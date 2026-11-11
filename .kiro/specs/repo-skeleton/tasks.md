@@ -4,7 +4,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 0: foundations
 
-- [ ] **T01 [P] (20 min) Add repository licensing files**
+- [x] **T01 [P] (20 min) Add repository licensing files**
   - Files: `LICENSE`, `THIRD-PARTY-NOTICES.md`.
   - Create the MIT license and a notice template that distinguishes current dependencies from future notices.
   - Depends on: none.
