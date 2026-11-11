@@ -1,0 +1,11 @@
+# Never ignore .kiro (hackathon rule)
+target/
+node_modules/
+web/build/
+web/.svelte-kit/
+.env
+.env.*
+!.env.example
+*.pem
+secrets/
+.DS_Store
