@@ -1,0 +1,23 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/server",
+    "crates/judge",
+    "crates/engine",
+    "crates/grimoire",
+    "crates/mcp",
+    "crates/common",
+]
+
+[workspace.package]
+edition = "2021"
+license = "MIT"
+version = "0.1.0"
+rust-version = "1.82"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+all = "warn"
+pedantic = "warn"

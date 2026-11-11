@@ -1,0 +1,13 @@
+[package]
+name = "counterspell-grimoire"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[[bin]]
+name = "validate"
+path = "src/main.rs"
+
+[lints]
+workspace = true

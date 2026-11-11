@@ -18,7 +18,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: README names the canonical packages and does not describe Valkey as a queue.
   - Preserve: canonical repository structure.
 
-- [ ] **T03 [S] (25 min) Create the exact Cargo workspace manifest**
+- [x] **T03 [S] (25 min) Create the exact Cargo workspace manifest**
   - Files: `Cargo.toml`, `Cargo.lock` after dependency resolution.
   - Declare exactly `crates/server`, `judge`, `engine`, `grimoire`, `mcp`, and `common`; set shared Rust edition/version/lint conventions without adding packages.
   - Depends on: none.
