@@ -27,7 +27,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 1: independent package and frontend scaffolds
 
-- [ ] **T04 [P] (25 min) Scaffold the common and engine packages**
+- [x] **T04 [P] (25 min) Scaffold the common and engine packages**
   - Files: `crates/common/Cargo.toml`, `crates/common/src/lib.rs`, `crates/engine/Cargo.toml`, `crates/engine/src/lib.rs`.
   - Create minimal compiling libraries with documented ownership boundaries and no process/Docker dependencies.
   - Depends on: T03.
