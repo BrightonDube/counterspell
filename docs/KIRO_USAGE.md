@@ -28,3 +28,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 
 ### 2026-11-12 01:45 SAST: Dev environment (non-Kiro)
 - Installed Rust 1.99.1 stable in WSL via rustup (rustfmt, clippy) so the Rust hooks and the repo-skeleton spec can run. jq 1.7, git, gcc 15.2 and Docker Desktop were already present.
+
+### 2026-11-12 01:46-01:48 SAST: 03-repo-skeleton-spec (Kiro CLI, gpt-5.6-luna, mode spec)
+- Prompt: `docs/kiro-prompts/03-repo-skeleton-cli.md`. Transcript: `docs/kiro-log/2026-11-12T0146-03-repo-skeleton-spec.log`. Exit 0.
+- Credits used (from /usage): 4.27 (hackathon credits used now 2251.49/4000).
