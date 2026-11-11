@@ -1,0 +1,18 @@
+You are setting up Kiro steering for Counterspell. This run is non-interactive (Kiro CLI), so there is no "Generate Steering Docs" button: create .kiro/steering/product.md, tech.md and structure.md yourself.
+
+Read these first (they are the single source of truth): docs/product-brief.md, docs/requirements.md, docs/system-design.md, docs/palette.md, docs/licence-rules.md, docs/kiro-playbook.md (section A.1 has the steering table).
+
+1) Write .kiro/steering/product.md, tech.md and structure.md (inclusion: always) to match these docs. Keep each under ~80 lines and reference the docs with #[[file:docs/...]] instead of copying long sections. In tech.md, add a "Decided - do not change without asking Brighton" list: Rust/Axum single binary + trusted judge worker that owns verdicts; Postgres incl. the job queue (FOR UPDATE SKIP LOCKED + leases) and run_events; Valkey for cache and rate limits only; Docker via bollard on a separate rootless sandbox-only daemon; the canonical Cargo layout counterspell-{server,judge,engine,grimoire,mcp,common}; Python + JavaScript at launch with Java/C++ stretch; SvelteKit static; Bits UI; Tailwind 4; GSAP only for landing + familiar; Monaco; MIT licence; OpenAI-compatible hints with gpt-6-luna then Groq gpt-oss-20b.
+2) Create these steering files with correct front-matter inclusion modes:
+   - rust-teaching.md (always): Brighton is new to Rust. After any Rust change, add a short "Rust lesson" (3-5 lines, plain English). No unwrap()/expect() outside tests. Prefer simple code over clever generics.
+   - security.md (always): never read or write .env or keys; ownership checks on every query; OAuth state+PKCE; no automatic account linking by email; rate limits; input validation VAL-1..VAL-5 enforced server-side; follow docs/system-design.md section 7 for the sandbox; untrusted code never runs outside the sandbox, including from counterspell-mcp.
+   - sandbox.md (fileMatch: crates/judge/**, languages/**, deploy/**): summarise sections 5-7 of the system design: the trusted worker owns tests, expected outputs, comparator, per-test deadlines (killed from outside) and the final verdict; user code only prints answers; sandboxes run only on the rootless sandbox daemon.
+   - ghost-engine.md (fileMatch: crates/engine/**): determinism, seeded RNG, shrink invariants (each accepted step strictly reduces the size metric), proptest conventions; call results "minimized counterexamples", never "smallest possible".
+   - frontend.md (fileMatch: web/**): Svelte 5 runes, Bits UI, Tailwind tokens from docs/palette.md, dark first, reduced-motion, GSAP only in landing/familiar, calm IDE.
+   - grimoire-authoring.md (fileMatch: packs/**): problem pack format, original problems only.
+   - api-conventions.md (auto, with name + description): JSON errors, cookie sessions, SSE event names from section 9.
+   - kiro-usage-log.md (manual): when invoked, append what we just did with Kiro (feature, surface, model, hooks, agents, MCP, what worked or not) to docs/KIRO_USAGE.md.
+   - release-checklist.md (manual): the freeze-day checklist from sections 14 and 7.
+3) Create a 6-line AGENTS.md at the repo root pointing to docs/ and .kiro/steering/, and crates/judge/AGENTS.md saying this crate is the security boundary.
+4) Because this run cannot ask questions: if anything in the docs conflicts, follow docs/system-design.md (its "Decision log 2026-11-12" wins), and write each conflict and the choice you made to docs/kiro-log/steering-questions.md for Brighton to review.
+Only create or edit files under .kiro/steering/, AGENTS.md, crates/judge/AGENTS.md and docs/kiro-log/. Do not touch anything else. Finish with a short list of the files you wrote.
