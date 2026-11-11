@@ -11,7 +11,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: files exist at the repository root and contain no placeholder license other than the intended notice template.
   - Preserve: MIT licensing decision; do not add unapproved dependency claims.
 
-- [ ] **T02 [P] (20 min) Add repository orientation files**
+- [x] **T02 [P] (20 min) Add repository orientation files**
   - Files: `README.md`, canonical empty directories `languages/`, `packs/`, `migrations/`, and `deploy/` as needed.
   - Document the project purpose, local commands, six-package layout, and the fact that judging/sandbox work is later.
   - Depends on: none.
