@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "stop-session-log",
+      "description": "Record the model, last commit, and diff stat when a changed session stops.",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/stop-session-log.sh"
+      }
+    }
+  ]
+}

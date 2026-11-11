@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "rust-fmt-on-save",
+      "description": "Format an edited Rust file with rustfmt when the toolchain and file are available.",
+      "trigger": "PostFileSave",
+      "matcher": "crates/.*\\.rs$",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/rust-fmt.sh '{{filePath}}'"
+      }
+    }
+  ]
+}

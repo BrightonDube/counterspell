@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "session-start-context",
+      "description": "Print the current plan milestone, recent commits, and open bugfix tasks at session start.",
+      "trigger": "SessionStart",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/session-start-context.sh"
+      }
+    }
+  ]
+}

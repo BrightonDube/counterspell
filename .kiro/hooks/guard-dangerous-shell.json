@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "guard-dangerous-shell",
+      "description": "Block shell requests that weaken sandboxing, destroy the filesystem, force-push, or pipe downloads to a shell.",
+      "trigger": "PreToolUse",
+      "matcher": "shell",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/dangerous-shell.sh"
+      }
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "spdx-header-on-create",
+      "description": "Add the MIT SPDX header using syntax valid for Rust, TypeScript, or Svelte markup.",
+      "trigger": "PostFileCreate",
+      "matcher": "\\.(rs|ts|svelte)$",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/spdx-header.sh '{{filePath}}'"
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "task-done-changelog",
+      "description": "Append the completed spec/task, commit, and verification result to the Kiro task log.",
+      "trigger": "PostTaskExec",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/task-done-changelog.sh"
+      }
+    }
+  ]
+}

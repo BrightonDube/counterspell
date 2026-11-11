@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "ghost-hunt-on-test-failure",
+      "description": "Suggest the sandbox ghost finder for scoped pack and engine test failures without blocking.",
+      "trigger": "PostToolUse",
+      "matcher": "shell",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/ghost-hint.sh"
+      }
+    }
+  ]
+}

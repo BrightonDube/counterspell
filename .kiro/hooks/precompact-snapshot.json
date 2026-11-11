@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "precompact-snapshot",
+      "description": "Print open spec tasks and Git status before context compaction.",
+      "trigger": "PreCompact",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/precompact-snapshot.sh"
+      }
+    }
+  ]
+}

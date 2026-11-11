@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "licence-check-on-deps",
+      "description": "Check Rust and web dependency licences after manifest changes.",
+      "trigger": "PostFileSave",
+      "matcher": "(Cargo\\.toml|package\\.json)$",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/licences.sh"
+      }
+    }
+  ]
+}

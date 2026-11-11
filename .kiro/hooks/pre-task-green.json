@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "pre-task-green",
+      "description": "Report the workspace cargo check before a task without blocking the task.",
+      "trigger": "PreTaskExec",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/pre-task-green.sh"
+      }
+    }
+  ]
+}

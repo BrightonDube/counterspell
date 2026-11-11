@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "rust-check-on-save",
+      "description": "Run clippy after an edited Rust file and preserve clippy's status.",
+      "trigger": "PostFileSave",
+      "matcher": "crates/.*\\.rs$",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/rust-check.sh"
+      }
+    }
+  ]
+}

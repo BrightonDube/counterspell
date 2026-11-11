@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "engine-tests-on-save",
+      "description": "Run the engine tests after engine Rust or pack changes, preserving cargo test failure status.",
+      "trigger": "PostFileSave",
+      "matcher": "crates/engine/.*\\.rs$|packs/.*",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/engine-tests.sh"
+      }
+    }
+  ]
+}

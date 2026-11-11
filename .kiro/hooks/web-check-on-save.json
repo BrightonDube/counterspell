@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "web-check-on-save",
+      "description": "Run svelte-check after Svelte or TypeScript web changes, preserving its status.",
+      "trigger": "PostFileSave",
+      "matcher": "web/src/.*\\.(svelte|ts)$",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/web-check.sh"
+      }
+    }
+  ]
+}
