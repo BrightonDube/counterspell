@@ -25,3 +25,6 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 - Human check against kiro.dev/docs/hooks: trigger names were right, but the files used `trigger: {type, matcher}` instead of the documented `{"version":"v1","hooks":[{name, trigger, matcher, action}]}`. Converted all 17 with a jq one-liner.
 - Smoke tests (run by hand, piping sample event JSON to each script): writing `.env` blocked (exit 2); `.env.example` allowed (exit 0); `docker run --privileged` blocked (exit 2); `ls` allowed; `pre-task-green` with no cargo printed "skipped" and exited 0.
 - Spec prompts D.3 to D.18 saved as numbered files in `docs/kiro-prompts/` for pasting into the IDE.
+
+### 2026-11-12 01:45 SAST: Dev environment (non-Kiro)
+- Installed Rust 1.99.1 stable in WSL via rustup (rustfmt, clippy) so the Rust hooks and the repo-skeleton spec can run. jq 1.7, git, gcc 15.2 and Docker Desktop were already present.
