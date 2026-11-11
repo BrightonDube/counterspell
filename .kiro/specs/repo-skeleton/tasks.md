@@ -34,7 +34,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo check -p counterspell-common -p counterspell-engine`.
   - Preserve: common is shared types only; engine is pure.
 
-- [ ] **T05 [P] (25 min) Scaffold judge, Grimoire, and MCP packages**
+- [x] **T05 [P] (25 min) Scaffold judge, Grimoire, and MCP packages**
   - Files: `crates/judge/**`, `crates/grimoire/**`, `crates/mcp/**`.
   - Create the exact package names, minimal entry points, and a single Grimoire package containing its future `validate` binary rather than a second package.
   - Depends on: T03.
