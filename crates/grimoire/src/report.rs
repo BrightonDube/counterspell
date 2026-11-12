@@ -136,6 +136,12 @@ impl Report {
         self.skipped.push(stage.to_owned());
     }
 
+    /// The pack name this report is about.
+    #[must_use]
+    pub fn pack(&self) -> &str {
+        &self.pack
+    }
+
     /// The stages that ran, in order.
     #[must_use]
     pub fn checked(&self) -> &[String] {

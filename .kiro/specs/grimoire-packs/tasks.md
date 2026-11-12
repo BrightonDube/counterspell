@@ -104,7 +104,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: a unit test that a pack with a broken `meta.toml` reports MET-01 and lists the content stages as skipped; a clean starter-like pack reports zero errors.
   - Rust lesson: explain `&Path` (borrowed) versus `PathBuf` (owned), and why `validate_static` only borrows the root.
 
-- [ ] **T13 [S] (30 min) CLI: validate, --json, --all, --deny-warnings, exit codes**
+- [x] **T13 [S] (30 min) CLI: validate, --json, --all, --deny-warnings, exit codes**
   - Files: `crates/grimoire/src/main.rs`.
   - Parse arguments with std only. Print text (one line per diagnostic) or JSON. Implement the exit codes 0, 1, 2 from GRM-37, GRM-38 and GRM-39. `--sandbox` returns exit 2 with SBX-07 until a runner exists.
   - Depends on: T12.
