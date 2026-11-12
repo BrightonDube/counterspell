@@ -253,3 +253,10 @@ Doc comments can link to items with square brackets, such as `[`hunt()`]`, and `
 A doctest is a code example in a doc comment that `cargo test --doc` compiles and runs, so the example in the crate docs cannot go stale.
 `RUSTDOCFLAGS="-D warnings" cargo doc` turns a broken link into a build failure.
 Documentation that shows a fake judge (a struct that implements `Oracle`) explains the seam without needing a sandbox.
+
+# Rust lesson: ghost-engine T26
+
+`cargo fmt --check`, `clippy -D warnings`, the test suite and the licence check are cheap, and each one catches a different kind of break.
+Clippy's `-D warnings` turns lints into errors, so a style issue such as a missing backtick fails the build instead of waiting in a log.
+A lint can also flag test code, so the same gate runs with `--all-targets` to include tests and examples.
+Running the gate on the final code, after the last edit, is the only evidence that counts.

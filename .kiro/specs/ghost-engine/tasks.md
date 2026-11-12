@@ -259,7 +259,7 @@ Conventions for every Rust task:
   - Preserve: docs never say "smallest possible" or imply correctness when nothing is found.
   - Rust lesson: doc comments and doctests.
 
-- [ ] **T26 [S] (30 min) Full verification gate**
+- [x] **T26 [S] (30 min) Full verification gate**
   - Files: none planned; fixes only if a check fails.
   - Run: `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo test --workspace`; `cargo deny check licenses`. Confirm the workspace still has exactly six packages and that only `crates/engine/`, `packs/_test/`, `THIRD-PARTY-NOTICES.md`, `Cargo.lock` and `docs/kiro-log/rust-lessons.md` changed. Confirm proptest regression files are committed. Time the engine tests (target under 60 s).
   - Requirements: R16.7, R15, R18.
@@ -278,14 +278,14 @@ Conventions for every Rust task:
 
 ## Completion checklist
 
-- [ ] The engine crate is still `counterspell-engine` in `crates/engine/`, with only `serde`, `serde_json` and (dev) `proptest`.
-- [ ] Generation, classification and shrinking live in separate modules; `shrink.rs` imports only `schema` and `size`.
-- [ ] Nothing in the crate executes code (purity test passes).
-- [ ] All 15 correctness properties pass, with regression files committed.
-- [ ] Three packs under `packs/_test/`, each with a Python reference, two incorrect programs, vectors and known ghosts; one program flagged for the dogfooding demo.
-- [ ] All six incorrect programs produce valid, reproducible minimized counterexamples within budget, and each passes `verify_ghost` and the independent re-check.
-- [ ] References hunted against themselves give a clear "not found" result.
-- [ ] Every result carries seed, generator version, engine version, problem version and image digest.
-- [ ] No engine string claims global minimality or correctness.
-- [ ] `packs/_test/README.md` states the model-oracle limit and the sandbox conformance hand-off.
-- [ ] fmt, Clippy (`-D warnings`), workspace tests and `cargo deny check licenses` are green.
+- [x] The engine crate is still `counterspell-engine` in `crates/engine/`, with only `serde`, `serde_json` and (dev) `proptest`.
+- [x] Generation, classification and shrinking live in separate modules; `shrink.rs` imports only `schema` and `size`.
+- [x] Nothing in the crate executes code (purity test passes).
+- [x] All 15 correctness properties pass, with regression files committed.
+- [x] Three packs under `packs/_test/`, each with a Python reference, two incorrect programs, vectors and known ghosts; one program flagged for the dogfooding demo.
+- [x] All six incorrect programs produce valid, reproducible minimized counterexamples within budget, and each passes `verify_ghost` and the independent re-check.
+- [x] References hunted against themselves give a clear "not found" result.
+- [x] Every result carries seed, generator version, engine version, problem version and image digest.
+- [x] No engine string claims global minimality or correctness.
+- [x] `packs/_test/README.md` states the model-oracle limit and the sandbox conformance hand-off.
+- [x] fmt, Clippy (`-D warnings`), workspace tests and `cargo deny check licenses` are green.
