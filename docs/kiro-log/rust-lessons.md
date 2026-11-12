@@ -105,3 +105,10 @@ Cargo features let a crate opt into only the parts it needs, such as Serde's der
 Runtime dependencies stay separate from dev-dependencies, so proptest is available only to tests.
 A module declaration creates a named boundary, while a small crate root keeps the public API easy to review.
 Keeping the engine's dependency list short protects its pure, synchronous design.
+
+# Rust lesson: ghost-engine T02
+
+u64 keeps the PRNG state stable across platforms, while i64 is used only at the input boundary.
+Wrapping arithmetic gives SplitMix64 its defined sequence without overflowing or panicking.
+Rejection sampling avoids modulo bias when an integer range does not divide the random domain.
+Length-prefixed hashing prevents different field boundaries from producing the same derived seed.

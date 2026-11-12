@@ -37,6 +37,7 @@ mod rng;
 mod schema;
 mod size;
 
+pub use rng::derive_seed;
 #[cfg(test)]
 mod tests {
     #[test]

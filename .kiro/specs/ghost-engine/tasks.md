@@ -21,7 +21,7 @@ Conventions for every Rust task:
   - Preserve: the engine keeps its package name and location; no other crate is edited.
   - Rust lesson: crates, features and why dependencies are kept few.
 
-- [ ] **T02 [P] (25 min) Seeded random numbers and seed derivation**
+- [x] **T02 [P] (25 min) Seeded random numbers and seed derivation**
   - Files: `crates/engine/src/rng.rs`.
   - Implement SplitMix64, `gen_range(lo, hi)` for `i64` bounds using `u128` arithmetic with rejection sampling, `gen_bool(percent)`, and `derive_seed(slug, code_sha256, language)` as FNV-1a 64 over length-prefixed fields plus `ENGINE_VERSION`. No `DefaultHasher`.
   - Unit tests: pinned first outputs for three seeds; pinned `derive_seed` value; length-prefix collision case (`("ab","c")` vs `("a","bc")`); full-range `gen_range` stays in bounds; `u64 → i64 → u64` seed round trip.
