@@ -76,7 +76,10 @@ fn no_source_file_runs_processes_opens_sockets_or_writes_files() {
 fn scanner_catches_a_planted_process_call() {
     let planted = "fn spawn() { let _ = std::process::Command::new(\"python3\"); }";
 
-    assert!(!api_violations(planted).is_empty());
+    assert_eq!(
+        api_violations(planted),
+        ["std::process::Command", "Command::"]
+    );
 }
 
 #[test]
