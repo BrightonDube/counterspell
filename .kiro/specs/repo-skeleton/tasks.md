@@ -124,7 +124,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `docker compose build server` and inspect/curl the built service.
   - Preserve: the page must be served by Axum, not by an npm process.
 
-- [ ] **T17 [S] (30 min) Run the Compose smoke test**
+- [x] **T17 [S] (30 min) Run the Compose smoke test**
   - Files: only implementation fixes required by the smoke test; do not broaden scope.
   - Run `docker compose up`, request `http://localhost/`, request `http://localhost/api/health`, and confirm the response includes the Svelte marker and health JSON.
   - Depends on: T14 and T16.
