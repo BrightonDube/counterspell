@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Ask what you need to know about the run you are in right now."
+
+[[hint]]
+rung = 2
+text = "Keep a count of the current run, and a count of the best run so far."
+
+[[hint]]
+rung = 3
+text = "When a letter matches the one before it, the current run grows. When it does not, the current run starts again at one."
+
+[[hint]]
+rung = 4
+text = "Check the best run after every letter, not only when a run ends."
