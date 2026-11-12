@@ -131,7 +131,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: Caddy logs show proxying to `server:8080`; no frontend dev server is exposed; judge has no public port or main Docker socket.
   - Preserve: local success must not weaken the sandbox boundary or expose database/Valkey ports.
 
-- [ ] **T18 [S] (30 min) Run the complete CI-equivalent verification**
+- [x] **T18 [S] (30 min) Run the complete CI-equivalent verification**
   - Files: no planned changes; fixes only if a check fails.
   - Run `cargo fmt --all -- --check`, Clippy with `-D warnings`, `cargo test --workspace`, `cd web && npm run check && npm run build`, `cargo deny check licenses`, and `docker compose config`.
   - Depends on: T15 and T17.
@@ -148,13 +148,13 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Completion checklist
 
-- [ ] Exactly six Cargo packages exist with the required names.
-- [ ] `GET /api/health` works through Axum.
-- [ ] `docker compose up` serves the Svelte page at `http://localhost/` from the Rust binary.
-- [ ] Postgres is the only planned truth/queue/event store; Valkey is cache/rate limits only.
-- [ ] Judge has no public port and no main Docker socket.
-- [ ] `migrations/` runs through the one-shot SQLx migration service.
-- [ ] Rootless sandbox daemon boundary is documented in `deploy/`.
-- [ ] MIT license and third-party notices exist.
-- [ ] CI checks fmt, Clippy, tests, Svelte check/build, and cargo-deny licenses.
-- [ ] All CI-equivalent checks are green.
+- [x] Exactly six Cargo packages exist with the required names.
+- [x] `GET /api/health` works through Axum.
+- [x] `docker compose up` serves the Svelte page at `http://localhost/` from the Rust binary.
+- [x] Postgres is the only planned truth/queue/event store; Valkey is cache/rate limits only.
+- [x] Judge has no public port and no main Docker socket.
+- [x] `migrations/` runs through the one-shot SQLx migration service.
+- [x] Rootless sandbox daemon boundary is documented in `deploy/`.
+- [x] MIT license and third-party notices exist.
+- [x] CI checks fmt, Clippy, tests, Svelte check/build, and cargo-deny licenses.
+- [x] All CI-equivalent checks are green.

@@ -54,3 +54,47 @@ Running these checks on every push makes small Rust changes easier to review tha
 Clippy caught a needless ownership transfer: `parse_port` only reads its input.
 Changing `String` to `&str` lets the function borrow the environment value without taking ownership.
 Borrowing is useful for small validation helpers because the caller keeps its string and no allocation is needed.
+# Rust lesson: repo-skeleton T01
+
+No Rust source changed in T01; the license covers the Rust packages that follow.
+A clear license lets future Rust code be reused and reviewed under the intended terms.
+
+# Rust lesson: repo-skeleton T02
+
+No Rust source changed in T02; the README documents where each Rust responsibility belongs.
+A written crate map helps prevent accidental ownership overlap as the workspace grows.
+
+# Rust lesson: repo-skeleton T07
+
+No Rust source changed in T07; semantic frontend tokens are consumed by the future Rust-served page.
+The Rust server stays responsible for delivery, while visual values remain in the frontend stylesheet.
+
+# Rust lesson: repo-skeleton T11
+
+No Rust source changed in T11; the deployment note protects the future judge boundary.
+The judge will own sandbox access later, while the server remains a normal HTTP process.
+
+# Rust lesson: repo-skeleton T13
+
+No Rust source changed in T13; Compose connects services without adding Docker dependencies to Rust.
+The server and judge remain separate binaries even though Compose starts both images.
+
+# Rust lesson: repo-skeleton T14
+
+No Rust source changed in T14; SQLx runs migrations as a one-shot operational process.
+The application can later use the resulting Postgres schema without placing migration logic in the server binary.
+
+# Rust lesson: repo-skeleton T16
+
+No Rust source changed in T16; the image copies the already-built Rust binary into a non-root runtime.
+The Rust server still serves the static build and never starts the frontend toolchain.
+
+# Rust lesson: repo-skeleton T17
+
+No Rust source changed in T17; the smoke test verified the Rust server behind Caddy.
+The HTTP response path proves the static frontend is delivered by Axum rather than a development server.
+
+# Rust lesson: repo-skeleton T18
+
+No Rust source changed in T18; the final checks validate the entire Rust workspace.
+Formatting, Clippy, tests, and the exact package metadata are release gates for later Rust features.
