@@ -1,0 +1,172 @@
+I'll start by reading the docs, steering files, and the existing repo-skeleton spec.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=53
+
+[tool] List Directory
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] List Directory
+[tool] status: InProgress
+[tool] status: Completed
+[tool] List Directory
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=59
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] List Directory
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=59
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=121
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=68
+[tool] Grep Search
+[tool] status: InProgress
+[tool] List Directory
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=64
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+I have enough context. Writing the three spec files now, starting with requirements.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=6464
+
+[tool] status: Failed: The model hit its output token limit before this tool call finished streaming, so the call was truncated and the tool was NOT executed. Tool call arguments are generated as model output and count a...
+The file was too large for one call, so I'll write it in chunks of 50 lines or fewer.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1600
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1319
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1038
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=122
+[tool] status: Pending
+[tool] status: Completed
+Now design.md, in chunks.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2231
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1787
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1624
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1764
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=691
+[tool] status: Pending
+[tool] status: Completed
+Now tasks.md.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1791
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2134
+[tool] status: Pending
+[tool] status: Completed
+Fixing a few details I noticed: the T17 verify line, the missing pack-1 bug vectors, and the public-surface table.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=292
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=44
+[tool] Confirm only spec files were added
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I wrote the complete `ghost-engine` spec: `requirements.md`, `design.md` and `tasks.md` under `.kiro/specs/ghost-engine/`. I changed nothing else, implemented no task, and ran no code. The other untracked entries in `git status` (the prompt file, a log and a script) were already there and I didn't touch them.
+
+Where the tests stand: the packs and the six incorrect programs have not been run, and there is no Rust yet. The spec only describes what the tests must check.
+
+- **requirements.md:** 18 numbered requirements (R1–R18) in plain "THE SYSTEM SHALL" form, a glossary, and a table tracing back to GHO-1, GHO-5, GHO-6, §8, §5 and your 10 correctness items.
+- **design.md:** it covers these areas:
+  - The three parts: generation, classification and shrinking.
+  - The `Oracle` trait.
+  - Budgets: 4 s search, 3 s shrink, 1 s verify, 8 s total.
+  - 15 correctness properties for proptest.
+  - A plain-English trade-offs section and a Rust vocabulary list.
+  - Open questions with the choice I assumed for each (16 in total).
+- **tasks.md:** 26 tasks of 30 minutes or less, in dependency waves like repo-skeleton. Each Rust task names a Rust lesson topic.
+
+**Test packs.** The design defines three packs under `packs/_test/`: `pair-count`, `longest-run` and `diagonal-sum`. Each has a Python reference and two wrong implementations. That is six bugs: three give wrong answers and three crash, with `ValueError` and `IndexError` classes. For each bug the design derives by hand the smallest failing input. I marked `pair-count/same-index` as the Kiro dogfooding demo candidate. The tasks assert those exact inputs, labelled as regression expectations for the current shrinker, not claims of minimality.
+
+**Design points worth knowing.**
+- **Coupled failures.** The shrinker needs a "move all numbers together" step. Without it, a failure like "some element x with 2x == target" gets stuck at `([5], 10)` instead of reaching `([0], 0)`.
+- **Timeouts.** A timeout ghost is found and re-confirmed once, but not shrunk, and it is never called a "minimized counterexample".
+- **Wrong-answer predicate.** All wrong answers count as one failure, as the system design says, so a shrink can drift between two different wrong behaviours.
+
+**Open questions that most need your answer** (all 16 are at the end of `design.md`):
+1. **Python is never run.** The steering rules forbid running Python on the host and the sandbox doesn't exist yet. The tests use Rust stand-ins that mirror each Python file, tied to hand-traced vectors. "Done" in this spec therefore means "proven against faithful models". The `judge-sandbox` and `run-lifecycle` specs must re-run the same cases through the real sandbox, and the pack README will say so.
+2. **Pack location.** I put the packs in `packs/_test/`, with the underscore meaning "skip when importing into the catalogue". The pack importer will need to honour that.
+3. **Demo target.** The dogfooding demo targets a wrong implementation rather than a wrong reference. Say if you want the reference version instead.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=226
+

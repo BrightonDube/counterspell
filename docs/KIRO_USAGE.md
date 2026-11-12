@@ -36,3 +36,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 01:49-03:44 SAST: 03b-repo-skeleton-implement (Kiro CLI, gpt-5.6-luna, mode default)
 - Prompt: `docs/kiro-prompts/03b-repo-skeleton-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T0149-03b-repo-skeleton-implement.log`. Exit 0.
 - Credits used (from /usage): 39.34 (hackathon credits used now 2290.83/4000).
+
+### 2026-11-12 10:37-10:53 SAST: 04-ghost-engine-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/04-ghost-engine-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1037-04-ghost-engine-spec.log`. Exit 0.
+- Credits used (from /usage): 29.62 (hackathon credits used now 2321.83/4000).
