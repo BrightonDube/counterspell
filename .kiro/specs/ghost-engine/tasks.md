@@ -232,7 +232,7 @@ Conventions for every Rust task:
   - Preserve: no host execution of Python; assertions say "regression expectation", not "global minimum".
   - Rust lesson: iterating over test cases, `assert_eq!` messages, and why independent checks catch shared bugs.
 
-- [ ] **T23 [P] (20 min) Purity guard test**
+- [x] **T23 [P] (20 min) Purity guard test**
   - Files: `crates/engine/tests/purity.rs`.
   - Fail if any file in `src/` contains `std::process`, `Command::new`, `std::fs`, `std::net`, `tokio`, `bollard`, `std::thread`, `unsafe`, `.unwrap()` or `.expect(` outside `#[cfg(test)]` blocks (accept a simple, documented approximation), and if the manifest's `[dependencies]` names anything but `serde` and `serde_json`, or `[dev-dependencies]` anything but `proptest`.
   - Requirements: R1.1, R1.2, R1.9, R17.3.

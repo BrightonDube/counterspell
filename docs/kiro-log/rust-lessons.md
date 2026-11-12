@@ -232,3 +232,10 @@ A property can pass for the wrong reason, so a separate non-vacuity test checks 
 Struct-update syntax (`HuntRequest { samples, ..HuntRequest::new(...) }`) sets fields when the value is built, which avoids the `clone_from` lint that clippy raises on `x.field = y.clone()`.
 `assert_eq!` on `Option`s and enums compares whole values, so a test that checks the expected value, the got value and the kind all at once fails with a readable diff.
 A mutation check (change one model, run the suite, restore the model) proves that the definition-of-done tests can fail.
+
+# Rust lesson: ghost-engine T23
+
+`std::fs::read_to_string` and `read_dir` read files from a test, so a test can check the source text of the crate.
+`Path::new(env!("CARGO_MANIFEST_DIR"))` gives the crate folder at compile time, so the test does not depend on the directory it runs from.
+`str::lines`, `trim_start`, `contains` and `split_once` are enough to scan text without a regex crate.
+A guard earns trust only when it fails on a real violation, so this task added a forbidden call, saw the test fail, and removed it again.
