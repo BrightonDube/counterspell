@@ -38,3 +38,9 @@ Axum registers API routes before the broad static fallback; the explicit API 404
 No Rust code changed in T10; the migration is intentionally independent of the Rust workspace.
 SQL migrations are versioned files, so SQLx can apply them once and record their history.
 The bootstrap table is metadata only; future specs will add users, jobs, and run events to Postgres.
+# Rust lesson: repo-skeleton T12
+
+The Dockerfile compiles Rust in a builder stage and copies only release binaries into runtime stages.
+This keeps compiler tooling out of production images and makes the server image smaller.
+The server runtime copies static files but no Docker client or socket, preserving the architecture boundary.
+The migration image pins the SQLx CLI version separately from application dependencies.

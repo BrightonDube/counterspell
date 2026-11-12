@@ -87,7 +87,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: note explicitly distinguishes the main Compose daemon from the sandbox daemon and contains no host-socket mount instruction for the server.
   - Preserve: separate rootless sandbox daemon is a fixed security boundary; do not implement code execution.
 
-- [ ] **T12 [S] (30 min) Create the multi-stage Dockerfile**
+- [x] **T12 [S] (30 min) Create the multi-stage Dockerfile**
   - Files: `Dockerfile`.
   - Add Node web-build, Rust release-build, server runtime, judge runtime, and pinned SQLx migration tooling targets. Copy `web/build` into the server runtime and set `STATIC_DIR` appropriately.
   - Depends on: T04, T05, T06, T08, T09, T10.
