@@ -112,3 +112,9 @@ u64 keeps the PRNG state stable across platforms, while i64 is used only at the 
 Wrapping arithmetic gives SplitMix64 its defined sequence without overflowing or panicking.
 Rejection sampling avoids modulo bias when an integer range does not divide the random domain.
 Length-prefixed hashing prevents different field boundaries from producing the same derived seed.
+
+# Rust lesson: ghost-engine T03
+
+Rust enums let one schema type represent several validated shapes while keeping each variant's fields explicit.
+Serde attributes such as `tag`, `rename_all`, `default`, and `deny_unknown_fields` control the JSON format without custom parsing code.
+A hand-written `Display` implementation turns a private error message into clear text for callers.

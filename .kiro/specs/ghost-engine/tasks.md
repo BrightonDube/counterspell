@@ -31,7 +31,7 @@ Conventions for every Rust task:
   - Preserve: pinned values change only together with `GENERATOR_VERSION`.
   - Rust lesson: integer types, `as` casts versus `try_from`, wrapping arithmetic.
 
-- [ ] **T03 [S] (30 min) Schema type and definition checks**
+- [x] **T03 [S] (30 min) Schema type and definition checks**
   - Files: `crates/engine/src/schema.rs`.
   - Implement `Schema` with the serde form in the design, `deny_unknown_fields`, and `check_definition` (all rules in R2.3 and the design). Provide a clear `SchemaError` with `Display`. No `thiserror`.
   - Unit tests: valid examples for the three packs' schemas parse; each rule has a rejecting test; nested tuple, empty tuple, float bound, unknown field and unknown `type` are rejected.

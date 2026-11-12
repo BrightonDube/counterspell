@@ -38,6 +38,7 @@ mod schema;
 mod size;
 
 pub use rng::derive_seed;
+pub use schema::{Schema, SchemaError};
 #[cfg(test)]
 mod tests {
     #[test]
