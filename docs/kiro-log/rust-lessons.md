@@ -27,3 +27,9 @@ Keeping the build artifact separate lets the Rust process remain the only produc
 The `?` operator returns an error early while preserving the normal success path.
 `Router` owns route composition, and `Json<Value>` serializes the health response without hand-building JSON.
 Tokio supplies the async runtime and listener, while Axum handles HTTP routing on top of it.
+# Rust lesson: repo-skeleton T09
+
+`Path` borrows a filesystem path, while `PathBuf` owns one and can be moved into the router.
+The server validates the directory before starting, so a missing build fails as a startup error.
+Axum registers API routes before the broad static fallback; the explicit API 404 keeps unknown API paths JSON.
+`ServeFile` provides the SPA entry point only after `ServeDir` cannot find a static asset.

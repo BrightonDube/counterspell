@@ -64,7 +64,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo check -p counterspell-server`; start it locally and curl `/api/health`.
   - Preserve: server has no Docker client/socket and health does not pretend to be full readiness.
 
-- [ ] **T09 [S] (30 min) Add static serving and SPA fallback**
+- [x] **T09 [S] (30 min) Add static serving and SPA fallback**
   - Files: `crates/server/src/main.rs` or server modules and static-serving dependencies.
   - Serve `STATIC_DIR` with `ServeDir`, preserve API route precedence, serve `index.html` for non-API frontend routes, and return clear startup errors for missing/bind failures.
   - Depends on: T08 and T06.
