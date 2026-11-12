@@ -1,0 +1,14 @@
+{
+  "pack": "longest-run",
+  "note": "Hand-verified reference vectors. Each expected value was checked by hand against reference/solution.py.",
+  "vectors": [
+    { "input": ["aabbb"], "expected": 3 },
+    { "input": [""], "expected": 0 },
+    { "input": ["abc"], "expected": 1 },
+    { "input": ["cccc"], "expected": 4 },
+    { "input": ["abba"], "expected": 2 },
+    { "input": ["aa"], "expected": 2 },
+    { "input": ["ab"], "expected": 1 },
+    { "input": ["bbca"], "expected": 2 }
+  ]
+}

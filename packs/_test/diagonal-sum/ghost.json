@@ -1,0 +1,66 @@
+{
+  "slug": "diagonal-sum",
+  "problem_version": 1,
+  "comparator": "exact",
+  "concept_tags": ["matrices", "indexing"],
+  "schema": {
+    "type": "tuple",
+    "items": [
+      { "type": "matrix", "min_rows": 0, "max_rows": 6, "min_cols": 0, "max_cols": 6, "min": -9, "max": 9 }
+    ]
+  },
+  "samples": [
+    { "input": [[[1, 2], [3, 4]]], "expected": 5 },
+    { "input": [[[1, 2, 3]]], "expected": 1 },
+    { "input": [[]], "expected": 0 }
+  ],
+  "known_ghosts": [
+    {
+      "id": "absolute-diagonal",
+      "input": [[[-1]]],
+      "kind": "wrong",
+      "exception_class": null,
+      "got": 1,
+      "explanation": "The sum must keep the sign of each diagonal cell. Taking abs() turns the -1 into 1.",
+      "concept_tags": ["matrices", "arithmetic"]
+    },
+    {
+      "id": "more-rows-than-columns",
+      "input": [[[]]],
+      "kind": "crash",
+      "exception_class": "IndexError",
+      "got": null,
+      "explanation": "The loop runs over the row count. A grid with one row and no columns has no cell at row 0, column 0, so the index goes past the end.",
+      "concept_tags": ["matrices", "indexing"]
+    }
+  ],
+  "incorrect": [
+    {
+      "id": "abs-diagonal",
+      "file": "incorrect/abs-diagonal.py",
+      "kind": "wrong",
+      "exception_class": null,
+      "smallest_input": [[[-1]]],
+      "smallest_size": { "nodes": 4, "magnitude": "1" },
+      "dogfood": false,
+      "vectors": [
+        { "input": [[[-3]]], "result": 3 },
+        { "input": [[[1, 2], [3, 4]]], "result": 5 }
+      ]
+    },
+    {
+      "id": "assumes-square",
+      "file": "incorrect/assumes-square.py",
+      "kind": "crash",
+      "exception_class": "IndexError",
+      "smallest_input": [[[]]],
+      "smallest_size": { "nodes": 3, "magnitude": "0" },
+      "dogfood": false,
+      "vectors": [
+        { "input": [[[1], [2]]], "crash": "IndexError" },
+        { "input": [[[1, 2], [3, 4]]], "result": 5 },
+        { "input": [[[1, 2, 3], [4, 5, 6]]], "result": 6 }
+      ]
+    }
+  ]
+}

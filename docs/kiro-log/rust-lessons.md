@@ -207,3 +207,7 @@ A closure that borrows `oracle` and `stats` mutably is passed to `shrink` as `&m
 `Option::take` moves a value out of an `Option` and leaves `None`, which lets a loop compare the new run with the previous one without holding two borrows.
 `match` guards with a moved binding (`Some(previous) if previous != run`) keep the comparison next to the branch that uses it.
 The confirm step returns a small enum (`Confirmed`, `Unreproduced`, `OutOfTime`), so each outcome has its own explicit branch and none can be ignored by accident.
+
+# Rust lesson: ghost-engine T17-T19
+
+No Rust changed in these tasks. They added the pack JSON, Markdown and Python text files only.

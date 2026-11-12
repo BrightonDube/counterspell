@@ -1,0 +1,66 @@
+{
+  "slug": "longest-run",
+  "problem_version": 1,
+  "comparator": "exact",
+  "concept_tags": ["strings", "run-length"],
+  "schema": {
+    "type": "tuple",
+    "items": [
+      { "type": "string", "alphabet": "abc", "min_len": 0, "max_len": 40 }
+    ]
+  },
+  "samples": [
+    { "input": ["aabbb"], "expected": 3 },
+    { "input": [""], "expected": 0 },
+    { "input": ["abc"], "expected": 1 }
+  ],
+  "known_ghosts": [
+    {
+      "id": "single-run-at-end",
+      "input": ["a"],
+      "kind": "wrong",
+      "exception_class": null,
+      "got": 0,
+      "explanation": "A run that reaches the end of the string is still a run. Your loop only records a run when the next character differs, so the last run is never recorded.",
+      "concept_tags": ["strings", "loops"]
+    },
+    {
+      "id": "empty-string-first-char",
+      "input": [""],
+      "kind": "crash",
+      "exception_class": "IndexError",
+      "got": null,
+      "explanation": "An empty string has no first character. Reading s[0] before checking the length raises IndexError.",
+      "concept_tags": ["strings", "edge-cases"]
+    }
+  ],
+  "incorrect": [
+    {
+      "id": "forgot-last-run",
+      "file": "incorrect/forgot-last-run.py",
+      "kind": "wrong",
+      "exception_class": null,
+      "smallest_input": ["a"],
+      "smallest_size": { "nodes": 3, "magnitude": "97" },
+      "dogfood": false,
+      "vectors": [
+        { "input": ["a"], "result": 0 },
+        { "input": ["aabbb"], "result": 2 },
+        { "input": ["abc"], "result": 1 }
+      ]
+    },
+    {
+      "id": "empty-first-char",
+      "file": "incorrect/empty-first-char.py",
+      "kind": "crash",
+      "exception_class": "IndexError",
+      "smallest_input": [""],
+      "smallest_size": { "nodes": 2, "magnitude": "0" },
+      "dogfood": false,
+      "vectors": [
+        { "input": [""], "crash": "IndexError" },
+        { "input": ["aabbb"], "result": 3 }
+      ]
+    }
+  ]
+}

@@ -177,7 +177,7 @@ Conventions for every Rust task:
 
 ## Wave 3: test packs (no Rust, no execution of Python)
 
-- [ ] **T17 [P] (30 min) Pack `pair-count`**
+- [x] **T17 [P] (30 min) Pack `pair-count`**
   - Files: `packs/_test/pair-count/{problem.md,ghost.json,golden.json,reference/solution.py,incorrect/same-index.py,incorrect/empty-min.py}`.
   - Write the original statement; the reference and the two incorrect programs exactly as in the design; `ghost.json` with `problem_version: 1`, schema, comparator `exact`, concept tags, three samples, known ghosts for `[[0],0]` (got 1) and `[[],0]` (class `ValueError`) with authored explanations, and the `incorrect` index (file, kind, class, expected smallest input, hand-traced `vectors`, `dogfood: true` on `same-index`); `golden.json` with at least eight hand-verified vectors including `[[1,2,3,4],5] → 2`, `[[0,0,0],0] → 3`, `[[],0] → 0`. Hand-traced bug vectors: `same-index`: `[[0],0] → 1`, `[[1,2,3,4],5] → 2`, `[[2,2],4] → 3`; `empty-min`: `[[],0] → ValueError`, `[[1,2,3,4],5] → 2`.
   - Requirements: R14.
@@ -186,7 +186,7 @@ Conventions for every Rust task:
   - Preserve: original wording; no copied problem text; Python is never run.
   - Rust lesson: not applicable (no Rust change). Write one line saying so, as the repo-skeleton tasks do.
 
-- [ ] **T18 [P] (30 min) Pack `longest-run`**
+- [x] **T18 [P] (30 min) Pack `longest-run`**
   - Files: `packs/_test/longest-run/…` (same layout; incorrect: `forgot-last-run.py`, `empty-first-char.py`).
   - Alphabet `abc`, length 0–40. Known ghosts: `["a"]` (got 0) and `[""]` (class `IndexError`). Golden vectors include `"aabbb" → 3`, `"" → 0`, `"abc" → 1`, `"cccc" → 4`, `"abba" → 2`. Hand-traced bug vectors: `forgot-last-run`: `"a" → 0`, `"aabbb" → 2`, `"abc" → 1`; `empty-first-char`: `"" → IndexError`, `"aabbb" → 3`.
   - Requirements: R14.
@@ -194,7 +194,7 @@ Conventions for every Rust task:
   - Verify and Preserve: as T17.
   - Rust lesson: not applicable.
 
-- [ ] **T19 [P] (30 min) Pack `diagonal-sum`**
+- [x] **T19 [P] (30 min) Pack `diagonal-sum`**
   - Files: `packs/_test/diagonal-sum/…` (incorrect: `abs-diagonal.py`, `assumes-square.py`).
   - Matrix rows 0–6, columns 0–6, cells −9 to 9. Known ghosts: `[[[-1]]]` (got 1) and `[[[]]]` (class `IndexError`). Golden vectors include `[[1,2],[3,4]] → 5`, `[[]] → 0`, `[] → 0`, `[[1,2,3]] → 1`, `[[1],[2]] → 1`, `[[-3]] → -3`, `[[1,2],[3,4],[5,6]] → 5`. Hand-traced bug vectors: `abs-diagonal`: `[[-3]] → 3`, `[[1,2],[3,4]] → 5`; `assumes-square`: `[[1],[2]] → IndexError`, `[[1,2],[3,4]] → 5`, `[[1,2,3],[4,5,6]] → 6`.
   - Requirements: R14.
