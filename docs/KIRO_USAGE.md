@@ -97,3 +97,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 12:40-12:44 SAST: 16-break-room-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/16-break-room-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1240-16-break-room-spec.log`. Exit 0.
 - Credits used (from /usage): 2.70 (hackathon credits used now 2487.75/4000).
+
+### 2026-11-12 12:44-13:03 SAST: 06-judge-sandbox-spec-retry (Kiro CLI, claude-sonnet-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/06-judge-sandbox-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1244-06-judge-sandbox-spec-retry.log`. Exit 0.
+- Credits used (from /usage): 31.58 (hackathon credits used now 2519.33/4000).

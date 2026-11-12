@@ -1,0 +1,186 @@
+I'll start by reading the docs, the steering files, and the existing repo-skeleton spec.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+
+[tool] List Directory
+[tool] status: InProgress
+[tool] List Directory
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=43
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=105
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=140
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=125
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=207
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=146
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=413
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=3837
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Fetch URL
+[tool] Fetch URL
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=3069
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] Fetch URL
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=41
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=4481
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9576
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=663
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=5282
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=480
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I wrote the `judge-sandbox` spec (`requirements.md`, `design.md`, `tasks.md`) under `.kiro/specs/judge-sandbox/` and stopped. Nothing is implemented, and nothing outside that folder changed. The log file under `docs/kiro-log/` was already untracked before this run.
+
+- **Analyze Requirements:** I couldn't click it from a non-interactive CLI run, so I did the cross-check by hand. It's recorded at the top of `requirements.md` as findings A1–A15. Please also click it in the IDE before you approve.
+- **Review gate:** `tasks.md` starts with T00, which is your review of the trusted/untrusted boundary. No implementation task may start until it's done. Sections 1–4 of `design.md` are the part to review, ending in a ten-point checklist.
+- **Where it plugs in:** it implements `RunExecutor` from run-lifecycle unchanged and adds an `Oracle` for ghost-engine. `languages.rs` is created here and language-drivers extends it.
+
+## Questions to answer before implementation
+
+I marked these ⚠ in `design.md` because each changes or removes an isolation or cleanup control. All seven are listed under Open questions in `design.md`, each with the choice I assumed (the first four are below):
+
+1. **No `nproc` ulimit.** Docker counts `nproc` per UID, and concurrent containers share one UID, so a fork bomb could stop the other slot from forking. I rely on the PID cgroup limit (64) and test it with a fork bomb in one slot while a good solution runs in the other. The alternative is one UID per slot.
+2. **`AutoRemove` off.** Cleanup is explicit removal, plus containers that expire by themselves, plus a sweeper. I need the container's exit state to tell "the user ended their own container" from "the daemon failed".
+3. **Python gets a syntax check run by the worker (`py_compile`).** This keeps `compile_error` a fact the worker observed, not something the program can print. It differs from `compile = []` in the system design and in language-drivers.
+4. **Strict digest pinning with no override.** Container creation also verifies the digest and never pulls.
+
+The other three are a fresh container per run that is never pooled, scratch space counting against the 256 MiB memory limit, and preflight failing closed with no skip flag.
+
+## Things you might not expect
+
+- **Fail-closed preflight:** it checks kernel facts from inside a probe container, not config, because Docker silently ignores the cgroup flags without delegation. I confirmed that against Docker's rootless docs. A failing preflight stops all execution and burns run-lifecycle retry attempts.
+- **WSL2:** the `sbx_` real-sandbox tests will probably not run there; they need a rootless daemon with delegated cgroups. The VPS run (T37) is the authoritative evidence.
+- **Hostile programs can't return a correct answer.** Every program in the hostile corpus is written so it cannot return a correct answer, otherwise "never Accepted" would be wrong for a program that probes the network, fails, then answers correctly. Containment is checked out of band (a listener on the host, the daemon's report of filesystem changes, the kernel's OOM counter), not from what the program prints.
+- **Early host check (T02):** a spike on the VPS answers the uncertain Docker and bollard details by experiment before any code depends on them. Those are file delivery over exec stdin, how OOM is reported, and the bollard API shapes. `design.md` states the assumed answers and doesn't claim them.
+
+## Cross-spec overlap
+
+Server-side VAL-1 to VAL-4 stay in run-lifecycle (T22, T23), so there is one implementation of each rule. This spec states the contract and adds the judge-side re-check. It also adds shared test vectors (`source_vectors.json`) and the output sanitiser for VAL-5. No keyword blocklists are used anywhere.
+
+The remaining open questions each list their assumed choice.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=260
+
