@@ -85,3 +85,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 12:04-12:08 SAST: 13-counterspell-mcp-power-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/13-counterspell-mcp-power-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1204-13-counterspell-mcp-power-spec.log`. Exit 0.
 - Credits used (from /usage): 7.33 (hackathon credits used now 2435.96/4000).
+
+### 2026-11-12 12:08-12:36 SAST: 14-efficiency-familiar-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/14-efficiency-familiar-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1208-14-efficiency-familiar-spec.log`. Exit 0.
+- Credits used (from /usage): 46.30 (hackathon credits used now 2482.26/4000).
