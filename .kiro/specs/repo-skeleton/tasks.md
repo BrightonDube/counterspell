@@ -41,7 +41,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo check -p counterspell-judge -p counterspell-grimoire -p counterspell-mcp`.
   - Preserve: judge is the future sandbox boundary; MCP never runs code directly on the host.
 
-- [ ] **T06 [P] (30 min) Create the SvelteKit static application**
+- [x] **T06 [P] (30 min) Create the SvelteKit static application**
   - Files: `web/package.json`, lockfile, SvelteKit config, `web/src/routes/+page.svelte`, `web/src/app.css`, and required config files.
   - Configure SvelteKit 5 with adapter-static, Tailwind 4, and the selected Bits UI-compatible foundation. Add a real minimal page with a stable smoke-test marker.
   - Depends on: none.
