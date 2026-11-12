@@ -80,7 +80,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 3: image and local infrastructure
 
-- [ ] **T11 [P] (25 min) Write the rootless sandbox deployment note**
+- [x] **T11 [P] (25 min) Write the rootless sandbox deployment note**
   - Files: `deploy/rootless-sandbox-daemon.md`.
   - Document the unprivileged `sandbox` user, systemd user service, separate socket, pre-pulled images, cgroup v2 delegation check, judge-only access, no server socket, and `JUDGE_CONCURRENCY=2`.
   - Depends on: none.
