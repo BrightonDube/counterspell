@@ -113,7 +113,7 @@ Conventions for every Rust task:
   - Preserve: `shrink` imports only `schema` and `size`.
   - Rust lesson: recursion over a tree, cloning versus borrowing, `Vec` building.
 
-- [ ] **T11 [S] (30 min) Shrink proposals, part 2: structural removal**
+- [x] **T11 [S] (30 min) Shrink proposals, part 2: structural removal**
   - Files: `crates/engine/src/shrink.rs`.
   - Implement ddmin-style chunk removal (sizes `⌈n/2⌉` down to 1) for arrays, strings, matrix rows and matrix columns, respecting minimum lengths and arity. Order the three proposal passes as in the design and expose them as one lazy iterator, `proposals(schema, value)`.
   - Tests: chunk sizes and order on an 8-element array; column removal removes the same index from every row; minimum lengths are never violated; tuples keep their arity.

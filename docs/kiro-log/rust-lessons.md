@@ -165,3 +165,10 @@ A JSON Pointer such as `/0/3` names one position inside a value, so a move chang
 `value.pointer_mut(path)` returns `Option<&mut Value>`, so a missing path is handled with `if let` instead of a panic.
 `&dyn Fn(...)` lets one function take any closure, which keeps the whole-value moves short.
 A `match` on a tuple of `(schema, value)` handles every pairing, and the `_ => {}` arm makes mismatched shapes harmless.
+
+# Rust lesson: ghost-engine T11
+
+`div_ceil` gives the rounded-up half of a length without floating-point numbers, which keeps the chunk sizes exact.
+`Iterator::chain` joins several lists of proposals without copying them into one new list.
+`std::iter::once(()).flat_map(...)` postpones building each pass until the caller asks for it.
+`get_mut(index)` returns an `Option`, so a bad index is skipped instead of crashing the program.
