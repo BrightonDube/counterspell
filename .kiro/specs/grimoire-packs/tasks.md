@@ -190,7 +190,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo test -p counterspell-grimoire --test starter_packs`.
   - Rust lesson: explain iterating a `read_dir` result and why each entry can fail, so it is a `Result`.
 
-- [ ] **T25 [S] (30 min) Model vectors for starter programs**
+- [x] **T25 [S] (30 min) Model vectors for starter programs**
   - Files: `crates/grimoire/tests/sandbox_fake.rs` (extend), `crates/grimoire/tests/support/` if needed.
   - Add plain Rust model functions and the hand-checked vectors for the three references and six incorrect programs, and assert SBX-03 and SBX-04 expectations with the model runner. Record in the file header that T20 must rerun these vectors through the real sandbox.
   - Depends on: T18, T21 to T23.

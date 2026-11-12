@@ -3,7 +3,8 @@
 //! This file proves the logic of the sandbox checks. It does not prove the
 //! sandbox. The model runner is plain Rust that mirrors each pack program, so no
 //! Python runs here. The judge spec must run the same vectors through the real
-//! Python files (task T20). Expected values are literals written by hand. The
+//! Python files (task T20), including the starter-pack vectors at the end of this
+//! file. Expected values are literals written by hand. The
 //! model is never used to derive an expectation.
 
 use counterspell_engine::ProgramResult;
@@ -504,4 +505,265 @@ fn static_error_stops_before_any_program_runs() {
     assert!(report.has_errors());
     assert!(report.skipped().iter().any(|stage| stage == "sandbox"));
     assert_eq!(runner.calls, 0);
+}
+
+// ---- Starter packs (T25) ------------------------------------------------
+//
+// The tests below read the real `packs/<slug>` directories. Their models are
+// hand-written mirrors of the Python files, and the vectors are hand traces.
+
+/// The three starter packs, in alphabetical order.
+const STARTERS: [&str; 3] = ["count-pairs", "diagonal-total", "longest-run-length"];
+
+/// The directory of one starter pack in the repository.
+fn starter_dir(slug: &str) -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("../../packs")
+        .join(slug)
+}
+
+/// Reads the text argument of `longest_run(text)`.
+fn text_argument(input: &Value) -> Vec<char> {
+    input[0]
+        .as_str()
+        .expect("first argument is a string")
+        .chars()
+        .collect()
+}
+
+/// Reads the grid argument of `diagonal_total(grid)`.
+fn grid_argument(input: &Value) -> Vec<Vec<i64>> {
+    input[0]
+        .as_array()
+        .expect("first argument is a list")
+        .iter()
+        .map(|row| {
+            row.as_array()
+                .expect("row is a list")
+                .iter()
+                .map(|cell| cell.as_i64().expect("cell is an integer"))
+                .collect()
+        })
+        .collect()
+}
+
+/// The reference for `longest-run-length`: the most letters in a row that match.
+fn longest_run_reference(input: &Value) -> ProgramResult {
+    let mut best = 0;
+    let mut current = 0;
+    let mut previous = None;
+    for ch in text_argument(input) {
+        if previous == Some(ch) {
+            current += 1;
+        } else {
+            current = 1;
+            previous = Some(ch);
+        }
+        best = best.max(current);
+    }
+    ProgramResult::Returned(json!(best))
+}
+
+/// Wrong answer: the best run is saved only when a new letter starts, so the last run is lost.
+fn longest_run_forgot_last(input: &Value) -> ProgramResult {
+    let mut best = 0;
+    let mut current = 0;
+    let mut previous = None;
+    for ch in text_argument(input) {
+        if previous == Some(ch) {
+            current += 1;
+        } else {
+            best = best.max(current);
+            current = 1;
+            previous = Some(ch);
+        }
+    }
+    ProgramResult::Returned(json!(best))
+}
+
+/// Crash: reads the first letter before it checks for empty text.
+fn longest_run_empty_first(input: &Value) -> ProgramResult {
+    let text = text_argument(input);
+    let Some(&first) = text.first() else {
+        return ProgramResult::Crashed {
+            exception_class: "IndexError".to_owned(),
+            message: "string index out of range".to_owned(),
+        };
+    };
+    let mut best = 1;
+    let mut current = 1;
+    let mut previous = first;
+    for &ch in &text[1..] {
+        if ch == previous {
+            current += 1;
+            best = best.max(current);
+        } else {
+            current = 1;
+            previous = ch;
+        }
+    }
+    ProgramResult::Returned(json!(best))
+}
+
+/// Sums the diagonal cells, after applying `transform` to each one.
+fn diagonal_sum(grid: &[Vec<i64>], transform: fn(i64) -> i64) -> i64 {
+    let cols = grid.first().map_or(0, Vec::len);
+    let size = grid.len().min(cols);
+    (0..size).map(|i| transform(grid[i][i])).sum()
+}
+
+/// The reference for `diagonal-total`: the sum of the cells whose row and column numbers match.
+fn diagonal_reference(input: &Value) -> ProgramResult {
+    ProgramResult::Returned(json!(diagonal_sum(&grid_argument(input), |cell| cell)))
+}
+
+/// Wrong answer: each diagonal cell is taken as its absolute value.
+fn diagonal_abs(input: &Value) -> ProgramResult {
+    ProgramResult::Returned(json!(diagonal_sum(&grid_argument(input), i64::abs)))
+}
+
+/// Crash: assumes a square grid, so a row with no cell in its own column raises an error.
+fn diagonal_assumes_square(input: &Value) -> ProgramResult {
+    let mut total = 0;
+    for (index, row) in grid_argument(input).iter().enumerate() {
+        let Some(&cell) = row.get(index) else {
+            return ProgramResult::Crashed {
+                exception_class: "IndexError".to_owned(),
+                message: "list index out of range".to_owned(),
+            };
+        };
+        total += cell;
+    }
+    ProgramResult::Returned(json!(total))
+}
+
+/// The reference and the incorrect models for one starter pack, keyed by program path.
+fn starter_models(slug: &str) -> (Model, Vec<(&'static str, Model)>) {
+    match slug {
+        "count-pairs" => (
+            reference_model,
+            vec![
+                ("incorrect/same-index.py", same_index_model as Model),
+                ("incorrect/empty-min.py", empty_min_model as Model),
+            ],
+        ),
+        "longest-run-length" => (
+            longest_run_reference,
+            vec![
+                (
+                    "incorrect/forgot-last-run.py",
+                    longest_run_forgot_last as Model,
+                ),
+                (
+                    "incorrect/empty-first-char.py",
+                    longest_run_empty_first as Model,
+                ),
+            ],
+        ),
+        "diagonal-total" => (
+            diagonal_reference,
+            vec![
+                ("incorrect/abs-diagonal.py", diagonal_abs as Model),
+                (
+                    "incorrect/assumes-square.py",
+                    diagonal_assumes_square as Model,
+                ),
+            ],
+        ),
+        other => panic!("no model for starter pack {other}"),
+    }
+}
+
+#[test]
+fn starter_packs_pass_every_sandbox_check_with_the_model_runner() {
+    for slug in STARTERS {
+        let (reference, programs) = starter_models(slug);
+        let mut runner = ModelRunner::new(reference, &programs);
+
+        let report = run_sandbox(&starter_dir(slug), &mut runner);
+
+        assert_eq!(codes(&report), Vec::<&str>::new(), "{slug}");
+    }
+}
+
+#[test]
+fn starter_ghosts_stop_reproducing_when_their_program_is_correct() {
+    // Both known ghosts of each pack must fail SBX-03 once their program is replaced
+    // by the reference, which is correct on every ghost input.
+    for slug in STARTERS {
+        let (reference, programs) = starter_models(slug);
+        let correct: Vec<(&'static str, Model)> = programs
+            .iter()
+            .map(|(path, _)| (*path, reference))
+            .collect();
+        let mut runner = ModelRunner::new(reference, &correct);
+
+        let report = run_sandbox(&starter_dir(slug), &mut runner);
+
+        assert_eq!(codes(&report), ["SBX-03", "SBX-03"], "{slug}");
+    }
+}
+
+#[test]
+fn count_pairs_models_match_hand_traces() {
+    assert_eq!(
+        reference_model(&json!([[1, 2, 3, 2], 4])),
+        ProgramResult::Returned(json!(2))
+    );
+    assert_eq!(
+        reference_model(&json!([[5, 5], 10])),
+        ProgramResult::Returned(json!(1))
+    );
+    assert_eq!(
+        same_index_model(&json!([[0], 0])),
+        ProgramResult::Returned(json!(1))
+    );
+    assert!(matches!(
+        empty_min_model(&json!([[], 0])),
+        ProgramResult::Crashed { exception_class, .. } if exception_class == "ValueError"
+    ));
+}
+
+#[test]
+fn longest_run_models_match_hand_traces() {
+    assert_eq!(
+        longest_run_reference(&json!(["aabbbc"])),
+        ProgramResult::Returned(json!(3))
+    );
+    assert_eq!(
+        longest_run_reference(&json!([""])),
+        ProgramResult::Returned(json!(0))
+    );
+    assert_eq!(
+        longest_run_forgot_last(&json!(["a"])),
+        ProgramResult::Returned(json!(0))
+    );
+    assert_eq!(
+        longest_run_forgot_last(&json!(["aa"])),
+        ProgramResult::Returned(json!(0))
+    );
+    assert!(matches!(
+        longest_run_empty_first(&json!([""])),
+        ProgramResult::Crashed { exception_class, .. } if exception_class == "IndexError"
+    ));
+}
+
+#[test]
+fn diagonal_total_models_match_hand_traces() {
+    assert_eq!(
+        diagonal_reference(&json!([[[1, 2], [3, 4]]])),
+        ProgramResult::Returned(json!(5))
+    );
+    assert_eq!(
+        diagonal_reference(&json!([[[-2, 9, 1]]])),
+        ProgramResult::Returned(json!(-2))
+    );
+    assert_eq!(
+        diagonal_abs(&json!([[[-1]]])),
+        ProgramResult::Returned(json!(1))
+    );
+    assert!(matches!(
+        diagonal_assumes_square(&json!([[[]]])),
+        ProgramResult::Crashed { exception_class, .. } if exception_class == "IndexError"
+    ));
 }
