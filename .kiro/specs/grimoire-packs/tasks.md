@@ -17,7 +17,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `packs/README.md` lists every LAY, MET, STM, SMP, GEN, HNT, KNG and REF rule in plain English and names `docs/system-design.md` §4, §6, §8, §9.
   - Preserve: `packs/` stays the reviewed-file home; no code in `packs/`.
 
-- [ ] **T02 [S] (30 min) Add dependencies, module skeleton, codes and report types**
+- [x] **T02 [S] (30 min) Add dependencies, module skeleton, codes and report types**
   - Files: `crates/grimoire/Cargo.toml`, `crates/grimoire/src/{lib.rs,main.rs,codes.rs,report.rs}`, and empty module files listed in `design.md` under "Crate layout".
   - Add `counterspell-engine` (path), `serde` (derive), `serde_json`, `toml`. Keep `GRIMOIRE_VERSION`. In `codes.rs`, define one `pub const` per code in the design table, with severity. In `report.rs`, define `Severity`, `Diagnostic`, `Report` and a JSON-serialisable form.
   - Depends on: none (engine public surface is needed later; the path dependency compiles now).
