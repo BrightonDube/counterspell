@@ -71,7 +71,7 @@ Conventions for every Rust task:
   - Preserve: no float tolerance and no custom checkers.
   - Rust lesson: `derive(PartialEq)` and what `==` means on `serde_json::Value`.
 
-- [ ] **T07 [S] (30 min) Failure classification and sanitising**
+- [x] **T07 [S] (30 min) Failure classification and sanitising**
   - Files: `crates/engine/src/classify.rs`.
   - Implement `ProgramResult`, `Observation`, `FailureKind` (serde `wrong`/`crash`/`timeout`), `FailurePredicate`, `Classification`, `classify`, and `sanitise_class`/`sanitise_text` (R4.8, R17.2). Provide `ProgramResult::sanitised()` used when a result enters a ghost.
   - Tests: every row of the classification table; garbled output is a wrong answer; reference crash, timeout or garble gives `ReferenceFailed`; hostile class strings (spaces, unicode, 10 KB) become `UnknownError`; messages are truncated on a character boundary; proptest P13 for `classify`.
