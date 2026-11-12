@@ -110,7 +110,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 4: CI and integration
 
-- [ ] **T15 [P] (30 min) Add GitHub Actions CI**
+- [x] **T15 [P] (30 min) Add GitHub Actions CI**
   - Files: `.github/workflows/ci.yml`.
   - Run Rust fmt check, Clippy with warnings denied, workspace tests, web `npm ci`, `npm run check`, `npm run build`, and `cargo deny check licenses` on push. Use lockfile-resolved dependencies.
   - Depends on: T03, T04, T05, T06.

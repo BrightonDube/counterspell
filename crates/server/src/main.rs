@@ -25,7 +25,7 @@ struct Config {
 impl Config {
     fn from_env() -> Result<Self, io::Error> {
         let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_owned());
-        let port = parse_port(env::var("PORT").unwrap_or_else(|_| "8080".to_owned()))?;
+        let port = parse_port(&env::var("PORT").unwrap_or_else(|_| "8080".to_owned()))?;
         let static_dir =
             PathBuf::from(env::var("STATIC_DIR").unwrap_or_else(|_| "web/build".to_owned()));
 
@@ -47,7 +47,7 @@ impl Config {
     }
 }
 
-fn parse_port(value: String) -> Result<u16, io::Error> {
+fn parse_port(value: &str) -> Result<u16, io::Error> {
     value.parse::<u16>().map_err(|error| {
         io::Error::new(
             io::ErrorKind::InvalidInput,

@@ -44,3 +44,13 @@ The Dockerfile compiles Rust in a builder stage and copies only release binaries
 This keeps compiler tooling out of production images and makes the server image smaller.
 The server runtime copies static files but no Docker client or socket, preserving the architecture boundary.
 The migration image pins the SQLx CLI version separately from application dependencies.
+# Rust lesson: repo-skeleton T15
+
+No Rust source changed in T15; CI protects the Rust workspace with formatting, Clippy, and tests.
+`cargo-deny` checks dependency license metadata against an explicit allow-list.
+Running these checks on every push makes small Rust changes easier to review than a late failure.
+# Rust lesson: repo-skeleton T15 follow-up
+
+Clippy caught a needless ownership transfer: `parse_port` only reads its input.
+Changing `String` to `&str` lets the function borrow the environment value without taking ownership.
+Borrowing is useful for small validation helpers because the caller keeps its string and no allocation is needed.
