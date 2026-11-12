@@ -7,9 +7,9 @@
 //! model is never used to derive an expectation.
 
 use counterspell_engine::ProgramResult;
-use counterspell_grimoire::report::Report;
+use counterspell_grimoire::report::{Report, Severity};
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
-use counterspell_grimoire::validate_sandbox;
+use counterspell_grimoire::{validate_sandbox, SandboxFault};
 use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::fs;
@@ -426,6 +426,71 @@ fn known_ghost_that_a_smaller_input_also_breaks_is_an_sbx_04_warning() {
 
     assert_eq!(codes(&report), ["SBX-04"]);
     assert!(!report.has_errors());
+}
+
+#[test]
+fn declared_bench_warns_sbx_08_without_calling_the_bench_runner() {
+    // The model runner's bench always fails, so any call to it would surface as an error.
+    let meta = format!(
+        "reference_complexity = \"n^2\"\n{META}\n[bench]\nsize_param = \"values\"\nsizes = [8, 16, 32]\n"
+    );
+    let pack = TempPack::new("bench", &[("meta.toml", meta)]);
+    let mut runner = ModelRunner::new(
+        reference_model,
+        &[
+            ("incorrect/same-index.py", same_index_model),
+            ("incorrect/empty-min.py", empty_min_model),
+        ],
+    );
+
+    let report = run_sandbox(&pack.root(), &mut runner);
+
+    assert_eq!(codes(&report), ["SBX-08"]);
+    assert!(!report.has_errors());
+}
+
+/// A runner whose sandbox is down: every call is an infrastructure fault.
+struct FaultyRunner;
+
+impl PackRunner for FaultyRunner {
+    fn run(
+        &mut self,
+        _target: Target<'_>,
+        _input: &Value,
+        _limit: Duration,
+    ) -> Result<ProgramResult, RunnerError> {
+        Err(RunnerError::Infrastructure(
+            "sandbox daemon unreachable".to_owned(),
+        ))
+    }
+
+    fn bench(
+        &mut self,
+        _sized_inputs: &[(u64, Value)],
+        _limit: Duration,
+    ) -> Result<Vec<(u64, u64)>, RunnerError> {
+        Err(RunnerError::Infrastructure(
+            "sandbox daemon unreachable".to_owned(),
+        ))
+    }
+}
+
+#[test]
+fn runner_fault_maps_to_sbx_06() {
+    let pack = TempPack::new("fault", &[]);
+
+    let fault = match validate_sandbox(&pack.root(), &mut FaultyRunner) {
+        Err(fault) => fault,
+        Ok(report) => panic!("a runner fault must not return a report: {report:?}"),
+    };
+
+    assert!(matches!(
+        fault,
+        SandboxFault::Runner(RunnerError::Infrastructure(_))
+    ));
+    let diagnostic = fault.diagnostic();
+    assert_eq!(diagnostic.code, "SBX-06");
+    assert_eq!(diagnostic.severity, Severity::Error);
 }
 
 #[test]

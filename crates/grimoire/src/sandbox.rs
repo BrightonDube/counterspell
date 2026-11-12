@@ -36,6 +36,18 @@ pub enum SandboxFault {
     Runner(RunnerError),
 }
 
+impl SandboxFault {
+    /// The SBX-06 diagnostic for this fault. It is an infrastructure failure (exit 2), never a pack error.
+    #[must_use]
+    pub fn diagnostic(&self) -> Diagnostic {
+        let message = match self {
+            Self::Io(error) => error.to_string(),
+            Self::Runner(RunnerError::Infrastructure(message)) => message.clone(),
+        };
+        Diagnostic::new(codes::SBX_06, "sandbox", None, message)
+    }
+}
+
 /// Runs SBX-01 to SBX-04 against `pack`. Stops early only on a runner fault.
 ///
 /// Callers must run the static checks first. The time limit comes from
@@ -53,6 +65,15 @@ pub fn check(
     let limit = Duration::from_millis(u64::try_from(meta.limits.time_ms).unwrap_or_default());
     check_samples(meta, runner, limit, report)?;
     check_hidden(meta, runner, limit, report)?;
+    if meta.bench.is_some() {
+        // PackRunner::bench is not implemented yet, so no complexity is claimed.
+        report.push(Diagnostic::new(
+            codes::SBX_08,
+            "meta.toml",
+            Some("/bench"),
+            "complexity is not checked yet: the bench fit is not available",
+        ));
+    }
     let ghosts = pack
         .text("known_ghosts.toml")
         .map(ghosts::sandbox_ghosts)
