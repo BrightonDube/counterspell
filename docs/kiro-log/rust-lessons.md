@@ -33,3 +33,8 @@ Tokio supplies the async runtime and listener, while Axum handles HTTP routing o
 The server validates the directory before starting, so a missing build fails as a startup error.
 Axum registers API routes before the broad static fallback; the explicit API 404 keeps unknown API paths JSON.
 `ServeFile` provides the SPA entry point only after `ServeDir` cannot find a static asset.
+# Rust lesson: repo-skeleton T10
+
+No Rust code changed in T10; the migration is intentionally independent of the Rust workspace.
+SQL migrations are versioned files, so SQLx can apply them once and record their history.
+The bootstrap table is metadata only; future specs will add users, jobs, and run events to Postgres.
