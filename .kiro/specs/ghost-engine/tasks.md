@@ -241,7 +241,7 @@ Conventions for every Rust task:
   - Preserve: the guard is a belt-and-braces check, not a replacement for review.
   - Rust lesson: reading files in tests and why "executes nothing" is checked mechanically.
 
-- [ ] **T24 [P] (25 min) Wording and serialisation tests (P14, P15)**
+- [x] **T24 [P] (25 min) Wording and serialisation tests (P14, P15)**
   - Files: `crates/engine/tests/properties.rs` (or a small `tests/wording.rs`).
   - Round-trip `HuntReport`, `Ghost`, `Schema`, `Budget` through JSON; check the JSON field names match the `ghosts` table (`kind`-derived value `wrong|crash|timeout`, `shrink_trace` content, `seed`, `generator_version`, `problem_version`, `image_digest`, `engine_version`); scan every template and `NotFoundReason` text for the forbidden phrases; check `magnitude` serialises as a string.
   - Requirements: R9.3, R9.6–R9.8, R15.12.

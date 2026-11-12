@@ -239,3 +239,10 @@ A mutation check (change one model, run the suite, restore the model) proves tha
 `Path::new(env!("CARGO_MANIFEST_DIR"))` gives the crate folder at compile time, so the test does not depend on the directory it runs from.
 `str::lines`, `trim_start`, `contains` and `split_once` are enough to scan text without a regex crate.
 A guard earns trust only when it fails on a real violation, so this task added a forbidden call, saw the test fail, and removed it again.
+
+# Rust lesson: ghost-engine T24
+
+Tests that share a name prefix can be run as a group, so `cargo test --test properties wording` runs only the wording checks.
+`serde_json::to_value` turns a Rust enum into JSON, and `assert_eq!` against a string literal checks the exact field contract that the database columns rely on.
+`build_autopsy` is the public entry point, so the template wording is tested through the same path the judge will use.
+A mutation check added a forbidden word to one template, saw the wording test fail, and then restored the file.

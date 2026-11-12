@@ -8,8 +8,9 @@ mod support;
 
 use counterspell_engine::generate::{CandidateStream, GeneratorConfig};
 use counterspell_engine::{
-    classify, hunt, verify_ghost, Classification, Clock, Comparator, HuntIdentity, HuntOutcome,
-    HuntReport, HuntRequest, ManualClock, Oracle, ProgramResult, Schema,
+    build_autopsy, classify, hunt, verify_ghost, Budget, Classification, Clock, Comparator,
+    FailureKind, FailurePredicate, HuntIdentity, HuntOutcome, HuntReport, HuntRequest, ManualClock,
+    NotFoundReason, Oracle, ProgramResult, Schema, ENGINE_VERSION, GENERATOR_VERSION, GHOST_LABEL,
 };
 use proptest::prelude::*;
 use serde_json::{json, Value};
@@ -275,5 +276,190 @@ fn p8_non_vacuity_an_always_wrong_oracle_yields_a_ghost() {
             counterspell_engine::shrink::ShrinkStop::LocalMinimum
         ),
         other => panic!("expected a ghost, got {other:?}"),
+    }
+}
+
+/// Phrases the engine must never put in a result (R9.6), plus the stricter list
+/// the design sets for templates.
+const FORBIDDEN_PHRASES: [&str; 6] = [
+    "smallest possible",
+    "global",
+    "proven",
+    "optimal",
+    "the minimum",
+    "smallest",
+];
+
+/// Panics if `text` contains a forbidden phrase, ignoring case.
+fn assert_no_forbidden_phrase(text: &str) {
+    let lower = text.to_lowercase();
+    for phrase in FORBIDDEN_PHRASES {
+        assert!(
+            !lower.contains(phrase),
+            "{text:?} contains the forbidden phrase {phrase:?}"
+        );
+    }
+}
+
+/// Integer-only inputs. The wording rule covers the engine's own templates, not
+/// data a learner's program echoes back, so this generator avoids text values.
+fn arb_integer_input() -> impl Strategy<Value = Value> {
+    prop::collection::vec(-100_i64..100, 0..6).prop_map(|items| json!([items, 3]))
+}
+
+#[test]
+fn wording_not_found_reasons_and_the_ghost_label_avoid_forbidden_phrases() {
+    for reason in [
+        NotFoundReason::CandidateBudget,
+        NotFoundReason::WallTime,
+        NotFoundReason::CandidatesExhausted,
+        NotFoundReason::Unreproducible,
+    ] {
+        assert_no_forbidden_phrase(&reason.to_string());
+    }
+    assert_no_forbidden_phrase(GHOST_LABEL);
+}
+
+#[test]
+fn wording_json_contract_uses_the_ghosts_table_names() {
+    let req = request(Schema::Int { min: 0, max: 5 }, Vec::new(), 3);
+    let (report, _, _) = run_hunt(&req, &Bug::CrashWhenLarge(1), COST_PER_CALL);
+    let value = serde_json::to_value(&report).expect("a report serialises");
+
+    let ghost = &value["outcome"]["Found"];
+    assert_eq!(ghost["predicate"]["kind"], "crash");
+    assert_eq!(ghost["predicate"]["exception_class"], "ValueError");
+    assert!(ghost["shrink"]["steps"].is_array());
+    assert!(ghost["budget_exhausted"].is_boolean());
+}
+
+#[test]
+fn wording_json_contract_provenance_fields_match_the_engine() {
+    let req = request(Schema::Int { min: 0, max: 5 }, Vec::new(), 3);
+    let (report, _, _) = run_hunt(&req, &Bug::CrashWhenLarge(1), COST_PER_CALL);
+    let value = serde_json::to_value(&report).expect("a report serialises");
+
+    assert_eq!(value["provenance"]["generator_version"], GENERATOR_VERSION);
+    assert_eq!(value["provenance"]["engine_version"], ENGINE_VERSION);
+    assert_eq!(value["provenance"]["problem_version"], 1);
+    assert_eq!(value["provenance"]["image_digest"], "sha256:test");
+    assert!(value["provenance"]["seed"].is_u64());
+}
+
+#[test]
+fn wording_kind_names_match_the_ghosts_table() {
+    assert_eq!(
+        serde_json::to_value(FailureKind::WrongAnswer).expect("serialises"),
+        "wrong"
+    );
+    assert_eq!(
+        serde_json::to_value(FailureKind::RuntimeError).expect("serialises"),
+        "crash"
+    );
+    assert_eq!(
+        serde_json::to_value(FailureKind::Timeout).expect("serialises"),
+        "timeout"
+    );
+}
+
+#[test]
+fn wording_json_contract_counts_and_magnitude_have_the_right_types() {
+    let req = request(Schema::Int { min: 0, max: 5 }, Vec::new(), 3);
+    let (report, _, _) = run_hunt(&req, &Bug::CrashWhenLarge(1), COST_PER_CALL);
+    let value = serde_json::to_value(&report).expect("a report serialises");
+    let ghost = &value["outcome"]["Found"];
+    assert!(ghost["verification_runs"].is_u64());
+    assert!(
+        ghost["size"]["magnitude"].is_string(),
+        "magnitude is a decimal string"
+    );
+}
+
+#[test]
+fn wording_fixed_reports_survive_a_json_round_trip() {
+    let found_request = request(Schema::Int { min: 0, max: 5 }, Vec::new(), 3);
+    let (found, _, _) = run_hunt(&found_request, &Bug::Always, COST_PER_CALL);
+    let (not_found, _, _) = run_hunt(&found_request, &Bug::Never, COST_PER_CALL);
+    let mut aborted_request = found_request.clone();
+    aborted_request.identity.image_digest = String::new();
+    let (aborted, _, _) = run_hunt(&aborted_request, &Bug::Always, COST_PER_CALL);
+
+    for report in [found, not_found, aborted] {
+        let text = serde_json::to_string(&report).expect("a report serialises");
+        let back: HuntReport = serde_json::from_str(&text).expect("a report deserialises");
+        assert_eq!(back, report);
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+
+    /// Break: a result type loses data when stored as JSON and read back.
+    #[test]
+    fn wording_p14_results_survive_a_json_round_trip(
+        schema in arb_schema(),
+        bug in arb_bug(),
+        seed in any::<u64>(),
+    ) {
+        let req = request(schema.clone(), Vec::new(), seed);
+        let (report, _, _) = run_hunt(&req, &bug, COST_PER_CALL);
+
+        let report_text = serde_json::to_string(&report).expect("a report serialises");
+        let report_back: HuntReport = serde_json::from_str(&report_text).expect("a report reads back");
+        prop_assert_eq!(report_back, report);
+
+        let schema_text = serde_json::to_string(&schema).expect("a schema serialises");
+        let schema_back: Schema = serde_json::from_str(&schema_text).expect("a schema reads back");
+        prop_assert_eq!(schema_back, schema);
+
+        let budget = Budget::default();
+        let budget_text = serde_json::to_string(&budget).expect("a budget serialises");
+        let budget_back: Budget = serde_json::from_str(&budget_text).expect("a budget reads back");
+        prop_assert_eq!(budget_back, budget);
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+
+    /// Break: an explanation template makes a claim the engine cannot back up.
+    #[test]
+    fn wording_p15_explanation_templates_avoid_forbidden_phrases(
+        input in arb_integer_input(),
+        expected in -50_i64..50,
+        got in -50_i64..50,
+        class in prop::sample::select(vec!["ValueError", "IndexError", "KeyError", "RecursionError"]),
+        message in ".{0,300}",
+    ) {
+        let limit = Budget::default().eval_limit;
+        let cases = [
+            (
+                FailurePredicate { kind: FailureKind::WrongAnswer, exception_class: None },
+                Some(Value::from(expected)),
+                ProgramResult::Returned(Value::from(got)),
+            ),
+            (
+                FailurePredicate { kind: FailureKind::RuntimeError, exception_class: Some(class.to_owned()) },
+                None,
+                ProgramResult::Crashed { exception_class: class.to_owned(), message: message.clone() },
+            ),
+            (
+                FailurePredicate { kind: FailureKind::Timeout, exception_class: None },
+                None,
+                ProgramResult::TimedOut,
+            ),
+        ];
+        for (predicate, expected_value, got_result) in cases {
+            let autopsy = build_autopsy(
+                &input,
+                &predicate,
+                expected_value.as_ref(),
+                &got_result,
+                limit,
+                &[],
+                &[],
+            );
+            assert_no_forbidden_phrase(&autopsy.explanation);
+        }
     }
 }
