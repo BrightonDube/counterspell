@@ -101,7 +101,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `docker compose config`; inspect that judge has no published ports and no main Docker socket, and Valkey has no queue/event service configuration.
   - Preserve: Caddy proxies to Axum; Postgres is truth; Valkey is cache/rate limits only.
 
-- [ ] **T14 [S] (25 min) Wire Compose migration execution**
+- [x] **T14 [S] (25 min) Wire Compose migration execution**
   - Files: `docker-compose.yml`, `Dockerfile` if target details need correction.
   - Make `migrate` wait for Postgres health, run `sqlx migrate run --source /app/migrations`, and fail visibly when migration execution fails.
   - Depends on: T10, T12, T13.

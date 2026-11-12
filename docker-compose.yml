@@ -80,7 +80,7 @@ services:
       target: migration-runtime
     environment:
       DATABASE_URL: postgres://counterspell@postgres:5432/counterspell
-    command: ["migrate", "--source", "/app/migrations"]
+    command: ["migrate", "run", "--source", "/app/migrations"]
     depends_on:
       postgres:
         condition: service_healthy
