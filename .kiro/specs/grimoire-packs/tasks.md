@@ -199,7 +199,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 7: gates and handover
 
-- [ ] **T26 [S] (25 min) Repo-wide gates**
+- [x] **T26 [S] (25 min) Repo-wide gates**
   - Files: none new. Fix only grimoire files.
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test -p counterspell-grimoire`, `cargo deny check licenses`.
   - Depends on: T01 to T25.
