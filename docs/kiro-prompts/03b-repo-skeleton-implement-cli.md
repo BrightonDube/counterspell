@@ -1,0 +1,5 @@
+Implement the repo-skeleton spec in .kiro/specs/repo-skeleton/ (requirements.md, design.md, tasks.md). Follow the steering in .kiro/steering/ and AGENTS.md. Use the assumed choices under "Open questions" in design.md.
+Work through tasks T01 to T18 in order. For each task: implement it, run the verification the task names (cargo fmt/clippy/test, npm/svelte-check, docker compose as relevant), fix failures, mark the task [x] in tasks.md, then git commit with a message like "repo-skeleton T03: <summary>" (git identity is already configured). Do not push, do not change branches, never read or write .env files (use .env.example), and never run docker with --privileged or mount the main Docker socket into any service.
+If a task is blocked by something only Brighton can do, leave it unchecked, write the reason in docs/kiro-log/repo-skeleton-blockers.md, and carry on with the tasks that don't depend on it.
+Rust lessons from rust-teaching.md go in docs/kiro-log/rust-lessons.md (append, one heading per task) instead of only in chat.
+Finish with a table: task, status, verification result, commit hash.
