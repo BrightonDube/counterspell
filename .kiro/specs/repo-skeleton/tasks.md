@@ -94,7 +94,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: build the server, judge, and migration targets; inspect that the server runtime has the static build and no Docker socket.
   - Preserve: server does not access Docker; only later judge deployment can receive the sandbox socket.
 
-- [ ] **T13 [S] (30 min) Add Caddy and Compose topology**
+- [x] **T13 [S] (30 min) Add Caddy and Compose topology**
   - Files: `Caddyfile`, `docker-compose.yml`.
   - Define `caddy`, `server`, `judge`, `postgres:17`, `valkey/valkey:8`, and one-shot `migrate`, with internal networks, health checks, named volumes, service dependencies, and only Caddy ports 80/443 published.
   - Depends on: T10 and T12.
