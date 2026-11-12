@@ -200,3 +200,10 @@ Cutting text at a character boundary, not a byte index, means a multi-byte lette
 `let ... else` runs a fallback and returns when a pattern does not match, which keeps the happy path flat.
 `Duration::saturating_sub` returns zero instead of panicking when the subtraction would go below zero.
 A request-validation function that returns `Option<String>` lets the hunt refuse bad input with a reason, not a panic.
+
+# Rust lesson: ghost-engine T16
+
+A closure that borrows `oracle` and `stats` mutably is passed to `shrink` as `&mut dyn FnMut`, and the borrow ends when its block closes, so the code can read the results afterwards.
+`Option::take` moves a value out of an `Option` and leaves `None`, which lets a loop compare the new run with the previous one without holding two borrows.
+`match` guards with a moved binding (`Some(previous) if previous != run`) keep the comparison next to the branch that uses it.
+The confirm step returns a small enum (`Confirmed`, `Unreproduced`, `OutOfTime`), so each outcome has its own explicit branch and none can be ignored by accident.

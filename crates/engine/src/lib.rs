@@ -44,8 +44,8 @@ pub use classify::{
 };
 pub use compare::Comparator;
 pub use hunt::{
-    hunt, AbortReason, Ghost, HuntIdentity, HuntOutcome, HuntReport, HuntRequest, HuntStats,
-    NotFoundReason, Provenance,
+    hunt, verify_ghost, AbortReason, Ghost, HuntIdentity, HuntOutcome, HuntReport, HuntRequest,
+    HuntStats, NotFoundReason, Provenance,
 };
 pub use oracle::{Clock, ManualClock, Oracle, OracleError, SystemClock};
 pub use rng::derive_seed;

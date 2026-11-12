@@ -165,7 +165,7 @@ Conventions for every Rust task:
   - Preserve: no panics on any request; infrastructure failures never become wrong answers.
   - Rust lesson: owning versus borrowing in a struct, `Box` in an enum, and `Result` conversion.
 
-- [ ] **T16 [S] (30 min) Hunt, part 2: shrink wiring, verification, fallback and timeouts**
+- [x] **T16 [S] (30 min) Hunt, part 2: shrink wiring, verification, fallback and timeouts**
   - Files: `crates/engine/src/hunt.rs`.
   - Wire `shrink::shrink` to a probe closure (clock check, Oracle call, classification equals the fixed predicate, Oracle errors remembered and turned into `Stop`). Add `verify_ghost` (R5.2, R5.5), the walk-back fallback over retained trace entries, `NotFound(Unreproducible)`, the timeout path (re-run once, no shrink, `NotAttempted`, `is_minimized() == false`), `budget_exhausted`, and ghost construction with sanitised results, autopsy, known-ghost match and provenance.
   - Tests: end-to-end with synthetic oracles: wrong answer found and shrunk; crash found and shrunk; flaky oracle triggers fallback; always-flaky gives `Unreproducible`; timeout ghost is not shrunk; shrink budget stop sets `budget_exhausted`; oracle error mid-shrink aborts.
