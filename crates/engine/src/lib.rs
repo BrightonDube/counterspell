@@ -37,6 +37,9 @@ mod rng;
 mod schema;
 mod size;
 
+pub use classify::{
+    classify, Classification, FailureKind, FailurePredicate, Observation, ProgramResult,
+};
 pub use compare::Comparator;
 pub use rng::derive_seed;
 pub use schema::{Schema, SchemaError, Violation};

@@ -139,3 +139,10 @@ Serde attributes define stable wire names without changing Rust's enum names.
 Borrowing JSON values lets Exact compare strict types without converting them first.
 Sorting canonical element text gives Unordered multiset behavior while preserving duplicate counts.
 A focused comparator keeps verdict rules reusable by the judge and ghost hunt.
+
+# Rust lesson: ghost-engine T07
+
+Enums make invalid classification states explicit, so every reference and user outcome gets a handled branch.
+`Option<String>` records that an exception class belongs only to crash predicates.
+Sanitizing at the engine boundary keeps untrusted text bounded before it reaches traces or persisted ghosts.
+Serde names pin the stored vocabulary separately from the Rust type names.

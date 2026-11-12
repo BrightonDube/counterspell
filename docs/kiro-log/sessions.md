@@ -2,3 +2,9 @@
  | diff stat:
  docs/KIRO_USAGE.md | 9 +++++++++
  1 file changed, 9 insertions(+)
+- 2026-11-12T16:13:04Z | model: not reported | last commit: 1fc1b21 ghost-engine T06: add strict output comparators
+ | diff stat:
+ crates/engine/src/classify.rs | 296 +++++++++++++++++++++++++++++++++++++++++-
+ crates/engine/src/lib.rs      |   3 +
+ docs/kiro-log/sessions.md     |   2 +
+ 3 files changed, 300 insertions(+), 1 deletion(-)

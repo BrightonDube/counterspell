@@ -101,3 +101,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 12:44-13:03 SAST: 06-judge-sandbox-spec-retry (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/06-judge-sandbox-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1244-06-judge-sandbox-spec-retry.log`. Exit 0.
 - Credits used (from /usage): 31.58 (hackathon credits used now 2519.33/4000).
+
+### 2026-11-12 16:53-18:21 SAST: 20-ghost-engine-implement (Kiro CLI, gpt-5.6-luna, mode default)
+- Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1653-20-ghost-engine-implement.log`. Exit 143.
+- Credits used (from /usage): 124.07 (hackathon credits used now 2645.14/4000).
