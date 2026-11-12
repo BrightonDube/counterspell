@@ -186,3 +186,10 @@ A trait such as `Oracle` is a promise about methods. The hunt will hold `&mut dy
 `Cell<Duration>` lets `ManualClock::advance` take `&self`, so a clock can be shared by reference while it moves.
 `Result<(), &str>` from `validate` lists every rule the budget breaks as a short reason, and `?` or `match` makes the caller handle it.
 Serde `with` attributes store `Duration` as plain milliseconds, which keeps the JSON readable for the judge.
+
+# Rust lesson: ghost-engine T14
+
+A recursive walk can carry its path as a `&str` argument, so each level builds only the path it needs.
+`matches!(got, ProgramResult::Returned(value) if value == expected)` checks an enum variant and a condition in one line.
+`map_or_else` supplies a fallback when an `Option` is empty, with no `unwrap()`.
+Cutting text at a character boundary, not a byte index, means a multi-byte letter can never be split and produce invalid UTF-8.

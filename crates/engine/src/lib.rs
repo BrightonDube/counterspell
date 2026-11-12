@@ -37,6 +37,7 @@ mod rng;
 mod schema;
 mod size;
 
+pub use autopsy::{build_autopsy, AuthoredMistake, Autopsy, Difference, KnownGhost};
 pub use budget::Budget;
 pub use classify::{
     classify, Classification, FailureKind, FailurePredicate, Observation, ProgramResult,

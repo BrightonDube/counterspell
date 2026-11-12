@@ -145,7 +145,7 @@ Conventions for every Rust task:
   - Preserve: `SystemClock` only reads `Instant`; no sleeping, no threads.
   - Rust lesson: traits as seams, `dyn Trait`, `Cell` for changing a value behind `&`.
 
-- [ ] **T14 [S] (30 min) Autopsy data**
+- [x] **T14 [S] (30 min) Autopsy data**
   - Files: `crates/engine/src/autopsy.rs`.
   - Implement `Difference`, `diff_values` (cap 20 plus flag), `KnownGhost` with `matches(&ghost_parts)` per R12.6, `AuthoredMistake`, `Autopsy`, and the explanation templates (wrong, crash, timeout), with input rendering cut at 120 characters.
   - Tests: difference paths for scalars, array index changes, extra and missing items, type changes; the 20-item cap; each match-rule branch; template output for the three kinds; proptest P13 for `diff_values`.
