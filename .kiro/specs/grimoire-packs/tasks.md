@@ -136,7 +136,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 5: sandbox boundary (no live execution in this spec)
 
-- [ ] **T17 [S] (30 min) PackRunner trait and ProgramOracle adapter**
+- [x] **T17 [S] (30 min) PackRunner trait and ProgramOracle adapter**
   - Files: `crates/grimoire/src/runner.rs`.
   - Define `PackRunner`, `Target`, `RunnerError` (infrastructure only), and `ProgramOracle { runner, target }` implementing the engine's `Oracle`. No implementation of the trait in this crate except in tests.
   - Depends on: T02. Blocked until the ghost-engine `Oracle` and `ProgramResult` are public.

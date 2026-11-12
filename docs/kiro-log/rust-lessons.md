@@ -322,3 +322,10 @@ A function that returns `Result<ProblemRecord, RecordError>` makes "only valid p
 A test that reads `src/` as text is a cheap architecture guard: it fails the build when a forbidden call such as `Command::new` appears.
 `str::contains` on a list of names is enough for this tripwire, and the self-tests prove the scanner would catch a planted call.
 Narrowing a forbidden name (`std::process::Command` rather than all of `std::process`) keeps legitimate uses such as `ExitCode` allowed.
+
+# Rust lesson: grimoire-packs T17
+
+A trait is a promise: any type that implements `PackRunner` must provide `run` and `bench`, so the judge can pass its own sandbox type in.
+`&mut dyn PackRunner` takes any implementation at run time, without making the adapter generic over every runner type.
+`map_err` converts one error type into another, so a runner fault becomes the engine's `OracleError` and never a program result.
+The fake runner in the test shows the rule: a crash is data, but an infrastructure fault is an error the caller must handle.
