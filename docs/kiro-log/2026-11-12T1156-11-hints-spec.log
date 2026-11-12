@@ -1,0 +1,87 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by reading the spec conventions, steering, and the source docs for hints.
+[tool] List Kiro specs, steering and docs files
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+Next I'll pull the hint-related sections from the system design, the requirements, and the steering files.
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The design depends on ghost, run-lifecycle, and auth data, so I'll check those specs for shared names and read the decision log.
+[tool] Read the decision log and all hint references
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the core context. I'll check the run-lifecycle requirements format and the seam names so the hints spec uses the same IDs and terms.
+[tool] Check spec formats, seams and steering conventions
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need: the hint requirements, the system design §4/§8b/§9 hint rules, the run-lifecycle and auth seams, and the spec format. Now I'll write the three files, starting with requirements.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+Next, the design. It covers the module layout, the data contract, the request pipeline, the guards, quotas, and the properties the tests will check. It ends with the open questions.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+Last, the task list. It follows the repo-skeleton and run-lifecycle format, uses the task IDs the design refers to (G1–G2, H-test, H-ci), and marks each Rust task with a Rust lesson.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+I'll confirm the three files are in place and that nothing outside `.kiro/specs/hints/` was touched.
+[tool] Confirm spec files exist and no other files changed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The hints spec is written under `.kiro/specs/hints/`: `requirements.md` (12 requirements), `design.md`, and `tasks.md` (about 25 tasks in waves). I did not implement anything, and I did not change files outside that folder. The two other untracked files in `docs/` were already there from the run log.
+
+The spec follows the repo-skeleton and run-lifecycle conventions: the six canonical crates, code in `crates/server/src/hints/`, shared types in `crates/common`, and the pack parser in `crates/grimoire`. The 18 open questions are at the end of `design.md`, each with the choice I assumed.
+
+Decisions to check first:
+
+- **New `problem_hints` table.** The system design has no table for authored ladder text. I added one, filled by the pack importer. This extends §4, so it needs your approval before the migration is written.
+- **Endpoint shape.** `POST /api/hints` takes `{submission_id, rung, ai}`. The design's `{submission_id, rung}` didn't say how an AI hint differs from a ladder reveal. I also added `GET /api/hints` so the panel can restore state after a reload.
+- **Ladder scope is per submission.** Per-problem progress would let a learner skip the ladder by resubmitting.
+- **Quota and spend fail closed on a Valkey outage.** AI turns off, and authored hints keep working. This differs from run-lifecycle, which fails open for its window limits.
+- **Timeout is per attempt.** With two providers, the worst case is about 16 s, not 8 s. If you want an 8 s total, the fallback gets the time left.
+- **Familiar shares the daily limit.** The 10 AI generations per user per day count the familiar's speech bubble too.
+
+Unverified items to test before the first real call: `gpt-6-luna` on Chat Completions, the Groq base URL and model ID, and the prices from §0 of the system design.

@@ -73,3 +73,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 11:53-11:56 SAST: 10-language-drivers-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/10-language-drivers-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1153-10-language-drivers-spec.log`. Exit 0.
 - Credits used (from /usage): 4.08 (hackathon credits used now 2420.73/4000).
+
+### 2026-11-12 11:56-12:00 SAST: 11-hints-spec (Kiro CLI, claude-haiku-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/11-hints-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1156-11-hints-spec.log`. Exit 0.
+- Credits used (from /usage): 3.48 (hackathon credits used now 2424.21/4000).
