@@ -349,3 +349,9 @@ Exit code 2 for a runner fault is part of the CLI, which has no runner yet. The 
 `fs::read_dir` returns an iterator of `Result` values, because each directory entry can fail on its own (for example a race with a delete).
 The test handles each entry with `expect` and a message, which is allowed in test code only.
 A filter on the file name (`starts_with('_')`) keeps `_test` out of the starter list, and `is_dir` removes stray files such as the README.
+
+# Rust lesson: grimoire-packs T25
+
+A plain `fn` item has its own unique type, so a `vec!` of different model functions needs each one cast with `as Model` to a single fn-pointer type.
+A non-capturing closure also coerces to a fn pointer, which is why `diagonal_sum` accepts both `|cell| cell` and `i64::abs`.
+The starter vectors are hand traces written as literals. The model functions are only tested against those literals, never used to produce them.
