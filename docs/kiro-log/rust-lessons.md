@@ -288,3 +288,10 @@ A struct field's type is a contract: `pack_version: i64` tells the reader and th
 `matches!((self, schema), (Self::Int, Schema::Int { .. }) | ...)` checks a pair of values in one readable expression, with no extra helper.
 `let ... else` returns early when a value is missing, which keeps the main path of a check flat.
 `windows(2)` gives each neighbouring pair of a slice, which is the simple way to check that sizes strictly increase.
+
+# Rust lesson: grimoire-packs T06 to T11
+
+`chars().count()` counts characters, while `len()` counts bytes, so a title with an accent is measured as the author sees it.
+`strip_prefix` returns an `Option<&str>` that is `Some` only when the prefix matches, which makes the `def <name>(` text check a single expression.
+`Iterator::take(200).any(...)` stops drawing candidates as soon as one check fails, so a bad generator cannot run forever.
+A `Result` from a TOML parse is mapped to a diagnostic with `match`, so a bad file is reported and never panics.

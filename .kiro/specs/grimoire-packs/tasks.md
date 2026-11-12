@@ -53,42 +53,42 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 2: content checks (parallel)
 
-- [ ] **T06 [P] (25 min) Statement checks**
+- [x] **T06 [P] (25 min) Statement checks**
   - Files: `crates/grimoire/src/statement.rs`.
   - STM-01 (title line equals `meta.title`, five headings in order) and STM-02 (8000 characters, no raw HTML tags).
   - Depends on: T03, T04.
   - Verify: unit tests for a wrong title, a missing heading, a heading out of order, and `<script>`.
   - Rust lesson: explain string slices and why `chars().count()` is used for length, not `len()`.
 
-- [ ] **T07 [P] (30 min) Sample checks**
+- [x] **T07 [P] (30 min) Sample checks**
   - Files: `crates/grimoire/src/samples.rs`.
   - SMP-01 (2–5), SMP-02 (input accepted by schema, expected matches returns shape), SMP-03 (no duplicate inputs, compared as canonical JSON text).
   - Depends on: T05.
   - Verify: unit tests for each code, including a `1.0` float in place of an int.
   - Rust lesson: explain `serde_json::Value` and why a float is not an integer in this check.
 
-- [ ] **T08 [P] (30 min) Generator check through the engine**
+- [x] **T08 [P] (30 min) Generator check through the engine**
   - Files: `crates/grimoire/src/generator.rs`.
   - GEN-01 (seed 0 to 2^63−1, hidden count 5–50) and GEN-02 (draw 200 candidates from `CandidateStream`, check `Schema::contains` and uniqueness).
   - Depends on: T05. Blocked until the ghost-engine public API (`CandidateStream`, `GeneratorConfig`) is merged.
   - Verify: unit test with a schema that yields many candidates; a test that the same seed gives the same first 20 candidates.
   - Rust lesson: explain an `Iterator` and why `take(200)` stops the work early.
 
-- [ ] **T09 [P] (25 min) Hint checks**
+- [x] **T09 [P] (25 min) Hint checks**
   - Files: `crates/grimoire/src/hints.rs`.
   - HNT-01 (exactly four entries, rungs 1 to 4 in order) and HNT-02 (1–600 characters, fences of at most 3 lines).
   - Depends on: T04.
   - Verify: unit tests for three hints, a rung out of order, and a 4-line fence.
   - Rust lesson: explain `Vec` and why the rung check uses an index loop rather than a clever iterator.
 
-- [ ] **T10 [P] (30 min) Known ghost checks (static)**
+- [x] **T10 [P] (30 min) Known ghost checks (static)**
   - Files: `crates/grimoire/src/ghosts.rs`.
   - KNG-01 (at most 10, unique kebab `id`), KNG-02 (input accepted by schema, `program` exists under `incorrect/`, defines the function by text), KNG-03 (kind rules), KNG-04 (400 bytes, no forbidden phrase), KNG-05 (concepts subset), KNG-06 (`dogfood` only in `_` packs).
   - Depends on: T05.
   - Verify: unit tests per code. Confirm the forbidden list matches the engine's constant, or that a copy equals it.
   - Rust lesson: explain `Option<T>` for `got` and `exception_class`, and why `kind` is an enum, not a string.
 
-- [ ] **T11 [P] (20 min) Reference presence and text check**
+- [x] **T11 [P] (20 min) Reference presence and text check**
   - Files: `crates/grimoire/src/reference.rs`.
   - REF-01: exactly one `reference/solution.py`, and a line starting with `def <function>(` (text match, no execution).
   - Depends on: T03, T05.
