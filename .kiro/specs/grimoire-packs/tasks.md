@@ -206,7 +206,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: all four commands exit 0. If `cargo deny` rejects a licence that `toml` pulls in, stop and ask Brighton before editing `deny.toml`.
   - Rust lesson: explain what `-D warnings` does: it turns Clippy warnings into errors so they cannot be ignored.
 
-- [ ] **T27 [S] (15 min) Handover note for the server and judge specs**
+- [x] **T27 [S] (15 min) Handover note for the server and judge specs**
   - Files: `crates/grimoire/README.md` (short) or a section in `packs/README.md`.
   - State the public entry points (`validate_static`, `validate_sandbox`, `ProblemRecord`, `PackRunner`), the codes, the blocked items (T08, T17, T20), and open questions 1 and 7 as decisions needed before import.
   - Depends on: T26.
