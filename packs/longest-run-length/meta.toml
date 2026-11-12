@@ -1,0 +1,43 @@
+slug = "longest-run-length"
+title = "The Longest Run"
+status = "draft"
+difficulty = "easy"
+track = "strings"
+concepts = ["strings", "scanning", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "longest_run"
+returns = "int"
+comparator = "exact"
+
+[[params]]
+name = "text"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abc", min_len = 0, max_len = 40 },
+]
+
+[generator]
+seed = 2718
+hidden_count = 12
+
+[[samples]]
+input = ["aabbbc"]
+expected = 3
+
+[[samples]]
+input = ["abca"]
+expected = 1
+
+[[samples]]
+input = ["cc"]
+expected = 2
