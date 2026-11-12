@@ -69,3 +69,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 11:49-11:53 SAST: 09-ide-workspace-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/09-ide-workspace-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1149-09-ide-workspace-spec.log`. Exit 0.
 - Credits used (from /usage): 9.02 (hackathon credits used now 2416.65/4000).
+
+### 2026-11-12 11:53-11:56 SAST: 10-language-drivers-spec (Kiro CLI, gpt-5.6-luna, mode spec)
+- Prompt: `docs/kiro-prompts/10-language-drivers-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1153-10-language-drivers-spec.log`. Exit 0.
+- Credits used (from /usage): 4.08 (hackathon credits used now 2420.73/4000).
