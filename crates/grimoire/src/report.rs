@@ -136,6 +136,18 @@ impl Report {
         self.skipped.push(stage.to_owned());
     }
 
+    /// The stages that ran, in order.
+    #[must_use]
+    pub fn checked(&self) -> &[String] {
+        &self.checked
+    }
+
+    /// The stages that were skipped, in order.
+    #[must_use]
+    pub fn skipped(&self) -> &[String] {
+        &self.skipped
+    }
+
     /// All diagnostics in the order they were added.
     #[must_use]
     pub fn diagnostics(&self) -> &[Diagnostic] {

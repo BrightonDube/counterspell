@@ -97,7 +97,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 3: pipeline and CLI
 
-- [ ] **T12 [S] (30 min) Static pipeline and report assembly**
+- [x] **T12 [S] (30 min) Static pipeline and report assembly**
   - Files: `crates/grimoire/src/lib.rs`, `crates/grimoire/src/report.rs`.
   - Implement `validate_static(root) -> Report`. Run stages in the order in `design.md`. Skip dependent stages when MET-01 fires, and record the `checked` and `skipped` lists in the report.
   - Depends on: T03 to T11.

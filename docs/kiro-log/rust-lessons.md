@@ -295,3 +295,9 @@ A struct field's type is a contract: `pack_version: i64` tells the reader and th
 `strip_prefix` returns an `Option<&str>` that is `Some` only when the prefix matches, which makes the `def <name>(` text check a single expression.
 `Iterator::take(200).any(...)` stops drawing candidates as soon as one check fails, so a bad generator cannot run forever.
 A `Result` from a TOML parse is mapped to a diagnostic with `match`, so a bad file is reported and never panics.
+
+# Rust lesson: grimoire-packs T12
+
+`&Path` is a borrowed view of a path, and `PathBuf` is an owned one, so `validate_static(root: &Path)` reads the caller's path without taking ownership of it.
+`Option` combined with `and_then` and `let ... else` lets the pipeline stop the metadata stages in one place when `meta.toml` fails.
+The report records every stage it ran or skipped, so a caller can tell a clean pack from a pack that was never fully checked.
