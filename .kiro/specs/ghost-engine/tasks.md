@@ -123,7 +123,7 @@ Conventions for every Rust task:
   - Preserve: proposals are candidates only; legality and size checks happen in the loop.
   - Rust lesson: slices, `chunks`, and building iterators with `chain`.
 
-- [ ] **T12 [S] (30 min) The shrink loop, trace recorder and properties P4–P7, P11**
+- [x] **T12 [S] (30 min) The shrink loop, trace recorder and properties P4–P7, P11**
   - Files: `crates/engine/src/shrink.rs`.
   - Implement `Probe`, `shrink`, `ShrinkOutcome`, `ShrinkStop`, `ShrinkStep`, `ShrinkReport` and the head-10/tail-10 recorder with `omitted_steps`. Enforce validity, strict size decrease and the tried-set before every probe call.
   - Tests: the loop in the design on hand-made predicates; budget stop (`EvalBudget`); `Stop` from the probe; never evaluates a value twice; proptests P4, P5, P7, P11 using random deterministic predicates over random valid starts.

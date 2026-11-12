@@ -172,3 +172,10 @@ A `match` on a tuple of `(schema, value)` handles every pairing, and the `_ => {
 `Iterator::chain` joins several lists of proposals without copying them into one new list.
 `std::iter::once(()).flat_map(...)` postpones building each pass until the caller asks for it.
 `get_mut(index)` returns an `Option`, so a bad index is skipped instead of crashing the program.
+
+# Rust lesson: ghost-engine T12
+
+A `&mut dyn FnMut(&Value) -> Probe` parameter lets the caller supply a yes-or-no test without the shrinker knowing what it does.
+The loop finds the proposals first, then returns from a helper, so the borrow of `current` ends before `current` is replaced.
+`VecDeque` keeps the last few trace entries cheaply, and `pop_front` drops the oldest once the cap is reached.
+`u32::try_from(len)` turns a `usize` count into a `u32` with a visible fallback instead of an unchecked `as` cast.

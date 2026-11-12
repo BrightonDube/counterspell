@@ -4,7 +4,10 @@
 //! an Oracle or a clock: the caller answers yes or no for each proposal.
 
 use crate::schema::Schema;
+use crate::size::{compare_size, size_of, SizeMetric};
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::collections::{HashSet, VecDeque};
 
 /// Whole-value moves: every integer goes to its target, then halfway to it.
 #[must_use]
@@ -164,6 +167,198 @@ pub fn proposals<'a>(schema: &'a Schema, value: &'a Value) -> impl Iterator<Item
             .chain(structural_moves(schema, value))
             .chain(scalar_moves(schema, value))
     })
+}
+
+/// The verdict a caller gives for one proposal.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Probe {
+    /// The proposal still fails in the same way, so keep it.
+    Keep,
+    /// The proposal does not fail in the same way.
+    Reject,
+    /// Stop shrinking now (for example, the time budget ran out).
+    Stop,
+}
+
+/// Why the shrink loop stopped.
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ShrinkStop {
+    /// A full pass over every proposal found nothing smaller that fails.
+    LocalMinimum,
+    /// The evaluation budget ran out.
+    EvalBudget,
+    /// The caller asked the loop to stop.
+    WallTime,
+    /// No shrinking was attempted (used for timeout ghosts).
+    NotAttempted,
+}
+
+/// One recorded entry in the shrink trace.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ShrinkStep {
+    /// Position in the full sequence. Zero is the first failing input.
+    pub index: u32,
+    /// The input at this step.
+    pub input: Value,
+    /// The size metric of `input`.
+    pub size: SizeMetric,
+    /// Evaluations spent when this step was recorded.
+    pub evaluations: u32,
+}
+
+/// The bounded trace of a shrink run.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ShrinkReport {
+    /// The first 10 and last 10 entries, in order.
+    pub steps: Vec<ShrinkStep>,
+    /// The number of accepted reductions. Entries recorded equal this plus one.
+    pub total_steps: u32,
+    /// Entries between the head and the tail that were not kept.
+    pub omitted_steps: u32,
+    /// Probes spent in total.
+    pub evaluations: u32,
+    /// Why the loop stopped.
+    pub stop: ShrinkStop,
+}
+
+/// The shrunk input and its trace.
+#[derive(Clone, Debug, PartialEq)]
+pub struct ShrinkOutcome {
+    /// The smallest input the loop reached.
+    pub value: Value,
+    /// The trace of accepted steps.
+    pub report: ShrinkReport,
+}
+
+/// How many trace entries are kept at the start of a run.
+const TRACE_HEAD: usize = 10;
+/// How many trace entries are kept at the end of a run.
+const TRACE_TAIL: usize = 10;
+
+/// Shrinks `start` by repeatedly accepting smaller valid proposals that the
+/// probe keeps.
+///
+/// The loop is first-improvement: after each accepted proposal it starts
+/// again from the top. A value is asked about at most once, and only valid,
+/// strictly smaller proposals are asked about.
+pub fn shrink(
+    schema: &Schema,
+    start: Value,
+    max_evals: u32,
+    probe: &mut dyn FnMut(&Value) -> Probe,
+) -> ShrinkOutcome {
+    let mut recorder = TraceRecorder::default();
+    let mut tried: HashSet<String> = HashSet::new();
+    tried.insert(start.to_string());
+    let mut evaluations: u32 = 0;
+    let mut current = start;
+    recorder.record(&current, evaluations);
+
+    loop {
+        match find_accepted(
+            schema,
+            &current,
+            &mut tried,
+            &mut evaluations,
+            max_evals,
+            probe,
+        ) {
+            Search::Accepted(next) => {
+                current = next;
+                recorder.record(&current, evaluations);
+            }
+            Search::Stopped(stop) => {
+                return ShrinkOutcome {
+                    value: current,
+                    report: recorder.into_report(evaluations, stop),
+                };
+            }
+        }
+    }
+}
+
+/// The result of one pass over the proposals for the current value.
+enum Search {
+    /// The probe kept this proposal.
+    Accepted(Value),
+    /// The pass ended without a kept proposal, or was cut short.
+    Stopped(ShrinkStop),
+}
+
+/// Asks the probe about each new, valid, smaller proposal until one is kept.
+fn find_accepted(
+    schema: &Schema,
+    current: &Value,
+    tried: &mut HashSet<String>,
+    evaluations: &mut u32,
+    max_evals: u32,
+    probe: &mut dyn FnMut(&Value) -> Probe,
+) -> Search {
+    for proposal in proposals(schema, current) {
+        if schema.contains(&proposal).is_err() {
+            continue;
+        }
+        if compare_size(&proposal, current) != std::cmp::Ordering::Less {
+            continue;
+        }
+        if !tried.insert(proposal.to_string()) {
+            continue;
+        }
+        if *evaluations >= max_evals {
+            return Search::Stopped(ShrinkStop::EvalBudget);
+        }
+        *evaluations += 1;
+        match probe(&proposal) {
+            Probe::Keep => return Search::Accepted(proposal),
+            Probe::Reject => {}
+            Probe::Stop => return Search::Stopped(ShrinkStop::WallTime),
+        }
+    }
+    Search::Stopped(ShrinkStop::LocalMinimum)
+}
+
+/// Keeps the first and last few trace entries and counts the rest.
+#[derive(Default)]
+struct TraceRecorder {
+    head: Vec<ShrinkStep>,
+    tail: VecDeque<ShrinkStep>,
+    recorded: u32,
+}
+
+impl TraceRecorder {
+    fn record(&mut self, value: &Value, evaluations: u32) {
+        let step = ShrinkStep {
+            index: self.recorded,
+            input: value.clone(),
+            size: size_of(value),
+            evaluations,
+        };
+        self.recorded = self.recorded.saturating_add(1);
+        if self.head.len() < TRACE_HEAD {
+            self.head.push(step);
+        } else {
+            self.tail.push_back(step);
+            if self.tail.len() > TRACE_TAIL {
+                self.tail.pop_front();
+            }
+        }
+    }
+
+    fn into_report(self, evaluations: u32, stop: ShrinkStop) -> ShrinkReport {
+        let kept = u32::try_from(self.head.len() + self.tail.len()).unwrap_or(u32::MAX);
+        let omitted_steps = self.recorded.saturating_sub(kept);
+        let total_steps = self.recorded.saturating_sub(1);
+        let mut steps = self.head;
+        steps.extend(self.tail);
+        ShrinkReport {
+            steps,
+            total_steps,
+            omitted_steps,
+            evaluations,
+            stop,
+        }
+    }
 }
 
 /// A position in a value that a scalar move may change.
@@ -447,6 +642,177 @@ mod tests {
             found,
             vec![json!(3), json!(5), json!(3), json!(5), json!(6)]
         );
+    }
+
+    #[test]
+    fn shrink_loop_reaches_a_local_minimum_on_a_threshold() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut probe = |value: &Value| {
+            if value.as_i64().is_some_and(|number| number >= 5) {
+                Probe::Keep
+            } else {
+                Probe::Reject
+            }
+        };
+        let outcome = shrink(&schema, json!(37), 300, &mut probe);
+        assert_eq!(outcome.value, json!(5));
+        assert_eq!(outcome.report.stop, ShrinkStop::LocalMinimum);
+        assert_eq!(outcome.report.total_steps, 6);
+        let trail: Vec<Value> = outcome
+            .report
+            .steps
+            .iter()
+            .map(|step| step.input.clone())
+            .collect();
+        assert_eq!(
+            trail,
+            vec![
+                json!(37),
+                json!(18),
+                json!(9),
+                json!(8),
+                json!(7),
+                json!(6),
+                json!(5)
+            ]
+        );
+    }
+
+    #[test]
+    fn shrink_stops_at_the_evaluation_budget() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut probe = |value: &Value| {
+            if value.as_i64().is_some_and(|number| number >= 5) {
+                Probe::Keep
+            } else {
+                Probe::Reject
+            }
+        };
+        let outcome = shrink(&schema, json!(37), 2, &mut probe);
+        assert_eq!(outcome.report.stop, ShrinkStop::EvalBudget);
+        assert_eq!(outcome.report.evaluations, 2);
+        assert_eq!(outcome.value, json!(18));
+    }
+
+    #[test]
+    fn shrink_returns_when_the_probe_says_stop() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut probe = |_: &Value| Probe::Stop;
+        let outcome = shrink(&schema, json!(37), 300, &mut probe);
+        assert_eq!(outcome.report.stop, ShrinkStop::WallTime);
+        assert_eq!(outcome.report.evaluations, 1);
+        assert_eq!(outcome.value, json!(37));
+    }
+
+    #[test]
+    fn shrink_never_asks_about_the_same_value_twice() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut asked: Vec<String> = Vec::new();
+        let mut probe = |value: &Value| {
+            asked.push(value.to_string());
+            if value.as_i64().is_some_and(|number| number >= 5) {
+                Probe::Keep
+            } else {
+                Probe::Reject
+            }
+        };
+        let _ = shrink(&schema, json!(37), 300, &mut probe);
+        let unique: HashSet<&String> = asked.iter().collect();
+        assert_eq!(unique.len(), asked.len());
+    }
+
+    /// A pure, seeded predicate that rejects about a quarter of all values.
+    fn seeded_probe(seed: u64) -> impl FnMut(&Value) -> Probe {
+        move |value: &Value| {
+            if mix(&value.to_string(), seed) % 4 == 0 {
+                Probe::Reject
+            } else {
+                Probe::Keep
+            }
+        }
+    }
+
+    /// A small FNV-style hash used only to make test predicates deterministic.
+    fn mix(text: &str, seed: u64) -> u64 {
+        text.bytes()
+            .fold(seed ^ 0xcbf2_9ce4_8422_2325, |hash, byte| {
+                (hash ^ u64::from(byte)).wrapping_mul(0x0000_0100_0000_01b3)
+            })
+    }
+
+    proptest! {
+        #[test]
+        fn shrink_p4_proposals_valid_and_smaller(
+            pair in arb_valid_value(),
+            seed in any::<u64>(),
+        ) {
+            let (schema, start) = pair;
+            let mut probe_inner = seeded_probe(seed);
+            let mut seen = Vec::new();
+            let mut probe = |value: &Value| {
+                seen.push(value.clone());
+                probe_inner(value)
+            };
+            let _ = shrink(&schema, start.clone(), 300, &mut probe);
+            for value in &seen {
+                prop_assert!(schema.contains(value).is_ok(), "invalid probe {}", value);
+                prop_assert_eq!(compare_size(value, &start), std::cmp::Ordering::Less);
+            }
+        }
+
+        #[test]
+        fn shrink_p5_accepted_steps_strictly_decrease(
+            pair in arb_valid_value(),
+            seed in any::<u64>(),
+        ) {
+            let (schema, start) = pair;
+            let mut probe = seeded_probe(seed);
+            let outcome = shrink(&schema, start.clone(), 300, &mut probe);
+            let steps = &outcome.report.steps;
+            prop_assert!(!steps.is_empty(), "no trace for {}", start);
+            prop_assert_eq!(&steps[0].input, &start);
+            for pair in steps.windows(2) {
+                prop_assert_eq!(compare_size(&pair[1].input, &pair[0].input), std::cmp::Ordering::Less);
+            }
+        }
+
+        #[test]
+        fn shrink_p7_local_minimum_has_no_smaller_kept_proposal(
+            pair in arb_valid_value(),
+            seed in any::<u64>(),
+        ) {
+            let (schema, start) = pair;
+            let mut probe = seeded_probe(seed);
+            let outcome = shrink(&schema, start, 300, &mut probe);
+            if outcome.report.stop == ShrinkStop::LocalMinimum {
+                let mut check = seeded_probe(seed);
+                for proposal in proposals(&schema, &outcome.value) {
+                    if schema.contains(&proposal).is_ok()
+                        && compare_size(&proposal, &outcome.value) == std::cmp::Ordering::Less
+                    {
+                        prop_assert_eq!(check(&proposal), Probe::Reject, "kept smaller {}", proposal);
+                    }
+                }
+            }
+        }
+
+        #[test]
+        fn shrink_p11_trace_is_capped_and_ends_at_the_ghost(
+            pair in arb_valid_value(),
+            seed in any::<u64>(),
+        ) {
+            let (schema, start) = pair;
+            let mut probe = seeded_probe(seed);
+            let outcome = shrink(&schema, start.clone(), 300, &mut probe);
+            let report = &outcome.report;
+            prop_assert!(report.steps.len() <= 20);
+            prop_assert!(!report.steps.is_empty());
+            prop_assert_eq!(&report.steps[0].input, &start);
+            prop_assert_eq!(&report.steps[report.steps.len() - 1].input, &outcome.value);
+            let entries = u32::try_from(report.steps.len()).unwrap_or(u32::MAX);
+            prop_assert_eq!(report.total_steps + 1, entries + report.omitted_steps);
+            prop_assert!(report.steps.windows(2).all(|pair| pair[0].index < pair[1].index));
+        }
     }
 
     proptest! {
