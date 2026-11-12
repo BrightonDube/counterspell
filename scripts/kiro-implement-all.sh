@@ -13,19 +13,19 @@ WATCH_FLOOR=150    # kill a running spec if remaining credits drop below this
 LIMIT=4000
 # num slug model estimated-credits
 SPECS=(
-  "20 ghost-engine gpt-5.6-luna 95"
-  "21 grimoire-packs gpt-5.6-luna 75"
-  "22 run-lifecycle gpt-5.6-luna 140"
-  "23 judge-sandbox claude-sonnet-5.5 365"
-  "24 language-drivers gpt-5.6-luna 55"
-  "25 auth gpt-5.6-luna 140"
-  "26 ide-workspace gpt-5.6-luna 100"
-  "27 efficiency-familiar gpt-5.6-luna 150"
-  "28 hints gpt-5.6-luna 75"
-  "29 dashboard-fsrs gpt-5.6-luna 70"
-  "30 counterspell-mcp-power gpt-5.6-luna 80"
-  "31 landing-steel-night gpt-5.6-luna 60"
-  "32 break-room gpt-5.6-luna 55"
+  "20 ghost-engine claude-haiku-5.5 12"
+  "21 grimoire-packs claude-haiku-5.5 10"
+  "22 run-lifecycle claude-haiku-5.5 18"
+  "23 judge-sandbox claude-haiku-5.5 46"
+  "24 language-drivers claude-haiku-5.5 10"
+  "25 auth claude-haiku-5.5 18"
+  "26 ide-workspace claude-haiku-5.5 12"
+  "27 efficiency-familiar claude-haiku-5.5 19"
+  "28 hints claude-haiku-5.5 10"
+  "29 dashboard-fsrs claude-haiku-5.5 10"
+  "30 counterspell-mcp-power claude-haiku-5.5 10"
+  "31 landing-steel-night claude-haiku-5.5 10"
+  "32 break-room claude-haiku-5.5 10"
 )
 usage(){ ~/.local/bin/kiro-cli chat --no-interactive --model claude-haiku-5.5 --trust-tools= "/usage" 2>/dev/null | grep -o 'kiroween-2026: [0-9.]*' | awk '{print $2}'; }
 log(){ echo "$(date '+%F %H:%M') $*" >> "$P"; }
@@ -65,7 +65,18 @@ for row in "${SPECS[@]}"; do
   [ "$REM" -ge "$FLOOR" ] || stop "remaining credits $REM < $FLOOR before $SLUG"
   [ $(( REM - EST )) -ge "$FLOOR" ] || stop "remaining $REM minus $SLUG estimate $EST would go below $FLOOR"
   log "BEGIN $SLUG model=$MODEL est=$EST remaining=$REM"
-  bash scripts/kiro-run.sh "$NUM-$SLUG-implement" "$MODEL" default "docs/kiro-prompts/$NUM-$SLUG-implement-cli.md"
+  # Re-run the same spec while each attempt makes progress (Kiro sessions can be cut off mid-spec).
+  for ATT in 1 2 3 4 5; do
+    read -r D0 T S <<<"$(counts "$SLUG")"
+    [ "$D0" -ge $(( T - S )) ] && break
+    U=$(usage); [ -n "$U" ] || stop "could not read credits from /usage"
+    REM=$(awk -v u="$U" -v l=$LIMIT 'BEGIN{printf "%.0f", l-u}')
+    [ "$REM" -ge "$FLOOR" ] || stop "remaining credits $REM < $FLOOR during $SLUG"
+    bash scripts/kiro-run.sh "$NUM-$SLUG-implement-a$ATT" "$MODEL" default "docs/kiro-prompts/$NUM-$SLUG-implement-cli.md"
+    read -r D1 T S <<<"$(counts "$SLUG")"
+    log "$SLUG attempt $ATT: tasks $D0 -> $D1 of $T ($(grep -o 'rc=[0-9]*' /tmp/kiro-run.status), $(grep -o 'credits=[0-9.-]*' /tmp/kiro-run.status))"
+    [ "$D1" -gt "$D0" ] || break
+  done
   RC=$(grep -o 'rc=[0-9]*' /tmp/kiro-run.status | cut -d= -f2)
   CR=$(grep -o 'credits=[0-9.-]*' /tmp/kiro-run.status | cut -d= -f2)
   TOT=$(grep -o 'total=[0-9.]*' /tmp/kiro-run.status | cut -d= -f2)
