@@ -132,3 +132,10 @@ A HashSet makes uniqueness checking linear instead of repeatedly scanning the en
 `u128` safely holds large magnitude sums, while Serde stores it as text because JSON numbers are narrower.
 Borrowing `&Value` keeps size calculations read-only and avoids moving input data.
 A canonical JSON tie-break makes distinct values comparable even when their numeric metrics match.
+
+# Rust lesson: ghost-engine T06
+
+Serde attributes define stable wire names without changing Rust's enum names.
+Borrowing JSON values lets Exact compare strict types without converting them first.
+Sorting canonical element text gives Unordered multiset behavior while preserving duplicate counts.
+A focused comparator keeps verdict rules reusable by the judge and ghost hunt.

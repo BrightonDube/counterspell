@@ -61,7 +61,7 @@ Conventions for every Rust task:
   - Preserve: no randomness, no clock, no dependency on schema.
   - Rust lesson: `Ordering`, `Ord` versus a comparison function, and why `u128` is used.
 
-- [ ] **T06 [P] (20 min) Comparators and property P12**
+- [x] **T06 [P] (20 min) Comparators and property P12**
   - Files: `crates/engine/src/compare.rs`.
   - Implement `Comparator::{Exact, Unordered}` with serde names `exact` and `unordered`, and `Comparator::equal(&self, expected, got) -> bool`.
   - Tests: `1` vs `1.0`, `true` vs `1`; permutation of top-level arrays; changed element detected; non-array falls back to exact; proptest P12.
