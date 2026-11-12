@@ -35,7 +35,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Preserve: the module only reads; `purity.rs` will enforce it later.
   - Rust lesson: explain `Result<T, E>` and `?` for I/O errors, and why a size check happens before the read.
 
-- [ ] **T04 [S] (30 min) meta.toml model with unknown keys denied**
+- [x] **T04 [S] (30 min) meta.toml model with unknown keys denied**
   - Files: `crates/grimoire/src/meta.rs`.
   - Deserialise into plain structs with `#[serde(deny_unknown_fields)]`. Map TOML errors to MET-01 with line and column. Check required fields and ranges (MET-02), `origin`/`licence`/third-party fields (MET-03), and the slug equals the directory (LAY-06).
   - Depends on: T02, T03.

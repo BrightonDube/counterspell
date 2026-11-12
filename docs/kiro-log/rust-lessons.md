@@ -274,3 +274,10 @@ Tests import the code table with an explicit `use crate::codes;`, so production 
 Every size check uses `metadata().len()` before `fs::read`, so an oversize file is never loaded into memory.
 `symlink_metadata` looks at the link itself, while `metadata` follows it, which is why the symlink ban works.
 `let ... else` lets a lookup stop early with a diagnostic, which keeps the happy path flat.
+
+# Rust lesson: grimoire-packs T04
+
+A struct field's type is a contract: `pack_version: i64` tells the reader and the compiler what TOML may hold, and a wrong type fails to parse with a message.
+`#[serde(deny_unknown_fields)]` turns a misspelt key into an error, so a typo such as `licnce` cannot pass review silently.
+`toml::from_str::<toml::Table>` checks syntax alone, which lets the code tell a syntax error (MET-01) from a wrong field value (MET-02).
+`Option<T>` with `#[serde(default)]` marks a field that may be absent, and the type makes the caller handle the missing case.
