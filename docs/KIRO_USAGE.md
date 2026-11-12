@@ -89,3 +89,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 12:08-12:36 SAST: 14-efficiency-familiar-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/14-efficiency-familiar-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1208-14-efficiency-familiar-spec.log`. Exit 0.
 - Credits used (from /usage): 46.30 (hackathon credits used now 2482.26/4000).
+
+### 2026-11-12 12:36-12:40 SAST: 15-landing-steel-night-spec (Kiro CLI, claude-haiku-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/15-landing-steel-night-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1236-15-landing-steel-night-spec.log`. Exit 0.
+- Credits used (from /usage): 2.79 (hackathon credits used now 2485.05/4000).
