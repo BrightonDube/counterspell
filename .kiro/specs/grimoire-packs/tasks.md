@@ -127,7 +127,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo test -p counterspell-grimoire --test mutations`.
   - Rust lesson: explain why tests can `expect` (test code is allowed to panic with a message) while production code cannot.
 
-- [ ] **T16 [P] (25 min) Purity guard and wording guard**
+- [x] **T16 [P] (25 min) Purity guard and wording guard**
   - Files: `crates/grimoire/tests/purity.rs`, plus a wording test in `report.rs` or `ghosts.rs`.
   - Scan `src/` for `std::process`, `Command::`, `std::net`, `TcpStream`, `File::create`, `fs::write`, `OpenOptions`, outside `pack.rs` (read only). Scan every diagnostic template for the engine's forbidden phrases (GRM-31 and GHO-6).
   - Depends on: T12.

@@ -315,3 +315,10 @@ A function that returns `Result<ProblemRecord, RecordError>` makes "only valid p
 `ok_or_else` turns an `Option` into a `Result` and only builds the error value when it is needed.
 `#[derive(PartialEq)]` on a record only works when every field type also implements it, so the derive on `ProblemRecord` pulled `Eq` onto the models it contains.
 `Result` distinguishes an unreadable directory from an invalid pack, which keeps infrastructure failures out of the pack-error path.
+
+# Rust lesson: grimoire-packs T16
+
+`#[cfg(test)]` compiles code only for `cargo test`, so test helpers never reach the shipped binary.
+A test that reads `src/` as text is a cheap architecture guard: it fails the build when a forbidden call such as `Command::new` appears.
+`str::contains` on a list of names is enough for this tripwire, and the self-tests prove the scanner would catch a planted call.
+Narrowing a forbidden name (`std::process::Command` rather than all of `std::process`) keeps legitimate uses such as `ExitCode` allowed.
