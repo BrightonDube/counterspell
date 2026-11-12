@@ -48,7 +48,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cd web && npm ci && npm run check && npm run build`.
   - Preserve: `web/` is the only frontend application; no dev server is part of production Compose.
 
-- [ ] **T07 [P] (25 min) Add Steel Night semantic Tailwind tokens**
+- [x] **T07 [P] (25 min) Add Steel Night semantic Tailwind tokens**
   - Files: `web/src/app.css` and frontend configuration only.
   - Translate the semantic tokens from `docs/palette.md` into Tailwind 4 CSS-first theme variables and a dark launch theme. Use semantic classes in the page.
   - Depends on: T06.
