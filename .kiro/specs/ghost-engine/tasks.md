@@ -204,7 +204,7 @@ Conventions for every Rust task:
 
 ## Wave 4: integration tests and documentation
 
-- [ ] **T20 [S] (30 min) Test support: pack loader and model oracles**
+- [x] **T20 [S] (30 min) Test support: pack loader and model oracles**
   - Files: `crates/engine/tests/support/mod.rs`.
   - Load `ghost.json`/`golden.json` via `env!("CARGO_MANIFEST_DIR")` and `serde_json`. Write the reference model and six buggy models as Rust functions mirroring the Python. Write `ModelOracle` (implements `Oracle`, charges a fixed cost on a `ManualClock`, returns `TimedOut` if the cost exceeds the limit), plus synthetic-oracle builders and proptest strategies shared by `properties.rs` and `packs.rs`.
   - Tests: every model reproduces its golden or hand-traced vectors exactly (R14, design "drift" control 1).

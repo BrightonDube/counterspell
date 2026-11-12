@@ -211,3 +211,10 @@ The confirm step returns a small enum (`Confirmed`, `Unreproduced`, `OutOfTime`)
 # Rust lesson: ghost-engine T17-T19
 
 No Rust changed in these tasks. They added the pack JSON, Markdown and Python text files only.
+
+# Rust lesson: ghost-engine T20
+
+Integration tests in `tests/` each compile as their own crate, so shared code goes in `tests/support/mod.rs` and is pulled in with `mod support;`.
+A function pointer type (`type Model = fn(&Value) -> ProgramResult;`) lets a `match` pick a model and pass it around without boxing.
+`Option::get` and `.get(i)` on `serde_json::Value` return `None` instead of panicking, so a missing key in a fixture becomes a clear test failure.
+The `let ... else` form (`let Some(x) = ... else { return ... };`) keeps the happy path flat when a missing value should exit early.
