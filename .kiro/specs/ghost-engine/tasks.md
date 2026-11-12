@@ -103,7 +103,7 @@ Conventions for every Rust task:
   - Preserve: `generate` imports only `schema` and `rng`.
   - Rust lesson: implementing `Iterator`, laziness, and `HashSet` for de-duplication.
 
-- [ ] **T10 [S] (30 min) Shrink proposals, part 1: whole-value and scalar moves**
+- [x] **T10 [S] (30 min) Shrink proposals, part 1: whole-value and scalar moves**
   - Files: `crates/engine/src/shrink.rs` (proposal generators).
   - Implement integer targets (nearest in-range value to 0), whole-value moves (all to target, all halved), scalar moves (jump, halve, step), and character moves toward the first alphabet character. Work on a path-based walk so tuple items shrink independently.
   - Tests: the `([5], 10)` coupled example reaches `([0], 0)` through a whole-value move; targets respect ranges that exclude 0; proptest: every proposal is either invalid (filtered later) or has the same shape as its source.

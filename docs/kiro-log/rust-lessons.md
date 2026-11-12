@@ -158,3 +158,10 @@ An `Iterator` produces one item per `next()` call, so the stream only builds can
 `VecDeque` gives cheap removal from the front, which is how the known ghosts and samples are handed out in order.
 The odometer walks combinations like a car mileage counter: the last digit moves first and carries into earlier ones.
 `checked_div`-style helpers and `Option` returns let an exhausted stage end with `None` instead of looping forever.
+
+# Rust lesson: ghost-engine T10
+
+A JSON Pointer such as `/0/3` names one position inside a value, so a move changes exactly that item and leaves the rest alone.
+`value.pointer_mut(path)` returns `Option<&mut Value>`, so a missing path is handled with `if let` instead of a panic.
+`&dyn Fn(...)` lets one function take any closure, which keeps the whole-value moves short.
+A `match` on a tuple of `(schema, value)` handles every pairing, and the `_ => {}` arm makes mismatched shapes harmless.
