@@ -1,0 +1,43 @@
+slug = "diagonal-total"
+title = "The Diagonal Total"
+status = "draft"
+difficulty = "easy"
+track = "matrices"
+concepts = ["matrices", "indexing", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "diagonal_total"
+returns = "int"
+comparator = "exact"
+
+[[params]]
+name = "grid"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 6, min_cols = 0, max_cols = 6, min = -9, max = 9 },
+]
+
+[generator]
+seed = 3141
+hidden_count = 12
+
+[[samples]]
+input = [[[1, 2], [3, 4]]]
+expected = 5
+
+[[samples]]
+input = [[[5, 0, 0], [0, 6, 0], [0, 0, 7]]]
+expected = 18
+
+[[samples]]
+input = [[[-2, 9, 1]]]
+expected = -2
