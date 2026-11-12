@@ -120,7 +120,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 4: tests that prove the rules
 
-- [ ] **T15 [P] (30 min) One mutation per diagnostic code**
+- [x] **T15 [P] (30 min) One mutation per diagnostic code**
   - Files: `crates/grimoire/tests/mutations.rs`.
   - For each code in `codes.rs` (except sandbox codes), copy a starter pack into a temp directory, apply one text change, and assert the report contains that code and no unrelated error. This is GRM-51. The starter packs must exist first (T21 to T23), so this task runs after Wave 6 starts, or uses `_test` packs as the base until then.
   - Depends on: T12, T21 to T23.
