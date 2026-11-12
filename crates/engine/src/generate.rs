@@ -3,6 +3,7 @@
 use crate::rng::SplitMix64;
 use crate::schema::Schema;
 use serde_json::{json, Value};
+use std::collections::{HashSet, VecDeque};
 
 /// Tunable generator defaults. Tests check properties, not these exact numbers.
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -11,6 +12,8 @@ pub struct GeneratorConfig {
     pub edge_int_percent: u8,
     /// Chance, in percent, that a collection length is drawn from the edge lengths.
     pub edge_length_percent: u8,
+    /// The largest number of candidates the enumeration stage yields.
+    pub enumeration_cap: usize,
     /// The largest number of JSON nodes a generated value should hold.
     pub max_units: usize,
 }
@@ -20,6 +23,7 @@ impl Default for GeneratorConfig {
         Self {
             edge_int_percent: 40,
             edge_length_percent: 35,
+            enumeration_cap: 150,
             max_units: 256,
         }
     }
@@ -202,6 +206,371 @@ fn to_usize(value: i64) -> usize {
     usize::try_from(value).unwrap_or(0)
 }
 
+/// Where a candidate input came from, in the order the stream yields them.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum Origin {
+    /// An authored known-ghost seed from the problem pack.
+    KnownGhost,
+    /// A public sample input from the problem pack.
+    Sample,
+    /// A tiny exhaustive enumeration of simple values.
+    Enumerated,
+    /// A seeded, edge-biased random value.
+    Generated,
+}
+
+/// One input the hunt may try, with the stage that produced it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Candidate {
+    /// The JSON input to evaluate.
+    pub value: Value,
+    /// The stage that produced the input.
+    pub origin: Origin,
+}
+
+/// Most tiny integers the enumeration keeps for each integer range.
+const TINY_INTS: usize = 4;
+/// Most tiny elements an array or matrix enumeration may draw from.
+const TINY_ELEMENTS: usize = 3;
+/// Stops the random stage after this many repeats in a row. The space is then almost surely exhausted.
+const MAX_CONSECUTIVE_DUPLICATES: u32 = 100;
+/// The length cap the random stage grows toward on a timeout hunt.
+const TIMEOUT_CAP: u64 = 100_000;
+
+/// The lazy, de-duplicated sequence of candidate inputs for one hunt.
+///
+/// Stages run in order: known ghosts, samples, a tiny enumeration and then
+/// seeded random values. Nothing is built before it is asked for.
+pub struct CandidateStream {
+    schema: Schema,
+    rng: SplitMix64,
+    config: GeneratorConfig,
+    seeds: VecDeque<Candidate>,
+    enumeration: Odometer,
+    enumerated: usize,
+    random_index: u64,
+    consecutive_duplicates: u32,
+    seen: HashSet<String>,
+    invalid_seeds: u32,
+    produced: u32,
+    timeout_target: bool,
+}
+
+impl CandidateStream {
+    /// Creates a stream for `schema`. Known ghosts and samples that fail
+    /// `Schema::contains` are skipped and counted.
+    #[must_use]
+    pub fn new(
+        schema: Schema,
+        seed: u64,
+        known_ghosts: Vec<Value>,
+        samples: Vec<Value>,
+        config: GeneratorConfig,
+    ) -> Self {
+        let mut invalid_seeds = 0;
+        let mut seeds = VecDeque::new();
+        for (values, origin) in [
+            (known_ghosts, Origin::KnownGhost),
+            (samples, Origin::Sample),
+        ] {
+            for value in values {
+                if schema.contains(&value).is_ok() {
+                    seeds.push_back(Candidate { value, origin });
+                } else {
+                    invalid_seeds += 1;
+                }
+            }
+        }
+        let enumeration = Odometer::new(&schema);
+        Self {
+            schema,
+            rng: SplitMix64::new(seed),
+            config,
+            seeds,
+            enumeration,
+            enumerated: 0,
+            random_index: 0,
+            consecutive_duplicates: 0,
+            seen: HashSet::new(),
+            invalid_seeds,
+            produced: 0,
+            timeout_target: false,
+        }
+    }
+
+    /// Lets the random stage grow lengths far beyond the normal cap, for timeout hunts.
+    #[must_use]
+    pub fn timeout_target(mut self) -> Self {
+        self.timeout_target = true;
+        self
+    }
+
+    /// Counts known ghosts and samples skipped because they broke the schema.
+    #[must_use]
+    pub fn invalid_seeds_skipped(&self) -> u32 {
+        self.invalid_seeds
+    }
+
+    /// Counts the candidates this stream has yielded so far.
+    #[must_use]
+    pub fn produced(&self) -> u32 {
+        self.produced
+    }
+
+    /// Returns the next candidate that has not been yielded before.
+    fn next_candidate(&mut self) -> Option<Candidate> {
+        while let Some(candidate) = self.seeds.pop_front() {
+            if self.first_time(&candidate.value) {
+                return Some(candidate);
+            }
+        }
+        while let Some(value) = self.next_enumerated() {
+            if self.first_time(&value) {
+                return Some(Candidate {
+                    value,
+                    origin: Origin::Enumerated,
+                });
+            }
+        }
+        let value = self.next_generated()?;
+        Some(Candidate {
+            value,
+            origin: Origin::Generated,
+        })
+    }
+
+    /// Records a value and reports whether this was its first appearance.
+    fn first_time(&mut self, value: &Value) -> bool {
+        self.seen.insert(value.to_string())
+    }
+
+    fn next_enumerated(&mut self) -> Option<Value> {
+        if self.enumerated >= self.config.enumeration_cap {
+            return None;
+        }
+        let next = self.enumeration.next_value()?;
+        self.enumerated += 1;
+        Some(next)
+    }
+
+    fn next_generated(&mut self) -> Option<Value> {
+        while self.consecutive_duplicates < MAX_CONSECUTIVE_DUPLICATES {
+            let cap = self.random_cap();
+            self.random_index += 1;
+            let value = generate_value(&self.schema, &mut self.rng, cap, &self.config);
+            if self.first_time(&value) {
+                self.consecutive_duplicates = 0;
+                return Some(value);
+            }
+            self.consecutive_duplicates += 1;
+        }
+        None
+    }
+
+    /// The length cap for the next random draw. It grows with the draw count.
+    fn random_cap(&self) -> usize {
+        let grown = if self.timeout_target {
+            2_u64
+                .saturating_add(self.random_index.saturating_mul(64))
+                .min(TIMEOUT_CAP)
+        } else {
+            let normal = u64::try_from(self.config.max_units).unwrap_or(u64::MAX);
+            (2 + self.random_index / 8).min(normal)
+        };
+        usize::try_from(grown).unwrap_or(usize::MAX)
+    }
+}
+
+impl Iterator for CandidateStream {
+    type Item = Candidate;
+
+    fn next(&mut self) -> Option<Candidate> {
+        let candidate = self.next_candidate()?;
+        self.produced = self.produced.saturating_add(1);
+        Some(candidate)
+    }
+}
+
+/// Walks every combination of tiny values, one step at a time, like an odometer.
+///
+/// A tuple root yields arrays of picks. Any other root yields one pick per step.
+struct Odometer {
+    pools: Vec<Vec<Value>>,
+    digits: Vec<usize>,
+    tuple: bool,
+    started: bool,
+    finished: bool,
+}
+
+impl Odometer {
+    fn new(schema: &Schema) -> Self {
+        let (pools, tuple): (Vec<Vec<Value>>, bool) = match schema {
+            Schema::Tuple { items } => (items.iter().map(tiny_pool).collect(), true),
+            other => (vec![tiny_pool(other)], false),
+        };
+        let finished = pools.is_empty() || pools.iter().any(Vec::is_empty);
+        let digits = vec![0; pools.len()];
+        Self {
+            pools,
+            digits,
+            tuple,
+            started: false,
+            finished,
+        }
+    }
+
+    fn next_value(&mut self) -> Option<Value> {
+        if self.finished {
+            return None;
+        }
+        if self.started {
+            self.advance();
+            if self.finished {
+                return None;
+            }
+        }
+        self.started = true;
+        Some(self.current())
+    }
+
+    fn advance(&mut self) {
+        for position in (0..self.digits.len()).rev() {
+            self.digits[position] += 1;
+            if self.digits[position] < self.pools[position].len() {
+                return;
+            }
+            self.digits[position] = 0;
+        }
+        self.finished = true;
+    }
+
+    fn current(&self) -> Value {
+        let picks: Vec<Value> = self
+            .pools
+            .iter()
+            .zip(&self.digits)
+            .map(|(pool, digit)| pool[*digit].clone())
+            .collect();
+        if self.tuple {
+            Value::Array(picks)
+        } else {
+            picks.into_iter().next().unwrap_or(Value::Null)
+        }
+    }
+}
+
+/// The simplest few values of a leaf schema, most important first.
+fn tiny_pool(schema: &Schema) -> Vec<Value> {
+    match schema {
+        Schema::Int { min, max } => tiny_ints(*min, *max)
+            .into_iter()
+            .map(|v| json!(v))
+            .collect(),
+        Schema::Str {
+            alphabet,
+            min_len,
+            max_len,
+        } => {
+            let chars: Vec<char> = alphabet.chars().take(2).collect();
+            (*min_len..=(*max_len).min(2))
+                .flat_map(|length| all_sequences(&chars, length))
+                .map(|picked| json!(picked.into_iter().collect::<String>()))
+                .filter(|value| schema.contains(value).is_ok())
+                .collect()
+        }
+        Schema::IntArray {
+            min_len,
+            max_len,
+            min,
+            max,
+            ..
+        } => {
+            let elements: Vec<i64> = tiny_ints(*min, *max)
+                .into_iter()
+                .take(TINY_ELEMENTS)
+                .collect();
+            (*min_len..=(*max_len).min(2))
+                .flat_map(|length| all_sequences(&elements, length))
+                .map(|items| json!(items))
+                .filter(|value| schema.contains(value).is_ok())
+                .collect()
+        }
+        Schema::Matrix {
+            min_rows,
+            max_rows,
+            min_cols,
+            max_cols,
+            min,
+            max,
+        } => {
+            let elements: Vec<i64> = tiny_ints(*min, *max).into_iter().take(2).collect();
+            let mut grids = Vec::new();
+            for rows in *min_rows..=(*max_rows).min(2) {
+                for cols in *min_cols..=(*max_cols).min(2) {
+                    grids.extend(grids_of(&elements, rows, cols));
+                }
+            }
+            grids
+                .into_iter()
+                .filter(|value| schema.contains(value).is_ok())
+                .collect()
+        }
+        Schema::Tuple { .. } => Vec::new(),
+    }
+}
+
+/// Up to four distinct integers in range: zero, its neighbours, then the bounds.
+fn tiny_ints(min: i64, max: i64) -> Vec<i64> {
+    let target = 0_i64.clamp(min, max);
+    let candidates = [
+        target,
+        target.saturating_add(1),
+        target.saturating_sub(1),
+        min,
+        max,
+    ];
+    let mut ints = Vec::new();
+    for candidate in candidates {
+        if (min..=max).contains(&candidate) && !ints.contains(&candidate) {
+            ints.push(candidate);
+        }
+    }
+    ints.truncate(TINY_INTS);
+    ints
+}
+
+/// Every grid of `rows` by `cols` cells whose cells come from `elements`.
+fn grids_of(elements: &[i64], rows: usize, cols: usize) -> Vec<Value> {
+    if cols == 0 {
+        return vec![json!(vec![Vec::<i64>::new(); rows])];
+    }
+    all_sequences(elements, rows * cols)
+        .into_iter()
+        .map(|cells| {
+            let grid: Vec<Vec<i64>> = cells.chunks(cols).map(<[i64]>::to_vec).collect();
+            json!(grid)
+        })
+        .collect()
+}
+
+/// Every sequence of `length` items drawn from `items`, in lexical order.
+fn all_sequences<T: Clone>(items: &[T], length: usize) -> Vec<Vec<T>> {
+    let mut sequences: Vec<Vec<T>> = vec![Vec::new()];
+    for _ in 0..length {
+        sequences = sequences
+            .iter()
+            .flat_map(|prefix| {
+                items.iter().map(move |item| {
+                    let mut next = prefix.clone();
+                    next.push(item.clone());
+                    next
+                })
+            })
+            .collect();
+    }
+    sequences
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -288,6 +657,175 @@ mod tests {
         for _ in 0..200 {
             let value = generate_value(&schema, &mut rng, 256, &config);
             assert!(schema.contains(&value).is_ok(), "invalid value {value}");
+        }
+    }
+
+    fn take_candidates(stream: &mut CandidateStream, count: usize) -> Vec<Candidate> {
+        stream.by_ref().take(count).collect()
+    }
+
+    #[test]
+    fn gen_stream_yields_stages_in_order() {
+        let mut stream = CandidateStream::new(
+            Schema::Int { min: -5, max: 5 },
+            1,
+            vec![json!(3)],
+            vec![json!(4)],
+            GeneratorConfig::default(),
+        );
+        let found: Vec<(Value, Origin)> = take_candidates(&mut stream, 4)
+            .into_iter()
+            .map(|candidate| (candidate.value, candidate.origin))
+            .collect();
+        assert_eq!(
+            found,
+            vec![
+                (json!(3), Origin::KnownGhost),
+                (json!(4), Origin::Sample),
+                (json!(0), Origin::Enumerated),
+                (json!(1), Origin::Enumerated),
+            ]
+        );
+    }
+
+    #[test]
+    fn gen_invalid_seed_is_skipped_and_counted() {
+        let mut stream = CandidateStream::new(
+            Schema::Int { min: -5, max: 5 },
+            1,
+            vec![],
+            vec![json!("x"), json!(2)],
+            GeneratorConfig::default(),
+        );
+        assert_eq!(stream.invalid_seeds_skipped(), 1);
+        let first = stream.next().expect("a candidate");
+        assert_eq!((first.value, first.origin), (json!(2), Origin::Sample));
+    }
+
+    #[test]
+    fn gen_duplicates_skip_and_stream_ends() {
+        let mut stream = CandidateStream::new(
+            Schema::Int { min: 0, max: 0 },
+            9,
+            vec![json!(0)],
+            vec![json!(0)],
+            GeneratorConfig::default(),
+        );
+        let all: Vec<Candidate> = stream.by_ref().collect();
+        assert_eq!(
+            all,
+            vec![Candidate {
+                value: json!(0),
+                origin: Origin::KnownGhost,
+            }]
+        );
+    }
+
+    #[test]
+    fn gen_stream_pulls_only_what_is_taken() {
+        let mut stream = CandidateStream::new(
+            Schema::Int {
+                min: -1000,
+                max: 1000,
+            },
+            3,
+            vec![],
+            vec![],
+            GeneratorConfig::default(),
+        );
+        assert_eq!(take_candidates(&mut stream, 5).len(), 5);
+        assert_eq!(stream.produced(), 5);
+    }
+
+    #[test]
+    fn gen_enumeration_stops_at_its_cap() {
+        let item = Schema::IntArray {
+            min_len: 0,
+            max_len: 2,
+            min: -1,
+            max: 1,
+            sorted: false,
+            unique: false,
+        };
+        let schema = Schema::Tuple {
+            items: vec![item.clone(), item.clone(), item.clone(), item],
+        };
+        let mut stream =
+            CandidateStream::new(schema, 5, vec![], vec![], GeneratorConfig::default());
+        let taken = take_candidates(&mut stream, 200);
+        let enumerated = taken
+            .iter()
+            .filter(|candidate| candidate.origin == Origin::Enumerated)
+            .count();
+        assert_eq!(enumerated, 150);
+    }
+
+    #[test]
+    fn gen_equal_seeds_give_equal_streams() {
+        let schema = Schema::IntArray {
+            min_len: 0,
+            max_len: 6,
+            min: -9,
+            max: 9,
+            sorted: false,
+            unique: false,
+        };
+        let mut first = CandidateStream::new(
+            schema.clone(),
+            77,
+            vec![],
+            vec![],
+            GeneratorConfig::default(),
+        );
+        let mut second =
+            CandidateStream::new(schema, 77, vec![], vec![], GeneratorConfig::default());
+        assert_eq!(
+            take_candidates(&mut first, 100),
+            take_candidates(&mut second, 100)
+        );
+    }
+
+    #[test]
+    fn gen_timeout_target_lifts_the_length_cap() {
+        let schema = Schema::IntArray {
+            min_len: 0,
+            max_len: 100_000,
+            min: 0,
+            max: 1,
+            sorted: false,
+            unique: false,
+        };
+        let mut stream =
+            CandidateStream::new(schema, 21, vec![], vec![], GeneratorConfig::default())
+                .timeout_target();
+        let longest = take_candidates(&mut stream, 300)
+            .iter()
+            .filter_map(|candidate| candidate.value.as_array().map(Vec::len))
+            .max()
+            .unwrap_or(0);
+        assert!(longest > 256, "longest was {longest}");
+    }
+
+    proptest! {
+        #[test]
+        fn gen_p1_stream_candidates_are_valid_and_distinct(
+            schema in arb_schema(),
+            seed in any::<u64>(),
+        ) {
+            let mut stream = CandidateStream::new(
+                schema.clone(),
+                seed,
+                vec![],
+                vec![],
+                GeneratorConfig::default(),
+            );
+            let candidates = take_candidates(&mut stream, 40);
+            prop_assert!(!candidates.is_empty(), "stream produced nothing");
+            let mut texts = std::collections::HashSet::new();
+            for candidate in &candidates {
+                prop_assert!(schema.contains(&candidate.value).is_ok(), "invalid {}", candidate.value);
+                prop_assert!(texts.insert(candidate.value.to_string()), "repeat {}", candidate.value);
+            }
         }
     }
 

@@ -151,3 +151,10 @@ Serde names pin the stored vocabulary separately from the Rust type names.
 A function that takes `&mut SplitMix64` shows that generation changes the random state, so the same seed always replays the same values.
 `checked_div` returns `None` for a zero divisor, which replaces a manual zero test with a single `map_or`.
 The generator builds values from the schema without validating them, and the proptest checks them with `contains`, so a generator bug fails a test instead of being hidden.
+
+# Rust lesson: ghost-engine T09
+
+An `Iterator` produces one item per `next()` call, so the stream only builds candidates that the hunt actually asks for.
+`VecDeque` gives cheap removal from the front, which is how the known ghosts and samples are handed out in order.
+The odometer walks combinations like a car mileage counter: the last digit moves first and carries into earlier ones.
+`checked_div`-style helpers and `Option` returns let an exhausted stage end with `None` instead of looping forever.

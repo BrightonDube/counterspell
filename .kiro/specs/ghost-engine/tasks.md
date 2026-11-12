@@ -93,7 +93,7 @@ Conventions for every Rust task:
   - Preserve: the generator does not call `contains` to repair its own output; invalid output must be a visible test failure.
   - Rust lesson: passing `&mut` state (the RNG) and why determinism needs it explicit.
 
-- [ ] **T09 [S] (30 min) Tiny enumeration and the candidate stream**
+- [x] **T09 [S] (30 min) Tiny enumeration and the candidate stream**
   - Files: `crates/engine/src/generate.rs` (enumeration, `CandidateStream`, `Candidate`, `Origin`).
   - Implement tiny pools per kind, the lazy odometer product with `enumeration_cap`, the stage order (known ghosts, samples, enumeration, random with growing cap), de-duplication, invalid-seed skipping with a counter, and the timeout-target size growth.
   - Tests: stage order; duplicates never yielded; invalid sample is skipped and counted; stream is lazy (taking 5 items does not build 500); proptest P1 for the whole stream; equal seeds give equal streams.
