@@ -179,3 +179,10 @@ A `&mut dyn FnMut(&Value) -> Probe` parameter lets the caller supply a yes-or-no
 The loop finds the proposals first, then returns from a helper, so the borrow of `current` ends before `current` is replaced.
 `VecDeque` keeps the last few trace entries cheaply, and `pop_front` drops the oldest once the cap is reached.
 `u32::try_from(len)` turns a `usize` count into a `u32` with a visible fallback instead of an unchecked `as` cast.
+
+# Rust lesson: ghost-engine T13
+
+A trait such as `Oracle` is a promise about methods. The hunt will hold `&mut dyn Oracle`, so the judge and the tests can supply different implementations.
+`Cell<Duration>` lets `ManualClock::advance` take `&self`, so a clock can be shared by reference while it moves.
+`Result<(), &str>` from `validate` lists every rule the budget breaks as a short reason, and `?` or `match` makes the caller handle it.
+Serde `with` attributes store `Duration` as plain milliseconds, which keeps the JSON readable for the judge.

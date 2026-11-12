@@ -135,7 +135,7 @@ Conventions for every Rust task:
 
 ## Wave 2: seam, autopsy and orchestration
 
-- [ ] **T13 [P] (25 min) Oracle, clock and budget**
+- [x] **T13 [P] (25 min) Oracle, clock and budget**
   - Files: `crates/engine/src/oracle.rs`, `crates/engine/src/budget.rs`.
   - Implement `Oracle`, `OracleError` (message plus `Display`), `Clock`, `SystemClock`, `ManualClock` (interior `Cell` counter with `advance`), and `Budget` with the defaults in R8.1 and `validate()` (R8.2, total at most 8 s, deadlines leave the reserve). Document the Oracle contract from the design in the trait's doc comment.
   - Tests: defaults; budgets over 8 s or without reserve are rejected; `ManualClock` advances only when told; phase deadline helpers (`search_deadline`, `shrink_deadline`) match the time plan table.

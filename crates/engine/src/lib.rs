@@ -37,10 +37,12 @@ mod rng;
 mod schema;
 mod size;
 
+pub use budget::Budget;
 pub use classify::{
     classify, Classification, FailureKind, FailurePredicate, Observation, ProgramResult,
 };
 pub use compare::Comparator;
+pub use oracle::{Clock, ManualClock, Oracle, OracleError, SystemClock};
 pub use rng::derive_seed;
 pub use schema::{Schema, SchemaError, Violation};
 pub use size::{compare_size, size_of, SizeMetric};
