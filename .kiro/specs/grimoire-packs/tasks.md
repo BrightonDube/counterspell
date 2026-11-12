@@ -27,7 +27,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 1: parsing and file safety
 
-- [ ] **T03 [S] (30 min) Pack discovery, allow-list, sizes, symlinks and UTF-8**
+- [x] **T03 [S] (30 min) Pack discovery, allow-list, sizes, symlinks and UTF-8**
   - Files: `crates/grimoire/src/pack.rs`, `crates/grimoire/tests/layout.rs`.
   - Implement GRM-1 to GRM-5 with LAY-01 to LAY-05. Walk without following symlinks. Check sizes before reading. Check UTF-8 and control characters on bytes. Check paths stay inside the root.
   - Depends on: T02.

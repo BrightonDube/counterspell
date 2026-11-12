@@ -267,3 +267,10 @@ An `enum` such as `Severity` lists every allowed choice, so a typo like `Severiy
 Each diagnostic code is a `const` built by a `const fn`, so a misspelt code fails to compile and the table exists before the program runs.
 `#[derive(Serialize)]` with `rename_all = "lowercase"` turns the enum into the JSON words `error` and `warning` without hand-written code.
 Tests import the code table with an explicit `use crate::codes;`, so production code does not carry an import that only tests use.
+
+# Rust lesson: grimoire-packs T03
+
+`Result<T, E>` makes a failure part of the return type, and `?` passes it up to the caller. The loader returns `io::Result` only when the pack directory itself cannot be read, so a bad file becomes a diagnostic instead of a crash.
+Every size check uses `metadata().len()` before `fs::read`, so an oversize file is never loaded into memory.
+`symlink_metadata` looks at the link itself, while `metadata` follows it, which is why the symlink ban works.
+`let ... else` lets a lookup stop early with a diagnostic, which keeps the happy path flat.
