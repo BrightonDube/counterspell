@@ -386,7 +386,7 @@ fn check_lengths(min: usize, max: usize, label: &str) -> Result<(), SchemaError>
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use proptest::prelude::*;
     use serde_json::{json, Value};
 
@@ -747,7 +747,7 @@ mod tests {
         }
     }
 
-    mod strategies {
+    pub(crate) mod strategies {
         use super::*;
 
         pub fn arb_schema() -> BoxedStrategy<Schema> {

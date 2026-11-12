@@ -83,7 +83,7 @@ Conventions for every Rust task:
 
 ## Wave 1: generation and shrinking
 
-- [ ] **T08 [S] (30 min) Edge-biased value generation**
+- [x] **T08 [S] (30 min) Edge-biased value generation**
   - Files: `crates/engine/src/generate.rs` (value builders, `GeneratorConfig`).
   - Implement `generate_value(schema, rng, size_cap, config)` for every schema kind with the edge pools and collection shapes in the design, honouring `sorted` and `unique`, and a `units(value)` helper for the 256-unit cap.
   - Tests: proptest P1 for values only (valid for any schema, seed and cap); equal seeds give equal values; edge values (empty, min, max, zero, duplicates) all appear over 500 draws for a sample schema.

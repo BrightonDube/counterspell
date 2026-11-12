@@ -146,3 +146,8 @@ Enums make invalid classification states explicit, so every reference and user o
 `Option<String>` records that an exception class belongs only to crash predicates.
 Sanitizing at the engine boundary keeps untrusted text bounded before it reaches traces or persisted ghosts.
 Serde names pin the stored vocabulary separately from the Rust type names.
+# Rust lesson: ghost-engine T08
+
+A function that takes `&mut SplitMix64` shows that generation changes the random state, so the same seed always replays the same values.
+`checked_div` returns `None` for a zero divisor, which replaces a manual zero test with a single `map_or`.
+The generator builds values from the schema without validating them, and the proptest checks them with `contains`, so a generator bug fails a test instead of being hidden.
