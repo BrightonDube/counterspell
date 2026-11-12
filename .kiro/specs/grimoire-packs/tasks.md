@@ -164,20 +164,20 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 6: starter packs
 
-- [ ] **T21 [P] (30 min) Starter pack `count-pairs`**
+- [x] **T21 [P] (30 min) Starter pack `count-pairs`**
   - Files: `packs/count-pairs/{problem.md,meta.toml,hints.toml,known_ghosts.toml,reference/solution.py,incorrect/same-index.py,incorrect/empty-min.py}`.
   - Write the statement from scratch (GRM-49). Use the signature and schema in `design.md`. Use `status = "draft"`, `seed = 1729`, `hidden_count = 12`. Two hand-checked samples (or more, up to 5). Ghosts `same-index` (`[[0], 0]`, got 1) and `empty-min` (`[[], 0]`, ValueError), as in `design.md`.
   - Depends on: T12, T13 (to run the validator).
   - Verify: `cargo run -q -p counterspell-grimoire -- validate packs/count-pairs` exits 0 with no errors. Warnings are listed and explained.
   - Rust lesson: not applicable to these data files. Note in the reply that the Python reference is reviewed as text, not run.
 
-- [ ] **T22 [P] (30 min) Starter pack `longest-run-length`**
+- [x] **T22 [P] (30 min) Starter pack `longest-run-length`**
   - Files: `packs/longest-run-length/...` (same file set).
   - Signature `longest_run(text: str) -> int`, alphabet `abc`, length 0–40. Ghosts `forgot-last-run` (`["a"]`, got 0) and `empty-first-char` (`[""]`, IndexError). Incorrect programs as in `design.md`.
   - Depends on: T12, T13.
   - Verify: as T21 for this slug.
 
-- [ ] **T23 [P] (30 min) Starter pack `diagonal-total`**
+- [x] **T23 [P] (30 min) Starter pack `diagonal-total`**
   - Files: `packs/diagonal-total/...`.
   - Signature `diagonal_total(grid: list[list[int]]) -> int`, matrix rows 0–6, columns 0–6, values −9 to 9. Ghosts `abs-diagonal` (`[[[-1]]]`, got 1) and `assumes-square` (`[[[]]]`, IndexError).
   - Depends on: T12, T13.
