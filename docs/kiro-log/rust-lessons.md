@@ -329,3 +329,10 @@ A trait is a promise: any type that implements `PackRunner` must provide `run` a
 `&mut dyn PackRunner` takes any implementation at run time, without making the adapter generic over every runner type.
 `map_err` converts one error type into another, so a runner fault becomes the engine's `OracleError` and never a program result.
 The fake runner in the test shows the rule: a crash is data, but an infrastructure fault is an error the caller must handle.
+
+# Rust lesson: grimoire-packs T18
+
+`&mut dyn PackRunner` lets the caller pick the runner at run time, and each call borrows it only for that call, so the checks never keep the runner.
+The sandbox checks keep hidden data in memory only. The reference runs inside the sandbox, so the validator never holds a hidden expected value; it checks only the shape of each result.
+A closure passed to the engine's `shrink` can capture `&mut` state. The error from a failed probe goes into an `Option` the closure fills, because `shrink` takes a probe that cannot return an error.
+`Result<Report, SandboxFault>` keeps a runner fault separate from a pack error, so a broken sandbox can never be reported as a broken pack.

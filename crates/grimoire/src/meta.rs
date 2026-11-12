@@ -7,7 +7,7 @@
 use crate::codes;
 use crate::limits::Limits;
 use crate::report::{Diagnostic, Report};
-use counterspell_engine::Schema;
+use counterspell_engine::{Comparator, Schema};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -101,6 +101,21 @@ pub struct Bench {
     pub size_param: String,
     /// The sizes to time, strictly increasing.
     pub sizes: Vec<i64>,
+}
+
+impl Meta {
+    /// The engine comparator named by the `comparator` field.
+    ///
+    /// Any name other than `unordered` means exact. MET-07 already rejects unknown
+    /// names, so a checked pack never reaches the fallback.
+    #[must_use]
+    pub fn engine_comparator(&self) -> Comparator {
+        if self.comparator == "unordered" {
+            Comparator::Unordered
+        } else {
+            Comparator::Exact
+        }
+    }
 }
 
 /// Parses and checks `meta.toml`. Returns the model when the file parses, even if a

@@ -143,7 +143,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo check -p counterspell-grimoire`; a doc test shows the trait shape.
   - Rust lesson: explain a trait as a promise a type makes, and why `&mut dyn PackRunner` lets the judge pass in its own type.
 
-- [ ] **T18 [S] (30 min) Sandbox checks SBX-01 to SBX-04 with a model runner**
+- [x] **T18 [S] (30 min) Sandbox checks SBX-01 to SBX-04 with a model runner**
   - Files: `crates/grimoire/src/sandbox.rs`, `crates/grimoire/tests/sandbox_fake.rs`.
   - SBX-01 (reference on samples), SBX-02 (reference on hidden inputs, in memory), SBX-03 (known ghosts reproduce), SBX-04 (minimality warning through the engine's `shrink`). Use a model runner: plain Rust functions that mirror each starter reference and incorrect program. The file header says this proves logic, not the sandbox.
   - Depends on: T17, T12.

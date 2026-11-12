@@ -29,6 +29,8 @@ pub mod statement;
 mod fixtures;
 
 use report::Report;
+use runner::PackRunner;
+pub use sandbox::SandboxFault;
 
 /// The file that holds the metadata.
 const META_FILE: &str = "meta.toml";
@@ -114,5 +116,38 @@ pub fn validate_static(root: &Path) -> io::Result<Report> {
         &mut report,
     );
     report.mark_checked("reference");
+    Ok(report)
+}
+
+/// Runs the static checks, then the sandbox checks through `runner`.
+///
+/// The sandbox stage runs only when the static checks have no errors, so a broken
+/// pack never reaches the runner. Its report lists `sandbox` as skipped in that case.
+///
+/// # Errors
+///
+/// Returns [`SandboxFault::Io`] when a pack file cannot be read, and
+/// [`SandboxFault::Runner`] when the runner reports an infrastructure fault.
+pub fn validate_sandbox(root: &Path, runner: &mut dyn PackRunner) -> Result<Report, SandboxFault> {
+    let mut report = validate_static(root).map_err(SandboxFault::Io)?;
+    if report.has_errors() {
+        report.mark_skipped("sandbox");
+        return Ok(report);
+    }
+    let mut scratch = Report::new(String::new());
+    let loaded = pack::load(root, &mut scratch).map_err(SandboxFault::Io)?;
+    let dir_name = root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default();
+    let Some(meta) = loaded
+        .text(META_FILE)
+        .and_then(|text| meta::check(text, dir_name, &mut scratch))
+    else {
+        report.mark_skipped("sandbox");
+        return Ok(report);
+    };
+    sandbox::check(&meta, &loaded, runner, &mut report).map_err(SandboxFault::Runner)?;
+    report.mark_checked("sandbox");
     Ok(report)
 }

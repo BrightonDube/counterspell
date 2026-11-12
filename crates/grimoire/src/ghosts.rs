@@ -7,6 +7,7 @@ use crate::reference::defines_function;
 use crate::report::{Diagnostic, Report};
 use crate::samples::accepts_return;
 use crate::signature::LaunchType;
+use counterspell_engine::{FailureKind, KnownGhost};
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -52,6 +53,52 @@ pub const FORBIDDEN_PHRASES: [&str; 6] = [
     "the minimum",
     "smallest",
 ];
+
+/// One known ghost as the sandbox needs it: the program that shows it and the engine's record.
+pub(crate) struct SandboxGhost {
+    /// The `incorrect/` file that the ghost runs.
+    pub(crate) program: String,
+    /// The ghost as the engine's classifier and matcher read it.
+    pub(crate) known: KnownGhost,
+}
+
+/// Reads the known ghosts a sandbox run can use.
+///
+/// A ghost with an unknown kind, or a file that does not parse, is left out here.
+/// The static checks already report both, and they run first.
+pub(crate) fn sandbox_ghosts(text: &str) -> Vec<SandboxGhost> {
+    let Ok(file) = toml::from_str::<GhostFile>(text) else {
+        return Vec::new();
+    };
+    file.ghost
+        .into_iter()
+        .filter_map(|entry| {
+            let kind = kind_of(&entry.kind)?;
+            Some(SandboxGhost {
+                program: entry.program,
+                known: KnownGhost {
+                    id: entry.id,
+                    input: entry.input,
+                    kind,
+                    exception_class: entry.exception_class,
+                    got: entry.got,
+                    explanation: entry.explanation,
+                    concept_tags: entry.concepts,
+                },
+            })
+        })
+        .collect()
+}
+
+/// Maps the TOML kind name to the engine's failure kind.
+fn kind_of(name: &str) -> Option<FailureKind> {
+    match name {
+        "wrong" => Some(FailureKind::WrongAnswer),
+        "crash" => Some(FailureKind::RuntimeError),
+        "timeout" => Some(FailureKind::Timeout),
+        _ => None,
+    }
+}
 
 /// Checks `known_ghosts.toml` against the schema, the programs, the kind rules and the wording.
 pub fn check(text: &str, meta: &Meta, dir_name: &str, pack: &Pack, report: &mut Report) {

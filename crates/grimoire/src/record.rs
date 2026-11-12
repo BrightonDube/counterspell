@@ -115,11 +115,6 @@ pub fn build(root: &Path) -> Result<ProblemRecord, RecordError> {
         Difficulty::parse(&meta.difficulty).ok_or_else(|| RecordError::Invalid(report.clone()))?;
     let version =
         u32::try_from(meta.pack_version).map_err(|_| RecordError::Invalid(report.clone()))?;
-    let comparator = if meta.comparator == "unordered" {
-        Comparator::Unordered
-    } else {
-        Comparator::Exact
-    };
     Ok(ProblemRecord {
         slug: meta.slug.clone(),
         title: meta.title.clone(),
@@ -132,7 +127,7 @@ pub fn build(root: &Path) -> Result<ProblemRecord, RecordError> {
             returns: meta.returns.clone(),
         },
         input_schema: meta.input_schema.clone(),
-        comparator,
+        comparator: meta.engine_comparator(),
         limits: meta.limits,
         reference_complexity: meta.reference_complexity.clone(),
         bench: meta.bench.clone(),
