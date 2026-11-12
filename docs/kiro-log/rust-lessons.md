@@ -98,3 +98,10 @@ The HTTP response path proves the static frontend is delivered by Axum rather th
 
 No Rust source changed in T18; the final checks validate the entire Rust workspace.
 Formatting, Clippy, tests, and the exact package metadata are release gates for later Rust features.
+
+# Rust lesson: ghost-engine T01
+
+Cargo features let a crate opt into only the parts it needs, such as Serde's derive macros.
+Runtime dependencies stay separate from dev-dependencies, so proptest is available only to tests.
+A module declaration creates a named boundary, while a small crate root keeps the public API easy to review.
+Keeping the engine's dependency list short protects its pure, synchronous design.

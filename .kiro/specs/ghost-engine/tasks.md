@@ -12,7 +12,7 @@ Conventions for every Rust task:
 
 ## Wave 0: foundations and leaf modules
 
-- [ ] **T01 [S] (25 min) Add dependencies and the module skeleton**
+- [x] **T01 [S] (25 min) Add dependencies and the module skeleton**
   - Files: `crates/engine/Cargo.toml`, `crates/engine/src/lib.rs`, empty module files listed in the design, `THIRD-PARTY-NOTICES.md`, `Cargo.lock`.
   - Add `serde` (with `derive`) and `serde_json`; add `proptest` as a dev-dependency (try `default-features = false, features = ["std"]` first). Declare the modules from the design's layout. Add `GENERATOR_VERSION = "gen-1"`, `GHOST_LABEL`, keep `ENGINE_VERSION`. Add `#![warn(missing_docs)]` and module docs that state the dependency-direction table.
   - Requirements: R1.2, R18.1, R18.2.
