@@ -71,7 +71,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: build `web/`, run the server, curl `/`, a static asset, `/some-client-route`, and `/api/health`.
   - Preserve: frontend is served from the Rust process, never a dev server; unknown API routes do not become SPA HTML.
 
-- [ ] **T10 [P] (25 min) Add the minimal SQLx migration path**
+- [x] **T10 [P] (25 min) Add the minimal SQLx migration path**
   - Files: `migrations/<timestamp>_bootstrap.sql`.
   - Add one valid, idempotently runnable bootstrap migration suitable for proving migration execution, without domain tables.
   - Depends on: T03.

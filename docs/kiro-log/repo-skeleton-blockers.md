@@ -1,10 +1,9 @@
 # Repo skeleton blockers
 
-## T10 — local Postgres migration verification
+## T10 — local Postgres migration verification (resolved)
 
-The migration file is implemented, but local migration execution is pending. The
-available Postgres service requires credentials that are not present in the
-workspace, and this task must not read `.env` or other secret files. Starting a
-new long-running Docker database was not available through the current tool
-control path. T10 remains unchecked until the Compose Postgres service can run
-it during T14.
+The migration was initially implemented before local Postgres credentials were
+available, so T10 stayed unchecked without reading `.env` or other secret
+files. The Compose Postgres service later provided a controlled local database.
+The migration was applied successfully, rerun successfully with no changes,
+and an intentionally invalid migration exited non-zero. T10 is now complete.
