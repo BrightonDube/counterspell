@@ -355,3 +355,10 @@ A filter on the file name (`starts_with('_')`) keeps `_test` out of the starter 
 A plain `fn` item has its own unique type, so a `vec!` of different model functions needs each one cast with `as Model` to a single fn-pointer type.
 A non-capturing closure also coerces to a fn pointer, which is why `diagonal_sum` accepts both `|cell| cell` and `i64::abs`.
 The starter vectors are hand traces written as literals. The model functions are only tested against those literals, never used to produce them.
+
+# Rust lesson: grimoire-packs T15
+
+`Schema::check_definition` returns a `Result`, so the generator stage can stop on an invalid schema with an early `return` before the engine runs.
+Some engine functions panic on bad input (`clamp` panics when min is above max). The validator must check the input first, because a panic in a check would crash the CLI, not produce a diagnostic.
+`#[allow(clippy::too_many_lines, reason = "...")]` silences one lint on one function and records why, so the reviewer can judge the exception.
+A test that collects every mismatch before it asserts shows all wrong expectations in one run, instead of stopping at the first.
