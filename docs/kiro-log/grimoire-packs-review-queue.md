@@ -18,3 +18,26 @@ No task in `tasks.md` is marked `[SUPERVISED]`, so no item here is a supervised 
 ## Review of waves 0 to 2 and 4 to 5
 
 The requesting-code-review step was not run as a subagent in this session. The review checklist was applied by hand, for each task, through the tests and the Clippy gate. An independent code review is still needed before the spec is marked done.
+
+## Continuation run (13 Nov 2026)
+
+No task in `tasks.md` is marked `[SUPERVISED]`, so nothing here is a supervised item. The wave-end review was done by hand, against `requesting-code-review/code-reviewer.md`, because the template forbids spawning a review subagent.
+
+### For Brighton to check
+
+1. **Starter packs** (`packs/count-pairs`, `packs/longest-run-length`, `packs/diagonal-total`): statements, hints, ghost explanations and reference solutions are drafts. Confirm the wording and the `author` byline before publishing (T28).
+2. **Known ghosts are hand traces.** The `got` values and crash classes are checked by the model runner only. The judge spec re-runs them in Python (T20).
+3. **Open question 1** (reference and hidden seed are public in git) is still assumed, not confirmed.
+4. **Open question 7** (`PackRunner` lives in grimoire, the judge implements it) must be confirmed before T20.
+
+### Review findings
+
+- **Critical:** none.
+- **Important, fixed in this run:** the generator check could make the engine panic on an invalid schema (MET-06). Fixed on the grimoire side (commit `c3b878c`).
+- **Important, open:** `validate --sandbox` cannot reach SBX-06 until a runner is wired (T20). Recorded in the blockers file.
+- **Important, open, another spec:** the engine's `tiny_ints` panics on min > max. See the blockers file.
+- **Minor, not changed:**
+  - `tests/sandbox_fake.rs` duplicates the `count-pairs` text instead of reading `packs/count-pairs`. A change to the pack needs both edits.
+  - The sandbox stage uses a local `observe` helper, not `ProgramOracle`. The design suggested reuse. Both do the same thing, so this is a style point.
+  - SBX-03 pointers use the index after the known-ghost filter. Only an invalid ghost kind shifts it, and static checks reject that before the sandbox runs.
+  - The mutation suite is Unix only (`#![cfg(unix)]`), because it creates a symlink. The CI on Linux covers it.

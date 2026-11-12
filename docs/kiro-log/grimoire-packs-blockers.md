@@ -35,3 +35,32 @@
 - **`guard-secrets` false positive.** The secrets hook blocks any write that contains `re_` followed by 20 or more identifier characters. It blocked one test file, because a test name contained `failure_` followed by a long suffix. The test was renamed to `infra_fault_is_oracle_error_not_user_result`, and the guard was not changed. This is the same false positive recorded in `ghost-engine-blockers.md`.
 - **Untracked hook and script files** from before this run: `.kiro/hooks/guard-test-integrity.json`, `.kiro/steering/test-integrity.md`, `scripts/kiro-hooks/guard-tests.sh`. They were not created or committed by this run.
 - **Untracked session log** `docs/kiro-log/2026-11-13T0025-21-grimoire-packs-implement-a1.log` was left as it was.
+
+## Continuation run (13 Nov 2026, after the blockers above)
+
+Done in this run: T15, T18, T21 to T27. T19 is partly done (see below).
+
+### Still open
+
+- **T19 (infrastructure exit and bench placeholder): left unticked.** The library gives the SBX-06 diagnostic (`SandboxFault::diagnostic`) and the SBX-08 bench warning. The exit-2 path is not reachable from the CLI, because `--sandbox` has no runner until the judge spec (T20). Unblock: T20.
+- **T20 (judge implements `PackRunner`, wires `--sandbox`): BLOCKED.** Needs the `judge-sandbox` spec, which is not implemented, and open question 7. Unblock: judge spec complete, and Brighton confirms that the judge depends on grimoire.
+- **T28 (review and publish starter packs): BLOCKED on Brighton.** The three packs stay `draft`. Brighton reviews each statement, hint, ghost explanation and reference, then sets `status = "published"`. The author byline `Brighton` is a placeholder (open question 9).
+- **T29 (convert `packs/_test/`): BLOCKED.** Needs the ghost-engine spec complete and open question 11. Those fixtures are untouched (GRM-50).
+- **T30 (CI step): BLOCKED.** Needs the CI spec and its owner.
+
+### Defect found in the engine (not fixed here, another spec's code)
+
+- **`counterspell-engine` panics in `tiny_ints`** (`crates/engine/src/generate.rs`, the `clamp` call) when a schema has min above max. The MET-06 mutation case triggered it. The grimoire side now stops the generator check on an invalid schema (`generator::check`, with a unit test). The ghost-engine owner should return an error instead of panicking. Until then, the MCP tools and the judge must not pass an unchecked schema to the engine.
+
+### Decisions taken in this run (Brighton can change them)
+
+- **Order:** T15 depends on the starter packs, so it ran after T21 to T23, not in list order. Its content is unchanged.
+- **Starter-pack ghosts:** each program was traced by hand, not run. The model vectors in `tests/sandbox_fake.rs` are the only evidence of the traces. T20 must run the same vectors through the real Python files (the header of that file says so).
+- **Model fixtures:** `tests/sandbox_fake.rs` copies the `count-pairs` text, so the sandbox tests do not depend on `packs/`. The starter-pack tests read `packs/` directly. If `packs/count-pairs` changes, update the copy in `sandbox_fake.rs` too.
+- **GEN-02 is not text-reachable.** It guards the engine's own candidate stream. `tests/mutations.rs` exempts it by name and says why.
+
+### Environment issues
+
+- **Stale incremental build (SIGSEGV).** After `cargo fmt` and `cargo clippy`, the grimoire unit-test binary crashed with SIGSEGV before any test ran. `cargo clean -p counterspell-grimoire` fixed it. If this returns, clean the package first.
+- **`guard-secrets` false positive, again.** The hook blocked an edit whose test name contained `re_` followed by 20 or more identifier characters. The test was renamed (`runner_fault_maps_to_sbx_06`). The hook should be fixed.
+- **Shell parser rejected one read-only command** (a `sed` pipeline with `;`). The same reads were done with the file tools. This is harmless, but it may matter to the hook authors.
