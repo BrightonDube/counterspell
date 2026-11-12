@@ -343,3 +343,9 @@ A runner fault is a separate type (`SandboxFault::Runner`), so the code that rea
 A `match` on the enum must name every variant, so adding a new fault kind later forces the diagnostic to be updated.
 A declared `[bench]` produces a warning without calling the runner. The test gives the runner a `bench` that always fails, so an accidental call would surface as an error.
 Exit code 2 for a runner fault is part of the CLI, which has no runner yet. The library gives the diagnostic now, and the exit path is wired when the judge supplies a runner (T20).
+
+# Rust lesson: grimoire-packs T24
+
+`fs::read_dir` returns an iterator of `Result` values, because each directory entry can fail on its own (for example a race with a delete).
+The test handles each entry with `expect` and a message, which is allowed in test code only.
+A filter on the file name (`starts_with('_')`) keeps `_test` out of the starter list, and `is_dir` removes stray files such as the README.

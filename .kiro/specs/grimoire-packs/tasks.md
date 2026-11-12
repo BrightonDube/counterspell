@@ -183,7 +183,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Depends on: T12, T13.
   - Verify: as T21 for this slug.
 
-- [ ] **T24 [S] (30 min) Starter packs test and zero-error gate**
+- [x] **T24 [S] (30 min) Starter packs test and zero-error gate**
   - Files: `crates/grimoire/tests/starter_packs.rs`.
   - Validate every `packs/<slug>` (not `_`) and assert zero errors (GRM-52). Fix any real defect in a starter pack, not the test.
   - Depends on: T21 to T23.
