@@ -44,6 +44,10 @@ hidden_count = 12
 [[samples]]
 input = [[1, 2, 3, 2], 4]
 expected = 2
+
+[[samples]]
+input = [[5, 5], 10]
+expected = 1
 "#
     .to_owned()
 }
