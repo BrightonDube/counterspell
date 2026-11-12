@@ -9,6 +9,78 @@
 //! `schema` and `rng`; `classify` uses `compare`; `shrink` uses `schema` and
 //! `size`; `oracle` and `budget` use only standard-library seams; `hunt` joins
 //! these parts; and `autopsy` uses classification, size, and JSON values.
+//!
+//! # The three parts
+//!
+//! - **Generate:** [`generate`] builds seeded, edge-biased candidate inputs in
+//!   a fixed order.
+//! - **Classify:** [`classify()`] compares the user's result with the reference
+//!   result. User output can only be compared; it never declares a verdict.
+//! - **Shrink:** [`shrink`] reduces a failing input step by step. A step is
+//!   kept only when it still fails the same way and the size metric drops.
+//!
+//! [`hunt()`] joins the three parts and returns a [`HuntReport`] for every
+//! request, including requests that cannot run.
+//!
+//! # The Oracle contract
+//!
+//! The judge implements [`Oracle`] by running programs in the sandbox. The
+//! engine never runs code itself. The trait's documentation lists the rules
+//! an Oracle must follow.
+//!
+//! # What "minimized counterexample" means
+//!
+//! A ghost is a *minimized counterexample*: the smallest failing input the
+//! search found within its budget. The shrinker is bounded, so it cannot prove
+//! that no smaller failing input exists. [`GHOST_LABEL`] is the product label.
+//!
+//! # Public surface
+//!
+//! | Item | Use |
+//! |---|---|
+//! | [`hunt()`], [`HuntRequest`], [`HuntReport`] | run a hunt and read the result |
+//! | [`verify_ghost`] | re-check a stored ghost on a fresh Oracle |
+//! | [`Oracle`], [`Clock`], [`SystemClock`], [`ManualClock`] | the seams the judge and tests plug into |
+//! | [`Budget`] | the limits, validated before a hunt starts |
+//! | [`Comparator`], [`Classification`], [`classify()`] | output comparison |
+//! | [`build_autopsy`], [`KnownGhost`], [`Autopsy`] | the Bug Autopsy data |
+//! | [`generate`], [`shrink`] | candidate generation and shrinking |
+//!
+//! # Example
+//!
+//! ```
+//! use counterspell_engine::{
+//!     hunt, Comparator, HuntIdentity, HuntOutcome, HuntRequest, ManualClock, Observation,
+//!     Oracle, OracleError, ProgramResult, Schema,
+//! };
+//! use serde_json::{json, Value};
+//! use std::time::Duration;
+//!
+//! // A stand-in for the sandboxed judge: the user's program always answers -1
+//! // and the reference always answers 0.
+//! struct AlwaysWrong;
+//!
+//! impl Oracle for AlwaysWrong {
+//!     fn evaluate(&mut self, _input: &Value, _limit: Duration) -> Result<Observation, OracleError> {
+//!         Ok(Observation {
+//!             user: ProgramResult::Returned(json!(-1)),
+//!             reference: ProgramResult::Returned(json!(0)),
+//!         })
+//!     }
+//! }
+//!
+//! let identity = HuntIdentity {
+//!     problem_slug: "example".to_owned(),
+//!     code_sha256: "abc123".to_owned(),
+//!     language: "python".to_owned(),
+//!     problem_version: 1,
+//!     image_digest: "sha256:example".to_owned(),
+//! };
+//! let request = HuntRequest::new(Schema::Int { min: 0, max: 5 }, Comparator::Exact, identity);
+//! let clock = ManualClock::new();
+//! let report = hunt(&request, &mut AlwaysWrong, &clock);
+//! assert!(matches!(report.outcome, HuntOutcome::Found(_)));
+//! ```
 
 #![warn(missing_docs)]
 

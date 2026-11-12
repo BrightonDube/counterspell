@@ -246,3 +246,10 @@ Tests that share a name prefix can be run as a group, so `cargo test --test prop
 `serde_json::to_value` turns a Rust enum into JSON, and `assert_eq!` against a string literal checks the exact field contract that the database columns rely on.
 `build_autopsy` is the public entry point, so the template wording is tested through the same path the judge will use.
 A mutation check added a forbidden word to one template, saw the wording test fail, and then restored the file.
+
+# Rust lesson: ghost-engine T25
+
+Doc comments can link to items with square brackets, such as `[`hunt()`]`, and `cargo doc` checks that each link resolves.
+A doctest is a code example in a doc comment that `cargo test --doc` compiles and runs, so the example in the crate docs cannot go stale.
+`RUSTDOCFLAGS="-D warnings" cargo doc` turns a broken link into a build failure.
+Documentation that shows a fake judge (a struct that implements `Oracle`) explains the seam without needing a sandbox.

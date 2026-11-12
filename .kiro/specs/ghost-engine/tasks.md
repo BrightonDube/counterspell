@@ -250,7 +250,7 @@ Conventions for every Rust task:
   - Preserve: wording constants live in one place.
   - Rust lesson: `serde` derive, `rename`, and testing a JSON contract.
 
-- [ ] **T25 [P] (25 min) Documentation**
+- [x] **T25 [P] (25 min) Documentation**
   - Files: `crates/engine/src/lib.rs` (crate docs with a runnable-in-tests usage example that uses a fake Oracle), `packs/_test/README.md`.
   - Crate docs: the three parts, the Oracle contract, what "minimized counterexample" means, and the public surface table. README: purpose, `_` prefix rule, layout, the model-oracle limits and the conformance hand-off from R16.8 and the design, and the dogfood candidate.
   - Requirements: R16.8, R18.
