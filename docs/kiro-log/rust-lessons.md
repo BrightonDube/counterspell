@@ -281,3 +281,10 @@ A struct field's type is a contract: `pack_version: i64` tells the reader and th
 `#[serde(deny_unknown_fields)]` turns a misspelt key into an error, so a typo such as `licnce` cannot pass review silently.
 `toml::from_str::<toml::Table>` checks syntax alone, which lets the code tell a syntax error (MET-01) from a wrong field value (MET-02).
 `Option<T>` with `#[serde(default)]` marks a field that may be absent, and the type makes the caller handle the missing case.
+
+# Rust lesson: grimoire-packs T05
+
+`match` on an enum forces every case to be written out, so adding a launch type later makes the compiler point at each mapping that needs updating.
+`matches!((self, schema), (Self::Int, Schema::Int { .. }) | ...)` checks a pair of values in one readable expression, with no extra helper.
+`let ... else` returns early when a value is missing, which keeps the main path of a check flat.
+`windows(2)` gives each neighbouring pair of a slice, which is the simple way to check that sizes strictly increase.

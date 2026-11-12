@@ -7,6 +7,8 @@
 pub const GRIMOIRE_VERSION: &str = "0.1.0";
 
 pub mod codes;
+#[cfg(test)]
+mod fixtures;
 pub mod generator;
 pub mod ghosts;
 pub mod hints;

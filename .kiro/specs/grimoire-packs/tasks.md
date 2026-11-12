@@ -43,7 +43,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Preserve: `input_schema` is held as `counterspell_engine::Schema` (serde tag names come from the engine).
   - Rust lesson: explain why a struct field's type is a contract, and what `deny_unknown_fields` protects against.
 
-- [ ] **T05 [S] (30 min) Signature, schema mapping and limits**
+- [x] **T05 [S] (30 min) Signature, schema mapping and limits**
   - Files: `crates/grimoire/src/signature.rs`, `crates/grimoire/src/limits.rs`.
   - Implement MET-04 (launch types), MET-05 (tuple arity and kind mapping), MET-06 (call `Schema::check_definition`), MET-07 (comparator rules), MET-08 (launch caps 100–2000 ms, 64–256 MB), and MET-09 (`reference_complexity` set and `[bench]` pairing, GRM-16 and GRM-17). Export the return-shape table.
   - Depends on: T04.
