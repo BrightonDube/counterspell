@@ -40,3 +40,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 10:37-10:53 SAST: 04-ghost-engine-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/04-ghost-engine-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1037-04-ghost-engine-spec.log`. Exit 0.
 - Credits used (from /usage): 29.62 (hackathon credits used now 2321.83/4000).
+
+### 2026-11-12 10:54-11:00 SAST: 05-grimoire-packs-spec (Kiro CLI, claude-haiku-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/05-grimoire-packs-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1054-05-grimoire-packs-spec.log`. Exit 0.
+- Credits used (from /usage): 4.35 (hackathon credits used now 2326.18/4000).
