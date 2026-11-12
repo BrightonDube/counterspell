@@ -39,6 +39,7 @@ mod size;
 
 pub use rng::derive_seed;
 pub use schema::{Schema, SchemaError, Violation};
+pub use size::{compare_size, size_of, SizeMetric};
 #[cfg(test)]
 mod tests {
     #[test]

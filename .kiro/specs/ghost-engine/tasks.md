@@ -51,7 +51,7 @@ Conventions for every Rust task:
   - Preserve: `contains` shares no code with `generate.rs`.
   - Rust lesson: borrowing `&Value`, `match` on `serde_json::Value`, early return with `?`.
 
-- [ ] **T05 [P] (25 min) Size metric and property P3**
+- [x] **T05 [P] (25 min) Size metric and property P3**
   - Files: `crates/engine/src/size.rs`.
   - Implement `SizeMetric`, `size_of`, `compare_size` as in the design (`nodes`, `magnitude` as `u128` serialised as a decimal string, canonical text tie-break). Floats and big numbers get magnitude 0 so the function is total.
   - Tests: the examples in the design (`0` → 1, `[0]` → 2, `([0],0)` → 4, the six table sizes); proptest P3 (irreflexive, exactly-one-of, transitive).

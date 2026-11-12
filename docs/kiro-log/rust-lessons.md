@@ -125,3 +125,10 @@ A borrowed `&Value` lets validation inspect untrusted JSON without taking owners
 `match` keeps each schema kind's shape checks separate, while `Result` returns the first useful violation.
 A JSON Pointer path records where a nested value failed, so callers do not need to guess.
 A HashSet makes uniqueness checking linear instead of repeatedly scanning the entire prefix.
+
+# Rust lesson: ghost-engine T05
+
+`Ordering` gives the shrinker one shared comparison rule instead of scattered size decisions.
+`u128` safely holds large magnitude sums, while Serde stores it as text because JSON numbers are narrower.
+Borrowing `&Value` keeps size calculations read-only and avoids moving input data.
+A canonical JSON tie-break makes distinct values comparable even when their numeric metrics match.
