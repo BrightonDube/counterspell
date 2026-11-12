@@ -52,3 +52,16 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 11:12-11:32 SAST: 07-run-lifecycle-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/07-run-lifecycle-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1112-07-run-lifecycle-spec.log`. Exit 0.
 - Credits used (from /usage): 32.59 (hackathon credits used now 2373.14/4000).
+
+### 2026-11-12 (time not recorded): Codebase Q&A in the IDE (read-only)
+- Surface: Kiro IDE chat, vibe session, autopilot. Model: Auto (selected dynamically by the server, so the exact model is unknown).
+- Feature used: manual steering (`.kiro/steering/kiro-usage-log.md`, invoked with `/kiro-usage-log`) to write this entry. No spec, hook, agent or MCP tool was run.
+- Prompts (paraphrased): what `Cargo.toml` and `deny.toml` do; what `crates/` and `grimoire` are; explain the project structure and whether skills are accessed.
+- Kiro produced: explanations only, no code or file changes before this entry. It read `Cargo.toml`, `deny.toml`, `AGENTS.md`, `crates/grimoire/src/lib.rs` and listed the top-level, `.kiro/`, `migrations/`, `web/`, `scripts/` and `packs/` directories.
+- Findings: `grimoire` is a placeholder crate (one `GRIMOIRE_VERSION` constant, pack parsing deferred). No skills are installed (no `SKILL.md` files, skill loader reports none). Powers installed but unused: `aws-security-agent`, `context7`, `exa`. `.kiro/agents/` is empty.
+- What did not work: the IDE's shell session opened in a different project (`~/Projects/BizPilot2`), so one `ls -R .kiro` returned that project's files. The output was discarded and the directory tool results were used instead. Shell commands for this repo need an explicit working directory.
+- Credits: not shown in the IDE chat; check the IDE usage panel.
+
+### 2026-11-12 11:32-11:49 SAST: 08-auth-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/08-auth-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1132-08-auth-spec.log`. Exit 0.
+- Credits used (from /usage): 27.56 (hackathon credits used now 2400.70/4000).

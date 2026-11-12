@@ -1,0 +1,171 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=8
+I'll start by reading the existing spec, the steering files, and the referenced docs.
+[tool] Load steering: API conventions
+[tool] List Directory
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] Fetch URL
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] Run Command
+[tool] Fetch URL
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] web_search
+[tool] status: InProgress
+[tool] web_search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+Research done. Now writing the spec, starting with `requirements.md`.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+Now `design.md`.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+Cross-checking the design against what I plan for the tasks, I need to fix a few details: the demo reset timestamp storage, the `INSERT` path of the demo guard, and task references.
+[tool] Replace in File
+[tool] status: Pending
+[tool] Replace in File
+[tool] status: Completed
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+Now `tasks.md`.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`docs/KIRO_USAGE.md` shows as modified, and I didn't touch it. I'll check what changed.
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `auth` spec is written in `.kiro/specs/auth/` as `requirements.md` (21 requirements), `design.md` and `tasks.md` (37 tasks). I implemented nothing and nothing was run. This was a read-and-write pass, so none of the SQL or Rust sketches has been compiled.
+
+**Analyze Requirements was not run as Kiro's feature.** It is interactive, so I did the same pass by hand. The findings are in a table at the end of `requirements.md`, 16 of them. Please re-run the real feature in the IDE before you approve the design.
+
+`docs/KIRO_USAGE.md` shows as modified. A separate IDE-chat session appended that entry (a read-only Q&A log), not this run. I wrote nothing outside `.kiro/specs/auth/`, and no task touches `.env`; secrets come from environment variables only.
+
+## What the spec decides
+- **No linking by email match.** A pure function `decide_oauth_login(identity_owner, ProfileEmail)` can only return `SignIn` for the owner of the identity. An email collision refuses with `account_exists`: no session, no new rows, no change to existing rows.
+- **Linking** happens only through a signed-in user's flow. For a provider, the `state` is bound to their session and user. For an email, the link must be opened while signed in as the same account, and a mismatch doesn't burn the token.
+- **Tokens:** 256-bit, stored hashed, consumed by one atomic `UPDATE`. They live exactly 15 minutes, which the database also enforces.
+- **Sessions:** opaque cookie, only the hash stored, `HttpOnly`, `Secure`, `SameSite=Lax`, 30 days rolling with a 90-day cap. `logout-all` takes effect on the next request.
+- **Demo account:** password sign-in only, restricted by a capabilities struct and by database triggers. A `SECURITY DEFINER` function resets only the demo user's data daily.
+- **22 properties (P1–P22)** map back to the EARS criteria, including the four you named.
+
+## Where I departed from `docs/system-design.md`
+These need your call, and the system design needs the same edits. All are in "Open questions", 16 in total, each with the choice I assumed.
+1. **Verify is `POST`, not `GET`.** Mail scanners pre-fetch links and would burn a single-use token.
+2. **One OAuth callback per provider.** GitHub OAuth apps accept only one callback URL.
+3. **Own `SessionService`, not `tower-sessions`.** Logout-everywhere needs an index on `user_id`, and session keys should be hashed.
+4. **`logout-all`, `auth/config` and `password/reset/confirm` are new endpoints.**
+5. **A 90-day absolute session limit,** added on top of the 30-day rolling one.
+6. **A `SECURITY DEFINER` function for the daily reset,** because `run-lifecycle` gives the server role no `DELETE` on `submissions`.
+
+## Risks to know before you build
+- Resend's free plan allows 100 emails a day. A per-email, per-IP and global daily cap (80) protects it, and email endpoints fail closed if Valkey is down.
+- All judges share the demo user's run limits from `run-lifecycle`. I left that unchanged and noted it.
+- Caddy logs the OAuth callback query string by default, which includes `code` and `state`. Task T33 proposes a log filter, but it edits the skeleton's `Caddyfile`, so it needs your approval when it runs.
+- Register and reset (T25) and account deletion (T36) are marked Should and Could. They are the first to cut if time runs short.
