@@ -81,3 +81,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 12:00-12:03 SAST: 12-dashboard-fsrs-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/12-dashboard-fsrs-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1200-12-dashboard-fsrs-spec.log`. Exit 0.
 - Credits used (from /usage): 4.42 (hackathon credits used now 2428.63/4000).
+
+### 2026-11-12 12:04-12:08 SAST: 13-counterspell-mcp-power-spec (Kiro CLI, gpt-5.6-luna, mode spec)
+- Prompt: `docs/kiro-prompts/13-counterspell-mcp-power-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1204-13-counterspell-mcp-power-spec.log`. Exit 0.
+- Credits used (from /usage): 7.33 (hackathon credits used now 2435.96/4000).
