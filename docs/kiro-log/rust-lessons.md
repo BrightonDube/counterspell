@@ -225,3 +225,10 @@ The `let ... else` form (`let Some(x) = ... else { return ... };`) keeps the hap
 `prop_oneof!` with weights picks between strategies, and `prop_filter` drops values that fail a check, such as an invalid schema.
 `prop_assert!` and `prop_assert_eq!` return an error instead of panicking, which lets proptest shrink the failing case.
 A property can pass for the wrong reason, so a separate non-vacuity test checks that the hunt really finds a ghost for at least one oracle.
+
+# Rust lesson: ghost-engine T22
+
+`let ... else` checks a shape and exits early, so a test can name the wrong shape in its panic message.
+Struct-update syntax (`HuntRequest { samples, ..HuntRequest::new(...) }`) sets fields when the value is built, which avoids the `clone_from` lint that clippy raises on `x.field = y.clone()`.
+`assert_eq!` on `Option`s and enums compares whole values, so a test that checks the expected value, the got value and the kind all at once fails with a readable diff.
+A mutation check (change one model, run the suite, restore the model) proves that the definition-of-done tests can fail.

@@ -52,8 +52,12 @@ pub struct Incorrect {
     pub kind: FailureKind,
     /// The exception class, for a crash.
     pub exception_class: Option<String>,
-    /// The hand-derived smallest failing input, as a regression expectation.
+    /// The smallest failing input, as a regression expectation for the shrinker.
     pub smallest_input: Value,
+    /// The node count of `smallest_input` under the engine's size metric.
+    pub smallest_nodes: u64,
+    /// The magnitude of `smallest_input` under the engine's size metric.
+    pub smallest_magnitude: u128,
     /// Whether the program is the dogfooding demo candidate.
     pub dogfood: bool,
     /// Hand-traced vectors for the program.
@@ -143,6 +147,14 @@ pub fn load_pack(slug: &str) -> Pack {
             kind: serde_json::from_value(entry["kind"].clone()).expect("incorrect kind"),
             exception_class: entry["exception_class"].as_str().map(str::to_owned),
             smallest_input: entry["smallest_input"].clone(),
+            smallest_nodes: entry["smallest_size"]["nodes"]
+                .as_u64()
+                .expect("smallest_size.nodes"),
+            smallest_magnitude: entry["smallest_size"]["magnitude"]
+                .as_str()
+                .expect("smallest_size.magnitude is a string")
+                .parse()
+                .expect("smallest_size.magnitude is a decimal number"),
             dogfood: entry["dogfood"].as_bool().unwrap_or(false),
             vectors: parse_vectors(&entry["vectors"]),
         })

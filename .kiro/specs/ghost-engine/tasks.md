@@ -223,7 +223,7 @@ Conventions for every Rust task:
   - Preserve: no real clock in properties; the manual clock keeps them deterministic.
   - Rust lesson: how `proptest` explores inputs and shrinks failing cases (and the pun with our own shrinker).
 
-- [ ] **T22 [S] (30 min) Definition-of-done tests for the packs**
+- [x] **T22 [S] (30 min) Definition-of-done tests for the packs**
   - Files: `crates/engine/tests/packs.rs`.
   - Static checks (files exist, incorrect files listed, same function name as reference by text scan). For all six incorrect programs: hunt, assert `Found`, kind and class, completeness of provenance, `contains`, fresh-oracle `verify_ghost`, independent re-check (model functions and `==`, not `classify`), the exact expected smallest input from the design's table, repeat-run equality, trace invariants. For each reference hunted against itself: assert `NotFound` with the expected reason text. If a result differs from the hand-derived table, stop and report; do not loosen the assertion.
   - Requirements: R14.9, R16.1–R16.6.
