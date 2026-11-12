@@ -16,3 +16,14 @@ A binary crate starts at `main`, while a library crate exposes reusable Rust API
 Grimoire keeps its library and `validate` command in one package, which avoids a second crate boundary.
 An empty `main` is still a deliberate process boundary; it does not imply that untrusted code is safe to run.
 Later async and trait work belongs in the judge and MCP specs, not in these placeholders.
+# Rust lesson: repo-skeleton T06
+
+No Rust code changed in T06; the frontend is intentionally independent of the server crate.
+The server will consume the generated `web/build` directory later rather than starting npm at runtime.
+Keeping the build artifact separate lets the Rust process remain the only production web server.
+# Rust lesson: repo-skeleton T08
+
+`Result` lets startup report configuration, bind, and server errors instead of hiding them.
+The `?` operator returns an error early while preserving the normal success path.
+`Router` owns route composition, and `Json<Value>` serializes the health response without hand-building JSON.
+Tokio supplies the async runtime and listener, while Axum handles HTTP routing on top of it.

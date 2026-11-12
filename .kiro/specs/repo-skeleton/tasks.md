@@ -57,7 +57,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 2: server and migration
 
-- [ ] **T08 [S] (30 min) Scaffold the Axum server package**
+- [x] **T08 [S] (30 min) Scaffold the Axum server package**
   - Files: `crates/server/Cargo.toml`, `crates/server/src/main.rs`, and a small module if needed.
   - Add Tokio/Axum startup, environment configuration with local defaults, and `GET /api/health` JSON response. Avoid `unwrap()`/`expect()` in production code.
   - Depends on: T03.
