@@ -93,3 +93,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 12:36-12:40 SAST: 15-landing-steel-night-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/15-landing-steel-night-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1236-15-landing-steel-night-spec.log`. Exit 0.
 - Credits used (from /usage): 2.79 (hackathon credits used now 2485.05/4000).
+
+### 2026-11-12 12:40-12:44 SAST: 16-break-room-spec (Kiro CLI, claude-haiku-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/16-break-room-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1240-16-break-room-spec.log`. Exit 0.
+- Credits used (from /usage): 2.70 (hackathon credits used now 2487.75/4000).
