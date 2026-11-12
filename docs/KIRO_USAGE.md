@@ -48,3 +48,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 11:00-11:12 SAST: 06-judge-sandbox-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/06-judge-sandbox-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1100-06-judge-sandbox-spec.log`. Exit 1.
 - Credits used (from /usage): 14.37 (hackathon credits used now 2340.55/4000).
+
+### 2026-11-12 11:12-11:32 SAST: 07-run-lifecycle-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/07-run-lifecycle-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1112-07-run-lifecycle-spec.log`. Exit 0.
+- Credits used (from /usage): 32.59 (hackathon credits used now 2373.14/4000).

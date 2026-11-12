@@ -1,0 +1,126 @@
+I'll start by reading the existing spec layout, the steering files, and the referenced docs.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=54
+
+[tool] List Directory
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=37
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=99
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=85
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=99
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=82
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2589
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1135
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7302
+[tool] status: Pending
+[tool] status: Completed
+Now the design document, which carries the state machine, SQL contracts, properties and test plan.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=11832
+
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+Two requirements need aligning with the design: the maximum claim age, and the rule that status changes only alongside their event.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=404
+[tool] status: Pending
+[tool] status: Completed
+Now the task list.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7435
+[tool] status: Pending
+[tool] status: Completed
+Cleaning up cross-references between the three files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=180
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=50
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=348
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=328
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+One more contract detail belongs in the design: an executor must emit `compiling` before it can complete a run, because `claimed → completed` isn't an allowed transition.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=437
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+The `run-lifecycle` spec is written to `.kiro/specs/run-lifecycle/`: `requirements.md` (22 requirements in EARS form), `design.md` and `tasks.md` (39 tasks). I changed no other file, and nothing was built or run, so none of the SQL or Rust in the spec has been executed.
+
+**What the spec contains**
+- **State machine:** the nine states with a single transition table, a mapping from `jobs.state` to `submissions.status`, and a Rust table (`counterspell-common`) mirrored by a database trigger. A test compares all 81 state pairs so the two can't drift.
+- **Single writer for events:** only the judge writes `run_events` and results. The server only inserts submissions and jobs, sets a cancel flag, and reads. Two non-login database roles enforce this, so a compromised web server can't forge a verdict.
+- **Event numbering:** `seq` comes from a counter on the submission row. The row lock makes `seq` order equal commit order, so a reconnecting client can't skip an event.
+- **Fenced writes:** every judge write is checked against (job, lease owner, `attempts`). The terminal write is one transaction with three independent barriers: the fence, a trigger that freezes a finished run, and a unique index allowing one `done` or `error` event.
+- **SSE:** ownership is checked before any event query, and every event query also joins on the owner. It subscribes to wake-ups before the first replay query. `NOTIFY` carries only the run id, and a 250 ms poll keeps it correct if notifications are lost.
+- **Properties and tests:** 18 correctness properties, including a proptest model that interleaves workers, stale leases, the reaper and cancels against a real Postgres. The 31 integration scenarios cover concurrent workers, duplicate claims, dropped SSE connections at every position, restart recovery, cancellation and replay.
+- **Definition of done:** a test posts 20 runs from 20 users at once, with 3 workers, 5 clients that drop and resume, and 5 other users plus an anonymous client probing every run. It writes enqueue, completion, queue-wait, execution and delivery latencies to `target/run-lifecycle/dod-report.json`, and a final task copies them into the kiro-log.
+
+**Things you should know**
+- **Production endpoints reject everything until auth and the catalogue exist.** `users` and `problems` tables don't exist yet, so the spec uses `UserResolver` and `ProblemLookup` traits and plain columns without foreign keys. Behaviour is proven by tests, not by clicking.
+- **`judge-sandbox` spec is missing.** Its run was throttled (`ModelThrottleError`) and left no files, so I defined the `RunExecutor` seam in this spec. The two need reconciling when that spec is written.
+- **Deviations from `docs/system-design.md`:** `status` holds lifecycle and `verdict` is its own column, unlike §4. I added `POST /api/runs/{id}/cancel`, which isn't in §9. I added a maximum claim age (120 s) so a stuck executor with a live heartbeat can't hold a run forever. I also added a few columns: `last_event_seq`, `started_at`, `claimed_at`, `cancel_requested_at` and `public_detail`.
+- **Compose change:** the judge service currently has `restart: "no"`, which defeats restart recovery. Task T19 changes it to `unless-stopped`.
+- **Validation:** I included server-side tree-sitter parsing (VAL-2) because `POST /api/runs` is the only place it can be enforced. If you'd rather it live in `language-drivers`, drop the parse part of T22.
+
+`design.md` ends with 20 open questions, each with the choice I assumed.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=246
+
