@@ -7,7 +7,7 @@ use crate::signature::LaunchType;
 use serde::Deserialize;
 
 /// The per-test limits declared in `[limits]`. Range checks come with the launch caps.
-#[derive(Clone, Copy, Debug, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Limits {
     /// The per-test time limit in milliseconds.

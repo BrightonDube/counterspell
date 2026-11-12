@@ -308,3 +308,10 @@ The report records every stage it ran or skipped, so a caller can tell a clean p
 `<[T; 1]>::try_from(vec)` checks that exactly one positional argument was given, without indexing a vector that might be empty.
 A `#[allow(clippy::...)]` with a `reason` is the honest way to silence one lint, because the reason stays visible to the reviewer.
 `Result` and `?` keep I/O failures out of the validation report, so exit 2 means the tool could not run, not that a pack is bad.
+
+# Rust lesson: grimoire-packs T14
+
+A function that returns `Result<ProblemRecord, RecordError>` makes "only valid packs" part of the type, so the importer cannot forget the check.
+`ok_or_else` turns an `Option` into a `Result` and only builds the error value when it is needed.
+`#[derive(PartialEq)]` on a record only works when every field type also implements it, so the derive on `ProblemRecord` pulled `Eq` onto the models it contains.
+`Result` distinguishes an unreadable directory from an invalid pack, which keeps infrastructure failures out of the pack-error path.

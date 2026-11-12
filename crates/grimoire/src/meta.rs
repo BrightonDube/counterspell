@@ -63,7 +63,7 @@ pub struct Meta {
 }
 
 /// One declared parameter.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Param {
     /// The parameter name, unique within the function.
@@ -94,7 +94,7 @@ pub struct Sample {
 }
 
 /// The benchmark table, present only when a complexity is declared.
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Bench {
     /// The parameter whose size grows.

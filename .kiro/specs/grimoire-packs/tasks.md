@@ -111,7 +111,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo run -q -p counterspell-grimoire -- validate packs/_test/pair-count` exits 0 or 1 with diagnostics, never panics; `--all packs` skips `_test`; `--sandbox` exits 2.
   - Rust lesson: explain `std::process::ExitCode` and why `main` returns it instead of calling `exit` inside helper code.
 
-- [ ] **T14 [S] (25 min) ProblemRecord handoff**
+- [x] **T14 [S] (25 min) ProblemRecord handoff**
   - Files: `crates/grimoire/src/record.rs`.
   - Build `ProblemRecord` only from a pack with zero errors (GRM-54). No database types.
   - Depends on: T12.
