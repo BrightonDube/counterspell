@@ -10,7 +10,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 
 ## Wave 0: foundations
 
-- [ ] **T01 [S] (25 min) Write the pack format reference for reviewers**
+- [x] **T01 [S] (25 min) Write the pack format reference for reviewers**
   - Files: `packs/README.md`.
   - Document the layout, the four required files, the optional ghost files, the allowed set, the `_` prefix rule, and the rule that hidden data is never committed by the authoring process. Quote the field tables from `design.md`. Mark the format "provisional until grimoire-packs is reviewed".
   - Depends on: none.

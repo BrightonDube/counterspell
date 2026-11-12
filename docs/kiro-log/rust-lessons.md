@@ -260,3 +260,10 @@ Documentation that shows a fake judge (a struct that implements `Oracle`) explai
 Clippy's `-D warnings` turns lints into errors, so a style issue such as a missing backtick fails the build instead of waiting in a log.
 A lint can also flag test code, so the same gate runs with `--all-targets` to include tests and examples.
 Running the gate on the final code, after the last edit, is the only evidence that counts.
+
+# Rust lesson: grimoire-packs T02
+
+An `enum` such as `Severity` lists every allowed choice, so a typo like `Severiy::Eror` is a compile error, not a runtime surprise.
+Each diagnostic code is a `const` built by a `const fn`, so a misspelt code fails to compile and the table exists before the program runs.
+`#[derive(Serialize)]` with `rename_all = "lowercase"` turns the enum into the JSON words `error` and `warning` without hand-written code.
+Tests import the code table with an explicit `use crate::codes;`, so production code does not carry an import that only tests use.
