@@ -418,3 +418,99 @@ impl Oracle for ModelOracle<'_> {
         })
     }
 }
+
+/// A bug family for the synthetic oracle. The reference counts JSON nodes, and
+/// each family decides when the user's program is wrong or crashes.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Bug {
+    /// The user is always wrong.
+    Always,
+    /// The user is never wrong.
+    Never,
+    /// The user is wrong when the input has at least this many JSON nodes.
+    WrongWhenLarge(usize),
+    /// The user raises `ValueError` when the input has at least this many JSON nodes.
+    CrashWhenLarge(usize),
+    /// The user is wrong when the input contains this integer anywhere.
+    WrongWhenContains(i64),
+    /// The reference itself raises on every input.
+    ReferenceCrashes,
+}
+
+/// Counts the JSON nodes in a value. Scalars and containers each count as one.
+pub fn node_count(value: &Value) -> usize {
+    match value {
+        Value::Array(items) => 1 + items.iter().map(node_count).sum::<usize>(),
+        Value::Object(entries) => 1 + entries.values().map(node_count).sum::<usize>(),
+        _ => 1,
+    }
+}
+
+/// Reports whether the integer `wanted` appears anywhere in a JSON value.
+fn contains_integer(value: &Value, wanted: i64) -> bool {
+    match value {
+        Value::Number(number) => number.as_i64() == Some(wanted),
+        Value::Array(items) => items.iter().any(|item| contains_integer(item, wanted)),
+        Value::Object(entries) => entries.values().any(|item| contains_integer(item, wanted)),
+        _ => false,
+    }
+}
+
+/// An Oracle whose reference returns the node count and whose user program
+/// follows a [`Bug`]. Each call charges a fixed cost on a manual clock, and a
+/// cost above the caller's limit makes the user's result `TimedOut`.
+pub struct SyntheticOracle<'a> {
+    bug: Bug,
+    clock: &'a ManualClock,
+    cost: Duration,
+    calls: u32,
+}
+
+impl<'a> SyntheticOracle<'a> {
+    /// Creates an Oracle that follows `bug` and charges `cost` on `clock` per call.
+    pub fn new(bug: Bug, clock: &'a ManualClock, cost: Duration) -> Self {
+        Self {
+            bug,
+            clock,
+            cost,
+            calls: 0,
+        }
+    }
+
+    /// The number of evaluations this Oracle has served.
+    pub fn calls(&self) -> u32 {
+        self.calls
+    }
+}
+
+impl Oracle for SyntheticOracle<'_> {
+    fn evaluate(&mut self, input: &Value, limit: Duration) -> Result<Observation, OracleError> {
+        self.calls += 1;
+        let nodes = node_count(input);
+        let expected = i64::try_from(nodes).unwrap_or(i64::MAX);
+        let reference = match self.bug {
+            Bug::ReferenceCrashes => crashed("IndexError", "the reference raised"),
+            _ => returned(expected),
+        };
+        if self.cost > limit {
+            return Ok(Observation {
+                user: ProgramResult::TimedOut,
+                reference,
+            });
+        }
+        self.clock.advance(self.cost);
+        let user = match self.bug {
+            Bug::Always => returned(expected + 1),
+            Bug::WrongWhenLarge(threshold) if nodes >= threshold => returned(expected + 1),
+            Bug::CrashWhenLarge(threshold) if nodes >= threshold => {
+                crashed("ValueError", "synthetic crash")
+            }
+            Bug::WrongWhenContains(wanted) if contains_integer(input, wanted) => {
+                returned(expected + 1)
+            }
+            Bug::ReferenceCrashes => returned(0),
+            _ => returned(expected),
+        };
+        Ok(Observation { user, reference })
+    }
+}

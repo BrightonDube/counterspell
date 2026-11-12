@@ -214,7 +214,7 @@ Conventions for every Rust task:
   - Preserve: support code executes only Rust; Python files are read as text if at all.
   - Rust lesson: integration-test layout, `mod support;`, and function pointers (`fn(&Value) -> …`).
 
-- [ ] **T21 [P] (30 min) Hunt-level properties**
+- [x] **T21 [P] (30 min) Hunt-level properties**
   - Files: `crates/engine/tests/properties.rs`.
   - Implement P1 (stream-level), P6, P8, P9, P10 with synthetic oracles (always fail, never fail, fail only on large inputs, charge clock time, reference fails). Use `with_cases(64)`. Commit generated regression files.
   - Requirements: R15.1, R15.5, R15.7–R15.9, R8.7.

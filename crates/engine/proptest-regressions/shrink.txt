@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc ab71a35437a657fc968474579d26df2046da7082f1639f8dfa0faa3a09bfc3f8 # shrinks to pair = (Int { min: 0, max: 0 }, Number(0))
