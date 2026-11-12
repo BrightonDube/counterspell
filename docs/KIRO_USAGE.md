@@ -65,3 +65,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 11:32-11:49 SAST: 08-auth-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/08-auth-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1132-08-auth-spec.log`. Exit 0.
 - Credits used (from /usage): 27.56 (hackathon credits used now 2400.70/4000).
+
+### 2026-11-12 11:49-11:53 SAST: 09-ide-workspace-spec (Kiro CLI, gpt-5.6-luna, mode spec)
+- Prompt: `docs/kiro-prompts/09-ide-workspace-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1149-09-ide-workspace-spec.log`. Exit 0.
+- Credits used (from /usage): 9.02 (hackathon credits used now 2416.65/4000).
