@@ -41,7 +41,7 @@ Conventions for every Rust task:
   - Preserve: no graph, tree, float or custom-checker kinds.
   - Rust lesson: `enum` with data, `serde` attributes, implementing `Display` by hand.
 
-- [ ] **T04 [S] (30 min) The validator `contains` and property P2**
+- [x] **T04 [S] (30 min) The validator `contains` and property P2**
   - Files: `crates/engine/src/schema.rs` (validator section), `Violation`.
   - Implement `Schema::contains(&self, &Value) -> Result<(), Violation>` as an independent walk (JSON pointer path, short reason). Use `as_i64`; reject floats and numbers above `i64::MAX`.
   - Tests: example tests per rule; proptest P2 (`arb_valid_value` then one controlled break); proptest P13 for `contains` on arbitrary JSON (no panic). Put `arb_schema`/`arb_value` in a `#[cfg(test)] mod strategies` inside the crate for now (T20 re-uses the idea in `tests/support`).

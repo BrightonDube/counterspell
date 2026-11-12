@@ -38,12 +38,19 @@ mod schema;
 mod size;
 
 pub use rng::derive_seed;
-pub use schema::{Schema, SchemaError};
+pub use schema::{Schema, SchemaError, Violation};
 #[cfg(test)]
 mod tests {
     #[test]
     fn foundation_exposes_stable_versions() {
         assert_eq!(super::GENERATOR_VERSION, "gen-1");
         assert_eq!(super::GHOST_LABEL, "minimized counterexample");
+    }
+
+    #[test]
+    fn foundation_reexports_schema_violation() {
+        let violation = super::Violation::new("/0", "bad value");
+        assert_eq!(violation.path, "/0");
+        assert_eq!(violation.reason, "bad value");
     }
 }

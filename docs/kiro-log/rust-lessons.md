@@ -118,3 +118,10 @@ Length-prefixed hashing prevents different field boundaries from producing the s
 Rust enums let one schema type represent several validated shapes while keeping each variant's fields explicit.
 Serde attributes such as `tag`, `rename_all`, `default`, and `deny_unknown_fields` control the JSON format without custom parsing code.
 A hand-written `Display` implementation turns a private error message into clear text for callers.
+
+# Rust lesson: ghost-engine T04
+
+A borrowed `&Value` lets validation inspect untrusted JSON without taking ownership of it.
+`match` keeps each schema kind's shape checks separate, while `Result` returns the first useful violation.
+A JSON Pointer path records where a nested value failed, so callers do not need to guess.
+A HashSet makes uniqueness checking linear instead of repeatedly scanning the entire prefix.
