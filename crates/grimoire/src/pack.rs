@@ -252,3 +252,16 @@ fn check_text(bytes: &[u8]) -> Result<String, &'static str> {
     }
     Ok(text.to_owned())
 }
+
+#[cfg(test)]
+impl Pack {
+    /// Builds a pack from `(name, text)` pairs. Used only by unit tests.
+    pub(crate) fn with_text(files: &[(&str, &str)]) -> Self {
+        Self {
+            files: files
+                .iter()
+                .map(|(name, text)| ((*name).to_owned(), (*text).to_owned()))
+                .collect(),
+        }
+    }
+}

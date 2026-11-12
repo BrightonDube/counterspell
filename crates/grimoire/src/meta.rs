@@ -248,7 +248,7 @@ fn is_slug(text: &str) -> bool {
 }
 
 /// Whether `text` is kebab-case: lower-case words of letters or digits joined by hyphens.
-fn is_kebab(text: &str) -> bool {
+pub(crate) fn is_kebab(text: &str) -> bool {
     text.starts_with(|character: char| character.is_ascii_lowercase())
         && text.split('-').all(|part| {
             !part.is_empty()
