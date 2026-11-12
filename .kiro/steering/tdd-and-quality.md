@@ -23,3 +23,6 @@ Rules that apply on every task:
 6. Runs are non-interactive. Where a skill or spec says "ask your human partner" or "ask Brighton", write the question and your assumed choice to `docs/kiro-log/<spec>-blockers.md` and continue with work that does not depend on the answer.
 7. No browser or localhost end-to-end tests and no deploy environments for now (Brighton, 12 Nov 2026). Unit and integration tests only. Tasks that are only browser E2E (Playwright, screenshots, manual browser checks) stay unchecked and are listed as "deferred: E2E" in the blockers file.
 8. Never read or write `.env` or any key or credential file. No `--privileged`. Never mount the main Docker socket into a container. Never run untrusted or hostile code on the host. Never push and never change branches.
+
+## Global skills (~/.kiro/skills, linked from ~/.agents/skills)
+Also use Brighton's global skills wherever relevant: tdd / pocock-tdd for every task, codebase-design and domain-modeling before new modules, diagnosing-bugs on any failure, code-review at each wave end, improve-codebase-architecture when refactoring, reliable-software-delivery for commits and checks, writing-for-agents for docs. If a global skill and a workspace skill overlap, follow both; the stricter rule wins. Never wait for interactive answers; log questions instead.
