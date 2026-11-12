@@ -105,3 +105,15 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 16:53-18:21 SAST: 20-ghost-engine-implement (Kiro CLI, gpt-5.6-luna, mode default)
 - Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1653-20-ghost-engine-implement.log`. Exit 143.
 - Credits used (from /usage): 124.07 (hackathon credits used now 2645.14/4000).
+
+### 2026-11-12 23:26-23:29 SAST: 20-ghost-engine-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T2326-20-ghost-engine-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 2.53 (hackathon credits used now 2647.67/4000).
+
+### 2026-11-13 23:29-00:01 SAST: 20-ghost-engine-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T2329-20-ghost-engine-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 24.28 (hackathon credits used now 2671.95/4000).
+
+### 2026-11-13 00:01-00:23 SAST: 20-ghost-engine-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0001-20-ghost-engine-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 17.77 (hackathon credits used now 2689.72/4000).
