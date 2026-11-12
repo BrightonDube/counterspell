@@ -44,3 +44,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-12 10:54-11:00 SAST: 05-grimoire-packs-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/05-grimoire-packs-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1054-05-grimoire-packs-spec.log`. Exit 0.
 - Credits used (from /usage): 4.35 (hackathon credits used now 2326.18/4000).
+
+### 2026-11-12 11:00-11:12 SAST: 06-judge-sandbox-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/06-judge-sandbox-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1100-06-judge-sandbox-spec.log`. Exit 1.
+- Credits used (from /usage): 14.37 (hackathon credits used now 2340.55/4000).
