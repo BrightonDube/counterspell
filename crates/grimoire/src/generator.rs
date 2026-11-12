@@ -27,6 +27,10 @@ pub fn check(meta: &Meta, report: &mut Report) {
     let Ok(seed) = u64::try_from(meta.generator.seed) else {
         return;
     };
+    // An invalid schema is reported by MET-06. The engine stream cannot run on it.
+    if meta.input_schema.check_definition().is_err() {
+        return;
+    }
     let stream = CandidateStream::new(
         meta.input_schema.clone(),
         seed,
@@ -84,5 +88,14 @@ mod tests {
         let text = fixtures::valid_text().replace("hidden_count = 12", "hidden_count = 51");
 
         assert_eq!(codes_for(&text), ["GEN-01"]);
+    }
+
+    #[test]
+    fn invalid_schema_definition_never_reaches_the_engine_stream() {
+        // The engine's stream panics on min > max, so the generator check must stop first.
+        // MET-06 reports the broken range, and this stage adds nothing.
+        let text = fixtures::valid_text().replace("min = -50, max = 50 }", "min = 50, max = -50 }");
+
+        assert_eq!(codes_for(&text), Vec::<String>::new());
     }
 }
