@@ -193,3 +193,10 @@ A recursive walk can carry its path as a `&str` argument, so each level builds o
 `matches!(got, ProgramResult::Returned(value) if value == expected)` checks an enum variant and a condition in one line.
 `map_or_else` supplies a fallback when an `Option` is empty, with no `unwrap()`.
 Cutting text at a character boundary, not a byte index, means a multi-byte letter can never be split and produce invalid UTF-8.
+
+# Rust lesson: ghost-engine T15
+
+`Option<&T>` compared with `==` tells you whether two optional values match without cloning either one.
+`let ... else` runs a fallback and returns when a pattern does not match, which keeps the happy path flat.
+`Duration::saturating_sub` returns zero instead of panicking when the subtraction would go below zero.
+A request-validation function that returns `Option<String>` lets the hunt refuse bad input with a reason, not a panic.

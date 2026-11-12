@@ -155,7 +155,7 @@ Conventions for every Rust task:
   - Preserve: no hidden test data; no template uses a forbidden phrase (checked in T24).
   - Rust lesson: recursion with a path accumulator, `Option` fields, `format!`.
 
-- [ ] **T15 [S] (30 min) Hunt, part 1: request, report types and the search phase**
+- [x] **T15 [S] (30 min) Hunt, part 1: request, report types and the search phase**
   - Files: `crates/engine/src/hunt.rs`.
   - Implement `HuntIdentity`, `HuntRequest::new`, `Provenance`, `HuntStats`, `Ghost`, `Origin` re-use, `HuntOutcome`, `NotFoundReason`, `AbortReason`, `HuntReport` (all serde), request validation (schema definition, budget, non-empty digest, identity length caps), and the search loop: candidate stream, per-call limits from the clock, classification, target filtering, `ReferenceFailed` counting (abort after 3), `OracleError` abort, timeout skipping, and the `NotFound` reasons. Stop after the first find, returning an internal `FirstFailure` for the next task.
   - Tests with small synthetic oracles and a `ManualClock`: never-failing oracle gives `CandidateBudget` and `CandidatesExhausted` where expected; wall-time stop; reference failure abort; oracle error abort; target filter (a crash is ignored when the target is wrong answer).

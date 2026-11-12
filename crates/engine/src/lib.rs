@@ -43,6 +43,10 @@ pub use classify::{
     classify, Classification, FailureKind, FailurePredicate, Observation, ProgramResult,
 };
 pub use compare::Comparator;
+pub use hunt::{
+    hunt, AbortReason, Ghost, HuntIdentity, HuntOutcome, HuntReport, HuntRequest, HuntStats,
+    NotFoundReason, Provenance,
+};
 pub use oracle::{Clock, ManualClock, Oracle, OracleError, SystemClock};
 pub use rng::derive_seed;
 pub use schema::{Schema, SchemaError, Violation};

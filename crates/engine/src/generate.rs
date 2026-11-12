@@ -2,6 +2,7 @@
 
 use crate::rng::SplitMix64;
 use crate::schema::Schema;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::{HashSet, VecDeque};
 
@@ -207,7 +208,8 @@ fn to_usize(value: i64) -> usize {
 }
 
 /// Where a candidate input came from, in the order the stream yields them.
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Origin {
     /// An authored known-ghost seed from the problem pack.
     KnownGhost,
