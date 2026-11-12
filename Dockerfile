@@ -7,8 +7,8 @@ COPY web/ ./
 RUN npm run build
 
 FROM rust:1.99-bookworm AS rust-builder
-ENV CARGO_HTTP_TIMEOUT=600 \
-    CARGO_NET_RETRY=10
+ENV CARGO_HTTP_TIMEOUT=60 \
+    CARGO_NET_RETRY=5
 WORKDIR /app
 
 COPY Cargo.toml Cargo.lock ./
@@ -16,8 +16,8 @@ COPY crates/ ./crates/
 RUN cargo build --release -p counterspell-server -p counterspell-judge -p counterspell-grimoire -p counterspell-mcp
 
 FROM rust:1.99-bookworm AS migration-tools
-ENV CARGO_HTTP_TIMEOUT=600 \
-    CARGO_NET_RETRY=10
+ENV CARGO_HTTP_TIMEOUT=60 \
+    CARGO_NET_RETRY=5
 ARG SQLX_CLI_VERSION=0.8.6
 RUN cargo install sqlx-cli --version "${SQLX_CLI_VERSION}" --no-default-features --features rustls,postgres --locked
 

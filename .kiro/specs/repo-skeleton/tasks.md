@@ -117,7 +117,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: run equivalent commands locally and validate workflow YAML.
   - Preserve: CI checks exactly the selected stack; do not add unrelated deploy automation.
 
-- [ ] **T16 [S] (25 min) Add local server/frontend image integration**
+- [x] **T16 [S] (25 min) Add local server/frontend image integration**
   - Files: `Dockerfile`, `docker-compose.yml`, server config only if needed.
   - Ensure the server image contains the Svelte static build and starts `counterspell-server` with the correct static directory; ensure Caddy reaches it.
   - Depends on: T09, T12, T13.
