@@ -339,7 +339,7 @@ Conventions for every Rust task:
   - Verify: `cd web && npm run check && npm run build`; manual: the address bar shows no token after load.
   - Preserve: no request is sent until the user presses the button.
 
-- [ ] **T32 [S] (30 min) Account settings page**
+- [x] **T32 [S] (30 min) Account settings page**
   - Files: `web/src/routes/settings/account/+page.svelte`.
   - Shows email, linked providers, buttons driven by `capabilities` (link GitHub, link Google, add email, sign out everywhere, delete account when T36 exists), `?linked=` and `?error=` banners; for the demo account every action is disabled with visible text explaining why. `401` goes to `/login` with a sanitised `return_to`.
   - Requirements: R20.3, R20.4, R20.6, R16.9.

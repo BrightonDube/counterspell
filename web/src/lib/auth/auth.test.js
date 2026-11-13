@@ -17,7 +17,12 @@ import {
   verifyMagicLink
 } from './client.js';
 import { SessionStore } from './session.svelte.js';
-import { ERROR_MESSAGES, errorFromQuery, messageFor } from './messages.js';
+import {
+  ERROR_MESSAGES,
+  errorFromQuery,
+  linkedMessage,
+  messageFor
+} from './messages.js';
 import { returnToFromQuery } from './return-to.js';
 
 afterEach(() => {
@@ -287,5 +292,21 @@ describe('errorFromQuery (T30)', () => {
     expect(errorFromQuery('?error=made_up')).toBe(
       ERROR_MESSAGES.internal_error
     );
+  });
+});
+
+describe('linkedMessage (T32)', () => {
+  it('confirms a provider that was linked', () => {
+    expect(linkedMessage('?linked=github')).toBe(
+      'GitHub is now linked to your account.'
+    );
+    expect(linkedMessage('?linked=google')).toBe(
+      'Google is now linked to your account.'
+    );
+  });
+
+  it('shows nothing for a provider the page does not name', () => {
+    expect(linkedMessage('?linked=evil')).toBeNull();
+    expect(linkedMessage('')).toBeNull();
   });
 });

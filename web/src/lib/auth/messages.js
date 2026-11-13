@@ -44,3 +44,20 @@ export function errorFromQuery(search) {
   const code = new URLSearchParams(search).get('error');
   return code ? messageFor(code) : null;
 }
+
+/** The providers the account page can confirm as linked, with their display names. */
+const LINKED_PROVIDERS = Object.freeze({ github: 'GitHub', google: 'Google' });
+
+/**
+ * The confirmation sentence for the `linked` provider in a query string, or `null`. Only the
+ * providers listed above are accepted, so the page never shows text taken from the URL.
+ * @param {string} search a query string such as `?linked=github`
+ * @returns {string | null}
+ */
+export function linkedMessage(search) {
+  const provider = new URLSearchParams(search).get('linked') ?? '';
+  if (!Object.hasOwn(LINKED_PROVIDERS, provider)) return null;
+  const name =
+    LINKED_PROVIDERS[/** @type {keyof typeof LINKED_PROVIDERS} */ (provider)];
+  return `${name} is now linked to your account.`;
+}
