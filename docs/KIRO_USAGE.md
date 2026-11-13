@@ -133,3 +133,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-13 09:34-09:36 SAST: 21-grimoire-packs-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/21-grimoire-packs-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0934-21-grimoire-packs-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.56 (hackathon credits used now 2752.68/4000).
+
+### 2026-11-13 09:38-09:52 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `docs/kiro-prompts/22-run-lifecycle-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0938-22-run-lifecycle-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 10.85 (hackathon credits used now 2763.70/4000).
+
+### 2026-11-13 09:52-09:57 SAST: 22-run-lifecycle-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `docs/kiro-prompts/22-run-lifecycle-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0952-22-run-lifecycle-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 3.80 (hackathon credits used now 2767.50/4000).
