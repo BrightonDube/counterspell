@@ -130,7 +130,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: fixture route visual test has the prototype banner; production component tests prove no percentages or fake steps appear; screen-reader list contains all actual steps.
   - Preserve: a timeout ghost is shown according to engine metadata and is not falsely called minimized.
 
-- [ ] **T16 [UI] [S] (30 min) Build the Bug Autopsy card**
+- [x] **T16 [UI] [S] (30 min) Build the Bug Autopsy card**
   - Files: `web/src/lib/workspace/AutopsyCard.svelte`, `web/src/lib/ghost/autopsy.ts`, tests.
   - Show failing input, expected, actual/crash/timeout, failure kind, engine explanation, structural differences, truncation marker, concept tags, and Authored explanation or AI hint label. Use success/danger semantic presentation plus text/icons.
   - Depends on: T01, T15.
