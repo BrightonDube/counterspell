@@ -201,7 +201,7 @@ Conventions for every Rust task:
 
 ## Wave 2: server API
 
-- [ ] **T20 [S] (30 min) Turn the server into a library and binary; add state, config and the JSON error envelope**
+- [x] **T20 [S] (30 min) Turn the server into a library and binary; add state, config and the JSON error envelope**
   - Files: `crates/server/Cargo.toml`, `crates/server/src/lib.rs`, `crates/server/src/main.rs`, `crates/server/src/config.rs`, `crates/server/src/error.rs`, `THIRD-PARTY-NOTICES.md`.
   - Move router assembly into `lib.rs` (`build_router(AppState)`), keep `/api/health`, the static files and the SPA fallback working with their existing precedence (unknown `/api/*` stays a JSON `404`, never HTML). Add `AppState` (pool, limiter, resolver, problem lookup, language catalogue, config, run waker handle). `ApiError` with stable `code`, safe `message`, optional `retry_after_seconds`, `IntoResponse`; 500s are logged and return a generic body. Add dependencies `sqlx`, `redis`, `tracing`, `tracing-subscriber`, `uuid`, `sha2`, `thiserror`, `tower-http` `limit` and `set-header` features, `counterspell-common`; add feature `testkit` (off) and dev-dependency on `counterspell-judge` with `default-features = false, features = ["testkit"]`.
   - Requirements: R4.1, scope constraints, `api-conventions.md`.

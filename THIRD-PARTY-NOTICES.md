@@ -62,3 +62,11 @@ The judge crate (`counterspell-judge`) adds these direct dependencies. `cargo de
 - **thiserror 2.0.21** — David Tolnay — MIT OR Apache-2.0 — <https://crates.io/crates/thiserror>
 
 The judge also uses `serde_json`, `uuid` and `counterspell-common` as listed above.
+
+## Server dependencies (run-lifecycle T20)
+
+The server crate (`counterspell-server`) adds these direct dependencies. Licences are from the crates.io metadata in `Cargo.lock`. `sqlx`, `tracing` and `thiserror` are listed above under the judge.
+
+- **redis 0.32.7** — redis-rs contributors — BSD-3-Clause — <https://crates.io/crates/redis> (Valkey client; `tokio-comp` and `script` features only, no TLS)
+- **tracing-subscriber 0.3.23** — Tokio contributors — MIT — <https://crates.io/crates/tracing-subscriber> (`fmt` and `std` features only)
+- **sha2 0.10.9** — RustCrypto developers — MIT OR Apache-2.0 — <https://crates.io/crates/sha2>

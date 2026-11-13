@@ -488,3 +488,10 @@ A function that only returns a value needs no `async`. Clippy flags an `async fn
 `proptest` generates many random call sequences and shrinks a failing one to a short example. Here each sequence is a list of enum values (`Op`), so the generator and the code under test share one type.
 A model is a second, simpler copy of the state. The test checks that the database and the model agree after every call, so one wrong prediction stops the case at once.
 `TestRunner::run` runs an async test body by calling `block_on` on a current-thread runtime, which lets a synchronous property test drive `sqlx` calls.
+
+# Rust lesson: run-lifecycle T20
+
+`axum` turns any type that implements `IntoResponse` into an HTTP reply. `ApiError` is that type here, so a handler can return `Result<_, ApiError>` and the `?` operator sends the error as the JSON envelope.
+A `Display` value passed to `ApiError::internal` is logged on the server and replaced with a fixed message. The client never sees the database or path text.
+A library target (`lib.rs`) holds the router and the config. `main.rs` only wires them together, so the integration tests build the same router the binary serves.
+`Option::filter` and `let ... else` keep the config reader short: a missing or empty value becomes a named error in one line.
