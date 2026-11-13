@@ -22,3 +22,23 @@ Run: auth implement, attempt 1 (13 Nov 2026).
 ## Not started in attempt 1 (no blocker, out of time and context)
 
 Tasks T10 to T37 are unchecked and were not started in this run. They are not blocked by a decision. Pick up at T10 (`SessionService`, SUPERVISED) in the next run. T14, T17, T18 to T23, T25 and T33 also need the T01 licence decision above. T27, T36 and T34 depend on those.
+
+## Attempt 2 (13 Nov 2026, afternoon)
+
+### T01 still blocked (licence decision)
+Unchanged from attempt 1. Brighton has not chosen between allowing `CDLA-Permissive-2.0` in `deny.toml` and switching to `rustls-tls-native-roots`. Tasks that need `reqwest` or `oauth2` stay unchecked: T14, T17, T18, T19, T20, T21, T22, T23, T25, T27, T33, T34, T35, T36, T37.
+
+### T08 FK still deferred to T34
+Needs run-lifecycle fixtures (T34), which are blocked by the T01 list above.
+
+### T28 daily demo reset: time source conflict (cut candidate)
+`cs_reset_demo_account()` (migration `20261113110200_auth_demo.sql`) stamps `demo_reset_at` with the database clock. The reset schedule takes the application `Clock`, and P18 tests need a moved clock. Those two clocks disagree in tests, so "no reset before the hour" cannot be proven without changing the function. Options for Brighton:
+1. Add a migration that passes the application time into `cs_reset_demo_account(p_now timestamptz)`. This changes a T09 contract.
+2. Accept database time for the schedule and test only with real time.
+Assumed choice: option 1 when T28 is picked up. T28 is on the cut list, so I left it unchecked.
+
+### T29 partial: auth client exists, rune session store missing
+`web/src/lib/auth/{client.js,messages.js,return-to.js}` and their Vitest tests (9 passing) are in place. `session.svelte.js` (the rune store) is not written, so T29 stays unchecked. T30, T31 and T32 are not started.
+
+### Blocked by T01 and T34 (listed above) and by the Brighton review queue
+Tasks T14 onward are unchecked; see the list above.
