@@ -49,3 +49,10 @@ Brighton reviews each entry before the next task that depends on it starts.
 - Missing: `pg_cancel_vs_complete_race`, `pg_crash_recovery_real_time`, NOTIFY wake-ups. See blockers file.
 - What to check: the three stop reasons (cancel, lease lost, shutdown) map to the right write. A lost lease writes nothing. Infrastructure errors release for retry and never become verdicts.
 - The concurrency test checks that a third run has not started after 100 scheduler yields. That shows the cap holds on this runtime, but it does not prove it under every timing.
+
+## T17: worker loop, completed (attempt 3; commit: see `git log --oneline -1`)
+
+- Change: the heartbeat is now a future inside the run's task (it was a spawned task). The executor task is wrapped in `AbortOnDrop`, so dropping the worker future aborts both renewal and the program. This is what makes `pg_crash_recovery_real_time` possible. The design text says "heartbeat task per run"; this is the one deviation, and Brighton should confirm it.
+- New tests: `pg_cancel_vs_complete_race_real_time` (a verdict the program produced is kept after a cancel) and `pg_crash_recovery_real_time` (abort mid-run, lease expires in real time, reaper requeues, retry opens with `restarted` and ends with one terminal event).
+- What to check: `execute` (the `select!` loop and the three outcomes), and `AbortOnDrop`.
+- Gap, not done: the claim loop polls `CLAIM_POLL` only. The `NOTIFY run_jobs` wake-up and the `NOTIFY run_cancel` wake-up from the design are not wired. Polling is correct but slower. Add with T24 (enqueue) or in a later task.
