@@ -229,7 +229,7 @@ Conventions for every Rust task:
   - Preserve: this is a first filter only; the sandbox remains the security boundary.
   - Rust lesson: parsing untrusted input without panicking.
 
-- [ ] **T23 [P] (30 min) Rate limiter (Valkey windows) and the in-memory test limiter**
+- [x] **T23 [P] (30 min) Rate limiter (Valkey windows) and the in-memory test limiter**
   - Files: `crates/server/src/ratelimit.rs`.
   - Trait `RateLimiter` (`hit(key, limit, window) -> Result<Decision>`), a Valkey implementation using one atomic script (increment, set expiry on first hit, return count and remaining TTL) with namespaced keys `rl:runs:user:<id>` and `rl:runs:ip:<hash of ip>`, and an in-memory implementation (feature `testkit`). On a Valkey error, `Decision::SkippedFailOpen` plus a `tracing` warning.
   - Tests: `valkey_window_limits` (limit, reset, `retry_after_seconds >= 1`); `valkey_outage_fails_open`; `valkey_keys_hold_only_counters` (scan keys and check types and values, P13); unit tests for the in-memory limiter.

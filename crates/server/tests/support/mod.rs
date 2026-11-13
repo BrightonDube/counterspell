@@ -10,7 +10,13 @@ use std::{
 };
 
 use axum::Router;
-use counterspell_server::{config::ServerConfig, AppState};
+use std::sync::Arc;
+
+use counterspell_server::{
+    config::ServerConfig,
+    ratelimit::{Limiter, MemoryLimiter},
+    AppState,
+};
 use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
@@ -109,7 +115,8 @@ pub async fn get(address: SocketAddr, path: &str, headers: &[(&str, &str)]) -> R
     }
 }
 
-/// Builds the app state for tests with no database.
+/// Builds the app state for tests with no database and an in-memory rate limiter.
 pub fn state_for(static_dir: &std::path::Path) -> AppState {
-    AppState::new(lazy_pool(), config_for(static_dir))
+    let limiter = Limiter::Memory(Arc::new(MemoryLimiter::default()));
+    AppState::new(lazy_pool(), config_for(static_dir), limiter)
 }
