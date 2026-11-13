@@ -98,6 +98,7 @@ pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/api/health", get(health))
         .route("/api/runs", post(runs::create::post_run))
+        .route("/api/runs/{id}", get(runs::read::get_run))
         .route("/api", any(api_not_found))
         .route("/api/{*path}", any(api_not_found))
         .fallback_service(static_files)

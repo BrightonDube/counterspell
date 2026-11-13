@@ -259,7 +259,7 @@ Conventions for every Rust task:
   - Preserve: errors contain no internals; rejected requests create nothing.
   - Rust lesson: extractors, ordering of checks, and early returns with `?`.
 
-- [ ] **T26 [S] (25 min) `GET /api/runs/{id}` read model**
+- [x] **T26 [S] (25 min) `GET /api/runs/{id}` read model**
   - Files: `crates/server/src/runs/read.rs`, `crates/server/tests/get_run.rs`.
   - Owner-checked read of the submission and its `test_results` (public detail only), returning the JSON in `design.md` Path 10. A missing id, a malformed id and a foreign id all return the same `404 not_found`. Terminal responses are built only from final columns.
   - Tests: `pg_get_run_requires_session`; `pg_get_run_foreign_and_missing_are_identical_404`; `pg_get_run_nonterminal_shape`; `get_run_after_reload_matches_stream` (finish a scripted run; `GET` equals the `done` payload; two `GET`s are byte-identical; P12 hidden tests have no detail).
