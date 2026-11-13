@@ -69,7 +69,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: editor is not in the initial shell bundle, theme tokens match `docs/palette.md`, language switching preserves models, and dispose is called on unmount.
   - Preserve: no browser execution, Pyodide, or fabricated diagnostics.
 
-- [ ] **T08 [UI] [P] (25 min) Implement per-problem/language draft persistence**
+- [x] **T08 [UI] [P] (25 min) Implement per-problem/language draft persistence**
   - Files: `web/src/lib/editor/draft-store.ts`, `source-validation.ts`, tests.
   - Store source under a versioned `(problem slug, language)` key with debounced writes, restore valid drafts, count UTF-8 bytes, and preserve the in-memory value if storage is unavailable. Do not store runs, hidden values, AI prompts, cookies, or secrets.
   - Depends on: T01.
