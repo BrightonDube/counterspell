@@ -39,13 +39,16 @@ services:
       context: .
       target: judge-runtime
     environment:
+      DATABASE_URL: postgres://counterspell@postgres:5432/counterspell
       JUDGE_CONCURRENCY: "2"
+      LEASE_SECS: "30"
+      RENEW_SECS: "10"
     depends_on:
       postgres:
         condition: service_healthy
     networks:
       - internal
-    restart: "no"
+    restart: unless-stopped
 
   postgres:
     image: postgres:17-alpine

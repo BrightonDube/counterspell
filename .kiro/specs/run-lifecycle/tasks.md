@@ -190,7 +190,7 @@ Conventions for every Rust task:
   - Preserve: lease ageing uses SQL, not sleeping.
   - Rust lesson: property-based testing with an operation model.
 
-- [ ] **T19 [S] (25 min) Wire the judge binary and its deployment settings**
+- [x] **T19 [S] (25 min) Wire the judge binary and its deployment settings**
   - Files: `crates/judge/src/main.rs`, `docker-compose.yml` (judge service only), `README.md` (one short section).
   - `main` loads `JudgeConfig`, initialises `tracing` (no source code, no hidden data in logs), connects to Postgres with a small pool, starts the reaper and a `Worker` with a placeholder `NoExecutor` that returns `ExecError::Infrastructure("no executor configured")`, so any real job ends honestly as `internal_error` after its retries and is never reported as a verdict (the judge-sandbox spec replaces it; production cannot enqueue runs until auth and the catalogue are wired anyway). Handle `SIGTERM` and `SIGINT`. In Compose set the judge `restart: unless-stopped` and pass the lease and concurrency variables; keep the service without ports and without a Docker socket.
   - Requirements: R9.1, R9.9, R1.6, R19.1.

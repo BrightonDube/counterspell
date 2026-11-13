@@ -476,3 +476,9 @@ A `JoinError` from a spawned task is how a panic reaches the caller. The worker 
 Dropping a future cancels it. The worker now keeps its heartbeat as a future inside the run's own task, so a dropped worker stops renewing its lease.
 `AbortOnDrop` is a small guard with a `Drop` impl. When the run's task is dropped, the guard aborts the spawned program too. Drop runs on every exit path, so cleanup cannot be forgotten.
 `tokio::select!` with `if !flag` skips a branch once it is done. `std::pin::pin!` pins a future on the stack so it can be polled again in a loop.
+
+# Rust lesson: run-lifecycle T19
+
+`main` returns `Result`, and the `?` operator passes each startup error up to the runtime, so the process exits non-zero. The judge's logic lives in `service::serve`, not in `main`, so a test can run it without a process.
+`tokio::select!` over `ctrl_c()` and a Unix `SIGTERM` stream waits for whichever signal comes first. The `#[cfg]` blocks keep the code building on non-Unix targets too.
+A function that only returns a value needs no `async`. Clippy flags an `async fn` with no `.await`, so `NoExecutor` returns `std::future::ready(...)`.

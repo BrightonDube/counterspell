@@ -75,3 +75,12 @@ Done and committed this run, each with its database tests passing against a thro
 ### Not started (this run stopped at the T17 gap)
 
 - T18 model test, T19 judge binary wiring, T20 to T39 (server API, SSE, web client, CI, DoD load test, docs). These need the next session.
+
+## Attempt 3 (14 Nov 2026): T17 and T19
+
+- **T17 done.** The heartbeat now runs inside the run's task, and the executor task is aborted when that task is dropped. This was needed for the crash test. The design text says "heartbeat task per run", so Brighton should confirm the change (see the review queue). The `NOTIFY run_jobs` and `NOTIFY run_cancel` wake-ups are not wired; the claim loop polls only. Polling is correct but slower.
+- **T19 done with two gaps (for Brighton):**
+  1. Logging is not initialised. T19 asks for `tracing` setup, but `tracing-subscriber` is not in the judge's named dependencies, so I did not add it. Until it is approved, judge logs are dropped. Unblock: approve `tracing-subscriber` for `counterspell-judge` (the server's T20 already names it).
+  2. The Compose judge connects as the `counterspell` user, with no password (the Postgres service uses trust auth). The least-privilege role `counterspell_judge` is `NOLOGIN` and has no password, so it cannot log in yet. Unblock: a deploy step that creates a login for `counterspell_judge` with a secret from the environment, then point `DATABASE_URL` at it.
+- **Not run:** `docker compose build judge`. Only `docker compose config` was checked.
+- **T18 (model test) not started in this pass.** It is the next unchecked task after T19.

@@ -71,6 +71,14 @@ public port, and the local skeleton does not mount a sandbox socket. The
 separate rootless sandbox daemon is documented in
 `deploy/rootless-sandbox-daemon.md` for a later judge implementation.
 
+### Judge worker
+
+`counterspell-judge` claims queued runs from Postgres and records their outcome.
+Until the sandbox runner exists, it runs a placeholder executor, so every run ends
+as an internal error after its retries. It never reports a verdict. Settings are
+read from the environment (`JUDGE_CONCURRENCY`, `LEASE_SECS`, `RENEW_SECS`, and
+the others in `crates/judge/src/config.rs`). It stops on `SIGINT` or `SIGTERM`.
+
 ## License
 
 Counterspell is MIT licensed. Dependency and asset notices are tracked in
