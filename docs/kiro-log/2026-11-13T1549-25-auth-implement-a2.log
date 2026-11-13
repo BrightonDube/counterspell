@@ -1,0 +1,688 @@
+I'll start by reading the auth tasks and the conventions at the top of the file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=70
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The first unchecked task is T01, but a commit says it was partial. T08 is also unchecked and marked partial. I'll read the blockers file, the attempt-1 log, and the rest of the tasks list before choosing where to start.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=113
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Attempt 1 finished T02 to T07 and T09, and left T01 and T08 partial. T01 is blocked on a licence decision that Brighton has not made, and T08's FK is deferred to T34. Next I'll read the rest of tasks.md, from T23 onward.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=111
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The remaining work is large: T10 to T37. Several tasks depend on the blocked T01 crates. Before deciding what I can build, I need the current auth code, the toolchain, and whether a Postgres and Valkey are available for the `pg_` and `valkey_` tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=233
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Docker is available, and the two existing containers belong to another project, so I will leave them alone. I'll start throwaway Postgres 17 and Valkey 8 containers for the `pg_` and `valkey_` tests, then read the existing rate limiter, IP extraction, seams and auth modules.
+[tool] Start throwaway Postgres and Valkey containers
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=209
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The run-lifecycle seams and rate limiter are already in place. Next I'll check `AppState`, the error type, and the public API of the auth modules I will build on.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=93
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next I need the table definitions, the design's session and token SQL, and the test pattern that the existing `pg_` tests use.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The core tables are in place with CHECK constraints that the Rust code must match. Next I need the design's exact SQL and cookie rules for sessions and tokens, plus the web package setup.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=122
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=26
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The session and token SQL is clear. Before writing the CSRF guard and rate-limit keys, I'll read the design's sections on those, plus the existing `pg_auth_demo_db` tests and the demo SQL.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=117
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I now have the design for sessions, tokens, CSRF and rate-limit keys. Next I'll check the `AuthConfig` fields and the existing `AuthError` variants so the new code uses the same names.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=147
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have enough design context to start T10. I'll check the shared `UserId` type and the existing error helpers, so the session code binds IDs the same way as the rest of the workspace.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=465
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`UserId` wraps a UUID and exposes `as_uuid`. That is all the session code needs. I'll add one shared helper that turns database errors into a logged `Internal` error, then write T10 test-first.
+
+First the RED step: the pg tests for the session behaviours. The tests need `SessionService`, so they will fail to compile until the module exists, which is the expected first failure.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1321
+[tool] status: Pending
+[tool] status: Completed
+The tests exist, so the RED run is a compile failure against the missing `session` module. I'll confirm that failure now.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=88
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The RED failure is the expected one: the `session` module does not exist yet. Now the GREEN step: the database error helper, then `SessionService`.
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1311
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+The module is registered. Next I run the session tests against the throwaway Postgres. The password stays in the shell environment and out of the repo.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Six of seven pass. The failing test is my mistake, not the code's. Its first check calls `authenticate`, which renews the session, so the later expiry check measures from the renewal and not from creation. I'll make the boundary checks use `is_valid`, which has no side effects.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=286
+[tool] status: Pending
+[tool] status: Completed
+Now I rerun the session suite.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=91
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All seven session tests pass. Before I tick T10, I'll run the format and Clippy gate on the crate.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy flags the helper for taking the error by value. It has to take it by value so it can be used with `map_err`, so I'll allow that one lint on this function with a stated reason.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=136
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The helper was appended after the `#[cfg(test)]` module, so clippy rejects the file. I'll move it above the test module.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=61
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=40
+[tool] status: Pending
+[tool] status: Completed
+That edit did nothing. I'll move the helper with two real replacements: remove it from the end, then insert it above the test module.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=208
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+There are now two copies of the helper, one above the tests and one at the end. I'll look at both before removing the extra one.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=60
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=232
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean. Next I run the workspace gate with both `DATABASE_URL` and `VALKEY_URL` set. The run-lifecycle and grimoire suites need the same services, so this also checks for regressions.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=125
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The whole workspace passes, including the ignored `pg_` and `valkey_` tests, and nothing is marked FAILED. I'll tick T10, add its Rust lesson, and commit it on its own.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=211
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T10 is committed as `19d5dd1`, and gitleaks found no leaks.
+
+T11 needs `SessionUserResolver` to implement `UserResolver`. That trait is currently synchronous, but session lookup is a database call. Before deciding how to change the seam, I'll check where `resolve` is used and what R2.6 requires for cookie names.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=380
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The trait is called in three run-lifecycle handlers and two test files. Making it async is the smallest honest change, and it keeps behaviour the same. I'll read the call sites before editing, so the `.await` lands in the right place.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=184
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Changing the seam to an async trait touches five call sites and two test files, and it leaves behaviour unchanged. I'll do it as its own step and record it.
+
+I'll start with the RED step for T11: the HTTP tests for cookies, `/api/me`, logout, logout-all and the resolver. They will fail to compile until the handlers and resolver exist.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2143
+[tool] status: Pending
+[tool] status: Completed
+The RED step is in place. Next is the GREEN step: convert `UserResolver` to an async trait and update the five callers and two test files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=498
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next, the two test files that call `resolve` synchronously need `#[tokio::test]` and `.await`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=197
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `tests/seams.rs` edit applied. Next, the bearer-resolver test in `testkit_seams.rs`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=242
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The seam change is complete. Now I'll write the auth GREEN code: cookie names and headers, the slot middleware, the `AuthUser` and `MaybeAuthUser` extractors, the resolver, the handlers, and the router. I'll start with cookies.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1324
+[tool] status: Pending
+[tool] status: Completed
+Next are the extractors, the resolver, and the handlers. I'll also add `Serialize` to `Capabilities`, because `/api/me` returns it to the UI.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=146
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=412
+[tool] status: Pending
+[tool] status: Completed
+Next, the resolver and handlers, then the module wiring.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=909
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Now I'll wire the modules into `auth/mod.rs` with `AuthState` and the router.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=344
+[tool] status: Pending
+[tool] status: Completed
+Everything is wired. I'll compile and run the new HTTP tests, plus the unit tests and the seam tests that the async change touched.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=102
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All of them pass. I'll run clippy on the crate, since pedantic lints often catch the new async and cookie code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=71
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy flags two things: `header_value` takes a `String` it never consumes, and a single-arm `match` should be `let else`. I'll fix both.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=275
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean. The trait change touches run-lifecycle, so I'll run the full workspace gate with both services, not only the auth tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=153
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The full workspace passes, with 53 result blocks and no failures. I'll tick T11, add its Rust lesson, and commit. The review-queue entry needs the commit hash, so it goes in a follow-up commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=310
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T11 is committed as `1e50811`. Next is T12, the stateful session model. It runs random sequences of create, authenticate, logout, logout-all, validity and clock advances against a pure model, then checks the database agrees. I'll write the test first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1813
+[tool] status: Pending
+[tool] status: Completed
+This property test checks code that already exists, so it may pass on the first run. A passing run alone would not show the test can catch anything. I'll run it, then do a deliberate mutation to confirm it fails when the code is wrong.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=136
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+It passes. Next I'll make the renewal rule wrong on purpose, changing the one-hour throttle to two hours, and confirm the test fails. Then I'll restore the committed file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=145
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The mutation is caught. The renewal check fails with a minimal failing sequence, and I restored `session.rs`. I'll check whether that failed run left a regression file behind, and whether the file is clean now.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=98
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The regression file came from the deliberate mutation. It records a sequence the correct code passes, and the spec asks for regression files to be kept, so I'll commit it with the test. First I'll run fmt and clippy on the new test file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=114
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy wants two allows here. Both are for test helper shapes that are clearer as written: `map_err(fail)` needs the by-value signature, and the operation match is clearest in one function.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=185
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean. I'll rerun the property test after the edits, then tick T12, add the lesson, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=257
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T12 is committed as `8f34841`. Next is T13, the `TokenStore`. I need the exact signatures of the token primitives I wrote in T05, and the `EmailAddress` parser from T03, before writing the store.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=309
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The primitives are there: `RawToken::generate` returns a `Result`, `token_status` is the reference model, and `email_token_expiry` gives the 15-minute expiry. I'll write the RED tests first. They cover the one-winner race, the exact 15-minute boundary, purpose binding, supersede, hashing at rest, and the bound-user rule for email links. Then a property test compares the store with `token_status`.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1736
+[tool] status: Pending
+[tool] status: Completed
+I left a placeholder test with no assertions at the end of that file. The test rules forbid that kind of test, so I'll remove it now. The property test already covers this behaviour.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=100
+[tool] status: Failed: Replace in File
+The guard blocked the removal, and it was right to. I'll replace the placeholder with a real test instead of deleting it. It will check that a used token stays refused inside its 15-minute window, which the store must enforce.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=255
+[tool] status: Pending
+[tool] status: Completed
+The RED test is in place and the placeholder is now a real assertion. Next is the GREEN code: `TokenStore` with `issue`, `peek` and `consume`. Each SQL statement follows the design. I'll add it to `tokens.rs` above the test module.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1082
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All eight token tests pass, including the 32-way race, which produces exactly one winner. I'll run clippy on the module and the test file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=70
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=106
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T13 is green after the clippy fix. I'll tick it, add the lesson, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=205
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T13 is committed as `c6aea37`. Next is T15, the auth rate limits, which depends only on T02. I'll write its tests first. They cover the limit boundary, scope independence, keys with no personal data, daily-cap reset by UTC date, fail-closed mail when Valkey is down, and a real-Valkey check.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1452
+[tool] status: Pending
+[tool] status: Completed
+One test would silently pass without `VALKEY_URL`, which is the "passes whatever" pattern the rules forbid. I'll make it an `#[ignore = "needs VALKEY_URL"]` test that fails loudly when the variable is missing.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=186
+[tool] status: Pending
+[tool] status: Completed
+I'll also fix the file header, which still says the Valkey test skips when the variable is unset. Then I'll implement `limits.rs` and register it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1209
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The seven in-memory tests pass, and the Valkey test stays ignored until I run it with `VALKEY_URL`. I'll run that real-Valkey check, then clippy.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=133
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The real-Valkey check passes too. Clippy flags two match arms with the same body, so I'll merge them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=199
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean and all eight limit tests pass. I'll tick T15, add its lesson, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=210
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The commit went through, but the tick did not apply: my search text matched nothing. I'll find the actual T15 line and fix the tick in a follow-up commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=64
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=63
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T15 is committed and ticked as `a86d693`.
+
+Next is T16, the origin guard for every non-safe `/api` request, plus the JSON and 16 KiB body layer for auth routes and the response-header layers. I'll write the tests first, including a counter handler to prove blocked requests never reach it.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1785
+[tool] status: Pending
+[tool] status: Completed
+Now the GREEN code. The module has the pure origin rule, the Origin guard middleware, the `no-store` and `no-referrer` layers, the JSON and size guard, and `apply_api_hardening`, which T33 will apply to the whole `/api` router.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1134
+[tool] status: Pending
+[tool] status: Completed
+The middleware is named `json_body_guard`, and the router helper is `json_body_guard_layer`. The test calls the router helper, so I'll point the test at it. I'll also register the module and apply the body guard in the auth router.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=330
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+One test fails because the guard decides whether a body exists from the `Content-Length` and `Transfer-Encoding` headers. A body without either header, such as HTTP/2 without a length, would skip the check. I'll change the guard to read the body first and decide from the bytes, so the check does not depend on headers.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=319
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 12 CSRF tests pass. The clippy findings are small: an elidable lifetime and a `match` that should be `let else`. I'll fix both, then run the database-backed HTTP tests too, since I ran them without `--include-ignored`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=221
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The integration tests all pass, including the database-backed HTTP tests. Clippy complains that `routes` and `router` are too similar in three tests. I'll rename the inner binding.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=134
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean and all 12 CSRF tests pass. I'll tick T16, add the lesson, and commit. This time I'll use `sed` and check the match, so the tick cannot fail silently again.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=224
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T16 is committed as `7aaa147`.
+
+T24 is password login. It needs the limiter to read failure counts before hashing, which the current `AuthLimiter` cannot do, because `hit` always counts. It also needs the client IP and a hashing gate in `AuthState`. I'll check how run-lifecycle gets the client IP, so login uses the same logic.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=694
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Run-lifecycle reads the peer with `ConnectInfo<SocketAddr>`. I'll follow that, but as an optional extractor, so tests without a socket still work. I'll write the login tests first. They cover the success path, the uniform 401 for unknown, wrong and passwordless accounts, the 429 that fires before any hashing, and 503 when the hash gate is saturated.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1125
+[tool] status: Pending
+[tool] status: Completed
+The test calls a `default_trusted_proxies` helper that does not exist. I'll use `TrustedProxies::parse`, which is the existing run-lifecycle type, and fix the test before writing the implementation.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=106
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I'll implement the pieces in dependency order: a read-only counter in the shared limiter, the `check` method, the password module with its hash gate, the `AuthState` fields, and the login handler.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=865
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next is the password module: Argon2id parameters, the policy check, the verify verdict, the dummy verify, and the hash gate.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1316
+[tool] status: Pending
+[tool] status: Completed
+The password module is written. Now the login handler, `AuthState` with its new fields, and the route.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=678
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The handler imports a helper I never wrote, `hash_password_or_dummy`, so I'll remove that import. Then I'll update `AuthState` and the router.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=665
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The script stopped on the first `mod.rs` replacement, so none of the `AuthState` edits were written. The login handler errors are the result. I'll check the current module list and apply those edits again with the right anchors.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=94
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=579
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Two things went wrong. The test-helper edit did not apply because `cargo fmt` changed the formatting, and the handler does not satisfy axum's `Handler` trait. I'll read the full compiler notes to find the cause.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=156
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The compiler suggests `#[axum::debug_handler]`, which names the failing argument. I'll add it temporarily to find the cause.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`debug_handler` needs the `macros` feature, which I won't add. I'll bisect instead: first a stub body with the same signature, to separate a signature problem from a body problem.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=285
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The stub fails too, so the cause is the signature. In axum 0.8, `Option<T>` extractors need `OptionalFromRequestParts`, and `ConnectInfo` does not implement it. Run-lifecycle already serves with connect info, so I'll make the extractor required and give the login tests a `MockConnectInfo` layer.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=423
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The temporary `debug_handler` attribute came back when I restored the file from the backup. I'll remove it, then build again.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=80
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The whole crate builds with no warnings. The earlier helper edit in `auth_session_http.rs` failed, though, so I'll check that file's `AuthState::new` call directly.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The helper edit did apply, and the build confirms it. I'll run the login tests, the password unit tests, and the existing HTTP tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=107
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All the login, password and HTTP tests pass. I'll run clippy on the crate before ticking T24.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=93
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=215
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean, and the login tests pass again. `password.rs` uses `tokio::time`, which compiles only because another crate enables that feature. I'll declare the feature explicitly on the server's tokio dependency, since it is already in the lock file, then tick T24 and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=329
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T24 is committed as `889df01`.
+
+The remaining unblocked work is T26 (demo seed and config), T28 (daily demo reset), and the web tasks T29 to T32. T26 needs the exact signature of the seed function from the T09 migration, so I'll read that first.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=150
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The seed function takes an email and a password hash, and it runs as `SECURITY DEFINER`. I'll write the T26 tests first. They cover one demo user after seeding twice, a password sign-in through the real login handler, an Argon2id value with no plain password in the database, and `config` reporting the demo as disabled when it is unset.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1077
+[tool] status: Pending
+[tool] status: Completed
+Next, the implementation: `seed_demo` in a new `demo` module, and the public `config` route in the handlers. The route takes only public flags, so it cannot carry a secret.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=724
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All four demo seed tests pass. I'll run clippy, then tick T26 and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=68
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=188
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T26 is committed as `eaa2a3d`.
+
+T28, the daily demo reset, has a time-source conflict I can't resolve inside this task. `cs_reset_demo_account` stamps `demo_reset_at` with the database clock, while the reset schedule must follow the application `Clock` for the tests P18 requires. The clean fix changes the T09 function contract through a new migration, which is Brighton's decision. I'll log that in the blockers file and leave T28 unchecked, since the cut order allows cutting it.
+
+Next, I'll check the web package for the T29 to T32 tasks.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=324
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The web app already has Svelte 5, Bits UI, and Vitest. I'll start T29 with the pure parts, which I can test: the error-to-sentence table, the `return_to` check, and a fetch wrapper that I can test with a mocked `fetch`. I'll also check the exact error codes the server returns, so the sentence table matches them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=313
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The internal code is `internal_error`, and the sentence table has to use the server's real codes. Next, the RED step: the Vitest tests for the pure auth helpers, which fail because the modules don't exist yet.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=511
+[tool] status: Pending
+[tool] status: Completed
+The message is a rules dump with no new request, so I'll keep going on the run. I'm finishing T29 first, since its RED test is already written. The three modules are small: the error sentences, the `return_to` check, and the fetch wrapper.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=830
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All nine web tests pass. T29 also needs the rune store, which I have not written, so I will leave T29 unchecked. I'll run the web check and build, then commit the partial work with a clear note.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=46
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The web check reports six type errors: untyped parameters, a missing index type on the message table, and an untyped mock call in the test. I'll fix them with JSDoc types, then rerun check, the tests, and the build.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=224
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Check passes with zero errors, the nine tests pass, and the build succeeds. I'll record the blockers and the review-queue items, then commit the partial T29 work and the log updates.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=560
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Last, the Rust gate across the whole workspace, with fmt, clippy and the ignored database and Valkey tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean, and the workspace test run has 59 result blocks with no failures. I'll stop the two throwaway containers and delete the temporary password file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=131
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The run completed 9 tasks in this attempt. T29 is only partly done, and the rest are blocked or cut. The Rust workspace gate passes: fmt, clippy with `-D warnings`, and 59 test result blocks with `--include-ignored` against throwaway Postgres 17 and Valkey 8. The web check, the nine auth Vitest tests and the build also pass.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T10 Sessions | Done | 7 `pg_` | Session suite passes | `19d5dd1` |
+| T11 Cookies, extractors, logout, `/api/me` | Done | 9 `pg_` + 3 unit | Workspace green; `UserResolver` made async | `1e50811` |
+| T12 Session property model | Done | 1 proptest | Renewal mutation caught, then reverted | `8f34841` |
+| T13 `TokenStore` | Done | 8 `pg_` (incl. proptest, 32-way race) | Token suite passes | `c6aea37` |
+| T15 Auth rate limits | Done | 7 unit + 1 `valkey_` | Passes against real Valkey | `35d2064`, `a86d693` |
+| T16 Origin guard, body guard, headers | Done | 12 | CSRF suite passes | `7aaa147` |
+| T24 Password login | Done | 4 `pg_` + 4 unit | Login suite passes | `889df01` |
+| T26 Demo seed and `GET /api/auth/config` | Done | 4 `pg_` | Demo seed suite passes | `eaa2a3d` |
+| T29 Web auth client | Partial, unchecked | 9 Vitest | check (0 errors), tests and build pass; rune store not written | `3d49bf2` |
+| T01 Dependencies | Blocked | — | Licence decision needed | (attempt 1) |
+| T08 FK on `submissions` | Partial, unchecked | — | Deferred to T34 | (attempt 1) |
+| T14, T17–T23, T25, T27, T33–T37 | Not started | — | Blocked by T01 (`reqwest`/`oauth2`) and T34 | — |
+| T28 Daily demo reset | Not started, cut candidate | — | Time-source conflict, see blockers | — |
+| T30–T32 Web pages | Not started | — | Depend on T29 store | — |
+
+**Blockers** (`docs/kiro-log/auth-blockers.md`):
+- **T01 licence:** Brighton must pick `CDLA-Permissive-2.0` in `deny.toml`, or switch to `rustls-tls-native-roots`. This blocks the OAuth, magic-link, register, delete and wiring tasks.
+- **T28 demo reset:** `cs_reset_demo_account` stamps `demo_reset_at` with the database clock, but the schedule uses the app clock. Fixing it means a migration that passes the time in, which changes a T09 contract.
+
+**Review queue** (`docs/kiro-log/auth-review-queue.md`): T10, T11, T12, T13, T24 and T26 are entries for Brighton. The queue notes what to check in each commit.
+
+**Open Minor findings**
+- No subagent review ran. I checked the diffs against the review checklist myself.
+- The login limit reads failure counts first and counts only failed attempts. To do this I added an additive `current()` method to run-lifecycle's `ratelimit.rs`.
+- `UserResolver` is now async. The change touches three run-lifecycle handlers and two test files, with no behaviour change.
+- The CSRF rule refuses a wrong `Origin` even when `Sec-Fetch-Site` agrees. That is stricter than the design's wording.
+- `Retry-After` for auth limits uses the full window length, which is an upper bound.
+- I enabled tokio's `time` feature on the server crate. It was already in the lock file, and no new crate was added.
+- The regression file `pg_auth_session_props.proptest-regressions` came from a deliberate mutation. It records a sequence that the correct code passes.
+- The `[SUPERVISED]` tasks T10 to T13, T24 and T26 each have a review-queue entry.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=279
+

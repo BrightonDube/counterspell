@@ -161,3 +161,19 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-13 14:51-15:08 SAST: 22-run-lifecycle-implement-a5 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a5.md`. Transcript: `docs/kiro-log/2026-11-13T1451-22-run-lifecycle-implement-a5.log`. Exit 0.
 - Credits used (from /usage): 10.94 (hackathon credits used now 2840.62/4000).
+
+### 2026-11-13 15:11-15:48 SAST: 25-auth-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a1.md`. Transcript: `docs/kiro-log/2026-11-13T1511-25-auth-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 16.26 (hackathon credits used now 2857.07/4000).
+
+### 2026-11-13 15:49-16:40 SAST: 25-auth-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a2.md`. Transcript: `docs/kiro-log/2026-11-13T1549-25-auth-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 24.92 (hackathon credits used now 2881.99/4000).
+
+### 2026-11-13 16:41-17:55 SAST: 25-auth-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a3.md`. Transcript: `docs/kiro-log/2026-11-13T1641-25-auth-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 19.38 (hackathon credits used now 2901.37/4000).
+
+### 2026-11-13 17:55-18:07 SAST: 25-auth-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a4.md`. Transcript: `docs/kiro-log/2026-11-13T1755-25-auth-implement-a4.log`. Exit 0.
+- Credits used (from /usage): 5.63 (hackathon credits used now 2907.00/4000).
