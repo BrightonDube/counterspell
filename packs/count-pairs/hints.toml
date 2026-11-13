@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Ask what a pair of positions needs before you count it."
+
+[[hint]]
+rung = 2
+text = "Think about the two positions as a loop over each first item, then a loop over the items after it."
+
+[[hint]]
+rung = 3
+text = "Start the second loop one place after the first, so an item never pairs with itself."
+
+[[hint]]
+rung = 4
+text = "Your inner loop may start at the same index as the outer loop. Change where it starts."

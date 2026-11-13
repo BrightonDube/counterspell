@@ -4,7 +4,7 @@ set -o pipefail
 cd "$(dirname "$0")/.."
 . ~/.cargo/env
 LABEL=$1; MODEL=$2; MODE=$3; PF=$4
-usage(){ ~/.local/bin/kiro-cli chat --no-interactive --model claude-haiku-5.5 --trust-tools= "/usage" 2>/dev/null | grep -o 'kiroween-2026: [0-9.]*' | awk '{print $2}'; }
+usage(){ ~/.local/bin/kiro-cli chat --agent-engine v2 --no-interactive --trust-tools= "/usage" 2>/dev/null | grep -oE 'kiroween-2026: [0-9]+(\.[0-9]+)?' | awk '{print $2}'; }  # v2 runs /usage locally; v3 (chat.agentEngine=v3 since 3.3.0) sends it to the model as a prompt
 U0=$(usage); TS=$(date +%Y-%m-%dT%H%M); LOG=docs/kiro-log/${TS}-${LABEL}.log; START=$(date '+%H:%M')
 ~/.local/bin/kiro-cli chat --v3 --mode "$MODE" --no-interactive --trust-workspace -a --model "$MODEL" "$(cat "$PF")" > "$LOG" 2>&1
 RC=$?

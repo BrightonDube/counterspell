@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Ask which cells sit on the diagonal of a grid."
+
+[[hint]]
+rung = 2
+text = "A diagonal cell has the same row number and column number."
+
+[[hint]]
+rung = 3
+text = "Work out how far the diagonal reaches before you start adding, so you never read a cell that is not there."
+
+[[hint]]
+rung = 4
+text = "Add only the cells where both the row number and the column number exist, and keep each value's sign."
