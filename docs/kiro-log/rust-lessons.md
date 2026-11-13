@@ -393,3 +393,16 @@ Role grants list the exact columns each writer may change. That keeps the server
 A test that only checks behaviour that already exists still earns its place when it can fail. Mutating one message to a duplicate made the distinctness test fail, which shows the table is protected.
 `HashSet` collects values and drops duplicates, so comparing its length with the list length is a short, exact duplicate check.
 Putting `serde_json::from_str` in a test shows that unknown text is an `Err`, so the wire format rejects values the code does not know.
+
+# Rust lesson: run-lifecycle T04
+
+A `enum` with data, such as `PublicTest::Hidden`, cannot hold an input field, because the variant has no such field. That makes a leak a compile error instead of a test failure.
+Private fields plus a constructor (`SampleDetail::new`) let the type cut values to a size before they leave. Callers cannot skip the cut.
+`match` on an enum with no `_` arm means a new event kind must have a name and a payload before the code compiles.
+Serialising to `serde_json::Value` lets a test check the exact keys a browser will see.
+
+# Rust lesson: run-lifecycle T03
+
+`status_after_event` returns `Option<RunStatus>`, so "not allowed" is a value the caller must handle. A `bool` plus a separate "what is the new status" call would let the two drift apart.
+`bool::then_some` turns "is this move allowed" into an `Option` in one line, and the table in `can_transition` stays the only copy of the rules.
+`proptest` runs a property against hundreds of random inputs and shrinks a failing case to a small one. The walk test uses it for event sequences.

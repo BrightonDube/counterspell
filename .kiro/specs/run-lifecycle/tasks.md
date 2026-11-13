@@ -36,7 +36,7 @@ Conventions for every Rust task:
   - Preserve: `Verdict` is separate from `RunStatus`; there is no verdict-like value in `RunStatus`.
   - Rust lesson: newtypes and enums.
 
-- [ ] **T03 [S] (30 min) Run state machine**
+- [x] **T03 [S] (30 min) Run state machine**
   - Files: `crates/common/src/run_state.rs`.
   - Implement the transition table from `design.md` as `can_transition(from, to) -> bool` (same-status is allowed), `status_after_event(current, &PublicEvent kind)`, `job_state_for(status)`, and `terminal_event_kind(status)`. Use exhaustive `match` with no wildcard arm so a new state fails to compile.
   - Proptest (P14): terminal states have no exit; every reachable transition appears in the table; a random walk over allowed moves never leaves the table; `job_state_for` is total and matches the mapping table; `RunStatus::is_active` equals "`job_state_for` is `claimed`".
@@ -46,7 +46,7 @@ Conventions for every Rust task:
   - Preserve: this is the only Rust definition of the table; the server and judge call it and do not copy it.
   - Rust lesson: exhaustive `match` and why a missing arm is a compile error.
 
-- [ ] **T04 [P] (30 min) Public event types and bounded payloads**
+- [x] **T04 [P] (30 min) Public event types and bounded payloads**
   - Files: `crates/common/src/events.rs`, `crates/common/src/limits.rs`.
   - Define `PublicTest::{Hidden, Sample}`, `SampleDetail`, `PublicEvent` (all eleven kinds, with `event_type() -> &'static str` returning exactly the names in `api-conventions.md`), `DonePayload` (including optional `compile_output` capped at 8 KiB), `ErrorPayload { code, message }` built only from `FailureReason`, `BoundedJson` (object only, at most 16 KiB, built only from a `Serialize` value), the SSE envelope `{seq, attempt, payload}`, and `MAX_PAYLOAD_BYTES`. There is no constructor from raw JSON for `Test`, `Done` or `Error`.
   - Unit tests: a hidden test serializes to exactly the keys `ordinal`, `verdict`, `time_ms`, `sample`; a sample test adds `input`, `expected`, `got`; `BoundedJson` rejects arrays, scalars and oversized objects; the `event_type` set equals the eleven allowed names (copy the list into the test from the steering file); error messages come only from the fixed table. Proptest: any generated `PublicEvent` serializes to a JSON object under the cap.
