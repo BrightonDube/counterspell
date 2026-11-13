@@ -30,3 +30,12 @@ Written by the implementation run on 13 Nov 2026. Each entry names the task, the
 - T10 (role privilege tests) is not written, so the grants are checked only with `\dp`.
 - No wave-end code review was run, because Wave 0 is not complete.
 - The `docs/kiro-log/2026-11-13T0938-22-run-lifecycle-implement-a1.log` file was left untracked.
+
+## Session 3 (14 Nov run): write guard blocks all file edits
+
+- **What happened:** every file write tool (`fs_write`, `fs_append`, `str_replace`) was refused by a PreToolUse hook with exit code 2 and no reason. The first `str_replace` on `crates/common/src/status.rs` removed a block and the second was refused, so the file was restored from git (`git checkout`, which discarded only that session's own edit).
+- **Cause (confirmed):** `scripts/kiro-hooks/guard-secrets.sh write` (matcher `write`, which also matches `fs_write`) returns "probable API key detected". Its regex is `re_[A-Za-z0-9_-]{20,}` (case-insensitive), so ordinary Rust text such as long snake_case test names is flagged. A six-line Rust test sample reproduced the block with the script alone. The test-integrity guard passes the same edits.
+- **What was not done:** I did not reword code to slip past the scanner, and I did not write files through the shell, because that would bypass the guard. Both are the kind of workaround the guard exists to prevent.
+- **Unblock:** Brighton to anchor the key patterns so that they match only a real token boundary, for example `(^|[^A-Za-z0-9_])re_[A-Za-z0-9_-]{20,}` (and the same for `sk-` and `gsk_`), and to make the hook print its reason. After that, T02 onward can continue.
+- **Tasks not done because of this:** T02 (tests), T03 (`status_after_event`, `terminal_event_kind` and the proptests), T04 onward. Every later task needs file writes.
+- **Environment:** a throwaway `postgres:17-alpine` container (`cs-rl-pg`) is running on 127.0.0.1:55470 for database checks. Port 5544 was already in use by another service. Stop it with `docker stop cs-rl-pg` when finished.
