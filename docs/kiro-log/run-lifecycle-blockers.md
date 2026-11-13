@@ -84,3 +84,9 @@ Done and committed this run, each with its database tests passing against a thro
   2. The Compose judge connects as the `counterspell` user, with no password (the Postgres service uses trust auth). The least-privilege role `counterspell_judge` is `NOLOGIN` and has no password, so it cannot log in yet. Unblock: a deploy step that creates a login for `counterspell_judge` with a secret from the environment, then point `DATABASE_URL` at it.
 - **Not run:** `docker compose build judge`. Only `docker compose config` was checked.
 - **T18 (model test) not started in this pass.** It is the next unchecked task after T19.
+
+## T18: model-based interleavings (done, attempt 3)
+
+- `pg_model_interleavings` runs 32 cases of up to 39 calls across 3 workers and 3 runs. It checks the fence's answer for each call, the job state and attempts against the model after each call, and the global invariants. It passed on the first run.
+- Not measured: branch coverage. I did not instrument the test to count how often each branch (for example a `finish` refused because the run never compiled) is reached. Worth checking before relying on it as the only queue safety net.
+- Proptest regression file: none was produced, because no case failed.

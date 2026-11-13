@@ -24,6 +24,7 @@ uuid = { version = "1", features = ["v4", "serde"] }
 [dev-dependencies]
 # Tests always see the test kit. Release builds leave the feature off.
 counterspell-judge = { path = ".", features = ["testkit"] }
+proptest = { version = "1.9", default-features = false, features = ["std"] }
 
 [lints]
 workspace = true
