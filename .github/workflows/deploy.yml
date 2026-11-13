@@ -1,6 +1,6 @@
 # Deploy to the production VPS. DISABLED until you set it up (it is a no-op today):
 #   1. Settings > Environments > New "production": required reviewer = you,
-#      deployment branches = "Selected: brighton/kiro-setup" (+ tags v*).
+#      deployment branches = "Selected: main" (+ tags v*).
 #   2. Environment secrets: DEPLOY_HOST, DEPLOY_PORT, DEPLOY_SSH_KEY (forced-command key,
 #      see deploy/vps/README.md), DEPLOY_KNOWN_HOSTS (host key copied out-of-band, not ssh-keyscan).
 #   3. Repository variable DEPLOY_ENABLED = true.
@@ -70,7 +70,7 @@ jobs:
         run: |
           set -euo pipefail
           owner="${GITHUB_REPOSITORY_OWNER,,}"
-          identity="^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/publish-images\.yml@refs/(heads/brighton/kiro-setup|tags/v.+)$"
+          identity="^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/publish-images\.yml@refs/(heads/main|tags/v.+)$"
           for img in server judge migrate; do
             ref="ghcr.io/${owner}/counterspell-${img}:sha-${SHA}"
             cosign verify "$ref" --certificate-identity-regexp "$identity" \

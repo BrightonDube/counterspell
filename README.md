@@ -1,7 +1,7 @@
 # Counterspell
 
-[![CI](https://github.com/BrightonDube/counterspell/actions/workflows/ci.yml/badge.svg?branch=brighton%2Fkiro-setup)](https://github.com/BrightonDube/counterspell/actions/workflows/ci.yml?query=branch%3Abrighton%2Fkiro-setup)
-[![Security](https://github.com/BrightonDube/counterspell/actions/workflows/security.yml/badge.svg?branch=brighton%2Fkiro-setup)](https://github.com/BrightonDube/counterspell/actions/workflows/security.yml?query=branch%3Abrighton%2Fkiro-setup)
+[![CI](https://github.com/BrightonDube/counterspell/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BrightonDube/counterspell/actions/workflows/ci.yml?query=branch%3Amain)
+[![Security](https://github.com/BrightonDube/counterspell/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/BrightonDube/counterspell/actions/workflows/security.yml?query=branch%3Amain)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/BrightonDube/counterspell/badge)](https://scorecard.dev/viewer/?uri=github.com/BrightonDube/counterspell)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 

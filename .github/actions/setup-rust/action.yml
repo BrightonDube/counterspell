@@ -20,5 +20,5 @@ runs:
       uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
       with:
         shared-key: ${{ inputs.cache-key }}
-        # Only trusted pushes to the default branch write the cache; PRs read it.
-        save-if: ${{ github.ref == 'refs/heads/brighton/kiro-setup' }}
+        # Only trusted pushes to main (the production/default branch) write the cache; PRs and kiro-setup only read it.
+        save-if: ${{ github.ref == 'refs/heads/main' }}

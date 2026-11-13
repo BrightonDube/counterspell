@@ -1,8 +1,8 @@
 # Reusable: build, push, sign and attest the three runtime images to GHCR.
-# Called only by ci.yml after "CI OK" on pushes to the default branch or v* tags.
+# Called only by ci.yml after "CI OK" on pushes to main or v* tags.
 # Verify an image:  gh attestation verify oci://ghcr.io/brightondube/counterspell-server:sha-<sha> -R BrightonDube/counterspell
 #                   cosign verify ghcr.io/brightondube/counterspell-server:sha-<sha> \
-#                     --certificate-identity-regexp '^https://github.com/BrightonDube/counterspell/\.github/workflows/publish-images\.yml@refs/(heads/brighton/kiro-setup|tags/v.+)$' \
+#                     --certificate-identity-regexp '^https://github.com/BrightonDube/counterspell/\.github/workflows/publish-images\.yml@refs/(heads/main|tags/v.+)$' \
 #                     --certificate-oidc-issuer https://token.actions.githubusercontent.com
 name: Publish images
 
