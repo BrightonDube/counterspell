@@ -8,7 +8,9 @@
 DO $$
 BEGIN
     CREATE ROLE counterspell_server NOLOGIN;
-EXCEPTION WHEN duplicate_object THEN
+-- Two databases migrating at once can race on the cluster-wide role catalogue.
+-- The loser gets unique_violation rather than duplicate_object, so catch both.
+EXCEPTION WHEN duplicate_object OR unique_violation THEN
     NULL;
 END
 $$;
@@ -16,7 +18,7 @@ $$;
 DO $$
 BEGIN
     CREATE ROLE counterspell_judge NOLOGIN;
-EXCEPTION WHEN duplicate_object THEN
+EXCEPTION WHEN duplicate_object OR unique_violation THEN
     NULL;
 END
 $$;
