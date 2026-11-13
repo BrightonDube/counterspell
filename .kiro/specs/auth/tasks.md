@@ -30,7 +30,7 @@ Conventions for every Rust task:
   - Preserve: no new Cargo package; `counterspell-common` gains no auth dependency.
   - Rust lesson: Cargo features and why `default-features = false` keeps the dependency tree small.
 
-- [ ] **T02 [S] (30 min) Auth module skeleton: config, clock, errors**
+- [x] **T02 [S] (30 min) Auth module skeleton: config, clock, errors**
   - Files: `crates/server/src/lib.rs` (create only if `run-lifecycle` has not), `crates/server/src/auth/{mod.rs,config.rs,clock.rs,errors.rs}`, `crates/common/src/ids.rs` (only if `UserId` does not exist yet).
   - `Redacted<T>` (Debug and Display print `[redacted]`). `AuthConfig::from_map(&HashMap<String,String>) -> Result<AuthConfig, ConfigError>` with every rule of R2 (required variables, provider enabled only with both values, production guards, development exceptions, demo needs both variables and a 16-character password, secret length, URL parsing). `from_env()` only builds the map. `Clock` trait with `SystemClock` and `ManualClock` (feature `testkit`). `AuthError` with `status()`, `code()`, `message()` mapping to the table in `design.md` and `IntoResponse` producing `{"code","message"}`.
   - Tests: table-driven unit tests for each config rule (missing `SESSION_SECRET` names the variable, not the value; production + `http` is refused; `log` transport refused in production; development + localhost allowed); `Debug` output of a config containing secrets never contains them.

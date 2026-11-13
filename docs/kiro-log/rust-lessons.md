@@ -544,3 +544,10 @@ Timestamps are formatted in SQL with `to_char`. That avoids adding the sqlx `tim
 `COALESCE(column, now())` keeps the first cancel timestamp. A repeated request changes nothing, which makes the endpoint safe to retry.
 `pg_notify` is called inside a query and sends only a hint. The payload is the run id, and the judge still reads the flag from Postgres.
 A `Result` with `?` on each step means a missing run and a foreign run return the same error value, so the response cannot reveal which one happened.
+
+# Rust lesson: auth T02
+
+`Redacted<T>` is a small wrapper with a hand-written `Debug` that prints `[redacted]`. A struct that derives `Debug` then shows that text for every secret field, so a secret cannot leak through a log line by accident.
+`optional` and `required` return `&str` borrowed from the map, so reading settings copies nothing until a value is kept. Owned `String`s are made only where the config stores them.
+`Option<T>` means "feature on or off". An OAuth provider is `Some` only when both of its values exist, so a half-set provider cannot be used by mistake.
+A `match` on the pair `(app_env, value)` lists every case. Adding a new environment or transport makes the compiler point at each place that must change.

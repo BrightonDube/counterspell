@@ -6,6 +6,7 @@
 
 #![warn(missing_docs)]
 
+pub mod auth;
 pub mod client_ip;
 pub mod config;
 pub mod error;
