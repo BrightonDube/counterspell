@@ -154,7 +154,7 @@ fn body_error(rejection: BytesRejection) -> ApiError {
     }
 }
 
-fn require_json(headers: &HeaderMap) -> Result<(), ApiError> {
+pub(crate) fn require_json(headers: &HeaderMap) -> Result<(), ApiError> {
     let is_json = headers
         .get(header::CONTENT_TYPE)
         .and_then(|value| value.to_str().ok())

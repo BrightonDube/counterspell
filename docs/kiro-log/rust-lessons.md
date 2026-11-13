@@ -537,3 +537,10 @@ Clippy's `needless_pass_by_value` asks for `&Decision` here, because `enforce` o
 `serde_json::from_value` into a struct with only three fields copies only those keys. Unknown keys are ignored by default, so a whitelist is one small struct, not a hand-written filter.
 Ownership is checked in the SQL `WHERE` clause, so a query for another user's row returns no row at all. Checking in Rust after the read would leave the data in memory.
 Timestamps are formatted in SQL with `to_char`. That avoids adding the sqlx `time` feature for one column.
+
+# Rust lesson: run-lifecycle T27
+
+`UPDATE ... RETURNING` gives back a value from the row it changed, in one statement. The cancel handler gets the run's status from the same query that sets the flag, so no second read can race with the judge.
+`COALESCE(column, now())` keeps the first cancel timestamp. A repeated request changes nothing, which makes the endpoint safe to retry.
+`pg_notify` is called inside a query and sends only a hint. The payload is the run id, and the judge still reads the flag from Postgres.
+A `Result` with `?` on each step means a missing run and a foreign run return the same error value, so the response cannot reveal which one happened.

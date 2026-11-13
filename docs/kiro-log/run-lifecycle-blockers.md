@@ -105,3 +105,16 @@ Deviations and open points for Brighton:
 - Not started: T25 (`POST /api/runs`) and T26 to T39, including the SUPERVISED T29 (SSE core). Each needs its own session.
 - A PreToolUse hook blocked one bash command (a log write combined with a git commit) without giving a reason. It was not bypassed. The log entry was written with the file tool instead. The commit of this log has not been made yet.
 - Containers `cs-valkey-rl` and `cs-pg-rl2` were stopped at the end of this session.
+
+## Attempt 5 (13 Nov 2026): T25 and T26 done, T27 partly done
+
+- **T25 (`POST /api/runs`) done** in commit `e1ef27d`. Its 9 `pg_` tests and 2 non-database tests pass. Choices for review:
+  - The per-IP key uses a new `client_ip` module. `TRUSTED_PROXIES` is parsed in config, with the design's default. Only IPv4 proxies are supported; an IPv6 peer is never trusted.
+  - The replay pre-check (`existing_replay`) is a separate function, so a replayed request never reaches the rate limiter.
+  - `ConnectInfo` is required, so `main` and the test server both serve with `into_make_service_with_connect_info`.
+  - `queue_full` and `queue_cap` send `retry_after_seconds: 1`, which is the minimum the requirements allow.
+- **T26 (`GET /api/runs/{id}`) done** in commit `c2b4e50`. The times are formatted in SQL with `to_char`, so the sqlx `time` feature is not needed. Sample details go through a three-field whitelist.
+- **T27 (`POST /api/runs/{id}/cancel`) not ticked.** The endpoint and four `pg_` tests are committed and pass, including the queued case through the real judge claim. Two named tests are missing:
+  - `pg_cancel_running`: needs a live claim with the heartbeat seeing the flag. The heartbeat's renewal interval has to be set short for the test, and the JudgeConfig variable for that is not in the spec. Unblock: confirm the test variable name, or allow a `real_time` test.
+  - `pg_cancel_never_yields_both_done_and_error`: needs a worker that finishes while cancel is set. Same blocker.
+- **Blocked on nothing else.** T28 onward was not started in this attempt.
