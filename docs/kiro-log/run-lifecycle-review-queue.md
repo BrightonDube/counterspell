@@ -31,3 +31,13 @@ Brighton reviews each entry before the next task that depends on it starts.
   - `emit` now refuses `done` and `error` (test `pg_emit_refuses_terminal_events`). Only the terminal write (T14) and the retry path may end a run.
   - `sanitize_last_error` strips control characters and caps the text at 500 characters.
 - Gap: `pg_lost_lease_stops_writes` covers emit, renew and release. The finish write is checked in T14.
+
+## T14: terminal write (commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/queue/finish.rs`, `crates/judge/tests/finish.rs`; `emit.rs` split into `read_status_locked` and `store_event_row` helpers.
+- What to check:
+  - `finish` does the fence, the status rule, the result columns, the test rows, the `done` event and the job update in one transaction. The `done` payload and the columns come from the same `FinalResult`.
+  - `TestRecord::Hidden` has no field for input, expected or program output, so none can be stored.
+  - `finish_failed` accepts only `cancelled`, `problem_unavailable` and `language_unavailable`. Retry exhaustion and expiry have their own paths.
+  - `QueueError::InvalidResult` refuses counts that do not fit an `int` column.
+- Note: the atomicity test forces a duplicate ordinal to fail after the submission update. It does not inject a fault inside the code path.

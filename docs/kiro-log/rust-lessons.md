@@ -446,3 +446,9 @@ A crate can list itself under `[dev-dependencies]` with a feature turned on. Tes
 A `struct` with `Copy` (such as `JobSnapshot`) is cheap to pass around when several branches need the same fields.
 `saturating_add`, `saturating_mul` and `min` keep retry arithmetic from overflowing, so a bad counter cannot panic the worker.
 `#[cfg(test)] mod tests` keeps unit tests next to the pure functions they check, such as backoff and sanitising.
+
+# Rust lesson: run-lifecycle T14
+
+`?` returns early from a function, and the transaction then rolls back when it is dropped. A failure in any step therefore leaves no partial result, which the atomicity test checks by forcing a duplicate row.
+Enums with data (`TestRecord::Sample` and `TestRecord::Hidden`) make the hidden-test rule a type rule: the hidden variant has no field that could carry the input.
+`u32::try_from(...)` into `i32` returns a `Result`, so an out-of-range count becomes a named error (`InvalidResult`) instead of a silent wrap.
