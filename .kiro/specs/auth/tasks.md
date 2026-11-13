@@ -315,7 +315,7 @@ Conventions for every Rust task:
 
 ## Wave 8: web screens
 
-- [ ] **T29 [P] (25 min) Auth client and session store**
+- [x] **T29 [P] (25 min) Auth client and session store**
   - Files: `web/src/lib/auth/client.js`, `web/src/lib/auth/session.svelte.js`, `web/src/lib/auth/messages.js`.
   - Fetch wrapper (same-origin, JSON, maps `{code,message}` errors), calls for every endpoint in the API table, a Svelte 5 rune store holding `user | null` and `capabilities`, a `returnToFromQuery()` that applies the same rules as the server (convenience only), a fixed table of `error` code → plain sentence.
   - Requirements: R20.5–R20.7.
@@ -323,7 +323,7 @@ Conventions for every Rust task:
   - Verify: `cd web && npm run check && npm run build`.
   - Preserve: no token or password is stored in `localStorage`, `sessionStorage` or a global; messages are rendered as text.
 
-- [ ] **T30 [S] (30 min) Login page**
+- [x] **T30 [S] (30 min) Login page**
   - Files: `web/src/routes/login/+page.svelte` (and small components under `web/src/lib/auth/`).
   - Provider buttons for enabled providers (plain links), email form with magic-link and password modes (Bits UI tabs), the "Judging? Use the demo account" link that opens the demo form (demo email shown, empty password field), `aria-live` error banner for `?error=`, labelled inputs, visible focus. Semantic tokens only.
   - Requirements: R20.1, R20.4, R20.5, R16.3.

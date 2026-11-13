@@ -17,7 +17,7 @@ import {
   verifyMagicLink
 } from './client.js';
 import { SessionStore } from './session.svelte.js';
-import { ERROR_MESSAGES, messageFor } from './messages.js';
+import { ERROR_MESSAGES, errorFromQuery, messageFor } from './messages.js';
 import { returnToFromQuery } from './return-to.js';
 
 afterEach(() => {
@@ -269,5 +269,23 @@ describe('session store (T29)', () => {
     );
     await new SessionStore().load();
     expect(setItem).not.toHaveBeenCalled();
+  });
+});
+
+describe('errorFromQuery (T30)', () => {
+  it('turns the error code in the query into its plain sentence', () => {
+    expect(errorFromQuery('?error=invalid_credentials')).toBe(
+      'The email or password is not correct.'
+    );
+  });
+
+  it('shows nothing when there is no error code', () => {
+    expect(errorFromQuery('?return_to=/problems')).toBeNull();
+  });
+
+  it('uses the generic sentence for a code the page does not know', () => {
+    expect(errorFromQuery('?error=made_up')).toBe(
+      ERROR_MESSAGES.internal_error
+    );
   });
 });
