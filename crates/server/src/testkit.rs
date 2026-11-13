@@ -5,14 +5,17 @@ use axum::http::{header::AUTHORIZATION, HeaderMap};
 use counterspell_common::ids::UserId;
 use uuid::Uuid;
 
+use async_trait::async_trait;
+
 use crate::seams::{ProblemLookup, ProblemRef, UserResolver};
 
 /// Accepts `Authorization: Bearer test-user-<n>` and maps `<n>` to a fixed user id.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct BearerTestResolver;
 
+#[async_trait]
 impl UserResolver for BearerTestResolver {
-    fn resolve(&self, headers: &HeaderMap) -> Option<UserId> {
+    async fn resolve(&self, headers: &HeaderMap) -> Option<UserId> {
         let value = headers.get(AUTHORIZATION)?.to_str().ok()?;
         let number = value.strip_prefix("Bearer test-user-")?;
         let number: u128 = number.parse().ok()?;

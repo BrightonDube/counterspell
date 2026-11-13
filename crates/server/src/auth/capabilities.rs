@@ -3,6 +3,8 @@
 //! Every mutating handler calls [`Capabilities::require`] before it does any work. No other code
 //! checks whether a user is the demo account.
 
+use serde::Serialize;
+
 use super::errors::AuthError;
 
 /// One action that the demo account is not allowed to take.
@@ -21,7 +23,7 @@ pub enum Capability {
 }
 
 /// The actions an account may take. The UI reads this same struct from `/api/me`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[allow(
     clippy::struct_excessive_bools,
     reason = "each flag is one named action that the UI reads separately from /api/me"

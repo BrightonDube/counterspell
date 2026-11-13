@@ -5,8 +5,7 @@
 //! here (nobody is signed in, no problems exist, two languages). The auth and catalogue specs replace
 //! them. Tests use the versions in `testkit`.
 
-use std::future::Future;
-
+use async_trait::async_trait;
 use axum::{
     extract::FromRequestParts,
     http::{request::Parts, HeaderMap},
@@ -16,9 +15,12 @@ use counterspell_common::ids::UserId;
 use crate::{error::ApiError, AppState};
 
 /// Works out who is calling from the request headers. Returns `None` for anonymous callers.
+///
+/// It is async because the session resolver checks the database.
+#[async_trait]
 pub trait UserResolver: Send + Sync {
     /// Returns the signed-in user for these headers, or `None`.
-    fn resolve(&self, headers: &HeaderMap) -> Option<UserId>;
+    async fn resolve(&self, headers: &HeaderMap) -> Option<UserId>;
 }
 
 /// The production resolver until the auth spec lands. It never identifies anyone, so every
@@ -26,8 +28,9 @@ pub trait UserResolver: Send + Sync {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Unauthenticated;
 
+#[async_trait]
 impl UserResolver for Unauthenticated {
-    fn resolve(&self, _headers: &HeaderMap) -> Option<UserId> {
+    async fn resolve(&self, _headers: &HeaderMap) -> Option<UserId> {
         None
     }
 }
@@ -99,15 +102,15 @@ pub struct CurrentUser(pub UserId);
 impl FromRequestParts<AppState> for CurrentUser {
     type Rejection = ApiError;
 
-    fn from_request_parts(
+    async fn from_request_parts(
         parts: &mut Parts,
         state: &AppState,
-    ) -> impl Future<Output = Result<Self, Self::Rejection>> + Send {
-        let result = state
+    ) -> Result<Self, Self::Rejection> {
+        state
             .user_resolver
             .resolve(&parts.headers)
+            .await
             .map(CurrentUser)
-            .ok_or_else(ApiError::unauthorized);
-        std::future::ready(result)
+            .ok_or_else(ApiError::unauthorized)
     }
 }

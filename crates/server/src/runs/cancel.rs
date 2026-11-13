@@ -54,6 +54,7 @@ pub async fn cancel_run(
     let user = state
         .user_resolver
         .resolve(&headers)
+        .await
         .ok_or_else(ApiError::unauthorized)?;
     require_json(&headers)?;
     let not_found = || ApiError::not_found("Run not found.");
