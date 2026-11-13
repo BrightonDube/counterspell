@@ -6,7 +6,8 @@
 
 use counterspell_grimoire::codes;
 use counterspell_grimoire::report::{Diagnostic, Report};
-use counterspell_grimoire::validate_static;
+use counterspell_grimoire::runner::PackRunner;
+use counterspell_grimoire::{validate_sandbox, validate_static, SandboxFault};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
@@ -72,14 +73,74 @@ fn parse(args: &[String]) -> Result<Options, String> {
     Ok(options)
 }
 
-/// Validates the target and returns one report per pack.
-fn reports_for(options: &Options) -> Result<Vec<Report>, String> {
+/// The pack directories the command targets, in sorted order.
+fn pack_paths(options: &Options) -> Result<Vec<PathBuf>, String> {
     match &options.target {
-        Target::Single(path) => Ok(vec![read_pack(path)?]),
+        Target::Single(path) => Ok(vec![path.clone()]),
         Target::All(root) => {
             let mut packs = pack_dirs(root, options.include_underscore)?;
             packs.sort();
-            packs.iter().map(|path| read_pack(path)).collect()
+            Ok(packs)
+        }
+    }
+}
+
+/// Validates the target and returns one report per pack.
+fn reports_for(options: &Options) -> Result<Vec<Report>, String> {
+    pack_paths(options)?
+        .iter()
+        .map(|path| read_pack(path))
+        .collect()
+}
+
+/// Validates each pack with the runner. The first fault stops the stage and is returned as is.
+fn sandbox_reports(
+    paths: &[PathBuf],
+    runner: &mut dyn PackRunner,
+) -> Result<Vec<Report>, SandboxFault> {
+    paths
+        .iter()
+        .map(|path| validate_sandbox(path, &mut *runner))
+        .collect()
+}
+
+/// Prints a sandbox fault as one diagnostic, as JSON when `--json` is set.
+fn print_fault(diagnostic: Diagnostic, json: bool) {
+    if json {
+        let mut report = Report::new("sandbox");
+        report.push(diagnostic);
+        println!("{}", report.to_json());
+    } else {
+        println!("{}", diagnostic.to_text_line());
+    }
+}
+
+/// Runs the sandbox stage on each target. With no runner configured it reports SBX-07.
+///
+/// A runner fault is printed as SBX-06 and exits 2. It is never reported as a pack error (exit 1).
+fn run_sandbox_stage(options: &Options, runner: Option<&mut dyn PackRunner>) -> ExitCode {
+    let Some(runner) = runner else {
+        let diagnostic = Diagnostic::new(
+            codes::SBX_07,
+            "sandbox",
+            None,
+            "sandbox runner not configured",
+        );
+        print_fault(diagnostic, options.json);
+        return ExitCode::from(2);
+    };
+    let paths = match pack_paths(options) {
+        Ok(paths) => paths,
+        Err(message) => {
+            eprintln!("{message}");
+            return ExitCode::from(2);
+        }
+    };
+    match sandbox_reports(&paths, runner) {
+        Ok(reports) => print_reports(&reports, options),
+        Err(fault) => {
+            print_fault(fault.diagnostic(), options.json);
+            ExitCode::from(2)
         }
     }
 }
@@ -147,14 +208,7 @@ fn run(args: &[String]) -> ExitCode {
         }
     };
     if options.sandbox {
-        let diagnostic = Diagnostic::new(
-            codes::SBX_07,
-            "sandbox",
-            None,
-            "sandbox runner not configured",
-        );
-        println!("{}", diagnostic.to_text_line());
-        return ExitCode::from(2);
+        return run_sandbox_stage(&options, None);
     }
     match reports_for(&options) {
         Ok(reports) => print_reports(&reports, &options),
@@ -168,4 +222,83 @@ fn run(args: &[String]) -> ExitCode {
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
     run(&args)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use counterspell_engine::ProgramResult;
+    use counterspell_grimoire::runner::RunnerError;
+    use serde_json::Value;
+    use std::time::Duration;
+
+    /// A runner whose sandbox is down: every call is an infrastructure fault.
+    struct DownRunner;
+
+    impl PackRunner for DownRunner {
+        fn run(
+            &mut self,
+            _target: counterspell_grimoire::runner::Target<'_>,
+            _input: &Value,
+            _limit: Duration,
+        ) -> Result<ProgramResult, RunnerError> {
+            Err(RunnerError::Infrastructure(
+                "sandbox daemon unreachable".to_owned(),
+            ))
+        }
+
+        fn bench(
+            &mut self,
+            _sized_inputs: &[(u64, Value)],
+            _limit: Duration,
+        ) -> Result<Vec<(u64, u64)>, RunnerError> {
+            Err(RunnerError::Infrastructure(
+                "sandbox daemon unreachable".to_owned(),
+            ))
+        }
+    }
+
+    fn args(items: &[&str]) -> Vec<String> {
+        items.iter().map(|item| (*item).to_owned()).collect()
+    }
+
+    fn count_pairs_dir() -> String {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../packs/count-pairs")
+            .display()
+            .to_string()
+    }
+
+    #[test]
+    fn runner_fault_is_sbx_06_from_the_sandbox_stage() {
+        let paths = vec![PathBuf::from(count_pairs_dir())];
+
+        let fault = match sandbox_reports(&paths, &mut DownRunner) {
+            Err(fault) => fault,
+            Ok(reports) => panic!("a runner fault must not produce reports: {}", reports.len()),
+        };
+
+        assert_eq!(fault.diagnostic().code, "SBX-06");
+    }
+
+    #[test]
+    fn runner_fault_exits_two_not_one() {
+        let dir = count_pairs_dir();
+        let options =
+            parse(&args(&["validate", &dir, "--sandbox"])).expect("the command line is valid");
+
+        // A pack error would exit 1. An infrastructure fault must exit 2 (SBX-06).
+        let code = run_sandbox_stage(&options, Some(&mut DownRunner));
+
+        assert_eq!(code, ExitCode::from(2));
+    }
+
+    #[test]
+    fn missing_runner_exits_two_with_sbx_07() {
+        let dir = count_pairs_dir();
+        let options =
+            parse(&args(&["validate", &dir, "--sandbox"])).expect("the command line is valid");
+
+        assert_eq!(run_sandbox_stage(&options, None), ExitCode::from(2));
+    }
 }

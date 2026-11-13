@@ -41,3 +41,18 @@ No task in `tasks.md` is marked `[SUPERVISED]`, so nothing here is a supervised 
   - The sandbox stage uses a local `observe` helper, not `ProgramOracle`. The design suggested reuse. Both do the same thing, so this is a style point.
   - SBX-03 pointers use the index after the known-ghost filter. Only an invalid ghost kind shifts it, and static checks reject that before the sandbox runs.
   - The mutation suite is Unix only (`#![cfg(unix)]`), because it creates a symlink. The CI on Linux covers it.
+
+## Implement pass (13 Nov 2026): wave 5 review for T19
+
+Review was done by a subagent against `requesting-code-review/code-reviewer.md`. Its findings and what was done:
+
+- **Important, fixed:** the exit-2 test only checked the code. Now `sandbox_reports` returns the fault, and a test asserts `SBX-06` on it.
+- **Important, fixed:** the SBX-07 path had no test. Added `missing_runner_exits_two_with_sbx_07`.
+- **Important, fixed:** faults printed plain text even under `--json`. `print_fault` now prints a JSON report when `--json` is set.
+- **Minor, open:** with `validate --all --sandbox`, a fault on a later pack drops the earlier packs' reports without printing them. Exit 2 is still correct. Fix when the judge runner exists (T20).
+- **Minor, open:** the exit-path test reads `packs/count-pairs`. If that pack changes so it no longer passes the static checks, the test fails for an unrelated reason. A small fixture under `tests/` would be steadier.
+- **Minor, open:** the `--json` fault output has no test (see the blockers file).
+
+### For Brighton to check
+
+- Open question 7 (who owns `PackRunner`) is still the gate for T20. Nothing else in this spec needs a decision before the judge spec starts.
