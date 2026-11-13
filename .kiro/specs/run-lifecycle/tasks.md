@@ -152,7 +152,7 @@ Conventions for every Rust task:
   - Preserve: `test_results` is written only here.
   - Rust lesson: why one transaction beats several careful statements.
 
-- [ ] **T15 [S] (30 min) Reaper and queue expiry**
+- [x] **T15 [S] (30 min) Reaper and queue expiry**
   - Files: `crates/judge/src/queue/reap.rs`, `crates/judge/tests/reap.rs`.
   - Implement `reap_once(pool, cfg) -> ReapReport` covering expired leases, the maximum claim age, cancelled-and-orphaned jobs, retries exhausted, and queue TTL expiry, as in `design.md` Path 6, using `FOR UPDATE SKIP LOCKED` and one transaction per job. Add `run_reaper(pool, cfg, shutdown)` that runs at start-up and every `REAPER_INTERVAL`.
   - Tests: `pg_reaper_requeues_expired_lease`; `pg_reaper_marks_dead_after_max_attempts` (P5, P18); `pg_reaper_two_reapers_do_not_double_count` (concurrent `reap_once`; `attempts` rises by exactly 1); `pg_max_claim_age_reclaims_stuck_run`; `pg_expiry_of_stale_queue` (P17, never executed); `pg_reaper_finishes_cancelled_orphan`; `pg_reaper_does_not_touch_live_leases`.

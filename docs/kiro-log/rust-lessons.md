@@ -452,3 +452,9 @@ A `struct` with `Copy` (such as `JobSnapshot`) is cheap to pass around when seve
 `?` returns early from a function, and the transaction then rolls back when it is dropped. A failure in any step therefore leaves no partial result, which the atomicity test checks by forcing a duplicate row.
 Enums with data (`TestRecord::Sample` and `TestRecord::Hidden`) make the hidden-test rule a type rule: the hidden variant has no field that could carry the input.
 `u32::try_from(...)` into `i32` returns a `Result`, so an out-of-range count becomes a named error (`InvalidResult`) instead of a silent wrap.
+
+# Rust lesson: run-lifecycle T15
+
+`tokio::select!` waits on two futures and runs the branch that finishes first. The reaper uses it to choose between "the timer ticked" and "shutdown was requested".
+`watch::channel` is a single value that many tasks can read. Setting it to `true` is the shutdown signal, and a task that starts late still sees it.
+Finding a candidate without a lock, then locking and checking it again, is a common pattern. The second check is what stops two reapers from acting on the same row.
