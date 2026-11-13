@@ -1,0 +1,69 @@
+# Terraform checks for infra/ (plan-only policy: no apply from CI, ever).
+# Runs fmt, validate and TFLint without credentials or a backend. Real `terraform plan`
+# needs provider tokens, so it runs from the laptop until a read-only plan token exists.
+# No-op until an infra/ folder with .tf files is added.
+name: Terraform
+
+on:
+  pull_request:
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+  push:
+    branches: [brighton/kiro-setup]
+    paths: ["infra/**", ".github/workflows/terraform.yml"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: terraform-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Terraform (fmt, validate, tflint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: infra
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Is there anything to check?
+        id: detect
+        working-directory: .
+        run: |
+          if find infra -name '*.tf' -print -quit 2>/dev/null | grep -q .; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No infra/*.tf yet; nothing to check." >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - name: Install Terraform
+        if: steps.detect.outputs.present == 'true'
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: 1.17.2
+          terraform_wrapper: false
+      - name: terraform fmt
+        if: steps.detect.outputs.present == 'true'
+        run: terraform fmt -check -recursive -diff
+      - name: terraform init (no backend) and validate
+        if: steps.detect.outputs.present == 'true'
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+      - name: Install TFLint
+        if: steps.detect.outputs.present == 'true'
+        uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+      - name: TFLint
+        if: steps.detect.outputs.present == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # avoids rate limits when downloading TFLint plugins
+        run: |
+          tflint --init
+          tflint --recursive --format compact

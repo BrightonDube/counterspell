@@ -1,0 +1,106 @@
+# Deploy to the production VPS. DISABLED until you set it up (it is a no-op today):
+#   1. Settings > Environments > New "production": required reviewer = you,
+#      deployment branches = "Selected: brighton/kiro-setup" (+ tags v*).
+#   2. Environment secrets: DEPLOY_HOST, DEPLOY_PORT, DEPLOY_SSH_KEY (forced-command key,
+#      see deploy/vps/README.md), DEPLOY_KNOWN_HOSTS (host key copied out-of-band, not ssh-keyscan).
+#   3. Repository variable DEPLOY_ENABLED = true.
+# The runner never gets a shell on the server: the key can only run counterspell-deploy,
+# which accepts one strictly validated "deploy <sha> <digest> <digest> <digest>" line.
+name: Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA whose published images to deploy (default = this run's commit)
+        required: false
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false # never interrupt a deploy halfway
+
+jobs:
+  disabled:
+    name: Deploy disabled (setup pending)
+    if: vars.DEPLOY_ENABLED != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions: {}
+    steps:
+      - name: Explain
+        run: |
+          echo "::notice title=Deploy disabled::Create the 'production' environment and its secrets, then set DEPLOY_ENABLED=true (see the header of deploy.yml)."
+          echo "Deploy is disabled until the production environment exists. Nothing was deployed." >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy to production
+    if: vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Resolve and validate the commit
+        id: sha
+        env:
+          INPUT_SHA: ${{ inputs.sha }}
+          RUN_SHA: ${{ github.sha }}
+        run: |
+          sha="${INPUT_SHA:-$RUN_SHA}"
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Not a full commit SHA"; exit 1; }
+          echo "value=$sha" >> "$GITHUB_OUTPUT"
+      - name: Install cosign
+        uses: sigstore/cosign-installer@756fe2d284c7292c4e9b62c8a28f1e5629c59532 # v4.1.3
+      - name: Log in to GHCR (read-only)
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Verify signatures and pin digests
+        id: digests
+        env:
+          SHA: ${{ steps.sha.outputs.value }}
+        run: |
+          set -euo pipefail
+          owner="${GITHUB_REPOSITORY_OWNER,,}"
+          identity="^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/publish-images\.yml@refs/(heads/brighton/kiro-setup|tags/v.+)$"
+          for img in server judge migrate; do
+            ref="ghcr.io/${owner}/counterspell-${img}:sha-${SHA}"
+            cosign verify "$ref" --certificate-identity-regexp "$identity" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+            digest=$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}')
+            [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::Bad digest for $ref"; exit 1; }
+            echo "${img}=${digest}" >> "$GITHUB_OUTPUT"
+          done
+      - name: Deploy over SSH (pinned host key, forced command)
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          HOST: ${{ secrets.DEPLOY_HOST }}
+          PORT: ${{ secrets.DEPLOY_PORT }}
+          SHA: ${{ steps.sha.outputs.value }}
+          D_SERVER: ${{ steps.digests.outputs.server }}
+          D_JUDGE: ${{ steps.digests.outputs.judge }}
+          D_MIGRATE: ${{ steps.digests.outputs.migrate }}
+        run: |
+          set -euo pipefail
+          umask 077
+          key="$RUNNER_TEMP/deploy_key"; kh="$RUNNER_TEMP/known_hosts"
+          trap 'rm -f "$key" "$kh"' EXIT
+          printf '%s\n' "$SSH_KEY" > "$key"
+          printf '%s\n' "$KNOWN_HOSTS" > "$kh"
+          ssh -i "$key" -p "${PORT:-22}" \
+            -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$kh" \
+            "deploy@${HOST}" "deploy ${SHA} ${D_SERVER} ${D_JUDGE} ${D_MIGRATE}"
+      - name: Summary
+        env:
+          SHA: ${{ steps.sha.outputs.value }}
+        run: echo "Deployed \`${SHA}\` (signature-verified images, pinned by digest)." >> "$GITHUB_STEP_SUMMARY"

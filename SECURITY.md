@@ -18,7 +18,10 @@ Only the latest commit on the default branch is supported.
 
 - Every push and PR runs `.github/workflows/security.yml`: Gitleaks + TruffleHog
   (full history), a forbidden-file check, CodeQL (JS/TS, Rust, Actions), Semgrep CE,
-  cargo-deny advisories, `npm audit`, actionlint and zizmor.
+  cargo-deny advisories, `npm audit`, OSV-Scanner, dependency review on PRs,
+  actionlint and zizmor. OpenSSF Scorecard runs weekly.
+- Published images are signed with cosign (keyless) and carry SLSA provenance and SBOM
+  attestations; see `docs/ci-cd.md` for how to verify them.
 - GitHub secret scanning with push protection, and Dependabot alerts and security updates.
 - Local pre-commit / pre-push Gitleaks hooks (`scripts/install-git-hooks.sh`).
 

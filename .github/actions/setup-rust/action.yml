@@ -1,0 +1,24 @@
+name: Set up Rust
+description: Stable Rust toolchain plus a Cargo cache that only the default branch may write.
+inputs:
+  components:
+    description: Comma-separated rustup components (e.g. "rustfmt, clippy").
+    required: false
+    default: ""
+  cache-key:
+    description: Shared cache key so jobs with the same build profile reuse target/.
+    required: false
+    default: default
+runs:
+  using: composite
+  steps:
+    - name: Install stable Rust
+      uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+      with:
+        components: ${{ inputs.components }}
+    - name: Restore Cargo cache
+      uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      with:
+        shared-key: ${{ inputs.cache-key }}
+        # Only trusted pushes to the default branch write the cache; PRs read it.
+        save-if: ${{ github.ref == 'refs/heads/brighton/kiro-setup' }}
