@@ -99,3 +99,10 @@ The auth module adds these direct dependencies to `counterspell-server`. `cargo 
 - **tower 0.5.3** (dev, feature `util`) — Tower contributors — MIT — <https://crates.io/crates/tower>
 
 Held back: **reqwest** (for Resend, GitHub and Google calls) and **oauth2** (PKCE and the code exchange). Their rustls path pulls in `webpki-roots 1.0.12`, which is licensed `CDLA-Permissive-2.0`, and `deny.toml` does not allow it. The licence decision is logged in `docs/kiro-log/auth-blockers.md` for Brighton.
+
+## Web editor dependencies (ide-workspace T07)
+
+- **monaco-editor 0.57.0** — Microsoft Corporation — MIT — <https://www.npmjs.com/package/monaco-editor> (lazy-loaded editor; the Crypt theme is defined in `web/src/lib/editor/crypt-theme.ts`)
+- **marked** (transitive, used by Monaco's hover markdown) — MIT — <https://www.npmjs.com/package/marked>
+- **dompurify** (transitive, used by Monaco to sanitise hover markup) — dual-licensed MPL-2.0 OR Apache-2.0; used under Apache-2.0 — <https://www.npmjs.com/package/dompurify>
+- **@types/trusted-types** (transitive type definitions) — MIT — <https://www.npmjs.com/package/@types/trusted-types>
