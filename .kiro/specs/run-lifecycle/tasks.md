@@ -112,7 +112,7 @@ Conventions for every Rust task:
   - Preserve: grants are not widened to make a test pass; fix the test or ask.
   - Rust lesson: transactions, savepoints and what happens on drop.
 
-- [ ] **T11 [S] [SUPERVISED] (30 min) Claim with `FOR UPDATE SKIP LOCKED`**
+- [x] **T11 [S] [SUPERVISED] (30 min) Claim with `FOR UPDATE SKIP LOCKED`**
   - Files: `crates/judge/src/queue/claim.rs`, `crates/judge/tests/claim.rs`.
   - Implement `claim_next(pool, worker_id, lease) -> Result<Option<ClaimedRun>>` as in `design.md` Path 2: one transaction; eligible rows, cancel-first ordering, lease from the database clock, `claimed_at`, submission to `claimed` with `started_at`, load of the run fields, and the `restarted` event when `attempts > 0` (the event append calls the helper from T12; stub it behind a trait or order T11 after T12 if simpler, but keep the claim and the `restarted` event in one transaction). Add `NOTIFY` listening is **not** part of this task.
   - Tests: `pg_claim_exclusive_under_contention` (8 concurrent claimers, 50 jobs, every job claimed exactly once, none lost); `pg_claim_order_and_run_after` (FIFO, future `run_after` skipped); `pg_claim_prefers_cancelled`; `pg_duplicate_claim_attempts` (a job already claimed is not claimed again); `pg_claim_sets_submission_state`.
