@@ -54,9 +54,10 @@ export function planPlayback(
 ): PlaybackPlan {
   const steps: ShrinkStepView[] = [];
   let skipped = 0;
-  let lastIndex = 0;
+  // The engine numbers the first failing input 0, so the first received step is always accepted.
+  let lastIndex: number | undefined;
   for (const step of trace.steps) {
-    if (step.index > lastIndex) {
+    if (lastIndex === undefined || step.index > lastIndex) {
       steps.push(step);
       lastIndex = step.index;
     } else {
