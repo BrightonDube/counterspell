@@ -51,3 +51,4 @@ Newly done: T06 (statement panel), T07 (lazy Monaco and Crypt theme). T09 is bui
 ## Attempt 3 update (13 Nov 2026, evening)
 
 - **T11 done (reconciliation needed).** Added `web/src/lib/runs/reducer.ts`, `stream.ts` and `api.ts` with tests. These cover the same work as run-lifecycle T32 (pure reducer) and T33 (stream client). Brighton or the run-lifecycle run should mark those two tasks as done against this commit instead of writing them again. The shared JSON client gained an optional `headers` field for `Idempotency-Key`. Lint errors in `client.ts` (`no-useless-assignment`, noted in attempt 2) are fixed.
+- **T10 done, API error preservation deferred to T13.** Shortcuts, shortcut help, the polite save-status region and the byte warning are tested. The rule that the Monaco editor's Ctrl+Enter runs samples is kept as an assumed choice (see the attempt 2 decision). Brighton to confirm.
