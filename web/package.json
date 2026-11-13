@@ -11,17 +11,24 @@
     "prepare": "svelte-kit sync"
   },
   "devDependencies": {
-    "@sveltejs/adapter-static": "^3.0.10",
-    "@sveltejs/kit": "^2.48.0",
-    "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "@sveltejs/adapter-static": "^4.0.1",
+    "@sveltejs/kit": "^3.2.0",
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/vite": "^4.1.13",
-    "svelte": "^5.39.0",
-    "svelte-check": "^4.3.1",
+    "svelte": "^5.57.3",
+    "svelte-check": "^4.7.8",
     "tailwindcss": "^4.1.13",
-    "typescript": "^5.9.2",
-    "vite": "^7.1.7"
+    "typescript": "^6.0.3",
+    "vite": "^8.3.8"
   },
   "dependencies": {
     "bits-ui": "^2.14.0"
+  },
+  "imports": {
+    "#lib": "./src/lib/index.js",
+    "#lib/*": "./src/lib/*"
+  },
+  "overrides": {
+    "cookie@0.6.0": "0.7.2"
   }
 }
