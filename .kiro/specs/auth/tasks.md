@@ -331,7 +331,7 @@ Conventions for every Rust task:
   - Verify: `cd web && npm run check && npm run build`; manual keyboard-only pass; no raw hex colours (`grep` the new files).
   - Preserve: nothing fabricated; the demo password is never prefilled.
 
-- [ ] **T31 [S] (25 min) Verify page**
+- [x] **T31 [S] (25 min) Verify page**
   - Files: `web/src/routes/auth/verify/+page.svelte`.
   - Reads the token from the fragment, calls `history.replaceState` immediately, keeps the token in memory only, shows a confirm button, posts to `/api/auth/email/verify`, shows success (redirect to the validated `return_to`), "link used or expired" with a request-new-link form, and a "sign in first" message for the `401` of a link-email token.
   - Requirements: R20.2, R5.3, R9.3.
