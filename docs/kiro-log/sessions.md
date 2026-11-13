@@ -73,3 +73,23 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-13T12:03:00Z | model: not reported | last commit: fba0399 run-lifecycle T17: Rust lesson
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-13T12:19:56Z | model: not reported | last commit: 3178f8c run-lifecycle T18: model-based interleaving test for the judge queue
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 15 insertions(+)
+- 2026-11-13T12:50:58Z | model: not reported | last commit: 9d6d789 run-lifecycle: session log for T20 to T24 and open points
+ | diff stat:
+ docs/KIRO_USAGE.md        | 12 ++++++++++++
+ docs/kiro-log/sessions.md | 12 ++++++++++++
+ 2 files changed, 24 insertions(+)
+- 2026-11-13T13:08:32Z | model: not reported | last commit: 0e1944e run-lifecycle T27 (partial): POST /api/runs/{id}/cancel sets the judge flag, owner-checked, no quota; running-cancel tests still open
+ | diff stat:
+ docs/KIRO_USAGE.md        | 16 ++++++++++++++++
+ docs/kiro-log/sessions.md | 17 +++++++++++++++++
+ 2 files changed, 33 insertions(+)
