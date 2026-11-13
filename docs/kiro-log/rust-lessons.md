@@ -628,3 +628,9 @@ The body guard reads the bytes and then rebuilds the request with `Request::from
 `spawn_blocking` moves CPU-heavy work (Argon2) to a thread pool for blocking code. The async workers stay free to answer other requests while a hash runs.
 A `Semaphore` is a counter of permits. `acquire_owned` gives a permit that holds its place until it is dropped, so the gate limits hashing at the same time across all requests.
 Axum 0.8 does not accept `Option<ConnectInfo<..>>` as an extractor. A required extractor plus `MockConnectInfo` in tests is the simple fix.
+
+# Rust lesson: auth T26
+
+`Option<T>` means "feature on or off" here. `DemoConfig` is `Some` only when both demo variables are set, so the seed and the config route check one value, not two flags.
+`then_some` turns a `bool` into an `Option`: `(verdict != Verdict::Rejected).then_some(stored)` keeps the stored hash only when it still accepts the password.
+The seed calls a database function instead of writing `users` itself. The function is the only place that can touch the demo row, so the Rust code cannot bypass the guards from T09.

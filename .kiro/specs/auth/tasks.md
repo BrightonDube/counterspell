@@ -283,7 +283,7 @@ Conventions for every Rust task:
 
 ## Wave 7: demo account
 
-- [ ] **T26 [S] (25 min) Demo seed and `GET /api/auth/config` (Must)**
+- [x] **T26 [S] (25 min) Demo seed and `GET /api/auth/config` (Must)**
   - Files: `crates/server/src/auth/demo.rs`, `crates/server/src/auth/handlers/config.rs`, `crates/server/tests/pg_auth_demo_seed.rs`.
   - `seed_demo(pool, &DemoConfig, hasher)`: hash only if the stored hash does not already verify the password; call `cs_seed_demo_user`. Called from start-up code (wired in T33). `GET /api/auth/config` as in `design.md` (no secrets, no password).
   - Tests: seeding twice leaves exactly one demo user with `is_demo = true`, handle `demo`, verified email; the demo user can log in with the configured password via T24's handler; with the variables unset nothing is seeded and `config` reports `demo.enabled = false`; the stored value is an Argon2id hash and the plain password appears nowhere in the database or in captured logs.
