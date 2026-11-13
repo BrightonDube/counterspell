@@ -4,8 +4,51 @@
 //! These helpers run as a database superuser. They seed rows and age leases with
 //! SQL, so tests never sleep to move time forward.
 
+use crate::queue::ClaimToken;
 use counterspell_common::ids::{RunId, UserId};
 use sqlx::PgPool;
+
+/// Claims a queued run for `owner` without the claim code, as the database owner.
+///
+/// Sets the job to `claimed` with a lease an hour ahead, and moves a queued run to
+/// `claimed`. The attempt count is left as it is. Use this only in tests that are
+/// not testing the claim itself.
+///
+/// # Errors
+///
+/// Returns the database error when the update fails or no job exists for `run`.
+pub async fn force_claim(
+    pool: &PgPool,
+    run: RunId,
+    owner: &str,
+) -> Result<ClaimToken, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let (job_id, attempts): (i64, i16) = sqlx::query_as(
+        "UPDATE jobs SET state = 'claimed', lease_owner = $2, \
+         lease_expires_at = now() + interval '1 hour', claimed_at = now(), updated_at = now() \
+         WHERE submission_id = $1 RETURNING id, attempts",
+    )
+    .bind(run.as_uuid())
+    .bind(owner)
+    .fetch_one(&mut *tx)
+    .await?;
+    sqlx::query(
+        "UPDATE submissions SET status = 'claimed', started_at = COALESCE(started_at, now()) \
+         WHERE id = $1 AND status = 'queued'",
+    )
+    .bind(run.as_uuid())
+    .execute(&mut *tx)
+    .await?;
+    tx.commit().await?;
+    Ok(ClaimToken::new(job_id, run, owner.to_owned(), attempts))
+}
+
+/// Copies a token but changes its owner or attempt count. Used to test that a stale
+/// or forged claim is refused.
+#[must_use]
+pub fn token_with(token: &ClaimToken, owner: &str, attempts: i16) -> ClaimToken {
+    ClaimToken::new(token.job_id(), token.run_id(), owner.to_owned(), attempts)
+}
 
 /// Inserts one queued run and its job in a single transaction.
 ///

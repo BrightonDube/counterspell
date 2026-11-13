@@ -21,5 +21,9 @@ tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "signal",
 tracing = "0.1"
 uuid = { version = "1", features = ["v4", "serde"] }
 
+[dev-dependencies]
+# Tests always see the test kit. Release builds leave the feature off.
+counterspell-judge = { path = ".", features = ["testkit"] }
+
 [lints]
 workspace = true

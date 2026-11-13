@@ -122,7 +122,7 @@ Conventions for every Rust task:
   - Preserve: all timestamps come from the database; lock order is jobs, then submissions.
   - Rust lesson: borrowing a connection pool across tasks (`Arc`, `Clone` on `PgPool`).
 
-- [ ] **T12 [S] [SUPERVISED] (30 min) Fence, append-event and `emit`**
+- [x] **T12 [S] [SUPERVISED] (30 min) Fence, append-event and `emit`**
   - Files: `crates/judge/src/queue/fence.rs`, `crates/judge/src/queue/emit.rs`, `crates/judge/tests/emit.rs`.
   - Implement the fenced transaction helper (job row `FOR UPDATE` with owner and attempts), `append_event_locked(tx, run, attempt, &PublicEvent)` (counter increment with status change from `status_after_event`, insert, `pg_notify('run_events', run_id)`), and `emit(pool, &ClaimToken, &PublicEvent)`. Ensure the events table is written only through `PublicEvent`; no function accepts raw JSON.
   - Tests: `pg_emit_assigns_gapless_seq`; `pg_emit_changes_status_with_event` (`compiling`, first `test`, `ghost_hunting`); `pg_emit_with_wrong_owner_or_stale_attempt_writes_nothing` (P4); `pg_event_seq_gapless_under_concurrency` (old and new holder and a reaper-style locked writer racing; the final set of `seq` is exactly `1..n`; P8); `pg_no_append_after_terminal`.
