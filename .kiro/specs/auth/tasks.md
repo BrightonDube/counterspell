@@ -303,7 +303,7 @@ Conventions for every Rust task:
   - Preserve: the demo's limits live in `Capabilities` only; no scattered `if user.is_demo`.
   - Rust lesson: exhaustive tests that fail when someone adds a route.
 
-- [ ] **T28 [S] (30 min) Daily demo reset (Should; property P18)** [SUPERVISED]
+- [x] **T28 [S] (30 min) Daily demo reset (Should; property P18)** [SUPERVISED]
   - Files: `crates/server/src/auth/demo.rs`, `crates/server/tests/pg_auth_demo_reset.rs`.
   - A background task that every 5 minutes computes the latest scheduled reset (`DEMO_RESET_HOUR_UTC`), reads `users.demo_reset_at`, and calls `cs_reset_demo_account()` when it is older; catches up on start-up; logs the count. Takes the `Clock`; cancellable for tests and shutdown.
   - Tests (`ManualClock`): no reset before the hour; one reset after it; a restart after a missed hour resets once; two concurrent calls reset once; other users' rows are unchanged (snapshot comparison); running submissions survive; sessions of the demo user survive.
