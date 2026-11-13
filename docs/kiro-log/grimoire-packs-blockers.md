@@ -71,3 +71,22 @@ Done in this run: T15, T18, T21 to T27. T19 is partly done (see below).
 - **Still open, unchanged:** T20 (judge implements `PackRunner`, wires the real runner into `--sandbox`). Blocked on the `judge-sandbox` spec and open question 7. Until then the CLI never reaches a real runner.
 - **T28, T29, T30:** still blocked on Brighton's review, the ghost-engine conversion decision and the CI spec. Not started.
 - **Known gap in T19:** the `--json` branch of `print_fault` has no test. It is one line, and the text branch is tested through the exit code.
+
+## Status run (13 Nov 2026, approved by Brighton, no code changes)
+
+No task was started, because every unticked task is blocked. The ticked tasks were re-verified fresh in this session:
+
+- `cargo fmt --all -- --check`: pass.
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: pass.
+- `cargo test -p counterspell-grimoire`: 149 tests passed, 0 failed.
+- `validate` on `count-pairs`, `longest-run-length` and `diagonal-total`: 0 errors, 0 warnings, exit 0.
+- `validate --all packs --deny-warnings`: exit 0 (the T30 command already works).
+- `validate packs/count-pairs --sandbox`: exit 2 with SBX-07, as designed until T20.
+- `cargo deny check licenses`: "licenses ok". It prints a warning that the `Zlib` allowance in `deny.toml` matches no crate. This is a config cleanup, not a failure. Minor, not changed.
+
+Blocked tasks, unchanged:
+
+- **T20 (judge implements `PackRunner`):** `judge-sandbox` has 0 of 56 tasks ticked. Unblock: that spec implemented, and open question 7 confirmed.
+- **T28 (Brighton publishes starter packs):** human step. The three packs stay `draft`.
+- **T29 (convert `packs/_test/`):** ghost-engine is now 37 of 37 ticked, so its dependency is met. The task still waits on open question 11 (the conversion decision), and the run rules forbid editing `packs/_test/`. Unblock: Brighton's decision on question 11.
+- **T30 (CI step):** the command passes today. The step belongs in `.github/workflows/ci.yml`, which the repo-skeleton spec owns. Unblock: the CI owner adds `cargo run -q -p counterspell-grimoire -- validate --all packs --deny-warnings` to that file.
