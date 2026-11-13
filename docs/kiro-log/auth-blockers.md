@@ -53,3 +53,12 @@ Unchanged. Brighton has not chosen between `CDLA-Permissive-2.0` in `deny.toml` 
 
 ### Other open tasks not started in attempt 3
 T29 to T32 (web) were started in this attempt, see the summary. T27, T36 and T37 depend on blocked tasks.
+
+### Attempt 3 update (end of run)
+- T29 (auth client and session store), T30 (login), T31 (verify), T32 (account settings) are done and committed. The "started in this attempt" line above is out of date.
+- `cargo deny check licenses` passes today only because `reqwest` and `oauth2` are not in `Cargo.toml` yet. The T01 blocker still applies as soon as they are added.
+- Deferred: E2E (rule 7). The manual checks named in T30 (keyboard-only pass), T31 (address bar shows no token after load) and T32 (demo account actions disabled, sign-out everywhere) need a browser and stay unchecked as "deferred: E2E".
+- Still open and blocked: T01, T08, T14, T17 to T23, T25, T27, T33 to T37. T27, T33 to T37 depend on these.
+- Notes for the next run, once T01 is decided:
+  - `reqwest` and `oauth2` are the only new crates T14, T18 to T21 need. The rest of T14 (templates, `MemorySender`, `GuardedSender`) has no network dependency and could be done first.
+  - Web routes import from `#lib/...`. SvelteKit 3 removed `$lib`, and `$app/environment` is now `$app/env`.
