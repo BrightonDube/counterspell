@@ -381,3 +381,9 @@ Feature flags such as `features = ["v4", "serde"]` switch on optional code in a 
 A `macro_rules!` block can write the enum, its text form and its list once, so `as_str`, `parse` and the serde names cannot drift apart. The `match` in `as_str` has no wildcard arm, so adding a variant without a text form is a compile error.
 `matches!` tests several variants in one readable expression. The transition table is written this way so each row reads like the design table.
 Put `use` lines and helper functions above a `#[cfg(test)] mod tests`. Clippy's `items_after_test_module` lint flags items that come after the test module.
+
+# Rust lesson: run-lifecycle T05-T07 (no Rust changed)
+
+The SQL schema is the contract that the Rust code relies on. Its CHECK constraints reject bad rows even when a bug skips the Rust checks.
+A trigger runs for every update, so a rule written there applies to every writer, including ones that bypass the Rust code.
+Role grants list the exact columns each writer may change. That keeps the server unable to write results, even if it is compromised.

@@ -56,7 +56,7 @@ Conventions for every Rust task:
   - Preserve: a hidden test has no field that can hold an input or expected value.
   - Rust lesson: making illegal states unrepresentable with enums.
 
-- [ ] **T05 [S] (30 min) Migration A: tables, constraints and indexes**
+- [x] **T05 [S] (30 min) Migration A: tables, constraints and indexes**
   - Files: `migrations/<timestamp>_run_lifecycle_tables.sql` (timestamp later than `20261112020000`).
   - Create `submissions`, `jobs`, `run_events`, `test_results` exactly as in `design.md` "Data contract", with all `CHECK` constraints, the unique and partial indexes, and `ON DELETE CASCADE` from `jobs`, `run_events` and `test_results` to `submissions`. No foreign keys to `users` or `problems` (open question 1). Idempotent where cheap; plain `CREATE TABLE` is fine because SQLx records applied migrations.
   - Requirements: R2.4, R3.4, R6.7, R11.5, R11.6, R15.4.
@@ -65,7 +65,7 @@ Conventions for every Rust task:
   - Preserve: the bootstrap migration is untouched; Familiar, ghost and other columns are not added.
   - Rust lesson: none (no Rust changed). Add a one-line note in the lessons file saying schema is the contract that Rust code relies on.
 
-- [ ] **T06 [S] (30 min) Migration B: transition function and freeze trigger**
+- [x] **T06 [S] (30 min) Migration B: transition function and freeze trigger**
   - Files: `migrations/<timestamp>_run_lifecycle_guards.sql`.
   - Create `cs_status_transition_allowed(from text, to text) RETURNS boolean IMMUTABLE` from the transition table, and the `BEFORE UPDATE` trigger on `submissions` that (1) freezes a terminal run, (2) rejects a disallowed transition, (3) rejects a decreasing `last_event_seq`. Use the error code `check_violation` and short messages that contain no data.
   - Requirements: R6.3, R10.3, P6, P14.
@@ -74,7 +74,7 @@ Conventions for every Rust task:
   - Preserve: the SQL table must equal the Rust table in T03 (T09 compares all 81 pairs).
   - Rust lesson: none (no Rust changed); note that the database now enforces the same rules as the Rust types.
 
-- [ ] **T07 [P] (25 min) Migration C: roles and grants**
+- [x] **T07 [P] (25 min) Migration C: roles and grants**
   - Files: `migrations/<timestamp>_run_lifecycle_roles.sql`.
   - Create `counterspell_server` and `counterspell_judge` as `NOLOGIN` roles inside a `DO` block that ignores `duplicate_object`. Grant exactly the privileges in the matrix in `design.md`, using column-level `UPDATE` grants. Revoke default `PUBLIC` privileges on the four tables. No passwords, no `LOGIN`.
   - Requirements: R19.1–R19.3.
