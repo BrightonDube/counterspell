@@ -577,3 +577,7 @@ A `match` guard (`Some(raw) if ...`) checks the value and binds it in one step. 
 An `enum` such as `OAuthDecision` lists every outcome. `match` with no `_` arm makes the compiler flag each place that does not handle a new outcome.
 `SignIn(UserId)` can only carry the identity's owner. A function cannot return "sign in to the owner of this email", because no such variant exists.
 `#[allow(clippy::...., reason = "...")]` silences one lint on one item and records why. It is preferred over a crate-wide allow.
+
+# Rust lesson: auth T07
+
+This task is SQL only, so there is no Rust lesson. The point is that a `CHECK` constraint or a trigger refuses bad rows for every writer, including a future Rust bug, while application code only protects the path it runs on.
