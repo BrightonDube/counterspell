@@ -634,3 +634,9 @@ Axum 0.8 does not accept `Option<ConnectInfo<..>>` as an extractor. A required e
 `Option<T>` means "feature on or off" here. `DemoConfig` is `Some` only when both demo variables are set, so the seed and the config route check one value, not two flags.
 `then_some` turns a `bool` into an `Option`: `(verdict != Verdict::Rejected).then_some(stored)` keeps the stored hash only when it still accepts the password.
 The seed calls a database function instead of writing `users` itself. The function is the only place that can touch the demo row, so the Rust code cannot bypass the guards from T09.
+
+# Rust lesson: auth T28
+
+`tokio::spawn` starts a task on the async runtime and returns a `JoinHandle`. Calling `abort()` on that handle stops the task, which is how shutdown cancels the daily reset.
+`Arc<dyn Clock>` lets the background task share one clock with the rest of the server. `clock.as_ref()` lends a plain `&dyn Clock` for each call, so the `Arc` never has to move into the call.
+`OffsetDateTime` and `Duration` are small values that are copied, so `latest_scheduled_reset` returns a new time without borrowing anything.

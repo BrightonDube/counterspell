@@ -89,7 +89,11 @@ async fn pg_seeding_creates_exactly_one_demo_account_and_is_idempotent(pool: PgP
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_only_the_server_role_may_run_the_demo_functions(pool: PgPool) {
-    for signature in ["cs_reset_demo_account()", "cs_seed_demo_user(text, text)"] {
+    // test-change: R18.8 (T28 gave cs_reset_demo_account the clock arguments; the grant rule is unchanged)
+    for signature in [
+        "cs_reset_demo_account(timestamptz, timestamptz)",
+        "cs_seed_demo_user(text, text)",
+    ] {
         let (server,): (bool,) =
             sqlx::query_as("SELECT has_function_privilege('counterspell_server', $1, 'EXECUTE')")
                 .bind(signature)

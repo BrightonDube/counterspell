@@ -42,3 +42,14 @@ Assumed choice: option 1 when T28 is picked up. T28 is on the cut list, so I lef
 
 ### Blocked by T01 and T34 (listed above) and by the Brighton review queue
 Tasks T14 onward are unchecked; see the list above.
+
+## Attempt 3 (13 Nov 2026)
+
+### T28 resolved (assumed choice applied)
+Applied option 1 from the attempt 2 note: migration `20261113110300_auth_demo_reset.sql` passes the application clock into `cs_reset_demo_account(p_now, p_due)`. This changes the T09 function contract, which is recorded in the review queue. T28 is ticked. The reset also fixed a T09 bug: the FK exclusion compared names, so the demo's sessions were deleted on reset.
+
+### Still blocked: T01 licence decision (reqwest and oauth2)
+Unchanged. Brighton has not chosen between `CDLA-Permissive-2.0` in `deny.toml` and `rustls-tls-native-roots`. Not started or not finished because of it: T01, T08 (FK waits for T34 fixtures), T14, T17, T18, T19, T20, T21, T22, T23, T25, T27, T33, T34, T35, T36, T37.
+
+### Other open tasks not started in attempt 3
+T29 to T32 (web) were started in this attempt, see the summary. T27, T36 and T37 depend on blocked tasks.
