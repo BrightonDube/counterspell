@@ -85,7 +85,7 @@ Conventions for every Rust task:
 
 ## Wave 1: judge queue core
 
-- [ ] **T08 [S] (30 min) Make the judge a library and binary, add config, errors and the test harness**
+- [x] **T08 [S] (30 min) Make the judge a library and binary, add config, errors and the test harness**
   - Files: `crates/judge/Cargo.toml`, `crates/judge/src/lib.rs`, `crates/judge/src/main.rs` (thin), `crates/judge/src/config.rs`, `crates/judge/src/queue/mod.rs`, `crates/judge/src/testkit.rs`, `THIRD-PARTY-NOTICES.md`.
   - Add `sqlx`, `tokio` (`macros`, `rt-multi-thread`, `sync`, `time`, `signal`), `tracing`, `uuid`, `serde_json`, `thiserror`, and `counterspell-common`. Add features `testkit` (off by default) and `sandbox` (default on, empty for now; judge-sandbox adds `bollard` behind it). `JudgeConfig` loads the judge variables from `design.md` "Configuration" with defaults and returns a clear error for invalid values. `QueueError` has `LeaseLost`, `NotFound`, `Database(sqlx::Error)`. `ClaimToken { job_id, run_id, lease_owner, attempts }`. `testkit` provides `seed_user_and_run(pool)` (inserts a submission and job as a superuser), `age_lease(pool, run)`, `age_created(pool, run, secs)`, and an `assert_invariants(pool)` checker for P1, P3, P6, P7, P8 (the checker is reused by every later test).
   - Requirements: R7.5, R8.5, scope constraints.
