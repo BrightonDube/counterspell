@@ -292,3 +292,83 @@ impl FailureReason {
         }
     }
 }
+
+#[cfg(test)]
+mod failure_reason_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    #[test]
+    fn failure_reason_text_round_trips_with_hand_written_literals() {
+        let cases = [
+            (FailureReason::Cancelled, "cancelled"),
+            (FailureReason::ProblemUnavailable, "problem_unavailable"),
+            (FailureReason::LanguageUnavailable, "language_unavailable"),
+            (FailureReason::Expired, "expired"),
+            (FailureReason::RetriesExhausted, "retries_exhausted"),
+        ];
+        for (value, text) in cases {
+            assert_eq!(value.as_str(), text);
+            assert_eq!(FailureReason::parse(text), Some(value));
+        }
+    }
+
+    #[test]
+    fn failure_reason_list_has_no_duplicates() {
+        let texts: HashSet<&str> = FailureReason::ALL.iter().map(|r| r.as_str()).collect();
+        assert_eq!(texts.len(), 5);
+        assert_eq!(FailureReason::ALL.len(), 5);
+    }
+
+    #[test]
+    fn public_messages_are_distinct_sentences() {
+        let messages: HashSet<&str> = FailureReason::ALL
+            .iter()
+            .map(|r| r.public_message())
+            .collect();
+        assert_eq!(
+            messages.len(),
+            FailureReason::ALL.len(),
+            "two reasons share a message, so the UI could not tell them apart"
+        );
+        for reason in FailureReason::ALL {
+            assert!(reason.public_message().ends_with('.'));
+        }
+    }
+
+    #[test]
+    fn serde_form_of_failure_reason_equals_the_text_form() {
+        let json = serde_json::to_string(&FailureReason::RetriesExhausted)
+            .expect("serialise failure reason");
+        assert_eq!(json, "\"retries_exhausted\"");
+        let back: FailureReason =
+            serde_json::from_str("\"problem_unavailable\"").expect("parse failure reason");
+        assert_eq!(back, FailureReason::ProblemUnavailable);
+        assert!(serde_json::from_str::<FailureReason>("\"Cancelled\"").is_err());
+    }
+
+    #[test]
+    fn parse_rejects_text_that_is_not_an_exact_match() {
+        assert_eq!(FailureReason::parse("Cancelled"), None);
+        assert_eq!(FailureReason::parse("cancelled "), None);
+        assert_eq!(FailureReason::parse(""), None);
+    }
+
+    #[test]
+    fn test_verdict_list_has_no_duplicates_and_round_trips() {
+        let texts: HashSet<&str> = TestVerdict::ALL.iter().map(|v| v.as_str()).collect();
+        assert_eq!(texts.len(), TestVerdict::ALL.len());
+        for verdict in TestVerdict::ALL {
+            assert_eq!(TestVerdict::parse(verdict.as_str()), Some(*verdict));
+        }
+        assert_eq!(TestVerdict::parse("Pass"), None);
+    }
+
+    #[test]
+    fn job_state_and_run_mode_reject_unknown_text() {
+        assert_eq!(JobState::parse("dead"), Some(JobState::Dead));
+        assert_eq!(JobState::parse("Dead"), None);
+        assert_eq!(RunMode::parse("Submit"), None);
+        assert_eq!(RunMode::parse("practice"), None);
+    }
+}
