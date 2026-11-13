@@ -279,7 +279,7 @@ Conventions for every Rust task:
   - Preserve: the server only sets the flag; the judge makes the state change.
   - Rust lesson: sharing a database pool between handlers and tests.
 
-- [ ] **T28 [S] (25 min) `RunWaker`: one listener for wake-ups**
+- [x] **T28 [S] (25 min) `RunWaker`: one listener for wake-ups**
   - Files: `crates/server/src/runs/wake.rs`, `crates/server/tests/wake.rs`.
   - One `PgListener` task on channel `run_events`. It sends `RunId`s on a `tokio::sync::broadcast` channel (capacity 1024), reconnects after errors with a delay, and sends a "wake everyone" marker after each reconnect. A switch `WakerMode::Disabled` (feature `testkit`) turns it off for the poll-only tests. Streams subscribe through a small handle.
   - Tests: `pg_waker_delivers_run_id_only` (the broadcast item contains no event data); `pg_waker_reconnect_sends_wake_all`; `pg_waker_lag_is_harmless`.

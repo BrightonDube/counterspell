@@ -54,6 +54,8 @@ pub struct AppState {
     pub languages: Arc<LanguageCatalog>,
     /// Counts run submissions per user and per IP address.
     pub limiter: Limiter,
+    /// Tells open event streams when a run has new events. Idle until `main` starts the listener.
+    pub run_waker: runs::wake::RunWaker,
 }
 
 impl AppState {
@@ -68,6 +70,7 @@ impl AppState {
             problems: Arc::new(EmptyCatalogue),
             languages: Arc::new(languages),
             limiter,
+            run_waker: runs::wake::RunWaker::idle(),
         }
     }
 
@@ -75,6 +78,13 @@ impl AppState {
     #[must_use]
     pub fn with_user_resolver(mut self, resolver: impl UserResolver + 'static) -> Self {
         self.user_resolver = Arc::new(resolver);
+        self
+    }
+
+    /// Replaces the run waker. `main` passes a started listener; tests can pass an idle one.
+    #[must_use]
+    pub fn with_run_waker(mut self, waker: runs::wake::RunWaker) -> Self {
+        self.run_waker = waker;
         self
     }
 

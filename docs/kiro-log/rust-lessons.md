@@ -654,3 +654,9 @@ The hand-written `Debug` on `OutgoingMail` hides the body, so printing a mail wi
 `JudgeConfig::from_lookup` takes a closure, so a test can pass its own settings without touching the process environment. Each test gets exactly the values it needs.
 `tokio::time::timeout` wraps a `JoinHandle` and returns an error if the run does not end in time. A stuck test then fails with a clear message instead of hanging.
 `Arc<Worker>` lets one worker be moved into `tokio::spawn` while the test keeps a handle. Shared ownership is explicit, and nothing is copied.
+
+# Rust lesson: run-lifecycle T28
+
+`broadcast::Sender` sends one value to many receivers. Each receiver gets its own copy, and a receiver that falls too far behind gets `RecvError::Lagged` instead of blocking the sender.
+`PgListener::try_recv` returns `Ok(None)` when the connection drops. The caller then decides what to do, which is why the waker sends a "read again" marker at that point.
+`Result` patterns can name the error (`Err(elapsed)`) or match a whole group (`Ok(Ok(_) | Err(RecvError::Lagged(_)))`). Clippy asks for named bindings when a bare `Err(_)` would hide a failure in a test.
