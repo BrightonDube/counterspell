@@ -40,7 +40,7 @@ Conventions for every Rust task:
   - Preserve: no secret in `Debug`/`Display`; URLs derive only from `PUBLIC_BASE_URL`.
   - Rust lesson: newtypes (`Redacted`) and implementing `Debug` by hand.
 
-- [ ] **T03 [P] (25 min) `EmailAddress` (property P15)**
+- [x] **T03 [P] (25 min) `EmailAddress` (property P15)**
   - Files: `crates/server/src/auth/email.rs` (type and parser only; senders come in T14).
   - `EmailAddress::parse` per R4.3 and R4.4: trim, lower-case, ASCII, at most 254, one `@`, non-empty parts, dotted domain without empty labels, none of whitespace, control characters, `<>,;"`. No dot or `+tag` canonicalisation.
   - Tests (proptest): idempotent parse; accepted values satisfy every rule; a corpus (`a@b.co`, `A@B.CO`, `a+x@b.co`, `a@b`, `a@@b.co`, `a b@c.co`, `a@b.co\r\nBcc: x@y.z`, `"a"@b.co`, `a@b.co,c@d.co`, non-ASCII) is classified as expected; `a.b@x.co` and `ab@x.co` stay different.
@@ -50,7 +50,7 @@ Conventions for every Rust task:
   - Preserve: nothing outside the parser may build an address string for mail.
   - Rust lesson: parse, don't validate; a type that can only hold valid values.
 
-- [ ] **T04 [P] (20 min) `return_to` sanitiser (property P16)**
+- [x] **T04 [P] (20 min) `return_to` sanitiser (property P16)**
   - Files: `crates/server/src/auth/return_to.rs`.
   - `sanitize_return_to(Option<&str>) -> String` per R6.8 (single leading `/`, not `//` or `/\`, no control characters, at most 200 characters, and the percent-decoded form obeys the same rules). Default `/`.
   - Tests (proptest): for random strings plus a corpus (`//evil.com`, `/\evil.com`, `/%2f%2fevil.com`, `/%5cevil.com`, `https://x`, `javascript:x`, `/ok?x=%20`, control characters, 201 characters), the result is `/` or a path whose `Url::join` with `https://counterspell.example` keeps the origin.
