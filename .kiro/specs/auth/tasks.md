@@ -175,7 +175,7 @@ Conventions for every Rust task:
   - Preserve: counters only; no personal data in keys.
   - Rust lesson: HMAC keys, `&[u8]` versus `Vec<u8>`.
 
-- [ ] **T16 [S] (25 min) CSRF origin guard and response layers (property P22)**
+- [x] **T16 [S] (25 min) CSRF origin guard and response layers (property P22)**
   - Files: `crates/server/src/auth/csrf.rs`, `crates/server/tests/auth_csrf.rs`.
   - `origin_guard` middleware (rule of R13.1), JSON-only and 16 KiB body layer for auth routes, `no_store` layer, `no_referrer` redirect layer. Expose a function `apply_api_hardening(Router) -> Router` that T33 applies to the whole `/api` router.
   - Tests: a table of (method, `Origin`, `Sec-Fetch-Site`, `Cookie`) combinations against the predicate (proptest); refused requests reach no handler (a counter handler proves it); `GET` is never blocked; wrong content type gives `415`; a 17 KiB body gives `413`.

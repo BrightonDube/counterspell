@@ -615,3 +615,10 @@ Single-use is one `UPDATE ... RETURNING` statement. The database lock on the row
 `Hmac::<Sha256>::new_from_slice` and `mac.update` build a keyed hash. A key derived from the session secret means a stored counter key cannot be matched back to an address by someone who only has Valkey.
 `match` arms with a guard (`Decision::SkippedFailOpen if action.fails_closed()`) let one rule decide between two outcomes, and order matters: the first matching arm wins.
 A small private trait (`CalendarText`) adds one method to `time::Date`, which keeps the formatting next to the code that uses it.
+
+# Rust lesson: auth T16
+
+A middleware is a function that takes the request and a `Next`. It can answer early (the guard returns `403` and never calls `next.run`), or pass the request on and change the response afterwards.
+`axum::middleware::from_fn_with_state` passes shared data, here an `Arc<WebOrigin>`, into the middleware without a global.
+The body guard reads the bytes and then rebuilds the request with `Request::from_parts`. Reading the bytes is the only reliable way to know whether a body exists, because headers can be missing.
+`let ... else` keeps the happy path flat when a match has one failure arm.
