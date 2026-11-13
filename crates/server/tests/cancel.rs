@@ -241,3 +241,116 @@ async fn pg_cancel_foreign_and_missing_are_404_and_set_no_flag(pool: PgPool) {
     assert_eq!(foreign.body, missing.body);
     assert_eq!(cancel_flag(&pool, run).await, None);
 }
+
+/// A judge config whose heartbeat renews every second, so a cancel is seen within about a second.
+fn fast_renew_config() -> JudgeConfig {
+    JudgeConfig::from_lookup(|name: &str| match name {
+        "RENEW_SECS" => Some("1".to_owned()),
+        "LEASE_SECS" => Some("5".to_owned()),
+        _ => None,
+    })
+    .expect("fast renew config loads")
+}
+
+/// Waits until the judge has claimed the run, so a cancel arrives while it is running.
+async fn wait_until_claimed(pool: &PgPool, run: RunId) {
+    for _ in 0..200 {
+        let state: String = sqlx::query_scalar("SELECT state FROM jobs WHERE submission_id = $1")
+            .bind(run.as_uuid())
+            .fetch_one(pool)
+            .await
+            .expect("read job state");
+        if state == "claimed" {
+            return;
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    panic!("the judge never claimed the run");
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_cancel_running_stops_the_executor_and_finishes_as_cancelled(pool: PgPool) {
+    let fixture = Fixture::new();
+    let run = queued_run(&pool, owner(1)).await;
+    let address = serve(build_router(state_with(pool.clone(), &fixture.dir))).await;
+
+    // A program that never finishes on its own. Only the cancel can end it.
+    let worker = Arc::new(Worker::new(
+        pool.clone(),
+        fast_renew_config(),
+        ScriptedExecutor::new(Script::Hang),
+        "worker-a".to_owned(),
+    ));
+    let judge = tokio::spawn({
+        let worker = Arc::clone(&worker);
+        async move { worker.process_next().await }
+    });
+    wait_until_claimed(&pool, run).await;
+
+    let reply = cancel(address, run, 1).await;
+    assert_eq!(reply.status, 202);
+
+    let claimed = tokio::time::timeout(Duration::from_secs(20), judge)
+        .await
+        .expect("the judge stops the run within the deadline")
+        .expect("judge task joins")
+        .expect("claim does not fail");
+    assert!(claimed);
+
+    let (status, reason, verdict): (String, Option<String>, Option<String>) =
+        sqlx::query_as("SELECT status, failure_reason, verdict FROM submissions WHERE id = $1")
+            .bind(run.as_uuid())
+            .fetch_one(&pool)
+            .await
+            .expect("read result");
+    assert_eq!(status, "failed");
+    assert_eq!(reason.as_deref(), Some("cancelled"));
+    assert_eq!(verdict, None);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_cancel_never_yields_both_done_and_error(pool: PgPool) {
+    let fixture = Fixture::new();
+    let run = queued_run(&pool, owner(1)).await;
+    let address = serve(build_router(state_with(pool.clone(), &fixture.dir))).await;
+
+    // A program that is slow enough for the cancel to land while it runs, so the race is real.
+    let worker = Arc::new(Worker::new(
+        pool.clone(),
+        fast_renew_config(),
+        ScriptedExecutor::new(Script::Pass {
+            tests: 40,
+            delay: Duration::from_millis(50),
+        }),
+        "worker-a".to_owned(),
+    ));
+    let judge = tokio::spawn({
+        let worker = Arc::clone(&worker);
+        async move { worker.process_next().await }
+    });
+    wait_until_claimed(&pool, run).await;
+    let reply = cancel(address, run, 1).await;
+    assert_eq!(reply.status, 202);
+
+    tokio::time::timeout(Duration::from_secs(30), judge)
+        .await
+        .expect("the run ends within the deadline")
+        .expect("judge task joins")
+        .expect("claim does not fail");
+
+    // Whichever side won the race, exactly one terminal event exists, and it is never both.
+    let terminal: Vec<String> = sqlx::query_scalar(
+        "SELECT type FROM run_events WHERE submission_id = $1 AND type IN ('done', 'error') ORDER BY seq",
+    )
+    .bind(run.as_uuid())
+    .fetch_all(&pool)
+    .await
+    .expect("read terminal events");
+    assert_eq!(
+        terminal.len(),
+        1,
+        "expected one terminal event, got {terminal:?}"
+    );
+}

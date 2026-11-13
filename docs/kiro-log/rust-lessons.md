@@ -648,3 +648,9 @@ The seed calls a database function instead of writing `users` itself. The functi
 `hit_daily_mail_cap(...).map_err(|_| MailError::Unavailable)?` turns one error type into another. The `map_err` keeps the mapping visible.
 `Mutex::lock` fails only if another thread panicked while holding the lock. `unwrap_or_else(PoisonError::into_inner)` takes the data anyway, so no `unwrap()` is needed.
 The hand-written `Debug` on `OutgoingMail` hides the body, so printing a mail with `{:?}` can never leak a sign-in link.
+
+# Rust lesson: run-lifecycle T27
+
+`JudgeConfig::from_lookup` takes a closure, so a test can pass its own settings without touching the process environment. Each test gets exactly the values it needs.
+`tokio::time::timeout` wraps a `JoinHandle` and returns an error if the run does not end in time. A stuck test then fails with a clear message instead of hanging.
+`Arc<Worker>` lets one worker be moved into `tokio::spawn` while the test keeps a handle. Shared ownership is explicit, and nothing is copied.
