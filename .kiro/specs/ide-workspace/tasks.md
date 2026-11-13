@@ -15,7 +15,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 0: contracts and safe seams
 
-- [ ] **T01 [P] (25 min) Freeze browser API and view-model contracts**
+- [x] **T01 [P] (25 min) Freeze browser API and view-model contracts**
   - Files: `web/src/lib/api/types.ts`, `web/src/lib/runs/types.ts`, `web/src/lib/ghost/types.ts`, `web/src/lib/familiar/types.ts`, focused tests.
   - Define strict browser types for `ProblemDetail`, `LanguageSummary`, run read models, public SSE envelopes, sample/hidden test rows, ghost/autopsy payloads, authored hints, measured Familiar data, and stable API errors. Keep raw server data at the adapter boundary and expose only public view models to components.
   - Add schema guards for hidden test payloads, bounded text, shrink trace entries, terminal results, and measured-only Familiar fields. Fixtures belong only in test files, not production modules.
