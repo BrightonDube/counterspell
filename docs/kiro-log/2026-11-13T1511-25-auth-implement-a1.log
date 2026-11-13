@@ -414,3 +414,60 @@ All 49 auth unit tests pass and Clippy is clean. I'll tick T05 and T06, add the 
 [tool] Tick T05 and T06, commit, and check containers
 [tool] status: InProgress
 [tool] status: InProgress
+[tool] status: Completed
+Both containers are running. I'll confirm the Postgres connection works, then read the data-contract section of the design, which T07 needs.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=159
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Check database connectivity and migration style
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The design has the exact table definitions. Before writing the migration, I'll look at how the existing run-lifecycle database tests are set up, so the auth tests match their pattern.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=154
+
+[tool] Find existing database test conventions
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The convention is `#[ignore = "needs DATABASE_URL"]` with `#[sqlx::test(migrations = "../../migrations")]`. For the schema tests, each refusal check also begins with a valid insert that must succeed. Without that, a missing table would make every refusal look like a pass.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1929
+[tool] Run schema tests expecting red before migration
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+The run printed nothing, so I'll look at the raw output.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] Show raw test output for schema tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The tests now fail because the tables do not exist, which is the expected red. I'll write the core migration to match the design's table definitions.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1078
+[tool] Run schema tests against the new migration
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The migration is not applied. `sqlx::test` embeds migrations at compile time, so cargo has not rebuilt the test crate since I added the file. I'll touch the test file to force a rebuild and run again.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=102
+
+[tool] Force test rebuild to embed new migration and rerun
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 11 schema tests pass. Next I'll confirm the migration is idempotent by running it twice in a scratch database, which is the "second run is a no-op" check the task requires.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=153
+
+[tool] Apply auth core migration twice to prove idempotence
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The migration runs cleanly twice, and the second run only prints "already exists" notices. I'll tick T07, add the review item and lesson, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=298
+
+[tool] Commit T07 schema migration and tests
+[tool] status: InProgress
+[tool] status: InProgress

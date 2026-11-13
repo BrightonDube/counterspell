@@ -82,7 +82,7 @@ Conventions for every Rust task:
 
 ## Wave 1: schema
 
-- [ ] **T07 [S] (30 min) Migration: core auth tables** [SUPERVISED]
+- [x] **T07 [S] (30 min) Migration: core auth tables** [SUPERVISED]
   - Files: `migrations/<timestamp>_auth_core.sql` (timestamp after the `run-lifecycle` migrations), `crates/server/tests/pg_auth_schema.rs`.
   - `CREATE EXTENSION IF NOT EXISTS citext`; tables `users`, `identities`, `email_tokens`, `sessions`, `oauth_flows` with every column, `CHECK`, index and the `sessions` update trigger exactly as in `design.md`. No grants yet.
   - Tests (`pg_`): an unverified email is refused (`users_email_is_verified`); a password without an email is refused; a second demo user is refused; a 16-minute `email_tokens` row is refused; an 11-minute flow is refused; a `login` flow with a session id and a `link` flow without one are refused; changing `sessions.user_id` or lowering `expires_at` is refused; `absolute_expires_at` beyond 90 days is refused; deleting a user cascades to identities, sessions, tokens and flows; deleting a session cascades to its `link` flows; two identities of one provider for one user are refused.
