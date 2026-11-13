@@ -55,7 +55,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: `npm run check && npm run build`; inspect that success green and danger red are reserved correctly and no purple/ambient animation is introduced.
   - Preserve: no second styling system and no landing-page animation in the IDE.
 
-- [ ] **T06 [UI] [P] (25 min) Build the problem statement panel**
+- [x] **T06 [UI] [P] (25 min) Build the problem statement panel**
   - Files: `web/src/lib/workspace/ProblemPanel.svelte`, safe statement renderer, component tests.
   - Show title, breadcrumb/track, concepts, difficulty, constraints, signature, examples, and collapsible detail sections. Render statement markdown safely with raw HTML disabled or allowlisted.
   - Depends on: T01, T03, T05.
