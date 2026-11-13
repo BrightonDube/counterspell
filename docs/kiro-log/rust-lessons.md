@@ -530,3 +530,10 @@ Axum runs extractors in argument order and the body must come last. Taking the b
 The checks run in a fixed order, and each one uses `?` to return early. Because nothing is written before the last check, an early return leaves the database untouched.
 `ok_or_else(...)` builds the error only when the value is missing, so a successful check does no work on the error path.
 Clippy's `needless_pass_by_value` asks for `&Decision` here, because `enforce` only reads the value. Passing a reference is the cheaper choice for a type that is not `Copy`.
+
+# Rust lesson: run-lifecycle T26
+
+`Option` in a struct maps to a SQL `NULL`. `fetch_optional` returns `None` when no row matches, and `ok_or_else` turns that into the same `404` for a missing, foreign or malformed id, so the caller cannot tell them apart.
+`serde_json::from_value` into a struct with only three fields copies only those keys. Unknown keys are ignored by default, so a whitelist is one small struct, not a hand-written filter.
+Ownership is checked in the SQL `WHERE` clause, so a query for another user's row returns no row at all. Checking in Rust after the read would leave the data in memory.
+Timestamps are formatted in SQL with `to_char`. That avoids adding the sqlx `time` feature for one column.
