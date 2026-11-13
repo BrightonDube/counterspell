@@ -5,5 +5,21 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+[features]
+default = ["sandbox"]
+# Reserved for the judge-sandbox spec: Docker support through bollard, on the sandbox daemon only.
+sandbox = []
+# Test helpers: a seeding and invariant-checking kit, and a scripted executor. Off in release builds.
+testkit = []
+
+[dependencies]
+counterspell-common = { path = "../common" }
+serde_json = "1.0"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "json", "migrate", "macros"] }
+thiserror = "2"
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "signal", "sync", "time"] }
+tracing = "0.1"
+uuid = { version = "1", features = ["v4", "serde"] }
+
 [lints]
 workspace = true

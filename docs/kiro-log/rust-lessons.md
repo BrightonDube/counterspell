@@ -406,3 +406,10 @@ Serialising to `serde_json::Value` lets a test check the exact keys a browser wi
 `status_after_event` returns `Option<RunStatus>`, so "not allowed" is a value the caller must handle. A `bool` plus a separate "what is the new status" call would let the two drift apart.
 `bool::then_some` turns "is this move allowed" into an `Option` in one line, and the table in `can_transition` stays the only copy of the rules.
 `proptest` runs a property against hundreds of random inputs and shrinks a failing case to a small one. The walk test uses it for event sequences.
+
+# Rust lesson: run-lifecycle T08
+
+A package with both `src/lib.rs` and `src/main.rs` builds two targets. Tests import the library, and the binary stays a thin shell.
+Cargo features are switches. `testkit` compiles helper code only when asked, so a release build cannot contain it.
+`Result<T, ConfigError>` returns a named reason for each bad setting. The message names the variable and never prints its value.
+A `pub(crate)` constructor is a compile-time guard: code outside the crate cannot forge a claim token. Unused items fail Clippy with `-D warnings`, so an item waits until its first caller.
