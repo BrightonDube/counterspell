@@ -93,3 +93,26 @@
  docs/KIRO_USAGE.md        | 16 ++++++++++++++++
  docs/kiro-log/sessions.md | 17 +++++++++++++++++
  2 files changed, 33 insertions(+)
+- 2026-11-13T13:48:50Z | model: not reported | last commit: dc37ef9 auth: keep proptest regression seeds and record where attempt 1 stopped
+ | diff stat:
+ .../2026-11-13T1511-25-auth-implement-a1.log       | 83 ++++++++++++++++++++++
+ docs/kiro-log/sessions.md                          |  2 +
+ 2 files changed, 85 insertions(+)
+- 2026-11-13T14:40:49Z | model: not reported | last commit: 3d49bf2 auth T29 (partial): auth client, error sentences and return_to check with vitest tests; rune store not written
+ | diff stat:
+ docs/KIRO_USAGE.md                                 |  4 ++
+ .../2026-11-13T1511-25-auth-implement-a1.log       | 84 ++++++++++++++++++++++
+ docs/kiro-log/sessions.md                          |  7 ++
+ 3 files changed, 95 insertions(+)
+- 2026-11-13T15:55:33Z | model: not reported | last commit: 32a0e91 auth: attempt 3 blocker log update
+ | diff stat:
+ docs/KIRO_USAGE.md                                 |  8 +++
+ .../2026-11-13T1511-25-auth-implement-a1.log       | 84 ++++++++++++++++++++++
+ docs/kiro-log/sessions.md                          | 13 ++++
+ 3 files changed, 105 insertions(+)
+- 2026-11-13T16:07:06Z | model: not reported | last commit: 410f040 auth T14 (partial): mail senders, templates and guard; Resend sender waits on T01 licence decision
+ | diff stat:
+ docs/KIRO_USAGE.md                                 | 12 ++++
+ .../2026-11-13T1511-25-auth-implement-a1.log       | 84 ++++++++++++++++++++++
+ docs/kiro-log/sessions.md                          | 19 +++++
+ 3 files changed, 115 insertions(+)
