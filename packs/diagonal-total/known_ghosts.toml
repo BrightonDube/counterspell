@@ -1,0 +1,17 @@
+[[ghost]]
+id = "abs-diagonal"
+program = "incorrect/abs-diagonal.py"
+kind = "wrong"
+input = [[[-1]]]
+got = 1
+concepts = ["matrices"]
+explanation = "The code takes the absolute value of each diagonal cell. The total should keep the sign of each value."
+
+[[ghost]]
+id = "assumes-square"
+program = "incorrect/assumes-square.py"
+kind = "crash"
+input = [[[]]]
+exception_class = "IndexError"
+concepts = ["indexing", "edge-cases"]
+explanation = "The loop runs once per row and reads the cell in the same column. A grid with a row and no column has no such cell, so an error is raised."

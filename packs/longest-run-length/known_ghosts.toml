@@ -1,0 +1,17 @@
+[[ghost]]
+id = "forgot-last-run"
+program = "incorrect/forgot-last-run.py"
+kind = "wrong"
+input = ["a"]
+got = 0
+concepts = ["scanning"]
+explanation = "The best run is only saved when a new letter starts. A run that reaches the end of the text is never saved, so the last run is lost."
+
+[[ghost]]
+id = "empty-first-char"
+program = "incorrect/empty-first-char.py"
+kind = "crash"
+input = [""]
+exception_class = "IndexError"
+concepts = ["edge-cases"]
+explanation = "The code reads the first letter before it checks for empty text, so an empty text raises an error. Check the length first."

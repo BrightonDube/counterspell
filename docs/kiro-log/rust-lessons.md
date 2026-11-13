@@ -260,3 +260,112 @@ Documentation that shows a fake judge (a struct that implements `Oracle`) explai
 Clippy's `-D warnings` turns lints into errors, so a style issue such as a missing backtick fails the build instead of waiting in a log.
 A lint can also flag test code, so the same gate runs with `--all-targets` to include tests and examples.
 Running the gate on the final code, after the last edit, is the only evidence that counts.
+
+# Rust lesson: grimoire-packs T02
+
+An `enum` such as `Severity` lists every allowed choice, so a typo like `Severiy::Eror` is a compile error, not a runtime surprise.
+Each diagnostic code is a `const` built by a `const fn`, so a misspelt code fails to compile and the table exists before the program runs.
+`#[derive(Serialize)]` with `rename_all = "lowercase"` turns the enum into the JSON words `error` and `warning` without hand-written code.
+Tests import the code table with an explicit `use crate::codes;`, so production code does not carry an import that only tests use.
+
+# Rust lesson: grimoire-packs T03
+
+`Result<T, E>` makes a failure part of the return type, and `?` passes it up to the caller. The loader returns `io::Result` only when the pack directory itself cannot be read, so a bad file becomes a diagnostic instead of a crash.
+Every size check uses `metadata().len()` before `fs::read`, so an oversize file is never loaded into memory.
+`symlink_metadata` looks at the link itself, while `metadata` follows it, which is why the symlink ban works.
+`let ... else` lets a lookup stop early with a diagnostic, which keeps the happy path flat.
+
+# Rust lesson: grimoire-packs T04
+
+A struct field's type is a contract: `pack_version: i64` tells the reader and the compiler what TOML may hold, and a wrong type fails to parse with a message.
+`#[serde(deny_unknown_fields)]` turns a misspelt key into an error, so a typo such as `licnce` cannot pass review silently.
+`toml::from_str::<toml::Table>` checks syntax alone, which lets the code tell a syntax error (MET-01) from a wrong field value (MET-02).
+`Option<T>` with `#[serde(default)]` marks a field that may be absent, and the type makes the caller handle the missing case.
+
+# Rust lesson: grimoire-packs T05
+
+`match` on an enum forces every case to be written out, so adding a launch type later makes the compiler point at each mapping that needs updating.
+`matches!((self, schema), (Self::Int, Schema::Int { .. }) | ...)` checks a pair of values in one readable expression, with no extra helper.
+`let ... else` returns early when a value is missing, which keeps the main path of a check flat.
+`windows(2)` gives each neighbouring pair of a slice, which is the simple way to check that sizes strictly increase.
+
+# Rust lesson: grimoire-packs T06 to T11
+
+`chars().count()` counts characters, while `len()` counts bytes, so a title with an accent is measured as the author sees it.
+`strip_prefix` returns an `Option<&str>` that is `Some` only when the prefix matches, which makes the `def <name>(` text check a single expression.
+`Iterator::take(200).any(...)` stops drawing candidates as soon as one check fails, so a bad generator cannot run forever.
+A `Result` from a TOML parse is mapped to a diagnostic with `match`, so a bad file is reported and never panics.
+
+# Rust lesson: grimoire-packs T12
+
+`&Path` is a borrowed view of a path, and `PathBuf` is an owned one, so `validate_static(root: &Path)` reads the caller's path without taking ownership of it.
+`Option` combined with `and_then` and `let ... else` lets the pipeline stop the metadata stages in one place when `meta.toml` fails.
+The report records every stage it ran or skipped, so a caller can tell a clean pack from a pack that was never fully checked.
+
+# Rust lesson: grimoire-packs T13
+
+`std::process::ExitCode` lets `main` return 0, 1 or 2, while helper functions return a `Result` or a code and never call `exit` themselves.
+`<[T; 1]>::try_from(vec)` checks that exactly one positional argument was given, without indexing a vector that might be empty.
+A `#[allow(clippy::...)]` with a `reason` is the honest way to silence one lint, because the reason stays visible to the reviewer.
+`Result` and `?` keep I/O failures out of the validation report, so exit 2 means the tool could not run, not that a pack is bad.
+
+# Rust lesson: grimoire-packs T14
+
+A function that returns `Result<ProblemRecord, RecordError>` makes "only valid packs" part of the type, so the importer cannot forget the check.
+`ok_or_else` turns an `Option` into a `Result` and only builds the error value when it is needed.
+`#[derive(PartialEq)]` on a record only works when every field type also implements it, so the derive on `ProblemRecord` pulled `Eq` onto the models it contains.
+`Result` distinguishes an unreadable directory from an invalid pack, which keeps infrastructure failures out of the pack-error path.
+
+# Rust lesson: grimoire-packs T16
+
+`#[cfg(test)]` compiles code only for `cargo test`, so test helpers never reach the shipped binary.
+A test that reads `src/` as text is a cheap architecture guard: it fails the build when a forbidden call such as `Command::new` appears.
+`str::contains` on a list of names is enough for this tripwire, and the self-tests prove the scanner would catch a planted call.
+Narrowing a forbidden name (`std::process::Command` rather than all of `std::process`) keeps legitimate uses such as `ExitCode` allowed.
+
+# Rust lesson: grimoire-packs T17
+
+A trait is a promise: any type that implements `PackRunner` must provide `run` and `bench`, so the judge can pass its own sandbox type in.
+`&mut dyn PackRunner` takes any implementation at run time, without making the adapter generic over every runner type.
+`map_err` converts one error type into another, so a runner fault becomes the engine's `OracleError` and never a program result.
+The fake runner in the test shows the rule: a crash is data, but an infrastructure fault is an error the caller must handle.
+
+# Rust lesson: grimoire-packs T18
+
+`&mut dyn PackRunner` lets the caller pick the runner at run time, and each call borrows it only for that call, so the checks never keep the runner.
+The sandbox checks keep hidden data in memory only. The reference runs inside the sandbox, so the validator never holds a hidden expected value; it checks only the shape of each result.
+A closure passed to the engine's `shrink` can capture `&mut` state. The error from a failed probe goes into an `Option` the closure fills, because `shrink` takes a probe that cannot return an error.
+`Result<Report, SandboxFault>` keeps a runner fault separate from a pack error, so a broken sandbox can never be reported as a broken pack.
+
+# Rust lesson: grimoire-packs T19
+
+A runner fault is a separate type (`SandboxFault::Runner`), so the code that reads a fault can never mistake it for a pack error.
+A `match` on the enum must name every variant, so adding a new fault kind later forces the diagnostic to be updated.
+A declared `[bench]` produces a warning without calling the runner. The test gives the runner a `bench` that always fails, so an accidental call would surface as an error.
+Exit code 2 for a runner fault is part of the CLI, which has no runner yet. The library gives the diagnostic now, and the exit path is wired when the judge supplies a runner (T20).
+
+# Rust lesson: grimoire-packs T24
+
+`fs::read_dir` returns an iterator of `Result` values, because each directory entry can fail on its own (for example a race with a delete).
+The test handles each entry with `expect` and a message, which is allowed in test code only.
+A filter on the file name (`starts_with('_')`) keeps `_test` out of the starter list, and `is_dir` removes stray files such as the README.
+
+# Rust lesson: grimoire-packs T25
+
+A plain `fn` item has its own unique type, so a `vec!` of different model functions needs each one cast with `as Model` to a single fn-pointer type.
+A non-capturing closure also coerces to a fn pointer, which is why `diagonal_sum` accepts both `|cell| cell` and `i64::abs`.
+The starter vectors are hand traces written as literals. The model functions are only tested against those literals, never used to produce them.
+
+# Rust lesson: grimoire-packs T15
+
+`Schema::check_definition` returns a `Result`, so the generator stage can stop on an invalid schema with an early `return` before the engine runs.
+Some engine functions panic on bad input (`clamp` panics when min is above max). The validator must check the input first, because a panic in a check would crash the CLI, not produce a diagnostic.
+`#[allow(clippy::too_many_lines, reason = "...")]` silences one lint on one function and records why, so the reviewer can judge the exception.
+A test that collects every mismatch before it asserts shows all wrong expectations in one run, instead of stopping at the first.
+
+# Rust lesson: grimoire-packs T19 (exit path, supersedes the earlier T19 note)
+
+`Option<&mut dyn PackRunner>` lets one function serve production (no runner, so it prints SBX-07) and tests (a fake runner) without a second code path.
+`&mut *runner` reborrows the runner for one call, so the loop can use it again for the next pack. Passing `runner` directly would move it on the first pass.
+`collect()` into `Result<Vec<_>, _>` stops at the first `Err`, so the first runner fault ends the stage without extra control flow.
+A `#[cfg(test)] mod tests` inside `main.rs` can call private functions through `use super::*`, so the exit path is tested without starting a process.

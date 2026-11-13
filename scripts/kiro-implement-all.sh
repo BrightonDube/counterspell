@@ -27,7 +27,7 @@ SPECS=(
   "31 landing-steel-night claude-haiku-5.5 10"
   "32 break-room claude-haiku-5.5 10"
 )
-usage(){ ~/.local/bin/kiro-cli chat --no-interactive --model claude-haiku-5.5 --trust-tools= "/usage" 2>/dev/null | grep -o 'kiroween-2026: [0-9.]*' | awk '{print $2}'; }
+usage(){ ~/.local/bin/kiro-cli chat --agent-engine v2 --no-interactive --trust-tools= "/usage" 2>/dev/null | grep -oE 'kiroween-2026: [0-9]+(\.[0-9]+)?' | awk '{print $2}'; }  # v2 runs /usage locally; v3 (chat.agentEngine=v3 since 3.3.0) sends it to the model as a prompt
 log(){ echo "$(date '+%F %H:%M') $*" >> "$P"; }
 WD=
 stop(){ log "STOPPED $*"; [ -n "$WD" ] && kill "$WD" 2>/dev/null; exit 1; }

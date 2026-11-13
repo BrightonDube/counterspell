@@ -56,3 +56,13 @@ Use a deliberately failing engine test. The status must be nonzero. The `engine-
 ## Hook-level checks
 
 After the direct script checks, exercise the actual IDE/CLI hook events with a temporary branch and disposable files. Confirm that the two blocking guards stop their operations, while `pre-task-green` and `ghost-hunt-on-test-failure` always allow the operation after printing their information. Do not place real credentials in any fixture.
+
+## `guard-test-integrity`
+
+Pipe a sample `PreToolUse` event into `bash scripts/kiro-hooks/guard-tests.sh` from a scratch directory that contains `docs/requirements.md` and `docs/kiro-log/`. Event shape: `{"tool_name":"str_replace","tool_input":{"path":"src/x.rs","oldStr":"...","newStr":"..."}}`. The CLI spellings `old_str`, `new_str` and `file_text` are accepted too.
+
+Must block with status `2`: an edit that leaves fewer `#[test]` / `#[tokio::test]` / `def test_` / `it(` / `test(` markers than it started with; overwriting a file with fewer tests; `delete_file` on a file that contains tests; adding `#[ignore]` to a test not named `pg_*` or `valkey_*`; adding `@pytest.mark.skip`, `it.skip` or `xit`; a `test-change:` marker whose ID is not in `docs/requirements.md`.
+
+Must allow with status `0`: adding, renaming, moving or refactoring tests (same or higher count); `#[ignore]` on `pg_*` / `valkey_*` tests; non-source files such as `.md`; creating a new file; appending; deleting a file without tests; malformed or empty events; MCP tools with no path; and `// test-change: VAL-3` with a real ID (which also appends a line to `docs/kiro-log/test-guard.log`).
+
+Checked 12 Nov 2026 against the script with 25 such cases in a scratch directory: 25 passed. Not yet checked against a live IDE or CLI hook event, so confirm the matcher `write|str_replace|fs_append|delete_file` fires in a real session.

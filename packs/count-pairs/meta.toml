@@ -1,0 +1,48 @@
+slug = "count-pairs"
+title = "Count the Pairs"
+status = "draft"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "pairs", "nested-loops"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "count_pairs"
+returns = "int"
+comparator = "exact"
+
+[[params]]
+name = "values"
+type = "list[int]"
+
+[[params]]
+name = "target"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 30, min = -50, max = 50 },
+  { type = "int", min = -100, max = 100 },
+]
+
+[generator]
+seed = 1729
+hidden_count = 12
+
+[[samples]]
+input = [[1, 2, 3, 2], 4]
+expected = 2
+
+[[samples]]
+input = [[5, 5], 10]
+expected = 1
+
+[[samples]]
+input = [[-3, 3, 0], 0]
+expected = 1

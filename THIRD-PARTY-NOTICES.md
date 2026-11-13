@@ -30,6 +30,18 @@ The reduced-feature proptest tree includes `bitflags`, `chacha20`, `cfg-if`,
 metadata is checked by `cargo deny`; they are test-only dependencies and are
 not linked into the engine's runtime dependency graph.
 
+## Grimoire dependencies
+
+The pack validator (`counterspell-grimoire`) adds these direct and tree
+packages. `cargo deny check licenses` passed on them on 13 November 2026.
+
+- **toml 0.8.23** — Ed Page and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/toml>
+
+The `toml` tree adds `toml_datetime 0.6.11`, `toml_edit 0.22.27`,
+`toml_write 0.1.2`, `serde_spanned 0.6.9`, `winnow 0.7.15`,
+`indexmap 2.14.2`, `hashbrown 0.17.1` and `equivalent 1.0.3`. Their
+upstream licences are recorded in `Cargo.lock` and the crates.io metadata.
+
 ## Notice policy
 
 This file records direct engine dependencies and the dependency-tree packages

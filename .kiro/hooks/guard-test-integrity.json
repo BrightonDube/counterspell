@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "guard-test-integrity",
+      "description": "Block edits that net-remove tests or add skip/ignore markers (except pg_/valkey_ DB tests). Fails open; has a documented test-change escape hatch.",
+      "trigger": "PreToolUse",
+      "matcher": "write|str_replace|fs_append|delete_file",
+      "timeout": 15,
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/guard-tests.sh"
+      }
+    }
+  ]
+}
