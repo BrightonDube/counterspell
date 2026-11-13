@@ -12,6 +12,7 @@ use super::emit::append_event_locked;
 use super::{ClaimToken, QueueError};
 use counterspell_common::events::PublicEvent;
 use counterspell_common::ids::RunId;
+use counterspell_common::status::RunMode;
 use sqlx::PgPool;
 use std::time::Duration;
 use uuid::Uuid;
@@ -27,6 +28,8 @@ pub struct ClaimedRun {
     pub problem_slug: String,
     /// The language the source is written in.
     pub lang: String,
+    /// Whether this is a sample run or a hidden-test submission.
+    pub mode: RunMode,
     /// The source text the user submitted.
     pub code: String,
 }
@@ -82,11 +85,17 @@ pub async fn claim_next(
     .execute(&mut *tx)
     .await?;
 
-    let (problem_slug, lang, code): (String, String, String) =
-        sqlx::query_as("SELECT problem_slug, lang, code FROM submissions WHERE id = $1")
+    let (problem_slug, lang, mode_text, code): (String, String, String, String) =
+        sqlx::query_as("SELECT problem_slug, lang, mode, code FROM submissions WHERE id = $1")
             .bind(run_uuid)
             .fetch_one(&mut *tx)
             .await?;
+    let mode = RunMode::parse(&mode_text).ok_or_else(|| {
+        QueueError::Database(sqlx::Error::ColumnDecode {
+            index: "mode".to_owned(),
+            source: "unknown run mode in the database".into(),
+        })
+    })?;
 
     if attempts > 0 {
         // The stored attempt count is zero-based, so this claim is attempt `attempts + 1`.
@@ -103,6 +112,7 @@ pub async fn claim_next(
         token: ClaimToken::new(job_id, run, worker.to_owned(), attempts),
         problem_slug,
         lang,
+        mode,
         code,
     }))
 }

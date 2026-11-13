@@ -7,6 +7,7 @@
 //! Run with `cargo test -p counterspell-judge --test claim -- --ignored pg_`.
 
 use counterspell_common::ids::RunId;
+use counterspell_common::status::RunMode;
 use counterspell_judge::queue::claim::claim_next;
 use counterspell_judge::testkit::{assert_invariants, seed_run};
 use sqlx::PgPool;
@@ -121,6 +122,7 @@ async fn pg_claim_sets_submission_state(pool: PgPool) {
     assert_eq!(claimed.token.attempts(), 0);
     assert_eq!(claimed.problem_slug, "two-sum");
     assert_eq!(claimed.lang, "python");
+    assert_eq!(claimed.mode, RunMode::Submit);
     assert_eq!(claimed.code, "print(1)");
 
     let (status, started, job_state, owner, lease_is_future): (
