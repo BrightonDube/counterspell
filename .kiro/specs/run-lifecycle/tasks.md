@@ -132,7 +132,7 @@ Conventions for every Rust task:
   - Preserve: `NOTIFY` carries only the run id and is sent in the same transaction.
   - Rust lesson: `sqlx` transactions, `?`, and rollback on early return.
 
-- [ ] **T13 [S] [SUPERVISED] (30 min) Lease renewal and release for retry**
+- [x] **T13 [S] [SUPERVISED] (30 min) Lease renewal and release for retry**
   - Files: `crates/judge/src/queue/lease.rs`, `crates/judge/tests/lease.rs`.
   - Implement `renew(pool, &ClaimToken, lease) -> Result<Renewal { cancel_requested }>` (fenced update, no row → `LeaseLost`), and `release_for_retry(pool, &ClaimToken, reason)` which, under the fence, requeues with `attempts + 1` and backoff or, when `attempts + 1 >= max_attempts`, marks the job dead and the run `internal_error`/`retries_exhausted` with its `error` event. Put the shared requeue-or-exhaust transaction body in one function used by both this task and the reaper (T15). Sanitise and truncate `last_error` to 500 characters.
   - Tests: `pg_lease_renewal_extends_and_reports_cancel`; `pg_renew_after_expiry_but_before_reap_succeeds`; `pg_renew_after_reap_fails`; `pg_lost_lease_stops_writes` (P4, after the lease is reaped, emit, renew and finish all return `LeaseLost`); `pg_reclaim_by_same_worker_gets_new_fence`; `pg_release_requeues_with_backoff`; `pg_release_exhausts_to_internal_error`.

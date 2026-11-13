@@ -15,15 +15,22 @@ use sqlx::{PgPool, Postgres, Transaction};
 
 /// Stores one public event for the run held by `token` and returns its sequence number.
 ///
+/// Terminal events (`done` and `error`) are refused here. Only the terminal write
+/// and the retry path may end a run, because they also set the result columns.
+///
 /// # Errors
 ///
 /// Returns `LeaseLost` when the claim no longer matches (nothing is written),
-/// `EventRejected` when the run cannot take this event now, or a database error.
+/// `EventRejected` when the event is terminal or the run cannot take it now, or a
+/// database error.
 pub async fn emit(
     pool: &PgPool,
     token: &ClaimToken,
     event: &PublicEvent,
 ) -> Result<i32, QueueError> {
+    if matches!(event, PublicEvent::Done(_) | PublicEvent::Error(_)) {
+        return Err(QueueError::EventRejected);
+    }
     let mut tx = pool.begin().await?;
     lock_claim(&mut tx, token).await?;
     let seq = append_event_locked(&mut tx, token.run_id(), token.attempts() + 1, event).await?;
@@ -35,7 +42,9 @@ pub async fn emit(
 ///
 /// The caller must lock the claim first. This function locks the submission row,
 /// checks the status rule, bumps the counter, stores the event and sends a
-/// `NOTIFY` that carries only the run id. The notice is sent at commit.
+/// `NOTIFY` that carries only the run id. An `error` event also sets `finished_at`
+/// and `failure_reason` in the same update, which the table's CHECK requires. The
+/// notice is sent at commit.
 ///
 /// # Errors
 ///
@@ -60,15 +69,22 @@ pub(crate) async fn append_event_locked(
         })
     })?;
     let next = status_after_event(current, event).ok_or(QueueError::EventRejected)?;
+    let failure = match event {
+        PublicEvent::Error(error) => Some(error.reason().as_str()),
+        _ => None,
+    };
 
     let seq: i32 = sqlx::query_scalar(
         "UPDATE submissions \
-         SET last_event_seq = last_event_seq + 1, status = $2 \
+         SET last_event_seq = last_event_seq + 1, status = $2, \
+             finished_at = CASE WHEN $3::text IS NULL THEN finished_at ELSE now() END, \
+             failure_reason = COALESCE($3, failure_reason) \
          WHERE id = $1 AND finished_at IS NULL \
          RETURNING last_event_seq",
     )
     .bind(run.as_uuid())
     .bind(next.as_str())
+    .bind(failure)
     .fetch_one(&mut **tx)
     .await?;
 

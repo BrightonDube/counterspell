@@ -5,8 +5,8 @@
 //!
 //! Run with `cargo test -p counterspell-judge --test emit -- --ignored pg_`.
 
-use counterspell_common::events::{PublicEvent, PublicTest};
-use counterspell_common::status::TestVerdict;
+use counterspell_common::events::{ErrorPayload, PublicEvent, PublicTest};
+use counterspell_common::status::{FailureReason, TestVerdict};
 use counterspell_judge::queue::emit::emit;
 use counterspell_judge::queue::QueueError;
 use counterspell_judge::testkit::{assert_invariants, force_claim, seed_run, token_with};
@@ -127,6 +127,24 @@ async fn pg_event_seq_gapless_under_concurrency(pool: PgPool) {
         seqs, expected,
         "sequence must be exactly 1..=81 with no gaps"
     );
+    assert_invariants(&pool).await.unwrap();
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_emit_refuses_terminal_events(pool: PgPool) {
+    let run = seed_run(&pool).await.unwrap();
+    let token = force_claim(&pool, run, "worker-a").await.unwrap();
+    emit(&pool, &token, &PublicEvent::Compiling).await.unwrap();
+
+    // Only the terminal write and the retry path may end a run, so a plain emit must refuse.
+    let ended = PublicEvent::Error(ErrorPayload::for_reason(FailureReason::Cancelled));
+    let result = emit(&pool, &token, &ended).await;
+    assert!(
+        matches!(result, Err(QueueError::EventRejected)),
+        "{result:?}"
+    );
+    assert_eq!(status_of(&pool, run.as_uuid()).await, "compiling");
     assert_invariants(&pool).await.unwrap();
 }
 
