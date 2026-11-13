@@ -160,6 +160,32 @@ impl AuthLimiter {
         }
     }
 
+    /// Refuses a request if its counter is already at the limit. It reads the counter and does not
+    /// count the request, so a sign-in attempt is counted only when it fails.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::RateLimited`] at or over the limit, [`AuthError::EmailUnavailable`] for
+    /// a mail action when the store is down, and [`AuthError::Internal`] for an unknown pair.
+    pub async fn check(
+        &self,
+        action: Action,
+        scope: Scope,
+        identity: &str,
+    ) -> Result<(), AuthError> {
+        let Some((limit, window)) = action.policy(scope) else {
+            return Err(AuthError::Internal);
+        };
+        let key = self.key(action, scope, identity)?;
+        match self.limiter.current(&key).await {
+            Some(count) if count >= limit => Err(AuthError::RateLimited {
+                retry_after_seconds: window,
+            }),
+            None if action.fails_closed() => Err(AuthError::EmailUnavailable),
+            Some(_) | None => Ok(()),
+        }
+    }
+
     /// Counts one mail for the global daily cap. The key holds the UTC date, so the count starts
     /// again on the next UTC day.
     ///

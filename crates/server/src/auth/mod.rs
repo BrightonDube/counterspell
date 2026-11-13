@@ -12,7 +12,12 @@ use axum::{
 };
 use sqlx::PgPool;
 
-use self::{clock::Clock, cookies::CookieSettings, session::SessionService};
+use crate::client_ip::TrustedProxies;
+
+use self::{
+    clock::Clock, cookies::CookieSettings, limits::AuthLimiter, password::HashGate,
+    session::SessionService,
+};
 
 pub mod capabilities;
 pub mod clock;
@@ -25,6 +30,7 @@ pub mod errors;
 pub mod extract;
 pub mod handlers;
 pub mod limits;
+pub mod password;
 pub mod resolver;
 pub mod return_to;
 pub mod session;
@@ -39,17 +45,33 @@ pub struct AuthState {
     pub sessions: SessionService,
     /// The cookie names and attributes for this deployment.
     pub cookies: CookieSettings,
+    /// The rate limits for auth requests.
+    pub limits: AuthLimiter,
+    /// The gate that limits password hashing and verification at once.
+    pub hashes: HashGate,
+    /// The proxies whose forwarding headers are believed when finding the client IP.
+    pub trusted: Arc<TrustedProxies>,
 }
 
 impl AuthState {
-    /// Builds the state from a pool, the clock that decides every expiry, and the cookie settings.
+    /// Builds the state from its parts. The clock decides every expiry.
     #[must_use]
-    pub fn new(pool: PgPool, clock: Arc<dyn Clock>, cookies: CookieSettings) -> Self {
+    pub fn new(
+        pool: PgPool,
+        clock: Arc<dyn Clock>,
+        cookies: CookieSettings,
+        limits: AuthLimiter,
+        hashes: HashGate,
+        trusted: TrustedProxies,
+    ) -> Self {
         let sessions = SessionService::new(pool.clone(), clock);
         Self {
             pool,
             sessions,
             cookies,
+            limits,
+            hashes,
+            trusted: Arc::new(trusted),
         }
     }
 }
@@ -61,6 +83,7 @@ pub fn router(state: AuthState) -> Router {
     let routes = Router::new()
         .route("/api/auth/logout", post(handlers::session::logout))
         .route("/api/auth/logout-all", post(handlers::session::logout_all))
+        .route("/api/auth/login", post(handlers::login::login))
         .route("/api/me", get(handlers::me::me))
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);
