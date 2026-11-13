@@ -91,9 +91,19 @@ async fn pg_claim_prefers_cancelled(pool: PgPool) {
         .await
         .unwrap();
 
-    // The cancelled job is claimed first, so the judge can finish it without running code.
-    assert_eq!(claim_as(&pool, "w").await, Some(cancelled));
-    assert_eq!(claim_as(&pool, "w").await, Some(older));
+    // The cancelled job is claimed first, and the claim says so, so the judge can finish it without running code.
+    let first = claim_next(&pool, "w", LEASE)
+        .await
+        .unwrap()
+        .expect("a job is queued");
+    assert_eq!(first.token.run_id(), cancelled);
+    assert!(first.cancel_requested);
+    let second = claim_next(&pool, "w", LEASE)
+        .await
+        .unwrap()
+        .expect("a job is queued");
+    assert_eq!(second.token.run_id(), older);
+    assert!(!second.cancel_requested);
 }
 
 #[ignore = "needs DATABASE_URL"]

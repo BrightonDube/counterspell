@@ -32,6 +32,8 @@ pub struct ClaimedRun {
     pub mode: RunMode,
     /// The source text the user submitted.
     pub code: String,
+    /// True when the user asked to cancel before this claim. The worker must not run the program.
+    pub cancel_requested: bool,
 }
 
 /// Claims the next ready run for `worker` and leases it for `lease`.
@@ -50,7 +52,7 @@ pub async fn claim_next(
 ) -> Result<Option<ClaimedRun>, QueueError> {
     let mut tx = pool.begin().await?;
 
-    let claimed_job: Option<(i64, Uuid, i16)> = sqlx::query_as(
+    let claimed_job: Option<(i64, Uuid, i16, bool)> = sqlx::query_as(
         "WITH next AS ( \
              SELECT id FROM jobs \
               WHERE state = 'queued' AND run_after <= now() \
@@ -64,14 +66,14 @@ pub async fn claim_next(
                 claimed_at = now(), updated_at = now() \
            FROM next \
           WHERE j.id = next.id \
-         RETURNING j.id, j.submission_id, j.attempts",
+         RETURNING j.id, j.submission_id, j.attempts, j.cancel_requested_at IS NOT NULL",
     )
     .bind(worker)
     .bind(lease.as_secs_f64())
     .fetch_optional(&mut *tx)
     .await?;
 
-    let Some((job_id, run_uuid, attempts)) = claimed_job else {
+    let Some((job_id, run_uuid, attempts, cancel_requested)) = claimed_job else {
         // Nothing was claimed, so there is nothing to commit. Dropping `tx` rolls back.
         return Ok(None);
     };
@@ -114,5 +116,6 @@ pub async fn claim_next(
         lang,
         mode,
         code,
+        cancel_requested,
     }))
 }

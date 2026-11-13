@@ -41,3 +41,11 @@ Brighton reviews each entry before the next task that depends on it starts.
   - `finish_failed` accepts only `cancelled`, `problem_unavailable` and `language_unavailable`. Retry exhaustion and expiry have their own paths.
   - `QueueError::InvalidResult` refuses counts that do not fit an `int` column.
 - Note: the atomicity test forces a duplicate ordinal to fail after the submission update. It does not inject a fault inside the code path.
+
+## T17: worker loop (PARTIAL, not ticked; commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/worker.rs`, `crates/judge/tests/worker.rs`; `ClaimedRun` gained `cancel_requested`.
+- Passing tests: completion, infrastructure retry, panic containment, cancel before claim (executor never runs), cancel while running (real time), concurrency limit, graceful shutdown (real time), hard deadline (real time, 5.7 s).
+- Missing: `pg_cancel_vs_complete_race`, `pg_crash_recovery_real_time`, NOTIFY wake-ups. See blockers file.
+- What to check: the three stop reasons (cancel, lease lost, shutdown) map to the right write. A lost lease writes nothing. Infrastructure errors release for retry and never become verdicts.
+- The concurrency test checks that a third run has not started after 100 scheduler yields. That shows the cap holds on this runtime, but it does not prove it under every timing.
