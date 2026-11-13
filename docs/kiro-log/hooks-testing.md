@@ -66,3 +66,16 @@ Must block with status `2`: an edit that leaves fewer `#[test]` / `#[tokio::test
 Must allow with status `0`: adding, renaming, moving or refactoring tests (same or higher count); `#[ignore]` on `pg_*` / `valkey_*` tests; non-source files such as `.md`; creating a new file; appending; deleting a file without tests; malformed or empty events; MCP tools with no path; and `// test-change: VAL-3` with a real ID (which also appends a line to `docs/kiro-log/test-guard.log`).
 
 Checked 12 Nov 2026 against the script with 25 such cases in a scratch directory: 25 passed. Not yet checked against a live IDE or CLI hook event, so confirm the matcher `write|str_replace|fs_append|delete_file` fires in a real session.
+
+
+## Token-boundary API-key patterns (13 Nov 2026)
+
+The write-mode check for `sk-`, `gsk_` and `re_` keys now requires a token boundary (`(^|[^A-Za-z0-9_])` before the prefix). Without that, ordinary Rust identifiers such as `failure_reason_public_messages_are_distinct` matched `re_[A-Za-z0-9_-]{20,}` (case-insensitive) and the PreToolUse hook blocked every test write in the run-lifecycle session. The hook also prints which pattern class matched.
+
+Regression checks (no full key is stored in the test file; prefixes and bodies are concatenated at runtime):
+
+```bash
+bash scripts/kiro-hooks/test-guard-secrets.sh
+```
+
+Expected result: every case is `ok`, including allowing `failure_reason_public_messages_are_distinct` and a long `ask-` word, and still blocking `.env`, PEM/`id_rsa`/`secrets/` paths, and real `sk-` / `gsk_` / `re_` keys. Checked 13 Nov 2026: all cases passed.

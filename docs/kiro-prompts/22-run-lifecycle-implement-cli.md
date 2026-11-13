@@ -1,6 +1,6 @@
 Implement the run-lifecycle spec in .kiro/specs/run-lifecycle/ (requirements.md, design.md, tasks.md). Follow AGENTS.md, every file in .kiro/steering/ (especially tdd-and-quality.md, security.md and rust-teaching.md), and the conventions at the top of tasks.md. Where design.md lists "Open questions", use the assumed choice unless Brighton has already answered it in the file.
 
-This run is non-interactive and was approved by Brighton (12 Nov 2026). Work through the tasks in tasks.md in order, one task at a time. Skip `[stretch]` tasks this pass.
+This run is non-interactive and was approved by Brighton (12 Nov 2026). Work through the tasks in tasks.md in order, one task at a time, starting at the first unchecked, non-stretch, non-BLOCKED task. Leave tasks already marked [x] as they are. Skip `[stretch]` and `[BLOCKED]` tasks this pass. If a PreToolUse hook blocks a write, read its message and do not bypass the hook with a shell write; a hook block on one task is not a reason to end the run.
 
 Skills: the workspace skills in .kiro/skills/ are loaded. Use them on every task:
 - `test-driven-development` (read its writing-good-tests.md once at the start) before any production code;

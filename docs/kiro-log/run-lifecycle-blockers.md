@@ -2,6 +2,10 @@
 
 Written by the implementation run on 13 Nov 2026. Each entry names the task, the reason it is not finished, and what would unblock it.
 
+## Resolved: write-guard false positive (13 Nov 2026)
+
+`scripts/kiro-hooks/guard-secrets.sh` now anchors `sk-`, `gsk_` and `re_` API-key patterns at a token boundary, so identifiers such as `failure_reason_public_messages_are_distinct` are no longer blocked. The hook prints which pattern class matched. T02 onward can continue. The entries below are kept as history of the earlier session.
+
 ## Environment: PreToolUse hook blocks some test writes (T02, T03)
 
 - **What happened:** the file-write tool was blocked by a PreToolUse hook several times. The hook returned exit code 2 with no reason. The blocks were not tied to the test-integrity guard, which only counts removed tests and added skip markers, and that guard passes when run by hand with a bare path. Blocks came and went with content. The `FailureReason` tests were blocked every time they were tried, while the enum and its message table went through. The blocks were not bypassed (no shell writes were used to get around them).

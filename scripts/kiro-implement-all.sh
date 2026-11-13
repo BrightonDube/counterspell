@@ -31,10 +31,12 @@ usage(){ ~/.local/bin/kiro-cli chat --agent-engine v2 --no-interactive --trust-t
 log(){ echo "$(date '+%F %H:%M') $*" >> "$P"; }
 WD=
 stop(){ log "STOPPED $*"; [ -n "$WD" ] && kill "$WD" 2>/dev/null; exit 1; }
-counts(){ # slug -> "done total stretch"
+# Counts only task lines ("- [x] **Tnn"), not definition-of-done checklists.
+# blocked = unchecked tasks whose title contains BLOCKED (gated on Brighton or another spec).
+counts(){ # slug -> "done total stretch blocked"
   local f=.kiro/specs/$1/tasks.md
-  echo "$(grep -cE '^\s*- \[x\]' "$f") $(grep -cE '^\s*- \[( |x)\]' "$f") $(grep -E '^\s*- \[( |x)\]' "$f" | grep -ci stretch)"; }
-half_done(){ read -r d t s <<<"$(counts "$1")"; [ $(( d * 2 )) -ge $(( t - s )) ]; }
+  echo "$(grep -cE '^\s*- \[x\] \*\*T' "$f" || true) $(grep -cE '^\s*- \[( |x)\] \*\*T' "$f" || true) $(grep -E '^\s*- \[( |x)\] \*\*T' "$f" | grep -ci stretch || true) $(grep -cE '^\s*- \[ \] \*\*T.*BLOCKED' "$f" || true)"; }
+half_done(){ read -r d t s b <<<"$(counts "$1")"; [ $(( d * 2 )) -ge $(( t - s - b )) ]; }
 gate(){ # slug -> 0 if allowed to start; prints the reason otherwise
   case $1 in
     judge-sandbox) grep -q "Review decisions" .kiro/specs/judge-sandbox/design.md || grep -qE '^\s*- \[x\] \*\*T00' .kiro/specs/judge-sandbox/tasks.md || { echo "T00 boundary review not signed off (no 'Review decisions' note in design.md)"; return 1; } ;;
@@ -56,8 +58,11 @@ WD=$!
 for row in "${SPECS[@]}"; do
   read -r NUM SLUG MODEL EST <<<"$row"
   if [ $# -gt 0 ] && ! printf '%s\n' "$@" | grep -qx "$SLUG"; then continue; fi
-  read -r D T S <<<"$(counts "$SLUG")"
-  if [ "$D" -ge $(( T - S )) ]; then log "$SLUG already done ($D/$T)"; continue; fi
+  read -r D T S B <<<"$(counts "$SLUG")"
+  if [ "$D" -ge $(( T - S - B )) ]; then
+    if [ "${B:-0}" -gt 0 ]; then log "$SLUG already done ($D/$T, $B blocked)"; else log "$SLUG already done ($D/$T)"; fi
+    continue
+  fi
   if ! why=$(gate "$SLUG"); then log "SKIPPED $SLUG: $why"; continue; fi
   [ "$(git branch --show-current)" = "$BRANCH" ] || stop "branch changed away from $BRANCH"
   U=$(usage); [ -n "$U" ] || stop "could not read credits from /usage"
@@ -67,25 +72,32 @@ for row in "${SPECS[@]}"; do
   log "BEGIN $SLUG model=$MODEL est=$EST remaining=$REM"
   # Re-run the same spec while each attempt makes progress (Kiro sessions can be cut off mid-spec).
   for ATT in 1 2 3 4 5; do
-    read -r D0 T S <<<"$(counts "$SLUG")"
-    [ "$D0" -ge $(( T - S )) ] && break
+    read -r D0 T S B <<<"$(counts "$SLUG")"
+    [ "$D0" -ge $(( T - S - B )) ] && break
     U=$(usage); [ -n "$U" ] || stop "could not read credits from /usage"
     REM=$(awk -v u="$U" -v l=$LIMIT 'BEGIN{printf "%.0f", l-u}')
     [ "$REM" -ge "$FLOOR" ] || stop "remaining credits $REM < $FLOOR during $SLUG"
-    bash scripts/kiro-run.sh "$NUM-$SLUG-implement-a$ATT" "$MODEL" default "docs/kiro-prompts/$NUM-$SLUG-implement-cli.md"
-    read -r D1 T S <<<"$(counts "$SLUG")"
+    PF=docs/kiro-prompts/$NUM-$SLUG-implement-cli.md
+    CONT=/tmp/kiro-continue-$SLUG-a$ATT.md
+    {
+      echo "This is a continuation (attempt $ATT). Resume at the first unchecked, non-stretch, non-BLOCKED task in .kiro/specs/$SLUG/tasks.md. Do not redo tasks already marked [x]. Skip [BLOCKED] and [stretch] tasks (leave a note in the blockers file if you have something new to add) and keep going. If a PreToolUse hook blocks a write, read its message; never bypass the hook with a shell write. A hook block on one task is not a reason to end the run."
+      echo
+      cat "$PF"
+    } > "$CONT"
+    bash scripts/kiro-run.sh "$NUM-$SLUG-implement-a$ATT" "$MODEL" default "$CONT"
+    read -r D1 T S B <<<"$(counts "$SLUG")"
     log "$SLUG attempt $ATT: tasks $D0 -> $D1 of $T ($(grep -o 'rc=[0-9]*' /tmp/kiro-run.status), $(grep -o 'credits=[0-9.-]*' /tmp/kiro-run.status))"
     [ "$D1" -gt "$D0" ] || break
   done
   RC=$(grep -o 'rc=[0-9]*' /tmp/kiro-run.status | cut -d= -f2)
   CR=$(grep -o 'credits=[0-9.-]*' /tmp/kiro-run.status | cut -d= -f2)
   TOT=$(grep -o 'total=[0-9.]*' /tmp/kiro-run.status | cut -d= -f2)
-  read -r D T S <<<"$(counts "$SLUG")"
+  read -r D T S B <<<"$(counts "$SLUG")"
   if suite; then TESTS=pass; else TESTS=FAIL; fi
   git add -A && git commit -qm "kiro: $SLUG implement run log and leftovers ($MODEL)" || true
-  log "$SLUG rc=$RC credits=$CR total=$TOT tasks=$D/$T stretch=$S tests=$TESTS"
+  log "$SLUG rc=$RC credits=$CR total=$TOT tasks=$D/$T stretch=$S blocked=$B tests=$TESTS"
   [ "$TESTS" = pass ] || stop "tests failing after $SLUG (see /tmp/kiro-impl-tests.log)"
-  [ $(( D * 2 )) -ge $(( T - S )) ] || stop "$SLUG ended with $D of $(( T - S )) core tasks checked (under half)"
+  [ $(( D * 2 )) -ge $(( T - S - B )) ] || stop "$SLUG ended with $D of $(( T - S - B )) core tasks checked (under half)"
 done
 log "ALL_DONE"
 kill "$WD" 2>/dev/null
