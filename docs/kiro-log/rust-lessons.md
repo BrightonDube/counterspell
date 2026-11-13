@@ -439,3 +439,10 @@ A crate can list itself under `[dev-dependencies]` with a feature turned on. Tes
 `FOR UPDATE SKIP LOCKED` lets many workers ask for work at once. A row locked by one worker is skipped by the others, so nobody waits and nobody gets the same job.
 `let ... else` handles the "nothing to claim" case early. The `return` drops the transaction, which rolls back, so no empty write is left behind.
 `#[derive(Clone)]` without `Debug` on `ClaimedRun` is a small guard: the source code it holds cannot be printed by a `{:?}` in a log line.
+
+# Rust lesson: run-lifecycle T13
+
+`Option<T>` from `fetch_optional` plus `ok_or(QueueError::LeaseLost)` turns "no matching row" into a named outcome. A stale worker gets a value it can match on, not a crash.
+A `struct` with `Copy` (such as `JobSnapshot`) is cheap to pass around when several branches need the same fields.
+`saturating_add`, `saturating_mul` and `min` keep retry arithmetic from overflowing, so a bad counter cannot panic the worker.
+`#[cfg(test)] mod tests` keeps unit tests next to the pure functions they check, such as backoff and sanitising.

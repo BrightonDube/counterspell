@@ -20,3 +20,14 @@ Brighton reviews each entry before the next task that depends on it starts.
   - Order is cancel-first (`NULLS LAST`), then `run_after`, then `id`. Future `run_after` is skipped.
   - All times come from the database (`now()`, `make_interval`). The lease length is passed in as seconds.
 - Ordering note: T11 was implemented after T12 because T11's `restarted` event uses T12's append helper. T11's own text allows this order.
+
+## T13: lease renewal and release for retry (commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/queue/lease.rs`, `crates/judge/tests/lease.rs`, plus `emit.rs` changes.
+- What to check:
+  - `renew` matches (job, owner, attempts) and does not look at the clock, so renewal after expiry but before a reap still counts.
+  - `requeue_or_exhaust_locked` is the shared body for release and the reaper (T15). It requeues with a backoff, or marks the job `dead` and emits `error` with `retries_exhausted`.
+  - `append_event_locked` now sets `finished_at` and `failure_reason` for an error event, because the table's CHECK requires them in the same update.
+  - `emit` now refuses `done` and `error` (test `pg_emit_refuses_terminal_events`). Only the terminal write (T14) and the retry path may end a run.
+  - `sanitize_last_error` strips control characters and caps the text at 500 characters.
+- Gap: `pg_lost_lease_stops_writes` covers emit, renew and release. The finish write is checked in T14.

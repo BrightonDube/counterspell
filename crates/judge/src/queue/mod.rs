@@ -4,6 +4,7 @@
 pub mod claim;
 pub mod emit;
 pub(crate) mod fence;
+pub mod lease;
 
 use counterspell_common::ids::RunId;
 use thiserror::Error;
