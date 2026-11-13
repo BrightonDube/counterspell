@@ -1,0 +1,12 @@
+# Production override: run the signed GHCR images (pinned by digest) instead of building on the server.
+# Values come from deploy.env, written by counterspell-deploy. Requires Docker Compose >= 2.24 (!reset).
+services:
+  server:
+    image: ${COUNTERSPELL_SERVER_IMAGE:?set by counterspell-deploy}
+    build: !reset null
+  judge:
+    image: ${COUNTERSPELL_JUDGE_IMAGE:?set by counterspell-deploy}
+    build: !reset null
+  migrate:
+    image: ${COUNTERSPELL_MIGRATE_IMAGE:?set by counterspell-deploy}
+    build: !reset null
