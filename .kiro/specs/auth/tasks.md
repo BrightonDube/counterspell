@@ -134,7 +134,7 @@ Conventions for every Rust task:
   - Preserve: there is no code path that reads a user id from a body, path, query or other header.
   - Rust lesson: Axum extractors and why handlers get the user from a type, not a parameter.
 
-- [ ] **T12 [S] (30 min) Session property tests (P9, P10, P11, P12, P13)** [SUPERVISED]
+- [x] **T12 [S] (30 min) Session property tests (P9, P10, P11, P12, P13)** [SUPERVISED]
   - Files: `crates/server/tests/pg_auth_session_props.rs`, `proptest-regressions/`.
   - Stateful model: random users and operations (create, authenticate, renew via manual clock, logout, logout-all, `/api/me`, resolver) against a pure model; assert isolation (A's session never returns B's data), logout and logout-all effects, lifetime rules, a new session value on every `create`, and that every `Set-Cookie` produced by the session handlers has the required attributes.
   - Requirements: R10.1, R10.3–R10.6, R11, R12.1, R12.5.

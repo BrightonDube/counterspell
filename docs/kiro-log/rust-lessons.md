@@ -597,3 +597,9 @@ This task is SQL only, so there is no Rust lesson. The useful idea is `SECURITY 
 An axum extractor is a type that implements `FromRequestParts`. A handler that takes `AuthUser` cannot run unless the extractor succeeds, so the user id never comes from a parameter the client can change.
 `UserResolver` became an `async_trait`, because the session check needs the database. Trait objects (`Arc<dyn UserResolver>`) cannot return a plain `async fn`, so `#[async_trait]` boxes the future.
 The `CookieSlot` is an `Arc<Mutex<..>>` placed in the request. The extractor writes to it and the middleware reads it after the handler, so a cleared cookie still reaches the browser when the handler returns an error.
+
+# Rust lesson: auth T12
+
+A property test generates many random operation lists and checks a model after each step. When one fails, proptest shrinks the list to the shortest one that still fails, so the printed sequence is the one to read.
+The model is a small pure struct with its own rules (`works_at`). It is written separately from the code under test, so a bug in the service cannot match a bug in the model by accident.
+`prop_assert!` returns an error instead of panicking. That lets the shrinker keep trying smaller inputs.
