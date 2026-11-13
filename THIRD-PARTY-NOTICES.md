@@ -79,3 +79,23 @@ The server uses these for the parse check in submission validation (VAL-2). `car
 - **tree-sitter-python 0.25.0** — tree-sitter contributors — MIT — <https://crates.io/crates/tree-sitter-python>
 - **tree-sitter-javascript 0.25.0** — tree-sitter contributors — MIT — <https://crates.io/crates/tree-sitter-javascript>
 - **proptest 1.9** (server dev-dependency, `std` feature only) — MIT OR Apache-2.0 — <https://crates.io/crates/proptest>
+
+## Auth dependencies (auth T01)
+
+The auth module adds these direct dependencies to `counterspell-server`. `cargo deny check licenses` passed on them on 13 November 2026, with `reqwest` and `oauth2` left out (see the note below).
+
+- **argon2 0.5.3** — RustCrypto developers — MIT OR Apache-2.0 — <https://crates.io/crates/argon2>
+- **axum-extra 0.12.6** (feature `cookie`) — Axum contributors — MIT — <https://crates.io/crates/axum-extra>
+- **hmac 0.12.1** — RustCrypto developers — MIT OR Apache-2.0 — <https://crates.io/crates/hmac>
+- **rand 0.9.5** — The Rand Project developers — MIT OR Apache-2.0 — <https://crates.io/crates/rand>
+- **base64 0.23.1** — Marshall Pierce and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/base64>
+- **hex 0.4.3** — KokaKiwi and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/hex>
+- **subtle 2.6.1** — isis lovecruft and Henry de Valence — BSD-3-Clause — <https://crates.io/crates/subtle>
+- **url 2.5.8** — The rust-url developers — MIT OR Apache-2.0 — <https://crates.io/crates/url>
+- **percent-encoding 2.3.2** — The rust-url developers — MIT OR Apache-2.0 — <https://crates.io/crates/percent-encoding>
+- **async-trait 0.1.92** — David Tolnay — MIT OR Apache-2.0 — <https://crates.io/crates/async-trait>
+- **time 0.3.55** — Time contributors — MIT OR Apache-2.0 — <https://crates.io/crates/time>
+- **wiremock 0.6.5** (dev) — Kenton Varda and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/wiremock>
+- **tower 0.5.3** (dev, feature `util`) — Tower contributors — MIT — <https://crates.io/crates/tower>
+
+Held back: **reqwest** (for Resend, GitHub and Google calls) and **oauth2** (PKCE and the code exchange). Their rustls path pulls in `webpki-roots 1.0.12`, which is licensed `CDLA-Permissive-2.0`, and `deny.toml` does not allow it. The licence decision is logged in `docs/kiro-log/auth-blockers.md` for Brighton.
