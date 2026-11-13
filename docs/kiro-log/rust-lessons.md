@@ -464,3 +464,9 @@ Finding a candidate without a lock, then locking and checking it again, is a com
 A trait with a generic `E: RunExecutor` parameter is checked at compile time for each executor type. A `dyn` trait object would box the future on each call, so the worker stays generic.
 `RunContext` is the only thing an executor receives. It has an `emit` method and a stop check, and nothing else, so the type system blocks a verdict write.
 Naming: the design sketch reused `ClaimedRun`, which already exists in the queue module, so the executor's input is `RunInput`. Two types with one name would be hard to read.
+
+# Rust lesson: run-lifecycle T17
+
+`tokio::spawn` runs a task on its own. Aborting the task that spawned it does not stop the child, so a heartbeat needs an explicit stop. `JoinHandle::abort_handle` lets the caller stop a task even after `timeout` has taken the handle.
+A `JoinError` from a spawned task is how a panic reaches the caller. The worker turns it into a retry, so one bad run cannot stop the worker.
+`Arc<Self>` lets several spawned tasks share the worker without copying it. The `Semaphore` permit moves into the task, so the slot frees itself when the run ends.
