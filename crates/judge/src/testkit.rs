@@ -1,12 +1,20 @@
-//! Test helpers for the judge's database tests. Compiled only with the `testkit`
-//! feature, so release builds never contain them.
+//! Test helpers for the judge's database and executor tests. Compiled only with the
+//! `testkit` feature, so release builds never contain them.
 //!
-//! These helpers run as a database superuser. They seed rows and age leases with
-//! SQL, so tests never sleep to move time forward.
+//! The database helpers run as a database superuser. They seed rows and age leases
+//! with SQL, so tests never sleep to move time forward. The executor helpers are
+//! in-memory stand-ins for the sandbox runner.
 
+use crate::executor::{ExecError, RunContext, RunExecutor, RunInput, RunOutcome};
+use crate::queue::finish::{FinalResult, TestRecord};
 use crate::queue::ClaimToken;
+use counterspell_common::events::{PublicEvent, PublicTest};
 use counterspell_common::ids::{RunId, UserId};
+use counterspell_common::status::{FailureReason, TestVerdict, Verdict};
 use sqlx::PgPool;
+use std::sync::{Arc, Mutex};
+use std::time::Duration;
+use tokio::sync::watch;
 
 /// Claims a queued run for `owner` without the claim code, as the database owner.
 ///
@@ -188,4 +196,166 @@ pub async fn assert_invariants(pool: &PgPool) -> Result<(), String> {
     } else {
         Err(failures.join("; "))
     }
+}
+
+/// The events a scripted or recording run emitted, readable after the run ends.
+#[derive(Clone)]
+pub struct EventLog(Arc<Mutex<Vec<PublicEvent>>>);
+
+impl EventLog {
+    /// A copy of every event recorded so far, in the order they were emitted.
+    #[must_use]
+    pub fn events(&self) -> Vec<PublicEvent> {
+        self.0
+            .lock()
+            .map(|events| events.clone())
+            .unwrap_or_default()
+    }
+}
+
+/// Builds in-memory contexts for executor tests.
+pub struct RecordingContext;
+
+impl RecordingContext {
+    /// A context whose stop signal never fires. Dropping its sender makes `stopped()` return at once.
+    #[must_use]
+    pub fn without_stop(attempt: u16) -> (RunContext, EventLog) {
+        let (_sender, stop) = watch::channel(false);
+        let log = EventLog(Arc::new(Mutex::new(Vec::new())));
+        let ctx = RunContext::recording(log.0.clone(), RunId::new(), attempt, stop);
+        (ctx, log)
+    }
+
+    /// A context and the sender that fires its stop signal.
+    #[must_use]
+    pub fn with_stop(attempt: u16) -> (RunContext, EventLog, watch::Sender<bool>) {
+        let (sender, stop) = watch::channel(false);
+        let log = EventLog(Arc::new(Mutex::new(Vec::new())));
+        let ctx = RunContext::recording(log.0.clone(), RunId::new(), attempt, stop);
+        (ctx, log, sender)
+    }
+}
+
+/// How a scripted executor behaves. Each variant covers one case the worker must handle.
+#[derive(Debug, Clone)]
+pub enum Script {
+    /// Every test passes. `delay` is slept before each test.
+    Pass {
+        /// Number of tests in the suite.
+        tests: u32,
+        /// Time spent before each test.
+        delay: Duration,
+    },
+    /// Passes like `Pass`. The canary test (T34) checks that hidden text never reaches a public surface.
+    PassWithCanaries {
+        /// Number of tests in the suite.
+        tests: u32,
+    },
+    /// The first test fails with the given run verdict.
+    Fail {
+        /// The run verdict to return.
+        verdict: Verdict,
+    },
+    /// Runs until the stop signal fires, then returns `Stopped`.
+    Hang,
+    /// Reports an infrastructure failure with this internal message.
+    Infra(String),
+    /// Panics, so the caller sees a join error.
+    Panic,
+    /// Emits this many events, then fails without a result.
+    CrashAfter(u32),
+    /// Ends the run with a fixed failure reason.
+    Unavailable(FailureReason),
+}
+
+/// An executor that follows a `Script`. It stands in for the sandbox runner in tests.
+pub struct ScriptedExecutor {
+    script: Script,
+}
+
+impl ScriptedExecutor {
+    /// An executor that follows `script`.
+    #[must_use]
+    pub const fn new(script: Script) -> Self {
+        Self { script }
+    }
+}
+
+impl RunExecutor for ScriptedExecutor {
+    async fn execute(&self, _run: RunInput, mut ctx: RunContext) -> Result<RunOutcome, ExecError> {
+        match &self.script {
+            Script::Pass { tests, delay } => pass(&ctx, *tests, *delay).await,
+            Script::PassWithCanaries { tests } => pass(&ctx, *tests, Duration::ZERO).await,
+            Script::Fail { verdict } => {
+                ctx.emit(&PublicEvent::Compiling).await?;
+                ctx.emit(&hidden_test(1, TestVerdict::WrongAnswer)).await?;
+                Ok(RunOutcome::Completed(FinalResult {
+                    verdict: *verdict,
+                    passed: 0,
+                    total: 1,
+                    score: 0,
+                    runtime_ms: 0,
+                    compile_output: None,
+                    tests: vec![TestRecord::Hidden {
+                        ordinal: 1,
+                        verdict: TestVerdict::WrongAnswer,
+                        time_ms: 1,
+                    }],
+                }))
+            }
+            Script::Hang => {
+                ctx.stopped().await;
+                Err(ExecError::Stopped)
+            }
+            Script::Infra(message) => Err(ExecError::Infrastructure(message.clone())),
+            Script::Panic => panic!("scripted panic"),
+            Script::CrashAfter(count) => {
+                for step in 0..*count {
+                    let event = if step == 0 {
+                        PublicEvent::Compiling
+                    } else {
+                        hidden_test(step, TestVerdict::Pass)
+                    };
+                    ctx.emit(&event).await?;
+                }
+                Err(ExecError::Infrastructure("scripted crash".to_owned()))
+            }
+            Script::Unavailable(reason) => Ok(RunOutcome::Failed(*reason)),
+        }
+    }
+}
+
+/// Emits `compiling`, then one passing hidden test per ordinal, and returns the accepted result.
+async fn pass(ctx: &RunContext, tests: u32, delay: Duration) -> Result<RunOutcome, ExecError> {
+    ctx.emit(&PublicEvent::Compiling).await?;
+    let mut records = Vec::new();
+    for ordinal in 1..=tests {
+        if !delay.is_zero() {
+            tokio::time::sleep(delay).await;
+        }
+        ctx.emit(&hidden_test(ordinal, TestVerdict::Pass)).await?;
+        records.push(TestRecord::Hidden {
+            ordinal,
+            verdict: TestVerdict::Pass,
+            time_ms: 1,
+        });
+    }
+    Ok(RunOutcome::Completed(FinalResult {
+        verdict: Verdict::Accepted,
+        passed: tests,
+        total: tests,
+        score: 100,
+        runtime_ms: 0,
+        compile_output: None,
+        tests: records,
+    }))
+}
+
+/// A public hidden-test event with a fixed one-millisecond time.
+fn hidden_test(ordinal: u32, verdict: TestVerdict) -> PublicEvent {
+    PublicEvent::Test(PublicTest::Hidden {
+        ordinal,
+        verdict,
+        time_ms: 1,
+    })
 }

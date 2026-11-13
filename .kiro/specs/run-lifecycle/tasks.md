@@ -162,7 +162,7 @@ Conventions for every Rust task:
   - Preserve: no `sleep` in these tests except where the test is named `real_time`; leases are aged with SQL.
   - Rust lesson: periodic tasks with `tokio::time::interval` and shutdown signals.
 
-- [ ] **T16 [S] (30 min) Executor trait, run context and the scripted executor**
+- [x] **T16 [S] (30 min) Executor trait, run context and the scripted executor**
   - Files: `crates/judge/src/executor.rs`, `crates/judge/src/testkit.rs`.
   - Define `ClaimedRun`, `RunOutcome`, `ExecError`, the `RunExecutor` trait (async fn in trait, no `dyn`), and `RunContext` (`emit`, `stop_requested`, `stopped`, `run_id`, `attempt`), exactly as sketched in `design.md` Path 7. In `testkit`, add `ScriptedExecutor` with behaviours `Pass { tests, delay }`, `Fail { verdict }`, `Hang`, `Infra(msg)`, `Panic`, `PassWithCanaries` (hidden inputs and expected outputs contain canary strings that the executor tries to place in free-text fields; only typed public constructors may carry data out) and `CrashAfter(n)` (stops after `n` events without finishing).
   - Requirements: R15.1, R18.1, R18.4.

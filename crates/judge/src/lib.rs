@@ -8,6 +8,7 @@
 #![warn(missing_docs)]
 
 pub mod config;
+pub mod executor;
 pub mod queue;
 #[cfg(feature = "testkit")]
 pub mod testkit;
