@@ -18,3 +18,7 @@ Run: auth implement, attempt 1 (13 Nov 2026).
 - **Not done:** the guarded `submissions.user_id → users(id) ON DELETE CASCADE` migration and its test "inserting a submission for an unknown user fails".
 - **Why:** adding that key now makes every run-lifecycle test that creates a run for a random user id fail (`tests/enqueue.rs`, `tests/cancel.rs`, `tests/get_run.rs`). Those tests need real user fixtures first, which is T34's job. Moving the key into T08 would mean editing run-lifecycle's tests early.
 - **Unblock:** do T33 and T34 (the fixtures), then add `migrations/<later timestamp>_auth_submissions_fk.sql` and the FK test. T08 can then be ticked. Assumed choice: keep the order as written in tasks.md and add the key in T34.
+
+## Not started in attempt 1 (no blocker, out of time and context)
+
+Tasks T10 to T37 are unchecked and were not started in this run. They are not blocked by a decision. Pick up at T10 (`SessionService`, SUPERVISED) in the next run. T14, T17, T18 to T23, T25 and T33 also need the T01 licence decision above. T27, T36 and T34 depend on those.
