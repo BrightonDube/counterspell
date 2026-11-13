@@ -1,6 +1,9 @@
 //! Postgres job queue: claiming, leases, fenced writes, run events, terminal
 //! writes and reaping. Postgres is the only source of truth for these rows.
 
+pub mod emit;
+pub(crate) mod fence;
+
 use counterspell_common::ids::RunId;
 use thiserror::Error;
 
@@ -13,6 +16,9 @@ pub enum QueueError {
     /// No row matched the request.
     #[error("the run was not found")]
     NotFound,
+    /// The run is in a state that cannot take this event, for example after it finished.
+    #[error("the run cannot take this event now")]
+    EventRejected,
     /// The database rejected or failed the statement.
     #[error("database error: {0}")]
     Database(#[from] sqlx::Error),
@@ -32,6 +38,23 @@ pub struct ClaimToken {
 }
 
 impl ClaimToken {
+    /// Builds a token from the values read in a claim. Only the claim code and the
+    /// test kit create tokens, so a worker cannot invent a claim it does not hold.
+    #[cfg(feature = "testkit")]
+    pub(crate) const fn new(
+        job_id: i64,
+        run_id: RunId,
+        lease_owner: String,
+        attempts: i16,
+    ) -> Self {
+        Self {
+            job_id,
+            run_id,
+            lease_owner,
+            attempts,
+        }
+    }
+
     /// The job row this claim belongs to.
     #[must_use]
     pub const fn job_id(&self) -> i64 {

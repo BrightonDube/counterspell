@@ -426,3 +426,10 @@ A test that expects a failure must still fail loudly when the statement succeeds
 A `Transaction` rolls back when it is dropped without `commit()`. The role tests end with `rollback()` on purpose, so nothing they write survives.
 `SAVEPOINT` is a sub-transaction. After a denied statement, `ROLLBACK TO SAVEPOINT` clears the error and keeps the outer transaction usable.
 `&mut **tx` and `&mut *tx` pass the transaction's connection to a query. Both forms appear in these tests; the difference is one extra dereference.
+
+# Rust lesson: run-lifecycle T12
+
+A function that takes `&mut Transaction` runs inside the caller's transaction. `append_event_locked` relies on this: the caller decides when to commit, so the fence, the status change and the insert either all commit or all roll back.
+`Option::ok_or(...)?` turns "no row" into a typed error that the caller matches on, such as `LeaseLost`. Expected outcomes stay in `Result`, and a panic is kept for real bugs.
+`pub(crate)` lets the claim code and the test kit build a `ClaimToken`, while other crates cannot. A `#[cfg(feature = "testkit")]` gate removes code that only tests use from release builds.
+A crate can list itself under `[dev-dependencies]` with a feature turned on. Tests then get the feature without callers passing `--features`.

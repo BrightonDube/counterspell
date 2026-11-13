@@ -192,6 +192,7 @@ name = "counterspell-judge"
 version = "0.1.0"
 dependencies = [
  "counterspell-common",
+ "counterspell-judge",
  "serde_json",
  "sqlx",
  "thiserror",
