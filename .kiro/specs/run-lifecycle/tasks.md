@@ -219,7 +219,7 @@ Conventions for every Rust task:
   - Preserve: no header-based test authentication exists outside the `testkit` feature.
   - Rust lesson: traits as seams, and extractors in axum.
 
-- [ ] **T22 [P] (30 min) Submission validation (VAL-1, VAL-2, VAL-3)**
+- [x] **T22 [P] (30 min) Submission validation (VAL-1, VAL-2, VAL-3)**
   - Files: `crates/server/src/validate.rs`, `crates/server/Cargo.toml`, `THIRD-PARTY-NOTICES.md`.
   - Pure function `validate_source(lang, code, limits) -> Result<(), ValidationError>`: byte limit with a message that states limit and actual size; no NUL or control characters other than tab, newline, carriage return; tree-sitter parse with the Python or JavaScript grammar, reporting the first error line and column. Add `tree-sitter`, `tree-sitter-python`, `tree-sitter-javascript` (check licences; MIT expected). No keyword or API blocklist.
   - Unit tests and proptest: oversize by one byte; multi-byte characters counted in bytes not characters; NUL and `\x1b` rejected; tab, `\n`, `\r\n` accepted; valid and invalid programs in both languages; a very deeply nested expression does not panic or hang; random byte soup never panics.

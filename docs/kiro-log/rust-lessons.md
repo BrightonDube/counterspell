@@ -502,3 +502,10 @@ A trait such as `UserResolver` is a seam. Production code stores it as `Arc<dyn 
 An axum extractor is a type that implements `FromRequestParts`. Putting `CurrentUser` in a handler's arguments makes the handler reject anonymous callers before its body runs.
 Clippy warns about `async fn` with no `.await`. Returning `std::future::ready(result)` from a non-async `fn` keeps the future `Send` and avoids the warning.
 `#[cfg(feature = "testkit")]` removes the bearer-token resolver from release builds, so a header can never sign a user in outside tests.
+
+# Rust lesson: run-lifecycle T22
+
+`Result<T, E>` lets the validator return the first problem it finds, and `?` stops the checks early. The cheap checks (size, then characters) run before the parser, so the parser only sees input that is already bounded.
+A tree-sitter tree can be deep, so the code that finds the first error walks it with a cursor in a loop, not with recursion. A recursive walk could overflow the stack on hostile input.
+`std::str::from_utf8` is the safe way to check text: it returns `Err` on bad bytes and never panics.
+Proptest feeds random bytes into the validator. It checks that the code never panics, which matters because this runs on untrusted input.
