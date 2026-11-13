@@ -4,6 +4,7 @@
 pub mod claim;
 pub mod emit;
 pub(crate) mod fence;
+pub mod finish;
 pub mod lease;
 
 use counterspell_common::ids::RunId;
@@ -21,6 +22,9 @@ pub enum QueueError {
     /// The run is in a state that cannot take this event, for example after it finished.
     #[error("the run cannot take this event now")]
     EventRejected,
+    /// The result's counts do not fit the database's integer columns.
+    #[error("a result count is out of range")]
+    InvalidResult,
     /// The database rejected or failed the statement.
     #[error("database error: {0}")]
     Database(#[from] sqlx::Error),

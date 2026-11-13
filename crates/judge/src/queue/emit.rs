@@ -38,13 +38,36 @@ pub async fn emit(
     Ok(seq)
 }
 
+/// Reads the run's current status and locks the submission row until commit.
+///
+/// # Errors
+///
+/// Returns `NotFound` when the run does not exist, or a database error. A status
+/// text the Rust enum does not know is reported as a decode error.
+pub(crate) async fn read_status_locked(
+    tx: &mut Transaction<'_, Postgres>,
+    run: RunId,
+) -> Result<RunStatus, QueueError> {
+    let text: String =
+        sqlx::query_scalar("SELECT status FROM submissions WHERE id = $1 FOR UPDATE")
+            .bind(run.as_uuid())
+            .fetch_optional(&mut **tx)
+            .await?
+            .ok_or(QueueError::NotFound)?;
+    RunStatus::parse(&text).ok_or_else(|| {
+        QueueError::Database(sqlx::Error::ColumnDecode {
+            index: "status".to_owned(),
+            source: "unknown run status in the database".into(),
+        })
+    })
+}
+
 /// Appends an event inside a transaction whose claim is already fenced.
 ///
 /// The caller must lock the claim first. This function locks the submission row,
-/// checks the status rule, bumps the counter, stores the event and sends a
-/// `NOTIFY` that carries only the run id. An `error` event also sets `finished_at`
-/// and `failure_reason` in the same update, which the table's CHECK requires. The
-/// notice is sent at commit.
+/// checks the status rule, bumps the counter and stores the event. An `error`
+/// event also sets `finished_at` and `failure_reason` in the same update, which the
+/// table's CHECK requires.
 ///
 /// # Errors
 ///
@@ -56,18 +79,7 @@ pub(crate) async fn append_event_locked(
     attempt: i16,
     event: &PublicEvent,
 ) -> Result<i32, QueueError> {
-    let current_text: String =
-        sqlx::query_scalar("SELECT status FROM submissions WHERE id = $1 FOR UPDATE")
-            .bind(run.as_uuid())
-            .fetch_optional(&mut **tx)
-            .await?
-            .ok_or(QueueError::NotFound)?;
-    let current = RunStatus::parse(&current_text).ok_or_else(|| {
-        QueueError::Database(sqlx::Error::ColumnDecode {
-            index: "status".to_owned(),
-            source: "unknown run status in the database".into(),
-        })
-    })?;
+    let current = read_status_locked(tx, run).await?;
     let next = status_after_event(current, event).ok_or(QueueError::EventRejected)?;
     let failure = match event {
         PublicEvent::Error(error) => Some(error.reason().as_str()),
@@ -85,9 +97,27 @@ pub(crate) async fn append_event_locked(
     .bind(run.as_uuid())
     .bind(next.as_str())
     .bind(failure)
-    .fetch_one(&mut **tx)
-    .await?;
+    .fetch_optional(&mut **tx)
+    .await?
+    .ok_or(QueueError::EventRejected)?;
 
+    store_event_row(tx, run, seq, attempt, event).await?;
+    Ok(seq)
+}
+
+/// Writes one `run_events` row with a sequence number that the caller already took,
+/// and sends the `NOTIFY` wake-up. The notice carries only the run id.
+///
+/// # Errors
+///
+/// Returns a database error when the insert or the notify fails.
+pub(crate) async fn store_event_row(
+    tx: &mut Transaction<'_, Postgres>,
+    run: RunId,
+    seq: i32,
+    attempt: i16,
+    event: &PublicEvent,
+) -> Result<(), QueueError> {
     sqlx::query(
         "INSERT INTO run_events (submission_id, seq, attempt, type, payload) \
          VALUES ($1, $2, $3, $4, $5)",
@@ -104,5 +134,5 @@ pub(crate) async fn append_event_locked(
         .bind(run.to_string())
         .execute(&mut **tx)
         .await?;
-    Ok(seq)
+    Ok(())
 }
