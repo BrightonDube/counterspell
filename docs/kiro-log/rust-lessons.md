@@ -622,3 +622,9 @@ A middleware is a function that takes the request and a `Next`. It can answer ea
 `axum::middleware::from_fn_with_state` passes shared data, here an `Arc<WebOrigin>`, into the middleware without a global.
 The body guard reads the bytes and then rebuilds the request with `Request::from_parts`. Reading the bytes is the only reliable way to know whether a body exists, because headers can be missing.
 `let ... else` keeps the happy path flat when a match has one failure arm.
+
+# Rust lesson: auth T24
+
+`spawn_blocking` moves CPU-heavy work (Argon2) to a thread pool for blocking code. The async workers stay free to answer other requests while a hash runs.
+A `Semaphore` is a counter of permits. `acquire_owned` gives a permit that holds its place until it is dropped, so the gate limits hashing at the same time across all requests.
+Axum 0.8 does not accept `Option<ConnectInfo<..>>` as an extractor. A required extractor plus `MockConnectInfo` in tests is the simple fix.

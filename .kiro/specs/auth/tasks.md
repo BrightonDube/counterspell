@@ -261,7 +261,7 @@ Conventions for every Rust task:
 
 ## Wave 6: passwords
 
-- [ ] **T24 [S] (30 min) Password hashing and login (properties P4 hash part, P14 login part)** [SUPERVISED]
+- [x] **T24 [S] (30 min) Password hashing and login (properties P4 hash part, P14 login part)** [SUPERVISED]
   - Files: `crates/server/src/auth/password.rs`, `crates/server/src/auth/handlers/login.rs`, `crates/server/tests/pg_auth_login.rs`.
   - Argon2id (19 456 KiB, 2, 1) with PHC strings, `verify` → `Verified | NeedsRehash | Rejected`, `verify_dummy`, `HashGate` (4 permits, 2 s wait), policy check (10–128 characters, ≤1024 bytes), `spawn_blocking`. `POST /api/auth/login` with the limiter (read failures first, count failures), uniform `401 invalid_credentials`, rehash on weak parameters, session creation.
   - Tests: round trip and wrong password; PHC parameters at or above the minimum; unknown email, wrong password and passwordless account give byte-identical responses; five failures for one (email, IP) give `429` before any hashing (a counter on the hasher proves it); a saturated gate gives `503 busy`; the password never appears in captured logs.

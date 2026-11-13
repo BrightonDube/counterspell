@@ -20,6 +20,9 @@ use counterspell_server::auth::{
     session::{AuthMethod, SessionService},
     AuthState,
 };
+use counterspell_server::auth::{config::Redacted, limits::AuthLimiter, password::HashGate};
+use counterspell_server::client_ip::TrustedProxies;
+use counterspell_server::ratelimit::{Limiter, MemoryLimiter};
 use counterspell_server::seams::UserResolver;
 use serde_json::Value;
 use sqlx::PgPool;
@@ -47,7 +50,20 @@ fn app(pool: &PgPool) -> (Router, Arc<ManualClock>) {
     let clock = Arc::new(ManualClock::new(
         OffsetDateTime::from_unix_timestamp(1_800_000_000).expect("valid timestamp"),
     ));
-    let state = AuthState::new(pool.clone(), clock.clone(), CookieSettings::new(false));
+    let limits = AuthLimiter::new(
+        Limiter::Memory(Arc::new(MemoryLimiter::default())),
+        &Redacted::new(vec![5_u8; 32]),
+    );
+    let gate = HashGate::new(4, std::time::Duration::from_secs(2));
+    let trusted = TrustedProxies::parse("10.0.0.0/8").expect("valid trusted proxies");
+    let state = AuthState::new(
+        pool.clone(),
+        clock.clone(),
+        CookieSettings::new(false),
+        limits,
+        gate,
+        trusted,
+    );
     (counterspell_server::auth::router(state), clock)
 }
 

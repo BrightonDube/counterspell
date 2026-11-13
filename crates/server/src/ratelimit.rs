@@ -66,6 +66,29 @@ impl ValkeyLimiter {
         })
     }
 
+    /// Reads a counter without changing it. Missing keys read as zero. `None` means Valkey could
+    /// not be reached.
+    pub async fn current(&self, key: &str) -> Option<u64> {
+        let mut connection = match self.client.get_multiplexed_async_connection().await {
+            Ok(connection) => connection,
+            Err(error) => {
+                tracing::warn!(error = %error, "rate limit read skipped: Valkey is unavailable");
+                return None;
+            }
+        };
+        let value: Result<Option<i64>, redis::RedisError> = redis::cmd("GET")
+            .arg(key)
+            .query_async(&mut connection)
+            .await;
+        match value {
+            Ok(count) => Some(count.and_then(|c| u64::try_from(c).ok()).unwrap_or(0)),
+            Err(error) => {
+                tracing::warn!(error = %error, "rate limit read skipped: Valkey is unavailable");
+                None
+            }
+        }
+    }
+
     async fn count(&self, key: &str, window_secs: u64) -> Result<(u64, u64), redis::RedisError> {
         let mut connection = self.client.get_multiplexed_async_connection().await?;
         let (count, ttl): (i64, i64) = redis::Script::new(HIT_SCRIPT)
@@ -100,6 +123,16 @@ pub struct MemoryLimiter {
 }
 
 #[cfg(feature = "testkit")]
+impl MemoryLimiter {
+    /// Reads a counter without counting a hit.
+    #[must_use]
+    pub fn current(&self, key: &str) -> Option<u64> {
+        let counts = self.counts.lock().unwrap_or_else(PoisonError::into_inner);
+        Some(counts.get(key).copied().unwrap_or(0))
+    }
+}
+
+#[cfg(feature = "testkit")]
 impl RateLimiter for MemoryLimiter {
     fn hit(
         &self,
@@ -122,6 +155,17 @@ pub enum Limiter {
     /// Counters in memory. Tests only.
     #[cfg(feature = "testkit")]
     Memory(std::sync::Arc<MemoryLimiter>),
+}
+
+impl Limiter {
+    /// Reads a counter without counting a hit. `None` means the counter store is down.
+    pub async fn current(&self, key: &str) -> Option<u64> {
+        match self {
+            Limiter::Valkey(valkey) => valkey.current(key).await,
+            #[cfg(feature = "testkit")]
+            Limiter::Memory(memory) => memory.current(key),
+        }
+    }
 }
 
 impl RateLimiter for Limiter {
