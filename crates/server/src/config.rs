@@ -8,8 +8,13 @@ use std::{fmt, net::SocketAddr, path::PathBuf};
 
 use thiserror::Error;
 
+use crate::client_ip::TrustedProxies;
+
 /// The window, in seconds, that per-user and per-IP run limits are counted over.
 pub const RUN_WINDOW_SECS: u64 = 600;
+
+/// The default trusted proxies: loopback and the private ranges Compose and Caddy use.
+const DEFAULT_TRUSTED_PROXIES: &str = "127.0.0.1/32,10.0.0.0/8,172.16.0.0/12";
 
 /// A setting is missing or cannot be used. Messages name the variable and never echo its value.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -59,6 +64,8 @@ pub struct ServerConfig {
     pub valkey_url: String,
     /// Submission limits.
     pub limits: RunLimits,
+    /// Proxies whose `X-Forwarded-For` header is believed for the per-IP limit.
+    pub trusted_proxies: TrustedProxies,
 }
 
 impl fmt::Debug for ServerConfig {
@@ -71,6 +78,7 @@ impl fmt::Debug for ServerConfig {
             .field("database_url", &"<redacted>")
             .field("valkey_url", &"<redacted>")
             .field("limits", &self.limits)
+            .field("trusted_proxies", &self.trusted_proxies)
             .finish()
     }
 }
@@ -114,6 +122,11 @@ impl ServerConfig {
             )?,
         };
 
+        let proxies_text = lookup("TRUSTED_PROXIES");
+        let trusted_proxies =
+            TrustedProxies::parse(proxies_text.as_deref().unwrap_or(DEFAULT_TRUSTED_PROXIES))
+                .map_err(|reason| invalid("TRUSTED_PROXIES", reason))?;
+
         Ok(Self {
             host,
             port,
@@ -121,6 +134,7 @@ impl ServerConfig {
             database_url,
             valkey_url,
             limits,
+            trusted_proxies,
         })
     }
 

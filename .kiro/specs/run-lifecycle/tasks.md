@@ -249,7 +249,7 @@ Conventions for every Rust task:
   - Preserve: a replay never consumes quota or cap.
   - Rust lesson: transactions that roll back automatically when a value is dropped.
 
-- [ ] **T25 [S] (30 min) `POST /api/runs` handler**
+- [x] **T25 [S] (30 min) `POST /api/runs` handler**
   - Files: `crates/server/src/runs/create.rs`, `crates/server/tests/post_runs.rs`.
   - Implement the check order from `design.md` Path 1: body limit and content type, strict JSON (`deny_unknown_fields`), `CurrentUser`, `Idempotency-Key` syntax, language and mode, `validate_source`, `ProblemLookup`, replay pre-check, rate-limit windows (user then IP; IP from `TRUSTED_PROXIES` rules), then `enqueue`. Return `202 {run_id, status}` with `Location`, and `Idempotent-Replayed: true` on replays. Map each `EnqueueOutcome` to the documented error.
   - Tests: `validation_rejects_without_side_effects` (every VAL case → correct status, no rows, no quota used); `pg_post_requires_session`; `pg_post_unknown_problem_404`; `pg_post_rate_limited_has_retry_after`; `pg_post_replay_header`; `pg_post_trusted_proxy_ip` (header ignored from untrusted peers).

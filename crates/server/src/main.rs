@@ -1,6 +1,6 @@
 //! Start-up for `counterspell-server`. The logic lives in the library so tests can build the same router.
 
-use std::io;
+use std::{io, net::SocketAddr};
 
 use counterspell_server::{
     build_router, config::ServerConfig, ensure_static_files, ratelimit::Limiter,
@@ -48,7 +48,8 @@ async fn main() -> Result<(), io::Error> {
 
     axum::serve(
         listener,
-        build_router(AppState::new(pool, config, Limiter::Valkey(limiter))),
+        build_router(AppState::new(pool, config, Limiter::Valkey(limiter)))
+            .into_make_service_with_connect_info::<SocketAddr>(),
     )
     .await
     .map_err(|error| io::Error::other(format!("server stopped unexpectedly: {error}")))
