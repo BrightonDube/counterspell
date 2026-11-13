@@ -94,7 +94,7 @@ Conventions for every Rust task:
   - Preserve: the judge binary still starts as a placeholder; nothing talks to Docker.
   - Rust lesson: library plus binary targets, features, and `Result` with a custom error type.
 
-- [ ] **T09 [S] (30 min) Schema, trigger and agreement tests**
+- [x] **T09 [S] (30 min) Schema, trigger and agreement tests**
   - Files: `crates/judge/tests/schema.rs`.
   - Tests: `pg_check_constraints_reject_bad_rows` (bad status, verdict without completion, terminal without `finished_at`, hidden `test_results` row with detail, payload over 16 KiB, unknown event type); `pg_unique_job_per_submission`; `pg_one_terminal_event_per_run`; `pg_terminal_row_is_frozen` (update status, verdict, counts, `finished_at`, `user_id`, `code_sha256` after finishing → error); `pg_transition_guard_rejects_illegal_move`; `pg_status_transition_agreement` (all 81 pairs: `common::run_state::can_transition` equals `cs_status_transition_allowed`); `pg_idempotency_index_is_per_user`.
   - Requirements: R6.3, R10.3, R15.4, P6, P7, P14.

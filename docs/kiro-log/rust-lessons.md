@@ -413,3 +413,10 @@ A package with both `src/lib.rs` and `src/main.rs` builds two targets. Tests imp
 Cargo features are switches. `testkit` compiles helper code only when asked, so a release build cannot contain it.
 `Result<T, ConfigError>` returns a named reason for each bad setting. The message names the variable and never prints its value.
 A `pub(crate)` constructor is a compile-time guard: code outside the crate cannot forge a claim token. Unused items fail Clippy with `-D warnings`, so an item waits until its first caller.
+
+# Rust lesson: run-lifecycle T09
+
+`#[sqlx::test]` gives each test its own database, so the tests can run in parallel. Cluster-wide objects such as roles are shared, which is how a parallel race showed up.
+`Result<T, sqlx::Error>` lets a test check the exact database error code (for example `23514` for a CHECK violation) instead of "some error happened".
+A test that expects a failure must still fail loudly when the statement succeeds. The helper panics in that case.
+`RunStatus::ALL` plus two nested loops checks all 81 pairs, so the Rust and SQL rules are compared exhaustively, not by sample.
