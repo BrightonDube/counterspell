@@ -162,3 +162,19 @@ describe('planPlayback reduced motion', () => {
     ]);
   });
 });
+
+describe('planPlayback with the engine numbering', () => {
+  // Breaks if the first failing input, which the engine numbers 0, is dropped from the replay.
+  it('plays a first step numbered 0, because the engine counts the first failing input from 0', () => {
+    const plan = planPlayback(
+      trace([
+        { index: 0, input: [3, 3, 0] },
+        { index: 1, input: [0, 0] }
+      ]),
+      [0, 0],
+      false
+    );
+    expect(plan.steps.map((step) => step.index)).toEqual([0, 1]);
+    expect(plan.trust).toBe('agrees');
+  });
+});
