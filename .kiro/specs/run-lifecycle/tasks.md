@@ -210,7 +210,7 @@ Conventions for every Rust task:
   - Preserve: the existing skeleton behaviour and its tests.
   - Rust lesson: `IntoResponse` and turning errors into HTTP replies safely.
 
-- [ ] **T21 [P] (25 min) Seams: user resolver, problem lookup, language catalogue, and their test versions**
+- [x] **T21 [P] (25 min) Seams: user resolver, problem lookup, language catalogue, and their test versions**
   - Files: `crates/server/src/seams.rs`, `crates/server/src/testkit.rs`.
   - Traits `UserResolver` (`resolve(&HeaderMap) -> Option<UserId>`) with an axum extractor `CurrentUser`; `ProblemLookup` (`published(slug) -> Option<ProblemRef>`); `LanguageCatalog` (enabled languages and `max_source_bytes`, defaults for `python` and `javascript`). Production implementations: `Unauthenticated` and `EmptyCatalogue`. In `testkit` (feature-gated): `BearerTestResolver` (`Authorization: Bearer test-user-<n>`), `InMemoryProblems`, and the in-memory rate limiter from T23.
   - Requirements: scope constraints, seams table.

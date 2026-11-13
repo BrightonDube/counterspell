@@ -27,6 +27,8 @@ uuid = { version = "1", features = ["v4", "serde"] }
 [dev-dependencies]
 # Tests run the real queue code through the judge's test kit, without Docker support.
 counterspell-judge = { path = "../judge", default-features = false, features = ["testkit"] }
+# The server's own tests always see its test seams. Release builds leave the feature off.
+counterspell-server = { path = ".", features = ["testkit"] }
 
 [lints]
 workspace = true

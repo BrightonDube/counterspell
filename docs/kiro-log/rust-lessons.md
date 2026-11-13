@@ -495,3 +495,10 @@ A model is a second, simpler copy of the state. The test checks that the databas
 A `Display` value passed to `ApiError::internal` is logged on the server and replaced with a fixed message. The client never sees the database or path text.
 A library target (`lib.rs`) holds the router and the config. `main.rs` only wires them together, so the integration tests build the same router the binary serves.
 `Option::filter` and `let ... else` keep the config reader short: a missing or empty value becomes a named error in one line.
+
+# Rust lesson: run-lifecycle T21
+
+A trait such as `UserResolver` is a seam. Production code stores it as `Arc<dyn UserResolver>` in `AppState`, so tests can swap in a different implementation with `with_user_resolver`. Only object-safe traits can do this, which is why the seams are plain `fn`, not `async fn`.
+An axum extractor is a type that implements `FromRequestParts`. Putting `CurrentUser` in a handler's arguments makes the handler reject anonymous callers before its body runs.
+Clippy warns about `async fn` with no `.await`. Returning `std::future::ready(result)` from a non-async `fn` keeps the future `Send` and avoids the warning.
+`#[cfg(feature = "testkit")]` removes the bearer-token resolver from release builds, so a header can never sign a user in outside tests.
