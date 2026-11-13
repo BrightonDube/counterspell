@@ -42,19 +42,26 @@ fn session_id(fill: char) -> String {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_an_unverified_email_is_refused(pool: PgPool) {
-    verified_user(&pool, "thandi").await.expect("valid user first");
+    verified_user(&pool, "thandi")
+        .await
+        .expect("valid user first");
     let refused = sqlx::query(
         "INSERT INTO users (email, handle, display_name) VALUES ('x@example.co', 'unverified', 'U')",
     )
     .execute(&pool)
     .await;
-    assert!(refused.is_err(), "an email without a verification time must be refused");
+    assert!(
+        refused.is_err(),
+        "an email without a verification time must be refused"
+    );
 }
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_a_password_without_an_email_is_refused(pool: PgPool) {
-    verified_user(&pool, "sipho").await.expect("valid user first");
+    verified_user(&pool, "sipho")
+        .await
+        .expect("valid user first");
     let refused = sqlx::query(
         "INSERT INTO users (password_hash, handle, display_name) VALUES ('$argon2id$x', 'nopassmail', 'N')",
     )
@@ -66,13 +73,12 @@ async fn pg_a_password_without_an_email_is_refused(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_a_second_demo_user_is_refused(pool: PgPool) {
-    sqlx::query(
-        "INSERT INTO users (email, email_verified_at, handle, display_name, is_demo)
-         VALUES ('judge@example.co', now(), 'demo', 'Judge', true)",
-    )
-    .execute(&pool)
-    .await
-    .expect("the first demo user is allowed");
+    // test-change: R16.6. The first demo account must now come from the seed helper, because the
+    // T09 guard refuses any direct insert of a demo user. The rule under test is unchanged.
+    sqlx::query("SELECT cs_seed_demo_user('judge@example.co', '$argon2id$v=19$seed')")
+        .execute(&pool)
+        .await
+        .expect("the seeded demo account is allowed");
     let refused = sqlx::query(
         "INSERT INTO users (email, email_verified_at, handle, display_name, is_demo)
          VALUES ('judge2@example.co', now(), 'demo2', 'Judge 2', true)",
@@ -130,7 +136,9 @@ async fn pg_an_oauth_flow_longer_than_ten_minutes_is_refused(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_a_login_flow_must_have_a_binding_and_no_session(pool: PgPool) {
     let user = verified_user(&pool, "lindiwe").await.expect("user");
-    session_for(&pool, user, &session_id('a')).await.expect("session");
+    session_for(&pool, user, &session_id('a'))
+        .await
+        .expect("session");
     let link_ok = sqlx::query(
         "INSERT INTO oauth_flows (state_hash, provider, purpose, pkce_verifier, session_id, user_id,
                                   created_at, expires_at)
@@ -170,7 +178,9 @@ async fn pg_a_login_flow_must_have_a_binding_and_no_session(pool: PgPool) {
 async fn pg_session_owner_and_creation_time_cannot_change_and_expiry_cannot_shrink(pool: PgPool) {
     let user = verified_user(&pool, "naledi").await.expect("user");
     let other = verified_user(&pool, "kwame").await.expect("other");
-    session_for(&pool, user, &session_id('b')).await.expect("session");
+    session_for(&pool, user, &session_id('b'))
+        .await
+        .expect("session");
 
     let owner_change = sqlx::query("UPDATE sessions SET user_id = $1 WHERE id = $2")
         .bind(other)
@@ -216,12 +226,16 @@ async fn pg_an_absolute_limit_beyond_ninety_days_is_refused(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_deleting_a_user_cascades_to_all_auth_rows(pool: PgPool) {
     let user = verified_user(&pool, "bongani").await.expect("user");
-    sqlx::query("INSERT INTO identities (user_id, provider, provider_user_id) VALUES ($1, 'github', '42')")
-        .bind(user)
-        .execute(&pool)
+    sqlx::query(
+        "INSERT INTO identities (user_id, provider, provider_user_id) VALUES ($1, 'github', '42')",
+    )
+    .bind(user)
+    .execute(&pool)
+    .await
+    .expect("identity");
+    session_for(&pool, user, &session_id('d'))
         .await
-        .expect("identity");
-    session_for(&pool, user, &session_id('d')).await.expect("session");
+        .expect("session");
     sqlx::query(
         "INSERT INTO email_tokens (token_hash, purpose, email, user_id, created_at, expires_at)
          VALUES (decode(repeat('20', 32), 'hex'), 'link_email', 'x@example.co', $1, now(), now() + interval '5 minutes')",
@@ -242,7 +256,11 @@ async fn pg_deleting_a_user_cascades_to_all_auth_rows(pool: PgPool) {
     .await
     .expect("flow");
 
-    sqlx::query("DELETE FROM users WHERE id = $1").bind(user).execute(&pool).await.expect("delete");
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user)
+        .execute(&pool)
+        .await
+        .expect("delete");
 
     for table in ["identities", "sessions", "email_tokens", "oauth_flows"] {
         let (count,): (i64,) = sqlx::query_as(&format!("SELECT count(*) FROM {table}"))
@@ -257,7 +275,9 @@ async fn pg_deleting_a_user_cascades_to_all_auth_rows(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_deleting_a_session_cascades_to_its_link_flows(pool: PgPool) {
     let user = verified_user(&pool, "zanele").await.expect("user");
-    session_for(&pool, user, &session_id('e')).await.expect("session");
+    session_for(&pool, user, &session_id('e'))
+        .await
+        .expect("session");
     sqlx::query(
         "INSERT INTO oauth_flows (state_hash, provider, purpose, pkce_verifier, session_id, user_id,
                                   created_at, expires_at)
@@ -285,11 +305,13 @@ async fn pg_deleting_a_session_cascades_to_its_link_flows(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_two_identities_of_one_provider_for_one_user_are_refused(pool: PgPool) {
     let user = verified_user(&pool, "amahle").await.expect("user");
-    sqlx::query("INSERT INTO identities (user_id, provider, provider_user_id) VALUES ($1, 'github', '1')")
-        .bind(user)
-        .execute(&pool)
-        .await
-        .expect("first identity");
+    sqlx::query(
+        "INSERT INTO identities (user_id, provider, provider_user_id) VALUES ($1, 'github', '1')",
+    )
+    .bind(user)
+    .execute(&pool)
+    .await
+    .expect("first identity");
     let refused = sqlx::query(
         "INSERT INTO identities (user_id, provider, provider_user_id) VALUES ($1, 'github', '2')",
     )
