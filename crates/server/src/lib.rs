@@ -11,6 +11,7 @@ pub mod error;
 pub mod seams;
 #[cfg(feature = "testkit")]
 pub mod testkit;
+pub mod validate;
 
 use std::{io, path::Path, sync::Arc};
 

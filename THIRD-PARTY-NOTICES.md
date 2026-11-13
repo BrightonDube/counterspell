@@ -70,3 +70,12 @@ The server crate (`counterspell-server`) adds these direct dependencies. Licence
 - **redis 0.32.7** — redis-rs contributors — BSD-3-Clause — <https://crates.io/crates/redis> (Valkey client; `tokio-comp` and `script` features only, no TLS)
 - **tracing-subscriber 0.3.23** — Tokio contributors — MIT — <https://crates.io/crates/tracing-subscriber> (`fmt` and `std` features only)
 - **sha2 0.10.9** — RustCrypto developers — MIT OR Apache-2.0 — <https://crates.io/crates/sha2>
+
+## Submission validation dependencies (run-lifecycle T22)
+
+The server uses these for the parse check in submission validation (VAL-2). `cargo deny check licenses` passed on them on 13 November 2026.
+
+- **tree-sitter 0.25.10** — tree-sitter contributors — MIT — <https://crates.io/crates/tree-sitter>
+- **tree-sitter-python 0.25.0** — tree-sitter contributors — MIT — <https://crates.io/crates/tree-sitter-python>
+- **tree-sitter-javascript 0.25.0** — tree-sitter contributors — MIT — <https://crates.io/crates/tree-sitter-javascript>
+- **proptest 1.9** (server dev-dependency, `std` feature only) — MIT OR Apache-2.0 — <https://crates.io/crates/proptest>
