@@ -516,3 +516,10 @@ A trait with `async` methods can be called through generics, but it cannot be st
 The Lua script runs in Valkey as one step, so no other client can slip between the increment and the expiry. A Rust `async` block cannot give that guarantee, so the logic lives in the script.
 `Result` is not the right type for a rate-limit outage. The policy is to allow the run and log it, so the limiter returns a `Decision::SkippedFailOpen` variant instead of an error the caller might forget to handle.
 `Sha256::digest` hashes the client address before it becomes a key. The raw address never reaches Valkey.
+
+# Rust lesson: run-lifecycle T24
+
+A `sqlx` transaction is rolled back when it is dropped without a commit. The code still calls `rollback()` on each early return, so the intent is visible to a reader.
+`&mut *tx` turns a `Transaction` into the `&mut PgConnection` that the helper functions need, and clippy asks for plain `&mut tx` where auto-deref already does the same thing.
+`pg_advisory_xact_lock` takes a lock that ends at commit or rollback. It is the database equivalent of a per-user mutex, and no Rust `Mutex` could cover several server instances.
+A `match` on an enum returned by a helper (`Replay`) keeps each outcome explicit. A missing case would stop the build.

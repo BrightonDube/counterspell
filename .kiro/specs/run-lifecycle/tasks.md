@@ -239,7 +239,7 @@ Conventions for every Rust task:
   - Preserve: Valkey stores counters only.
   - Rust lesson: async trait objects versus generics for a shared service.
 
-- [ ] **T24 [S] [SUPERVISED] (30 min) Enqueue transaction**
+- [x] **T24 [S] [SUPERVISED] (30 min) Enqueue transaction**
   - Files: `crates/server/src/runs/enqueue.rs`, `crates/server/tests/enqueue.rs`.
   - Implement `enqueue(pool, NewRun) -> Result<EnqueueOutcome { Created | Replayed | Reuse | CapReached | QueueFull }>` exactly as `design.md` Path 1 step 9: advisory lock per user, authoritative replay check, active-job count from `jobs`, global depth check, inserts, `pg_notify('run_jobs')`, one transaction.
   - Tests: `pg_enqueue_is_atomic` (fault injection after the submission insert; no rows remain; P1); `pg_idempotency_sequential`; `pg_idempotency_concurrent` (10 simultaneous identical requests, one run, one job); `pg_idempotency_reuse_is_422_case`; `pg_idempotency_keys_are_per_user`; `pg_active_cap_under_concurrent_posts` (10 concurrent requests from one user with cap 3, exactly 3 created; P13); `pg_global_queue_depth_cap`.

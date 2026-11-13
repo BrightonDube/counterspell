@@ -56,3 +56,12 @@ Brighton reviews each entry before the next task that depends on it starts.
 - New tests: `pg_cancel_vs_complete_race_real_time` (a verdict the program produced is kept after a cancel) and `pg_crash_recovery_real_time` (abort mid-run, lease expires in real time, reaper requeues, retry opens with `restarted` and ends with one terminal event).
 - What to check: `execute` (the `select!` loop and the three outcomes), and `AbortOnDrop`.
 - Gap, not done: the claim loop polls `CLAIM_POLL` only. The `NOTIFY run_jobs` wake-up and the `NOTIFY run_cancel` wake-up from the design are not wired. Polling is correct but slower. Add with T24 (enqueue) or in a later task.
+
+## T24: enqueue transaction (commit: see `git log --oneline -1`)
+
+- Files: `crates/server/src/runs/enqueue.rs`, `crates/server/src/runs/mod.rs`, `crates/server/tests/enqueue.rs`, `Cargo.toml` (sqlx gains the `migrate` and `macros` features for `#[sqlx::test]`; no new crate).
+- What to check:
+  - One transaction: the advisory lock for the user, the replay check, the active cap, the queue depth cap, the insert of the run and job, and `pg_notify('run_jobs')`. Any failure rolls everything back.
+  - Mutation check (run once, restored): with the advisory lock removed, `pg_parallel_enqueues_by_one_user_respect_the_cap` created 6 runs against a cap of 3 on each of three runs. With the lock it passes. So the test does catch the race.
+  - Deviation from design Path 1: a unique-index violation on `(user_id, idempotency_key)` is returned as a database error (a `500` once wired), not as a replay. The advisory lock serialises same-user requests, so this should not happen. Brighton to decide whether to add a re-read after a unique violation.
+  - `NewRun::new` computes the SHA-256 of the code itself, so a caller cannot pass a digest that does not match.
