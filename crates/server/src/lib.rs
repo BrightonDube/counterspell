@@ -8,6 +8,9 @@
 
 pub mod config;
 pub mod error;
+pub mod seams;
+#[cfg(feature = "testkit")]
+pub mod testkit;
 
 use std::{io, path::Path, sync::Arc};
 
@@ -24,25 +27,53 @@ use tower_http::{
     set_header::SetResponseHeaderLayer,
 };
 
-use crate::{config::ServerConfig, error::ApiError};
+use crate::{
+    config::ServerConfig,
+    error::ApiError,
+    seams::{EmptyCatalogue, LanguageCatalog, ProblemLookup, Unauthenticated, UserResolver},
+};
 
-/// Shared state for every request handler. Cloning is cheap: the pool and config are shared.
+/// Shared state for every request handler. Cloning is cheap: the pool and the seams are shared.
 #[derive(Clone)]
 pub struct AppState {
     /// Postgres pool. Connections are opened lazily, so start-up does not need the database.
     pub pool: PgPool,
     /// Settings read at start-up.
     pub config: Arc<ServerConfig>,
+    /// Identifies the caller. Production never identifies anyone until the auth spec lands.
+    pub user_resolver: Arc<dyn UserResolver>,
+    /// Finds published problems. Production publishes none until the catalogue lands.
+    pub problems: Arc<dyn ProblemLookup>,
+    /// The accepted languages and source limits.
+    pub languages: Arc<LanguageCatalog>,
 }
 
 impl AppState {
-    /// Bundles a pool and the settings.
+    /// Bundles a pool and the settings, with the production seams.
     #[must_use]
     pub fn new(pool: PgPool, config: ServerConfig) -> Self {
+        let languages = LanguageCatalog::launch(config.limits.max_source_bytes);
         Self {
             pool,
             config: Arc::new(config),
+            user_resolver: Arc::new(Unauthenticated),
+            problems: Arc::new(EmptyCatalogue),
+            languages: Arc::new(languages),
         }
+    }
+
+    /// Replaces the user resolver. Used by tests and, later, by the auth spec.
+    #[must_use]
+    pub fn with_user_resolver(mut self, resolver: impl UserResolver + 'static) -> Self {
+        self.user_resolver = Arc::new(resolver);
+        self
+    }
+
+    /// Replaces the problem lookup. Used by tests and, later, by the catalogue spec.
+    #[must_use]
+    pub fn with_problems(mut self, problems: impl ProblemLookup + 'static) -> Self {
+        self.problems = Arc::new(problems);
+        self
     }
 }
 
