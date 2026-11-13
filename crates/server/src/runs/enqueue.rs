@@ -151,6 +151,28 @@ pub async fn enqueue(
     Ok(EnqueueOutcome::Created { run_id: run.run_id })
 }
 
+/// Looks for an earlier run with the same user and `Idempotency-Key`, without taking the user's lock.
+///
+/// Returns [`EnqueueOutcome::Replayed`] when the program and mode match, [`EnqueueOutcome::Reuse`] when
+/// they differ, and `None` when no earlier run uses the key. Nothing is written. The handler calls this
+/// before counting any rate limit, so a replay never uses quota (R3.6). `enqueue` checks again under the
+/// lock, so a race still gives one run.
+///
+/// # Errors
+///
+/// Returns [`EnqueueError::Database`] when the lookup fails.
+pub async fn existing_replay(
+    pool: &PgPool,
+    run: &NewRun,
+) -> Result<Option<EnqueueOutcome>, EnqueueError> {
+    let mut conn = pool.acquire().await?;
+    Ok(match find_replay(&mut conn, run).await? {
+        Replay::NoneFound => None,
+        Replay::Same(run_id) => Some(EnqueueOutcome::Replayed { run_id }),
+        Replay::Different => Some(EnqueueOutcome::Reuse),
+    })
+}
+
 async fn find_replay(conn: &mut PgConnection, run: &NewRun) -> Result<Replay, sqlx::Error> {
     let Some(key) = run.idempotency_key.as_deref() else {
         return Ok(Replay::NoneFound);

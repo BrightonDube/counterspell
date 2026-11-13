@@ -79,14 +79,17 @@ pub async fn serve(router: Router) -> SocketAddr {
     let listener = TcpListener::bind("127.0.0.1:0").await.expect("bind");
     let address = listener.local_addr().expect("address");
     tokio::spawn(async move {
-        let _ = axum::serve(listener, router).await;
+        let _ = axum::serve(
+            listener,
+            router.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .await;
     });
     address
 }
 
 /// Sends a `GET` with extra headers and reads the whole reply.
 pub async fn get(address: SocketAddr, path: &str, headers: &[(&str, &str)]) -> Reply {
-    let mut stream = TcpStream::connect(address).await.expect("connect");
     let mut request = String::from("GET ");
     request.push_str(path);
     request.push_str(" HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n");
@@ -97,6 +100,28 @@ pub async fn get(address: SocketAddr, path: &str, headers: &[(&str, &str)]) -> R
         request.push_str("\r\n");
     }
     request.push_str("\r\n");
+    exchange(address, &request).await
+}
+
+/// Sends a `POST` with a JSON body and extra headers, and reads the whole reply.
+pub async fn post(address: SocketAddr, path: &str, headers: &[(&str, &str)], body: &str) -> Reply {
+    let mut request = format!(
+        "POST {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nContent-Length: {}\r\n",
+        body.len()
+    );
+    for (name, value) in headers {
+        request.push_str(name);
+        request.push_str(": ");
+        request.push_str(value);
+        request.push_str("\r\n");
+    }
+    request.push_str("\r\n");
+    request.push_str(body);
+    exchange(address, &request).await
+}
+
+async fn exchange(address: SocketAddr, request: &str) -> Reply {
+    let mut stream = TcpStream::connect(address).await.expect("connect");
     stream.write_all(request.as_bytes()).await.expect("write");
     let mut raw = Vec::new();
     stream.read_to_end(&mut raw).await.expect("read");

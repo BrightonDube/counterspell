@@ -58,10 +58,24 @@ impl ApiError {
     /// A `429` error that tells the client how many seconds to wait.
     #[must_use]
     pub fn rate_limited(retry_after_seconds: u64) -> Self {
+        Self::throttled(
+            "rate_limited",
+            format!("Too many requests. Try again in {retry_after_seconds} seconds."),
+            retry_after_seconds,
+        )
+    }
+
+    /// A `429` error with its own stable code, for queue caps, and a wait time.
+    #[must_use]
+    pub fn throttled(
+        code: &'static str,
+        message: impl Into<String>,
+        retry_after_seconds: u64,
+    ) -> Self {
         Self {
             status: StatusCode::TOO_MANY_REQUESTS,
-            code: "rate_limited",
-            message: format!("Too many requests. Try again in {retry_after_seconds} seconds."),
+            code,
+            message: message.into(),
             retry_after_seconds: Some(retry_after_seconds),
         }
     }

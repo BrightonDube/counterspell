@@ -523,3 +523,10 @@ A `sqlx` transaction is rolled back when it is dropped without a commit. The cod
 `&mut *tx` turns a `Transaction` into the `&mut PgConnection` that the helper functions need, and clippy asks for plain `&mut tx` where auto-deref already does the same thing.
 `pg_advisory_xact_lock` takes a lock that ends at commit or rollback. It is the database equivalent of a per-user mutex, and no Rust `Mutex` could cover several server instances.
 A `match` on an enum returned by a helper (`Replay`) keeps each outcome explicit. A missing case would stop the build.
+
+# Rust lesson: run-lifecycle T25
+
+Axum runs extractors in argument order and the body must come last. Taking the body as `Result<Bytes, BytesRejection>` lets the handler turn a too-large body into the same JSON error as every other failure, instead of a plain-text reply.
+The checks run in a fixed order, and each one uses `?` to return early. Because nothing is written before the last check, an early return leaves the database untouched.
+`ok_or_else(...)` builds the error only when the value is missing, so a successful check does no work on the error path.
+Clippy's `needless_pass_by_value` asks for `&Decision` here, because `enforce` only reads the value. Passing a reference is the cheaper choice for a type that is not `Copy`.

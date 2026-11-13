@@ -6,6 +6,7 @@
 
 #![warn(missing_docs)]
 
+pub mod client_ip;
 pub mod config;
 pub mod error;
 pub mod ratelimit;
@@ -19,7 +20,7 @@ use std::{io, path::Path, sync::Arc};
 
 use axum::{
     http::{header::HeaderName, HeaderValue},
-    routing::{any, get},
+    routing::{any, get, post},
     Json, Router,
 };
 use serde_json::{json, Value};
@@ -96,6 +97,7 @@ pub fn build_router(state: AppState) -> Router {
 
     Router::new()
         .route("/api/health", get(health))
+        .route("/api/runs", post(runs::create::post_run))
         .route("/api", any(api_not_found))
         .route("/api/{*path}", any(api_not_found))
         .fallback_service(static_files)
