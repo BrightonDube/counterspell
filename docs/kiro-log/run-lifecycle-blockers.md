@@ -53,3 +53,25 @@ Written by the implementation run on 13 Nov 2026. Each entry names the task, the
 - Toolchain note: the cached `libsqlite3-sys-0.30.1.crate` was truncated, which broke `cargo fetch`. Only that cached archive was deleted; cargo re-downloaded it cleanly. Nothing in the project was changed for this.
 - Not started: T11 (claim, SUPERVISED) onward. Those are the security-critical queue, worker, server and SSE tasks. They need a full session of their own, and this session stopped after T10 to keep the work verifiable.
 - Database for tests: `postgres:17-alpine` container `cs-rl-pg` on 127.0.0.1:55470, password typed in the shell only. Stop it with `docker stop cs-rl-pg` when finished.
+
+## Run of 13 Nov 2026 (attempt 2): run-lifecycle T11 to T17
+
+Done and committed this run, each with its database tests passing against a throwaway `postgres:17-alpine`: T11 claim, T12 fence and emit, T13 lease and release, T14 terminal write, T15 reaper, T16 executor seam, and T17 worker (partly, see below). The gate (fmt, clippy with `-D warnings`, workspace tests, judge `pg_` tests) was green at each commit.
+
+### T17 is not ticked: parts still missing
+
+- `pg_cancel_vs_complete_race` is not written. A run that has already produced a full verdict must keep it even if a cancel arrives. The fence should give that behaviour, but no test shows it yet.
+- `pg_crash_recovery_real_time` is not written, and it needs a design change first. The worker's heartbeat and executor run in their own spawned tasks. Aborting the task that called `process_next` does not stop them, so the lease would keep renewing and a crash could not be simulated. The fix is to hold the heartbeat and executor handles in the worker's own task (or to let the test drop the whole runtime), then write the test.
+- The claim loop polls every `CLAIM_POLL` only. The design also wants `NOTIFY run_jobs` (wake on enqueue) and `NOTIFY run_cancel` (wake the heartbeat on cancel). Not wired. Polling is correct, just slower.
+- Unblock: Brighton, decide whether the crash test may restructure `Worker::execute` so the heartbeat sits in the same task as the executor. Then the remaining work is about two hours.
+
+### Deviations recorded for review
+
+- T11 was built after T12 because the claim's `restarted` event uses T12's append helper. T11's text allows this.
+- The executor's input type is `RunInput`, not `ClaimedRun`, to avoid a name clash with the queue's `ClaimedRun`.
+- `ClaimedRun` gained `mode` (T16 needs it) and `cancel_requested` (T17 needs it). Both are additive.
+- `judge` lists itself under `[dev-dependencies]` with the `testkit` feature. That is what lets a plain `cargo test -p counterspell-judge` see the test kit. Cargo.lock changed only by that line.
+
+### Not started (this run stopped at the T17 gap)
+
+- T18 model test, T19 judge binary wiring, T20 to T39 (server API, SSE, web client, CI, DoD load test, docs). These need the next session.

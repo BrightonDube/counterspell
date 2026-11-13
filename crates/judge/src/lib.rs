@@ -12,5 +12,6 @@ pub mod executor;
 pub mod queue;
 #[cfg(feature = "testkit")]
 pub mod testkit;
+pub mod worker;
 
 pub use config::{ConfigError, JudgeConfig};
