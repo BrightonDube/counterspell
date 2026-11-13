@@ -387,3 +387,9 @@ Put `use` lines and helper functions above a `#[cfg(test)] mod tests`. Clippy's 
 The SQL schema is the contract that the Rust code relies on. Its CHECK constraints reject bad rows even when a bug skips the Rust checks.
 A trigger runs for every update, so a rule written there applies to every writer, including ones that bypass the Rust code.
 Role grants list the exact columns each writer may change. That keeps the server unable to write results, even if it is compromised.
+
+# Rust lesson: run-lifecycle T02
+
+A test that only checks behaviour that already exists still earns its place when it can fail. Mutating one message to a duplicate made the distinctness test fail, which shows the table is protected.
+`HashSet` collects values and drops duplicates, so comparing its length with the list length is a short, exact duplicate check.
+Putting `serde_json::from_str` in a test shows that unknown text is an `Err`, so the wire format rejects values the code does not know.

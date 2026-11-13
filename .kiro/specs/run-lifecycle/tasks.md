@@ -26,7 +26,7 @@ Conventions for every Rust task:
   - Preserve: `common` stays free of web, database, Docker and process dependencies.
   - Rust lesson: crates, features, and why shared crates stay small.
 
-- [ ] **T02 [P] (25 min) Ids and enums**
+- [x] **T02 [P] (25 min) Ids and enums**
   - Files: `crates/common/src/ids.rs`, `crates/common/src/status.rs`.
   - `RunId` and `UserId` newtypes over `Uuid` (`Display`, `FromStr`, serde transparent). Enums with `as_str`, `parse`, serde `snake_case`: `RunStatus` (nine states, `is_terminal`, `is_active`), `Verdict` (seven), `TestVerdict` (six), `FailureReason` (`cancelled`, `problem_unavailable`, `language_unavailable`, `expired`, `retries_exhausted`), `RunMode`, `JobState` (five). Export `ALL_*` constant slices. Add a fixed table `FailureReason::public_message()` of safe messages.
   - Unit tests: string round trips; `ALL_*` lists have no duplicates; serde forms equal `as_str`; invalid strings are rejected.
