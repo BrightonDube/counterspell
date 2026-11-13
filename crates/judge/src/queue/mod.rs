@@ -1,6 +1,7 @@
 //! Postgres job queue: claiming, leases, fenced writes, run events, terminal
 //! writes and reaping. Postgres is the only source of truth for these rows.
 
+pub mod claim;
 pub mod emit;
 pub(crate) mod fence;
 
@@ -40,7 +41,6 @@ pub struct ClaimToken {
 impl ClaimToken {
     /// Builds a token from the values read in a claim. Only the claim code and the
     /// test kit create tokens, so a worker cannot invent a claim it does not hold.
-    #[cfg(feature = "testkit")]
     pub(crate) const fn new(
         job_id: i64,
         run_id: RunId,
