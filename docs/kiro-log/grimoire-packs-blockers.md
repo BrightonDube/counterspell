@@ -64,3 +64,10 @@ Done in this run: T15, T18, T21 to T27. T19 is partly done (see below).
 - **Stale incremental build (SIGSEGV).** After `cargo fmt` and `cargo clippy`, the grimoire unit-test binary crashed with SIGSEGV before any test ran. `cargo clean -p counterspell-grimoire` fixed it. If this returns, clean the package first.
 - **`guard-secrets` false positive, again.** The hook blocked an edit whose test name contained `re_` followed by 20 or more identifier characters. The test was renamed (`runner_fault_maps_to_sbx_06`). The hook should be fixed.
 - **Shell parser rejected one read-only command** (a `sed` pipeline with `;`). The same reads were done with the file tools. This is harmless, but it may matter to the hook authors.
+
+## Implement pass (13 Nov 2026, after the continuation run above)
+
+- **T19 is now done (ticked).** The CLI `--sandbox` path goes through `run_sandbox_stage(options, runner: Option<&mut dyn PackRunner>)`. Production passes `None` and prints SBX-07, exit 2. A runner fault from `validate_sandbox` prints SBX-06 and exits 2, never exit 1. Tests: `runner_fault_is_sbx_06_from_the_sandbox_stage`, `runner_fault_exits_two_not_one`, `missing_runner_exits_two_with_sbx_07` (in `src/main.rs`). SBX-08 is covered by `declared_bench_warns_sbx_08_without_calling_the_bench_runner` in `tests/sandbox_fake.rs`.
+- **Still open, unchanged:** T20 (judge implements `PackRunner`, wires the real runner into `--sandbox`). Blocked on the `judge-sandbox` spec and open question 7. Until then the CLI never reaches a real runner.
+- **T28, T29, T30:** still blocked on Brighton's review, the ghost-engine conversion decision and the CI spec. Not started.
+- **Known gap in T19:** the `--json` branch of `print_fault` has no test. It is one line, and the text branch is tested through the exit code.

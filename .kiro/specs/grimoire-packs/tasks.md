@@ -150,7 +150,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: `cargo test -p counterspell-grimoire --test sandbox_fake`.
   - Rust lesson: explain why hidden expected values stay in a local variable and are never returned in the report (ownership makes the value's lifetime visible).
 
-- [ ] **T19 [S] (20 min) Infrastructure exit and bench placeholder**
+- [x] **T19 [S] (20 min) Infrastructure exit and bench placeholder**
   - Files: `crates/grimoire/src/sandbox.rs`, `crates/grimoire/src/main.rs`.
   - SBX-06 (runner infrastructure error maps to exit 2, not a pack error). SBX-05 and SBX-08 (bench: emit the "not checked" warning until `PackRunner::bench` is implemented).
   - Depends on: T18.
