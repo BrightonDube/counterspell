@@ -90,3 +90,18 @@ Done and committed this run, each with its database tests passing against a thro
 - `pg_model_interleavings` runs 32 cases of up to 39 calls across 3 workers and 3 runs. It checks the fence's answer for each call, the job state and attempts against the model after each call, and the global invariants. It passed on the first run.
 - Not measured: branch coverage. I did not instrument the test to count how often each branch (for example a `finish` refused because the run never compiled) is reached. Worth checking before relying on it as the only queue safety net.
 - Proptest regression file: none was produced, because no case failed.
+
+## Session 22 (attempt 4, 13 Nov 2026): T20 to T24 done, T25 onward not started
+
+Done and committed, each with its gate green (fmt, clippy with `-D warnings` on the workspace, `cargo test --workspace --include-ignored` against a throwaway Postgres 17 and Valkey 8): T20 (library, config, error envelope, router), T21 (seams and testkit seams), T22 (validation with tree-sitter), T23 (Valkey limiter), T24 (enqueue, SUPERVISED).
+
+Deviations and open points for Brighton:
+- T20: `AppState` holds the pool, config, resolver, problem lookup, languages and limiter. It does not hold the `RunWaker` handle yet; that arrives with T28.
+- T21: the in-memory limiter the task mentions is `MemoryLimiter` in T23 (feature `testkit`), so it is not duplicated.
+- T22: the first shell-script test line used `rm -rf /tmp/work`. That is a valid Python expression, so the parser was right to accept it. The test now uses a shell `for` loop.
+- T23: `valkey_outage_fails_open` is not marked `#[ignore]`. It needs no Valkey server, only an unreachable port. The other two `valkey_` tests are ignored and need `VALKEY_URL`.
+- T24: a unique-index violation on `(user_id, idempotency_key)` is returned as a database error, not as a replay (design Path 1 asks for a replay). The advisory lock makes it unreachable for one user. The review queue asks Brighton to decide.
+- Test dependencies: the HTTP tests send raw HTTP/1.1 over a TCP socket, so no `tower` or `reqwest` was added.
+- Not started: T25 (`POST /api/runs`) and T26 to T39, including the SUPERVISED T29 (SSE core). Each needs its own session.
+- A PreToolUse hook blocked one bash command (a log write combined with a git commit) without giving a reason. It was not bypassed. The log entry was written with the file tool instead. The commit of this log has not been made yet.
+- Containers `cs-valkey-rl` and `cs-pg-rl2` were stopped at the end of this session.
