@@ -609,3 +609,9 @@ The model is a small pure struct with its own rules (`works_at`). It is written 
 `PgPool` is cheap to clone, and it is a handle to a shared pool. `tokio::spawn` needs `'static` data, so each racing task gets its own clone of the store and of the token string.
 Single-use is one `UPDATE ... RETURNING` statement. The database lock on the row decides the winner, so no Rust mutex is needed and no read-then-write race exists.
 `.bind(user.map(UserId::as_uuid))` passes the method as a function value. Clippy prefers this to a closure that only calls a method.
+
+# Rust lesson: auth T15
+
+`Hmac::<Sha256>::new_from_slice` and `mac.update` build a keyed hash. A key derived from the session secret means a stored counter key cannot be matched back to an address by someone who only has Valkey.
+`match` arms with a guard (`Decision::SkippedFailOpen if action.fails_closed()`) let one rule decide between two outcomes, and order matters: the first matching arm wins.
+A small private trait (`CalendarText`) adds one method to `time::Date`, which keeps the formatting next to the code that uses it.
