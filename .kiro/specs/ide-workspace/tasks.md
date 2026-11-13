@@ -115,7 +115,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 3: ghost, autopsy, hints, and Familiar
 
-- [ ] **T14 [UI] [P] (25 min) Implement the recorded shrink playback controller**
+- [x] **T14 [UI] [P] (25 min) Implement the recorded shrink playback controller**
   - Files: `web/src/lib/ghost/shrink-playback.ts`, tests.
   - Build a pure controller that accepts only received ordered steps, preserves head/tail omission metadata, verifies final input agreement, caps total display time near 3 seconds, and selects static mode under reduced motion.
   - Depends on: T01 and T11.
