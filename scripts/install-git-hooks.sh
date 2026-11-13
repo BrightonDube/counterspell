@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
-# Installs the gitleaks pre-commit and pre-push hooks into this clone (.git/hooks is shared by all worktrees).
+# Point this clone at the tracked hooks in scripts/git-hooks (shared by all worktrees).
+# pre-push runs scripts/pre-push.sh: gitleaks, cargo fmt/clippy/test, then web lint,
+# svelte-check, Vitest and the build. See docs/ci-cd.md.
 set -euo pipefail
 root=$(git rev-parse --show-toplevel)
-hooks=$(git rev-parse --git-common-dir)/hooks
-for h in pre-commit pre-push; do
-  install -m755 "$root/scripts/git-hooks/$h" "$hooks/$h"
-  echo "installed $hooks/$h"
-done
+git -C "$root" config core.hooksPath scripts/git-hooks
+echo "set core.hooksPath=scripts/git-hooks"
 command -v gitleaks >/dev/null || [ -x "$HOME/.local/bin/gitleaks" ] || echo "Now install gitleaks: https://github.com/gitleaks/gitleaks#installing"

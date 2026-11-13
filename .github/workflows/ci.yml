@@ -188,20 +188,11 @@ jobs:
       - name: svelte-check
         run: npm run check
       - name: Lint
-        run: |
-          if npm pkg get scripts.lint | grep -q '{}'; then
-            echo "::warning title=No web lint::web/package.json has no \"lint\" script yet; add ESLint/Prettier to enforce it."
-          else
-            npm run lint
-          fi
+        run: npm run lint
+      - name: Format check
+        run: npm run format:check
       - name: Unit tests (Vitest)
-        run: |
-          if npm pkg get scripts.test | grep -q '{}'; then
-            echo "::warning title=No web tests::web/package.json has no \"test\" script yet; add Vitest so the TDD gate covers the frontend."
-            echo "> :warning: **web:** no \`test\` script yet, frontend unit tests are not enforced." >> "$GITHUB_STEP_SUMMARY"
-          else
-            npm run test -- --run
-          fi
+        run: npm run test
       - name: Build
         run: npm run build
 
