@@ -20,3 +20,13 @@ Written by the implementation run on 13 Nov 2026. Each entry names the task, the
 ## Not started: T04 onward
 
 - T04 to T39 were not started in this run. The list is long, and the hook problem above was blocking test writes, so the tasks were not attempted.
+
+## Update: status at the end of this run
+
+- Done and verified: T01, T05, T06, T07.
+- Partly done, left unticked: T02 (no `FailureReason` tests), T03 (no `status_after_event`, `terminal_event_kind` or proptests).
+- Not started: T04, T08 to T39.
+- Database checks run against `postgres:17-alpine` in a throwaway container. The container was stopped. The password was random and never written to a file.
+- T10 (role privilege tests) is not written, so the grants are checked only with `\dp`.
+- No wave-end code review was run, because Wave 0 is not complete.
+- The `docs/kiro-log/2026-11-13T0938-22-run-lifecycle-implement-a1.log` file was left untracked.
