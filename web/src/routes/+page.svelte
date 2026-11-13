@@ -16,11 +16,13 @@
         Learn why your code breaks.
       </h1>
       <p class="max-w-xl text-lg leading-8 text-text-muted">
-        The ghost engine and trusted judge are coming soon. This calm page proves the
-        SvelteKit build can be served by the Rust process.
+        The ghost engine and trusted judge are coming soon. This calm page
+        proves the SvelteKit build can be served by the Rust process.
       </p>
     </div>
-    <div class="w-fit rounded border border-border bg-surface px-4 py-3 text-sm text-text-subtle">
+    <div
+      class="w-fit rounded border border-border bg-surface px-4 py-3 text-sm text-text-subtle"
+    >
       Skeleton milestone · judging is not implemented yet
     </div>
   </div>
