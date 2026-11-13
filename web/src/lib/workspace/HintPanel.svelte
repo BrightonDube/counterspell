@@ -1,8 +1,16 @@
 <script lang="ts">
   import type { LadderState } from './hint-ladder';
 
-  let { ladder, onNext }: { ladder: LadderState; onNext: () => void } =
-    $props();
+  let {
+    ladder,
+    onNext,
+    aiHint = null
+  }: {
+    ladder: LadderState;
+    onNext: () => void;
+    /** Optional AI text from the server. It is always labelled and always shown as plain text. */
+    aiHint?: { text: string } | null;
+  } = $props();
 
   const exhausted = $derived(ladder.revealed.length >= ladder.total);
 </script>
@@ -20,6 +28,15 @@
       <p class="text-text">{hint.text}</p>
     </div>
   {/each}
+
+  {#if aiHint !== null}
+    <div
+      class="rounded border border-accent-moss-muted bg-accent-moss-deep p-3"
+    >
+      <p class="text-sm font-semibold text-accent-moss">AI hint</p>
+      <p class="text-text">{aiHint.text}</p>
+    </div>
+  {/if}
 
   {#if ladder.error !== null}
     <p role="alert" class="text-sm text-danger">{ladder.error}</p>
