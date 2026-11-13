@@ -1,0 +1,6 @@
+# zizmor configuration (https://docs.zizmor.sh/configuration/).
+rules:
+  self-repository:
+    # GitHub's new `uses: $/...` syntax is better, but actionlint 1.7.12 rejects it.
+    # Switch to `$/` and delete this once actionlint supports it.
+    disable: true

@@ -1,0 +1,17 @@
+name: Set up web
+description: Node.js 22 with the npm cache, then a clean install of web/ without dependency lifecycle scripts.
+runs:
+  using: composite
+  steps:
+    - name: Install Node.js
+      uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+      with:
+        node-version: 22
+        cache: npm
+        cache-dependency-path: web/package-lock.json
+    - name: Install dependencies (lockfile only, no install scripts)
+      shell: bash
+      working-directory: web
+      run: |
+        npm ci --ignore-scripts --no-audit --no-fund
+        npx --no-install svelte-kit sync

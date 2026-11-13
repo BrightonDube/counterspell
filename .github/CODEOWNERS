@@ -1,0 +1,7 @@
+# Everything is owned by Brighton; CI, deploy and security config doubly so.
+*                         @BrightonDube
+/.github/                 @BrightonDube
+/deploy/                  @BrightonDube
+/scripts/                 @BrightonDube
+/Dockerfile               @BrightonDube
+/docker-compose.yml       @BrightonDube
