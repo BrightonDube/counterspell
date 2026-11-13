@@ -5,14 +5,20 @@
   let {
     status,
     ghost,
+    ghostError = null,
     shrinkSteps,
     reducedMotion
   }: {
     status: string;
     ghost: GhostView | null;
+    /** Set when the ghost payload failed validation, so nothing is shown from it. */
+    ghostError?: 'malformed' | null;
     shrinkSteps: readonly ShrinkStepView[];
     reducedMotion: boolean;
   } = $props();
+
+  /** Run endings that stop the search before it can report a result. */
+  const CUT_OFF_STATUSES = ['aborted', 'cancelled', 'expired', 'internal_error'];
 
   // The replay plan orders and times only the steps the server recorded. Steps that do not end at the
   // ghost input are not shown at all.
@@ -54,6 +60,14 @@
           {/each}
         </ol>
       {/if}
+    {:else if ghostError === 'malformed'}
+      <p role="alert" class="text-text-muted">
+        The ghost data could not be verified, so nothing is shown.
+      </p>
+    {:else if CUT_OFF_STATUSES.includes(status)}
+      <p role="status" class="text-text-muted">
+        The ghost search did not finish, so no input is shown.
+      </p>
     {:else if status === 'completed'}
       <p role="status" class="text-text-muted">
         No ghost input was found within the search budget.

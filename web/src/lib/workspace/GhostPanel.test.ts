@@ -169,6 +169,41 @@ describe('GhostPanel ghost card', () => {
     expect(screen.getByText(/do not end at this input/)).toBeTruthy();
   });
 
+  // Breaks if a search that was cut off (aborted, expired or internal error) reads as "no ghost exists".
+  it('does not claim the search finished when the run ended without one', () => {
+    render(GhostPanel, {
+      props: {
+        status: 'internal_error',
+        ghost: null,
+        shrinkSteps: [],
+        reducedMotion: false
+      }
+    });
+    expect(
+      screen.getByText(/The ghost search did not finish/)
+    ).toBeTruthy();
+    expect(
+      screen.queryByText(/No ghost input was found within the search budget/)
+    ).toBeNull();
+  });
+
+  // Breaks if a ghost payload that failed validation is silently dropped instead of saying so.
+  it('says the ghost data could not be verified when the payload is malformed', () => {
+    render(GhostPanel, {
+      props: {
+        status: 'completed',
+        ghost: null,
+        ghostError: 'malformed',
+        shrinkSteps: [],
+        reducedMotion: false
+      }
+    });
+    expect(
+      screen.getByText(/could not be verified, so nothing is shown/)
+    ).toBeTruthy();
+    expect(screen.queryAllByRole('listitem')).toHaveLength(0);
+  });
+
   // Breaks if a finished run with no ghost is left blank instead of saying so.
   it('says when no ghost was found within the search budget', () => {
     render(GhostPanel, {
