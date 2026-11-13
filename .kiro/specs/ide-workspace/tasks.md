@@ -151,7 +151,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: ownership, schema, rate limit, idempotency, real queue event, one public custom result, and no unrelated hidden detail; API errors do not erase the autopsy.
   - Preserve: the source runs only in the trusted sandbox.
 
-- [ ] **T19 [UI] [P] (30 min) Build measured Familiar component and state reducer**
+- [x] **T19 [UI] [P] (30 min) Build measured Familiar component and state reducer**
   - Files: `web/src/lib/familiar/Familiar.svelte`, `familiar-state.ts`, `how-it-judges.svelte`, SVG mood assets, tests.
   - Implement five measured moods, dock/hide/mute controls, text equivalent, the “How does it judge me?” popover, and semantic visual rules. Consume only `complexity`, `familiar`, or terminal measured data; code edits never change mood.
   - Use lazy-loaded SVG art, calm 120–200ms transitions, and no live typing guess. Keep the Familiar inside the result region and never over editor text.
