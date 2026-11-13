@@ -551,3 +551,16 @@ A `Result` with `?` on each step means a missing run and a foreign run return th
 `optional` and `required` return `&str` borrowed from the map, so reading settings copies nothing until a value is kept. Owned `String`s are made only where the config stores them.
 `Option<T>` means "feature on or off". An OAuth provider is `Some` only when both of its values exist, so a half-set provider cannot be used by mistake.
 A `match` on the pair `(app_env, value)` lists every case. Adding a new environment or transport makes the compiler point at each place that must change.
+
+# Rust lesson: auth T03
+
+`EmailAddress::parse` returns `Result<EmailAddress, EmailError>`, so the only way to hold an address is through the checks. Code that receives an `EmailAddress` never needs to check it again.
+`trim`, `to_ascii_lowercase` and `split_once` each return a new value or a borrowed slice. Nothing is changed in place, so the rules read from top to bottom.
+A hand-written `Debug` prints `[redacted]` for the address. A derived `Debug` would put personal data into any log line that prints the struct.
+Proptest checks the rules on thousands of random inputs. A property that fails prints the smallest input that breaks it, which makes the bug easy to read.
+
+# Rust lesson: auth T04
+
+`Option<&str>` is a borrowed, optional value. The function returns an owned `String` because the default and the accepted path must outlive the request body.
+A `match` guard (`Some(raw) if ...`) checks the value and binds it in one step. Anything that does not match falls through to the safe default.
+`percent_decode_str` returns a `Cow<str>`. The check runs on the decoded text too, so an encoded `%2f%2f` cannot slip past a check on the raw text.
