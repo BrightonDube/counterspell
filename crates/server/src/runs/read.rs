@@ -145,6 +145,7 @@ pub async fn get_run(
     let user = state
         .user_resolver
         .resolve(&headers)
+        .await
         .ok_or_else(ApiError::unauthorized)?;
     let not_found = || ApiError::not_found("Run not found.");
     let run_id = RunId::from_str(&id).map_err(|_| not_found())?;

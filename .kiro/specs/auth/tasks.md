@@ -124,7 +124,7 @@ Conventions for every Rust task:
   - Preserve: the database is authoritative for expiry, never the cookie's `Max-Age`.
   - Rust lesson: `async fn`, `Result`, and the `?` operator with a custom error type.
 
-- [ ] **T11 [S] (30 min) Cookie handling, extractors and the `UserResolver` seam** [SUPERVISED]
+- [x] **T11 [S] (30 min) Cookie handling, extractors and the `UserResolver` seam** [SUPERVISED]
   - Files: `crates/server/src/auth/{session.rs,resolver.rs,mod.rs}`, `crates/server/src/auth/handlers/{session.rs,me.rs}`, `crates/server/src/seams.rs` (only if the trait signature must change), `crates/server/tests/auth_session_http.rs`.
   - Cookie builder (names, attributes and dev exceptions from R2.6 and `design.md`), `CookieSlot` middleware `session_cookie`, extractors `AuthUser` and `MaybeAuthUser` (take no input from the request except the cookie), `SessionUserResolver` implementing `UserResolver`, handlers `POST /api/auth/logout`, `POST /api/auth/logout-all` (capability check), `GET /api/me` (no-store, caller's data only), and an `auth::router(state)` skeleton that mounts them.
   - Tests: no cookie, garbage cookie and expired cookie give `401 unauthenticated` and a clearing cookie when the value was unusable; `GET /api/me` returns only the caller; `logout` is idempotent; `logout-all` kills all of the user's sessions and no one else's; `SessionUserResolver` returns the same user as the extractor.

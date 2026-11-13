@@ -591,3 +591,9 @@ This task is SQL only, so there is no Rust lesson. The useful idea is `SECURITY 
 `async fn` returns a future that does nothing until it is awaited. Each database call ends in `.await.map_err(database)?`, so a failure is logged once and turned into one safe error type.
 `Arc<dyn Clock>` lets production pass the system clock and tests pass a clock they can move, with no change to the session code.
 `Option` from `fetch_optional` becomes `let Some(..) = row else { return Ok(None) };`. The early return keeps the happy path flat.
+
+# Rust lesson: auth T11
+
+An axum extractor is a type that implements `FromRequestParts`. A handler that takes `AuthUser` cannot run unless the extractor succeeds, so the user id never comes from a parameter the client can change.
+`UserResolver` became an `async_trait`, because the session check needs the database. Trait objects (`Arc<dyn UserResolver>`) cannot return a plain `async fn`, so `#[async_trait]` boxes the future.
+The `CookieSlot` is an `Arc<Mutex<..>>` placed in the request. The extractor writes to it and the middleware reads it after the handler, so a cleared cookie still reaches the browser when the handler returns an error.

@@ -19,11 +19,12 @@ fn bearer(value: &'static str) -> HeaderMap {
     headers
 }
 
-#[test]
-fn production_resolver_never_identifies_anyone() {
-    assert!(Unauthenticated.resolve(&HeaderMap::new()).is_none());
+#[tokio::test]
+async fn production_resolver_never_identifies_anyone() {
+    assert!(Unauthenticated.resolve(&HeaderMap::new()).await.is_none());
     assert!(Unauthenticated
         .resolve(&bearer("Bearer test-user-1"))
+        .await
         .is_none());
 }
 

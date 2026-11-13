@@ -70,6 +70,7 @@ pub async fn post_run(
     let user = state
         .user_resolver
         .resolve(&headers)
+        .await
         .ok_or_else(ApiError::unauthorized)?;
     let key = idempotency_key(&headers)?;
     let mode = RunMode::parse(&request.mode)

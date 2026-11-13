@@ -24,15 +24,21 @@ fn bearer(value: &'static str) -> HeaderMap {
     headers
 }
 
-#[test]
-fn bearer_resolver_reads_numbered_test_users() {
+#[tokio::test]
+async fn bearer_resolver_reads_numbered_test_users() {
     let resolver = BearerTestResolver;
 
-    let seven = resolver.resolve(&bearer("Bearer test-user-7"));
+    let seven = resolver.resolve(&bearer("Bearer test-user-7")).await;
     assert_eq!(seven, Some(UserId::from_uuid(Uuid::from_u128(7))));
-    assert!(resolver.resolve(&bearer("Bearer test-user-x")).is_none());
-    assert!(resolver.resolve(&bearer("Basic dXNlcjpwYXNz")).is_none());
-    assert!(resolver.resolve(&HeaderMap::new()).is_none());
+    assert!(resolver
+        .resolve(&bearer("Bearer test-user-x"))
+        .await
+        .is_none());
+    assert!(resolver
+        .resolve(&bearer("Basic dXNlcjpwYXNz"))
+        .await
+        .is_none());
+    assert!(resolver.resolve(&HeaderMap::new()).await.is_none());
 }
 
 #[test]
