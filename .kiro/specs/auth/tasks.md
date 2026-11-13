@@ -114,7 +114,7 @@ Conventions for every Rust task:
 
 ## Wave 2: sessions
 
-- [ ] **T10 [S] (30 min) `SessionService` (parts of P4, P11, P12)** [SUPERVISED]
+- [x] **T10 [S] (30 min) `SessionService` (parts of P4, P11, P12)** [SUPERVISED]
   - Files: `crates/server/src/auth/session.rs`, `crates/server/tests/pg_auth_session.rs`.
   - `SessionKey` (SHA-256 hex), `SessionService::{create, authenticate, revoke, revoke_all, is_valid}` with the SQL of `design.md`, the 30-day rolling and 90-day absolute limits, the one-hour renewal throttle, and `Clock` injection. `create` returns the raw cookie value once.
   - Tests (`pg_`, `ManualClock`): created sessions store only the hash; a session authenticates iff `now < min(last_renewed + 30 d, created + 90 d)`; renewal happens at most once per hour and never passes the absolute limit; unknown, expired and wrong-case values do not authenticate; `revoke_all` deletes exactly one user's sessions; a session of a deleted user is gone.

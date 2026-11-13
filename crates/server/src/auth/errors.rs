@@ -173,6 +173,17 @@ impl IntoResponse for AuthError {
     }
 }
 
+/// Turns a database failure into [`AuthError::Internal`]. The SQL error is logged, never returned.
+#[must_use]
+#[allow(
+    clippy::needless_pass_by_value,
+    reason = "used as map_err(database), which passes the error by value"
+)]
+pub fn database(error: sqlx::Error) -> AuthError {
+    tracing::error!(error = %error, "auth database query failed");
+    AuthError::Internal
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

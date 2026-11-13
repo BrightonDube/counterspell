@@ -585,3 +585,9 @@ This task is SQL only, so there is no Rust lesson. The point is that a `CHECK` c
 # Rust lesson: auth T09
 
 This task is SQL only, so there is no Rust lesson. The useful idea is `SECURITY DEFINER`: a function runs with its owner's rights, so the server role can call it without being allowed to change the table directly. A fixed `search_path` stops a caller from putting a look-alike function in front of the real one.
+
+# Rust lesson: auth T10
+
+`async fn` returns a future that does nothing until it is awaited. Each database call ends in `.await.map_err(database)?`, so a failure is logged once and turned into one safe error type.
+`Arc<dyn Clock>` lets production pass the system clock and tests pass a clock they can move, with no change to the session code.
+`Option` from `fetch_optional` becomes `let Some(..) = row else { return Ok(None) };`. The early return keeps the happy path flat.
