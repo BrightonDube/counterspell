@@ -581,3 +581,7 @@ An `enum` such as `OAuthDecision` lists every outcome. `match` with no `_` arm m
 # Rust lesson: auth T07
 
 This task is SQL only, so there is no Rust lesson. The point is that a `CHECK` constraint or a trigger refuses bad rows for every writer, including a future Rust bug, while application code only protects the path it runs on.
+
+# Rust lesson: auth T09
+
+This task is SQL only, so there is no Rust lesson. The useful idea is `SECURITY DEFINER`: a function runs with its owner's rights, so the server role can call it without being allowed to change the table directly. A fixed `search_path` stops a caller from putting a look-alike function in front of the real one.

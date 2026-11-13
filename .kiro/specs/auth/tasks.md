@@ -102,7 +102,7 @@ Conventions for every Rust task:
   - Preserve: the judge role gets nothing; Postgres stays the only store.
   - Rust lesson: none (SQL only); note least privilege.
 
-- [ ] **T09 [S] (30 min) Migration: demo guards, seed helper and reset function (properties P17 database part, P18 prerequisite)** [SUPERVISED]
+- [x] **T09 [S] (30 min) Migration: demo guards, seed helper and reset function (properties P17 database part, P18 prerequisite)** [SUPERVISED]
   - Files: `migrations/<timestamp>_auth_demo.sql`, `crates/server/tests/pg_auth_demo_db.rs`.
   - `cs_guard_demo_user()` trigger on `users` (insert, update, delete), the `identities` before-insert trigger that refuses the demo user, `cs_seed_demo_user(text, text)` (`SECURITY DEFINER`, fixed `search_path`, sets `counterspell.demo_seed` locally, upserts the single demo user), `cs_reset_demo_account()` (as in `design.md`, including the advisory lock and the generic per-user-table loop), grants and revokes for both functions.
   - Tests (`pg_`): without the setting, inserting a demo user, deleting the demo user, changing its email or password, and inserting an identity for it all fail; `cs_seed_demo_user` creates exactly one demo user and is idempotent; the server role can execute the functions and the judge role cannot; the reset function removes only the demo user's finished rows (use a temporary table with a cascading foreign key to `users` to prove the generic loop), keeps running rows, resets counters, sets `demo_reset_at`, and leaves a second user's rows byte-identical.
