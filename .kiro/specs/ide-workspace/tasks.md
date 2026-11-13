@@ -99,7 +99,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: fake EventSource unit tests for duplicates, gaps, reconnects, `restarted`, terminal close, malformed events, and 429 errors; no in-memory event source is used as production truth.
   - Preserve: public payload visibility and ownership rules remain server-side.
 
-- [ ] **T12 [UI] [S] (25 min) Build sample and hidden test result panels**
+- [x] **T12 [UI] [S] (25 min) Build sample and hidden test result panels**
   - Files: `web/src/lib/workspace/TestPanel.svelte`, test row components, tests.
   - Render queued/claimed/compiling/running/terminal statuses, sample input/expected/got/time, and hidden ordinal/verdict/time rows. Add text/icons for every status and safe truncated plain-text output.
   - Depends on: T10, T11.
