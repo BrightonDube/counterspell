@@ -375,3 +375,9 @@ A `#[cfg(test)] mod tests` inside `main.rs` can call private functions through `
 A crate's `[dependencies]` are what ships; `[dev-dependencies]` only compile for tests. Keeping `sqlx`, `axum`, `tokio` and `bollard` out of `counterspell-common` means the shared types compile anywhere without a database or Docker.
 Feature flags such as `features = ["v4", "serde"]` switch on optional code in a dependency. Enabling only what is needed keeps the build small and the licence surface clear.
 `#![warn(missing_docs)]` at the top of `lib.rs` makes the compiler ask for a doc comment on every public item.
+
+# Rust lesson: run-lifecycle T02 and T03 (partial)
+
+A `macro_rules!` block can write the enum, its text form and its list once, so `as_str`, `parse` and the serde names cannot drift apart. The `match` in `as_str` has no wildcard arm, so adding a variant without a text form is a compile error.
+`matches!` tests several variants in one readable expression. The transition table is written this way so each row reads like the design table.
+Put `use` lines and helper functions above a `#[cfg(test)] mod tests`. Clippy's `items_after_test_module` lint flags items that come after the test module.
