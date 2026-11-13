@@ -181,7 +181,7 @@ Conventions for every Rust task:
   - Preserve: the worker never writes a verdict itself; it only calls `finish` with the executor's value.
   - Rust lesson: `tokio::spawn`, `JoinError`, `select!` and channels.
 
-- [ ] **T18 [S] (30 min) Model-based interleaving test**
+- [x] **T18 [S] (30 min) Model-based interleaving test**
   - Files: `crates/judge/tests/model.rs`.
   - `pg_model_interleavings` with `proptest` as described in `design.md` ("Model-based test"): operations `enqueue`, `claim(w)`, `renew(w)`, `emit(w)`, `finish(w)`, `expire_lease`, `reap`, `cancel` across 2–3 workers and 1–4 runs, including deliberate stale-holder calls. After every step run `assert_invariants` (P3–P8, P14) and a fence-oracle: the model predicts which calls must report `LeaseLost`. 32 cases, a small Tokio runtime per case, tables reset per case. Commit the proptest regression file if one appears.
   - Requirements: P3, P4, P5, P6, P7, P8, P14.

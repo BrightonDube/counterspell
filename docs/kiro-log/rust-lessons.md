@@ -482,3 +482,9 @@ Dropping a future cancels it. The worker now keeps its heartbeat as a future ins
 `main` returns `Result`, and the `?` operator passes each startup error up to the runtime, so the process exits non-zero. The judge's logic lives in `service::serve`, not in `main`, so a test can run it without a process.
 `tokio::select!` over `ctrl_c()` and a Unix `SIGTERM` stream waits for whichever signal comes first. The `#[cfg]` blocks keep the code building on non-Unix targets too.
 A function that only returns a value needs no `async`. Clippy flags an `async fn` with no `.await`, so `NoExecutor` returns `std::future::ready(...)`.
+
+# Rust lesson: run-lifecycle T18
+
+`proptest` generates many random call sequences and shrinks a failing one to a short example. Here each sequence is a list of enum values (`Op`), so the generator and the code under test share one type.
+A model is a second, simpler copy of the state. The test checks that the database and the model agree after every call, so one wrong prediction stops the case at once.
+`TestRunner::run` runs an async test body by calling `block_on` on a current-thread runtime, which lets a synchronous property test drive `sqlx` calls.
