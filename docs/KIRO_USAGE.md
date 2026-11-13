@@ -177,3 +177,19 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-13 17:55-18:07 SAST: 25-auth-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a4.md`. Transcript: `docs/kiro-log/2026-11-13T1755-25-auth-implement-a4.log`. Exit 0.
 - Credits used (from /usage): 5.63 (hackathon credits used now 2907.00/4000).
+
+### 2026-11-13 18:10-19:37 SAST: 26-ide-workspace-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-ide-workspace-a1.md`. Transcript: `docs/kiro-log/2026-11-13T1810-26-ide-workspace-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 21.32 (hackathon credits used now 2928.32/4000).
+
+### 2026-11-13 19:37-20:43 SAST: 26-ide-workspace-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-ide-workspace-a2.md`. Transcript: `docs/kiro-log/2026-11-13T1937-26-ide-workspace-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 15.30 (hackathon credits used now 2943.62/4000).
+
+### 2026-11-13 20:43-21:47 SAST: 26-ide-workspace-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-ide-workspace-a3.md`. Transcript: `docs/kiro-log/2026-11-13T2043-26-ide-workspace-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 11.50 (hackathon credits used now 2955.12/4000).
+
+### 2026-11-13 21:48-21:57 SAST: 26-ide-workspace-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-ide-workspace-a4.md`. Transcript: `docs/kiro-log/2026-11-13T2148-26-ide-workspace-implement-a4.log`. Exit 0.
+- Credits used (from /usage): 2.57 (hackathon credits used now 2957.69/4000).

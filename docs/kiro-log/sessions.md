@@ -116,3 +116,18 @@
  .../2026-11-13T1511-25-auth-implement-a1.log       | 84 ++++++++++++++++++++++
  docs/kiro-log/sessions.md                          | 19 +++++
  3 files changed, 115 insertions(+)
+- 2026-11-13T18:42:55Z | model: not reported | last commit: 38551b7 ide-workspace T07: mark lazy Monaco task done after build bundle check
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-13T19:47:49Z | model: not reported | last commit: 6017963 ide-workspace T17: labelled plain-text AI hint display in hint panel
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 15 insertions(+)
+- 2026-11-13T19:57:04Z | model: not reported | last commit: c5a03dd ide-workspace T15 (partial): cut-off and malformed ghost states in ghost panel
+ | diff stat:
+ docs/KIRO_USAGE.md        | 12 ++++++++++++
+ docs/kiro-log/sessions.md | 12 ++++++++++++
+ 2 files changed, 24 insertions(+)

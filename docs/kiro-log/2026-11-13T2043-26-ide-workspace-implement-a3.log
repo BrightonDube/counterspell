@@ -1,0 +1,393 @@
+I'll start by reading the task list and the spec's conventions.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=77
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Check git state and spec files
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Several tasks are already ticked. T02 is the first unchecked non-stretch task. Before starting it, I'll read the blockers file and the last attempt's log to see what earlier attempts left behind.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+
+[tool] Read blockers and last attempt log
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The blockers file says T08, T14, T16 and T19 were checked, but I read T08 as unchecked. I'll confirm the real checkbox state, then check whether the upstream specs T02 and T11 depend on have moved since the last attempt.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=163
+
+[tool] Check task checkbox states across specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Current state: T08 is ticked, and T14, T16 and T19 are ticked too. The unchecked tasks are T02, T05, T09, T10 (partial), T11 through T13, T15, T17, T18, T20 through T28. T02, T13 and T18 depend on server routes and tables that don't exist yet, so they stay blocked. T11 can proceed, because its design allows an equivalent to run-lifecycle T32/T33. I'll read the TDD guidance and the web test setup first.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=309
+
+[tool] Inspect web package and lib layout
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+vitest is already a dev dependency with a `test` script. Next I'll read the run types and the T10 controls so the T11 reducer and T10 completion match them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=73
+
+[tool] Read run types and run controls
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T01's run envelope parser already exists. Before writing the T11 reducer and stream client, I'll check the keyboard helper, the API client and the contract helpers they should reuse.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=121
+
+[tool] Read keyboard, client and contract exports
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The shared request client and contract helpers are reusable. Before I write the stream reconnect logic, I need the spec's rules on `Last-Event-ID`, the error event and the 204 response.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=242
+
+[tool] Search SSE and error contract in specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=59
+[tool] Read stream client design from run-lifecycle
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+run-lifecycle T32 and T33 describe the same reducer and stream client that T11 needs. I'll implement them once under `web/src/lib/runs/` and log the overlap for reconciliation. Next I'll read the exact reducer rules in the design.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=110
+
+[tool] Read reducer rules and events endpoint design
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The reducer rules are clear. The per-attempt ghost and Familiar state needs the shapes of the existing ghost and Familiar view types, so I'll read those before writing tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=216
+
+[tool] Read ghost and familiar type shapes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the shapes I need. I'll write the T11 tests first, then the implementation. The reducer tests cover duplicates, gaps, restarts, terminal handling and a seeded replay-noise property. The stream tests use a fake EventSource, so no test touches the network.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1213
+[tool] status: Pending
+[tool] status: Completed
+Before writing the reducer, I need to fix one line in the test I just wrote. The noisy-replay loop picks the replayed event with an awkward expression that doesn't pick from earlier events. I'll make it replay a random earlier event explicitly.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=185
+[tool] status: Pending
+[tool] status: Completed
+Now I'll run the reducer tests and confirm they fail because the module doesn't exist yet.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=57
+
+[tool] Run reducer tests expecting failure
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The suite fails because `./reducer` doesn't exist, which is the expected red state. I'll write the reducer now, following the design's `apply` rules.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=665
+[tool] status: Pending
+[tool] status: Completed
+The reducer is written. Next I'll run the reducer tests to see whether they pass.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+
+[tool] Run reducer tests after implementation
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 7 reducer tests pass. Next is the stream client. I'll write its tests first. They use a fake EventSource that records each URL it was opened with, so reconnect and cursor behaviour can be checked.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=986
+[tool] status: Pending
+[tool] status: Completed
+Next I'll run the stream tests and confirm they fail because `./stream` doesn't exist yet.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=97
+
+[tool] Confirm stream tests fail before implementation
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The failure is the missing module, as expected. Now I'll write the stream client.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=722
+[tool] status: Pending
+[tool] status: Completed
+The file ends with a messy indirection: a helper that just forwards to `initialRunState`, an import placed at the bottom, and a no-op ternary in the error path. I'll tidy all three so the module reads cleanly.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=217
+
+[tool] Tidy stream.ts imports and helpers
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The stream module is tidied. I'll run its tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=65
+
+[tool] Run run-stream unit tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Three tests fail, for two different reasons.
+
+- **Two expectations were my mistake.** A terminal event goes to `onDone`, not `onState`, so `states` correctly stops at `lastSeq` 2. I'll assert on `done[0].lastSeq` in those tests.
+- **One is a real bug.** After a gap, the gap flag stays set. A second gap on the new stream returns the same state object, so `receive` returns early and never reconnects. Duplicates on the new stream would also be misread as gaps. The fix is to check `next.gap` before the identity check, and clear the flag when reopening.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=458
+
+[tool] Fix gap handling and rerun run tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 28 run tests pass. Now I'll add the run API adapter: `startRun` with an `Idempotency-Key` header, and `getRun`. I'll write its test first. The shared request client doesn't accept custom headers yet, so the test also needs that capability.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=471
+[tool] status: Pending
+[tool] status: Completed
+The request client needs to accept extra headers for `Idempotency-Key`. I'll add an optional `headers` field, keeping existing behaviour the same when it's absent.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=231
+
+[tool] Add optional headers to shared JSON client
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The client change is in. Now I'll write `api.ts`, following the same request conventions the other adapters use.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=265
+[tool] status: Pending
+[tool] status: Completed
+I'll run the run-tests and the existing client tests together, since I changed the shared client.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=75
+
+[tool] Run run and api unit tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 60 tests pass. The T11 verification also needs `npm run check`, the full test suite and the production build, so I'll run all three.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=88
+
+[tool] Run web check, tests and build
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Type check found one error: the test imports `RunStreamState` from `./stream`, but the type lives in `./reducer`. I'll fix the import and rerun the check.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=129
+
+[tool] Recheck types, formatting and lint for runs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The remaining issues are small. One unused variable in my test. Lint also reports two pre-existing `no-useless-assignment` errors in `client.ts`, which earlier attempts logged as a known problem. I'm already editing that file, so I'll fix them too. I'll also run Prettier on the files I created, leaving the unrelated `hints.test.ts` alone.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+
+[tool] Inspect lint sites before editing
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=176
+[tool] Fix lint, format new files, rerun checks
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Type check, lint and all 205 tests pass. The T11 verify also asks for a 429 case, and I haven't covered one yet. I'll check the error envelope field names so the test uses the real server shape.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=107
+
+[tool] Read API error envelope parser
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=127
+[tool] status: Pending
+[tool] status: Completed
+I'll run the run API tests, then the full web gate again.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=113
+
+[tool] Verify T11 with full web gate
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T11 gate is green: 33 run tests, type check, lint and build. I'll tick T11 in `tasks.md`, record the overlap with run-lifecycle T32/T33 in the blockers log, and commit only the T11 files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=244
+
+[tool] Tick T11, log reconciliation, and commit
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T11 is committed, and the pre-commit secret scan passed. Next is T10, the remaining work on Run/Submit controls: a status announcer, shortcut wiring and shortcut help. I'll check what the existing tests already cover so I don't duplicate them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=253
+
+[tool] Review existing RunControls and keyboard tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`RunControls` already covers in-flight clicks and the byte limit. What's missing is shortcut wiring, shortcut help, and a polite status region for the save state. I'll add those tests first, then the code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=793
+
+[tool] Add T10 tests and confirm they fail first
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The new tests fail for the expected reasons. Two of the new tests already pass, which is correct, because they check safety behaviour that already exists. Now the implementation: a plain-text status region, plus window-level shortcut handling and help text in `RunControls`.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=108
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=397
+[tool] status: Pending
+[tool] status: Completed
+I'll run the workspace tests and the type check against the updated controls.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Run workspace tests and type check for T10
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 54 workspace tests pass and the type check is clean. T10's verify also asks for visible focus, so I'll confirm the global focus style applies to these buttons before I tick it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=75
+
+[tool] Check global focus-visible style
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+A global `:focus-visible` rule covers the buttons. API error preservation belongs to T13, so I'll note that in the blockers file rather than hold T10 open. Next I'll format and lint the changed files, tick T10, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=276
+
+[tool] Lint, tick T10, and commit
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T10 is committed. Next is T12, the sample and hidden test panels. Those depend on T10 and T11, which are both done. I'll split the logic into a pure view-model module and a thin component. The pure module decides what a hidden row may show, so tests can check that hidden detail can't reach the view.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=761
+[tool] status: Pending
+[tool] status: Completed
+The truncation assertion in that file mixes a boolean and a number, which makes it hard to read. I'll rewrite it to narrow the union explicitly. I'll also drop the trivial `truncateOutput` test, since the `rowView` truncation test already covers that behaviour.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=239
+
+[tool] Fix test-rows tests and confirm red
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next I'll write the view-model module. It holds fixed labels and icons, a display cap for output, and a hidden-row projection that copies only ordinal, verdict and time.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=517
+[tool] status: Pending
+[tool] status: Completed
+Next is the component test. It checks four things. Output containing `<script>` stays as text. A canary placed on a hidden row never renders. The terminal label is shown. Empty rows render nothing.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=521
+[tool] status: Pending
+[tool] status: Completed
+Now the component. Each row's text sits in one element so the test matches it. The icon is hidden from screen readers because the label already names the outcome.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=311
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=108
+[tool] Run T12 tests, type check and lint
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 65 workspace tests pass, with a clean type check and lint. One caveat for the record: I wrote the `TestPanel` tests together with the component, so I didn't watch them fail first. The `test-rows` tests did fail first, against the missing module. I'll tick T12 and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=172
+
+[tool] Tick T12 and commit test panel work
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T12 is committed. T13 stays blocked, because the server has no events route and the problems and languages APIs aren't routed yet. T15 depends only on T12 and T14, which are both done, so I'll start it. First I need the playback controller's API and the ghost view shape.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=100
+
+[tool] Read playback controller and ghost types
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=62
+[tool] Read playback plan and autopsy card pattern
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The controller already orders steps, checks that the last recorded input matches the ghost, and sets static mode for reduced motion. T15 can build on it. I'll write the component tests first, covering the hunting state, the wording for minimized versus timed-out ghosts, the complete step list, the untrusted-trace case and the no-ghost case.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1094
+[tool] status: Pending
+[tool] status: Completed
+The tests check the wording rules that matter most. A timeout is never called minimized, a trace that disagrees with the ghost is not replayed, and reduced motion gives a static list. I'll write the component to match them. Live steps are shown while the server is still hunting, and the stored ghost trace is used once the ghost exists.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=711
+[tool] status: Pending
+[tool] status: Completed
+One test is weak. `textContent` containing `'1'` would also match the step list, so it can't catch a missing expected value. I'll switch it to exact text matches on the input, expected and got elements, then run the tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=260
+
+[tool] Format and run GhostPanel tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Two failures. The first one is a real bug in the T14 playback controller. Its duplicate check starts with `lastIndex = 0` and keeps only steps with `index > lastIndex`, so a first step numbered 0 is silently dropped. I'll check what index numbering the existing T14 tests assume before I change it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=112
+
+[tool] Check step index convention in playback tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The ghost-engine design says index 0 is the first failing input, so the playback controller is wrong and its tests encoded the wrong numbering. I'll add a red test for the first step at index 0 to the T14 suite, then fix the controller.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=210
+
+[tool] Add red test for index 0 playback
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The new test fails as expected: the step numbered 0 is dropped. I'll fix the controller so the first received step is always accepted, and later steps must have a higher index.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=191
+
+[tool] Fix playback index-0 bug and rerun ghost tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 34 ghost tests pass, including the T14 suites. Before committing I'll run the full web gate. T15 is only partly done. The panel doesn't yet handle the aborted and malformed states from its verify list, and its visual check is E2E. So T15 stays unticked, and I'll record that in the blockers file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=205
+
+[tool] Run full web gate after T14 fix
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=213
+[tool] Commit T15 partial and T14 playback fix
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T15 partial and the T14 fix are committed. Next is T17, the AI hint display, which the blockers file marked as waiting on the hints contract. I'll read the existing hint adapter and panel to see how much is left.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=119
+
+[tool] Read hint adapter, ladder and panel
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The authored ladder already covers ordering, pending state, failed rungs and the daily cap. What's missing is the AI hint display. That needs a clearly labelled AI block, plain-text rendering and an inert unsafe string. Those don't depend on the server contract, which is still unbuilt, so I can add them now. I'll write the tests first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=408
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=252
+[tool] Add AI hint display and run its tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Four HintPanel tests pass and the type check and lint are clean. I wrote the component and tests in the same step, so I didn't watch these fail first. T17's display requirements are now covered. The request to the AI endpoint still depends on the unbuilt hints spec, and I'll record that. I'll tick T17 and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=241
+
+[tool] Tick T17 and commit AI hint display
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T17 is committed. T21 to T23 (keyboard flow, reduced-motion lifecycle, accessibility sweep) are each large, and I've used a lot of this session's context. I'll stop feature work here, run the final web gate on the current tree, and confirm the working tree is clean.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=188
+
+[tool] Final web gate and repository state
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Resumed at T02 and worked through the unblocked tasks in order. This pass ticked T10, T11, T12 and T17, and T15 is partly done. T02, T13 and T18 are blocked on upstream server work. T05 needs font approval from Brighton. T21 to T23 weren't started, and T24 to T27 are E2E. Gate result: `svelte-check` reports 0 errors, all 237 vitest tests pass across 36 files, and `npm run build` succeeds. No Rust changed in this pass, so no Rust lesson was added.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T02 custom ghost-run route | Blocked, not started | 0 | Needs grimoire-packs tables and ghost persistence | — |
+| T05 Steel Night shell and fonts | Blocked, not started | 0 | Needs Brighton to approve Geist and JetBrains Mono packages | — |
+| T09 WorkspaceShell | Left unticked (E2E layout checks deferred) | 0 | Unit tests from attempt 2 still pass | — |
+| T10 Run/Submit controls | Done | 5 | Workspace tests and check pass; API error preservation moved to T13 | 43424f1 |
+| T11 SSE reducer, stream client, run API | Done | 20 | 33 run/api tests, check, lint, build pass | 29440ee |
+| T12 test panels | Done | 11 | 65 workspace tests, check, lint pass | a9cc573 |
+| T13 connect Run/Submit | Blocked | 0 | Needs `GET /api/runs/{id}/events` and the problems/languages routes | — |
+| T14 shrink playback | Fixed bug, stays ticked | 1 | Playback now accepts index 0 | e662c7d |
+| T15 ghost panel | Partial, unticked | 9 | Aborted and malformed states and the visual check still open | e662c7d |
+| T17 hint panel | Done for display | 4 | AI request waits on the hints spec | 6017963 |
+| T18 Rerun ghost | Blocked | 0 | Needs T02 and T13 | — |
+| T20 Familiar wiring | Blocked | 0 | Needs T13 and the Familiar routes | — |
+| T21–T23 keyboard, reduced motion, accessibility | Not started | 0 | — | — |
+| T24–T27 browser and real-flow proofs | Deferred: E2E | 0 | — | — |
+| T28 full gate | Blocked | 0 | Needs judge-sandbox, language-drivers, hints | — |
+
+**What changed:**
+- **T11** covers the reducer, the stream client and the run API. It is the same work as run-lifecycle T32 and T33, so those two should be reconciled against this commit rather than rewritten.
+- **Two bugs found and fixed.** After a gap, the stream client never reconnected, because the gap flag stuck on the state. The playback controller also dropped the first step, which the engine numbers 0. The T14 tests had assumed 1-based numbering, so I corrected them.
+- **Shared client:** I added an optional `headers` field for `Idempotency-Key` and fixed two existing `no-useless-assignment` lint errors in `client.ts`.
+
+**Blockers and Brighton decisions** (in `docs/kiro-log/ide-workspace-blockers.md`):
+- Font packages need approval for T05.
+- Ctrl+Enter inside Monaco runs samples. This is an assumed choice that Brighton should confirm.
+- The Familiar art is left to the efficiency-familiar spec, and GSAP is not yet added.
+- Upstream seams needed: run-lifecycle SSE and routes (T13), grimoire-packs tables (T02), hints routes (T17 request, T20).
+
+**Review queue:** no `[SUPERVISED]` tasks were in this pass, so nothing was added to `ide-workspace-review-queue.md`.
+
+**Open Minor findings and gaps:**
+- `requesting-code-review` was not run at wave end. This is still open.
+- `TestPanel`, `HintPanel` and `GhostPanel` tests were written alongside their components, so I didn't see them fail first. The `test-rows`, reducer, stream and playback tests did fail first.
+- The T14 `index 0` fix changes behaviour in a task that was already ticked.
+- The ghost panel has no aborted or malformed state yet (T15).
+- Working-tree changes to `docs/KIRO[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=483
+_USAGE.md`, `docs/kiro-log/sessions.md` and three attempt logs were already there. I didn't touch them.
