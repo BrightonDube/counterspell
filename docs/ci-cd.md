@@ -11,7 +11,7 @@ Direct pushes to `main` are allowed (no branch protection or ruleset on `main`).
 
 | Workflow | Runs on | What it does | Gate |
 |---|---|---|---|
-| `ci.yml` | PRs, pushes to `main` and `brighton/kiro-setup`, `v*` tags | Path-filtered jobs: Rust fmt + clippy `-D warnings` + tests (Postgres 17 and Valkey 8 service containers, fails if zero tests ran); coverage with `cargo-llvm-cov` (summary in the run, lcov artifact, `COVERAGE_MIN_LINES` variable as the floor); web `svelte-check`, lint, Vitest, build; Docker build of all three targets (no push; skipped on main/tag pushes because publish-images.yml builds them) | **CI OK** (required) |
+| `ci.yml` | PRs, pushes to `main` and `brighton/kiro-setup`, `v*` tags | Path-filtered jobs: Rust fmt + clippy `-D warnings` + tests (Postgres 17 and Valkey 8 service containers, fails if zero tests ran); coverage with `cargo-llvm-cov` (summary in the run, lcov artifact, `COVERAGE_MIN_LINES` variable as the floor); web `svelte-check`, ESLint, Prettier `format:check`, Vitest (all blocking), build; Docker build of all three targets (no push; skipped on main/tag pushes because publish-images.yml builds them) | **CI OK** (required) |
 | `publish-images.yml` | Called by `ci.yml` after **CI OK** on `main` pushes and tags only | Builds and pushes `counterspell-server`, `-judge`, `-migrate` to GHCR; BuildKit provenance and SBOM; cosign keyless signature; GitHub artifact attestations for provenance and SBOM. Tags also get a GitHub release with SPDX SBOMs | only after CI passes, never from `brighton/kiro-setup` |
 | `security.yml` | Every push (any branch), PRs, weekly, manual | Gitleaks and TruffleHog over full history; forbidden-file check; CodeQL (JS/TS, Rust, Actions); Semgrep CE; cargo-deny advisories/bans/sources; `npm audit`; OSV-Scanner (report to code scanning); dependency review on PRs; actionlint and zizmor | **Security OK** (required) |
 | `scorecard.yml` | Default branch (`main`), weekly, ruleset changes | OpenSSF Scorecard to code scanning and the public badge | informational |
@@ -58,3 +58,21 @@ cosign verify ghcr.io/brightondube/counterspell-server:sha-<commit> \
   --certificate-identity-regexp '^https://github.com/BrightonDube/counterspell/\.github/workflows/publish-images\.yml@refs/(heads/main|tags/v.+)$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
+
+## Local pre-push hook
+
+`scripts/pre-push.sh` is the tracked gate. Install it in a clone with:
+
+```bash
+scripts/install-git-hooks.sh
+```
+
+That sets `core.hooksPath` to `scripts/git-hooks`, so Git runs the tracked `pre-commit` and `pre-push` wrappers. The pre-push wrapper execs `scripts/pre-push.sh`, which in order:
+
+1. Scans only the commits about to be pushed with Gitleaks (warns and continues if Gitleaks is not installed; CI still scans).
+2. `cargo fmt --all -- --check`
+3. `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
+4. `cargo test --workspace --all-features --locked`
+5. `npm run lint`, `npm run check`, `npm run test`, and `npm run build` in `web/`
+
+Any step that fails aborts the push. The hook is compatible with `/home/brighton/kiro-push-after-spec.sh`, which already re-runs the suite and then pushes as you to `brighton/kiro-setup`; Git will run this hook during that push.
