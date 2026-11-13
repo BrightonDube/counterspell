@@ -137,7 +137,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: expected/actual/difference paths are text-only, incomplete payloads produce unavailable state, authored versus AI labels are exact, timeout wording does not claim shrinking, and hidden canaries never render.
   - Preserve: the browser does not recompute or contradict the trusted engine diff.
 
-- [ ] **T17 [UI] [P] (25 min) Add authored hint ladder and AI hint display**
+- [x] **T17 [UI] [P] (25 min) Add authored hint ladder and AI hint display**
   - Files: `web/src/lib/workspace/HintPanel.svelte`, `web/src/lib/api/hints.ts`, tests.
   - Reveal authored rungs in order, preserve already revealed text, show retry/cap states, and display optional server-provided AI text with an explicit `AI hint` label. Render all hint text as plain text.
   - Depends on: T01, T16.
