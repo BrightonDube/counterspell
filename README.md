@@ -1,5 +1,10 @@
 # Counterspell
 
+[![CI](https://github.com/BrightonDube/counterspell/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/BrightonDube/counterspell/actions/workflows/ci.yml?query=branch%3Amain)
+[![Security](https://github.com/BrightonDube/counterspell/actions/workflows/security.yml/badge.svg?branch=main)](https://github.com/BrightonDube/counterspell/actions/workflows/security.yml?query=branch%3Amain)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/BrightonDube/counterspell/badge)](https://scorecard.dev/viewer/?uri=github.com/BrightonDube/counterspell)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Counterspell is a horror-themed coding practice platform. When a solution
 fails, the future judge will find and shrink a failing input into a minimized
 counterexample and explain the bug.
@@ -70,3 +75,9 @@ separate rootless sandbox daemon is documented in
 
 Counterspell is MIT licensed. Dependency and asset notices are tracked in
 `THIRD-PARTY-NOTICES.md` as they are introduced and verified.
+
+## CI/CD and security
+
+Every PR and push runs tests, coverage, linting, image builds and a security gate
+(secrets, SAST, dependency audits, workflow lint). Images are signed and attested.
+See [docs/ci-cd.md](docs/ci-cd.md) and [SECURITY.md](SECURITY.md).
