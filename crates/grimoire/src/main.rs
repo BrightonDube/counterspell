@@ -220,7 +220,13 @@ fn run(args: &[String]) -> ExitCode {
 }
 
 fn main() -> ExitCode {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    // CLI operands after argv[0]. This is a user-facing command, not a
+    // security boundary, so the Semgrep args/args_os rules do not apply.
+    // nosemgrep: rust.lang.security.args-os.args-os
+    let args: Vec<String> = std::env::args_os()
+        .skip(1)
+        .map(|s| s.to_string_lossy().into_owned())
+        .collect();
     run(&args)
 }
 

@@ -1,0 +1,36 @@
+# Weekly, grouped updates: minor+patch in one PR per ecosystem, every major on its own PR.
+# Security updates (Dependabot alerts) are separate and arrive as soon as an advisory lands.
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    open-pull-requests-limit: 5
+    groups:
+      rust-minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: npm
+    directory: /web
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    open-pull-requests-limit: 5
+    groups:
+      web-minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: github-actions
+    directories: ["/", "/.github/actions/*"]
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    groups:
+      actions-minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    groups:
+      docker-minor-patch: { update-types: [minor, patch] }
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 7 }
+    groups:
+      compose-minor-patch: { update-types: [minor, patch] }
