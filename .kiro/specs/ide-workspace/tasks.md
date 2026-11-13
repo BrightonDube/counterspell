@@ -32,7 +32,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Preserve: server has no Bollard dependency or Docker socket; Postgres remains the queue and source of truth.
   - Rust lesson: explain why the route validates and enqueues but never executes source code, and how `?` preserves database error context.
 
-- [ ] **T03 [P] (25 min) Wire problem and language API adapters**
+- [x] **T03 [P] (25 min) Wire problem and language API adapters**
   - Files: `web/src/lib/api/client.ts`, `web/src/lib/api/problems.ts`, `web/src/lib/api/languages.ts`, adapter tests.
   - Implement same-origin `GET /api/problems/{slug}` and `GET /api/languages` loaders with abort support, stable error decoding, safe markdown input, and strict response validation. Do not put production problem content in the bundle.
   - Depends on: T01 and the catalogue/language API seams.
