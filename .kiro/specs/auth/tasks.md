@@ -165,7 +165,7 @@ Conventions for every Rust task:
   - Preserve: the Resend key is never logged; nothing builds a link from a request header.
   - Rust lesson: traits and `Arc<dyn Trait>` for swappable implementations.
 
-- [ ] **T15 [S] (30 min) Auth rate limits and client IP (property P19)**
+- [x] **T15 [S] (30 min) Auth rate limits and client IP (property P19)**
   - Files: `crates/server/src/auth/limits.rs`, and `crates/server/src/{net.rs,limits.rs}` only if `run-lifecycle` has not created `ClientIp` and the fixed-window counter.
   - `AuthLimiter` over the shared window counter: actions, scopes and limits from `design.md`; keys `rl:auth:<action>:<scope>:<hmac_hex>` using HMAC-SHA256 with `SESSION_SECRET`; `Retry-After` computation; fail-closed for mail actions and the daily cap, fail-open (with a warning) for others; a store trait with an in-memory fake for tests.
   - Tests: request `limit + 1` is refused with `retry_after >= 1`; a refused request does not consume another unit; scopes are independent; keys contain no raw email or IP; Valkey down gives `EmailUnavailable` for mail actions and allows login attempts; daily cap blocks at 80 and resets the next UTC day. A `valkey_` test runs the same checks against real Valkey.
