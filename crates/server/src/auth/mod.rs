@@ -25,6 +25,7 @@ pub mod config;
 pub mod cookies;
 pub mod csrf;
 pub mod decision;
+pub mod demo;
 pub mod email;
 pub mod errors;
 pub mod extract;
