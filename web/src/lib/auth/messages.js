@@ -34,3 +34,13 @@ export const ERROR_MESSAGES = Object.freeze({
 export function messageFor(code) {
   return ERROR_MESSAGES[code] ?? ERROR_MESSAGES.internal_error;
 }
+
+/**
+ * The plain sentence for the `error` code in a query string, or `null` when there is none.
+ * @param {string} search a query string such as `?error=invalid_credentials`
+ * @returns {string | null}
+ */
+export function errorFromQuery(search) {
+  const code = new URLSearchParams(search).get('error');
+  return code ? messageFor(code) : null;
+}
