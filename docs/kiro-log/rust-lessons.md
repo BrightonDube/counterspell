@@ -509,3 +509,10 @@ Clippy warns about `async fn` with no `.await`. Returning `std::future::ready(re
 A tree-sitter tree can be deep, so the code that finds the first error walks it with a cursor in a loop, not with recursion. A recursive walk could overflow the stack on hostile input.
 `std::str::from_utf8` is the safe way to check text: it returns `Err` on bad bytes and never panics.
 Proptest feeds random bytes into the validator. It checks that the code never panics, which matters because this runs on untrusted input.
+
+# Rust lesson: run-lifecycle T23
+
+A trait with `async` methods can be called through generics, but it cannot be stored as a `dyn` object without boxing. So the server stores one concrete `Limiter` enum and matches on it. The enum implements the trait, so callers see only the trait.
+The Lua script runs in Valkey as one step, so no other client can slip between the increment and the expiry. A Rust `async` block cannot give that guarantee, so the logic lives in the script.
+`Result` is not the right type for a rate-limit outage. The policy is to allow the run and log it, so the limiter returns a `Decision::SkippedFailOpen` variant instead of an error the caller might forget to handle.
+`Sha256::digest` hashes the client address before it becomes a key. The raw address never reaches Valkey.

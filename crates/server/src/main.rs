@@ -2,7 +2,10 @@
 
 use std::io;
 
-use counterspell_server::{build_router, config::ServerConfig, ensure_static_files, AppState};
+use counterspell_server::{
+    build_router, config::ServerConfig, ensure_static_files, ratelimit::Limiter,
+    ratelimit::ValkeyLimiter, AppState,
+};
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
 
@@ -36,7 +39,17 @@ async fn main() -> Result<(), io::Error> {
         )
     })?;
 
-    axum::serve(listener, build_router(AppState::new(pool, config)))
-        .await
-        .map_err(|error| io::Error::other(format!("server stopped unexpectedly: {error}")))
+    let limiter = ValkeyLimiter::open(&config.valkey_url).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "VALKEY_URL is not a valid Valkey URL",
+        )
+    })?;
+
+    axum::serve(
+        listener,
+        build_router(AppState::new(pool, config, Limiter::Valkey(limiter))),
+    )
+    .await
+    .map_err(|error| io::Error::other(format!("server stopped unexpectedly: {error}")))
 }

@@ -8,6 +8,7 @@
 
 pub mod config;
 pub mod error;
+pub mod ratelimit;
 pub mod seams;
 #[cfg(feature = "testkit")]
 pub mod testkit;
@@ -31,6 +32,7 @@ use tower_http::{
 use crate::{
     config::ServerConfig,
     error::ApiError,
+    ratelimit::Limiter,
     seams::{EmptyCatalogue, LanguageCatalog, ProblemLookup, Unauthenticated, UserResolver},
 };
 
@@ -47,12 +49,14 @@ pub struct AppState {
     pub problems: Arc<dyn ProblemLookup>,
     /// The accepted languages and source limits.
     pub languages: Arc<LanguageCatalog>,
+    /// Counts run submissions per user and per IP address.
+    pub limiter: Limiter,
 }
 
 impl AppState {
-    /// Bundles a pool and the settings, with the production seams.
+    /// Bundles a pool, the settings and the rate limiter, with the production seams.
     #[must_use]
-    pub fn new(pool: PgPool, config: ServerConfig) -> Self {
+    pub fn new(pool: PgPool, config: ServerConfig, limiter: Limiter) -> Self {
         let languages = LanguageCatalog::launch(config.limits.max_source_bytes);
         Self {
             pool,
@@ -60,6 +64,7 @@ impl AppState {
             user_resolver: Arc::new(Unauthenticated),
             problems: Arc::new(EmptyCatalogue),
             languages: Arc::new(languages),
+            limiter,
         }
     }
 
