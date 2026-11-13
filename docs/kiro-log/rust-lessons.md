@@ -564,3 +564,10 @@ Proptest checks the rules on thousands of random inputs. A property that fails p
 `Option<&str>` is a borrowed, optional value. The function returns an owned `String` because the default and the accepted path must outlive the request body.
 A `match` guard (`Some(raw) if ...`) checks the value and binds it in one step. Anything that does not match falls through to the safe default.
 `percent_decode_str` returns a `Cow<str>`. The check runs on the decoded text too, so an encoded `%2f%2f` cannot slip past a check on the raw text.
+
+# Rust lesson: auth T05
+
+`RawToken::generate` returns `Result`, because the operating system's random source can fail. The error becomes `AuthError::Internal` instead of a panic, so the caller decides what to do.
+`#[derive(Debug)]` is not used on `RawToken`. A hand-written `Debug` keeps the secret text out of logs, and the type does not derive `Clone`, so copies of the secret are deliberate.
+`Sha256::digest(...).into()` turns the hash output into a plain `[u8; 32]`. A fixed-size array can be compared, copied and used as a map key.
+`proptest!` runs one property over many random inputs. The model (`model_valid`) is written separately from the code under test, so the test cannot pass by copying the implementation.
