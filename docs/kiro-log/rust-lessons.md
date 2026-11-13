@@ -470,3 +470,9 @@ Naming: the design sketch reused `ClaimedRun`, which already exists in the queue
 `tokio::spawn` runs a task on its own. Aborting the task that spawned it does not stop the child, so a heartbeat needs an explicit stop. `JoinHandle::abort_handle` lets the caller stop a task even after `timeout` has taken the handle.
 A `JoinError` from a spawned task is how a panic reaches the caller. The worker turns it into a retry, so one bad run cannot stop the worker.
 `Arc<Self>` lets several spawned tasks share the worker without copying it. The `Semaphore` permit moves into the task, so the slot frees itself when the run ends.
+
+# Rust lesson: run-lifecycle T17 (crash fix)
+
+Dropping a future cancels it. The worker now keeps its heartbeat as a future inside the run's own task, so a dropped worker stops renewing its lease.
+`AbortOnDrop` is a small guard with a `Drop` impl. When the run's task is dropped, the guard aborts the spawned program too. Drop runs on every exit path, so cleanup cannot be forgotten.
+`tokio::select!` with `if !flag` skips a branch once it is done. `std::pin::pin!` pins a future on the stack so it can be polled again in a loop.

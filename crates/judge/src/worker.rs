@@ -135,7 +135,9 @@ impl<E: RunExecutor> Worker<E> {
 
         let reason = Arc::new(Mutex::new(StopReason::Running));
         let (stop_tx, stop_rx) = watch::channel(false);
-        let heartbeat = tokio::spawn(heartbeat(
+        // The heartbeat is a future of this task, not a separate task. If this task is dropped
+        // (a crash or an abort), renewal stops with it, so the lease can expire and be reaped.
+        let mut beat = std::pin::pin!(heartbeat(
             self.pool.clone(),
             self.cfg.clone(),
             token.clone(),
@@ -156,19 +158,28 @@ impl<E: RunExecutor> Worker<E> {
         let ctx = RunContext::for_queue(self.pool.clone(), token.clone(), attempt, stop_rx);
         let executor = Arc::clone(&self.executor);
         // Running the executor in its own task means a panic becomes a join error here.
-        let run = tokio::spawn(async move { executor.execute(input, ctx).await });
-        let abort = run.abort_handle();
-        let joined = tokio::time::timeout(hard_deadline(&self.cfg), run).await;
-        heartbeat.abort();
+        let mut run = tokio::spawn(async move { executor.execute(input, ctx).await });
+        let guard = AbortOnDrop(run.abort_handle());
+        let mut deadline = std::pin::pin!(tokio::time::sleep(hard_deadline(&self.cfg)));
+        let mut heartbeat_done = false;
+        // Wait for the executor to finish. Keep the heartbeat running alongside it until the
+        // heartbeat stops, and give up when the hard deadline passes.
+        let joined = loop {
+            tokio::select! {
+                result = &mut run => break Some(result),
+                () = &mut beat, if !heartbeat_done => heartbeat_done = true,
+                () = &mut deadline => break None,
+            }
+        };
         let why = reason.lock().map_or(StopReason::Running, |guard| *guard);
 
         match joined {
-            Err(_elapsed) => {
-                abort.abort();
+            None => {
+                guard.stop();
                 self.release(&token, "hard deadline reached").await;
             }
-            Ok(Err(_join_error)) => self.release(&token, "executor panicked").await,
-            Ok(Ok(outcome)) => self.settle(&token, outcome, why).await,
+            Some(Err(_join_error)) => self.release(&token, "executor panicked").await,
+            Some(Ok(outcome)) => self.settle(&token, outcome, why).await,
         }
     }
 
@@ -211,6 +222,22 @@ impl<E: RunExecutor> Worker<E> {
                 .await
                 .map(|_| ()),
         );
+    }
+}
+
+/// Aborts the executor task when dropped. A dropped worker therefore never leaves a program running.
+struct AbortOnDrop(tokio::task::AbortHandle);
+
+impl AbortOnDrop {
+    /// Stops the executor task now.
+    fn stop(&self) {
+        self.0.abort();
+    }
+}
+
+impl Drop for AbortOnDrop {
+    fn drop(&mut self) {
+        self.stop();
     }
 }
 

@@ -10,13 +10,17 @@
 //!
 //! Run with `cargo test -p counterspell-judge --test worker -- --ignored pg_`.
 
-use counterspell_common::status::FailureReason;
+use counterspell_common::events::PublicEvent;
+use counterspell_common::status::{FailureReason, TestVerdict, Verdict};
 use counterspell_judge::config::JudgeConfig;
 use counterspell_judge::executor::{ExecError, RunContext, RunExecutor, RunInput, RunOutcome};
+use counterspell_judge::queue::finish::{FinalResult, TestRecord};
+use counterspell_judge::queue::reap::reap_once;
 use counterspell_judge::testkit::{assert_invariants, seed_run, Script, ScriptedExecutor};
 use counterspell_judge::worker::Worker;
 use sqlx::PgPool;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{mpsc, watch};
 use uuid::Uuid;
 
@@ -312,5 +316,138 @@ async fn pg_worker_hard_deadline_releases_stuck_executor_real_time(pool: PgPool)
         state(&pool, run.as_uuid()).await,
         ("queued".into(), "queued".into(), 1)
     );
+    assert_invariants(&pool).await.unwrap();
+}
+
+/// Sets a cancel while it runs, then ignores the stop signal and returns a full verdict.
+/// The heartbeat sees the cancel, but a verdict the program already produced must stand.
+struct CancelThenComplete {
+    pool: PgPool,
+    run: Uuid,
+}
+
+impl RunExecutor for CancelThenComplete {
+    async fn execute(&self, _run: RunInput, ctx: RunContext) -> Result<RunOutcome, ExecError> {
+        // A real run compiles before it can end with a verdict.
+        ctx.emit(&PublicEvent::Compiling).await?;
+        sqlx::query("UPDATE jobs SET cancel_requested_at = now() WHERE submission_id = $1")
+            .bind(self.run)
+            .execute(&self.pool)
+            .await
+            .map_err(|_| ExecError::Infrastructure("cancel could not be set".to_owned()))?;
+        // Wait past one heartbeat (one second here), so the heartbeat has seen the cancel.
+        tokio::time::sleep(Duration::from_millis(1500)).await;
+        Ok(RunOutcome::Completed(FinalResult {
+            verdict: Verdict::Accepted,
+            passed: 1,
+            total: 1,
+            score: 100,
+            runtime_ms: 1,
+            compile_output: None,
+            tests: vec![TestRecord::Hidden {
+                ordinal: 1,
+                verdict: TestVerdict::Pass,
+                time_ms: 1,
+            }],
+        }))
+    }
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_cancel_vs_complete_race_real_time(pool: PgPool) {
+    let run = seed_run(&pool).await.unwrap();
+    let worker = Worker::new(
+        pool.clone(),
+        fast_heartbeat(),
+        CancelThenComplete {
+            pool: pool.clone(),
+            run: run.as_uuid(),
+        },
+        "judge-a".to_owned(),
+    );
+
+    assert!(worker.process_next().await.unwrap());
+
+    // The verdict the program produced is kept, and the cancel does not overwrite it.
+    let (status, verdict): (String, Option<String>) =
+        sqlx::query_as("SELECT status, verdict FROM submissions WHERE id = $1")
+            .bind(run.as_uuid())
+            .fetch_one(&pool)
+            .await
+            .unwrap();
+    assert_eq!(status, "completed");
+    assert_eq!(verdict.as_deref(), Some(Verdict::Accepted.as_str()));
+    assert_eq!(state(&pool, run.as_uuid()).await.1, "succeeded");
+    assert_invariants(&pool).await.unwrap();
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_crash_recovery_real_time(pool: PgPool) {
+    let run = seed_run(&pool).await.unwrap();
+    let cfg = fast_heartbeat();
+    let (started_tx, mut started_rx) = mpsc::unbounded_channel();
+    let first = Worker::new(
+        pool.clone(),
+        cfg.clone(),
+        Announcing {
+            started: started_tx,
+        },
+        "judge-a".to_owned(),
+    );
+    let crashing = tokio::spawn(async move { first.process_next().await });
+    started_rx.recv().await.expect("the first attempt started");
+
+    // Crash: the worker task is dropped mid-run. Its heartbeat and program stop with it.
+    crashing.abort();
+    let _cancelled = crashing.await;
+
+    // Nothing renews the lease now. Wait for it to run out in real time, then reap the run.
+    tokio::time::sleep(cfg.lease + Duration::from_millis(500)).await;
+    reap_once(&pool, &cfg).await.unwrap();
+    assert_eq!(
+        state(&pool, run.as_uuid()).await,
+        ("queued".into(), "queued".into(), 1)
+    );
+    // The retry waits out a backoff. Clear it with SQL so the test does not sleep for it.
+    sqlx::query("UPDATE jobs SET run_after = now() WHERE submission_id = $1")
+        .bind(run.as_uuid())
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let second = Worker::new(
+        pool.clone(),
+        config(),
+        ScriptedExecutor::new(Script::Pass {
+            tests: 2,
+            delay: Duration::ZERO,
+        }),
+        "judge-b".to_owned(),
+    );
+    assert!(second.process_next().await.unwrap());
+
+    assert_eq!(
+        state(&pool, run.as_uuid()).await,
+        ("completed".into(), "succeeded".into(), 1)
+    );
+    // The retry opens with `restarted`, and the run has exactly one terminal event.
+    let first_of_retry: String = sqlx::query_scalar(
+        "SELECT type FROM run_events WHERE submission_id = $1 AND attempt = 2 ORDER BY seq LIMIT 1",
+    )
+    .bind(run.as_uuid())
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(first_of_retry, "restarted");
+    let terminal: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM run_events WHERE submission_id = $1 AND type IN ('done', 'error')",
+    )
+    .bind(run.as_uuid())
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(terminal, 1);
     assert_invariants(&pool).await.unwrap();
 }
