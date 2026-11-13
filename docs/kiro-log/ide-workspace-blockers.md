@@ -47,3 +47,7 @@ Newly done: T06 (statement panel), T07 (lazy Monaco and Crypt theme). T09 is bui
 - **New dependency (T07).** `monaco-editor` 0.57.0 (MIT), recorded in `THIRD-PARTY-NOTICES.md`, with its transitive `marked` (MIT), `dompurify` (MPL-2.0 OR Apache-2.0, used under Apache-2.0) and `@types/trusted-types` (MIT). The lockfile also dropped unused `jsdom` and helper packages. Tests and build pass after that change.
 - **Pre-existing lint error (not from this pass).** `web/src/lib/api/client.ts` lines 137–138 (T03) fail `no-useless-assignment`. `npm run lint` will fail until those initialisers are removed. The required gate (`check`, `test`, `build`) passes.
 - **T10 and T17 still partial.** T10 needs `StatusAnnouncer.svelte` and the Run/Submit wiring (T13). T17 needs the AI text contract.
+
+## Attempt 3 update (13 Nov 2026, evening)
+
+- **T11 done (reconciliation needed).** Added `web/src/lib/runs/reducer.ts`, `stream.ts` and `api.ts` with tests. These cover the same work as run-lifecycle T32 (pure reducer) and T33 (stream client). Brighton or the run-lifecycle run should mark those two tasks as done against this commit instead of writing them again. The shared JSON client gained an optional `headers` field for `Idempotency-Key`. Lint errors in `client.ts` (`no-useless-assignment`, noted in attempt 2) are fixed.

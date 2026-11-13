@@ -92,6 +92,8 @@ export type HttpMethod = 'GET' | 'POST' | 'PATCH';
 /** Options for a JSON request. `body` is sent as JSON when it is not undefined. */
 export interface JsonRequestOptions extends RequestOptions {
   body?: unknown;
+  /** Extra request headers, for example `Idempotency-Key`. */
+  headers?: Record<string, string>;
 }
 
 /** Sends a same-origin JSON request and parses the response with `parse`. */
@@ -116,6 +118,15 @@ export function getJson<T>(
   return sendRequest('GET', path, parse, options);
 }
 
+function requestHeaders(options: JsonRequestOptions): Record<string, string> {
+  const headers: Record<string, string> = {
+    accept: 'application/json',
+    ...options.headers
+  };
+  if (options.body !== undefined) headers['content-type'] = 'application/json';
+  return headers;
+}
+
 async function sendRequest<T>(
   method: HttpMethod,
   path: string,
@@ -134,16 +145,13 @@ async function sendRequest<T>(
   if (options.signal?.aborted) controller.abort();
   options.signal?.addEventListener('abort', onCallerAbort, { once: true });
 
-  let status = 0;
-  let text = '';
+  let status: number;
+  let text: string;
   try {
     const response = await fetchImpl(path, {
       method,
       credentials: 'same-origin',
-      headers:
-        options.body === undefined
-          ? { accept: 'application/json' }
-          : { accept: 'application/json', 'content-type': 'application/json' },
+      headers: requestHeaders(options),
       body:
         options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: controller.signal
