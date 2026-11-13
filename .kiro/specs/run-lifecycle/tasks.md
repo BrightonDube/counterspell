@@ -269,7 +269,7 @@ Conventions for every Rust task:
   - Preserve: absent sections stay absent, never fabricated.
   - Rust lesson: serialising structs with `serde` and optional fields.
 
-- [ ] **T27 [S] (25 min) `POST /api/runs/{id}/cancel`**
+- [x] **T27 [S] (25 min) `POST /api/runs/{id}/cancel`**
   - Files: `crates/server/src/runs/cancel.rs`, `crates/server/tests/cancel.rs`.
   - Implement Path 8: owner-scoped `UPDATE jobs … cancel_requested_at`, `NOTIFY run_cancel` and `run_jobs`, `202` or `200`, common `404`. Require `Content-Type: application/json`. Cancel consumes no quota.
   - Tests with the real worker (T17) and the scripted executor: `pg_cancel_queued`, `pg_cancel_running`, `pg_cancel_after_done` (no change, `200`), `pg_cancel_foreign` (`404`, no flag set), `pg_cancel_twice`, `pg_cancel_never_yields_both_done_and_error`.
