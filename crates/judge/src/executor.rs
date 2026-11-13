@@ -174,3 +174,22 @@ impl RunContext {
         }
     }
 }
+
+/// The executor used until the sandbox runner exists. It never produces a verdict.
+///
+/// Every run it receives fails as an infrastructure error. The worker retries it, and after
+/// the last attempt the run ends as `internal_error`, never as a wrong answer.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct NoExecutor;
+
+impl RunExecutor for NoExecutor {
+    fn execute(
+        &self,
+        _run: RunInput,
+        _ctx: RunContext,
+    ) -> impl std::future::Future<Output = Result<RunOutcome, ExecError>> + Send {
+        std::future::ready(Err(ExecError::Infrastructure(
+            "no executor configured".to_owned(),
+        )))
+    }
+}
