@@ -160,22 +160,55 @@ jobs:
         run: npm audit --audit-level=high
 
   deps-osv:
-    name: Deps / OSV-Scanner (all lockfiles)
+    # Report, not a gate: findings go to Security > Code scanning and the run summary.
+    # High/critical advisories already block via npm audit, cargo-deny and dependency review.
+    name: Deps / OSV-Scanner (all lockfiles, report)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
       contents: read
+      security-events: write # upload SARIF to code scanning
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Scan Cargo.lock, package-lock.json and Dockerfile bases against OSV.dev
+      - name: Scan Cargo.lock and package-lock.json against OSV.dev (SARIF)
+        id: scan
+        continue-on-error: true # exit 1 just means "vulnerabilities found"; they are reported below
         uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
         with:
           scan-args: |-
+            --format=sarif
+            --output=osv-results.sarif
             --recursive
             ./
+      - name: Same scan as a table for the run summary
+        continue-on-error: true
+        uses: google/osv-scanner-action/osv-scanner-action@32d3cd482bdadfb38b186c0ad1b031902d55d932 # v2.7.1
+        with:
+          scan-args: |-
+            --format=markdown
+            --output=osv-results.md
+            --recursive
+            ./
+      - name: Write summary
+        env:
+          OUTCOME: ${{ steps.scan.outcome }}
+        run: |
+          {
+            echo "### OSV-Scanner"
+            if [ -s osv-results.md ]; then cat osv-results.md; else echo "No known vulnerabilities."; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "::warning title=OSV-Scanner::Known vulnerabilities in dependencies; see the run summary and Security > Code scanning."
+          fi
+          test -s osv-results.sarif || { echo "::error::OSV-Scanner produced no SARIF (scanner error, not findings)"; exit 1; }
+      - name: Upload to code scanning
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: osv-results.sarif
+          category: osv-scanner
 
   dependency-review:
     name: Deps / Dependency review (PR diff)
