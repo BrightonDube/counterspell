@@ -39,7 +39,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: loading, 401, 404, malformed JSON, timeout, and abort tests; no secrets or raw server error internals are exposed.
   - Preserve: enabled language flags from the server are authoritative.
 
-- [ ] **T04 [P] (25 min) Add the fixture-only prototype route boundary**
+- [x] **T04 [P] (25 min) Add the fixture-only prototype route boundary**
   - Files: `web/src/routes/prototype/ide-workspace/+page.svelte`, fixture module under `web/src/lib/prototype/`, route tests.
   - Create a visually useful shell fixture for UI work that has a persistent, high-contrast `Prototype fixture — not a real run` banner. Use unmistakable fixture ids and prevent fixture actions from calling production run endpoints.
   - Depends on: T01.
