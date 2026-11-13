@@ -145,7 +145,7 @@ Conventions for every Rust task:
 
 ## Wave 3: tokens, mail, limits, request hardening, magic link
 
-- [ ] **T13 [S] (30 min) `TokenStore` (properties P1, P2, P3, P4)** [SUPERVISED]
+- [x] **T13 [S] (30 min) `TokenStore` (properties P1, P2, P3, P4)** [SUPERVISED]
   - Files: `crates/server/src/auth/tokens.rs`, `crates/server/tests/pg_auth_tokens.rs`.
   - `TokenStore::{issue, peek, consume}` with the exact SQL of `design.md` (supersede then insert in one transaction; one-statement consume with purpose, expiry, used and bound-user checks). Any failure returns `InvalidOrExpired`.
   - Tests (`pg_`, `ManualClock`): 32 concurrent consumers of one token produce exactly one success (P1); consume at `t` succeeds iff the model says valid, including the exact boundary at 15 minutes (P2); a token never validates for another purpose; issuing again supersedes the earlier token and leaves one live token per (email, purpose) (P3); after random operations no table contains a raw token (P4); `link_email` with the wrong bound user fails without marking the token used.
