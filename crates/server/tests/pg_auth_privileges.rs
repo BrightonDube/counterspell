@@ -8,7 +8,13 @@
 
 use sqlx::PgPool;
 
-const AUTH_TABLES: [&str; 5] = ["users", "identities", "email_tokens", "sessions", "oauth_flows"];
+const AUTH_TABLES: [&str; 5] = [
+    "users",
+    "identities",
+    "email_tokens",
+    "sessions",
+    "oauth_flows",
+];
 
 async fn role_can(pool: &PgPool, role: &str, table: &str, privilege: &str) -> bool {
     let (granted,): (bool,) = sqlx::query_as("SELECT has_table_privilege($1, $2, $3)")
@@ -36,7 +42,15 @@ async fn column_can(pool: &PgPool, role: &str, table: &str, column: &str) -> boo
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_judge_role_and_public_have_no_privilege_on_auth_tables(pool: PgPool) {
     for table in AUTH_TABLES {
-        for privilege in ["SELECT", "INSERT", "UPDATE", "DELETE", "TRUNCATE", "REFERENCES", "TRIGGER"] {
+        for privilege in [
+            "SELECT",
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "TRUNCATE",
+            "REFERENCES",
+            "TRIGGER",
+        ] {
             assert!(
                 !role_can(&pool, "counterspell_judge", table, privilege).await,
                 "judge must not have {privilege} on {table}"
@@ -59,7 +73,10 @@ async fn pg_judge_role_and_public_have_no_privilege_on_auth_tables(pool: PgPool)
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_server_role_cannot_truncate_or_change_the_demo_columns(pool: PgPool) {
     for table in AUTH_TABLES {
-        assert!(!role_can(&pool, "counterspell_server", table, "TRUNCATE").await, "{table}");
+        assert!(
+            !role_can(&pool, "counterspell_server", table, "TRUNCATE").await,
+            "{table}"
+        );
     }
     for column in ["handle", "is_demo", "demo_reset_at"] {
         assert!(

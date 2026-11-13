@@ -44,7 +44,10 @@ async fn pg_the_demo_account_cannot_be_created_directly(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_the_demo_account_cannot_be_deleted_changed_or_given_identities(pool: PgPool) {
     let demo = seed(&pool, "judge@example.co").await.expect("seed");
-    let delete = sqlx::query("DELETE FROM users WHERE id = $1").bind(demo).execute(&pool).await;
+    let delete = sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(demo)
+        .execute(&pool)
+        .await;
     assert!(delete.is_err(), "delete");
 
     let email_change = sqlx::query("UPDATE users SET email = 'other@example.co' WHERE id = $1")
@@ -74,12 +77,11 @@ async fn pg_seeding_creates_exactly_one_demo_account_and_is_idempotent(pool: PgP
     let first = seed(&pool, "judge@example.co").await.expect("first seed");
     let second = seed(&pool, "judge@example.co").await.expect("second seed");
     assert_eq!(first, second, "the same row is updated");
-    let (count, handle): (i64, String) = sqlx::query_as(
-        "SELECT count(*), max(handle::text) FROM users WHERE is_demo",
-    )
-    .fetch_one(&pool)
-    .await
-    .expect("count");
+    let (count, handle): (i64, String) =
+        sqlx::query_as("SELECT count(*), max(handle::text) FROM users WHERE is_demo")
+            .fetch_one(&pool)
+            .await
+            .expect("count");
     assert_eq!(count, 1);
     assert_eq!(handle, "demo");
 }
@@ -88,18 +90,23 @@ async fn pg_seeding_creates_exactly_one_demo_account_and_is_idempotent(pool: PgP
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_only_the_server_role_may_run_the_demo_functions(pool: PgPool) {
     for signature in ["cs_reset_demo_account()", "cs_seed_demo_user(text, text)"] {
-        let (server,): (bool,) = sqlx::query_as("SELECT has_function_privilege('counterspell_server', $1, 'EXECUTE')")
-            .bind(signature)
-            .fetch_one(&pool)
-            .await
-            .expect("server");
-        let (judge,): (bool,) = sqlx::query_as("SELECT has_function_privilege('counterspell_judge', $1, 'EXECUTE')")
-            .bind(signature)
-            .fetch_one(&pool)
-            .await
-            .expect("judge");
+        let (server,): (bool,) =
+            sqlx::query_as("SELECT has_function_privilege('counterspell_server', $1, 'EXECUTE')")
+                .bind(signature)
+                .fetch_one(&pool)
+                .await
+                .expect("server");
+        let (judge,): (bool,) =
+            sqlx::query_as("SELECT has_function_privilege('counterspell_judge', $1, 'EXECUTE')")
+                .bind(signature)
+                .fetch_one(&pool)
+                .await
+                .expect("judge");
         assert!(server, "{signature} must be executable by the server role");
-        assert!(!judge, "{signature} must not be executable by the judge role");
+        assert!(
+            !judge,
+            "{signature} must not be executable by the judge role"
+        );
     }
 }
 
@@ -126,7 +133,7 @@ async fn pg_reset_removes_only_the_demo_finished_rows_and_keeps_other_users(pool
         (other, "completed", true),
     ] {
         let verdict = (status == "completed").then_some("accepted");
-        let finished_at = finished.then(|| "now()");
+        let finished_at = finished.then_some("now()");
         sqlx::query(&format!(
             "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256,
                                      status, verdict, finished_at)
@@ -177,20 +184,23 @@ async fn pg_reset_removes_only_the_demo_finished_rows_and_keeps_other_users(pool
     .expect("running");
     assert_eq!(demo_running, 1, "a running submission survives the reset");
 
-    let (demo_scores,): (i64,) = sqlx::query_as("SELECT count(*) FROM demo_scores WHERE user_id = $1")
-        .bind(demo)
-        .fetch_one(&pool)
-        .await
-        .expect("scores");
-    assert_eq!(demo_scores, 0, "the generic loop removes the demo's other rows");
+    let (demo_scores,): (i64,) =
+        sqlx::query_as("SELECT count(*) FROM demo_scores WHERE user_id = $1")
+            .bind(demo)
+            .fetch_one(&pool)
+            .await
+            .expect("scores");
+    assert_eq!(
+        demo_scores, 0,
+        "the generic loop removes the demo's other rows"
+    );
 
-    let (xp, streak, reset_at): (i32, i32, Option<time::OffsetDateTime>) = sqlx::query_as(
-        "SELECT xp, streak_days, demo_reset_at FROM users WHERE id = $1",
-    )
-    .bind(demo)
-    .fetch_one(&pool)
-    .await
-    .expect("counters after");
+    let (xp, streak, reset_at): (i32, i32, Option<time::OffsetDateTime>) =
+        sqlx::query_as("SELECT xp, streak_days, demo_reset_at FROM users WHERE id = $1")
+            .bind(demo)
+            .fetch_one(&pool)
+            .await
+            .expect("counters after");
     assert_eq!((xp, streak), (0, 0));
     assert!(reset_at.is_some());
 
@@ -201,5 +211,8 @@ async fn pg_reset_removes_only_the_demo_finished_rows_and_keeps_other_users(pool
     .fetch_all(&pool)
     .await
     .expect("after");
-    assert_eq!(other_before, other_after, "another user's rows are unchanged");
+    assert_eq!(
+        other_before, other_after,
+        "another user's rows are unchanged"
+    );
 }
