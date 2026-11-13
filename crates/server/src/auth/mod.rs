@@ -18,6 +18,7 @@ pub mod capabilities;
 pub mod clock;
 pub mod config;
 pub mod cookies;
+pub mod csrf;
 pub mod decision;
 pub mod email;
 pub mod errors;
@@ -57,10 +58,11 @@ impl AuthState {
 ///
 /// The cookie middleware sits on this router, so each handler can fill the cookie slot.
 pub fn router(state: AuthState) -> Router {
-    Router::new()
+    let routes = Router::new()
         .route("/api/auth/logout", post(handlers::session::logout))
         .route("/api/auth/logout-all", post(handlers::session::logout_all))
         .route("/api/me", get(handlers::me::me))
         .layer(middleware::from_fn(cookies::session_cookie))
-        .with_state(state)
+        .with_state(state);
+    csrf::json_body_guard_layer(routes)
 }
