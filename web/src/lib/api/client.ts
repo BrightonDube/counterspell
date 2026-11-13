@@ -87,14 +87,40 @@ function failureFromResponse(status: number, text: string): ApiRequestError {
   return new ApiRequestError(status, fallback.code, fallback.message);
 }
 
+export type HttpMethod = 'GET' | 'POST' | 'PATCH';
+
+/** Options for a JSON request. `body` is sent as JSON when it is not undefined. */
+export interface JsonRequestOptions extends RequestOptions {
+  body?: unknown;
+}
+
+/** Sends a same-origin JSON request and parses the response with `parse`. */
+export function requestJson<T>(
+  method: HttpMethod,
+  path: string,
+  parse: (raw: unknown) => T,
+  options: JsonRequestOptions = {}
+): Promise<T> {
+  return sendRequest(method, path, parse, options);
+}
+
 /**
  * Sends a same-origin GET and parses the JSON body with `parse`.
  * Throws ApiRequestError for every failure, including malformed JSON and contract violations.
  */
-export async function getJson<T>(
+export function getJson<T>(
   path: string,
   parse: (raw: unknown) => T,
   options: RequestOptions = {}
+): Promise<T> {
+  return sendRequest('GET', path, parse, options);
+}
+
+async function sendRequest<T>(
+  method: HttpMethod,
+  path: string,
+  parse: (raw: unknown) => T,
+  options: JsonRequestOptions
 ): Promise<T> {
   const fetchImpl = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
@@ -112,9 +138,14 @@ export async function getJson<T>(
   let text = '';
   try {
     const response = await fetchImpl(path, {
-      method: 'GET',
+      method,
       credentials: 'same-origin',
-      headers: { accept: 'application/json' },
+      headers:
+        options.body === undefined
+          ? { accept: 'application/json' }
+          : { accept: 'application/json', 'content-type': 'application/json' },
+      body:
+        options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: controller.signal
     });
     status = response.status;
