@@ -142,7 +142,7 @@ Conventions for every Rust task:
   - Preserve: `attempts` never exceeds `max_attempts`.
   - Rust lesson: `Result` error variants for expected outcomes (`LeaseLost` is not a crash).
 
-- [ ] **T14 [S] [SUPERVISED] (30 min) Terminal write**
+- [x] **T14 [S] [SUPERVISED] (30 min) Terminal write**
   - Files: `crates/judge/src/queue/finish.rs`, `crates/judge/tests/finish.rs`.
   - Implement `finish(pool, &ClaimToken, FinalResult)` and `finish_failed(pool, &ClaimToken, FailureReason)` as in `design.md` Path 5. `FinalResult` holds verdict, counts, score, timings, and the list of `TestRecord` (`Sample` with detail, `Hidden` without). The `done` payload and the stored columns are built from the same value. Hidden records must have null snippets (the type has no place for them).
   - Tests: `pg_terminal_write_exactly_once` (two tasks race to finish with the same fence; exactly one succeeds, one terminal event, `test_results` once); `pg_stale_owner_finish_rejected` (P4); `pg_finish_writes_done_event_matching_columns`; `pg_finish_failed_cancelled_shape`; `pg_second_terminal_event_rejected` (direct SQL); `pg_finish_is_atomic` (fault injected after `test_results` insert leaves nothing).
