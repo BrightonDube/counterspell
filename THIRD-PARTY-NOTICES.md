@@ -19,6 +19,9 @@ The test dependency tree also includes `autocfg 1.5.0` and `libc 0.2.191`.
 These crates retain their upstream MIT, Apache-2.0, or MIT/Apache-2.0
 licensing as recorded in `Cargo.lock` and the crates.io package metadata.
 
+- **uuid 1.29.2** — The uuid contributors — Apache-2.0 OR MIT —
+  <https://crates.io/crates/uuid> (run-lifecycle T01, shared run ids)
+
 ## Development dependencies
 
 - **proptest 1.12.0** — The proptest contributors — MIT OR Apache-2.0 —

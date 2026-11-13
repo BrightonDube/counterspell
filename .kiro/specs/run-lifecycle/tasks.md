@@ -17,7 +17,7 @@ Conventions for every Rust task:
 
 ## Wave 0: shared types, state machine and schema
 
-- [ ] **T01 [S] (25 min) Prepare `counterspell-common` for shared run types**
+- [x] **T01 [S] (25 min) Prepare `counterspell-common` for shared run types**
   - Files: `crates/common/Cargo.toml`, `crates/common/src/lib.rs`, empty module files `ids.rs`, `status.rs`, `run_state.rs`, `events.rs`, `limits.rs`, `THIRD-PARTY-NOTICES.md`, `Cargo.lock`.
   - Add `serde` (with `derive`), `serde_json`, `uuid` (features `v4`, `serde`); dev-dependency `proptest` (try `default-features = false, features = ["std"]` first). Declare the modules with module docs that state what the crate must never depend on. Add `#![warn(missing_docs)]`. Keep `COMMON_VERSION`.
   - Requirements: R6.8, scope constraints.
