@@ -58,3 +58,21 @@ cosign verify ghcr.io/brightondube/counterspell-server:sha-<commit> \
   --certificate-identity-regexp '^https://github.com/BrightonDube/counterspell/\.github/workflows/publish-images\.yml@refs/(heads/main|tags/v.+)$' \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com
 ```
+
+## Local pre-push hook
+
+`scripts/pre-push.sh` is the tracked gate. Install it in a clone with:
+
+```bash
+scripts/install-git-hooks.sh
+```
+
+That sets `core.hooksPath` to `scripts/git-hooks`, so Git runs the tracked `pre-commit` and `pre-push` wrappers. The pre-push wrapper execs `scripts/pre-push.sh`, which in order:
+
+1. Scans only the commits about to be pushed with Gitleaks (warns and continues if Gitleaks is not installed; CI still scans).
+2. `cargo fmt --all -- --check`
+3. `cargo clippy --workspace --all-targets --all-features --locked -- -D warnings`
+4. `cargo test --workspace --all-features --locked`
+5. `npm run lint`, `npm run check`, `npm run test`, and `npm run build` in `web/`
+
+Any step that fails aborts the push. The hook is compatible with `/home/brighton/kiro-push-after-spec.sh`, which already re-runs the suite and then pushes as you to `brighton/kiro-setup`; Git will run this hook during that push.
