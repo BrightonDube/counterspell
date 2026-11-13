@@ -62,7 +62,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: keyboard expand/collapse, safe markup, missing optional fields, long constraints, and sample rendering tests.
   - Preserve: sample values are data, not HTML.
 
-- [ ] **T07 [UI] [P] (25 min) Add the lazy Monaco editor and Crypt theme**
+- [x] **T07 [UI] [P] (25 min) Add the lazy Monaco editor and Crypt theme**
   - Files: `web/src/lib/editor/MonacoEditor.svelte`, `web/src/lib/editor/crypt-theme.ts`, Monaco loader tests.
   - Dynamically import Monaco on workspace entry/editor focus, define the documented `crypt` theme, configure Python/JavaScript language modes, expose an accessible editor label, and dispose the model/editor on route leave.
   - Depends on: T05 and T03.
