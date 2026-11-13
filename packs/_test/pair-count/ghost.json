@@ -1,0 +1,67 @@
+{
+  "slug": "pair-count",
+  "problem_version": 1,
+  "comparator": "exact",
+  "concept_tags": ["arrays", "pairs", "nested-loops"],
+  "schema": {
+    "type": "tuple",
+    "items": [
+      { "type": "int_array", "min_len": 0, "max_len": 30, "min": -50, "max": 50 },
+      { "type": "int", "min": -100, "max": 100 }
+    ]
+  },
+  "samples": [
+    { "input": [[1, 2, 3, 4], 5], "expected": 2 },
+    { "input": [[0, 0, 0], 0], "expected": 3 },
+    { "input": [[5, -5, 0], 0], "expected": 1 }
+  ],
+  "known_ghosts": [
+    {
+      "id": "same-index-self-pair",
+      "input": [[0], 0],
+      "kind": "wrong",
+      "exception_class": null,
+      "got": 1,
+      "explanation": "An item cannot pair with itself. Your inner loop starts at i, so the single item 0 pairs with itself and is counted once.",
+      "concept_tags": ["pairs", "nested-loops"]
+    },
+    {
+      "id": "empty-list-min",
+      "input": [[], 0],
+      "kind": "crash",
+      "exception_class": "ValueError",
+      "got": null,
+      "explanation": "min() has no value for an empty list. The early exit reads the smallest item before checking that one exists.",
+      "concept_tags": ["arrays", "edge-cases"]
+    }
+  ],
+  "incorrect": [
+    {
+      "id": "same-index",
+      "file": "incorrect/same-index.py",
+      "kind": "wrong",
+      "exception_class": null,
+      "smallest_input": [[0], 0],
+      "smallest_size": { "nodes": 4, "magnitude": "0" },
+      "dogfood": true,
+      "vectors": [
+        { "input": [[0], 0], "result": 1 },
+        { "input": [[1, 2, 3, 4], 5], "result": 2 },
+        { "input": [[2, 2], 4], "result": 3 }
+      ]
+    },
+    {
+      "id": "empty-min",
+      "file": "incorrect/empty-min.py",
+      "kind": "crash",
+      "exception_class": "ValueError",
+      "smallest_input": [[], 0],
+      "smallest_size": { "nodes": 3, "magnitude": "0" },
+      "dogfood": false,
+      "vectors": [
+        { "input": [[], 0], "crash": "ValueError" },
+        { "input": [[1, 2, 3, 4], 5], "result": 2 }
+      ]
+    }
+  ]
+}

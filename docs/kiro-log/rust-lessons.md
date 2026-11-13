@@ -158,3 +158,105 @@ An `Iterator` produces one item per `next()` call, so the stream only builds can
 `VecDeque` gives cheap removal from the front, which is how the known ghosts and samples are handed out in order.
 The odometer walks combinations like a car mileage counter: the last digit moves first and carries into earlier ones.
 `checked_div`-style helpers and `Option` returns let an exhausted stage end with `None` instead of looping forever.
+
+# Rust lesson: ghost-engine T10
+
+A JSON Pointer such as `/0/3` names one position inside a value, so a move changes exactly that item and leaves the rest alone.
+`value.pointer_mut(path)` returns `Option<&mut Value>`, so a missing path is handled with `if let` instead of a panic.
+`&dyn Fn(...)` lets one function take any closure, which keeps the whole-value moves short.
+A `match` on a tuple of `(schema, value)` handles every pairing, and the `_ => {}` arm makes mismatched shapes harmless.
+
+# Rust lesson: ghost-engine T11
+
+`div_ceil` gives the rounded-up half of a length without floating-point numbers, which keeps the chunk sizes exact.
+`Iterator::chain` joins several lists of proposals without copying them into one new list.
+`std::iter::once(()).flat_map(...)` postpones building each pass until the caller asks for it.
+`get_mut(index)` returns an `Option`, so a bad index is skipped instead of crashing the program.
+
+# Rust lesson: ghost-engine T12
+
+A `&mut dyn FnMut(&Value) -> Probe` parameter lets the caller supply a yes-or-no test without the shrinker knowing what it does.
+The loop finds the proposals first, then returns from a helper, so the borrow of `current` ends before `current` is replaced.
+`VecDeque` keeps the last few trace entries cheaply, and `pop_front` drops the oldest once the cap is reached.
+`u32::try_from(len)` turns a `usize` count into a `u32` with a visible fallback instead of an unchecked `as` cast.
+
+# Rust lesson: ghost-engine T13
+
+A trait such as `Oracle` is a promise about methods. The hunt will hold `&mut dyn Oracle`, so the judge and the tests can supply different implementations.
+`Cell<Duration>` lets `ManualClock::advance` take `&self`, so a clock can be shared by reference while it moves.
+`Result<(), &str>` from `validate` lists every rule the budget breaks as a short reason, and `?` or `match` makes the caller handle it.
+Serde `with` attributes store `Duration` as plain milliseconds, which keeps the JSON readable for the judge.
+
+# Rust lesson: ghost-engine T14
+
+A recursive walk can carry its path as a `&str` argument, so each level builds only the path it needs.
+`matches!(got, ProgramResult::Returned(value) if value == expected)` checks an enum variant and a condition in one line.
+`map_or_else` supplies a fallback when an `Option` is empty, with no `unwrap()`.
+Cutting text at a character boundary, not a byte index, means a multi-byte letter can never be split and produce invalid UTF-8.
+
+# Rust lesson: ghost-engine T15
+
+`Option<&T>` compared with `==` tells you whether two optional values match without cloning either one.
+`let ... else` runs a fallback and returns when a pattern does not match, which keeps the happy path flat.
+`Duration::saturating_sub` returns zero instead of panicking when the subtraction would go below zero.
+A request-validation function that returns `Option<String>` lets the hunt refuse bad input with a reason, not a panic.
+
+# Rust lesson: ghost-engine T16
+
+A closure that borrows `oracle` and `stats` mutably is passed to `shrink` as `&mut dyn FnMut`, and the borrow ends when its block closes, so the code can read the results afterwards.
+`Option::take` moves a value out of an `Option` and leaves `None`, which lets a loop compare the new run with the previous one without holding two borrows.
+`match` guards with a moved binding (`Some(previous) if previous != run`) keep the comparison next to the branch that uses it.
+The confirm step returns a small enum (`Confirmed`, `Unreproduced`, `OutOfTime`), so each outcome has its own explicit branch and none can be ignored by accident.
+
+# Rust lesson: ghost-engine T17-T19
+
+No Rust changed in these tasks. They added the pack JSON, Markdown and Python text files only.
+
+# Rust lesson: ghost-engine T20
+
+Integration tests in `tests/` each compile as their own crate, so shared code goes in `tests/support/mod.rs` and is pulled in with `mod support;`.
+A function pointer type (`type Model = fn(&Value) -> ProgramResult;`) lets a `match` pick a model and pass it around without boxing.
+`Option::get` and `.get(i)` on `serde_json::Value` return `None` instead of panicking, so a missing key in a fixture becomes a clear test failure.
+The `let ... else` form (`let Some(x) = ... else { return ... };`) keeps the happy path flat when a missing value should exit early.
+
+# Rust lesson: ghost-engine T21
+
+`proptest!` runs each property on many random inputs, and when one fails it shrinks that input and saves the seed in a regression file so the case runs again first next time.
+`prop_oneof!` with weights picks between strategies, and `prop_filter` drops values that fail a check, such as an invalid schema.
+`prop_assert!` and `prop_assert_eq!` return an error instead of panicking, which lets proptest shrink the failing case.
+A property can pass for the wrong reason, so a separate non-vacuity test checks that the hunt really finds a ghost for at least one oracle.
+
+# Rust lesson: ghost-engine T22
+
+`let ... else` checks a shape and exits early, so a test can name the wrong shape in its panic message.
+Struct-update syntax (`HuntRequest { samples, ..HuntRequest::new(...) }`) sets fields when the value is built, which avoids the `clone_from` lint that clippy raises on `x.field = y.clone()`.
+`assert_eq!` on `Option`s and enums compares whole values, so a test that checks the expected value, the got value and the kind all at once fails with a readable diff.
+A mutation check (change one model, run the suite, restore the model) proves that the definition-of-done tests can fail.
+
+# Rust lesson: ghost-engine T23
+
+`std::fs::read_to_string` and `read_dir` read files from a test, so a test can check the source text of the crate.
+`Path::new(env!("CARGO_MANIFEST_DIR"))` gives the crate folder at compile time, so the test does not depend on the directory it runs from.
+`str::lines`, `trim_start`, `contains` and `split_once` are enough to scan text without a regex crate.
+A guard earns trust only when it fails on a real violation, so this task added a forbidden call, saw the test fail, and removed it again.
+
+# Rust lesson: ghost-engine T24
+
+Tests that share a name prefix can be run as a group, so `cargo test --test properties wording` runs only the wording checks.
+`serde_json::to_value` turns a Rust enum into JSON, and `assert_eq!` against a string literal checks the exact field contract that the database columns rely on.
+`build_autopsy` is the public entry point, so the template wording is tested through the same path the judge will use.
+A mutation check added a forbidden word to one template, saw the wording test fail, and then restored the file.
+
+# Rust lesson: ghost-engine T25
+
+Doc comments can link to items with square brackets, such as `[`hunt()`]`, and `cargo doc` checks that each link resolves.
+A doctest is a code example in a doc comment that `cargo test --doc` compiles and runs, so the example in the crate docs cannot go stale.
+`RUSTDOCFLAGS="-D warnings" cargo doc` turns a broken link into a build failure.
+Documentation that shows a fake judge (a struct that implements `Oracle`) explains the seam without needing a sandbox.
+
+# Rust lesson: ghost-engine T26
+
+`cargo fmt --check`, `clippy -D warnings`, the test suite and the licence check are cheap, and each one catches a different kind of break.
+Clippy's `-D warnings` turns lints into errors, so a style issue such as a missing backtick fails the build instead of waiting in a log.
+A lint can also flag test code, so the same gate runs with `--all-targets` to include tests and examples.
+Running the gate on the final code, after the last edit, is the only evidence that counts.
