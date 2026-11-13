@@ -92,7 +92,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: controls remain safe during duplicate clicks, source-too-large warning reports bytes, keyboard shortcuts, visible focus, and API error preservation tests.
   - Preserve: controls never infer a verdict from local validation.
 
-- [ ] **T11 [UI] [P] (30 min) Integrate the persisted SSE reducer and stream client**
+- [x] **T11 [UI] [P] (30 min) Integrate the persisted SSE reducer and stream client**
   - Files: `web/src/lib/runs/reducer.ts`, `stream.ts`, `api/runs.ts`, tests or reconciliation with existing `run-lifecycle` browser logic.
   - Use one idempotency key per user action, connect to real SSE, apply `seq` ordering, ignore duplicates/stale events, detect gaps, reconnect using the last sequence, handle `204`, close after terminal, and fetch the authoritative run read model.
   - Depends on: T01 and existing `run-lifecycle` T32/T33 or their equivalent.
