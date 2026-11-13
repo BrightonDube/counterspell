@@ -141,3 +141,23 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-13 09:52-09:57 SAST: 22-run-lifecycle-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/22-run-lifecycle-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0952-22-run-lifecycle-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 3.80 (hackathon credits used now 2767.50/4000).
+
+### 2026-11-13 13:12-13:26 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-run-lifecycle-a1.md`. Transcript: `docs/kiro-log/2026-11-13T1312-22-run-lifecycle-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 8.13 (hackathon credits used now 2783.25/4000).
+
+### 2026-11-13 13:26-14:03 SAST: 22-run-lifecycle-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-run-lifecycle-a2.md`. Transcript: `docs/kiro-log/2026-11-13T1326-22-run-lifecycle-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 21.74 (hackathon credits used now 2804.99/4000).
+
+### 2026-11-13 14:03-14:20 SAST: 22-run-lifecycle-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-run-lifecycle-a3.md`. Transcript: `docs/kiro-log/2026-11-13T1403-22-run-lifecycle-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 8.59 (hackathon credits used now 2813.58/4000).
+
+### 2026-11-13 14:20-14:51 SAST: 22-run-lifecycle-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-run-lifecycle-a4.md`. Transcript: `docs/kiro-log/2026-11-13T1420-22-run-lifecycle-implement-a4.log`. Exit 0.
+- Credits used (from /usage): 16.10 (hackathon credits used now 2829.68/4000).
+
+### 2026-11-13 14:51-15:08 SAST: 22-run-lifecycle-implement-a5 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-run-lifecycle-a5.md`. Transcript: `docs/kiro-log/2026-11-13T1451-22-run-lifecycle-implement-a5.log`. Exit 0.
+- Credits used (from /usage): 10.94 (hackathon credits used now 2840.62/4000).
