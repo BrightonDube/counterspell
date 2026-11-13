@@ -603,3 +603,9 @@ The `CookieSlot` is an `Arc<Mutex<..>>` placed in the request. The extractor wri
 A property test generates many random operation lists and checks a model after each step. When one fails, proptest shrinks the list to the shortest one that still fails, so the printed sequence is the one to read.
 The model is a small pure struct with its own rules (`works_at`). It is written separately from the code under test, so a bug in the service cannot match a bug in the model by accident.
 `prop_assert!` returns an error instead of panicking. That lets the shrinker keep trying smaller inputs.
+
+# Rust lesson: auth T13
+
+`PgPool` is cheap to clone, and it is a handle to a shared pool. `tokio::spawn` needs `'static` data, so each racing task gets its own clone of the store and of the token string.
+Single-use is one `UPDATE ... RETURNING` statement. The database lock on the row decides the winner, so no Rust mutex is needed and no read-then-write race exists.
+`.bind(user.map(UserId::as_uuid))` passes the method as a function value. Clippy prefers this to a closure that only calls a method.

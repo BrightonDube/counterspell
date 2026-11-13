@@ -9,7 +9,17 @@ use rand::{rngs::OsRng, TryRngCore};
 use sha2::{Digest, Sha256};
 use time::{Duration, OffsetDateTime};
 
-use super::errors::AuthError;
+use std::sync::Arc;
+
+use counterspell_common::ids::UserId;
+use sqlx::PgPool;
+use uuid::Uuid;
+
+use super::{
+    clock::Clock,
+    email::EmailAddress,
+    errors::{database, AuthError},
+};
 
 /// How long an email token stays valid after it is issued.
 pub const EMAIL_TOKEN_TTL: Duration = Duration::minutes(15);
@@ -133,6 +143,150 @@ pub fn token_status(
         TokenStatus::Valid
     } else {
         TokenStatus::Expired
+    }
+}
+
+/// A live token, read without using it. The verify handler uses it to choose the purpose and the
+/// user to demand before it consumes the token.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Peeked {
+    /// What the token may be used for.
+    pub purpose: Purpose,
+    /// The account the token is bound to, if any.
+    pub user_id: Option<UserId>,
+}
+
+/// A token that was just used. It carries the address and the data stored with it.
+#[derive(Debug, Clone)]
+pub struct Consumed {
+    /// The address the token was issued for.
+    pub email: EmailAddress,
+    /// The account the token was bound to, if any.
+    pub user_id: Option<UserId>,
+    /// The data stored when the token was issued, for example a password hash for registration.
+    pub payload: serde_json::Value,
+}
+
+/// Issues, reads and uses email tokens. Only hashes reach the database, and every use is one
+/// atomic statement, so a token can be used once even when many requests race.
+#[derive(Clone)]
+pub struct TokenStore {
+    pool: PgPool,
+    clock: Arc<dyn Clock>,
+}
+
+impl TokenStore {
+    /// Builds the store over a pool and the clock that decides every expiry.
+    #[must_use]
+    pub fn new(pool: PgPool, clock: Arc<dyn Clock>) -> Self {
+        Self { pool, clock }
+    }
+
+    /// Issues a token for `email`. Any earlier live token for the same address and purpose stops
+    /// working, so only the newest one can be used.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Internal`] when the random source or the database fails.
+    pub async fn issue(
+        &self,
+        purpose: Purpose,
+        email: &EmailAddress,
+        user: Option<UserId>,
+        payload: serde_json::Value,
+    ) -> Result<RawToken, AuthError> {
+        let raw = RawToken::generate()?;
+        let hash = TokenHash::of(raw.expose());
+        let now = self.clock.now();
+        let mut transaction = self.pool.begin().await.map_err(database)?;
+        sqlx::query(
+            "UPDATE email_tokens SET used_at = $3
+              WHERE email = $1 AND purpose = $2 AND used_at IS NULL",
+        )
+        .bind(email.as_str())
+        .bind(purpose.as_str())
+        .bind(now)
+        .execute(&mut *transaction)
+        .await
+        .map_err(database)?;
+        sqlx::query(
+            "INSERT INTO email_tokens (token_hash, purpose, email, user_id, payload, created_at, expires_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)",
+        )
+        .bind(hash.as_bytes().as_slice())
+        .bind(purpose.as_str())
+        .bind(email.as_str())
+        .bind(user.map(UserId::as_uuid))
+        .bind(payload)
+        .bind(now)
+        .bind(email_token_expiry(now))
+        .execute(&mut *transaction)
+        .await
+        .map_err(database)?;
+        transaction.commit().await.map_err(database)?;
+        Ok(raw)
+    }
+
+    /// Reads a live token without using it. Returns `None` for an unknown, used, expired or
+    /// unrecognised token.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Internal`] when the database fails.
+    pub async fn peek(&self, raw: &str) -> Result<Option<Peeked>, AuthError> {
+        let now = self.clock.now();
+        let row: Option<(String, Option<Uuid>)> = sqlx::query_as(
+            "SELECT purpose, user_id FROM email_tokens
+              WHERE token_hash = $1 AND used_at IS NULL AND expires_at > $2",
+        )
+        .bind(TokenHash::of(raw).as_bytes().as_slice())
+        .bind(now)
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(database)?;
+        Ok(row.and_then(|(purpose, user)| {
+            Purpose::parse(&purpose).map(|purpose| Peeked {
+                purpose,
+                user_id: user.map(UserId::from_uuid),
+            })
+        }))
+    }
+
+    /// Uses a token once. The purpose must match, the token must be unused and inside its
+    /// lifetime, and when `bound_user` is given the token must belong to that user. Any failure
+    /// returns the same error and changes nothing.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::InvalidOrExpiredToken`] for every refusal, and
+    /// [`AuthError::Internal`] when the database fails.
+    pub async fn consume(
+        &self,
+        raw: &str,
+        purpose: Purpose,
+        bound_user: Option<UserId>,
+    ) -> Result<Consumed, AuthError> {
+        let now = self.clock.now();
+        let row: Option<(String, Option<Uuid>, serde_json::Value)> = sqlx::query_as(
+            "UPDATE email_tokens SET used_at = $3
+              WHERE token_hash = $1 AND purpose = $2 AND used_at IS NULL AND expires_at > $3
+                AND ($4::uuid IS NULL OR user_id = $4)
+          RETURNING email::text, user_id, payload",
+        )
+        .bind(TokenHash::of(raw).as_bytes().as_slice())
+        .bind(purpose.as_str())
+        .bind(now)
+        .bind(bound_user.map(UserId::as_uuid))
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(database)?;
+        let (email, user, payload) = row.ok_or(AuthError::InvalidOrExpiredToken)?;
+        let email = EmailAddress::parse(&email).map_err(|_| AuthError::Internal)?;
+        Ok(Consumed {
+            email,
+            user_id: user.map(UserId::from_uuid),
+            payload,
+        })
     }
 }
 
