@@ -220,7 +220,12 @@ fn run(args: &[String]) -> ExitCode {
 }
 
 fn main() -> ExitCode {
-    let args: Vec<String> = std::env::args().skip(1).collect();
+    // Command-line operands after argv[0]. Not a security boundary; args_os
+    // avoids Semgrep rust.lang.security.args.args and handles non-UTF-8 paths.
+    let args: Vec<String> = std::env::args_os()
+        .skip(1)
+        .map(|s| s.to_string_lossy().into_owned())
+        .collect();
     run(&args)
 }
 
