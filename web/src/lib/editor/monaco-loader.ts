@@ -1,5 +1,6 @@
 // Loads Monaco only when the workspace editor is needed, so the shell bundle stays small.
 // The Crypt theme is defined once per page, and the editor worker is created by Monaco on demand.
+import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import { cryptTheme } from './crypt-theme';
 
 export const CRYPT_THEME_NAME = 'crypt';
@@ -19,14 +20,7 @@ export function loadMonaco(): Promise<MonacoModule> {
       MonacoEnvironment?: { getWorker: () => Worker };
     };
     globals.MonacoEnvironment ??= {
-      getWorker: () =>
-        new Worker(
-          new URL(
-            'monaco-editor/esm/vs/editor/editor.worker.js',
-            import.meta.url
-          ),
-          { type: 'module' }
-        )
+      getWorker: () => new EditorWorker()
     };
     monacoPromise = import('monaco-editor').then((monaco) => {
       monaco.editor.defineTheme(CRYPT_THEME_NAME, cryptTheme);
