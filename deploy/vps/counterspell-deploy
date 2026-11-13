@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Forced command for the CI deploy key (authorized_keys: restrict,command="/usr/local/sbin/counterspell-deploy").
+# Accepts exactly one of:
+#   deploy <40-hex sha> <server sha256 digest> <judge sha256 digest> <migrate sha256 digest>
+#   status
+# Anything else is refused. Images are pulled by digest only; on a failed health check the
+# previous digests are restored. Database migrations are NOT rolled back.
+# Install: root-owned, mode 0755. Not tested against a real server yet.
+set -euo pipefail
+umask 027
+
+APP_DIR="${COUNTERSPELL_DIR:-/opt/counterspell}"
+REGISTRY="ghcr.io/brightondube"
+HEALTH_URL="${COUNTERSPELL_HEALTH_URL:-http://127.0.0.1/api/health}"
+CURRENT="$APP_DIR/deploy.env"
+PREVIOUS="$APP_DIR/deploy.env.previous"
+COMPOSE=(docker compose --project-directory "$APP_DIR" -f "$APP_DIR/docker-compose.yml" -f "$APP_DIR/compose.prod.yml")
+
+refuse() { echo "refused: $*" >&2; exit 2; }
+log() { logger -t counterspell-deploy -- "$*" 2>/dev/null || true; echo "$*"; }
+
+req="${SSH_ORIGINAL_COMMAND:-}"
+hex40='[0-9a-f]{40}'
+dig='sha256:[0-9a-f]{64}'
+
+if [[ "$req" == "status" ]]; then
+  [[ -f "$CURRENT" ]] && cat "$CURRENT" || echo "no deploy yet"
+  exit 0
+fi
+[[ "$req" =~ ^deploy\ ($hex40)\ ($dig)\ ($dig)\ ($dig)$ ]] || refuse "expected 'deploy <sha> <digest> <digest> <digest>' or 'status'"
+sha="${BASH_REMATCH[1]}"; d_server="${BASH_REMATCH[2]}"; d_judge="${BASH_REMATCH[3]}"; d_migrate="${BASH_REMATCH[4]}"
+
+exec 9>"$APP_DIR/.deploy.lock"
+flock -n 9 || refuse "another deploy is running"
+
+up() { # $1 = env file
+  "${COMPOSE[@]}" --env-file "$1" pull server judge migrate
+  "${COMPOSE[@]}" --env-file "$1" run --rm migrate
+  "${COMPOSE[@]}" --env-file "$1" up -d --no-build --remove-orphans
+}
+healthy() {
+  for _ in $(seq 1 30); do curl -fsS --max-time 3 "$HEALTH_URL" > /dev/null && return 0; sleep 2; done
+  return 1
+}
+
+new="$APP_DIR/deploy.env.new"
+{
+  echo "COUNTERSPELL_SHA=$sha"
+  echo "COUNTERSPELL_SERVER_IMAGE=$REGISTRY/counterspell-server@$d_server"
+  echo "COUNTERSPELL_JUDGE_IMAGE=$REGISTRY/counterspell-judge@$d_judge"
+  echo "COUNTERSPELL_MIGRATE_IMAGE=$REGISTRY/counterspell-migrate@$d_migrate"
+} > "$new"
+
+log "deploying $sha"
+if up "$new" && healthy; then
+  [[ -f "$CURRENT" ]] && cp "$CURRENT" "$PREVIOUS"
+  mv "$new" "$CURRENT"
+  log "deployed $sha"
+  exit 0
+fi
+
+log "health check failed for $sha"
+if [[ -f "$CURRENT" ]]; then
+  "${COMPOSE[@]}" --env-file "$CURRENT" up -d --no-build --remove-orphans || true
+  log "rolled back to $(grep '^COUNTERSPELL_SHA=' "$CURRENT" | cut -d= -f2)"
+fi
+rm -f "$new"
+exit 1

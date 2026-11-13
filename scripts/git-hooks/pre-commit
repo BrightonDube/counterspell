@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Blocks commits that stage secrets or credential files. Installed by scripts/install-git-hooks.sh.
+GL=$(command -v gitleaks || echo "$HOME/.local/bin/gitleaks")
+root=$(git rev-parse --show-toplevel)
+if [ -x "$root/scripts/check-forbidden-files.sh" ]; then
+  bash "$root/scripts/check-forbidden-files.sh" --staged >/dev/null || { bash "$root/scripts/check-forbidden-files.sh" --staged; exit 1; }
+fi
+if [ ! -x "$GL" ]; then
+  echo "WARNING: gitleaks not installed; local secret scan skipped (CI will still scan)." >&2
+  exit 0
+fi
+cfg=(); [ -f "$root/.gitleaks.toml" ] && cfg=(--config "$root/.gitleaks.toml")
+exec "$GL" git --staged "${cfg[@]}" --redact --no-banner --exit-code 1 "$root"
