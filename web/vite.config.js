@@ -4,7 +4,10 @@ import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  plugins: [tailwindcss(), sveltekit({ adapter: adapter() })],
+  plugins: [
+    tailwindcss(),
+    sveltekit({ adapter: adapter({ fallback: 'index.html' }) })
+  ],
   // Vitest must resolve the client Svelte build, not the SSR one.
   resolve: process.env.VITEST ? { conditions: ['browser'] } : undefined,
   test: {

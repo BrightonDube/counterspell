@@ -34,3 +34,16 @@ Checked tasks: T01, T03, T04, T08, T14, T16, T19. Partial (committed, unchecked)
 - The `ghost` event payload is the shape in `web/src/lib/ghost/types.ts`. The server does not emit it yet, and the field names must match judge-sandbox when it does.
 - `ProblemDetail.constraints` is a list of strings. The design allowed structured objects too.
 - The custom ghost route (T02) is the assumed `POST /api/runs/ghost` from design open question 1.
+
+## Attempt 2 update (13 Nov 2026, evening)
+
+Newly done: T06 (statement panel), T07 (lazy Monaco and Crypt theme). T09 is built but left unchecked.
+
+- **T09 unchecked: browser checks deferred (E2E).** Built: `WorkspaceShell`, `EditorPanel`, `ProblemWorkspace`, `editor-session.ts`, route `web/src/routes/problems/[slug]/`. Unit tests cover landmarks, the problem toggle, the language picker (enabled only), draft restore and save status, and the load error state. Still needed, and deferred as E2E: desktop, tablet and portrait layout checks, 200% zoom, the 44px target check, and route-change abort in a real browser.
+- **T09 side effect: SPA fallback.** `web/vite.config.js` now sets `adapter({ fallback: 'index.html' })`, so a deep link to `/problems/<slug>` reaches the app. The server already falls back to `index.html`. Brighton to confirm this config change.
+- **T05 remains unchecked (fonts).** Geist and JetBrains Mono files are still not vendored. The tokens in `app.css` are in place. T09 was built on the tokens, not the font files.
+- **Monaco bundle.** Monaco is a separate 2.7 MB chunk. The entry and app graphs do not reach it. It loads only through the problems route, and only when the editor mounts. Confirmed from the build output.
+- **Monaco worker import.** `monaco-editor/editor/editor.worker.js?worker` (Vite's worker import). The `esm/vs/...` path does not resolve because of the package `exports` map.
+- **New dependency (T07).** `monaco-editor` 0.57.0 (MIT), recorded in `THIRD-PARTY-NOTICES.md`, with its transitive `marked` (MIT), `dompurify` (MPL-2.0 OR Apache-2.0, used under Apache-2.0) and `@types/trusted-types` (MIT). The lockfile also dropped unused `jsdom` and helper packages. Tests and build pass after that change.
+- **Pre-existing lint error (not from this pass).** `web/src/lib/api/client.ts` lines 137–138 (T03) fail `no-useless-assignment`. `npm run lint` will fail until those initialisers are removed. The required gate (`check`, `test`, `build`) passes.
+- **T10 and T17 still partial.** T10 needs `StatusAnnouncer.svelte` and the Run/Submit wiring (T13). T17 needs the AI text contract.
