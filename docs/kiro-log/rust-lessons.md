@@ -420,3 +420,9 @@ A `pub(crate)` constructor is a compile-time guard: code outside the crate canno
 `Result<T, sqlx::Error>` lets a test check the exact database error code (for example `23514` for a CHECK violation) instead of "some error happened".
 A test that expects a failure must still fail loudly when the statement succeeds. The helper panics in that case.
 `RunStatus::ALL` plus two nested loops checks all 81 pairs, so the Rust and SQL rules are compared exhaustively, not by sample.
+
+# Rust lesson: run-lifecycle T10
+
+A `Transaction` rolls back when it is dropped without `commit()`. The role tests end with `rollback()` on purpose, so nothing they write survives.
+`SAVEPOINT` is a sub-transaction. After a denied statement, `ROLLBACK TO SAVEPOINT` clears the error and keeps the outer transaction usable.
+`&mut **tx` and `&mut *tx` pass the transaction's connection to a query. Both forms appear in these tests; the difference is one extra dereference.

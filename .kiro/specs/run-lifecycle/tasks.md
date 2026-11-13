@@ -103,7 +103,7 @@ Conventions for every Rust task:
   - Preserve: tests use the admin pool and do not rely on role grants.
   - Rust lesson: async tests and `#[sqlx::test]`.
 
-- [ ] **T10 [P] (25 min) Role privilege tests**
+- [x] **T10 [P] (25 min) Role privilege tests**
   - Files: `crates/judge/tests/roles.rs`.
   - `pg_role_privileges`: inside a transaction, `SET LOCAL ROLE counterspell_server` and assert it can insert a submission and job, read all four tables, and set `cancel_requested_at`; and that it cannot insert `run_events` or `test_results`, update `submissions`, or change `state`, `attempts` or `lease_*`. Repeat for `counterspell_judge` (can claim, update allowed columns, insert events and results; cannot delete, cannot change `user_id`, `code` or `code_sha256`, cannot insert `jobs`). Use `SAVEPOINT` so one failure does not abort the transaction.
   - Requirements: R19.2–R19.4.

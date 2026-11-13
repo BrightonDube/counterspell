@@ -43,3 +43,13 @@ Written by the implementation run on 13 Nov 2026. Each entry names the task, the
 - **Unblock:** Brighton to anchor the key patterns so that they match only a real token boundary, for example `(^|[^A-Za-z0-9_])re_[A-Za-z0-9_-]{20,}` (and the same for `sk-` and `gsk_`), and to make the hook print its reason. After that, T02 onward can continue.
 - **Tasks not done because of this:** T02 (tests), T03 (`status_after_event`, `terminal_event_kind` and the proptests), T04 onward. Every later task needs file writes.
 - **Environment:** a throwaway `postgres:17-alpine` container (`cs-rl-pg`) is running on 127.0.0.1:55470 for database checks. Port 5544 was already in use by another service. Stop it with `docker stop cs-rl-pg` when finished.
+
+## Status update: session of 13 Nov 2026 (afternoon)
+
+- Done and verified in this session: T08 (judge library, config, queue types, testkit; 5 config unit tests), T09 (7 schema and trigger database tests, passed three times), T10 (2 role privilege tests).
+- Bug fixed in T07's migration: `counterspell_server` and `counterspell_judge` role creation now also catches `unique_violation`. Two test databases migrating in parallel raced on the cluster-wide role catalogue, and the loser got `23505`. Found by T09's test run, reproduced, fixed. Migration C has not been deployed anywhere, so the file was edited in place.
+- Config note: `config.rs` and its tests were written in one step, so the red phase was not observed for T08's config tests. The tests do pass.
+- Stale entries above this section: T02 and T03 are now complete in the code and the tests exist. The "hook blocks writes" entries were resolved earlier in this log and do not apply now.
+- Toolchain note: the cached `libsqlite3-sys-0.30.1.crate` was truncated, which broke `cargo fetch`. Only that cached archive was deleted; cargo re-downloaded it cleanly. Nothing in the project was changed for this.
+- Not started: T11 (claim, SUPERVISED) onward. Those are the security-critical queue, worker, server and SSE tasks. They need a full session of their own, and this session stopped after T10 to keep the work verifiable.
+- Database for tests: `postgres:17-alpine` container `cs-rl-pg` on 127.0.0.1:55470, password typed in the shell only. Stop it with `docker stop cs-rl-pg` when finished.
