@@ -68,3 +68,8 @@
  docs/kiro-log/hooks-testing.md    | 10 +++++++++
  docs/kiro-log/sessions.md         | 45 +++++++++++++++++++++++++++++++++++++++
  4 files changed, 89 insertions(+), 1 deletion(-)
+- 2026-11-13T07:57:06Z | model: not reported | last commit: 8e1278e run-lifecycle: log write-guard block that stops T02 onward
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
