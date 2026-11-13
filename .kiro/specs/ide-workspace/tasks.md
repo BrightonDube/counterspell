@@ -85,7 +85,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 2: editing and run lifecycle UI
 
-- [ ] **T10 [UI] [P] (25 min) Add Run/Submit controls and draft readiness rules**
+- [x] **T10 [UI] [P] (25 min) Add Run/Submit controls and draft readiness rules**
   - Files: `web/src/lib/workspace/RunControls.svelte`, `keyboard.ts`, `StatusAnnouncer.svelte`, component tests.
   - Add Run, Submit, language selection, byte warning, save state, shortcut help, disabled/loading rules, and accessible status text. Use `Ctrl/Cmd+Enter` for Run and `Ctrl/Cmd+Shift+Enter` for Submit without overriding Monaco editing commands unexpectedly.
   - Depends on: T08 and T09.
