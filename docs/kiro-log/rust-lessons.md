@@ -640,3 +640,11 @@ The seed calls a database function instead of writing `users` itself. The functi
 `tokio::spawn` starts a task on the async runtime and returns a `JoinHandle`. Calling `abort()` on that handle stops the task, which is how shutdown cancels the daily reset.
 `Arc<dyn Clock>` lets the background task share one clock with the rest of the server. `clock.as_ref()` lends a plain `&dyn Clock` for each call, so the `Arc` never has to move into the call.
 `OffsetDateTime` and `Duration` are small values that are copied, so `latest_scheduled_reset` returns a new time without borrowing anything.
+
+# Rust lesson: auth T14
+
+`Arc<dyn EmailSender>` lets handlers hold any sender. Start-up picks the real one, and tests put in `MemorySender`. The trait object costs one pointer indirection, which is fine for mail.
+`GuardedSender` wraps another sender. It checks the demo address and the daily cap, then calls the inner `send`, so no caller can skip those rules.
+`hit_daily_mail_cap(...).map_err(|_| MailError::Unavailable)?` turns one error type into another. The `map_err` keeps the mapping visible.
+`Mutex::lock` fails only if another thread panicked while holding the lock. `unwrap_or_else(PoisonError::into_inner)` takes the data anyway, so no `unwrap()` is needed.
+The hand-written `Debug` on `OutgoingMail` hides the body, so printing a mail with `{:?}` can never leak a sign-in link.
