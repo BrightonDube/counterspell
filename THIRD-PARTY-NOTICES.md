@@ -51,3 +51,14 @@ This file records direct engine dependencies and the dependency-tree packages
 introduced by the engine manifest. Generated or upstream license text is not
 replaced here; the corresponding package metadata and lockfile remain the
 source for exact copyright and notice text.
+
+## Judge dependencies (run-lifecycle T08)
+
+The judge crate (`counterspell-judge`) adds these direct dependencies. `cargo deny check licenses` passed on them on 13 November 2026.
+
+- **sqlx 0.8.6** — launchbadge and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/sqlx> (Postgres driver; TLS features off)
+- **tokio 1.54.1** — Tokio contributors — MIT — <https://crates.io/crates/tokio>
+- **tracing 0.1.44** — Tokio contributors — MIT — <https://crates.io/crates/tracing>
+- **thiserror 2.0.21** — David Tolnay — MIT OR Apache-2.0 — <https://crates.io/crates/thiserror>
+
+The judge also uses `serde_json`, `uuid` and `counterspell-common` as listed above.
