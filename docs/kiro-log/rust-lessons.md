@@ -571,3 +571,9 @@ A `match` guard (`Some(raw) if ...`) checks the value and binds it in one step. 
 `#[derive(Debug)]` is not used on `RawToken`. A hand-written `Debug` keeps the secret text out of logs, and the type does not derive `Clone`, so copies of the secret are deliberate.
 `Sha256::digest(...).into()` turns the hash output into a plain `[u8; 32]`. A fixed-size array can be compared, copied and used as a map key.
 `proptest!` runs one property over many random inputs. The model (`model_valid`) is written separately from the code under test, so the test cannot pass by copying the implementation.
+
+# Rust lesson: auth T06
+
+An `enum` such as `OAuthDecision` lists every outcome. `match` with no `_` arm makes the compiler flag each place that does not handle a new outcome.
+`SignIn(UserId)` can only carry the identity's owner. A function cannot return "sign in to the owner of this email", because no such variant exists.
+`#[allow(clippy::...., reason = "...")]` silences one lint on one item and records why. It is preferred over a crate-wide allow.

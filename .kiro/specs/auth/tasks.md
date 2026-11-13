@@ -60,7 +60,7 @@ Conventions for every Rust task:
   - Preserve: the value is stored server-side and never echoed into a header unchecked.
   - Rust lesson: `&str` versus `String` and returning owned data from a borrowed input.
 
-- [ ] **T05 [P] (30 min) Token primitives and the pure expiry model (part of P2, P4)** [SUPERVISED]
+- [x] **T05 [P] (30 min) Token primitives and the pure expiry model (part of P2, P4)** [SUPERVISED]
   - Files: `crates/server/src/auth/tokens.rs` (types and pure functions only; the SQL store is T13).
   - `RawToken::generate()` (32 bytes from `OsRng`, unpadded base64url; no `Debug` that prints the value), `TokenHash::of(&str)` (SHA-256), `Purpose` enum with `as_str` and `parse`, constants `EMAIL_TOKEN_TTL = 15 min`, `FLOW_TTL = 10 min`, and `token_status(issued, expires, used, now) -> Valid | Expired | Used` as the reference model used by property tests.
   - Tests: generated tokens are 43 characters, unique across 10 000 draws, base64url only; hashing is deterministic; `token_status` is `Valid` iff `used.is_none() && issued <= now < expires`; `expires - issued` is exactly 15 minutes for tokens made by the issue helper.
@@ -70,7 +70,7 @@ Conventions for every Rust task:
   - Preserve: raw tokens never implement `Debug`/`Display` with the value.
   - Rust lesson: ownership of secrets and why we avoid `Clone` on them.
 
-- [ ] **T06 [P] (30 min) Pure decisions and capabilities (properties P5, P8 pure part)** [SUPERVISED]
+- [x] **T06 [P] (30 min) Pure decisions and capabilities (properties P5, P8 pure part)** [SUPERVISED]
   - Files: `crates/server/src/auth/decision.rs`, `crates/server/src/auth/capabilities.rs`.
   - `ProfileEmail`, `OAuthDecision`, `decide_oauth_login`; `Actor`, `LinkDecision`, `decide_link`; `Capabilities::for_user(is_demo)` and `require(Capability)`. `match` expressions with no wildcard arm.
   - Tests (proptest, exhaustive combinations): `decide_oauth_login(Some(u), _) == SignIn(u)` for every email state; with `None` and `Taken` the result is `RefuseEmailTaken`; `SignIn` only ever carries the identity owner; `decide_link` order (demo, same owner, other owner, provider already linked, link); `Capabilities::for_user(true)` is all false and `for_user(false)` all true.
