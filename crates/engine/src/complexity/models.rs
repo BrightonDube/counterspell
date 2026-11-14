@@ -35,6 +35,13 @@ fn basis(class: Class, n: u64) -> f64 {
     }
 }
 
+/// The natural log of the basis at every size, for a class that is not `2^n`.
+///
+/// Used by the agreement check, which compares the data's slope with the model's.
+pub(crate) fn log_basis(class: Class, sizes: &[u64]) -> Vec<f64> {
+    sizes.iter().map(|&n| basis(class, n).ln()).collect()
+}
+
 /// Fits one model to the points. `sizes`, `times` and `sigma` have the same length.
 ///
 /// `times` must be positive, normalised to a maximum of 1. `sigma` is the

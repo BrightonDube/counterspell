@@ -104,7 +104,7 @@ Conventions for every web task:
   - Preserve: functions are pure and take plain slices.
   - Rust lesson: slices, iterators and why `windows(2)` suits consecutive pairs.
 
-- [ ] **T09 [S] (30 min) Plausible set, agreement, stability, confidence, `fit` and `compare`**
+- [x] **T09 [S] (30 min) Plausible set, agreement, stability, confidence, `fit` and `compare`**
   - Files: `crates/engine/src/complexity/{decide.rs,mod.rs}`.
   - Implement steps 4 to 10 of the design's algorithm: plausible set, agreement per model (including the `2^n` rule), drop-one stability for `k ≥ 5`, the `Low`/`Medium`/`High` rules, the run-mode cap, `class` only for `Medium` and `High`, `reasons`, and `compare` (gap and `reference_plausible`). Make `fit` return a `FitReport` with serde.
   - Tests: golden cases for clean `n`, `n log n`, `n^2`, `n^3`, flat, a single spiked point, a short range, a class outside the set (`n^1.5`), `k = 3` for `Mode::Quick`; each asserts class, confidence and reasons.
