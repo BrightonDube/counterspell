@@ -849,3 +849,9 @@ An `as` conversion inside a test helper still trips Clippy's pedantic lints. A n
 A geometric mean is `exp(mean(ln ratio))`. Working in logs turns a product of ratios into a sum, so one very large ratio cannot overflow the result.
 A `BTreeMap` keyed by size matches the two series by size regardless of input order, and its iteration order is sorted, so the result is deterministic.
 `let ... else` returns `None` for a missing size without an `unwrap`, which keeps the "not meaningful" case explicit.
+
+# Rust lesson: efficiency-familiar T17
+- `match` on an enum with no `_` arm makes the compiler list every case. When the engine adds a growth class, `to_common_class` stops compiling until someone maps it.
+- `let ... else` returns early when a value is `None`, which keeps the happy path flat (the run that did not complete gets no mood).
+- `clone()` on an `Option` field lets a test read a value without moving it out of the struct; in production code, move the value once and pass it on.
+- Pure functions take everything as arguments and return a value. `assess` does no I/O, so its tests need no database and no clock.
