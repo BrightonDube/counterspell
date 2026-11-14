@@ -282,7 +282,7 @@ Conventions for every web task:
   - Verify: `cd web && npm ci && npm test && npm run check && npm run build`; the contract test names any missing id; SVG size within the 120 KB budget or the overrun is recorded.
   - Preserve: do not draw or generate final art; the placeholder never ships as the default once real art exists.
 
-- [ ] **T27 [P] (25 min) Mood styling and the effect planner (P22)**
+- [x] **T27 [P] (25 min) Mood styling and the effect planner (P22)**
   - Files: `web/src/lib/familiar/mascot/{mood-style.ts,plan.ts}`, tests.
   - `mood-style.ts`: mood to name, layer ids, icon name, text token, and the glow recipe (token names and mix percentages, no hex). `plan.ts`: `planEffect` exactly as designed.
   - Tests: exhaustive table for `planEffect` over all combinations; every mood has a style; no hex strings in either file (source scan); passing moods never select the danger text token.
