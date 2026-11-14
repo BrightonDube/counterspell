@@ -26,6 +26,8 @@ services:
       STATIC_DIR: /app/web/build
       # Login role counterspell_server. The value comes from the host environment, never from this file.
       DATABASE_URL: ${SERVER_DATABASE_URL:-}
+      # Valkey has no auth and sits only on the internal network, so the in-network address is the default.
+      VALKEY_URL: ${VALKEY_URL:-redis://valkey:6379}
     depends_on:
       postgres:
         condition: service_healthy
