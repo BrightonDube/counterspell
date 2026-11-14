@@ -9,6 +9,7 @@
 
 pub mod config;
 pub mod executor;
+pub mod familiar;
 pub mod languages;
 pub mod queue;
 pub mod sandbox;

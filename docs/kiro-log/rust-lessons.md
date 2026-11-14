@@ -843,3 +843,9 @@ A pinned constant is checked against an independent calculation (Python, same fi
 
 A calibration can disagree with a sampled property. The 4,000-case table showed zero wrong Medium, but a 200,000-case run and a random property run both found one. Larger samples and the property together were needed.
 An `as` conversion inside a test helper still trips Clippy's pedantic lints. A narrow `#[allow]` with a reason is clearer than a wider blanket.
+
+# Rust lesson: efficiency-familiar T14
+
+A geometric mean is `exp(mean(ln ratio))`. Working in logs turns a product of ratios into a sum, so one very large ratio cannot overflow the result.
+A `BTreeMap` keyed by size matches the two series by size regardless of input order, and its iteration order is sorted, so the result is deterministic.
+`let ... else` returns `None` for a missing size without an `unwrap`, which keeps the "not meaningful" case explicit.
