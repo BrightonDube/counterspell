@@ -1,9 +1,9 @@
-//! OAuth sign-in: `GET /api/auth/oauth/{provider}/start` and `.../callback`.
+//! OAuth sign-in and linking: `GET /api/auth/oauth/{provider}/start` and `.../callback`.
 //!
-//! The callback never returns JSON. Success redirects to the saved return path, and every failure
-//! redirects to `/login?error=<code>`. The flow is taken first, so each state works once. The
-//! browser binding is checked before the code is exchanged, and the binding cookie is cleared on
-//! every outcome.
+//! The callback never returns JSON. Success redirects to the saved place, and every failure
+//! redirects to `/login?error=<code>`, or to `/settings/account?error=<code>` for a link flow.
+//! The flow is taken first, so each state works once. The browser binding of a sign-in is
+//! checked before the code is exchanged, and the binding cookie is cleared on every outcome.
 
 use std::net::SocketAddr;
 
@@ -20,7 +20,9 @@ use crate::{
     auth::{
         accounts::new_handle,
         cookies::{read_cookie, CookieSlot},
-        decision::{decide_oauth_login, OAuthDecision, ProfileEmail},
+        decision::{
+            decide_link, decide_oauth_login, Actor, LinkDecision, OAuthDecision, ProfileEmail,
+        },
         email::EmailAddress,
         errors::AuthError,
         limits::{Action, Scope},
@@ -55,10 +57,10 @@ pub struct CallbackQuery {
     pub error: Option<String>,
 }
 
-/// Why a callback did not sign anyone in. The code is shown on the login page.
+/// Why a callback did not finish. The code is shown on the page the browser lands on.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Refusal {
-    /// The state is unknown, reused, expired, or the browser binding does not match.
+    /// The state is unknown, reused, expired, or the browser binding or session does not match.
     StateInvalid,
     /// The person refused at the provider.
     Denied,
@@ -66,21 +68,59 @@ enum Refusal {
     Failed,
     /// The provider's verified email belongs to another account, so nothing was linked.
     AccountExists,
+    /// The provider identity is linked to a different account. Nothing changed.
+    IdentityAlreadyLinked,
+    /// The account already has an identity for this provider. Nothing changed.
+    ProviderAlreadyLinked,
+    /// The provider is not enabled on this server.
+    ProviderDisabled,
 }
 
 impl Refusal {
-    /// The error code that the login page reads from the query string.
+    /// The error code that the page reads from the query string.
     fn code(self) -> &'static str {
         match self {
             Self::StateInvalid => "state_invalid",
             Self::Denied => "oauth_denied",
             Self::Failed => "oauth_failed",
             Self::AccountExists => "account_exists",
+            Self::IdentityAlreadyLinked => "identity_already_linked",
+            Self::ProviderAlreadyLinked => "provider_already_linked",
+            Self::ProviderDisabled => "provider_disabled",
         }
     }
 }
 
-/// `GET /api/auth/oauth/{provider}/start`: sends the browser to the provider.
+/// A refused callback. The purpose is known only once the flow has been taken, so a refusal
+/// before that point goes to the sign-in page.
+struct Refused {
+    /// The flow's purpose, or `None` when no flow was taken.
+    purpose: Option<FlowPurpose>,
+    /// The reason.
+    refusal: Refusal,
+}
+
+impl Refused {
+    /// A refusal before any flow was taken.
+    fn early(refusal: Refusal) -> Self {
+        Self {
+            purpose: None,
+            refusal,
+        }
+    }
+
+    /// The page the browser lands on. A link flow returns to the account settings page.
+    fn landing(&self) -> String {
+        match self.purpose {
+            Some(FlowPurpose::Link) => {
+                format!("/settings/account?error={}", self.refusal.code())
+            }
+            _ => format!("/login?error={}", self.refusal.code()),
+        }
+    }
+}
+
+/// `GET /api/auth/oauth/{provider}/start`: sends the browser to the provider to sign in.
 ///
 /// # Errors
 ///
@@ -129,38 +169,56 @@ pub async fn callback(
         slot.push(clear);
     }
     match finish(&state, &slot, &headers, &provider, query).await {
-        Ok(return_to) => Redirect::to(&return_to).into_response(),
-        Err(refusal) => {
-            tracing::info!(reason = refusal.code(), "oauth sign-in refused");
-            Redirect::to(&format!("/login?error={}", refusal.code())).into_response()
+        Ok(landing) => Redirect::to(&landing).into_response(),
+        Err(refused) => {
+            tracing::info!(reason = refused.refusal.code(), "oauth callback refused");
+            Redirect::to(&refused.landing()).into_response()
         }
     }
 }
 
-/// Runs the callback steps in their fixed order and returns the place to go on success.
+/// Takes the flow, then runs the steps for its purpose. Returns where to go on success.
 async fn finish(
     state: &AuthState,
     slot: &CookieSlot,
     headers: &HeaderMap,
     provider_name: &str,
     query: CallbackQuery,
-) -> Result<String, Refusal> {
-    let provider = ProviderId::parse(provider_name).ok_or(Refusal::StateInvalid)?;
-    let port = state.oauth_port().map_err(|_| Refusal::Failed)?;
-    let adapter = port
-        .providers
-        .get(&provider)
-        .cloned()
-        .ok_or(Refusal::StateInvalid)?;
-    let raw_state = query.state.as_deref().ok_or(Refusal::StateInvalid)?;
-
-    // Taking the flow uses it up. A replayed or altered state finds nothing.
-    let flow = state
-        .flows
-        .consume(raw_state, provider)
+) -> Result<String, Refused> {
+    let flow = take_flow(state, provider_name, query.state.as_deref()).await?;
+    let purpose = flow.purpose();
+    run_flow(state, slot, headers, &flow, query)
         .await
-        .map_err(|_| Refusal::Failed)?
-        .ok_or(Refusal::StateInvalid)?;
+        .map_err(|refusal| Refused {
+            purpose: Some(purpose),
+            refusal,
+        })
+}
+
+/// Takes the flow for the `state` value. The row is deleted even when the checks below fail.
+async fn take_flow(
+    state: &AuthState,
+    provider_name: &str,
+    raw_state: Option<&str>,
+) -> Result<Flow, Refused> {
+    let provider = ProviderId::parse(provider_name).ok_or(Refused::early(Refusal::StateInvalid))?;
+    let raw = raw_state.ok_or(Refused::early(Refusal::StateInvalid))?;
+    state
+        .flows
+        .consume(raw, provider)
+        .await
+        .map_err(|_| Refused::early(Refusal::Failed))?
+        .ok_or(Refused::early(Refusal::StateInvalid))
+}
+
+/// The checks and the work for a taken flow, in their fixed order.
+async fn run_flow(
+    state: &AuthState,
+    slot: &CookieSlot,
+    headers: &HeaderMap,
+    flow: &Flow,
+    query: CallbackQuery,
+) -> Result<String, Refusal> {
     if flow.purpose() == FlowPurpose::Login {
         let binding = read_cookie(headers, state.cookies.binding_name());
         if !flow.binding_matches(binding) {
@@ -171,12 +229,28 @@ async fn finish(
         return Err(Refusal::Denied);
     }
     let code = query.code.as_deref().ok_or(Refusal::Failed)?;
-    let redirect = callback_url(&port.base_url, provider).map_err(|_| Refusal::Failed)?;
+    let port = state.oauth_port().map_err(|_| Refusal::Failed)?;
+    let adapter = port
+        .providers
+        .get(&flow.provider())
+        .cloned()
+        .ok_or(Refusal::ProviderDisabled)?;
+    let redirect = callback_url(&port.base_url, flow.provider()).map_err(|_| Refusal::Failed)?;
 
     match flow.purpose() {
-        FlowPurpose::Login => sign_in(state, slot, adapter.as_ref(), &flow, code, &redirect).await,
-        // Linking a provider to a signed-in account is added in T22.
-        FlowPurpose::Link => Err(Refusal::Failed),
+        FlowPurpose::Login => sign_in(state, slot, adapter.as_ref(), flow, code, &redirect).await,
+        FlowPurpose::Link => {
+            link_provider(
+                state,
+                slot,
+                headers,
+                adapter.as_ref(),
+                flow,
+                code,
+                &redirect,
+            )
+            .await
+        }
     }
 }
 
@@ -218,6 +292,119 @@ async fn sign_in(
         .map_err(|_| Refusal::Failed)?;
     slot.push(cookie);
     Ok(sanitize_return_to(Some(flow.return_to())))
+}
+
+/// Links the provider identity to the signed-in account that started the flow. Only the very
+/// session that started the flow may finish it. The provider's email is never used.
+async fn link_provider(
+    state: &AuthState,
+    slot: &CookieSlot,
+    headers: &HeaderMap,
+    adapter: &dyn OAuthProvider,
+    flow: &Flow,
+    code: &str,
+    redirect: &Url,
+) -> Result<String, Refusal> {
+    let actor = flow_session_user(state, slot, headers, flow).await?;
+    let profile = adapter
+        .fetch_profile(code, flow.pkce_verifier(), redirect)
+        .await
+        .map_err(|_| Refusal::Failed)?;
+    let provider = flow.provider();
+    let owner = identity_owner(&state.pool, provider, &profile.provider_user_id).await?;
+    let has_provider = actor_has_provider(&state.pool, actor.id, provider).await?;
+    match decide_link(&actor, owner, has_provider) {
+        LinkDecision::Link => insert_identity(state, actor.id, provider, &profile).await?,
+        LinkDecision::AlreadyLinkedHere => {}
+        LinkDecision::RefuseLinkedElsewhere => return Err(Refusal::IdentityAlreadyLinked),
+        LinkDecision::RefuseProviderAlreadyLinked => {
+            return Err(Refusal::ProviderAlreadyLinked);
+        }
+        // The demo account cannot start a link flow, so this is only a safe default.
+        LinkDecision::RefuseDemo => return Err(Refusal::StateInvalid),
+    }
+    Ok(format!("/settings/account?linked={}", provider.as_str()))
+}
+
+/// The account of the browser's current session. The session must be the one the flow was
+/// started from, so a flow cannot be finished from another browser or after logout.
+async fn flow_session_user(
+    state: &AuthState,
+    slot: &CookieSlot,
+    headers: &HeaderMap,
+    flow: &Flow,
+) -> Result<Actor, Refusal> {
+    let raw = read_cookie(headers, state.cookies.session_name()).ok_or(Refusal::StateInvalid)?;
+    let found = state
+        .sessions
+        .authenticate(raw)
+        .await
+        .map_err(|_| Refusal::Failed)?
+        .ok_or(Refusal::StateInvalid)?;
+    let same_session = flow.session_key() == Some(found.key.as_str());
+    let same_user = flow.user() == Some(found.user_id);
+    if !(same_session && same_user) {
+        return Err(Refusal::StateInvalid);
+    }
+    if found.renewed {
+        let cookie = state
+            .cookies
+            .session_value(raw)
+            .map_err(|_| Refusal::Failed)?;
+        slot.push(cookie);
+    }
+    Ok(Actor {
+        id: found.user_id,
+        is_demo: found.is_demo,
+    })
+}
+
+/// Whether the account already has an identity for this provider.
+async fn actor_has_provider(
+    pool: &PgPool,
+    user: UserId,
+    provider: ProviderId,
+) -> Result<bool, Refusal> {
+    let (exists,): (bool,) = sqlx::query_as(
+        "SELECT EXISTS (SELECT 1 FROM identities WHERE user_id = $1 AND provider = $2)",
+    )
+    .bind(user.as_uuid())
+    .bind(provider.as_str())
+    .fetch_one(pool)
+    .await
+    .map_err(|_| Refusal::Failed)?;
+    Ok(exists)
+}
+
+/// Adds the identity to the account. When a parallel request linked first, the outcome is read
+/// again, so the answer matches what the database now holds.
+async fn insert_identity(
+    state: &AuthState,
+    user: UserId,
+    provider: ProviderId,
+    profile: &ProviderProfile,
+) -> Result<(), Refusal> {
+    let inserted = sqlx::query(
+        "INSERT INTO identities (user_id, provider, provider_user_id, provider_label)
+         VALUES ($1, $2, $3, $4)",
+    )
+    .bind(user.as_uuid())
+    .bind(provider.as_str())
+    .bind(&profile.provider_user_id)
+    .bind(provider_label(profile))
+    .execute(&state.pool)
+    .await;
+    match inserted {
+        Ok(_) => Ok(()),
+        Err(error) if is_unique_violation(&error) => {
+            match identity_owner(&state.pool, provider, &profile.provider_user_id).await? {
+                Some(owner) if owner == user => Ok(()),
+                Some(_) => Err(Refusal::IdentityAlreadyLinked),
+                None => Err(Refusal::ProviderAlreadyLinked),
+            }
+        }
+        Err(_) => Err(Refusal::Failed),
+    }
 }
 
 /// The account that already holds this provider identity, if any.
@@ -282,10 +469,6 @@ async fn create_account(
         Err(error) if is_unique_violation(&error) => return Err(Refusal::AccountExists),
         Err(_) => return Err(Refusal::Failed),
     };
-    let label: Option<String> = profile
-        .label
-        .as_ref()
-        .map(|text| text.chars().take(100).collect());
     sqlx::query(
         "INSERT INTO identities (user_id, provider, provider_user_id, provider_label)
          VALUES ($1, $2, $3, $4)",
@@ -293,12 +476,21 @@ async fn create_account(
     .bind(user_id)
     .bind(provider.as_str())
     .bind(&profile.provider_user_id)
-    .bind(label)
+    .bind(provider_label(profile))
     .execute(&mut *transaction)
     .await
     .map_err(|_| Refusal::Failed)?;
     transaction.commit().await.map_err(|_| Refusal::Failed)?;
     Ok(UserId::from_uuid(user_id))
+}
+
+/// The provider's display name, cut to the length the table allows. It is never used to find an
+/// account.
+fn provider_label(profile: &ProviderProfile) -> Option<String> {
+    profile
+        .label
+        .as_ref()
+        .map(|text| text.chars().take(100).collect())
 }
 
 /// Whether a database error is a unique-constraint violation.
@@ -307,7 +499,7 @@ fn is_unique_violation(error: &sqlx::Error) -> bool {
 }
 
 /// The callback URL for one provider. It is built from configuration only, never from the request.
-fn callback_url(base_url: &str, provider: ProviderId) -> Result<Url, AuthError> {
+pub(crate) fn callback_url(base_url: &str, provider: ProviderId) -> Result<Url, AuthError> {
     let text = format!(
         "{}/api/auth/oauth/{}/callback",
         base_url.trim_end_matches('/'),

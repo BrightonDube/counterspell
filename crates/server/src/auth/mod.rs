@@ -181,6 +181,10 @@ pub fn router(state: AuthState) -> Router {
             "/api/auth/oauth/{provider}/callback",
             get(handlers::oauth::callback),
         )
+        .route(
+            "/api/auth/link/{provider}/start",
+            post(handlers::link::start),
+        )
         .route("/api/me", get(handlers::me::me))
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);
