@@ -130,7 +130,7 @@ Conventions:
 
 ## Wave 2: session logic against a fake Docker
 
-- [ ] **T14 [S] (30 min) Backend traits and the fake backend**
+- [x] **T14 [S] (30 min) Backend traits and the fake backend**
   - Files: `crates/judge/src/sandbox/backend.rs`, `crates/judge/src/sandbox/testkit.rs`.
   - Define `Backend`, `BackendSession`, `DriverChannel`, `InfraError` (daemon unreachable, API timeout, image missing, digest mismatch, policy read-back mismatch, kill failed, exec setup failed, unexpected response) with generics, not `dyn`. Implement `FakeBackend` (feature `testkit`): ledger of created and removed containers, fault injection at the n-th call, and scripted program behaviours (answer after a delay, hang, flood, exit with code, OOM evidence) driven by Tokio's paused clock.
   - Tests: ledger counts; fault injection triggers exactly at the chosen call; scripted behaviours reproduce.

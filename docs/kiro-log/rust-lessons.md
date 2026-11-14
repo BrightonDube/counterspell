@@ -726,3 +726,9 @@ A match guard (`Some(detail) if run.sample && !self.hidden_phase`) checks state 
 `serde_json::Value` silently keeps the last of two equal keys, so a checker that parses to `Value` cannot see the duplicate. A small `Deserialize` visitor that reads only the keys (`IgnoredAny` skips the values) catches it.
 `match (iter.next(), iter.next())` checks "exactly one" without collecting. `(Some(only), None)` is true only when nothing else follows.
 A manual `impl Debug` that prints a placeholder keeps a type's contents out of `{:?}` output, in tests and in logs.
+
+# Rust lesson: judge-sandbox T14
+
+A trait can declare an `async` method by returning `impl Future + Send`. Generics then pick the backend at compile time, so there is no `dyn` and no boxed future.
+`std::future::ready(value)` gives a ready future for a fake that does no waiting, which keeps the fake free of `async` functions that never `.await`.
+A `Mutex` guard must not live across an `.await`. The fake takes the lock in short sync blocks and releases it before returning, so the future stays `Send`.
