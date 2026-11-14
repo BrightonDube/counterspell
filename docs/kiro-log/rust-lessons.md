@@ -690,3 +690,9 @@ A value built from typed parts cannot carry a stray path or command. `FileName` 
 `&[u8]` is a borrowed view of bytes, so `split` on a chunk returns slices without copying. The reader copies a segment into its own buffer only after the size check passes.
 `std::mem::take` moves a finished line out of the buffer and leaves an empty one behind. No clone is needed, and the buffer is reused.
 Bounded memory comes from checking the length before extending a `Vec`. Checking afterwards would let a flood allocate first.
+
+# Rust lesson: judge-sandbox T08 and T09
+
+`serde_json::Value` holds any JSON. Parsing it first and checking keys afterwards lets the code report the exact broken rule (extra key, wrong id) instead of a generic error.
+`let ... else` returns early when a pattern does not match, which keeps the happy path flat.
+`String::from_utf8_lossy` turns invalid bytes into U+FFFD. `is_char_boundary` finds a safe cut point, so a multi-byte character is never split.
