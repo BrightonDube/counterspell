@@ -117,22 +117,49 @@ describe('applyEvent', () => {
     expect(after).toBe(done);
   });
 
-  it('maps an internal_error to the internal_error status, not a wrong answer', () => {
+  // Error codes are the wire values from crates/common/src/status.rs (FailureReason), and the status
+  // follows the table in crates/common/src/run_state.rs (status_after_event).
+  it('maps retries_exhausted to internal_error, never to a wrong answer', () => {
     const state = applyEvent(
       initialRunState('run-1'),
       envelope(1, {
         kind: 'error',
-        code: 'internal_error',
-        message: 'The judge failed.'
+        code: 'retries_exhausted',
+        message: 'The judge could not finish this run.'
       })
     );
     expect(state.status).toBe('internal_error');
     expect(state.terminal).toEqual({
       kind: 'error',
-      code: 'internal_error',
-      message: 'The judge failed.'
+      code: 'retries_exhausted',
+      message: 'The judge could not finish this run.'
     });
   });
+
+  it('maps expired to the expired status', () => {
+    const state = applyEvent(
+      initialRunState('run-1'),
+      envelope(1, {
+        kind: 'error',
+        code: 'expired',
+        message: 'The run waited too long in the queue and was not run.'
+      })
+    );
+    expect(state.status).toBe('expired');
+    expect(state.terminal?.kind).toBe('error');
+  });
+
+  it.each(['cancelled', 'problem_unavailable', 'language_unavailable'])(
+    'maps %s to the failed status',
+    (code) => {
+      const state = applyEvent(
+        initialRunState('run-1'),
+        envelope(1, { kind: 'error', code, message: 'Stopped.' })
+      );
+      expect(state.status).toBe('failed');
+      expect(state.terminal).toEqual({ kind: 'error', code, message: 'Stopped.' });
+    }
+  );
 
   it('gives the same state for a noisy replay as for the log applied once', () => {
     const log: RunEventEnvelope[] = [
