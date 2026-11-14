@@ -78,7 +78,7 @@ Everything that crosses from Z4 back to Z2 is untrusted bytes. The judge reads i
 1. Integrity of verdicts (an `accepted` must mean the code was right).
 2. Confidentiality of hidden tests and expected outputs.
 3. The host (VPS), its secrets, and the application data (Postgres, Valkey, Caddy, `.env`).
-4. Availability for other users and for the judges until 29 Jan 2027.
+4. Availability for other users and for reviewers until 29 Jan 2027.
 5. Isolation between users' runs.
 
 ### Adversaries

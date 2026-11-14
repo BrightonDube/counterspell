@@ -4,7 +4,7 @@
 
 Provide the developer-facing Counterspell MCP server and installable Kiro Power described by `docs/system-design.md` §8 and `docs/kiro-playbook.md` A.5–A.6. Kiro should be able to validate original Grimoire packs, hunt and shrink ghost inputs, inspect verdict explanations, and fit supplied complexity timings through the same engine used by production.
 
-The feature also provides a dogfooding proof: Kiro asks `find_ghost_input` to investigate a deliberately buggy implementation through the sandbox, fixes the bug, and re-verifies the pack with `validate_pack` and `find_ghost_input`. The proof must produce evidence that can be used in the Kiroween video and `docs/KIRO_USAGE.md`.
+The feature also provides a dogfooding proof: Kiro asks `find_ghost_input` to investigate a deliberately buggy implementation through the sandbox, fixes the bug, and re-verifies the pack with `validate_pack` and `find_ghost_input`. The proof must produce evidence that can be used in the demo video and `docs/KIRO_USAGE.md`.
 
 Sources: `docs/system-design.md` §§2, 5, 6, 7, 8 and 8b; `docs/requirements.md` MCP-1 to MCP-3 and the Sandbox criteria; `docs/kiro-playbook.md` A.5, A.6 and A.10; `.kiro/specs/ghost-engine/`; `.kiro/specs/grimoire-packs/`; `.kiro/steering/structure.md`, `security.md`, `sandbox.md`, and `rust-teaching.md`.
 

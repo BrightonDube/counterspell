@@ -4,13 +4,13 @@
 
 This spec defines how a person proves who they are to Counterspell, how that proof becomes a session, and how one person's account can gain more sign-in methods without ever being merged with someone else's.
 
-Three sign-in methods stay, as decided: **GitHub and Google OAuth** (authorization code with `state` and PKCE), and **email** (a single-use magic link, plus email and password). A **judge demo account** gives hackathon judges a no-friction path. Sessions are opaque cookies backed by Postgres. Email is sent through **Resend**.
+Three sign-in methods stay, as decided: **GitHub and Google OAuth** (authorization code with `state` and PKCE), and **email** (a single-use magic link, plus email and password). A **demo account** gives reviewers a no-friction path. Sessions are opaque cookies backed by Postgres. Email is sent through **Resend**.
 
 The rule that shapes everything: **an account is never linked, merged or signed in to because two things share an email address.** Linking happens only when a signed-in user starts it, and only after the new method is proven (OAuth with a link-intent `state` bound to their session, or a verification email).
 
 Property-based testing (PBT) is **enabled** for this spec. The EARS criteria below are written so that each important one becomes a property in `design.md` (token single-use, expiry, session isolation, "an OAuth email match never links or signs in to another account", and more).
 
-Sources: `docs/system-design.md` §1.1 (F1), §1.2, §4 (`users`, `identities`, `email_tokens`, `sessions`), §7.1, §9 (auth endpoints, judge demo account), §10 (configuration); `docs/requirements.md` ACC-1 to ACC-6 and their EARS criteria; steering `security.md`, `api-conventions.md`, `structure.md`, `tech.md`, `rust-teaching.md`; sibling specs `repo-skeleton` and `run-lifecycle` (the `UserResolver` seam, the database roles, rate-limit conventions).
+Sources: `docs/system-design.md` §1.1 (F1), §1.2, §4 (`users`, `identities`, `email_tokens`, `sessions`), §7.1, §9 (auth endpoints, demo account), §10 (configuration); `docs/requirements.md` ACC-1 to ACC-6 and their EARS criteria; steering `security.md`, `api-conventions.md`, `structure.md`, `tech.md`, `rust-teaching.md`; sibling specs `repo-skeleton` and `run-lifecycle` (the `UserResolver` seam, the database roles, rate-limit conventions).
 
 ## Glossary
 
@@ -26,7 +26,7 @@ Sources: `docs/system-design.md` §1.1 (F1), §1.2, §4 (`users`, `identities`, 
 - **Session**: a row in `sessions`; the browser holds an opaque random value, the database holds only its hash.
 - **Session key**: the SHA-256 hex of the session value; the `sessions.id`.
 - **Capabilities**: the actions an account may perform (link a provider, change credentials, delete itself, sign out everywhere). Computed from the account; sent to the UI.
-- **Demo account**: the single seeded account for judges (`users.is_demo`).
+- **Demo account**: the single seeded account for reviewers (`users.is_demo`).
 - **Clock**: the one injectable source of "now" used for every expiry decision. Tests use a manual clock.
 - **Fake provider / fake mailer**: test doubles for an OAuth provider and for Resend. No test calls the internet.
 - **Seam**: a trait owned by one spec and implemented by another. This spec implements `UserResolver` from `run-lifecycle`.
@@ -235,13 +235,13 @@ Sources: `docs/system-design.md` §1.1 (F1), §1.2, §4 (`users`, `identities`, 
 8. WHEN a client sends `POST /api/auth/password/reset {email}`, THE SYSTEM SHALL answer `202` identically for any valid address and send mail only if the account exists, has a password, and is not the demo account. WHEN the `reset` token is consumed with `POST /api/auth/password/reset/confirm {token, new_password}`, THEN THE SYSTEM SHALL replace the hash, delete all of the user's sessions and sign in nobody.
 9. A password SHALL be set only by criterion 7 (new account) or criterion 8 (existing password). No other path SHALL add a password to an account.
 
-### R16. Judge demo account (Must; ACC-6)
+### R16. Demo account (Must; ACC-6)
 
-**User story:** As a hackathon judge, I want to sign in with a given demo account in seconds and try everything, without being able to harm the account or other judges.
+**User story:** As a reviewer, I want to sign in with a given demo account in seconds and try everything, without being able to harm the account or other reviewers.
 
 1. THE demo account SHALL exist only when `DEMO_ACCOUNT_EMAIL` and `DEMO_ACCOUNT_PASSWORD` (at least 16 characters) are set. Otherwise it SHALL be disabled and its login-page link hidden.
 2. WHEN the server starts, THE SYSTEM SHALL seed the demo account idempotently: exactly one user with `is_demo = true`, handle `demo`, a verified email, and an Argon2id hash of the configured password. THE password SHALL NOT appear in the repository, in logs, in any response or in plain text in the database.
-3. THE login page SHALL show a "Judging? Use the demo account" link that opens the demo sign-in form. The form SHALL show the demo email and ask for the password given in the Devpost private field. Sign-in SHALL use `POST /api/auth/login`.
+3. THE login page SHALL show a "Try the demo account" link that opens the demo sign-in form. The form SHALL show the demo email and ask for the password given in the private field of the external submission form. Sign-in SHALL use `POST /api/auth/login`.
 4. THE SYSTEM SHALL refuse these actions for the demo account with `403 demo_account_restricted`: linking a provider, linking an email, changing email or password (register, reset), deleting the account, and `logout-all`. `logout` (this session only) SHALL be allowed.
 5. THE demo account SHALL be reachable by password only. A magic-link request for its address SHALL answer the usual `202` and send nothing, its tokens SHALL be refused, and an OAuth profile with its address SHALL be refused like any other email collision.
 6. THE database SHALL, as a second barrier, refuse to add an identity to the demo user, refuse to delete the demo user, and refuse to change its email, handle or password except during seeding.
@@ -318,7 +318,7 @@ Kiro's *Analyze Requirements* feature is interactive and was not available in th
 | 5 | A `link_email` link opened in another browser, or by another signed-in user, could attach an address to the wrong account. | Gap | Consume only for a session of the token's user; mismatch does not burn the token (R9.3). |
 | 6 | §4 says `email citext unique` but OAuth users may have no (verified) email. A stored unverified email would let someone squat an address. | Ambiguity | Nullable email; the database refuses an unverified stored email (R7.3, R18.2). |
 | 7 | Resend's free plan allows 100 emails per day. One abuser could use it up and block every magic link. | Risk | Per-email, per-IP and a global daily cap; fail closed on Valkey outage (R4.8, R14.1, R14.4). |
-| 8 | The demo account is shared by every judge. `logout-all` would sign the others out; a password change would lock them out. | Gap | Demo restrictions include `logout-all` and all credential changes (R16.4). |
+| 8 | The demo account is shared by every reviewer. `logout-all` would sign the others out; a password change would lock them out. | Gap | Demo restrictions include `logout-all` and all credential changes (R16.4). |
 | 9 | Registering with an unverified email as an account row lets an attacker squat the victim's address ("pre-hijacking"). | Risk | A pending registration lives in a token; no account until the mailbox is proven (R15.7). |
 | 10 | ACC-1.4 says to tell the user to use their original method. That reveals that an email has an account. | Trade-off | Accepted only for the person who just proved control of that email at a provider (R7.2). Magic-link, register and reset answers stay uniform (R5.1, R15.7, R15.8). |
 | 11 | §9 gives separate callbacks for sign-in and linking. GitHub OAuth apps accept one callback URL. | Conflict | One callback per provider; the flow row decides sign-in or link (R6, R8). Open question 2. |
