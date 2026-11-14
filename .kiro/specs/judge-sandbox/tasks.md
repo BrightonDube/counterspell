@@ -62,7 +62,7 @@ Conventions:
   - Depends on: T04.
   - Rust lesson: plain data structs vs library types; why the checker is a separate function that is itself tested.
 
-- [ ] **T06 [P] (25 min) Session and exec specs and the tar builder**
+- [x] **T06 [P] (25 min) Session and exec specs and the tar builder**
   - Files: `crates/judge/src/sandbox/spec.rs`, `crates/judge/tests/model_spec.rs`.
   - Implement `SessionSpec`, `ExecSpec` (fixed argv, env, user, working dir), container names and labels, and `build_tar(files)` that writes exactly three entries with validated fixed names (source, driver, `signature.json`). There is no function that takes a command string.
   - Tests: P4 (two random sources and inputs produce equal specs, equal entry names, differing content only); the tar contains only the three names; a name that is not valid cannot be passed (type-level or checked at construction).

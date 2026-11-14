@@ -6,35 +6,18 @@
 
 use std::time::Duration;
 
-use counterspell_judge::languages::LanguageCatalog;
 use counterspell_judge::sandbox::config::OciRuntime;
 use counterspell_judge::sandbox::policy::{
     ContainerPolicy, PolicyViolation, ScratchExec, SeccompProfile, TmpfsMount, Ulimit,
 };
-use tempfile::TempDir;
+
+mod support;
+use support::shipped_catalogue;
 
 const MIB: u64 = 1024 * 1024;
 
-/// The shipped Python entry, with a stand-in driver file so the loader accepts it.
-/// `scratch_exec` flips the Python scratch flag, to test a language that may execute there.
-fn python_language_text(scratch_exec: bool) -> (TempDir, String) {
-    let text = include_str!("../../../languages/languages.toml");
-    let python_only = text.split("[javascript]").next().unwrap().to_owned();
-    let text = if scratch_exec {
-        python_only.replace("exec_scratch = false", "exec_scratch = true")
-    } else {
-        python_only
-    };
-    let dir = TempDir::new().unwrap();
-    let driver_dir = dir.path().join("drivers").join("python");
-    std::fs::create_dir_all(&driver_dir).unwrap();
-    std::fs::write(driver_dir.join("driver.py"), "print('driver')\n").unwrap();
-    (dir, text)
-}
-
 fn policy_for(scratch_exec: bool) -> ContainerPolicy {
-    let (dir, text) = python_language_text(scratch_exec);
-    let catalog = LanguageCatalog::parse(&text, dir.path()).unwrap();
+    let (_dir, catalog) = shipped_catalogue(scratch_exec);
     let python = catalog.get("python").unwrap();
     ContainerPolicy::for_language(python, Duration::from_secs(20), OciRuntime::Runc)
 }
