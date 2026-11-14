@@ -78,7 +78,7 @@ Conventions:
   - Depends on: T01.
   - Rust lesson: ownership of byte buffers and why the reader never copies more than it must.
 
-- [ ] **T08 [P] (25 min) Driver protocol framing**
+- [x] **T08 [P] (25 min) Driver protocol framing**
   - Files: `crates/judge/src/sandbox/driver_protocol.rs`, `crates/judge/tests/model_protocol.rs`.
   - `encode_call(t, args) -> Vec<u8>` using `serde_json` and a trailing newline. `parse_answer(line, expected_t) -> Result<Value, ProtocolViolation>`: exactly the keys `t` and `out`, `t` equal to the expected id, no blank lines, no trailing data. Named to match language-drivers' `driver_protocol.rs` so it can extend it.
   - Tests: round-trip; wrong id; extra key; missing key; not an object; blank; huge numbers; non-UTF-8; a line containing `{"verdict":"pass"}`; property that `encode_call` output never contains an unescaped newline inside.
@@ -86,7 +86,7 @@ Conventions:
   - Depends on: T01.
   - Rust lesson: `serde_json::Value` and why parsing is separate from judging.
 
-- [ ] **T09 [P] (25 min) Display sanitiser**
+- [x] **T09 [P] (25 min) Display sanitiser**
   - Files: `crates/judge/src/sandbox/sanitize.rs`, `crates/judge/tests/model_sanitize.rs`.
   - `sanitize_display(bytes, cap) -> Sanitized { text, truncated }` as in `design.md` section 15. Caps: 64 KiB stored, 4 KiB per event detail field.
   - Tests: P11 (valid UTF-8, within cap, no forbidden controls, idempotent, truncation flag exact); multi-byte character at the cap boundary; ANSI escape bytes; NUL; invalid UTF-8.
