@@ -8,6 +8,8 @@
 
 #![allow(dead_code)]
 
+pub mod complexity;
+
 use counterspell_engine::{
     Comparator, FailureKind, KnownGhost, ManualClock, Observation, Oracle, OracleError,
     ProgramResult, Schema,

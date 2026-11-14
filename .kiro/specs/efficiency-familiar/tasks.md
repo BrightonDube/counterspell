@@ -114,7 +114,7 @@ Conventions for every web task:
   - Preserve: a class is never reported at `Low`; `High` needs all the listed conditions.
   - Rust lesson: borrowing slices, `Option` for "maybe a class", and sorting with `partial_cmp`.
 
-- [ ] **T10 [P] (30 min) Synthetic timing corpus and strategies**
+- [x] **T10 [P] (30 min) Synthetic timing corpus and strategies**
   - Files: `crates/engine/tests/support/complexity.rs`, `crates/engine/tests/support/mod.rs` (add a module line).
   - Build the series generator from the design: true class ∈ {`n`, `n log n`, `n^2`, `n^3`}; `k` ∈ 3..=8; size factor 2 or 4; `n_0` ∈ 2^6..2^10; fixed overhead `ρ` ∈ [0, 3] of the compute at `n_0`; lognormal multiplicative noise `s` ∈ [0, 0.25]; spike probability up to 0.1 with multiplier 1.5 to 3; five repeats per point, median and `(max − min)/median` as `Point`. A seeded variant for the calibration report. Offer a "spread unknown" form.
   - Tests: the generator itself obeys its parameter ranges; noise-free output is exactly `a + c·g(n)`.
@@ -124,7 +124,7 @@ Conventions for every web task:
   - Preserve: test support only; nothing here ships.
   - Rust lesson: `proptest` strategies and why a generator needs its own tests.
 
-- [ ] **T11 [S] (30 min) Fit properties P1 to P7**
+- [x] **T11 [S] (30 min) Fit properties P1 to P7**
   - Files: `crates/engine/tests/properties_complexity.rs`.
   - Implement P1 (soundness), P2 (usefulness), P3 (scale invariance with powers of two), P4 (totality on arbitrary and extreme inputs), P5 (determinism), P6 (class only with confidence; `plausible` contains `leaning`), P7 (`Quick` never `High`). Run them. If P1 or P2 fail, **record the failing seeds and stop**; T12 fixes constants.
   - Requirements: R3.4 to R3.10.
@@ -133,7 +133,7 @@ Conventions for every web task:
   - Preserve: regression files are committed.
   - Rust lesson: property tests versus example tests, and reading a shrunk counterexample.
 
-- [ ] **T12 [S] [SUPERVISED] (30 min) Calibrate and freeze the constants as `fit-1`**
+- [x] **T12 [S] [SUPERVISED] (30 min) Calibrate and freeze the constants as `fit-1`**
   - Files: `crates/engine/src/complexity/mod.rs` (constants only), `docs/kiro-log/efficiency-familiar-calibration.md`.
   - Adjust only constants in `FitConfig`, and only toward less confidence, until P1 and P2 pass with at least 4,000 cases. Do not change the algorithm. Record the final constants, the corpus parameters, and for each true class the share of `Low`, `Medium`-correct, `Medium`-adjacent and `High`-correct results, and the number of wrong-at-`High` results (must be zero). If P2 cannot pass without breaking P1, stop and report to Brighton instead of weakening either property.
   - Requirements: R3.8, R3.9, R15.2.

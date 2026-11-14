@@ -816,3 +816,19 @@ A test that puts an expected value next to its hand-derived source (`Sxx = 2·(l
 The grade is one function with an early `return` for each "Low" reason. Each check reads as one sentence, and the `Vec` of reasons is built in the same order the requirements list them.
 Passing `&[...]` slices into pure functions keeps ownership with the caller. The fit never copies the input except when it drops a point for the stability check.
 `bool::then_some` turns "class only at medium or high" into one expression, and `Option` makes "no class" impossible to confuse with a class.
+
+# Rust lesson: efficiency-familiar T10
+
+A test helper that generates data needs its own tests, because a property test is only as good as its inputs. The corpus tests check parameter ranges and a hand-checkable series before any fit runs.
+`u64` medians are scaled so the largest sits at 1e18. That keeps every value inside `u64` range, which matters because `as u64` from a too-large `f64` saturates silently.
+
+# Rust lesson: efficiency-familiar T11
+
+`proptest!` runs each property on many random inputs and shrinks a failure to a minimal case. Reading "minimal failing input" tells you which shape breaks the rule.
+Mutation check: loosening a constant on purpose made P1 fail. A property that never fails proves nothing, so the check is worth the minute it takes.
+`prop_assert!` returns an error inside a property rather than panicking, so proptest can shrink the input before it reports.
+
+# Rust lesson: efficiency-familiar T12
+
+Constants live in one `Default` impl, and the calibration table is an `#[ignore]`d test that prints the numbers. Tuning is then visible in a diff and reproducible, not a hidden edit.
+A count that must be zero (wrong-at-High) is asserted by a property, not eyeballed from the table.
