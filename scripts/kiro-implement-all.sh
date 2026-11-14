@@ -31,6 +31,12 @@ usage(){ ~/.local/bin/kiro-cli chat --agent-engine v2 --no-interactive --trust-t
 log(){ echo "$(date '+%F %H:%M') $*" >> "$P"; }
 WD=
 stop(){ log "STOPPED $*"; [ -n "$WD" ] && kill "$WD" 2>/dev/null; exit 1; }
+# Pending spec-only amendments (38 private-pack split) before any implement session.
+# One Kiro session at a time. No-ops if already applied. The current kiro-gap-specs.sh
+# process will pick this up when it reaches implement-all, because it invokes this file from disk.
+if [ -f scripts/kiro-pending-spec-amendments.sh ]; then
+  bash scripts/kiro-pending-spec-amendments.sh || stop "pending spec amendment failed"
+fi
 # Counts only task lines ("- [x] **Tnn"), not definition-of-done checklists.
 # blocked = unchecked tasks whose title contains BLOCKED (gated on Brighton or another spec).
 counts(){ # slug -> "done total stretch blocked"
