@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Writes the specs for the gaps found on 14 Nov 2026 (spec mode only, no implementation),
+# then amends problem-catalogue for the private-pack split (38),
 # then runs docs/kiro-prompts/37-remove-hackathon-mentions.md as its own default-mode session,
 # then resumes implementation with judge-sandbox, auth and ide-workspace first.
 # Run inside tmux session kiro-impl (scripts/kiro-after-current.sh starts it). One Kiro session at a time.
@@ -29,6 +30,26 @@ spec(){ # num slug model
 spec 34 problem-catalogue claude-haiku-5.5
 spec 35 deploy-ops claude-haiku-5.5
 spec 36 pack-authoring-pipeline claude-haiku-5.5
+
+# Amend the already-written problem-catalogue spec for the private-pack split
+# (Brighton, 14 Nov 23:06). Spec only. Skips if the split is already in the spec.
+amend_private_pack_split(){
+  local f=docs/kiro-prompts/38-private-pack-split.md
+  [ -f "$f" ] || { log "STOPPED missing $f"; exit 1; }
+  if [ -f .kiro/specs/problem-catalogue/design.md ] && grep -q 'counterspell-packs-private' .kiro/specs/problem-catalogue/design.md .kiro/specs/problem-catalogue/requirements.md 2>/dev/null; then
+    log "38-private-pack-split already reflected in problem-catalogue, skipped"
+    return 0
+  fi
+  local U REM; U=$(usage); [ -n "$U" ] || { log "STOPPED could not read credits"; exit 1; }
+  REM=$(awk -v u="$U" -v l=$LIMIT 'BEGIN{printf "%.0f", l-u}')
+  [ "$REM" -ge "$SPEC_FLOOR" ] || { log "STOPPED remaining credits $REM < $SPEC_FLOOR before 38-private-pack-split"; exit 1; }
+  log "BEGIN 38-private-pack-split ($1) remaining=$REM"
+  bash scripts/kiro-run.sh "38-private-pack-split" "$1" spec "$f"
+  git add .kiro/specs/problem-catalogue "$f" docs/KIRO_USAGE.md docs/kiro-log/*-38-private-pack-split.log 2>/dev/null
+  git commit -qm "kiro: amend problem-catalogue for the private-pack split (Kiro CLI spec mode, $1)" || true
+  log "38-private-pack-split $(cat /tmp/kiro-run.status)"
+}
+amend_private_pack_split claude-haiku-5.5
 
 # Neutralize event-specific wording (Brighton, 14 Nov 2026) after the three specs
 # and before implementation resumes. Own default-mode session, not a new spec.

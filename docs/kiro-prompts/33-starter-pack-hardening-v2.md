@@ -16,7 +16,25 @@ Replaces the ON HOLD brief `docs/kiro-prompts/33-starter-pack-hardening.md` (kep
 
 ## Settled decisions (14 Nov 2026)
 
-- Hidden tests and reference solutions stay in this public repo for now (accepted by Brighton on 14 Nov 2026). He plans to make the repo private later. No private store is needed now. The database remains the serving source; the importer still copies published packs into Postgres.
+- 14 Nov 23:06 (Brighton; replaces the earlier 14 Nov decision that hidden tests could stay in the public repo): Hidden tests (`hidden.toml`, and generator seeds if they reveal hidden cases), reference solutions and ghost/incorrect solutions must live in a private GitHub repo, not the public Counterspell repo. The public repo keeps `problem.md`, `meta.toml` (samples), hints and other public parts. The importer reads both (the private repo via a deploy key or a token at import time, never baked into the public repo or images) and loads them into Postgres. Hidden parts stay server-only.
+- Suggested private repo (Brighton creates it; agents must not): `BrightonDube/counterspell-packs-private`. Do not create that repo, and do not move existing pack files, until he has created it and approved this brief. After approval, Kiro moves the hidden parts as part of the pack work.
+- The existing packs' hidden parts are already in this public repo's git history. Moving the old files is not enough. The fix is to rotate them: write new hidden cases (and new references or ghosts where a rotated case requires it) so the values in public history are no longer the live secrets.
+
+## Pack layout (public and private)
+
+Public repo `BrightonDube/counterspell`, under `packs/<slug>/`:
+
+- `problem.md`, `meta.toml` (public metadata and `[[samples]]` only), `hints.toml`, and any other public part (for example a public README blurb).
+- `packs/catalogue.toml` (tracks and concepts) stays public.
+
+Private repo `BrightonDube/counterspell-packs-private`, under the same `packs/<slug>/` slug:
+
+- `hidden.toml` (curated hidden cases).
+- Generator config and seeds, if they can be used to reconstruct hidden cases (for example `generator.toml`; do not leave those seeds in public `meta.toml`).
+- `reference/` (the reference solution).
+- `incorrect/` (deliberately buggy solutions) and known-ghost files (`known_ghosts.toml` or the equivalent).
+
+The importer checks out or reads both trees, joins them by slug, validates the combined pack, and writes Postgres. It authenticates to the private repo with a deploy key or a token supplied at import time, stored outside the public repo (the same idea as the local `dev-test.env` path). That secret is never committed, never baked into images, and never logged. After import, hidden parts are served from Postgres only (judge role); they never appear in the public API, logs or SSE events.
 
 ## Why v2 (what changed from the original)
 
@@ -70,7 +88,7 @@ Four rungs, general, never assuming the learner's specific bug. The authored lad
 ### Known ghosts
 
 - **diagonal-total:** remove `abs-diagonal` (nobody writes `abs()` there by accident). Replace it with a realistic wrong-answer bug, `both-diagonals`: the learner also adds the anti-diagonal, `total += grid[i][i] + grid[i][size - 1 - i]`. Hand trace: on `[[1]]` the program returns 2 and the reference returns 1, so use `input = [[[1]]]`, `got = 2` (verify by hand and record the trace in the task notes). Concepts: `["matrices", "indexing"]`. The explanation describes the mistake without words from the engine's forbidden list (GRM-31) and without claiming the input is the smallest. Note: swapping rows and columns does **not** change the main diagonal (`grid[i][i]` is the same cell either way), so it is not usable as a wrong-answer ghost. Keep `assumes-square` (crash on `[[[]]]`).
-- Replace `incorrect/abs-diagonal.py` with `incorrect/both-diagonals.py`. Update the model function and vectors in `crates/grimoire/tests/sandbox_fake.rs` (marker `test-change: GHO-6`), the starter table in grimoire-packs `design.md`, and the T23 note in `tasks.md`.
+- Replace `incorrect/abs-diagonal.py` with `incorrect/both-diagonals.py`. Update the model function and vectors in `crates/grimoire/tests/sandbox_fake.rs` (marker `test-change: GHO-6`), the starter table in grimoire-packs `design.md`, and the T23 note in `tasks.md`. After approval, `incorrect/` and known-ghost files live in the private repo; do not move them until then. Rotated hidden cases must still trigger this ghost.
 - count-pairs and longest-run-length ghosts stay. Re-read each explanation against its program and fix any wording that does not match what the program does.
 
 ### Complexity
@@ -87,9 +105,9 @@ Estimated completion time, learning objectives, prerequisite concepts, and a lon
 
 Today the hidden tests are only `[generator]` output from a seed. Random generation rarely hits the exact edge cases. Add a hand-picked hidden list.
 
-### Format (new): optional `hidden.toml` in the pack
+### Format (new): optional `hidden.toml` in the private pack tree
 
-A separate file, not a table in `meta.toml`, so everything server-only sits in one file that the importer never sends to a public surface.
+A separate file in the private repo, not a table in public `meta.toml`, so everything server-only sits in one tree that the importer never sends to a public surface.
 
 ```toml
 [[case]]
@@ -99,8 +117,8 @@ why = "empty list"       # author note, 1-120 chars, never shown to learners
 ```
 
 - Parsed with `#[serde(deny_unknown_fields)]` like `meta.toml`.
-- Add `hidden.toml` to the layout allow-list in `pack.rs` (LAY-02) with a 32 KB cap (LAY-04). Update GRM-1, GRM-2 and GRM-4 wording and `packs/README.md`.
-- `[[samples]]` and `[generator]` are unchanged. Hidden tests become the curated cases plus the generated ones. GRM-23 (`hidden_count` 5 to 50) still applies to the generated part only.
+- The validator and importer see a combined pack (public tree + private tree for the same slug). Add `hidden.toml` to the layout allow-list in `pack.rs` (LAY-02) with a 32 KB cap (LAY-04). Update GRM-1, GRM-2 and GRM-4 wording and `packs/README.md` (public README describes the split, and must not include live hidden cases).
+- Public `meta.toml` keeps `[[samples]]` and public metadata only. If a `[generator]` seed can reconstruct hidden cases, that config lives in the private tree (for example `generator.toml`), not in public `meta.toml`. Hidden tests are the curated cases plus the generated ones. GRM-23 (`hidden_count` 5 to 50) still applies to the generated part only.
 - Test order at import: samples, then curated hidden, then generated hidden (ordinals in that order). The judge already runs samples first (A1).
 
 ### New validator checks (codes go in `codes.rs`, each with a negative fixture and a `mutations.rs` case, GRM-51)
@@ -127,45 +145,50 @@ Also fix the generator side if needed: confirm with a test that every candidate 
 
 ## Part 3 - New spec `pack-import` (the missing catalogue)
 
-Make this a **new spec**, `.kiro/specs/pack-import/` (`requirements.md`, `design.md`, `tasks.md`), in the same style as the other specs. The grimoire-packs scope says that crate never touches a database or `migrations/` (GRM-54), so it does not belong there. This spec is the "catalogue spec" that run-lifecycle, judge-sandbox, hints and dashboard-fsrs refer to.
+Make this a **new spec**, `.kiro/specs/pack-import/` (`requirements.md`, `design.md`, `tasks.md`), in the same style as the other specs, unless `.kiro/specs/problem-catalogue/` already exists. If it does, amend that spec (do not write a second catalogue). The grimoire-packs scope says that crate never touches a database or `migrations/` (GRM-54), so it does not belong there. This is the "catalogue spec" that run-lifecycle, judge-sandbox, hints and dashboard-fsrs refer to.
 
 ### Data flow (put this in the design, in plain English, for Brighton)
 
 ```
-packs/<slug>/ in git (draft -> Brighton approves -> published)
-  -> counterspell-grimoire: validate_static + validate_sandbox (judge PackRunner)
-  -> importer: builds an import bundle, runs the reference in the sandbox for generated hidden expected values
+public packs/<slug>/   (problem.md, meta.toml samples, hints, ...)
+  + private BrightonDube/counterspell-packs-private packs/<slug>/
+      (hidden.toml, generator seeds if they reveal hidden cases, reference/, incorrect/, known ghosts)
+  -> importer (deploy key or token at import time; never in the public repo or images)
+  -> counterspell-grimoire: validate_static + validate_sandbox on the combined pack (judge PackRunner)
   -> Postgres: packs, problems, concepts, problem_concepts, test_cases, reference_solutions,
      problem_hints, problem_known_ghosts
   -> server (SELECT, public data only): GET /api/problems, GET /api/problems/{slug}, ProblemLookup
   -> judge (SELECT, all test data): ProblemTests -> sandbox run -> test_results / run_events -> SSE to browser
 ```
 
+The database remains the serving source. Changing a problem still means: edit the public and/or private pack, validate, Brighton approves, import. No redeploy.
+
 ### Requirements to cover
 
-1. **Import bundle (grimoire, pure).** Extend `record.rs` with a bundle built only from a pack with zero static errors. It holds the existing `ProblemRecord`, plus status, samples, curated hidden cases, generated hidden inputs, hints, known ghosts, the reference source and a SHA-256 content hash of the pack files. Generated hidden inputs must come from the same function `sandbox.rs` uses, so validation and import see identical inputs. Extract that function rather than copying it. No sqlx, no I/O beyond the existing `pack.rs` reads (GRM-54, `purity.rs`).
-2. **Only published packs.** `status = "draft"` packs and `_`-prefixed directories are never imported. A pack must pass static and sandbox validation in the same import run, or it is not written.
-3. **Tables (new migration, guarded pattern like the auth and hints migrations):**
+1. **Import bundle (grimoire, pure).** Extend `record.rs` with a bundle built only from a combined pack (public + private tree for the same slug) with zero static errors. It holds the existing `ProblemRecord`, plus status, samples, curated hidden cases, generated hidden inputs, hints, known ghosts, the reference source and a SHA-256 content hash of both trees. Generated hidden inputs must come from the same function `sandbox.rs` uses, so validation and import see identical inputs. Extract that function rather than copying it. No sqlx, no I/O beyond the existing `pack.rs` reads (GRM-54, `purity.rs`).
+2. **Private-repo access.** The importer reads the private GitHub repo with a deploy key or a token supplied at import time, from a path or environment outside the public repo. Never commit that secret, never bake it into images, never log it, never ship it in the public tree. A missing or refused private tree is a failed import, not a silent public-only import. Document the local and server setup; do not create the GitHub repo in this brief.
+3. **Only published packs.** `status = "draft"` packs and `_`-prefixed directories are never imported. A pack must pass static and sandbox validation in the same import run, or it is not written.
+4. **Tables (new migration, guarded pattern like the auth and hints migrations):**
    - `packs`, `problems`, `concepts`, `problem_concepts`, `test_cases`, `reference_solutions` per `docs/system-design.md` §4. `problems` stores `reference_complexity`, `bench` and `complexity_note` from the record.
    - New `problems` columns: `published boolean` (what `ProblemLookup` checks), `track text`, and `content_sha256 bytea`.
    - New `problem_known_ghosts` (slug, version, id, input, kind, got, exception_class, explanation, concepts): server-only authored Bug Autopsy data that the judge turns into the engine's `KnownGhost`.
    - `problem_hints` belongs to the hints spec (H10). The importer writes to it but does not create it. If that migration is not present, mark the hint-writing task blocked instead of defining the table twice.
    - Add the foreign keys the other specs left for the catalogue (`submissions.problem_slug`, `problem_hints.problem_slug`) with the guarded `to_regclass` pattern.
-4. **Privileges (security default, already decided by the existing specs):** new `counterspell_importer` NOLOGIN role (same pattern as `20261113100200_run_lifecycle_roles.sql`, no passwords in migrations) with write access to the catalogue tables only. `counterspell_server` gets SELECT on `packs`, `problems`, `concepts`, `problem_concepts`, `problem_hints`, and **sample test cases only** (for example a view over `test_cases WHERE is_sample`). It gets no access to hidden rows, `reference_solutions` or `problem_known_ghosts`. `counterspell_judge` gets SELECT on everything it needs to run and hunt. Add `pg_` tests proving that the server role cannot read a hidden row or a reference.
-5. **Expected values.** Samples and curated hidden cases use their authored `expected` (already proven against the reference by SBX-01 and SBX-09). Generated hidden expected values come from running the reference through `PackRunner` at import time. Never on the host, never written to disk or logs.
-6. **Idempotent and versioned.** Same slug, same `pack_version` and same content hash means no change. Same version with a different hash is an error ("bump pack_version"). A higher version replaces that problem's test cases, hints, reference and known ghosts in one transaction. A lower version is an error. A previously imported problem whose pack is now draft or missing becomes `published = false` and is never deleted, because submissions refer to it. Re-running the import twice gives identical rows (`pg_` test).
-7. **No rebuild or restart needed.** The importer is a command run against the database (Kiro picks where it lives; the judge crate is the natural home because it already has sqlx and will implement `PackRunner`; record the choice). The server must see an imported or unpublished problem within 60 seconds without a restart. `ProblemLookup` is synchronous, so use a refreshed in-memory snapshot or change the seam; Kiro decides and records why.
-8. **Production seams.** Implement a Postgres `ProblemLookup` (server) and a Postgres `ProblemTests` (judge, samples only for `Run`, everything for `Submit`, `reference_python` from `reference_solutions`). Keep `EmptyCatalogue` for tests and a missing database.
-9. **Public API.** `GET /api/problems` (slug, title, difficulty, track, concepts) and `GET /api/problems/{slug}` (statement_md, signature, samples, limits), matching the response shape that `web/src/lib/api/problems.ts` validates. Never include hidden cases, generated tests, references, known ghosts, `why` notes or the content hash. Add a canary test: put canaries in a hidden case, the reference and a ghost explanation, import, then assert neither endpoint body contains any canary.
-10. **Honest limit, document it.** The learner's program does receive each hidden input as its argument while it runs; that is how tests work. What it never gets is the expected output, and from the first hidden test onward nothing it prints is shown (A1). The browser never receives hidden inputs or expected outputs.
+5. **Privileges (security default, already decided by the existing specs):** new `counterspell_importer` NOLOGIN role (same pattern as `20261113100200_run_lifecycle_roles.sql`, no passwords in migrations) with write access to the catalogue tables only. `counterspell_server` gets SELECT on `packs`, `problems`, `concepts`, `problem_concepts`, `problem_hints`, and **sample test cases only** (for example a view over `test_cases WHERE is_sample`). It gets no access to hidden rows, `reference_solutions` or `problem_known_ghosts`. `counterspell_judge` gets SELECT on everything it needs to run and hunt. Add `pg_` tests proving that the server role cannot read a hidden row or a reference.
+6. **Expected values.** Samples and curated hidden cases use their authored `expected` (already proven against the reference by SBX-01 and SBX-09). Generated hidden expected values come from running the reference through `PackRunner` at import time. Never on the host, never written to disk or logs.
+7. **Idempotent and versioned.** Same slug, same `pack_version` and same content hash means no change. Same version with a different hash is an error ("bump pack_version"). A higher version replaces that problem's test cases, hints, reference and known ghosts in one transaction. A lower version is an error. A previously imported problem whose pack is now draft or missing becomes `published = false` and is never deleted, because submissions refer to it. Re-running the import twice gives identical rows (`pg_` test).
+8. **No rebuild or restart needed.** The importer is a command run against the database (Kiro picks where it lives; the judge crate is the natural home because it already has sqlx and will implement `PackRunner`; record the choice). The server must see an imported or unpublished problem within 60 seconds without a restart. `ProblemLookup` is synchronous, so use a refreshed in-memory snapshot or change the seam; Kiro decides and records why.
+9. **Production seams.** Implement a Postgres `ProblemLookup` (server) and a Postgres `ProblemTests` (judge, samples only for `Run`, everything for `Submit`, `reference_python` from `reference_solutions`). Keep `EmptyCatalogue` for tests and a missing database.
+10. **Public API.** `GET /api/problems` (slug, title, difficulty, track, concepts) and `GET /api/problems/{slug}` (statement_md, signature, samples, limits), matching the response shape that `web/src/lib/api/problems.ts` validates. Never include hidden cases, generated tests, references, known ghosts, `why` notes or the content hash. Add a canary test: put canaries in a hidden case, the reference and a ghost explanation, import, then assert neither endpoint body contains any canary.
+11. **Honest limit, document it.** The learner's program does receive each hidden input as its argument while it runs; that is how tests work. What it never gets is the expected output, and from the first hidden test onward nothing it prints is shown (A1). The browser never receives hidden inputs or expected outputs.
 
 ### pack-import tasks (outline; Kiro sizes them at 30 minutes or less)
 
 - I01 Spec docs: requirements (IMP-n IDs), design (data flow above, tables, roles, versioning rules, decisions), tasks.
 - I02 Import bundle in grimoire, plus the shared hidden-input function (unit tests, `purity.rs` still green).
 - I03 Migration: tables, new columns, `problem_known_ghosts`, importer role, grants, guarded FKs (`pg_` tests, migration runs twice).
-- I04 Importer core with a fake `PackRunner`: publish filter, versioning, idempotency, unpublish, one transaction per pack (`pg_` tests).
-- I05 Import command and its report (counts and slugs only, no hidden data in output or logs; log canary test).
+- I04 Importer core with a fake `PackRunner`: publish filter, versioning, idempotency, unpublish, one transaction per pack (`pg_` tests). Joins public and private trees by slug; refuses a public-only import.
+- I05 Import command and its report (counts and slugs only, no hidden data in output or logs; log canary test). Private-repo credential from the environment or a file outside the public repo.
 - I06 Postgres `ProblemTests` and known-ghost loading in the judge.
 - I07 Postgres `ProblemLookup` with refresh, wired in `build_router` / `AppState`.
 - I08 `GET /api/problems` and `/api/problems/{slug}` with leak canary tests.
@@ -180,13 +203,15 @@ Brighton does not design problems, solutions or hints. Agents do; Brighton appro
 
 ```
 agent picks an idea from docs/pack-backlog.md
-  -> drafts packs/<slug>/ (status = "draft") following the authoring skill
-  -> counterspell-grimoire validate packs/<slug> --deny-warnings   (static, always)
+  -> drafts the public parts in the public packs/<slug>/ and the hidden parts
+     in BrightonDube/counterspell-packs-private packs/<slug>/  (status = "draft")
+  -> counterspell-grimoire validate the combined pack --deny-warnings   (static, always)
   -> model-runner vectors in sandbox_fake.rs until --sandbox exists; then validate --sandbox
-  -> scripts/pack-review-digest.sh <slug> writes docs/pack-review/<slug>.md (one readable file)
+  -> scripts/pack-review-digest.sh <slug> writes one readable file
+     (if it includes hidden tests, references or ghosts, that file lives only in the private repo)
   -> Brighton reads the digest: approve or reject with notes
   -> approve: status = "published" in a commit whose message contains "Approved by Brighton"
-  -> the importer loads it (Part 3)
+  -> the importer reads both repos and loads it (Part 3)
 ```
 
 Build:
@@ -194,13 +219,13 @@ Build:
    - Original idea and wording; no LeetCode, HackerRank or other third-party text (PCK-3, GRM-49).
    - Only engine-supported types (`int`, `str`, `list[int]`, `list[list[int]]`) and comparators (`exact`, `unordered`).
    - Statement: exact call and argument types, a worked example from sample 1, edge cases in words, constraints identical to the schema, "integer" wording, beginner-friendly.
-   - Samples (2 to 5) show typical cases. Edge cases go in `hidden.toml` (at least 8: empty, single, max size, boundary values, negatives, duplicates, each ghost input).
+   - Samples (2 to 5) show typical cases and stay in public `meta.toml`. Edge cases go in private `hidden.toml` (at least 8: empty, single, max size, boundary values, negatives, duplicates, each ghost input). These must be newly written for the starter packs, not copied from values already in public git history.
    - Ghosts: realistic beginner mistakes only (off-by-one, wrong loop bound, wrong starting value, forgetting the last element, empty input, mixing up index and value). Hand-trace each `got`. No contrived bugs like `abs()` on a total. Explanations describe the mistake, avoid the forbidden words and never claim minimality.
    - Hints: four general rungs, never assuming a specific bug; rung 4 near-solution without full code.
    - `complexity_note` with time and extra space; no `reference_complexity` until `[bench]` is supported.
    - A self-review checklist the agent fills in before handing over.
 2. **Backlog** (new): `docs/pack-backlog.md` with 7 original problem ideas that balance the tracks (arrays, strings, matrices) and add a few medium problems. Kiro writes it, and Brighton can strike any idea during review.
-3. **Review digest script** (new): `scripts/pack-review-digest.sh <slug>` concatenates a pack's files into one markdown with the latest validator report and the agent's checklist. Read-only; writes only under `docs/pack-review/`.
+3. **Review digest script** (new): `scripts/pack-review-digest.sh <slug>` concatenates a pack's public and private files into one markdown with the latest validator report and the agent's checklist. Read-only. If the digest includes hidden tests, references or ghosts, write it only under the private repo, never under the public `docs/` tree.
 4. **Publish guard** (new): extend `scripts/kiro-hooks/pack-validate.sh` (or add a sibling hook) so a Kiro edit that sets `status = "published"` is blocked. Extend `scripts/pre-push.sh` so a push fails if any commit changes a pack to `published` without "Approved by Brighton" in its message. Test both with shell fixtures.
 5. **Seven new packs**, one task each, using the skill. Each stops at `draft` with a digest written. Run the hardened starter packs through the same digest so Brighton reviews all 10 the same way.
 
@@ -221,11 +246,11 @@ Target: 10 packs with digests ready for Brighton's review by Thu 26 Nov, leaving
 3. Each starter statement says "integer" where negatives are allowed, names the exact call, has a worked example matching sample 1, and states its edge cases. A beginner can understand it without reading TOML.
 4. No authored hint assumes a specific bug. `abs-diagonal` is gone, and `both-diagonals` is verified by hand trace and model runner.
 5. Every new diagnostic code has a negative fixture that fails with exactly that code. Hidden-case canaries never appear in validator output.
-6. Each starter pack has at least 8 curated hidden cases, the reference agrees with all of them (model runner now, sandbox later), and none duplicates a sample.
+6. Each starter pack has at least 8 curated hidden cases in the private tree, the reference agrees with all of them (model runner now, sandbox later), and none duplicates a sample. Those hidden cases are new, not the values already in public git history.
 7. `pg_` tests prove: drafts are never imported; re-import is a no-op; the version rules hold; unpublish never deletes; the server role cannot read hidden test cases, references or known ghosts; the API bodies contain no canaries.
 8. The authoring skill, backlog, digest script and publish guard exist and are tested. At least the 3 starter packs have review digests. Every pack is still `draft`.
 9. `docs/kiro-log/starter-pack-v2.md` lists each change, the decisions Kiro made, the deferred items (estimated time, objectives, prerequisites, editorial, `reference_complexity`/`[bench]`), and the tasks blocked on the judge.
 
 ## Deliverables
 
-Updated starter packs with `hidden.toml`; validator changes and tests; the `pack-import` spec and its implementation; the authoring skill, backlog, digest script and publish guard; review digests; the changelog. Local commits only until each spec is finished and green. Never `main`.
+Updated starter packs split across the public and private trees, with **new** (rotated) hidden cases; validator changes and tests; the catalogue/import spec (amended for the split) and its implementation; the authoring skill, backlog, digest script and publish guard; review digests (hidden-containing ones only in the private repo); the changelog. Local commits only until each spec is finished and green. Never `main`. Do not create the private GitHub repo in this brief.
