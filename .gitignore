@@ -1,4 +1,4 @@
-# Never ignore .kiro (hackathon rule)
+# Never ignore .kiro (repository rule)
 target/
 node_modules/
 web/build/
