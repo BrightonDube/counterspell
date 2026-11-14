@@ -58,6 +58,31 @@ pub(crate) fn slope_view(sizes: &[u64], times: &[f64], sigma_bar: f64) -> Slope 
     }
 }
 
+/// The least-squares slope of `ys` against `xs`. The slope of `ln v` against `ln n` for a model `v`.
+pub(crate) fn ols_slope(xs: &[f64], ys: &[f64]) -> f64 {
+    let count = len_as_f64(xs.len());
+    let mean_x = xs.iter().sum::<f64>() / count;
+    let mean_y = ys.iter().sum::<f64>() / count;
+    let sxx: f64 = xs.iter().map(|x| (x - mean_x).powi(2)).sum();
+    let sxy: f64 = xs
+        .iter()
+        .zip(ys)
+        .map(|(x, y)| (x - mean_x) * (y - mean_y))
+        .sum();
+    sxy / sxx
+}
+
+/// The slope of a model's log values against `ln n`, over the top segment.
+pub(crate) fn top_slope(sizes: &[u64], model_ln: &[f64]) -> f64 {
+    let count = top_count(sizes.len());
+    let start = sizes.len() - count;
+    let xs: Vec<f64> = sizes[start..]
+        .iter()
+        .map(|&n| size_as_f64(n).ln())
+        .collect();
+    ols_slope(&xs, &model_ln[start..])
+}
+
 /// The local exponent between each pair of consecutive points, over every point.
 pub(crate) fn local_exponents(sizes: &[u64], times: &[f64]) -> Vec<f64> {
     let (xs, ys) = log_coordinates(sizes, times);

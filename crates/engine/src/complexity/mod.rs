@@ -8,13 +8,13 @@
 //! The engine has its own copy of the seven class names, so it does not depend
 //! on `counterspell-common`. The judge converts between the two in one place.
 
+use decide::{decide, Inputs};
+use noise::point_noise;
 use std::fmt;
 
-#[allow(dead_code)] // The fit uses these modules from task T09; the allow goes then.
+mod decide;
 mod models;
-#[allow(dead_code)] // Same: removed in T09.
 mod noise;
-#[allow(dead_code)] // Same: removed in T09.
 mod views;
 
 /// Converts an input size to `f64`. Sizes are at most `u64::MAX`, so the rounding only
@@ -181,8 +181,6 @@ pub enum FitError {
     ZeroMedian,
     /// A spread is negative or not finite.
     BadSpread,
-    /// Temporary: the fit algorithm is not implemented yet (removed in T09).
-    NotImplemented,
 }
 
 impl fmt::Display for FitError {
@@ -196,7 +194,6 @@ impl fmt::Display for FitError {
             Self::SizesNotIncreasing => f.write_str("sizes must be strictly increasing"),
             Self::ZeroMedian => f.write_str("every median time must be above zero"),
             Self::BadSpread => f.write_str("a spread must be finite and not negative"),
-            Self::NotImplemented => f.write_str("the fit is not implemented yet"),
         }
     }
 }
@@ -264,16 +261,6 @@ impl Default for FitConfig {
     }
 }
 
-/// Fits a timing curve. Temporary: the full algorithm lands in task T09.
-///
-/// # Errors
-///
-/// Returns [`FitError`] for input that cannot be fitted.
-pub fn fit(points: &[Point], _mode: Mode, _cfg: &FitConfig) -> Result<(), FitError> {
-    validate(points)?;
-    Err(FitError::NotImplemented)
-}
-
 /// Checks the input before any arithmetic. Nothing here panics.
 pub(crate) fn validate(points: &[Point]) -> Result<(), FitError> {
     if !(MIN_POINTS..=MAX_POINTS).contains(&points.len()) {
@@ -298,6 +285,108 @@ pub(crate) fn validate(points: &[Point]) -> Result<(), FitError> {
         return Err(FitError::SizesNotIncreasing);
     }
     Ok(())
+}
+
+/// The result of one fit: the class (when supported), how sure it is, and the evidence.
+#[derive(Debug, Clone, PartialEq, serde::Serialize)]
+pub struct FitReport {
+    /// The fit version that produced this report.
+    pub fit_version: &'static str,
+    /// The reported class. Present only at `Medium` or `High`.
+    pub class: Option<Class>,
+    /// How sure the fit is.
+    pub confidence: Confidence,
+    /// The lowest-residual class. Informational when the confidence is `Low`.
+    pub leaning: Class,
+    /// Every class the noise cannot rule out, in rank order. Never empty.
+    pub plausible: Vec<Class>,
+    /// The log-log slope over the largest points.
+    pub slope: f64,
+    /// The standard error of the slope.
+    pub slope_se: f64,
+    /// The local exponent between each consecutive pair of points.
+    pub exponents: Vec<f64>,
+    /// The residual of every model, in rank order.
+    pub residuals: Vec<(Class, f64)>,
+    /// The combined relative noise.
+    pub noise: f64,
+    /// The largest size over the smallest.
+    pub range_ratio: f64,
+    /// How many points were fitted.
+    pub points: usize,
+    /// Why the confidence is not higher, or the mode cap that applied.
+    pub reasons: Vec<Reason>,
+}
+
+/// How a fitted class compares with the reference class.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Comparison {
+    /// The rank difference, observed minus reference. Present only when a class was reported.
+    /// A negative gap means the solution scales better than the reference.
+    pub gap: Option<i8>,
+    /// Whether the reference class is in the plausible set, even when the fit is unsure.
+    pub reference_plausible: bool,
+}
+
+/// Fits a timing curve and says which growth class the data supports.
+///
+/// The points must follow the validation rules: 3 to 32 points, sizes of at least 2 in strictly
+/// increasing order, and positive medians. Scaling every median by a positive constant does
+/// not change the result.
+///
+/// # Errors
+///
+/// Returns [`FitError`] for input that breaks the validation rules. It never panics.
+pub fn fit(points: &[Point], mode: Mode, cfg: &FitConfig) -> Result<FitReport, FitError> {
+    validate(points)?;
+    // Divide by the largest median, so the timings lie in (0, 1] and a constant factor cancels.
+    let largest = points
+        .iter()
+        .map(|p| size_as_f64(p.median_ns))
+        .fold(0.0_f64, f64::max);
+    let sizes: Vec<u64> = points.iter().map(|p| p.n).collect();
+    let times: Vec<f64> = points
+        .iter()
+        .map(|p| size_as_f64(p.median_ns) / largest)
+        .collect();
+    let sigmas: Vec<f64> = points.iter().map(|p| point_noise(p.spread, cfg)).collect();
+    let outcome = decide(
+        &Inputs {
+            sizes: &sizes,
+            times: &times,
+            sigmas: &sigmas,
+        },
+        mode,
+        cfg,
+    );
+    Ok(FitReport {
+        fit_version: FIT_VERSION,
+        class: outcome.class,
+        confidence: outcome.confidence,
+        leaning: outcome.leaning,
+        plausible: outcome.plausible,
+        slope: outcome.slope.b,
+        slope_se: outcome.slope.se,
+        exponents: outcome.exponents,
+        residuals: outcome.residuals,
+        noise: outcome.sigma_bar,
+        range_ratio: outcome.range_ratio,
+        points: points.len(),
+        reasons: outcome.reasons,
+    })
+}
+
+/// Compares a fitted report with the reference class the author declared.
+#[must_use]
+pub fn compare(report: &FitReport, reference: Class) -> Comparison {
+    let gap = report.class.map(|class| {
+        // Ranks are 0 to 6, so the difference is always between -6 and 6 and fits in i8.
+        i8::try_from(i16::from(class.rank()) - i16::from(reference.rank())).unwrap_or(0)
+    });
+    Comparison {
+        gap,
+        reference_plausible: report.plausible.contains(&reference),
+    }
 }
 
 #[cfg(test)]
@@ -380,5 +469,143 @@ mod tests {
         assert_eq!(ranks, vec![0, 1, 2, 3, 4, 5, 6]);
         let ids: Vec<&str> = Class::ALL.iter().map(|c| c.id()).collect();
         assert_eq!(ids, vec!["1", "log n", "n", "n log n", "n^2", "n^3", "2^n"]);
+    }
+
+    /// Points with median `median(n)` nanoseconds at each size.
+    #[allow(
+        clippy::cast_possible_truncation,
+        clippy::cast_sign_loss,
+        clippy::cast_precision_loss
+    )]
+    fn curve(sizes: &[u64], median: impl Fn(f64) -> f64, spread: Option<f64>) -> Vec<Point> {
+        sizes
+            .iter()
+            .map(|&n| Point {
+                n,
+                median_ns: median(n as f64).round() as u64,
+                spread,
+            })
+            .collect()
+    }
+
+    const POW2: [u64; 6] = [64, 128, 256, 512, 1024, 2048];
+
+    #[test]
+    fn clean_linear_data_is_called_linear_with_at_least_medium_confidence() {
+        let points = curve(&POW2, |n| 1000.0 * n, Some(0.04));
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_eq!(report.class, Some(Class::Linear));
+        assert!(
+            report.confidence >= Confidence::Medium,
+            "{:?}",
+            report.reasons
+        );
+    }
+
+    #[test]
+    fn clean_quadratic_data_is_called_quadratic() {
+        let points = curve(&POW2, |n| 3.0 * n * n + 500.0, Some(0.04));
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_eq!(report.class, Some(Class::Quadratic));
+        assert!(
+            report.confidence >= Confidence::Medium,
+            "{:?}",
+            report.reasons
+        );
+    }
+
+    #[test]
+    fn clean_cubic_data_is_called_cubic() {
+        let points = curve(&POW2, |n| 0.5 * n * n * n, Some(0.04));
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_eq!(report.class, Some(Class::Cubic));
+        assert!(
+            report.confidence >= Confidence::Medium,
+            "{:?}",
+            report.reasons
+        );
+    }
+
+    #[test]
+    fn flat_data_is_unsure_and_lists_constant_among_the_plausible_classes() {
+        let points = curve(&POW2, |_| 700.0, Some(0.04));
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_eq!(report.class, None);
+        assert_eq!(report.confidence, Confidence::Low);
+        assert!(report.plausible.contains(&Class::Constant));
+        assert!(report.reasons.contains(&Reason::SeveralClassesPlausible));
+    }
+
+    #[test]
+    fn a_single_spiked_point_never_gives_high_confidence() {
+        let mut points = curve(&POW2, |n| 1000.0 * n, None);
+        points[3].median_ns *= 3;
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_ne!(report.confidence, Confidence::High);
+        if let Some(class) = report.class {
+            assert_eq!(class, Class::Linear);
+        }
+    }
+
+    #[test]
+    fn a_range_of_two_times_is_low_with_the_size_range_reason() {
+        let sizes = [64_u64, 80, 96, 112, 128];
+        let points = curve(&sizes, |n| 1000.0 * n, Some(0.04));
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_eq!(report.confidence, Confidence::Low);
+        assert!(report.reasons.contains(&Reason::SizeRangeTooSmall));
+    }
+
+    #[test]
+    fn a_class_outside_the_model_set_is_unsure() {
+        let points = curve(&POW2, |n| 1000.0 * n.powf(1.5), Some(0.04));
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_eq!(report.confidence, Confidence::Low);
+        assert_eq!(report.class, None);
+    }
+
+    #[test]
+    fn a_quick_run_with_three_points_is_at_most_medium_and_says_why() {
+        let sizes = [64_u64, 640, 6400];
+        let points = curve(&sizes, |n| 1000.0 * n, Some(0.04));
+        let report = fit(&points, Mode::Quick, &FitConfig::default()).expect("valid input");
+        assert_eq!(report.class, Some(Class::Linear));
+        assert_eq!(report.confidence, Confidence::Medium);
+        assert!(report.reasons.contains(&Reason::TooFewPointsForHigh));
+    }
+
+    #[test]
+    fn a_quick_run_never_reports_high_even_when_every_other_check_passes() {
+        let points = curve(&POW2, |n| 1000.0 * n, Some(0.04));
+        let full = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        let quick = fit(&points, Mode::Quick, &FitConfig::default()).expect("valid input");
+        assert_ne!(quick.confidence, Confidence::High);
+        if full.confidence == Confidence::High {
+            assert!(quick.reasons.contains(&Reason::RunCapped));
+        }
+    }
+
+    #[test]
+    fn a_class_is_reported_only_at_medium_or_high() {
+        let cases = [
+            curve(&POW2, |_| 700.0, Some(0.04)),
+            curve(&POW2, |n| 1000.0 * n.powf(1.5), Some(0.04)),
+        ];
+        for points in cases {
+            let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+            assert_eq!(report.class.is_some(), report.confidence != Confidence::Low);
+            assert!(report.plausible.contains(&report.leaning));
+        }
+    }
+
+    #[test]
+    fn compare_gives_the_rank_gap_only_when_a_class_was_reported() {
+        let points = curve(&POW2, |n| 1000.0 * n * n, Some(0.04));
+        let report = fit(&points, Mode::Full, &FitConfig::default()).expect("valid input");
+        let vs_linear = compare(&report, Class::Linear);
+        assert_eq!(vs_linear.gap, Some(2));
+        let flat = curve(&POW2, |_| 700.0, Some(0.04));
+        let unsure = fit(&flat, Mode::Full, &FitConfig::default()).expect("valid input");
+        assert_eq!(compare(&unsure, Class::Linear).gap, None);
     }
 }

@@ -810,3 +810,9 @@ Modelling `2^n` in log space (`ln t = α + n·ln 2`) avoids `inf` for large `n`.
 `slice::windows(2)` pairs consecutive points with `zip`, which reads like the maths. `top_count` uses `usize::div_ceil`, which avoids a hand-written rounding step.
 `sort_by(f64::total_cmp)` sorts floats with a total order, so a stray NaN cannot make the sort panic or give a random result.
 A test that puts an expected value next to its hand-derived source (`Sxx = 2·(ln 2)²`) caught my own arithmetic error in the noise test. The literal was wrong, not the code.
+
+# Rust lesson: efficiency-familiar T09
+
+The grade is one function with an early `return` for each "Low" reason. Each check reads as one sentence, and the `Vec` of reasons is built in the same order the requirements list them.
+Passing `&[...]` slices into pure functions keeps ownership with the caller. The fit never copies the input except when it drops a point for the stability check.
+`bool::then_some` turns "class only at medium or high" into one expression, and `Option` makes "no class" impossible to confuse with a class.
