@@ -237,7 +237,7 @@
             class="text-accent-moss underline underline-offset-4 hover:text-accent-moss-strong focus-visible:outline-2 focus-visible:outline-focus"
             onclick={() => openDemo(options)}
           >
-            Judging? Use the demo account
+            Try the demo account
           </button>
         </section>
       {/if}

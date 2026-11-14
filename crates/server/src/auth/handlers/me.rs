@@ -27,7 +27,7 @@ pub struct MeUser {
     pub display_name: String,
     /// The verified email address, when there is one.
     pub email: Option<String>,
-    /// Whether this is the judge demo account.
+    /// Whether this is the demo account.
     pub is_demo: bool,
     /// The linked sign-in providers, for example `github`.
     pub providers: Vec<String>,

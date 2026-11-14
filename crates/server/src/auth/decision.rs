@@ -39,7 +39,7 @@ pub enum OAuthDecision {
 pub struct Actor {
     /// The signed-in account.
     pub id: UserId,
-    /// Whether this account is the judge demo account.
+    /// Whether this account is the demo account.
     pub is_demo: bool,
 }
 

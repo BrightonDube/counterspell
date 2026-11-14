@@ -1,4 +1,4 @@
-//! Database tests for the judge demo seed and `GET /api/auth/config` (auth T26, requirements
+//! Database tests for the demo seed and `GET /api/auth/config` (auth T26, requirements
 //! R16.1 to R16.3, R16.9).
 //!
 //! Run with `DATABASE_URL=<throwaway postgres 17> cargo test -p counterspell-server --test pg_auth_demo_seed -- --ignored`.

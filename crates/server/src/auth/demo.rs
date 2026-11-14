@@ -1,4 +1,4 @@
-//! The judge demo account: seeding it at start-up and resetting it every day.
+//! The demo account: seeding it at start-up and resetting it every day.
 //!
 //! The seed runs through the database function `cs_seed_demo_user`, and the reset runs through
 //! `cs_reset_demo_account`. Those functions are the only code that may change the demo account.

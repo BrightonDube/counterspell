@@ -82,7 +82,7 @@ pub struct Authenticated {
     pub user_id: UserId,
     /// The stored key of the session.
     pub key: SessionKey,
-    /// Whether the user is the judge demo account.
+    /// Whether the user is the demo account.
     pub is_demo: bool,
     /// True when this request moved the session's expiry forward.
     pub renewed: bool,

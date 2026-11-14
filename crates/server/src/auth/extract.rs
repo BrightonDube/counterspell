@@ -18,7 +18,7 @@ pub struct AuthUser {
     pub user_id: UserId,
     /// The stored key of the session that was used. Logout needs it.
     pub key: SessionKey,
-    /// Whether the user is the judge demo account.
+    /// Whether the user is the demo account.
     pub is_demo: bool,
 }
 
