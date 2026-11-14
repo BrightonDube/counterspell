@@ -217,3 +217,15 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-14 18:13-18:15 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a1.md`. Transcript: `docs/kiro-log/2026-11-14T1813-22-run-lifecycle-implement-a1.log`. Exit 0.
 - Credits used (from /usage): 1.47 (hackathon credits used now 2993.98/4000).
+
+### 2026-11-14 18:19-19:08 SAST: 23-judge-sandbox-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a1.md`. Transcript: `docs/kiro-log/2026-11-14T1819-23-judge-sandbox-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 33.43 (hackathon credits used now 3027.54/4000).
+
+### 2026-11-14 19:08-19:48 SAST: 23-judge-sandbox-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a2.md`. Transcript: `docs/kiro-log/2026-11-14T1908-23-judge-sandbox-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 20.33 (hackathon credits used now 3047.87/4000).
+
+### 2026-11-14 19:48-19:56 SAST: 23-judge-sandbox-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a3.md`. Transcript: `docs/kiro-log/2026-11-14T1948-23-judge-sandbox-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 3.85 (hackathon credits used now 3051.72/4000).
