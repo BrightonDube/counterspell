@@ -38,6 +38,15 @@ fn an_id_too_large_for_u64_is_refused_as_the_wrong_id() {
 }
 
 #[test]
+fn a_repeated_key_is_refused_even_when_the_values_agree() {
+    // Value keeps only the last `t`, so without this check the first id would be lost.
+    assert_eq!(
+        parse_answer(br#"{"t":2,"t":1,"out":1}"#, 1).unwrap_err(),
+        ProtocolViolation::DuplicateKey("t".to_owned())
+    );
+}
+
+#[test]
 fn an_extra_key_is_refused() {
     assert_eq!(
         parse_answer(br#"{"t":3,"out":1,"extra":true}"#, 3).unwrap_err(),

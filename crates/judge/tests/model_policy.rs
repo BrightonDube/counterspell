@@ -61,6 +61,7 @@ fn the_production_limits_match_the_design() {
     assert_eq!(policy.log_driver, "none");
     assert_eq!(policy.restart_policy, "no");
     assert!(!policy.auto_remove);
+    assert_eq!(policy.scratch, ScratchExec::Forbidden);
 }
 
 #[test]
@@ -311,6 +312,25 @@ fn mutations() -> Vec<(&'static str, Mutation, PolicyViolation)> {
                 });
             },
             PolicyViolation::ProcLimitSet,
+        ),
+        (
+            "duplicate open-files limit",
+            |p| {
+                p.ulimits.push(Ulimit {
+                    name: "nofile".to_owned(),
+                    soft: 64,
+                    hard: 64,
+                });
+            },
+            PolicyViolation::NoFileLimit,
+        ),
+        (
+            "duplicate tmp mount",
+            |p| {
+                let tmp = p.tmpfs.iter().find(|m| m.path == "/tmp").unwrap().clone();
+                p.tmpfs.push(tmp);
+            },
+            PolicyViolation::UnexpectedMount,
         ),
         (
             "log driver enabled",

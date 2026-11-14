@@ -20,19 +20,30 @@ const TRUNCATION_MARKER: &[u8] = b"\n[stderr truncated]\n";
 pub struct Overflow;
 
 /// Splits bytes into lines, holding at most `cap` bytes of an unfinished line.
+/// It also counts every byte it is given, so one call cannot exceed its byte budget.
 #[derive(Debug)]
 pub struct LineReader {
     cap: usize,
+    budget_left: usize,
     pending: Vec<u8>,
     overflowed: bool,
 }
 
 impl LineReader {
-    /// A reader that allows lines of up to `cap` bytes, not counting the newline.
+    /// A reader that allows lines of up to `cap` bytes, not counting the newline, and
+    /// has no total byte budget.
     #[must_use]
     pub fn new(cap: usize) -> Self {
+        Self::with_budget(cap, usize::MAX)
+    }
+
+    /// A reader with a line cap and a total byte budget for the call. Design section 9
+    /// uses a 1 MiB budget for stdout.
+    #[must_use]
+    pub fn with_budget(cap: usize, budget: usize) -> Self {
         Self {
             cap,
+            budget_left: budget,
             pending: Vec::new(),
             overflowed: false,
         }
@@ -45,11 +56,17 @@ impl LineReader {
     ///
     /// # Errors
     ///
-    /// Returns [`Overflow`] when an unfinished line is longer than the cap.
+    /// Returns [`Overflow`] when an unfinished line is longer than the cap, or when the
+    /// call has received more bytes than its budget.
     pub fn push(&mut self, chunk: &[u8]) -> Result<Vec<Vec<u8>>, Overflow> {
         if self.overflowed {
             return Err(Overflow);
         }
+        if chunk.len() > self.budget_left {
+            self.overflowed = true;
+            return Err(Overflow);
+        }
+        self.budget_left -= chunk.len();
         let mut lines = Vec::new();
         let mut segments = chunk.split(|&byte| byte == b'\n').peekable();
         while let Some(segment) = segments.next() {

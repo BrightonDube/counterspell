@@ -162,6 +162,23 @@ fn the_result_counts_passes_and_keeps_the_planned_total() {
 }
 
 #[test]
+fn hidden_run_debug_output_has_no_canary() {
+    let run = hidden(4, VerdictKind::WrongAnswer, Some(canary_detail()));
+    let text = format!("{run:?}");
+    for canary in [
+        "CANARY_INPUT",
+        "CANARY_EXPECTED",
+        "CANARY_PRINTED",
+        "CANARY_STDERR",
+    ] {
+        assert!(
+            !text.contains(canary),
+            "{canary} appeared in debug output: {text}"
+        );
+    }
+}
+
+#[test]
 fn the_final_verdict_serialises_as_a_snake_case_word() {
     let result = build_result(FinalVerdict::CompileError, 1, Vec::new());
     let value: Value = serde_json::from_str(&serialised(&result)).unwrap();

@@ -119,8 +119,9 @@ fn a_run_with_no_planned_tests_is_not_accepted() {
 }
 
 #[test]
-fn an_unexplained_short_run_is_incomplete_not_accepted() {
-    let tests = [executed(1, 0)];
+fn two_passes_with_the_same_ordinal_do_not_stand_in_for_a_missing_test() {
+    // Test 2 never ran, but ordinal 1 is recorded twice. The count matches, the set does not.
+    let tests = [executed(1, 0), executed(1, 0)];
     assert_eq!(
         decide(&tests, &facts(true, 2, false, false)),
         FinalVerdict::Incomplete

@@ -424,6 +424,14 @@ impl ContainerPolicy {
                 found.push(PolicyViolation::UnexpectedMount);
             }
         }
+        let duplicated = self.tmpfs.iter().enumerate().any(|(i, mount)| {
+            self.tmpfs[..i]
+                .iter()
+                .any(|earlier| earlier.path == mount.path)
+        });
+        if duplicated {
+            found.push(PolicyViolation::UnexpectedMount);
+        }
         match self.tmpfs.iter().find(|m| m.path == WORKING_DIR) {
             None => found.push(PolicyViolation::ScratchMount("missing")),
             Some(scratch) => self.check_scratch(scratch, found),
@@ -491,11 +499,15 @@ fn check_tmp(tmp: &TmpfsMount, found: &mut Vec<PolicyViolation>) {
     }
 }
 
-/// True when the named ulimit is present with soft and hard both equal to `value`.
+/// True when the named ulimit appears exactly once, with soft and hard both equal to `value`.
+/// A second entry with the same name is refused, so a weaker duplicate cannot hide behind
+/// a correct one.
 fn ulimit_is(ulimits: &[Ulimit], name: &str, value: i64) -> bool {
-    ulimits
-        .iter()
-        .any(|u| u.name == name && u.soft == value && u.hard == value)
+    let mut matching = ulimits.iter().filter(|u| u.name == name);
+    match (matching.next(), matching.next()) {
+        (Some(only), None) => only.soft == value && only.hard == value,
+        _ => false,
+    }
 }
 
 fn scratch_options(noexec: bool) -> Vec<String> {

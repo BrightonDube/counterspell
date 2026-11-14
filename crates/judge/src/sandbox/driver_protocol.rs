@@ -6,6 +6,10 @@
 //!
 //! Named to match `language-drivers` so that crate can extend it.
 
+use std::fmt;
+
+use serde::de::{Deserializer, IgnoredAny, MapAccess, Visitor};
+use serde::Deserialize;
 use serde_json::{Map, Value};
 use thiserror::Error;
 
@@ -34,6 +38,9 @@ pub enum ProtocolViolation {
     /// The object has a key other than `t` and `out`.
     #[error("the answer has an unexpected key {0:?}")]
     ExtraKey(String),
+    /// The same key appears twice in the object.
+    #[error("the answer repeats the key {0:?}")]
+    DuplicateKey(String),
     /// The object lacks `t` or `out`.
     #[error("the answer has no {0:?} key")]
     MissingKey(&'static str),
@@ -60,6 +67,34 @@ pub fn encode_call(call_id: u64, args: &[Value]) -> Result<Vec<u8>, ProtocolViol
     Ok(line)
 }
 
+/// Every top-level key of a JSON object, in order, including repeats. `serde_json::Value`
+/// keeps only the last of two equal keys, so this type is used to catch the repeats.
+struct KeyList(Vec<String>);
+
+impl<'de> Deserialize<'de> for KeyList {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct KeyVisitor;
+
+        impl<'de> Visitor<'de> for KeyVisitor {
+            type Value = KeyList;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+                formatter.write_str("a JSON object")
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<KeyList, A::Error> {
+                let mut keys = Vec::new();
+                while let Some((key, IgnoredAny)) = map.next_entry::<String, IgnoredAny>()? {
+                    keys.push(key);
+                }
+                Ok(KeyList(keys))
+            }
+        }
+
+        deserializer.deserialize_map(KeyVisitor)
+    }
+}
+
 /// Checks one answer line and returns its `out` value.
 ///
 /// The line must be one JSON object with exactly the keys `t` and `out`, and `t` must
@@ -77,6 +112,14 @@ pub fn parse_answer(line: &[u8], expected: u64) -> Result<Value, ProtocolViolati
     let Value::Object(mut object) = value else {
         return Err(ProtocolViolation::NotAnObject);
     };
+
+    let keys: KeyList = serde_json::from_str(text).map_err(|_| ProtocolViolation::NotJson)?;
+    let mut seen = std::collections::BTreeSet::new();
+    for key in keys.0 {
+        if !seen.insert(key.clone()) {
+            return Err(ProtocolViolation::DuplicateKey(key));
+        }
+    }
 
     if let Some(extra) = object
         .keys()

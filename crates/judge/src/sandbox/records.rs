@@ -5,6 +5,8 @@
 //! later record carries only the ordinal, verdict and time, whatever the program printed.
 //! Hidden tests never carry any output.
 
+use std::fmt;
+
 use serde::Serialize;
 
 use super::compare::TestVerdict;
@@ -45,7 +47,7 @@ impl VerdictKind {
 }
 
 /// The raw text of one sample test. It is never kept for a hidden test.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct SampleDetail {
     /// The input given to the program.
     pub input: Vec<u8>,
@@ -55,6 +57,12 @@ pub struct SampleDetail {
     pub got: Vec<u8>,
     /// The program's stderr, possibly truncated.
     pub stderr: Vec<u8>,
+}
+
+impl fmt::Debug for SampleDetail {
+    fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
+        formatter.write_str("SampleDetail(<redacted>)")
+    }
 }
 
 /// One executed test, as the run code observed it, before redaction.

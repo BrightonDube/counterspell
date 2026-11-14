@@ -109,6 +109,14 @@ proptest! {
 }
 
 #[test]
+fn a_call_budget_overflows_even_when_every_line_is_short() {
+    // Ten bytes of budget, spread over short lines. The eleventh byte overflows.
+    let mut reader = LineReader::with_budget(10, 10);
+    assert_eq!(reader.push(b"a\na\na\na\na\n").unwrap().len(), 5);
+    assert_eq!(reader.push(b"a\n"), Err(Overflow));
+}
+
+#[test]
 fn short_stderr_is_kept_without_a_marker() {
     let mut stderr = StderrBuffer::new();
     stderr.push(b"hello\n");
@@ -131,7 +139,7 @@ fn stderr_past_the_cap_is_truncated_with_a_marker() {
     let rendered = stderr.rendered();
     assert!(rendered.starts_with(&vec![b'x'; STDERR_CAP]));
     assert!(rendered.ends_with(b"[stderr truncated]\n"));
-    assert!(rendered.len() <= STDERR_CAP + 64);
+    assert_eq!(rendered.len(), STDERR_CAP + 20);
 }
 
 #[test]

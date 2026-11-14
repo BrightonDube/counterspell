@@ -720,3 +720,9 @@ A returned `&str` borrows from the input. The source is checked once and never c
 Enum variants make impossible states unrepresentable. A `Hidden` record has no field for output, so the type itself cannot carry a hidden test's text.
 A match guard (`Some(detail) if run.sample && !self.hidden_phase`) checks state before a value is used, so the redaction rule sits in one place.
 `#[serde(tag = "kind")]` writes the variant name into the JSON. A reader can tell the two record kinds apart without guessing.
+
+# Rust lesson: judge-sandbox wave 1 review fixes
+
+`serde_json::Value` silently keeps the last of two equal keys, so a checker that parses to `Value` cannot see the duplicate. A small `Deserialize` visitor that reads only the keys (`IgnoredAny` skips the values) catches it.
+`match (iter.next(), iter.next())` checks "exactly one" without collecting. `(Some(only), None)` is true only when nothing else follows.
+A manual `impl Debug` that prints a placeholder keeps a type's contents out of `{:?}` output, in tests and in logs.
