@@ -1,9 +1,9 @@
 # Language catalogue for the judge sandbox (judge-sandbox T04, design.md section 6).
 #
 # Every image must be pinned by digest. A tag is refused by the loader.
-# PLACEHOLDER: the all-zero digests below are syntactically valid but are not real
-# images. T03 replaces the Python digest with the value recorded on the sandbox
-# daemon. Until then the sandbox fails closed (image missing).
+# Python is pinned (judge-sandbox T03, 14 Nov 2026, see deploy/sandbox-verification.md).
+# The all-zero digests on the disabled languages are placeholders, not real images.
+# Renovate (renovate.json) proposes weekly digest refreshes; a human merges them.
 #
 # Python is enabled. JavaScript, Java and C++ are present but disabled (language-drivers
 # and the stretch goals). The executor refuses disabled languages.
@@ -14,7 +14,7 @@
 
 [python]
 enabled = true
-image = "python:3.13-slim@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+image = "python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90"
 file = "solution.py"
 driver = "drivers/python/driver.py"
 compile = ["python3", "-I", "-S", "-m", "py_compile", "/box/solution.py"]

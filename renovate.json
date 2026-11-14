@@ -1,0 +1,33 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Only refreshes the digest-pinned sandbox images in languages/languages.toml (judge-sandbox A3). Dependabot handles cargo, npm, actions and Dockerfiles.",
+  "extends": ["config:recommended"],
+  "enabledManagers": ["custom.regex"],
+  "timezone": "Africa/Johannesburg",
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Sandbox images: image = \"name:tag@sha256:digest\"",
+      "managerFilePatterns": ["/^languages/languages\\.toml$/"],
+      "matchStrings": [
+        "image = \"(?<depName>[a-z0-9][a-z0-9._/-]*):(?<currentValue>[A-Za-z0-9._-]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+      ],
+      "datasourceTemplate": "docker"
+    }
+  ],
+  "packageRules": [
+    {
+      "matchManagers": ["custom.regex"],
+      "matchUpdateTypes": ["major", "minor", "patch"],
+      "enabled": false
+    },
+    {
+      "matchManagers": ["custom.regex"],
+      "matchUpdateTypes": ["digest"],
+      "groupName": "sandbox image digests",
+      "schedule": ["before 6am on monday"],
+      "automerge": false,
+      "labels": ["sandbox", "security"]
+    }
+  ]
+}
