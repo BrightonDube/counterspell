@@ -7,3 +7,4 @@
 //! the filesystem, so their tests run anywhere.
 
 pub mod config;
+pub mod policy;

@@ -54,7 +54,7 @@ Conventions:
   - Depends on: T01. (T03 supplies the real digest; tests use a fixture with a syntactically valid fake digest that is never pulled.)
   - Rust lesson: newtypes with private fields; `serde` with `deny_unknown_fields`.
 
-- [ ] **T05 [S] [SUPERVISED] (30 min) Container policy and the hardening checker**
+- [x] **T05 [S] [SUPERVISED] (30 min) Container policy and the hardening checker**
   - Files: `crates/judge/src/sandbox/policy.rs`, `crates/judge/tests/model_policy.rs`.
   - Implement the pure `ContainerPolicy`, `Limits`, `PolicyViolation` and `ContainerPolicy::for_language(lang, run_cap, runtime)` with every control of `design.md` section 7 (including no `nproc`, log driver `none`, PID 1 `sleep`, labels, fixed environment). Implement `hardening_violations()`.
   - Tests: P3. Mutation test: for each control, weaken only that control and assert the checker reports exactly that violation. A test that the production constructor sets `seccomp` to nothing (default profile), never `unconfined`.
