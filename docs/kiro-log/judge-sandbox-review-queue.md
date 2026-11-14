@@ -75,3 +75,14 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - **Minor, verdict order (documented, not changed).** Runs go samples first, but the verdict picks the lowest ordinal among failures (design section 9). This is intended.
 - **Minor, wrong error label (fixed).** A pre-create policy violation is now `InfraError::PolicyRejected`, not `PolicyReadbackMismatch`.
 - **Minor, weak tests (partly addressed).** The fault-on-remove property now asserts the fault that left a container behind. The stderr-flood test still cannot show the flood was capped, because that is internal to the reader; `stream.rs` has its own cap tests (`model_stream.rs`). `model_backend.rs` mostly checks the fake's ledger. It is kept because it pins the fake that the other tests rely on.
+
+
+## T20 bollard create, read-back and image check (SUPERVISED, code only; not ticked)
+- **Files:** `crates/judge/src/sandbox/bollard_backend.rs`, `crates/judge/src/sandbox/mod.rs` (module behind feature `sandbox`), `crates/judge/tests/model_bollard.rs`.
+- **Check:**
+  - `create_checked` order: the hardening checker runs first, then the image digest is inspected (never pulled), then create, then read-back. A failed read-back removes the container.
+  - `from_inspect` fails closed. An absent or unknown value (runtime, env entry, namespace mode, tmpfs size) is an error or a non-private value, never a default that passes.
+  - The read-back must equal the policy it created, and must pass the checker. The mutation table shows each weakened daemon field gives exactly one violation.
+  - `host_resources` includes inspect `Mounts`. That covers volumes an image declares. Brighton should confirm this is wanted.
+  - Restart policy: only `no` passes. Any other text maps to an empty name that the checker rejects.
+- **Not verified yet:** the real daemon round trip (`sbx_create_readback_matches`, blocked, see the blockers file). Tmpfs option echo and `pid_mode` `""` are the two daemon behaviours the real test must confirm.

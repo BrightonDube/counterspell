@@ -7,6 +7,8 @@
 //! the filesystem, so their tests run anywhere.
 
 pub mod backend;
+#[cfg(feature = "sandbox")]
+pub mod bollard_backend;
 pub mod call;
 pub mod compare;
 pub mod config;
