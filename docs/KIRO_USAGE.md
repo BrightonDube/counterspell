@@ -229,3 +229,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-14 19:48-19:56 SAST: 23-judge-sandbox-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-judge-sandbox-a3.md`. Transcript: `docs/kiro-log/2026-11-14T1948-23-judge-sandbox-implement-a3.log`. Exit 0.
 - Credits used (from /usage): 3.85 (hackathon credits used now 3051.72/4000).
+
+### 2026-11-14 22:49-23:00 SAST: 34-problem-catalogue-spec (Kiro CLI, claude-haiku-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/34-problem-catalogue-cli.md`. Transcript: `docs/kiro-log/2026-11-14T2249-34-problem-catalogue-spec.log`. Exit 0.
+- Credits used (from /usage): 7.25 (hackathon credits used now 3112.87/4000).

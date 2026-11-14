@@ -1,0 +1,158 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=8
+I'll start by mapping the existing specs, steering files and docs this spec has to fit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=106
+
+[tool] List specs, steering files and docs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: List specs, steering files and docs
+The spec set is large, so I'll read the steering files and the problem-catalogue prompt first, then the specs it touches.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=135
+
+[tool] Read steering files and catalogue prompt
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The prompt lists the dependencies. Next I'll check the sizes of the specs it depends on before reading them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Show spec sizes and hardening prompt
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next I'll read the grimoire-packs spec in full, since the importer builds on its `ProblemRecord`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=71
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The grimoire-packs design was cut off before its open questions. I'll read the rest, plus the run-lifecycle seams and the submissions table.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+
+[tool] Read grimoire design tail and requirements
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The grimoire-packs spec is clear now. Next, the run-lifecycle seams and what's already in the repo: migrations, server source, and the seams file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Inspect migrations, crates and seams file
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The repo already has migrations for run-lifecycle and auth roles. I'll read those, since the least-privilege design has to extend them rather than conflict.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=91
+
+[tool] Read existing migrations
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The existing roles already split server and judge access. Next I'll search the dependent specs for the catalogue hooks: foreign keys, `/api/languages`, `ProblemTests`, `ProblemLookup`, and the blocked tasks.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=117
+
+[tool] Find every catalogue reference across specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Several specs point at this one for foreign keys and seams. I'll read the judge-sandbox `ProblemTests` contract, the ide-workspace blocked tasks, and the language-drivers API ownership.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=120
+
+[tool] Read ProblemTests contract and ide blocked tasks
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The ide-workspace T02 needs a stored ghost lookup, so I'll check that seam, then confirm who owns `GET /api/languages`, the hints table shape, and the auth capability and demo rules.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=133
+
+[tool] Check language API, ghost seam, hints tables and auth capabilities
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The hints spec makes `problem_hints` the importer's output, and the judge spec leaves its `ProblemTests` implementation to this spec. Next I'll check who owns the `ghosts` table and migration ordering across specs, plus the auth capability matrix.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=639
+
+[tool] Check ghosts table, migration ordering and capabilities
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `ghosts` table has no DDL in any migration yet. I'll check which spec is meant to create it, and how the auth spec adds its submissions foreign key, since this spec will copy that pattern.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=122
+
+[tool] Locate ghosts table owner and FK patterns
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Ghost DDL has no owner, and the dashboard and efficiency specs add foreign keys to tables this spec creates. I'll check the remaining touchpoints: efficiency-familiar's `problems` columns, the ide-workspace problem DTO, and the judge-sandbox migration-free rule.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=239
+
+[tool] Check problems-table additions and IDE DTO
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Two conflicts to record: ide-workspace uses `intro/standard/hard` for difficulty, while grimoire and the system design use `easy/medium/hard`. I'll check the rest of the ide-workspace response shape and what currently exists under `packs/`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=175
+
+[tool] Show ProblemDetail fields, packs tree and crate deps
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The ProblemDetail shape is clear. Last check before writing: the judge crate's current dependencies and its `ProblemTests` placeholder, since the importer and the judge-side test loader will live there.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=125
+
+[tool] Check judge deps and production seam wiring
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the cross-spec picture. Before writing, I need the exact task IDs in run-lifecycle, judge-sandbox, hints and auth, because the spec must name the tasks it depends on.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=187
+
+[tool] List task headings for dependent specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the task IDs. I'll check the header conventions of one existing spec so the new files match.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=94
+
+[tool] Sample conventions from run-lifecycle spec
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need. The spec has to depend on several other specs, and I must not edit their files, so cross-spec changes will be written as requests with owning task IDs. I'll write the requirements first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=5342
+[tool] status: Pending
+[tool] status: Completed
+The requirements reference design decisions D1 to D16 by number, so the design must use the same numbering. I'll fix one stray cross-reference first.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=166
+[tool] status: Pending
+[tool] status: Completed
+The requirements are written. Next is the design: the schema, the import pipeline, the privilege matrix, the API contracts, the seams, the cross-spec change requests, and the open questions with assumed choices, numbered D1 to D16 to match the requirements.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=6574
+[tool] status: Pending
+[tool] status: Completed
+The design is drafted. The D1 to D16 decisions are scattered through it, so I'll add a register table near the top, where a reader can find each decision.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=424
+[tool] status: Pending
+[tool] status: Completed
+The design now has a register. Last is `tasks.md`, which follows the existing wave layout, uses C-prefixed IDs (C34 is the doc task named in the requirements), and names each dependency by spec and task ID.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=5692
+[tool] status: Pending
+[tool] status: Completed
+All three files are written. I'll run final checks: the no-hackathon rule from `brighton-decisions`, file sizes, and that nothing was written outside the spec folder.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=179
+
+[tool] Verify spec files and check for stray changes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The problem-catalogue spec is written in `.kiro/specs/problem-catalogue/` as `requirements.md` (77 numbered EARS requirements), `design.md` and `tasks.md` (C00 to C39). I did not implement anything. Brighton's approval gate (C00) comes first.
+
+**What the spec decides**
+
+- **Schema:** three SQLx migrations sorted after the existing ones. Versions are immutable. Hidden tests, reference solutions and known-ghost data are insert-only, and only while a version is unvalidated. A database trigger refuses to publish a version that lacks sandbox validation, four hints, or 2 to 5 examples.
+- **Roles:** no new roles. The server reads public tables only and has no privilege on hidden data. The judge reads hidden data and writes nothing. The operator CLI uses a separate database URL.
+- **Importer:** a second binary, `counterspell-catalogue`, in the judge package. It refuses draft and `_` packs, uses grimoire's static validation, and writes one transaction per pack. Re-running an unchanged pack is a no-op. A content change needs a larger `pack_version`, which creates one new version. Dry-run writes nothing and prints the manifest diff.
+- **Hidden expected outputs:** computed at import, by the reference, inside the judge's sandbox through `PackRunner`. The design compares this with lazy first-run computation and rejects the alternative. The reasoning is in `design.md`.
+- **Public API:** `GET /api/problems`, `GET /api/problems/{slug}` and `GET /api/languages`, built from explicit response structs. Hint bodies, hidden data and known-ghost data never appear in a response. Unknown and unpublished slugs return the same 404.
+- **Seams:** `ProblemLookup` becomes async and returns the pinned version. Enqueue pins the version in the same statement that checks publication. The judge gets a `PgProblemTests` reader.
+
+**Decisions that need Brighton**
+
+- **Operator database login (D4).** The CLI uses the database owner login, because the brief forbids new roles. That is a security call, so please confirm it.
+- **Starter packs are still drafts.** Until you approve them (grimoire-packs T28), the catalogue imports nothing, and the seed commands say so.
+- **Difficulty values.** I used `easy`, `medium`, `hard`. The ide-workspace design uses `intro`, `standard`, `hard`, so that spec needs a change.
+- **`ghosts` table has no owner.** `GhostLookup` is blocked (C33), and ide-workspace T02 depends on it.
+- **Existing tests will break.** The new submission foreign key means run-lifecycle and judge test helpers must insert a fixture problem first (C35). That is a change to other specs' tests.
+- **Other specs' files are not edited.** Changes they need are listed as X1 to X13 in the design, for their owners to apply.
+
+The design lists 20 open questions, each with the assumed choice, so the spec can run without a reply. The two untracked files in `docs/` were already there before I started. I wrote only inside `.kiro/specs/problem-catalogue/`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=272
+
