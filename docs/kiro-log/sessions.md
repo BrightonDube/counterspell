@@ -153,3 +153,18 @@
  docs/kiro-log/run-lifecycle-blockers.md | 8 ++++++++
  docs/kiro-log/sessions.md               | 2 ++
  2 files changed, 10 insertions(+)
+- 2026-11-14T17:41:09Z | model: not reported | last commit: c67110d judge-sandbox T18: fault-injection and cleanup properties
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-14T17:48:09Z | model: not reported | last commit: 96f49f5 judge-sandbox: record attempt 2 stop point and contracts for the bollard backend
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 11 insertions(+)
+- 2026-11-14T17:56:42Z | model: not reported | last commit: 36576ed judge-sandbox T19 (code, not ticked): daemon socket guard, facts checker, bollard connect; needs T02 recorded fixtures
+ | diff stat:
+ docs/KIRO_USAGE.md        |  8 ++++++++
+ docs/kiro-log/sessions.md | 12 ++++++++++++
+ 2 files changed, 20 insertions(+)

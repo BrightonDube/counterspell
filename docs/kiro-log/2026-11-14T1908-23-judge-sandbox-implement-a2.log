@@ -1,0 +1,511 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=8
+I'll start by checking the spec's tasks and design for Brighton's "Review decisions" note, since the T00 gate decides whether any code can change.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=74
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+T00 is signed off, so implementation may proceed. The first unchecked tasks are T02 and T03, both `[HUMAN]`. Next I'll check the blockers log and the sandbox steering before deciding the order.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The next actionable task is T14 (backend traits and the fake backend). T02 and T03 need someone on the VPS, so they stay unchecked. Before writing code I need the design for the backend traits and the sandbox steering rules.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=105
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The design has an exact module map and session steps. I'll read those sections, the existing `testkit.rs`, and the spec for the backend traits.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=101
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+I'm picking up T14 (backend traits and fake backend). Before writing tests I need the existing spec and policy type names, and a baseline build.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=101
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The design fixes the module map, so `backend.rs` and `testkit.rs` go under `sandbox/`. Next I'll read how the existing model tests build a `SessionSpec` and a language, so the new tests follow the same pattern.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=362
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The tests share a `support` module and build specs from the shipped catalogue. I'll read that helper before writing the T14 tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=79
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have enough to write the T14 tests first. The plan is a `backend.rs` with `InfraError`, the three async traits (`Backend`, `BackendSession`, `DriverChannel`), and a `testkit.rs` fake. The tests come before the implementation, so the first run should fail on the missing modules.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1253
+[tool] status: Pending
+[tool] status: Completed
+Next I'll run the new test file. It should fail because the modules and types do not exist yet.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=61
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The first run fails on the two missing modules, as expected. Next is the minimal implementation: `backend.rs` with the error and traits.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=708
+[tool] status: Pending
+[tool] status: Completed
+Now the fake backend. It counts every call, fires faults on the chosen call, and replays scripted driver behaviour. It is gated behind the `testkit` feature.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1158
+[tool] status: Pending
+[tool] status: Completed
+The `next_event` I just wrote is more convoluted than it needs to be. I'll simplify it to a plain `async fn` and drop the unneeded `Result` from `take_behaviour`.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=386
+[tool] status: Pending
+[tool] status: Completed
+Next I'll drop the unused `Future` import and register the two modules in `sandbox/mod.rs`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 10 pass. Now the full Rust gate: format, clippy with warnings as errors, and the workspace tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=79
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Format and clippy both flag my code. The fixes: use `PoisonError::into_inner` directly, and make the trait impls return `std::future::ready(...)` instead of empty `async fn`s, which clippy rejects as `unused_async`. I'll rewrite the impl block of `testkit.rs` from `impl Backend` to the end of the file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=689
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy now reports nothing. I'll confirm its exit status and check that `cargo fmt` only touched my files, then run the full workspace tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=88
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The whole workspace is green: clippy exits 0 and every suite passes, including the 10 new `model_backend` tests. I'll record the Rust lesson, tick T14 in `tasks.md`, and commit only the files for this task.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=137
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=189
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T14 is committed (`7ecee7c`). T15 is next: session lifecycle and the cleanup guard. It needs a read-back of the container policy, which `BackendSession` doesn't have yet, and a tar-extract command. I'll check the spec constants and whether `ContainerPolicy` is `Clone`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=679
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The spec module has what I need, but no tar-extract command yet, and `ContainerPolicy` is `Clone`. I'll write the T15 tests first. They cover the success path, the compile failure, the read-back mismatch, and cleanup on early return, abort and panic.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1224
+[tool] status: Pending
+[tool] status: Completed
+Before running, I'll check that `LanguageDefinition` is `Clone`, because the abort and panic tests move a copy into a spawned task.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=118
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+RED is confirmed: the `session` module and the new fake methods are missing. Now the GREEN work, starting with the seam changes. `BackendSession` gets `read_policy`, the fake gets scripted exec exits and a read-back override, and `ExecSpec` gets a fixed tar-extract command.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=773
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The seam changes are in place. Next is `session.rs`. Cleanup is an explicit `close()` on normal and error paths, plus a `Drop` guard that spawns kill and remove for early returns, aborts and panics. The helper returns an error instead of unwrapping, since `unwrap` and `expect` are banned outside tests.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1447
+[tool] status: Pending
+[tool] status: Completed
+The session module is written. I'll register it in `mod.rs`, drop the unused `DriverChannel` import, and run the T15 tests.
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=161
+[tool] status: Completed
+The compile error is a missing `'static` bound on the backend's session type, which the `Drop` guard needs. The clean fix is to put `'static` on the associated type in the `Backend` trait.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=95
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 8 session tests pass. I'll remove the unused import in the test file, then run the full gate: fmt, clippy, and the workspace tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=135
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The full gate passes: fmt clean, clippy clean, and every workspace suite green (76 `test result: ok` lines, no failures). I'll add the Rust lesson, tick T15, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=274
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T15 is committed as `9b85496`. T15 is `[SUPERVISED]`, so I'll add a review-queue entry for it, using the same format as the existing entries.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=65
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=207
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T15 review entry is committed (`0055188`). T16 is next: the call runner, which is the most security-sensitive piece in the spec. Before designing it I need the APIs of the bounded reader, the stderr buffer and the encoder.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=647
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`LineReader::push` returns complete lines or `Overflow`. I need to know whether returned lines keep their newline, and how the budget counts, so I'll read that part of `stream.rs`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=61
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The reader keeps lines without their newline and checks the byte budget before copying. I'll now write the T16 tests first. The run is per-test, so the call takes a persistent `CallIo` (stdout reader, leftover lines, stderr buffer). The fake gets stderr events and blocked writes so the tests can cover them.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2328
+[tool] status: Pending
+[tool] status: Completed
+One assertion in the last test is circular: it compares `first` against a value taken from `first` itself. I'll replace it with a direct check on the line and remove the helper.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=159
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+RED is confirmed (missing `call` module, `Behaviour::Stderr`, `set_block_writes`). Now the implementation, in dependency order: the event type and fake first, then the reader's per-call budget reset, then `Session::abort`, then `call.rs`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=835
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The fake, the event type, the reader reset and `Session::abort` are in place. Now `call.rs`: one biased `select!` per step, with the deadline first, then the stop signal, then I/O.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1011
+[tool] status: Pending
+[tool] status: Completed
+`call.rs` is written. I'll register the module and run the T16 tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=112
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 12 call tests pass. Now the full gate.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=151
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Everything is green: fmt, clippy, and all 77 suites. I'll add the Rust lesson, tick T16, and commit the implementation.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=221
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T16 is committed as `0a5094b`. I'll add its review-queue entry now. It has to record one deviation: kernel facts (`memory.events`, `pids.events`) are not read yet, and the timeout branch of `abort` is untested.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=423
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T16 is closed out and logged. T17 (run orchestration) is next. It sits on the comparator and the verdict function, so I'll read those two APIs before writing its tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=114
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The comparator and verdict APIs fit the run loop. The remaining question is the engine's `Comparator` type, which `PlannedTest` needs. I'll check its variants and whether it is `Copy`, along with the config fields for the fail-fast threshold.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=598
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need for T17. The test file comes first. It covers the scheduling order (samples before hidden tests, property P15), the decided verdict for each path, container reuse after a wrong answer, fail-fast with new containers after timeouts, the run cap, compile failure, stop, and infrastructure errors.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1729
+[tool] status: Pending
+[tool] status: Completed
+The test file calls a `test_clone` method that doesn't exist, and `ExecutedTest` can't be cloned because a `Pass` carries a non-cloneable proof. I'll make `RunResult` own its `executed` list and provide `verdict()`, so the tests can call that directly.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=253
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test file is ready. Now `run.rs`. It schedules samples before hidden tests and opens a session per container. It closes a session after abnormal ends, stops at fail-fast, and records the cap cut and the stop flag. Compile failure on the first open means no tests ran.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1572
+[tool] status: Pending
+[tool] status: Completed
+`run.rs` is written, and the tests were written before it. I'll register the module and run the T17 tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=118
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 9 pass on the first run. Now the full gate.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=103
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy flags `execute_run` at 114 lines (limit 100). I'll split out the per-test call and verdict step into a `run_test` helper, which makes the loop body easier to read as well.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=901
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The library now passes. The remaining clippy error is in my test helper, which takes `Value` by value without consuming it. I'll change it to take a reference and update the callers.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=160
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Everything is green again: clippy exits 0, all 78 suites pass, and fmt is clean. I'll write the Rust lesson, tick T17, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=223
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T17 is committed as `98b34db`. T18 is the fault-injection property tests. The property needs two small fake changes: the fake must say which operation a fault fired on, and a scripted panic must be possible inside a driver read. Before editing, I'll list every `tick()` call site.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=568
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The call sites are at known lines, so I'll tag each with its operation name. I'll also add `fired_on` to the state and the scripted panic.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=437
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The fake now records the operation a fault fired on, and it can panic inside a read. Next are the T18 property tests, written first. P9 injects a fault at every daemon-call position for small plans. P8 runs random programs and checks the ledger balances. The cancel and panic tests check cleanup when the task is aborted or panics.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1583
+[tool] status: Pending
+[tool] status: Completed
+The property tests are written. They exercise existing code, so they may pass on the first run. I'll run them and read the results carefully rather than assume.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=103
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All five pass. A passing test only counts if it can fail, so I'll check the cleanup tests with a mutation. I'll temporarily disable the `Drop` cleanup in `session.rs`, expect the cancel and panic tests to fail, and then restore the file from a backup copy.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=184
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The mutation test works. With `Drop` cleanup removed, the cancel, panic and fault-injection tests all fail. The restored `session.rs` matches HEAD (`git diff` is empty) and its suite passes again. Now the full gate for T18.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=162
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy flags two `usize` to `u32` casts in the P8 test. I'll replace them with a counter that is already `u32` and with `u32::try_from`, which is fine in test code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=210
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Everything is green. I'll add the T18 lesson, tick the task, and commit. Then I'll run the wave-2 review.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=210
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Wave 2 covers T14 through T18. I'll start an independent reviewer over that diff, asking it for security and correctness findings with severities.
+[tool] Sub-agent: semantic_reviewer
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=244
+[tool] status: InProgress
+[tool] Summarise the judge diff and file sizes
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=183
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=161
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1723
+[tool] Check compile-step logic, sweeper, and line numbers
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=195
+[tool] Verify Python compile setting and locate key lines
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=279
+[tool] Collect line numbers for each finding
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=889
+[tool] status: Completed
+The reviewer raised one Critical item and several Important ones. Several are fair, and I'll fix them. A few belong to the bollard backend (T19 to T21), which doesn't exist yet, so I'll write those as contracts in `backend.rs` and log the rest. Before changing the call runner, I'll check the protocol error variants and whether a requirement ID covers "no trailing data", so the change to the T16 test can cite it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1026
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+R8.4 says an unsolicited line is a protocol violation, which supports tightening the call runner. That is the change I'll make. Lines that arrive after an answer, in the same read, become an `ExtraOutput` violation, and the container is killed. That removes the carry-over queue, which was the source of the Critical item. Infrastructure errors during a call now end the container before the error returns. I'll start with the call runner and its tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1191
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The build fails on the new variant and a leftover import, as expected. I'll fix the import, then add the `ProtocolViolation::ExtraOutput` variant and update `run.rs`. In the run loop, a container's survival now comes from the call's facts rather than from the verdict kind. The open is bounded by the run deadline, and a stop sender that has been dropped counts as a stop.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1129
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `run_test` body didn't pick up my replacement, so the imports went unused and the struct literal is still the old one. I'll read that function as it stands and fix it directly.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=72
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+rustfmt had reflowed the `judge_answer` call, so my match string missed. I'll replace the function body with the exact current text.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=274
+[tool] status: Pending
+[tool] status: Completed
+I'll rebuild to confirm the library compiles. Then I'll add the compile output overflow flag, the backend contract notes, and the fake's overflow knob.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=553
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The library builds, but one variant lost its doc comment. My insertion landed between an existing doc line and its variant. I'll look at the enum and fix it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=59
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=116
+[tool] status: Pending
+[tool] status: Completed
+The doc comment is restored. Now the tests. Replacing the T16 test that asserted the carry-over behaviour needs a `test-change` marker that cites R8.4. I'll also add tests for the new behaviour: an infrastructure error ending the container before it returns, a run-level extra-output case, a dropped stop sender, the zero-threshold refusal, and the compile overflow flag.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=944
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All five suites pass with the new tests. I'll run the full gate before committing the review fixes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=145
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The gate is green. I'll record the review findings and their outcome in the review queue, add the Rust lesson for the changed code, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=773
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The wave 2 fixes are committed as `293e4b5`. Every remaining task now depends on T02, which needs a person on the VPS, so I'll check that the human-step file covers T02 and T03 before updating the blockers log.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=107
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The human-step file covers T02 and T03. The `model_faults.proptest-regressions` file is an artifact of my own mutation run, which made P9 fail on purpose. It isn't a real regression, so I'll delete it. Then I'll record this run's stop point in the blockers log and commit that log.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=340
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Attempt 2 finished T14 through T18 and the wave 2 review fixes. T19 onward is blocked on T02, which needs someone on the VPS. Everything is committed, the gate is green, and nothing was pushed or branched.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T02 host spike | Not run, `[HUMAN]` | none | Steps are in `docs/kiro-log/judge-sandbox-human-steps.md` | none |
+| T03 Python digest pin | Not run, `[HUMAN]` | none | Steps are in the same file | none |
+| T14 backend traits and fake backend | Done | 10 (`model_backend`) | fmt, clippy, workspace tests pass | `7ecee7c` |
+| T15 session lifecycle and cleanup guard `[SUPERVISED]` | Done | 8 (`model_session`) | same | `9b85496` (queue entry `0055188`) |
+| T16 call runner `[SUPERVISED]` | Done | 12 (`model_call`) | same | `0a5094b` (queue entry `64c7f09`) |
+| T17 run orchestration | Done | 9 (`model_run`) | same | `98b34db` |
+| T18 fault-injection properties | Done | 5 (`model_faults`) | same | `c67110d` |
+| Wave 2 review fixes | Done | 4 more across the model tests | same, 79 suites pass | `293e4b5` |
+| T19 to T31 | Blocked | none | Depends on T02, see blockers | none |
+
+Final gate: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace` all pass. T14 to T18 each have a Rust lesson in `docs/kiro-log/rust-lessons.md`.
+
+**Blockers** (`docs/kiro-log/judge-sandbox-blockers.md`)
+- T02 and T03 need a person on the sandbox VPS. Everything after them is blocked.
+- The sweeper (T23) must land before a failed container removal is safe. Until then, a removal that fails leaves the container behind.
+- The bollard backend (T19 to T21) must meet three contracts, written in `backend.rs`: a per-call API timeout, `Exited` only after a successful inspect, and a 64 KiB output cap.
+
+**Review queue** (`docs/kiro-log/judge-sandbox-review-queue.md`)
+- T15 and T16 are `[SUPERVISED]`. Brighton should check the cleanup and kill behaviour in T15, and the call runner in T16.
+- The T16 change to strict answer lines (an extra line is a protocol violation) departs from the design text. It is marked `test-change: R8.4`. Brighton should confirm it.
+- Residual risk: a program can answer a later call before its input is written, if the answer matches. The runner can't block that without a non-blocking read.
+- Not built yet: kernel facts (`memory.events`, `pids.events`) are not read. The OOM evidence comes from the backend's `Exited` event until T21.
+- The timeout branch in `Session::abort` and the compile timeout branch are untested. The fake cannot hang them.
+- Tests use real time with short limits.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=362
+ Tokio's `test-util` feature was not added, because the task did not name it.
+
+**Open Minor review findings**
+- Verdicts pick the lowest-ordinal failure, but runs go samples first. This matches the design and is documented.
+- A slow daemon during a write or read looks like a time limit to the user. The bollard backend should report it as an error.
+- Some weak tests remain. The fake backend's ledger tests check the fake itself, and the stderr-flood test cannot show the cap was applied.
