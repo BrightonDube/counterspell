@@ -44,3 +44,16 @@ Reviewed by the semantic reviewer over `git diff 898c150..105208f -- crates/judg
   - A read-back that fails `hardening_violations` removes the container and returns `PolicyReadbackMismatch`.
   - The compile step has a budget and a 64 KiB output cap. **Not tested:** the timeout branch, because the fake's exec never hangs and the real budget is 5 s. T21 or T16 should add a test once a scripted hang exists.
 - **Real daemon:** nothing here talks to Docker yet. The real read-back and kill behaviour is checked by T20, T21 and the `sbx_` tests.
+
+## T16 call runner (commit 0a5094b) [SUPERVISED]
+- **Files:** `crates/judge/src/sandbox/call.rs`, `crates/judge/tests/model_call.rs`. The seam gained `DriverEvent::Stderr`. `session.rs` gained `Session::abort(within)`, and `stream.rs` gained `LineReader::reset_budget`.
+- **Check:**
+  - Every wait is a biased `select!`: deadline, then stop, then I/O. A write the program never reads is bounded by the same deadline.
+  - Stdout has a 1 MiB budget per call. Lines that arrive early are kept for the next call (a second line read together with the first answers the next call without reading again).
+  - Stderr only fills a buffer. A stderr flood does not kill the container and does not change the answer.
+  - `CallFacts` has no stderr-overflow variant (A2).
+- **Deviations Brighton should confirm:**
+  1. **Kernel facts not read.** The design asks for `memory.events` and `pids.events` through a fixed exec on abnormal ends. This is not written. The OOM evidence for `DriverExited` comes from the `Exited` event that the backend sends. T21 must fill that from `memory.events`. Deadline and output limit verdicts do not depend on OOM evidence.
+  2. **Infrastructure errors do not abort.** A daemon error during a call returns `Err` and leaves the container to the caller. The caller must close the session (`Opened` is dropped, so `Drop` cleans up).
+  3. **Kill-timeout branch untested.** `Session::abort` returns `KillFailed` when removal misses the kill slack. The fake cannot hang a removal, so only the success path is covered.
+  4. **Timing is real time.** The design asks for virtual time (P6). Tokio's `test-util` feature is not enabled and this run did not add it. Tests use 50 ms limits and bounds with 500 ms slack. This is a little slow on a loaded machine.
