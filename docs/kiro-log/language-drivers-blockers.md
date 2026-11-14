@@ -1,0 +1,59 @@
+# language-drivers blockers
+
+Run: attempt 1, 15 Nov 2026. Non-interactive run approved by Brighton (12 Nov 2026).
+
+## Summary
+
+- **Done and ticked:** T01 (`b8f8c7e`): `languages/protocol.md` plus `crates/judge/tests/model_protocol_doc.rs`.
+- **Partly done, not ticked:** T05 (`cb52f4c`): `ExecSpec::bench` appends `bench_args` to the catalogue run argv. The judge can build the bench command. Starting it in a sandbox is still unverified, so T05 stays open.
+- **Blocked:** T02 to T04, T06 to T12. Every remaining task needs either a real rootless sandbox daemon to run code, or a human-pinned image digest.
+- **Stretch, not started:** T13 to T16 (Java and C++). T12 must pass first.
+
+## The main blocker: no verified sandbox to run driver code
+
+The spec says all code execution for tests goes through the judge's sandbox runner on the rootless sandbox daemon. Nothing runs on the host. Three things block that:
+
+1. **judge-sandbox T02 (HUMAN, VPS spike)** is open. The only local run used rootful WSL Docker, which the identity guard refuses. Rootless behaviour is still unverified.
+2. **judge-sandbox T20 `#[ignore]` guard.** The PreToolUse guard refuses `#[ignore]` on `sbx_*` tests. Every real-daemon test in the judge-sandbox chain depends on that decision. Brighton has not yet answered (see `judge-sandbox-blockers.md`).
+3. **judge-sandbox executor.** `crates/judge/src/executor.rs` still uses `NoExecutor`. There is no working path that starts a driver in a container and returns answers.
+
+Effect: T03 (Python driver), T04 (Node driver), T06 (parity), T07 to T12 cannot be verified as the tasks require. Kiro did not write driver code without a way to run it, because that would break the red-green rule (TDD rule 2). Kiro also did not run driver tests on the host.
+
+**Unblock:** Brighton decides on judge-sandbox `#[ignore]` for `sbx_*` tests. A rootless sandbox daemon then runs the `sbx_` tests. With those, the next run can start T03 as RED: write the protocol fixture tests, run them through the sandbox, then write `driver.py`.
+
+## T02: registry
+
+- **Python driver file missing.** `languages/languages.toml` enables Python. The loader refuses an enabled language whose driver is missing, so the real catalogue fails to load. Fixing this needs `languages/drivers/python/driver.py` (T03, blocked above).
+- **JavaScript digest is a placeholder.** The JavaScript entry is disabled and holds the all-zero digest. The spec needs `node:22-slim` enabled. A real digest must be pinned first (HUMAN step, the same as judge-sandbox T03 for Python). Renovate then refreshes it weekly.
+- **JavaScript driver file missing.** `drivers/javascript/driver.js` is needed before enabling the entry (T04, blocked above).
+
+**Unblock:** pin the Node digest (human), write the driver (T04), then enable JavaScript.
+
+## T05: JavaScript registry entry and packaging
+
+- The bench argv part is done (`cb52f4c`).
+- The verification "a sandbox starts the configured command with a known-correct fixture" is blocked (see the main blocker).
+- Needs the Node digest pin.
+
+## T07: driver integration with the sandbox runner
+
+- The judge has `ExecSpec::driver` and `ExecSpec::bench` for argv. The driver is copied with `build_tar`.
+- **Signature descriptor not built.** `signature.json` must hold only public signature metadata. The shape is in `languages/protocol.md`. The only signature type in the repo is `counterspell_grimoire::record::Signature` (`crates/grimoire/src/signature.rs`). The judge does not depend on grimoire, and the task names no such dependency. Kiro did not add one.
+  - **Decision needed from Brighton:** either (a) add a `counterspell-grimoire` dependency to the judge, or (b) move a shared public signature type into `counterspell-common`. This choice changes the crate graph, so Kiro did not make it.
+- The sandbox start and comparison verification is blocked (main blocker).
+
+## T08 to T12
+
+- Blocked on the sandbox runner (T07) and on the bench problem interface.
+- **T09:** needs run-lifecycle event persistence for `bench_*` events. Not checked whether those event types exist yet.
+- **T10:** needs known-correct fixtures for each published pack. The packs are still draft (grimoire-packs T28 is waiting for Brighton's review). Fixtures for unpublished packs would be guesswork.
+- **T12:** the freeze-safe gate can only be recorded after T06, T09, T10 and T11 pass.
+
+## Stretch (T13 to T16)
+
+Not started. The spec's core gate (T12) has not passed, so Java and C++ stay out of this pass.
+
+## Notes for the next run
+
+- Next start: T02, once the JavaScript digest is pinned, or T03 once the sandbox tests can run.
+- The next run's `driver.py` should start from `protocol.md` and the `ExecSpec` argv.
