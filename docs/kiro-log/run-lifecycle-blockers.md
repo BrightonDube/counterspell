@@ -150,3 +150,10 @@ Done this session, each with its gate green:
 - **T33 done.** `startRunAction` in `web/src/lib/runs/api.ts` makes one idempotency key per user action and reuses it on every retry. Two tests in `api.test.ts` cover key reuse after a 500 and a fresh key per action. `stream.test.ts` already covered drop and resume, duplicates, gap recovery, terminal close and reconnect limits; the 429 `retry_after_seconds` case is in `api.test.ts`. Gate: `svelte-check` 0 errors, 243 web tests pass, `npm run build` ok.
 - **T29 still blocked (unchanged).** The SSE endpoint needs a `Stream` trait for axum's `Sse`. No task names `futures-util`, so it was not added. Unblock: Brighton approves `futures-util` for `counterspell-server`.
 - **T30, T31, T34, T35, T36, T37, T39** depend on T29 and stay unchecked. T38 (Caddy and deploy notes) does not depend on T29 and could run next.
+
+## Attempt 6, continued: T38 done with one deferred check
+
+- **T38 done.** `Caddyfile` routes `/api/runs/{id}/events` with `flush_interval -1` and no compression. Other routes keep `zstd`/`gzip`. `docker-compose.yml` sets the server and judge `DATABASE_URL` from `SERVER_DATABASE_URL` and `JUDGE_DATABASE_URL` (names only; values stay in the host environment). `deploy/run-lifecycle.md` covers the login roles, the config table, the single-server-process assumption and how to read the DoD report.
+- Checks run: `docker compose config` exits 0. The judge has no `ports:` and no Docker socket. `caddy validate` (image `caddy:2.10.2-alpine`) prints "Valid configuration".
+- **Deferred: E2E.** The manual check that an SSE request through Caddy delivers events as they are written needs a running stack. It is out of scope for this run (no browser or localhost E2E). Brighton can run it after deploy.
+- Unblock nothing else for T38. T29, T30, T31, T34–T37 and T39 remain blocked on the `futures-util` approval (T29) and on T36.
