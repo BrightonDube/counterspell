@@ -63,3 +63,15 @@ Items here stay open until the named person acts. Kiro left each task unchecked 
 **Minor findings (T20):**
 - The read-back assumes the daemon echoes the tmpfs option string unchanged. The ignored real-daemon test must confirm it (T37).
 - `host_resources` reads inspect `Mounts`, so an image-declared `VOLUME` is reported as a host resource. That is a fail-closed choice, but it is not in the design text. Brighton should confirm it.
+
+## Run stop point (attempt 3 of the continuation, 15 Nov 2026): T20 still blocked by the `#[ignore]` guard
+
+- **Task:** T20 (`sbx_create_readback_matches`) stays `[ ]`. Its code and model tests are already in commit `d74705c`.
+- **What happened:** I retried the write of `crates/judge/tests/sbx_bollard_create.rs`, the real-daemon test that needs `SANDBOX_DOCKER_SOCKET`, with `#[ignore]`. The PreToolUse guard refused it: "Rust #[ignore] is allowed only on tests named pg_* or valkey_*". No workaround was used. There was no shell write, no feature gate and no runtime skip.
+- **Why it matters:** every later task depends on T20 or on T24. T21 depends on T20, T22 on T21, T23 on T20, and T24 on T22 and T23. Each of them has an `sbx_` test, or a `#[ignore]` sweep, so none can be ticked. The `T25`–`T33` scenario tests also need `#[ignore]` on `sbx_` tests.
+- **Decision needed from Brighton (one of these):**
+  1. Extend the guard to allow `#[ignore]` on `sbx_*` tests, as the `pg_`/`valkey_` exception already does. This is the spec's own convention (tasks.md, conventions). It is my preferred option.
+  2. Another gating method you approve in writing. A runtime skip on a missing socket is not acceptable, because it would pass silently.
+- **Unblocks:** T20 to T24 and T25 to T33 (`sbx_` tests), then T34 to T39.
+- **Not done in this run:** no code changed. T21 onward were not started, because their dependencies are open.
+- **Note:** `run-lifecycle` T16 and T19 are already ticked, so the T24 dependency on them is met. The block is only the `sbx_` guard.

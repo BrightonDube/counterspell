@@ -168,3 +168,9 @@
  docs/KIRO_USAGE.md        |  8 ++++++++
  docs/kiro-log/sessions.md | 12 ++++++++++++
  2 files changed, 20 insertions(+)
+- 2026-11-14T22:05:00Z | model: not reported | last commit: d74705c judge-sandbox T20: bollard create, read-back and image check (code; sbx test blocked, not ticked)
+ | diff stat:
+ docs/KIRO_USAGE.md                      |  4 ++++
+ docs/kiro-log/judge-sandbox-blockers.md | 12 ++++++++++++
+ docs/kiro-log/sessions.md               |  2 ++
+ 3 files changed, 18 insertions(+)

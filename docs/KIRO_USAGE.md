@@ -249,3 +249,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-14 23:29-23:42 SAST: 37-remove-hackathon-mentions (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/37-remove-hackathon-mentions.md`. Transcript: `docs/kiro-log/2026-11-14T2329-37-remove-hackathon-mentions.log`. Exit 0.
 - Credits used (from /usage): 5.03 (credits used now 3136.94/4000).
+
+### 2026-11-15 23:46-00:02 SAST: 23-judge-sandbox-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a1.md`. Transcript: `docs/kiro-log/2026-11-14T2346-23-judge-sandbox-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 8.52 (credits used now 3145.46/4000).
+
+### 2026-11-15 00:02-00:05 SAST: 23-judge-sandbox-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0002-23-judge-sandbox-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 2.13 (credits used now 3147.59/4000).
