@@ -14,3 +14,6 @@ Recorded 14 Nov 2026 by Brighton.
 - 14 Nov 2026: auth T01 applies the webpki-roots / CDLA-Permissive-2.0 option approved above (not native roots). The older "licence decision open" notes in `docs/kiro-log/auth-blockers.md` are superseded.
 - 14 Nov 2026: throwaway local Postgres 17 (`cs-dev-pg`) and Valkey 8 (`cs-dev-valkey`) containers on 127.0.0.1 serve the `pg_` and `valkey_` tests. The runner exports `DATABASE_URL` and `VALKEY_URL` from a file outside the repo. Do not start, stop or reconfigure these containers, and never write the URLs or the password into any file.
 - 14 Nov 2026: new specs `problem-catalogue`, `deploy-ops` and `pack-authoring-pipeline` are spec-only until Brighton approves them. Do not implement them.
+
+- 14 Nov 2026 (Brighton): Code, UI text, comments, config, tests and specs must not mention the hackathon. Use neutral wording (for example "launch" or "v1 deadline"). Only external docs that genuinely need it may mention it, such as a submission doc kept under docs/. The hackathon write-up is done by Brighton's assistant, not a spec.
+- 14 Nov 2026 (Brighton): Hidden tests and reference solutions stay in the public repo for now. Brighton plans to make the repo private later. No private store is needed now.
