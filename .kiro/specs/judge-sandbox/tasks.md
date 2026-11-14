@@ -94,7 +94,7 @@ Conventions:
   - Depends on: T01.
   - Rust lesson: `String::from_utf8_lossy`, char boundaries, and `&str` slicing rules.
 
-- [ ] **T10 [S] [SUPERVISED] (30 min) Trusted comparator and the only mint of `Pass`**
+- [x] **T10 [S] [SUPERVISED] (30 min) Trusted comparator and the only mint of `Pass`**
   - Files: `crates/judge/src/sandbox/compare.rs`, `crates/judge/tests/model_compare.rs`.
   - `Expected`, `Verified` (private constructor), `TestVerdict`, `judge_answer(expected, call_id, line, comparator)`. Use `counterspell_engine::Comparator` (exact and unordered). Only this module can build `TestVerdict::Pass`.
   - Tests: P2 (arbitrary bytes, verdict-looking JSON, wrong ids, extra lines, a value equal to expected but with the wrong id); exact vs unordered semantics; a compile-fail test (`trybuild` if licence allows, otherwise a doc-test with `compile_fail`) showing `Pass` cannot be constructed outside the module.
