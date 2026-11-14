@@ -274,7 +274,7 @@ Conventions for every web task:
 
 ## Wave 3: the mascot (web) and preferences
 
-- [ ] **T26 [S] (30 min) Web prerequisites: asset contract, placeholder, GSAP and notices**
+- [x] **T26 [S] (30 min) Web prerequisites: asset contract, placeholder, GSAP and notices**
   - Files: `web/src/lib/familiar/mascot/contract.ts`, `contract.test.ts`, `web/static/familiar/` (audit; placeholder only if the art is absent), `web/package.json`, `web/package-lock.json`, `THIRD-PARTY-NOTICES.md`, `docs/kiro-log/efficiency-familiar-prereqs.md` (append).
   - Audit `web/static/familiar/`. Implement `validate(svgText)` for the id contract in the design. If a conforming SVG exists, validate it and record its size. If not, add a **clearly labelled placeholder** (`jack-o-lantern.placeholder.svg`, text "PLACEHOLDER ART" in the file) that satisfies the contract, so the code can be built and tested; record in the log that the real art is still needed. Add `gsap` as a dependency (npm only, not vendored) and its notice; add `vitest` if run-lifecycle T32 has not.
   - Requirements: R9.1, R9.11, R9.12.

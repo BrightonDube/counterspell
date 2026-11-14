@@ -118,3 +118,7 @@ Held back: **reqwest** (for Resend, GitHub and Google calls) and **oauth2** (PKC
 - **marked** (transitive, used by Monaco's hover markdown) — MIT — <https://www.npmjs.com/package/marked>
 - **dompurify** (transitive, used by Monaco to sanitise hover markup) — dual-licensed MPL-2.0 OR Apache-2.0; used under Apache-2.0 — <https://www.npmjs.com/package/dompurify>
 - **@types/trusted-types** (transitive type definitions) — MIT — <https://www.npmjs.com/package/@types/trusted-types>
+
+## Efficiency Familiar web dependencies (efficiency-familiar T26)
+
+- **gsap 3.15.1** — GreenSock (Webflow) — GSAP "Standard No Charge" licence (proprietary, commercial use allowed; accepted exception in `docs/licence-rules.md`). npm dependency only; the source is not vendored. Used only by the landing page and the Familiar. <https://www.npmjs.com/package/gsap> · <https://gsap.com/standard-license>
