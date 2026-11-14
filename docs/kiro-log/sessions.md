@@ -148,3 +148,8 @@
  ...26-11-14T0135-22-run-lifecycle-implement-a1.log | 39 ++++++++++++++++++++++
  docs/kiro-log/sessions.md                          | 13 ++++++++
  3 files changed, 60 insertions(+)
+- 2026-11-14T16:15:34Z | model: not reported | last commit: 4a12518 spec(judge-sandbox): record T00 review decisions
+ | diff stat:
+ docs/kiro-log/run-lifecycle-blockers.md | 8 ++++++++
+ docs/kiro-log/sessions.md               | 2 ++
+ 2 files changed, 10 insertions(+)
