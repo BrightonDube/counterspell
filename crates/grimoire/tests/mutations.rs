@@ -440,7 +440,10 @@ fn every_static_code_has_a_mutation_except_the_listed_exemption() {
     let required: BTreeSet<&str> = codes::ALL
         .iter()
         .map(|code| code.id)
-        .filter(|id| !id.starts_with("SBX-") && !NOT_TEXT_REACHABLE.contains(id))
+        .filter(|id| {
+            // SBX and BEN codes come from the sandbox stage, which runs after the static checks.
+            !id.starts_with("SBX-") && !id.starts_with("BEN-") && !NOT_TEXT_REACHABLE.contains(id)
+        })
         .collect();
 
     assert_eq!(targeted, required);

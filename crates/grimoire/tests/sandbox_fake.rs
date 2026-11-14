@@ -430,8 +430,11 @@ fn known_ghost_that_a_smaller_input_also_breaks_is_an_sbx_04_warning() {
 }
 
 #[test]
-fn declared_bench_warns_sbx_08_without_calling_the_bench_runner() {
-    // The model runner's bench always fails, so any call to it would surface as an error.
+// test-change: PCK-1
+// The bench now runs on the runner (R13.1 of efficiency-familiar). The old test expected
+// SBX-08 and no call. A bench fault must now surface as an infrastructure fault (exit 2).
+fn declared_bench_calls_the_runner_and_a_fault_is_infrastructure() {
+    // The model runner's bench always fails, so the fault must reach the caller.
     let meta = format!(
         "reference_complexity = \"n^2\"\n{META}\n[bench]\nsize_param = \"values\"\nsizes = [8, 16, 32]\n"
     );
@@ -444,10 +447,12 @@ fn declared_bench_warns_sbx_08_without_calling_the_bench_runner() {
         ],
     );
 
-    let report = run_sandbox(&pack.root(), &mut runner);
+    let outcome = validate_sandbox(&pack.root(), &mut runner);
 
-    assert_eq!(codes(&report), ["SBX-08"]);
-    assert!(!report.has_errors());
+    assert!(matches!(
+        outcome,
+        Err(SandboxFault::Runner(RunnerError::Infrastructure(_)))
+    ));
 }
 
 /// A runner whose sandbox is down: every call is an infrastructure fault.
