@@ -1,0 +1,17 @@
+# Spec 15: `deploy-ops` (VPS provisioning, Compose and Caddy, backups, monitoring)
+
+Added 14 Nov 2026 after the spec-gap review. Spec mode only. Implementing it must never touch a real server, buy anything, or run terraform apply / ansible against a real host.
+
+```
+Spec: deploy-ops. Specify how Counterspell goes from a signed image in GHCR to a running, backed-up, monitored service on one VPS, without choosing a paid provider for Brighton. Read #[[file:docs/system-design.md]] (§2, §7, §10 Deployment, §11 Cost, §13 Risks), #[[file:docs/requirements.md]] (§7 non-functional: availability until 29 Jan 2027, daily backup, uptime monitor; ADM-2, ADM-4), #[[file:docs/ci-cd.md]], .github/workflows/ (deploy.yml, publish-images.yml, terraform.yml are already written and are no-ops), deploy/ (rootless-sandbox-daemon.md, run-lifecycle.md, vps/README.md, vps/compose.prod.yml, vps/counterspell-deploy), docker-compose.yml, .kiro/specs/judge-sandbox/ (rootless sandbox daemon, T38 deployment notes, digest pre-pull), .kiro/specs/auth/ (domain, OAuth callbacks, Resend DNS), and .kiro/steering/ (security.md, sandbox.md, release-checklist.md). Build on what exists; do not replace deploy.yml or the forced-command deploy design.
+
+Cover:
+1. Provider-neutral provisioning: Terraform under infra/ with the provider behind a small module boundary (the docs name OVH VPS-2 as the current choice; keep it swappable), plan-only in CI, no state or tokens committed. Ansible (or a documented script if you justify it) for host configuration: users (deploy, sandbox), SSH hardening, firewall (80/443 and SSH only), unattended security upgrades, Docker Engine and Compose for the main daemon, the rootless sandbox daemon as a systemd user service of `sandbox` with the cgroup Delegate drop-in, pre-pulling sandbox images by digest, time sync.
+2. Runtime: production Compose (caddy, server, judge, postgres:17, valkey:8, one-shot migrate) with internal networks, the judge mounting only the rootless daemon socket, limited Postgres roles, resource limits matching the §10 memory budget, Caddy TLS and security headers, secrets in a server-side env file never committed.
+3. Release and rollback: deploy by image digest, migrations before the new server starts, health and readiness checks, one-command rollback to the previous digest, and the release checklist.
+4. Backups: nightly pg_dump, 7 kept locally, an off-box copy (list free options and flag any paid one as a Brighton decision), encryption of the off-box copy, and a monthly restore drill with a written result.
+5. Observability: structured logs without user code or secrets (ADM-4), log rotation, a free external uptime monitor, minimal metrics or log-derived counters for queue depth, sandbox kills and run latency (ADM-2 groundwork), and alert routing to Brighton.
+6. Security operations: rotating the deploy key, patch cadence, incident steps for a suspected sandbox escape (stop the judge, keep evidence), and the uptime period through 29 Jan 2027.
+7. Verification without a server: terraform fmt/validate/tflint, ansible-lint and syntax-check, docker compose config, and a local dry run where possible. Real-host steps are [HUMAN] tasks with exact commands for Brighton.
+Put every cost, domain, provider or DNS choice in "Open questions" as a Brighton decision with the free option assumed.
+```
