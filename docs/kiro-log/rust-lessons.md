@@ -714,3 +714,9 @@ An enum with data (`TestVerdict`) plus a `match` makes the compiler list every c
 `&[u8]` is raw bytes and `&str` is checked UTF-8. `std::str::from_utf8` turns one into the other and returns `Result`, so invalid input can't become a `str` by accident.
 `char::is_control` covers every control character in one call, so one rule catches NUL, ESC, BEL and DEL.
 A returned `&str` borrows from the input. The source is checked once and never copied.
+
+# Rust lesson: judge-sandbox T13
+
+Enum variants make impossible states unrepresentable. A `Hidden` record has no field for output, so the type itself cannot carry a hidden test's text.
+A match guard (`Some(detail) if run.sample && !self.hidden_phase`) checks state before a value is used, so the redaction rule sits in one place.
+`#[serde(tag = "kind")]` writes the variant name into the JSON. A reader can tell the two record kinds apart without guessing.
