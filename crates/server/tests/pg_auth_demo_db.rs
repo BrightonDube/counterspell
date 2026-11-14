@@ -1,4 +1,4 @@
-//! Database tests for the judge demo account guards and reset (auth T09, requirements R16.6 to R16.8).
+//! Database tests for the demo account guards and reset (auth T09, requirements R16.6 to R16.8).
 //!
 //! The demo account can only be created or re-credentialed by the seed helper, can never be
 //! deleted or given another identity, and its reset clears only its own finished rows.

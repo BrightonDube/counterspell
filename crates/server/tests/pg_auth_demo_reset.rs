@@ -1,4 +1,4 @@
-//! Database tests for the judge demo daily reset (auth T28, requirements R16.7 and R16.8).
+//! Database tests for the demo daily reset (auth T28, requirements R16.7 and R16.8).
 //!
 //! The reset runs at most once per scheduled window. The schedule is computed from the injected
 //! clock, and the database checks `demo_reset_at` under its advisory lock, so a restart or two

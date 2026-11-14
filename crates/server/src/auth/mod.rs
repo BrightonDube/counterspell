@@ -1,4 +1,4 @@
-//! Sign-in, sessions, email links, OAuth sign-in and linking, passwords, and the judge demo account.
+//! Sign-in, sessions, email links, OAuth sign-in and linking, passwords, and the demo account.
 //!
 //! Everything in this module is server-side. Postgres is the only store for users, identities,
 //! sessions, email tokens and OAuth flows. Valkey holds counters only.

@@ -121,7 +121,7 @@ pub struct MailConfig {
     pub mail_from: Option<String>,
 }
 
-/// The judge demo account's sign-in details.
+/// The demo account's sign-in details.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DemoConfig {
     /// The demo address, lower-cased and trimmed.
@@ -151,7 +151,7 @@ pub struct AuthConfig {
     pub mail: MailConfig,
     /// Sign-in emails allowed across the whole service each UTC day.
     pub email_daily_cap: u32,
-    /// The judge demo account, when its variables are set.
+    /// The demo account, when its variables are set.
     pub demo: Option<DemoConfig>,
     /// The UTC hour (0 to 23) at which the demo account resets.
     pub demo_reset_hour_utc: u8,
