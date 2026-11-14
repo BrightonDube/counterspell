@@ -95,6 +95,8 @@ pub const GHOST_LABEL: &str = "minimized counterexample";
 
 /// Failure classification is a public part of the engine.
 pub mod classify;
+/// The complexity fit: which growth class a timing curve supports.
+pub mod complexity;
 /// Candidate generation is a public part of the engine.
 pub mod generate;
 /// Failure shrinking is a public part of the engine.
