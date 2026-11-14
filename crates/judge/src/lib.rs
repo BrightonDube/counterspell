@@ -9,6 +9,7 @@
 
 pub mod config;
 pub mod executor;
+pub mod languages;
 pub mod queue;
 pub mod sandbox;
 pub mod service;

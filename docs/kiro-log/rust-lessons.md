@@ -666,3 +666,9 @@ The hand-written `Debug` on `OutgoingMail` hides the body, so printing a mail wi
 Cargo features switch code on and off at build time. `bollard` is an optional dependency behind the `sandbox` feature, so builds without it never compile the Docker client.
 `clippy.toml` `disallowed-methods` turns a forbidden function into a lint error. Judge code cannot call `Command::new` by accident.
 Configuration errors are a typed enum (`thiserror`). Each variant names the variable and never echoes its value, so a secret in a bad setting cannot leak into a log.
+
+# Rust lesson: judge-sandbox T04
+
+A newtype with a private field makes an invalid value impossible to build. `PinnedImage` has no public constructor, so the only way to get one is `parse`, which refuses tags. The compiler enforces the rule everywhere the type is used.
+`#[serde(deny_unknown_fields)]` makes a typo in the catalogue a load error instead of a silently ignored setting.
+`toml::Table` is a sorted map, so validation errors appear in a stable order, and the first broken language is always the same one.

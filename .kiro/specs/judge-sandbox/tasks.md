@@ -46,7 +46,7 @@ Conventions:
 
 ## Wave 1: pure core (no Docker, runs anywhere)
 
-- [ ] **T04 [S] (30 min) Language catalogue loader and `languages.toml`**
+- [x] **T04 [S] (30 min) Language catalogue loader and `languages.toml`**
   - Files: `crates/judge/src/languages.rs`, `languages/languages.toml`, `crates/judge/tests/model_languages.rs`.
   - Implement `PinnedImage` (private field; only builds from `…@sha256:` + 64 hex), `LanguageDefinition`, `LanguageCatalog::load(path)` and validation as in `design.md` section 6. Python enabled; JavaScript, Java and C++ present with `enabled = false`. File-name validation. Parse `bench_args` but do not use it. Expose `max_source_bytes(lang)` for the server's `LanguageCatalog`.
   - Tests: property P13 (generated invalid files rejected; valid file round-trips); a tag is rejected; duplicate names; unknown fields; zero limits; path-like file names; disabled language is returned but marked disabled.
