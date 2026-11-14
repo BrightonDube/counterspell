@@ -1,6 +1,6 @@
 # How we used Kiro on Counterspell
 
-Running log for the Kiroween 2026 "How we used Kiro" write-up. Newest entries at the bottom.
+Running log for the "How we used Kiro" external submission write-up. Newest entries at the bottom.
 Each entry: date/time (SAST), Kiro surface (IDE / CLI), feature used (steering, specs, hooks, MCP, agents, Powers, /goal), model, prompt (or link to it), what Kiro produced, what we changed, credits used (if shown).
 
 Other tools used are disclosed separately in README.md (rules: "must disclose any other pre-existing code or work").
@@ -31,27 +31,27 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 
 ### 2026-11-12 01:46-01:48 SAST: 03-repo-skeleton-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/03-repo-skeleton-cli.md`. Transcript: `docs/kiro-log/2026-11-12T0146-03-repo-skeleton-spec.log`. Exit 0.
-- Credits used (from /usage): 4.27 (hackathon credits used now 2251.49/4000).
+- Credits used (from /usage): 4.27 (credits used now 2251.49/4000).
 
 ### 2026-11-12 01:49-03:44 SAST: 03b-repo-skeleton-implement (Kiro CLI, gpt-5.6-luna, mode default)
 - Prompt: `docs/kiro-prompts/03b-repo-skeleton-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T0149-03b-repo-skeleton-implement.log`. Exit 0.
-- Credits used (from /usage): 39.34 (hackathon credits used now 2290.83/4000).
+- Credits used (from /usage): 39.34 (credits used now 2290.83/4000).
 
 ### 2026-11-12 10:37-10:53 SAST: 04-ghost-engine-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/04-ghost-engine-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1037-04-ghost-engine-spec.log`. Exit 0.
-- Credits used (from /usage): 29.62 (hackathon credits used now 2321.83/4000).
+- Credits used (from /usage): 29.62 (credits used now 2321.83/4000).
 
 ### 2026-11-12 10:54-11:00 SAST: 05-grimoire-packs-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/05-grimoire-packs-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1054-05-grimoire-packs-spec.log`. Exit 0.
-- Credits used (from /usage): 4.35 (hackathon credits used now 2326.18/4000).
+- Credits used (from /usage): 4.35 (credits used now 2326.18/4000).
 
 ### 2026-11-12 11:00-11:12 SAST: 06-judge-sandbox-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/06-judge-sandbox-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1100-06-judge-sandbox-spec.log`. Exit 1.
-- Credits used (from /usage): 14.37 (hackathon credits used now 2340.55/4000).
+- Credits used (from /usage): 14.37 (credits used now 2340.55/4000).
 
 ### 2026-11-12 11:12-11:32 SAST: 07-run-lifecycle-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/07-run-lifecycle-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1112-07-run-lifecycle-spec.log`. Exit 0.
-- Credits used (from /usage): 32.59 (hackathon credits used now 2373.14/4000).
+- Credits used (from /usage): 32.59 (credits used now 2373.14/4000).
 
 ### 2026-11-12 (time not recorded): Codebase Q&A in the IDE (read-only)
 - Surface: Kiro IDE chat, vibe session, autopilot. Model: Auto (selected dynamically by the server, so the exact model is unknown).
@@ -64,184 +64,184 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 
 ### 2026-11-12 11:32-11:49 SAST: 08-auth-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/08-auth-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1132-08-auth-spec.log`. Exit 0.
-- Credits used (from /usage): 27.56 (hackathon credits used now 2400.70/4000).
+- Credits used (from /usage): 27.56 (credits used now 2400.70/4000).
 
 ### 2026-11-12 11:49-11:53 SAST: 09-ide-workspace-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/09-ide-workspace-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1149-09-ide-workspace-spec.log`. Exit 0.
-- Credits used (from /usage): 9.02 (hackathon credits used now 2416.65/4000).
+- Credits used (from /usage): 9.02 (credits used now 2416.65/4000).
 
 ### 2026-11-12 11:53-11:56 SAST: 10-language-drivers-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/10-language-drivers-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1153-10-language-drivers-spec.log`. Exit 0.
-- Credits used (from /usage): 4.08 (hackathon credits used now 2420.73/4000).
+- Credits used (from /usage): 4.08 (credits used now 2420.73/4000).
 
 ### 2026-11-12 11:56-12:00 SAST: 11-hints-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/11-hints-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1156-11-hints-spec.log`. Exit 0.
-- Credits used (from /usage): 3.48 (hackathon credits used now 2424.21/4000).
+- Credits used (from /usage): 3.48 (credits used now 2424.21/4000).
 
 ### 2026-11-12 12:00-12:03 SAST: 12-dashboard-fsrs-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/12-dashboard-fsrs-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1200-12-dashboard-fsrs-spec.log`. Exit 0.
-- Credits used (from /usage): 4.42 (hackathon credits used now 2428.63/4000).
+- Credits used (from /usage): 4.42 (credits used now 2428.63/4000).
 
 ### 2026-11-12 12:04-12:08 SAST: 13-counterspell-mcp-power-spec (Kiro CLI, gpt-5.6-luna, mode spec)
 - Prompt: `docs/kiro-prompts/13-counterspell-mcp-power-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1204-13-counterspell-mcp-power-spec.log`. Exit 0.
-- Credits used (from /usage): 7.33 (hackathon credits used now 2435.96/4000).
+- Credits used (from /usage): 7.33 (credits used now 2435.96/4000).
 
 ### 2026-11-12 12:08-12:36 SAST: 14-efficiency-familiar-spec (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/14-efficiency-familiar-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1208-14-efficiency-familiar-spec.log`. Exit 0.
-- Credits used (from /usage): 46.30 (hackathon credits used now 2482.26/4000).
+- Credits used (from /usage): 46.30 (credits used now 2482.26/4000).
 
 ### 2026-11-12 12:36-12:40 SAST: 15-landing-steel-night-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/15-landing-steel-night-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1236-15-landing-steel-night-spec.log`. Exit 0.
-- Credits used (from /usage): 2.79 (hackathon credits used now 2485.05/4000).
+- Credits used (from /usage): 2.79 (credits used now 2485.05/4000).
 
 ### 2026-11-12 12:40-12:44 SAST: 16-break-room-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/16-break-room-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1240-16-break-room-spec.log`. Exit 0.
-- Credits used (from /usage): 2.70 (hackathon credits used now 2487.75/4000).
+- Credits used (from /usage): 2.70 (credits used now 2487.75/4000).
 
 ### 2026-11-12 12:44-13:03 SAST: 06-judge-sandbox-spec-retry (Kiro CLI, claude-sonnet-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/06-judge-sandbox-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1244-06-judge-sandbox-spec-retry.log`. Exit 0.
-- Credits used (from /usage): 31.58 (hackathon credits used now 2519.33/4000).
+- Credits used (from /usage): 31.58 (credits used now 2519.33/4000).
 
 ### 2026-11-12 16:53-18:21 SAST: 20-ghost-engine-implement (Kiro CLI, gpt-5.6-luna, mode default)
 - Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T1653-20-ghost-engine-implement.log`. Exit 143.
-- Credits used (from /usage): 124.07 (hackathon credits used now 2645.14/4000).
+- Credits used (from /usage): 124.07 (credits used now 2645.14/4000).
 
 ### 2026-11-12 23:26-23:29 SAST: 20-ghost-engine-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T2326-20-ghost-engine-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 2.53 (hackathon credits used now 2647.67/4000).
+- Credits used (from /usage): 2.53 (credits used now 2647.67/4000).
 
 ### 2026-11-13 23:29-00:01 SAST: 20-ghost-engine-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-12T2329-20-ghost-engine-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 24.28 (hackathon credits used now 2671.95/4000).
+- Credits used (from /usage): 24.28 (credits used now 2671.95/4000).
 
 ### 2026-11-13 00:01-00:23 SAST: 20-ghost-engine-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/20-ghost-engine-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0001-20-ghost-engine-implement-a3.log`. Exit 0.
-- Credits used (from /usage): 17.77 (hackathon credits used now 2689.72/4000).
+- Credits used (from /usage): 17.77 (credits used now 2689.72/4000).
 
 ### 2026-11-13 00:25-00:50 SAST: 21-grimoire-packs-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/21-grimoire-packs-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0025-21-grimoire-packs-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 28.67 (hackathon credits used now 2718.68/4000).
+- Credits used (from /usage): 28.67 (credits used now 2718.68/4000).
 
 ### 2026-11-13 00:50-01:15 SAST: 21-grimoire-packs-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/21-grimoire-packs-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0050-21-grimoire-packs-implement-a2.log`. Exit 0.
-- Credits used (from /usage): -2718.68 (hackathon credits used now /4000).
+- Credits used (from /usage): -2718.68 (credits used now /4000).
 
 ### 2026-11-13 09:27-09:34 SAST: 21-grimoire-packs-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/21-grimoire-packs-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0927-21-grimoire-packs-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 5.85 (hackathon credits used now 2751.12/4000).
+- Credits used (from /usage): 5.85 (credits used now 2751.12/4000).
 
 ### 2026-11-13 09:34-09:36 SAST: 21-grimoire-packs-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/21-grimoire-packs-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0934-21-grimoire-packs-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 1.56 (hackathon credits used now 2752.68/4000).
+- Credits used (from /usage): 1.56 (credits used now 2752.68/4000).
 
 ### 2026-11-13 09:38-09:52 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/22-run-lifecycle-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0938-22-run-lifecycle-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 10.85 (hackathon credits used now 2763.70/4000).
+- Credits used (from /usage): 10.85 (credits used now 2763.70/4000).
 
 ### 2026-11-13 09:52-09:57 SAST: 22-run-lifecycle-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `docs/kiro-prompts/22-run-lifecycle-implement-cli.md`. Transcript: `docs/kiro-log/2026-11-13T0952-22-run-lifecycle-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 3.80 (hackathon credits used now 2767.50/4000).
+- Credits used (from /usage): 3.80 (credits used now 2767.50/4000).
 
 ### 2026-11-13 13:12-13:26 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a1.md`. Transcript: `docs/kiro-log/2026-11-13T1312-22-run-lifecycle-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 8.13 (hackathon credits used now 2783.25/4000).
+- Credits used (from /usage): 8.13 (credits used now 2783.25/4000).
 
 ### 2026-11-13 13:26-14:03 SAST: 22-run-lifecycle-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a2.md`. Transcript: `docs/kiro-log/2026-11-13T1326-22-run-lifecycle-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 21.74 (hackathon credits used now 2804.99/4000).
+- Credits used (from /usage): 21.74 (credits used now 2804.99/4000).
 
 ### 2026-11-13 14:03-14:20 SAST: 22-run-lifecycle-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a3.md`. Transcript: `docs/kiro-log/2026-11-13T1403-22-run-lifecycle-implement-a3.log`. Exit 0.
-- Credits used (from /usage): 8.59 (hackathon credits used now 2813.58/4000).
+- Credits used (from /usage): 8.59 (credits used now 2813.58/4000).
 
 ### 2026-11-13 14:20-14:51 SAST: 22-run-lifecycle-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a4.md`. Transcript: `docs/kiro-log/2026-11-13T1420-22-run-lifecycle-implement-a4.log`. Exit 0.
-- Credits used (from /usage): 16.10 (hackathon credits used now 2829.68/4000).
+- Credits used (from /usage): 16.10 (credits used now 2829.68/4000).
 
 ### 2026-11-13 14:51-15:08 SAST: 22-run-lifecycle-implement-a5 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a5.md`. Transcript: `docs/kiro-log/2026-11-13T1451-22-run-lifecycle-implement-a5.log`. Exit 0.
-- Credits used (from /usage): 10.94 (hackathon credits used now 2840.62/4000).
+- Credits used (from /usage): 10.94 (credits used now 2840.62/4000).
 
 ### 2026-11-13 15:11-15:48 SAST: 25-auth-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a1.md`. Transcript: `docs/kiro-log/2026-11-13T1511-25-auth-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 16.26 (hackathon credits used now 2857.07/4000).
+- Credits used (from /usage): 16.26 (credits used now 2857.07/4000).
 
 ### 2026-11-13 15:49-16:40 SAST: 25-auth-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a2.md`. Transcript: `docs/kiro-log/2026-11-13T1549-25-auth-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 24.92 (hackathon credits used now 2881.99/4000).
+- Credits used (from /usage): 24.92 (credits used now 2881.99/4000).
 
 ### 2026-11-13 16:41-17:55 SAST: 25-auth-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a3.md`. Transcript: `docs/kiro-log/2026-11-13T1641-25-auth-implement-a3.log`. Exit 0.
-- Credits used (from /usage): 19.38 (hackathon credits used now 2901.37/4000).
+- Credits used (from /usage): 19.38 (credits used now 2901.37/4000).
 
 ### 2026-11-13 17:55-18:07 SAST: 25-auth-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a4.md`. Transcript: `docs/kiro-log/2026-11-13T1755-25-auth-implement-a4.log`. Exit 0.
-- Credits used (from /usage): 5.63 (hackathon credits used now 2907.00/4000).
+- Credits used (from /usage): 5.63 (credits used now 2907.00/4000).
 
 ### 2026-11-13 18:10-19:37 SAST: 26-ide-workspace-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-ide-workspace-a1.md`. Transcript: `docs/kiro-log/2026-11-13T1810-26-ide-workspace-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 21.32 (hackathon credits used now 2928.32/4000).
+- Credits used (from /usage): 21.32 (credits used now 2928.32/4000).
 
 ### 2026-11-13 19:37-20:43 SAST: 26-ide-workspace-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-ide-workspace-a2.md`. Transcript: `docs/kiro-log/2026-11-13T1937-26-ide-workspace-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 15.30 (hackathon credits used now 2943.62/4000).
+- Credits used (from /usage): 15.30 (credits used now 2943.62/4000).
 
 ### 2026-11-13 20:43-21:47 SAST: 26-ide-workspace-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-ide-workspace-a3.md`. Transcript: `docs/kiro-log/2026-11-13T2043-26-ide-workspace-implement-a3.log`. Exit 0.
-- Credits used (from /usage): 11.50 (hackathon credits used now 2955.12/4000).
+- Credits used (from /usage): 11.50 (credits used now 2955.12/4000).
 
 ### 2026-11-13 21:48-21:57 SAST: 26-ide-workspace-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-ide-workspace-a4.md`. Transcript: `docs/kiro-log/2026-11-13T2148-26-ide-workspace-implement-a4.log`. Exit 0.
-- Credits used (from /usage): 2.57 (hackathon credits used now 2957.69/4000).
+- Credits used (from /usage): 2.57 (credits used now 2957.69/4000).
 
 ### 2026-11-14 01:35-02:05 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a1.md`. Transcript: `docs/kiro-log/2026-11-14T0135-22-run-lifecycle-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 10.19 (hackathon credits used now 2967.88/4000).
+- Credits used (from /usage): 10.19 (credits used now 2967.88/4000).
 
 ### 2026-11-14 02:05-02:18 SAST: 22-run-lifecycle-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a2.md`. Transcript: `docs/kiro-log/2026-11-14T0205-22-run-lifecycle-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 4.91 (hackathon credits used now 2972.79/4000).
+- Credits used (from /usage): 4.91 (credits used now 2972.79/4000).
 
 ### 2026-11-14 02:18-02:22 SAST: 22-run-lifecycle-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a3.md`. Transcript: `docs/kiro-log/2026-11-14T0218-22-run-lifecycle-implement-a3.log`. Exit 0.
-- Credits used (from /usage): 1.70 (hackathon credits used now 2974.49/4000).
+- Credits used (from /usage): 1.70 (credits used now 2974.49/4000).
 
 ### 2026-11-14 02:26-02:29 SAST: 25-auth-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a1.md`. Transcript: `docs/kiro-log/2026-11-14T0226-25-auth-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 1.75 (hackathon credits used now 2976.24/4000).
+- Credits used (from /usage): 1.75 (credits used now 2976.24/4000).
 
 ### 2026-11-14 02:33-02:39 SAST: 26-ide-workspace-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-ide-workspace-a1.md`. Transcript: `docs/kiro-log/2026-11-14T0233-26-ide-workspace-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 1.59 (hackathon credits used now 2977.96/4000).
+- Credits used (from /usage): 1.59 (credits used now 2977.96/4000).
 
 ### 2026-11-14 18:13-18:15 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a1.md`. Transcript: `docs/kiro-log/2026-11-14T1813-22-run-lifecycle-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 1.47 (hackathon credits used now 2993.98/4000).
+- Credits used (from /usage): 1.47 (credits used now 2993.98/4000).
 
 ### 2026-11-14 18:19-19:08 SAST: 23-judge-sandbox-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-judge-sandbox-a1.md`. Transcript: `docs/kiro-log/2026-11-14T1819-23-judge-sandbox-implement-a1.log`. Exit 0.
-- Credits used (from /usage): 33.43 (hackathon credits used now 3027.54/4000).
+- Credits used (from /usage): 33.43 (credits used now 3027.54/4000).
 
 ### 2026-11-14 19:08-19:48 SAST: 23-judge-sandbox-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-judge-sandbox-a2.md`. Transcript: `docs/kiro-log/2026-11-14T1908-23-judge-sandbox-implement-a2.log`. Exit 0.
-- Credits used (from /usage): 20.33 (hackathon credits used now 3047.87/4000).
+- Credits used (from /usage): 20.33 (credits used now 3047.87/4000).
 
 ### 2026-11-14 19:48-19:56 SAST: 23-judge-sandbox-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-judge-sandbox-a3.md`. Transcript: `docs/kiro-log/2026-11-14T1948-23-judge-sandbox-implement-a3.log`. Exit 0.
-- Credits used (from /usage): 3.85 (hackathon credits used now 3051.72/4000).
+- Credits used (from /usage): 3.85 (credits used now 3051.72/4000).
 
 ### 2026-11-14 22:49-23:00 SAST: 34-problem-catalogue-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/34-problem-catalogue-cli.md`. Transcript: `docs/kiro-log/2026-11-14T2249-34-problem-catalogue-spec.log`. Exit 0.
-- Credits used (from /usage): 7.25 (hackathon credits used now 3112.87/4000).
+- Credits used (from /usage): 7.25 (credits used now 3112.87/4000).
 
 ### 2026-11-14 23:00-23:12 SAST: 35-deploy-ops-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/35-deploy-ops-cli.md`. Transcript: `docs/kiro-log/2026-11-14T2300-35-deploy-ops-spec.log`. Exit 0.
-- Credits used (from /usage): 7.39 (hackathon credits used now 3120.26/4000).
+- Credits used (from /usage): 7.39 (credits used now 3120.26/4000).
 
 ### 2026-11-14 23:12-23:19 SAST: 36-pack-authoring-pipeline-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/36-pack-authoring-pipeline-cli.md`. Transcript: `docs/kiro-log/2026-11-14T2312-36-pack-authoring-pipeline-spec.log`. Exit 0.
-- Credits used (from /usage): 5.09 (hackathon credits used now 3125.35/4000).
+- Credits used (from /usage): 5.09 (credits used now 3125.35/4000).
 
 ### 2026-11-14 23:19-23:28 SAST: 38-private-pack-split (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/38-private-pack-split.md`. Transcript: `docs/kiro-log/2026-11-14T2319-38-private-pack-split.log`. Exit 0.
-- Credits used (from /usage): 6.56 (hackathon credits used now 3131.91/4000).
+- Credits used (from /usage): 6.56 (credits used now 3131.91/4000).
