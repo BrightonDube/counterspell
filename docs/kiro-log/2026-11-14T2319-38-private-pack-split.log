@@ -1,0 +1,378 @@
+I'll start by reading the standing decisions and the existing `problem-catalogue` spec.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=100
+
+[tool] Read File
+[tool] status: InProgress
+[tool] List spec, steering and prompt files and git status
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The private-repo decision is clear. Next I'll find the places in the spec that assume a public repo or touch hidden data.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=108
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+Requirements are readable. Next, the design's section headings and the open-questions block, so I can find open question 18 and the data-flow diagram.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=77
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=27
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The file is long. I'll grep for the pack-path and open-question references rather than reading all 606 lines.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=71
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+Grep results are too sparse to rely on, so I'll read the rest of the design in chunks.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=49
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=28
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+Design is read. Next, the tasks file, which holds the wave structure and the SUPERVISED markers I need to extend.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=53
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=27
+I have the full structure of the three files. Before editing, I'll check the draft layout prompt, the pack-authoring spec, and the untracked log, so the amendment stays consistent with them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=155
+
+[tool] Check draft layout prompt, related specs and existing log
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The untracked log is the harness's own session log, so I will leave it alone. The pack-authoring spec already points at this amendment (its X3 row) and names some private files, so I'll align with those names before editing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1377
+
+[tool] Read private tree layout and approval references in pack-authoring spec
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need. Summary of what the amendment changes:
+
+- Hidden data moves to a private repo, read through a local checkout, and the importer never fetches or holds a credential.
+- A public-only import is refused, and approval plus retired-value checks gate the sandbox step.
+- The current draft has two gaps I need to close: `generator_seed` sits in a column the server can read, and `problem_versions.manifest` would hold private file hashes. Both move to judge-only tables.
+- `docs/kiro-prompts/33-starter-pack-hardening-v2.md` proposes a `counterspell_importer` role, which conflicts with CAT-R1. I'll keep the no-new-role rule and flag the conflict.
+
+I'll start with the requirements file.
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Completed
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=4196
+[tool] status: Pending
+[tool] status: Completed
+All 19 requirement edits applied. Next the design file: the decision register, data model, pipeline steps, privilege table, failure matrix, and open question 18.
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1828
+[tool] status: Pending
+[tool] status: Completed
+Those edits applied. In the diagram I just wrote, the retired-value check feeds `validate_static`, which is wrong, so I'll fix that along with the pipeline steps.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2086
+[tool] status: Pending
+[tool] status: Completed
+Design is done. Now `tasks.md`: the marker and convention updates, the new tasks (C00a, C08a, C11a, C19b, C40), and the existing tasks that need credentials, private-tree arguments or new fields.
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Failed: Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=3995
+[tool] status: Pending
+[tool] status: Completed
+One edit missed, the C34 runbook bullet. I'll read the exact text and retry.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=134
+[tool] status: Pending
+[tool] status: Completed
+All edits are in. I'll check for leftover public-repo assumptions and confirm the new IDs resolve across the three files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=115
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+The cross-references resolve. Last step: commit only the three amended spec files. The untracked session log stays out of the commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=139
+
+[tool] Commit the three amended problem-catalogue spec files
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `problem-catalogue` spec is amended for the private-pack split and committed as `c94504f`. Only the three spec files changed. Nothing was implemented, the private repo was not created, and nothing was pushed.
+
+What changed:
+
+- **Layout:** hidden parts (`hidden.toml`, generator seeds, `reference/`, `incorrect/`, `known_ghosts.toml`, `approval.toml`) live in `BrightonDube/counterspell-packs-private`. The public tree keeps `problem.md`, `meta.toml` samples, hints and `packs/catalogue.toml`.
+- **Importer:** reads a local checkout passed as `--private-root`. It never fetches, runs git or holds a credential. A missing, unreadable or in-public-tree root stops the whole run before any database connection.
+- **Refusals:** a public-only import is refused. So are a missing private part, a stale or mismatched `approval.toml`, and a hidden case that matches a retired hash.
+- **Rotation:** hidden values already in public history are retired through `retired-values.toml`. A slug with retired hashes cannot be sandbox-imported until a `[[rotated]]` record exists. The design says so explicitly.
+- **Tasks:** added C00a (private repo and credential, HUMAN), C08a and C11a (pure preflight, join, approval and retired-value checks), C19b (refused public-only import and approval-gate tests) and C40 (rotation gate, HUMAN). Credential handling in C34 and the purity guard in C23 are updated. C38 and C39 now take the private-root and approval flow.
+
+Two gaps in the earlier draft are fixed. The generator seed sat in `problem_versions`, which the server role can read. It moves to a judge-only table. `problem_versions.manifest` would also have held private file hashes. It now holds public paths only.
+
+Decisions for you:
+
+- **Draft conflict:** `docs/kiro-prompts/33-starter-pack-hardening-v2.md` proposes a `counterspell_importer` role and table names `test_cases` and `problem_known_ghosts`. I kept this spec's no-new-role rule and its names. The draft is not edited. Please confirm before you approve it (open question 22).
+- **Public history:** I did not rewrite public git history. Rotation alone blocks the exposed values from being used (open question 21). Whether to rewrite history is your call.
+- **Credential:** I assumed a read-only deploy key, given to git by you at checkout time (open question 23).
+- **Static-only imports:** these also need the private tree. A synthetic fixture is the only dev stand-in (open question 24).
+
+The unt[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=190
+racked `docs/kiro-log/2026-11-14T2319-38-private-pack-split.log` is the session log. I left it uncommitted.
