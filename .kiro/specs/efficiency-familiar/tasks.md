@@ -152,7 +152,7 @@ Conventions for every web task:
   - Preserve: the engine stays pure and synchronous.
   - Rust lesson: deterministic random numbers and why seeds are derived from data, not time.
 
-- [ ] **T14 [P] (20 min) Ratio vs baseline**
+- [x] **T14 [P] (20 min) Ratio vs baseline**
   - Files: `crates/judge/src/familiar/{mod.rs,ratio.rs}`.
   - Implement the geometric-mean ratio over common sizes, absent for fewer than two common sizes or any zero median. Add the usability filter type for baselines (problem version, image digest) as a pure function over rows.
   - Tests: P14; stale version and wrong digest are rejected; order independence.
