@@ -744,3 +744,9 @@ A `?` inside `prepare` still closes the container, because `open_session` closes
 `tokio::select!` with `biased;` checks its branches in the order written. Putting the deadline first means a late answer can't win a tie against the clock.
 A `select!` arm that does `return` leaves the function at once, so each abnormal end is one arm and one `return`.
 `let Ok(lines) = io.stdout.push(&bytes) else { ... };` (let-else) handles the overflow error in one line and keeps the happy path flat.
+
+# Rust lesson: judge-sandbox T17
+
+A `for` loop with `break` and `return` is the normal way to stop early. Each exit is one line and the cleanup after the loop runs once.
+`match` on a small enum (`Step::Ran` or `Step::Stopped`) moves a "stopped" result out of the verdict path, so the verdict code never sees it.
+`Option::as_mut()` with `let ... else` avoids `unwrap` when the code needs a value it just checked. Clippy's line limit pushed the per-test call into its own function, which also made the loop easier to read.
