@@ -896,3 +896,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `async fn` in a trait needs the `async_trait` macro here, so `Arc<dyn EmailSender>` can hold any sender. Handlers hold the trait object and tests swap in a recorder.
 - `reqwest::Error::is_connect()` and `status()` decide whether a retry makes sense. A rejected request (4xx) is not retried, because the same request would be rejected again.
 - `error_for_status()` turns an HTTP 4xx or 5xx into an `Err`, so the `?` operator and `match` handle network and HTTP failures in one place.
+
+# Rust lesson: auth T17
+- `Option<T>` in a struct field (`mail: Option<MailPort>`) makes "not wired yet" a value. The handler turns `None` into an error with `?`, so a route can never send mail through an unset sender.
+- `tokio::spawn` takes ownership. The handler moves the sender `Arc` and the message into the task and returns `202` at once, so the response does not wait for the mail provider.
+- `tokio::join!` runs two futures on one task. The concurrency test uses it to race two verifies of one token, and the database's single `UPDATE ... RETURNING` decides the winner.

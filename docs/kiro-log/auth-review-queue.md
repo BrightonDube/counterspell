@@ -21,3 +21,9 @@ Attempt 3 supervised tasks:
 Attempt 4 supervised items (T14 is not supervised, but it has a deliberate exception to review):
 
 - **T14 (mail senders, partial), `crates/server/src/auth/email.rs`**: `LogSender` writes the full sign-in text, including the `#token=` link, to the log under the target `counterspell::dev_mail`. This is a deliberate development-only exception, because design §Email sending and T33 need the link in the dev log. Check that: (1) `LogSender::new` refuses `AppEnv::Production` (it does, and a test covers it); (2) `GuardedSender` is the only sender wired in production (T33). Decide whether you accept this exception before T33 is ticked. T35's log-capture test should use `MemorySender`, not `LogSender`.
+
+## T17 magic-link request and verify (SUPERVISED)
+- Commit: see `git log --oneline --grep "auth T17"`.
+- Check: `handlers/magic.rs` answers `202` before any account lookup, and the demo address gets no token and no mail. `handlers/verify.rs` consumes the token in one statement, and creates the account through `INSERT ... ON CONFLICT DO NOTHING`, refusing the demo row. Only the `MagicLink` purpose can sign in; the other purposes are refused until T23 and T25.
+- Design choice: `AuthState` gained `clock`, `tokens` and an optional `mail` (`MailPort`), set by `with_mail`. `AuthState::new` keeps its signature, so existing tests still compile. T33 must call `with_mail` in production.
+- Tests: `crates/server/tests/auth_magic.rs` (8 `pg_` tests, all passing against the dev Postgres).
