@@ -119,7 +119,7 @@ Conventions:
   - Verify: add a note to run-lifecycle T22 that its tests should load the same vectors (recorded in the verification report, not by editing that spec).
   - Rust lesson: byte slices vs strings; `std::str::from_utf8`.
 
-- [ ] **T13 [S] (30 min) Public records with redaction**
+- [x] **T13 [S] (30 min) Public records with redaction**
   - Files: `crates/judge/src/sandbox/records.rs`, `crates/judge/tests/model_records.rs`.
   - Build `TestRecord`, `PublicTest::Hidden` / `Sample` and the final `FinalResult` shape from executed tests. Hidden tests carry verdict and time only. Sample detail (`input`, `expected`, `got`) is sanitised and bounded to 4 KiB per field; `stderr_snip` for samples only.
   - Add the A1 output-visibility guard. Records are built through a visibility tracker that becomes "hidden-phase" at the first hidden test. In that phase it drops stdout, stderr, exception text, snippets and sample detail, and keeps verdict and time only, even if a sample test somehow arrives later.
