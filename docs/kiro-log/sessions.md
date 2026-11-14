@@ -131,3 +131,20 @@
  docs/KIRO_USAGE.md        | 12 ++++++++++++
  docs/kiro-log/sessions.md | 12 ++++++++++++
  2 files changed, 24 insertions(+)
+- 2026-11-14T00:05:36Z | model: not reported | last commit: 8ecb376 run-lifecycle: session log for T27 to T32 and the SSE dependency blocker
+ | diff stat:
+ ...26-11-14T0135-22-run-lifecycle-implement-a1.log | 38 ++++++++++++++++++++++
+ docs/kiro-log/sessions.md                          |  2 ++
+ 2 files changed, 40 insertions(+)
+- 2026-11-14T00:18:42Z | model: not reported | last commit: 8b40b3c run-lifecycle: review-queue notes for T33 and T38
+ | diff stat:
+ docs/KIRO_USAGE.md                                 |  4 +++
+ ...26-11-14T0135-22-run-lifecycle-implement-a1.log | 39 ++++++++++++++++++++++
+ docs/kiro-log/sessions.md                          |  7 ++++
+ 3 files changed, 50 insertions(+)
+- 2026-11-14T00:22:04Z | model: not reported | last commit: 9621eda run-lifecycle: attempt 7 blocker note (T29 needs futures-util approval)
+ | diff stat:
+ docs/KIRO_USAGE.md                                 |  8 +++++
+ ...26-11-14T0135-22-run-lifecycle-implement-a1.log | 39 ++++++++++++++++++++++
+ docs/kiro-log/sessions.md                          | 13 ++++++++
+ 3 files changed, 60 insertions(+)
