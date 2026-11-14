@@ -22,3 +22,9 @@ Items here stay open until the named person acts. Kiro left each task unchecked 
 
 ## Follow-up for run-lifecycle T22 (note, not a blocker)
 - `crates/judge/tests/data/source_vectors.json` is the shared validation vector file (judge-sandbox T12). Run-lifecycle T22 tests should load the same file. This was recorded here, and the run-lifecycle spec was not edited.
+
+## Run stop point (14 Nov 2026)
+- **Done:** T01, T04 to T13 (with the wave 1 review fixes).
+- **Not started in this run:** T14 to T18 (backend traits, fake backend, session lifecycle, call runner, run orchestration, fault properties). They do not need a Docker daemon, but the backend trait shape is a design decision that the next run should review. T15 and T16 are SUPERVISED.
+- **Blocked:** T19 to T31 depend on T02 (HUMAN, VPS host spike). T23 and T24 also depend on run-lifecycle T16 and T19. T25 to T31 need a real sandbox daemon and are `sbx_` scenario tests.
+- **Human-only:** T02 and T03 (`docs/kiro-log/judge-sandbox-human-steps.md`).
