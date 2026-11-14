@@ -22,7 +22,7 @@ Conventions:
   - Depends on: none.
   - Verify: no implementation task is started before this note exists. **Done 14 Nov 2026: the note is in `design.md`, with amendments A1 (hidden-test ordering and output visibility), A2 (stderr truncation) and A3 (automated digest refresh).**
 
-- [ ] **T01 [S] (25 min) Judge dependencies, features, lint bans and configuration struct**
+- [x] **T01 [S] (25 min) Judge dependencies, features, lint bans and configuration struct**
   - Files: `crates/judge/Cargo.toml`, `crates/judge/clippy.toml`, `crates/judge/src/sandbox/{mod,config}.rs`, `THIRD-PARTY-NOTICES.md`.
   - Add the dependencies listed in `design.md` section 5 (`bollard` only behind feature `sandbox`; `testkit` feature; both off for libraries that do not need them). Add `clippy.toml` with `disallowed-methods` for `std::process::Command::new` and `tokio::process::Command::new` (also add the same file for `crates/mcp`). Implement `SandboxConfig::from_env()` with every variable of `design.md` section 6, range checks, and the rule `orphan_age > run_cap + 15 s`. No `.env` file is read.
   - Tests: unit tests for defaults, out-of-range values, missing `SANDBOX_DOCKER_SOCKET`, orphan-age rule.

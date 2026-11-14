@@ -38,6 +38,49 @@ pub enum ConfigError {
     /// A lease must be renewed before it expires, so renewal must be shorter.
     #[error("RENEW_SECS must be shorter than LEASE_SECS")]
     RenewNotShorterThanLease,
+    /// A setting that has no default was not set, or was blank.
+    #[error("{name} is required")]
+    MissingRequired {
+        /// The environment variable that must be set.
+        name: &'static str,
+    },
+    /// The runtime name is not one the judge knows how to use.
+    #[error("SANDBOX_RUNTIME must be runc or runsc")]
+    UnknownRuntime,
+    /// An orphaned container must outlive the longest run, or the sweeper could
+    /// remove a container that a run is still using.
+    #[error("SANDBOX_ORPHAN_AGE_SECS must be more than RUN_WALL_CAP_SECS + 15")]
+    OrphanAgeTooShort,
+}
+
+/// Reads one whole-number setting through `lookup`, using `default` when it is unset.
+///
+/// # Errors
+///
+/// Returns [`ConfigError::NotANumber`] for text that is not a whole number, and
+/// [`ConfigError::OutOfRange`] for a number outside `min..=max`.
+pub(crate) fn whole_number<F>(
+    lookup: &F,
+    name: &'static str,
+    default: u64,
+    min: u64,
+    max: u64,
+) -> Result<u64, ConfigError>
+where
+    F: Fn(&str) -> Option<String>,
+{
+    let value = match lookup(name) {
+        None => default,
+        Some(text) => text
+            .trim()
+            .parse::<u64>()
+            .map_err(|_| ConfigError::NotANumber { name })?,
+    };
+    if (min..=max).contains(&value) {
+        Ok(value)
+    } else {
+        Err(ConfigError::OutOfRange { name, min, max })
+    }
 }
 
 /// Every setting the judge needs. Build it once at start-up and pass it down.
@@ -86,18 +129,7 @@ impl JudgeConfig {
         F: Fn(&str) -> Option<String>,
     {
         let read = |name: &'static str, default: u64, min: u64, max: u64| {
-            let value = match lookup(name) {
-                None => default,
-                Some(text) => text
-                    .trim()
-                    .parse::<u64>()
-                    .map_err(|_| ConfigError::NotANumber { name })?,
-            };
-            if (min..=max).contains(&value) {
-                Ok(value)
-            } else {
-                Err(ConfigError::OutOfRange { name, min, max })
-            }
+            whole_number(&lookup, name, default, min, max)
         };
 
         let lease = read(LEASE_SECS, 30, 5, 600)?;
