@@ -237,3 +237,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-14 23:00-23:12 SAST: 35-deploy-ops-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/35-deploy-ops-cli.md`. Transcript: `docs/kiro-log/2026-11-14T2300-35-deploy-ops-spec.log`. Exit 0.
 - Credits used (from /usage): 7.39 (hackathon credits used now 3120.26/4000).
+
+### 2026-11-14 23:12-23:19 SAST: 36-pack-authoring-pipeline-spec (Kiro CLI, claude-haiku-5.5, mode spec)
+- Prompt: `docs/kiro-prompts/36-pack-authoring-pipeline-cli.md`. Transcript: `docs/kiro-log/2026-11-14T2312-36-pack-authoring-pipeline-spec.log`. Exit 0.
+- Credits used (from /usage): 5.09 (hackathon credits used now 3125.35/4000).
