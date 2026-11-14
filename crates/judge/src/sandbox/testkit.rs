@@ -103,6 +103,7 @@ struct State {
     program: VecDeque<Behaviour>,
     exec_exits: VecDeque<i64>,
     exec_exit: i64,
+    exec_overflow: bool,
     readback: Option<ContainerPolicy>,
     block_writes: bool,
     fired_on: Option<&'static str>,
@@ -159,6 +160,11 @@ impl FakeBackend {
     /// Makes every driver write wait forever, as a program that never reads its stdin does.
     pub fn set_block_writes(&self, blocked: bool) {
         self.lock().block_writes = blocked;
+    }
+
+    /// Makes every exec report that its output overflowed the cap, as a flooding compile would.
+    pub fn set_exec_overflow(&self, overflowed: bool) {
+        self.lock().exec_overflow = overflowed;
     }
 
     /// Makes every read-back return `policy` instead of the policy the container was created with.
@@ -249,6 +255,7 @@ impl BackendSession for FakeSession {
                 exit_code,
                 stdout: Vec::new(),
                 stderr: Vec::new(),
+                overflowed: state.exec_overflow,
             }
         });
         ready(result)

@@ -756,3 +756,9 @@ A `for` loop with `break` and `return` is the normal way to stop early. Each exi
 A `proptest!` block runs many random cases. Each case builds its own runtime with `Builder::new_current_thread`, because a property test is a normal function, not an `async` one.
 A test can prove a cleanup rule by breaking it on purpose. With `Drop` cleanup removed, the cancel, panic and fault tests failed. Restoring the file brought them back.
 Casting `usize` to `u32` can silently truncate, so clippy warns. `u32::try_from(...)` or a `u32` counter avoids that, and `u32::try_from(...).unwrap()` is acceptable in a test.
+
+# Rust lesson: judge-sandbox wave 2 review fixes
+
+`timeout_at(deadline, future)` bounds an async step by an absolute `Instant`, so a slow daemon cannot hold a slot past the run cap.
+`match lines.as_slice() { [] => ..., [line] if held == 0 => ..., _ => ... }` matches on slice shape. It states "exactly one line and nothing after it" in one place.
+When a function can fail after an external side effect, do the cleanup before returning the error, so the caller sees a clean state. A `Drop` guard alone only starts the cleanup.

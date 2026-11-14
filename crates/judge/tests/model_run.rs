@@ -224,13 +224,60 @@ async fn an_infrastructure_fault_mid_run_is_an_error_and_the_container_is_remove
         result.unwrap_err(),
         InfraError::DaemonUnreachable("socket gone".to_owned())
     );
-    for _ in 0..400 {
-        if backend.ledger().live() == 0 {
-            return;
-        }
-        tokio::time::sleep(Duration::from_millis(5)).await;
-    }
-    panic!("the container was not removed after the infrastructure error");
+    assert_eq!(
+        backend.ledger().live(),
+        0,
+        "the container must be removed before the error is returned"
+    );
+}
+
+#[tokio::test]
+async fn a_dropped_stop_sender_counts_as_a_stop_like_the_call_runner() {
+    let backend = FakeBackend::new();
+    let (keep, mut stop) = watch::channel(false);
+    drop(keep);
+    let plan = vec![hidden(1, json!(1), 1_000)];
+
+    let result = run(&backend, plan, settings(Duration::from_secs(10)), &mut stop)
+        .await
+        .unwrap();
+
+    assert!(result.executed.is_empty());
+    assert_eq!(result.verdict(), FinalVerdict::Stopped);
+}
+
+#[tokio::test]
+async fn a_zero_consecutive_abnormal_limit_is_refused() {
+    let backend = FakeBackend::new();
+    let (_keep, mut stop) = watch::channel(false);
+    let plan = vec![hidden(1, json!(1), 1_000)];
+    let mut zero = settings(Duration::from_secs(10));
+    zero.max_consecutive_abnormal = 0;
+
+    let result = run(&backend, plan, zero, &mut stop).await;
+
+    assert!(matches!(result, Err(InfraError::Unexpected(_))));
+    assert_eq!(backend.ledger().created(), 0);
+}
+
+#[tokio::test]
+async fn an_extra_output_line_is_a_wrong_answer_and_the_next_test_gets_a_new_container() {
+    let backend = FakeBackend::new();
+    backend.script_program([
+        Behaviour::Answer(b"{\"t\":1,\"out\":1}\n{\"t\":1,\"out\":1}\n".to_vec()),
+        answer(2, &json!(2)),
+    ]);
+    let (_keep, mut stop) = watch::channel(false);
+    let plan = vec![hidden(1, json!(1), 1_000), hidden(2, json!(2), 1_000)];
+
+    let result = run(&backend, plan, settings(Duration::from_secs(10)), &mut stop)
+        .await
+        .unwrap();
+
+    assert_eq!(result.executed.len(), 2);
+    assert_eq!(result.verdict(), FinalVerdict::WrongAnswer);
+    assert_eq!(backend.ledger().created(), 2);
+    assert_eq!(backend.ledger().live(), 0);
 }
 
 proptest! {

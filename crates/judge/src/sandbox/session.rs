@@ -219,7 +219,7 @@ async fn compile_step<S: BackendSession>(
         Err(_elapsed) => return Err(SessionError::CompileFailed(CompileFailure::TimedOut)),
         Ok(result) => result?,
     };
-    if output.stdout.len() + output.stderr.len() > COMPILE_OUTPUT_CAP {
+    if output.overflowed || output.stdout.len() + output.stderr.len() > COMPILE_OUTPUT_CAP {
         return Err(SessionError::CompileFailed(CompileFailure::OutputTooLarge));
     }
     if output.exit_code != 0 {

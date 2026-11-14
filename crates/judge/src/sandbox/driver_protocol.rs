@@ -47,6 +47,9 @@ pub enum ProtocolViolation {
     /// The answer is for a different call, or its id is not a whole number.
     #[error("the answer is for a different call")]
     WrongId,
+    /// The program printed more than one line in a single read, or data after its answer.
+    #[error("the driver printed more than one answer line")]
+    ExtraOutput,
 }
 
 /// Encodes one call as a single JSON line that ends with a newline.

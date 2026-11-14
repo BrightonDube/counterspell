@@ -4,6 +4,7 @@
 use std::time::Duration;
 
 use counterspell_judge::languages::LanguageCatalog;
+use counterspell_judge::sandbox::backend::InfraError;
 use counterspell_judge::sandbox::call::{run_call, CallFacts, CallIo, CallLimits, STDOUT_BUDGET};
 use counterspell_judge::sandbox::config::OciRuntime;
 use counterspell_judge::sandbox::session::{open_session, Opened};
@@ -279,22 +280,43 @@ async fn each_call_gets_a_fresh_stdout_budget() {
     opened.session.close().await.unwrap();
 }
 
+// test-change: R8.4 (judge-sandbox spec). This test used to expect a second line in the same
+// read to answer the next call. The protocol allows one answer line per call, and R8.4 treats
+// an unsolicited line as a protocol violation, so it now expects ExtraOutput.
 #[tokio::test]
-async fn a_second_line_read_with_the_first_answers_the_next_call_without_reading_again() {
+async fn a_second_line_in_the_same_read_is_extra_output_and_removes_the_container() {
     let backend = FakeBackend::new();
     backend.script_program([Behaviour::Answer(b"first\nsecond\n".to_vec())]);
     let mut opened = open(&backend).await;
     let mut io = CallIo::new();
     let (_keep, mut stop) = watch::channel(false);
 
-    let first = run_call(&mut opened, &mut io, 1, &args(), limits(1_000), &mut stop)
-        .await
-        .unwrap();
-    let second = run_call(&mut opened, &mut io, 2, &args(), limits(1_000), &mut stop)
+    let facts = run_call(&mut opened, &mut io, 1, &args(), limits(1_000), &mut stop)
         .await
         .unwrap();
 
-    assert!(matches!(&first, CallFacts::Answer { line, .. } if line == b"first"));
-    assert!(matches!(second, CallFacts::Answer { ref line, .. } if line == b"second"));
-    opened.session.close().await.unwrap();
+    assert_eq!(facts, CallFacts::ExtraOutput);
+    assert_eq!(backend.ledger().live(), 0);
+}
+
+#[tokio::test]
+async fn an_infrastructure_error_during_a_call_removes_the_container_before_it_returns() {
+    let backend = FakeBackend::new();
+    // Calls: 1 create, 2 read-back, 3 start, 4 load, 5 compile, 6 open driver, 7 write.
+    backend.fail_call(7, InfraError::DaemonUnreachable("socket gone".to_owned()));
+    let mut opened = open(&backend).await;
+    let mut io = CallIo::new();
+    let (_keep, mut stop) = watch::channel(false);
+
+    let result = run_call(&mut opened, &mut io, 1, &args(), limits(1_000), &mut stop).await;
+
+    assert_eq!(
+        result,
+        Err(InfraError::DaemonUnreachable("socket gone".to_owned()))
+    );
+    assert_eq!(
+        backend.ledger().live(),
+        0,
+        "the container must be gone when the error is returned, not later"
+    );
 }

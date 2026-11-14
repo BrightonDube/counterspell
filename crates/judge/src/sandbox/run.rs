@@ -9,11 +9,13 @@ use std::time::Duration;
 
 use serde_json::Value;
 use tokio::sync::watch;
-use tokio::time::Instant;
+use tokio::time::{timeout_at, Instant};
 
 use super::backend::{Backend, BackendSession, InfraError};
 use super::call::{run_call, CallFacts, CallIo, CallLimits};
+use super::compare::WrongReason;
 use super::compare::{judge_answer, Expected, TestVerdict};
+use super::driver_protocol::ProtocolViolation;
 use super::session::{open_session, Opened, SessionError};
 use super::spec::SessionSpec;
 use super::verdict::{decide, ExecutedTest, FinalVerdict, RunFacts};
@@ -85,6 +87,12 @@ pub fn schedule(mut tests: Vec<PlannedTest>) -> Vec<PlannedTest> {
     tests
 }
 
+/// True when the stop signal has fired, or its sender has gone. The call runner treats a
+/// dropped sender the same way.
+fn stop_requested(stop: &mut watch::Receiver<bool>) -> bool {
+    *stop.borrow() || stop.has_changed().is_err()
+}
+
 /// Mutable state of one run, kept together so the loop's early exits stay readable.
 #[derive(Debug)]
 struct Progress {
@@ -116,6 +124,11 @@ pub async fn execute_run<B: Backend>(
     settings: RunSettings,
     stop: &mut watch::Receiver<bool>,
 ) -> Result<RunResult, InfraError> {
+    if settings.max_consecutive_abnormal == 0 {
+        return Err(InfraError::Unexpected(
+            "max_consecutive_abnormal must be at least 1".to_owned(),
+        ));
+    }
     let planned = u32::try_from(plan.len()).unwrap_or(u32::MAX);
     let mut progress = Progress {
         executed: Vec::new(),
@@ -130,7 +143,7 @@ pub async fn execute_run<B: Backend>(
     let mut io = CallIo::new();
 
     for test in schedule(plan) {
-        if *stop.borrow() {
+        if stop_requested(stop) {
             progress.stopped = true;
             break;
         }
@@ -143,24 +156,25 @@ pub async fn execute_run<B: Backend>(
         }
 
         if current.is_none() {
-            match open_next(
+            // The open is bounded by the run cap, so a stalled daemon cannot hold the slot.
+            let opening = open_next(
                 backend,
                 lang,
                 archive,
                 &session_spec,
                 &mut progress.sessions_opened,
-            )
-            .await
-            {
-                Ok(opened) => {
+            );
+            match timeout_at(settings.run_deadline, opening).await {
+                Ok(Ok(opened)) => {
                     current = Some(opened);
                     io = CallIo::new();
                 }
-                Err(SessionError::CompileFailed(_)) if progress.sessions_opened == 1 => {
+                Ok(Err(SessionError::CompileFailed(_))) if progress.sessions_opened == 1 => {
                     progress.compiled = false;
                     break;
                 }
-                Err(error) => return Err(into_infra(error)),
+                Ok(Err(error)) => return Err(into_infra(error)),
+                Err(_elapsed) => return Err(InfraError::ApiTimeout),
             }
         }
         let Some(open) = current.as_mut() else {
@@ -169,17 +183,22 @@ pub async fn execute_run<B: Backend>(
             ));
         };
 
-        let (verdict, elapsed) = match run_test(open, &mut io, &test, &settings, stop).await? {
-            Step::Ran { verdict, elapsed } => (verdict, elapsed),
-            Step::Stopped => {
-                progress.stopped = true;
-                break;
-            }
-        };
+        let (verdict, elapsed, container_alive) =
+            match run_test(open, &mut io, &test, &settings, stop).await? {
+                Step::Ran {
+                    verdict,
+                    elapsed,
+                    container_alive,
+                } => (verdict, elapsed, container_alive),
+                Step::Stopped => {
+                    progress.stopped = true;
+                    break;
+                }
+            };
 
-        // An abnormal end has already removed the container, so drop the handle and open a
-        // fresh one for the next test.
-        if matches!(verdict, TestVerdict::Pass(_) | TestVerdict::WrongAnswer(_)) {
+        // Any end other than an answer has already removed the container. Drop the handle and
+        // open a fresh one for the next test.
+        if container_alive {
             progress.consecutive_abnormal = 0;
         } else {
             current = None;
@@ -215,10 +234,11 @@ pub async fn execute_run<B: Backend>(
 
 /// What one test's call produced.
 enum Step {
-    /// The test ran to a verdict.
+    /// The test ran to a verdict. `container_alive` is false when the call ended the container.
     Ran {
         verdict: TestVerdict,
         elapsed: Duration,
+        container_alive: bool,
     },
     /// The stop signal ended the call. The test has no verdict.
     Stopped,
@@ -240,6 +260,7 @@ async fn run_test<S: BackendSession + 'static>(
     let started = Instant::now();
     let facts = run_call(open, io, u64::from(test.ordinal), &test.args, limits, stop).await?;
     let elapsed = started.elapsed();
+    let container_alive = matches!(facts, CallFacts::Answer { .. });
     let verdict = match facts {
         CallFacts::Answer { line, .. } => judge_answer(
             &test.expected,
@@ -249,11 +270,18 @@ async fn run_test<S: BackendSession + 'static>(
         ),
         CallFacts::Deadline => TestVerdict::TimeLimit,
         CallFacts::OutputLimit => TestVerdict::OutputLimit,
+        CallFacts::ExtraOutput => {
+            TestVerdict::WrongAnswer(WrongReason::Protocol(ProtocolViolation::ExtraOutput))
+        }
         CallFacts::DriverExited { oom_kill, .. } if oom_kill > 0 => TestVerdict::MemoryLimit,
         CallFacts::DriverExited { .. } => TestVerdict::RuntimeError,
         CallFacts::Stopped => return Ok(Step::Stopped),
     };
-    Ok(Step::Ran { verdict, elapsed })
+    Ok(Step::Ran {
+        verdict,
+        elapsed,
+        container_alive,
+    })
 }
 
 /// Opens the next container, numbering it so its name is unique within the run.
@@ -274,9 +302,9 @@ async fn open_next<B: Backend>(
 fn into_infra(error: SessionError) -> InfraError {
     match error {
         SessionError::Infrastructure(error) => error,
-        SessionError::PolicyViolations(violations) => InfraError::PolicyReadbackMismatch(format!(
-            "policy weakened before create: {violations:?}"
-        )),
+        SessionError::PolicyViolations(violations) => {
+            InfraError::PolicyRejected(format!("{violations:?}"))
+        }
         SessionError::CompileFailed(failure) => InfraError::Unexpected(format!(
             "compile failed when a container was restarted: {failure:?}"
         )),
