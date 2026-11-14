@@ -1,0 +1,77 @@
+# Language catalogue for the judge sandbox (judge-sandbox T04, design.md section 6).
+#
+# Every image must be pinned by digest. A tag is refused by the loader.
+# PLACEHOLDER: the all-zero digests below are syntactically valid but are not real
+# images. T03 replaces the Python digest with the value recorded on the sandbox
+# daemon. Until then the sandbox fails closed (image missing).
+#
+# Python is enabled. JavaScript, Java and C++ are present but disabled (language-drivers
+# and the stretch goals). The executor refuses disabled languages.
+#
+# Driver files are relative to this directory. The loader refuses an enabled language
+# whose driver file is missing, so Python stays unusable until language-drivers adds
+# drivers/python/driver.py.
+
+[python]
+enabled = true
+image = "python:3.13-slim@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+file = "solution.py"
+driver = "drivers/python/driver.py"
+compile = ["python3", "-I", "-S", "-m", "py_compile", "/box/solution.py"]
+run = ["python3", "-I", "-S", "driver.py"]
+bench_args = ["--mode", "bench"]
+mem_mb = 256
+time_ms_per_test = 2000
+max_time_ms_per_test = 10000
+compile_budget_ms = 5000
+max_source_bytes = 65536
+exec_scratch = false
+protocol_version = 1
+
+[javascript]
+enabled = false
+image = "node:22-slim@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+file = "solution.js"
+driver = "drivers/javascript/driver.js"
+compile = []
+run = ["node", "--max-old-space-size=192", "driver.js"]
+bench_args = ["--mode", "bench"]
+mem_mb = 256
+time_ms_per_test = 2000
+max_time_ms_per_test = 10000
+compile_budget_ms = 5000
+max_source_bytes = 65536
+exec_scratch = false
+protocol_version = 1
+
+[java]
+enabled = false
+image = "eclipse-temurin:21-jdk@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+file = "Solution.java"
+driver = "drivers/java/Driver.java"
+compile = ["javac", "-d", "/box/out", "Solution.java", "Driver.java"]
+run = ["java", "-Xss16m", "-Xmx256m", "-XX:+UseSerialGC", "-cp", "/box/out", "Driver"]
+bench_args = ["--mode", "bench"]
+mem_mb = 512
+time_ms_per_test = 3000
+max_time_ms_per_test = 10000
+compile_budget_ms = 10000
+max_source_bytes = 65536
+exec_scratch = true
+protocol_version = 1
+
+[cpp]
+enabled = false
+image = "gcc:14@sha256:0000000000000000000000000000000000000000000000000000000000000000"
+file = "solution.cpp"
+driver = "drivers/cpp/driver.cpp"
+compile = ["g++", "-O2", "-std=c++20", "-o", "/box/out/main", "driver.cpp"]
+run = ["/box/out/main"]
+bench_args = ["--mode", "bench"]
+mem_mb = 256
+time_ms_per_test = 2000
+max_time_ms_per_test = 10000
+compile_budget_ms = 10000
+max_source_bytes = 65536
+exec_scratch = true
+protocol_version = 1
