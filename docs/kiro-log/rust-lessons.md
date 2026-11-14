@@ -672,3 +672,9 @@ Configuration errors are a typed enum (`thiserror`). Each variant names the vari
 A newtype with a private field makes an invalid value impossible to build. `PinnedImage` has no public constructor, so the only way to get one is `parse`, which refuses tags. The compiler enforces the rule everywhere the type is used.
 `#[serde(deny_unknown_fields)]` makes a typo in the catalogue a load error instead of a silently ignored setting.
 `toml::Table` is a sorted map, so validation errors appear in a stable order, and the first broken language is always the same one.
+
+# Rust lesson: judge-sandbox T05
+
+A plain data struct holds the policy, and a separate function checks it. The checker is what catches a weakened value, so it gets its own tests: each test weakens one field and expects exactly one named error back.
+`#[derive(thiserror::Error)]` on an enum gives each control its own variant with a message. A violation is a value the caller can match on, not a string to parse.
+`#[must_use]` on functions whose result matters stops a caller from calling the checker and ignoring its answer.
