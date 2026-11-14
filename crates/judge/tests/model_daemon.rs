@@ -22,6 +22,21 @@ fn good_facts() -> DaemonFacts {
     }
 }
 
+/// P14: the daemon module never reads the environment, so `DOCKER_HOST` cannot redirect
+/// the judge. This scans the source instead of setting process variables in a test.
+/// Doc comments may name `DOCKER_HOST`; only code that reads environment is refused.
+#[test]
+fn daemon_module_never_reads_the_environment() {
+    let source = include_str!("../src/sandbox/daemon.rs");
+    let code: String = source
+        .lines()
+        .filter(|line| !line.trim_start().starts_with("//"))
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(!code.contains("env::"), "daemon.rs reads the environment");
+    assert!(!code.contains("var_os"), "daemon.rs reads the environment");
+}
+
 #[test]
 fn empty_and_blank_socket_paths_are_refused() {
     assert_eq!(validate_socket_path(""), Err(SocketPathError::Empty));
@@ -174,6 +189,25 @@ mod from_bollard {
     #[test]
     fn missing_security_options_fail_closed_as_not_rootless() {
         let info = synthetic_info(&serde_json::json!({"SecurityOptions": null}));
+        let facts = DaemonFacts::from(&info);
+        assert_eq!(
+            check_facts(&facts, OciRuntime::Runc),
+            Err(DaemonCheckError::NotRootless)
+        );
+    }
+
+    /// Recorded 14 Nov 2026 from the local WSL Docker daemon (rootful, not the sandbox
+    /// daemon): `docker info --format` gave `["name=seccomp,profile=builtin","name=cgroupns"]`,
+    /// cgroup version 2, driver systemd, root dir `/var/lib/docker`. A real rejected fixture.
+    #[test]
+    fn recorded_rootful_local_daemon_is_rejected() {
+        let info: SystemInfo = serde_json::from_value(serde_json::json!({
+            "SecurityOptions": ["name=seccomp,profile=builtin", "name=cgroupns"],
+            "CgroupVersion": "2",
+            "CgroupDriver": "systemd",
+            "DockerRootDir": "/var/lib/docker"
+        }))
+        .expect("recorded fixture matches SystemInfo");
         let facts = DaemonFacts::from(&info);
         assert_eq!(
             check_facts(&facts, OciRuntime::Runc),
