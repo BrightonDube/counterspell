@@ -13,3 +13,4 @@ pub mod policy;
 pub mod sanitize;
 pub mod spec;
 pub mod stream;
+pub mod verdict;
