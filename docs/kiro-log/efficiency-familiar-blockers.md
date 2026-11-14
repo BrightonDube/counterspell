@@ -43,3 +43,18 @@ Tasks left unchecked, with the reason and what would unblock each.
    The algorithm must not change without your decision.
 2. **Jack-o'-lantern art** is absent (design Open question 1). Placeholder needed.
 3. **Error envelope and `hints` table** are owned by other specs that are not yet implemented.
+
+## Run 2 (14 Nov 2026, continuation): status and new blockers
+
+### T15 migration: written, not verified, not committed
+- File: `migrations/20261114120000_efficiency_familiar.sql` (untracked; not part of any commit).
+- Blocker: no Postgres is available. `docker run postgres:17` was refused by the tool wrapper as a long-running daemon command, and only the Postgres client (no server) is installed locally, so no scratch cluster could start.
+- Unblock: a throwaway Postgres 17 container started by Brighton (or an approved way to start one), then `psql -f` each migration in order, twice. Then tick T15 and commit the file.
+- Also blocks T16, T19, T21, T23 and T32 (database tests and terminal write), because they need the T15 columns.
+
+### T24 grimoire SBX-05 and BEN-01: partly done
+- Done: `check_bench` runs `PackRunner::bench` on the declared sizes, fits with `engine::complexity::fit` in `Mode::Full`, and reports SBX-05 on a class mismatch or a `Low` fit. BEN-01 is raised for a size parameter that is not in the function, a negative size, or a size the schema cannot hold (including an impossible `unique` range). SBX-08 is no longer emitted. Runner faults still surface as SBX-06 (exit 2).
+- Not done: the warning when bench sizes span less than 32× (R13.4). It needs a new warning code, but the codes test `only_three_codes_are_warnings` asserts the exact warning list, so it cannot be added without changing that test. Decision for Brighton: approve a new warning code (for example `BEN-02`) and the matching change to the codes test, which must cite a requirement ID that exists in `docs/requirements.md`.
+- Test changes made in this run (please review):
+  1. `crates/grimoire/tests/mutations.rs`: the static-mutation coverage filter now also skips `BEN-` codes, because BEN-01 is raised only by the sandbox stage, the same as `SBX-`. This is the narrowest fix, but it is a change to an assertion's scope.
+  2. `crates/grimoire/tests/sandbox_fake.rs`: `declared_bench_warns_sbx_08_without_calling_the_bench_runner` is replaced by `declared_bench_calls_the_runner_and_a_fault_is_infrastructure`, marked `test-change: PCK-1`. The old test expected SBX-08 and no bench call, which R13.1 removes. PCK-1.3 in `docs/requirements.md` is the cited requirement.

@@ -861,3 +861,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `tokio::sync::Semaphore` gives a permit as an `OwnedSemaphorePermit`. Dropping the permit returns it, so a bench cannot hold the gate after an early return or an error.
 - `Option` means "unknown" here. `is_none_or` lets an unknown reading pass, and only a known reading above the limit discards a bench.
 - `parse::<f64>()` accepts `NaN` and `inf`. Checking `is_finite()` as well as `> 0.0` rejects them.
+
+# Rust lesson: efficiency-familiar T24
+- `let ... else` and `?` on a custom error type let a bad bench size become one diagnostic. The check stops that size, not the whole pack.
+- `u64::try_from(i64)` returns an error for a negative size instead of wrapping, so a bad pack value cannot become a huge number.
+- A function that takes `impl Into<String>` accepts both `&str` and `String` messages, which keeps the diagnostic call sites short.
+- Matching a text value to an enum with `_ => None` is the right shape for a declared name that might be unknown. Exhaustive matches are for values the code already holds.
