@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Writes the specs for the gaps found on 14 Nov 2026 (spec mode only, no implementation),
+# then runs docs/kiro-prompts/37-remove-hackathon-mentions.md as its own default-mode session,
 # then resumes implementation with judge-sandbox, auth and ide-workspace first.
 # Run inside tmux session kiro-impl (scripts/kiro-after-current.sh starts it). One Kiro session at a time.
 set -u
@@ -28,6 +29,22 @@ spec(){ # num slug model
 spec 34 problem-catalogue claude-haiku-5.5
 spec 35 deploy-ops claude-haiku-5.5
 spec 36 pack-authoring-pipeline claude-haiku-5.5
+
+# Neutralize event-specific wording (Brighton, 14 Nov 2026) after the three specs
+# and before implementation resumes. Own default-mode session, not a new spec.
+remove_event_wording(){ # model
+  local f=docs/kiro-prompts/37-remove-hackathon-mentions.md
+  [ -f "$f" ] || { log "STOPPED missing $f"; exit 1; }
+  local U REM; U=$(usage); [ -n "$U" ] || { log "STOPPED could not read credits"; exit 1; }
+  REM=$(awk -v u="$U" -v l=$LIMIT 'BEGIN{printf "%.0f", l-u}')
+  [ "$REM" -ge "$SPEC_FLOOR" ] || { log "STOPPED remaining credits $REM < $SPEC_FLOOR before remove-hackathon-mentions"; exit 1; }
+  log "BEGIN remove-hackathon-mentions ($1) remaining=$REM"
+  bash scripts/kiro-run.sh "37-remove-hackathon-mentions" "$1" default "$f"
+  git add docs/kiro-prompts/37-remove-hackathon-mentions.md docs/KIRO_USAGE.md docs/kiro-log/remove-hackathon-mentions.md docs/kiro-log/*-37-remove-hackathon-mentions.log 2>/dev/null
+  git commit -qm "kiro: remove-hackathon-mentions run log (Kiro CLI, $1)" || true
+  log "remove-hackathon-mentions $(cat /tmp/kiro-run.status)"
+}
+remove_event_wording claude-haiku-5.5
 log "SPECS_DONE; resuming implementation"
 # Throwaway local Postgres/Valkey for pg_/valkey_ tests. File lives outside the repo and only exports two URLs.
 [ -f ~/.config/counterspell/dev-test.env ] && . ~/.config/counterspell/dev-test.env

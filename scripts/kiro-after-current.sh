@@ -23,4 +23,4 @@ done
 sleep 5
 if pgrep -f 'kiro-cli chat --v3' >/dev/null; then log "STOPPED a Kiro session is still running; not starting another"; exit 1; fi
 tmux new -d -s kiro-impl 'bash scripts/kiro-gap-specs.sh'
-log "started kiro-impl: gap specs, then judge-sandbox, language-drivers, auth, ide-workspace, efficiency-familiar, hints, dashboard-fsrs, counterspell-mcp-power, landing-steel-night, break-room"
+log "started kiro-impl: gap specs, then remove-hackathon-mentions, then judge-sandbox, language-drivers, auth, ide-workspace, efficiency-familiar, hints, dashboard-fsrs, counterspell-mcp-power, landing-steel-night, break-room"
