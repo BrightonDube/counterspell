@@ -1,7 +1,7 @@
 //! Mail senders, templates and the link format (R4.1, R4.2, R4.5 to R4.7, R4.9).
 //!
-//! No test here touches the network. The Resend sender is tested with a mock server once its
-//! HTTP client is available (task T14, blocked on the licence decision in `auth-blockers.md`).
+//! No test here touches the real Resend API. The Resend sender is tested against a `wiremock`
+//! server that stands in for it (task T14).
 
 use std::sync::Arc;
 
@@ -10,7 +10,7 @@ use counterspell_server::auth::{
     config::{AppEnv, Redacted},
     email::{
         compose, magic_link_url, EmailAddress, EmailSender, GuardedSender, LogSender, MailError,
-        MemorySender,
+        MemorySender, ResendSender,
     },
     limits::AuthLimiter,
     tokens::Purpose,
@@ -179,4 +179,93 @@ async fn the_daily_cap_stops_mail_and_resets_on_the_next_utc_day() {
         .await
         .expect("the cap resets on the next UTC day");
     assert_eq!(inner.sent().len(), 3);
+}
+
+/// A message to one address, as the Resend sender would receive it.
+fn resend_mail() -> counterspell_server::auth::email::OutgoingMail {
+    compose(
+        Purpose::MagicLink,
+        address("thandi@example.co"),
+        "https://counterspell.example/auth/verify#token=abc",
+        "idem-1",
+    )
+}
+
+fn resend_sender(endpoint: &str) -> ResendSender {
+    ResendSender::new(
+        Redacted::new("re_test_key".to_owned()),
+        "Counterspell <login@example.co>".to_owned(),
+        endpoint,
+    )
+    .expect("the test client builds")
+}
+
+#[tokio::test]
+async fn resend_sends_one_recipient_with_bearer_auth_and_an_idempotency_key() {
+    use wiremock::matchers::{body_partial_json, header, method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .and(header("authorization", "Bearer re_test_key"))
+        .and(header("idempotency-key", "idem-1"))
+        .and(body_partial_json(serde_json::json!({
+            "from": "Counterspell <login@example.co>",
+            "to": ["thandi@example.co"],
+            "subject": "Your Counterspell sign-in link",
+        })))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&server)
+        .await;
+
+    let endpoint = format!("{}/emails", server.uri());
+    let result = resend_sender(&endpoint).send(resend_mail()).await;
+
+    assert_eq!(result, Ok(()));
+}
+
+#[tokio::test]
+async fn resend_retries_once_after_a_server_error() {
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .respond_with(ResponseTemplate::new(500))
+        .up_to_n_times(1)
+        .mount(&server)
+        .await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .respond_with(ResponseTemplate::new(200))
+        .mount(&server)
+        .await;
+
+    let endpoint = format!("{}/emails", server.uri());
+    let result = resend_sender(&endpoint).send(resend_mail()).await;
+
+    assert_eq!(result, Ok(()));
+    assert_eq!(server.received_requests().await.map_or(0, |r| r.len()), 2);
+}
+
+#[tokio::test]
+async fn resend_does_not_retry_a_rejected_request() {
+    use wiremock::matchers::{method, path};
+    use wiremock::{Mock, MockServer, ResponseTemplate};
+
+    let server = MockServer::start().await;
+    Mock::given(method("POST"))
+        .and(path("/emails"))
+        .respond_with(ResponseTemplate::new(422).set_body_string("invalid recipient"))
+        .mount(&server)
+        .await;
+
+    let endpoint = format!("{}/emails", server.uri());
+    let result = resend_sender(&endpoint).send(resend_mail()).await;
+
+    assert_eq!(result, Err(MailError::Unavailable));
+    assert_eq!(server.received_requests().await.map_or(0, |r| r.len()), 1);
 }

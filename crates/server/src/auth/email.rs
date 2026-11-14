@@ -7,11 +7,17 @@
 
 use std::fmt;
 use std::sync::{Arc, Mutex, PoisonError};
+use std::time::Duration;
 
 use async_trait::async_trait;
 use thiserror::Error;
 
-use crate::auth::{clock::Clock, config::AppEnv, limits::AuthLimiter, tokens::Purpose};
+use crate::auth::{
+    clock::Clock,
+    config::{AppEnv, Redacted},
+    limits::AuthLimiter,
+    tokens::Purpose,
+};
 
 /// The longest address the parser accepts, in bytes.
 pub const MAX_EMAIL_LEN: usize = 254;
@@ -176,6 +182,106 @@ impl EmailSender for LogSender {
             "development mail (not sent)"
         );
         Ok(())
+    }
+}
+
+/// The Resend endpoint that sends one message.
+pub const RESEND_ENDPOINT: &str = "https://api.resend.com/emails";
+
+/// Sends mail through the Resend HTTP API. The API key is sent only as a bearer header and is
+/// never logged. A failed send is logged by status code, never by body or address.
+pub struct ResendSender {
+    client: reqwest::Client,
+    endpoint: String,
+    api_key: Redacted<String>,
+    mail_from: String,
+}
+
+impl ResendSender {
+    /// Builds the sender for the production endpoint.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MailError::Unavailable`] when the HTTP client cannot be built.
+    pub fn production(api_key: Redacted<String>, mail_from: String) -> Result<Self, MailError> {
+        Self::new(api_key, mail_from, RESEND_ENDPOINT)
+    }
+
+    /// Builds the sender for any endpoint. Tests point it at a mock server.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`MailError::Unavailable`] when the HTTP client cannot be built.
+    pub fn new(
+        api_key: Redacted<String>,
+        mail_from: String,
+        endpoint: &str,
+    ) -> Result<Self, MailError> {
+        let client = reqwest::Client::builder()
+            .connect_timeout(Duration::from_secs(3))
+            .timeout(Duration::from_secs(10))
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .map_err(|_| MailError::Unavailable)?;
+        Ok(Self {
+            client,
+            endpoint: endpoint.to_owned(),
+            api_key,
+            mail_from,
+        })
+    }
+
+    /// One HTTP attempt. Returns `Ok(())` on a 2xx response.
+    async fn attempt(
+        &self,
+        payload: &serde_json::Value,
+        idempotency_key: &str,
+    ) -> Result<(), reqwest::Error> {
+        let response = self
+            .client
+            .post(&self.endpoint)
+            .bearer_auth(self.api_key.expose())
+            .header("Idempotency-Key", idempotency_key)
+            .json(payload)
+            .send()
+            .await?;
+        response.error_for_status().map(|_| ())
+    }
+}
+
+#[async_trait]
+impl EmailSender for ResendSender {
+    async fn send(&self, msg: OutgoingMail) -> Result<(), MailError> {
+        let payload = serde_json::json!({
+            "from": self.mail_from,
+            "to": [msg.to.as_str()],
+            "subject": msg.subject,
+            "html": msg.html,
+            "text": msg.text,
+        });
+        // One retry, and only for a connect failure or a 5xx answer. A rejected request (4xx)
+        // is not retried, because the same request would be rejected again.
+        let mut retried = false;
+        loop {
+            match self.attempt(&payload, &msg.idempotency_key).await {
+                Ok(()) => return Ok(()),
+                Err(error) => {
+                    let retryable = error.is_connect()
+                        || error
+                            .status()
+                            .is_some_and(|status| status.is_server_error());
+                    if retryable && !retried {
+                        retried = true;
+                        continue;
+                    }
+                    tracing::warn!(
+                        status = ?error.status().map(|status| status.as_u16()),
+                        "resend refused or failed to send a message"
+                    );
+                    return Err(MailError::Unavailable);
+                }
+            }
+        }
     }
 }
 
