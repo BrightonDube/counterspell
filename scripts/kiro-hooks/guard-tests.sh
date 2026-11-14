@@ -3,8 +3,8 @@
 #
 # Blocks (exit 2) only two things, and only in source files (.rs .py .js .ts ...):
 #   1. one edit that removes more test markers than it adds back (a net loss of tests);
-#   2. one edit that adds a skip/ignore marker, except Rust #[ignore] on pg_* / valkey_*
-#      tests, which is the repo's database-test convention.
+#   2. one edit that adds a skip/ignore marker, except Rust #[ignore] on pg_* / valkey_* / sbx_*
+#      tests (database and sandbox-daemon conventions).
 # Deleting a source file that contains tests is treated as removing those tests.
 #
 # Escape hatch for a real requirement change: put `test-change: <REQ-ID>` in the edit
@@ -49,13 +49,13 @@ esac
 
 count() { printf '%s\n' "$1" | grep -Eo -- "$2" | wc -l | tr -d '[:space:]'; }
 
-# Rust: count #[ignore] attributes whose next `fn` is not named pg_* or valkey_*.
+# Rust: count #[ignore] attributes whose next `fn` is not named pg_*, valkey_* or sbx_*.
 bad_rust_ignores() {
   printf '%s\n' "$1" | awk '
     /#\[ignore/ { pending++ }
     pending > 0 && match($0, /fn[ \t]+[A-Za-z0-9_]+/) {
       name = substr($0, RSTART, RLENGTH); sub(/^fn[ \t]+/, "", name)
-      if (name !~ /^(pg|valkey)_/) bad += pending
+      if (name !~ /^(pg|valkey|sbx)_/) bad += pending
       pending = 0
     }
     END { bad += pending; print bad + 0 }'
@@ -138,7 +138,7 @@ fi
 {
   printf 'blocked: this %s adds a skip/ignore marker to a test in %s.\n' "$kind" "$path"
   printf '%s\n' 'Do not disable a test to get green. Fix the code so the test passes.'
-  printf '%s\n' 'Rust #[ignore] is allowed only on tests named pg_* or valkey_* (they need a database);'
+  printf '%s\n' 'Rust #[ignore] is allowed only on tests named pg_*, valkey_* or sbx_* (database or a real sandbox daemon);'
   printf '%s\n' 'put the "fn pg_..." line in the same edit. If the requirement changed, add a comment'
   printf '%s\n' '"test-change: <REQ-ID>" (an ID from docs/requirements.md). Otherwise leave the test'
   printf '%s\n' 'failing and record it in docs/kiro-log/<spec>-blockers.md.'

@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Only refreshes the digest-pinned sandbox images in languages/languages.toml (judge-sandbox A3). Dependabot handles cargo, npm, actions and Dockerfiles.",
+  "description": "Only refreshes digest-pinned sandbox images in languages/languages.toml (python, node, eclipse-temurin, gcc; judge-sandbox A3). Digest PRs only, never auto-merged. Dependabot handles cargo, npm, actions and Dockerfiles.",
   "extends": ["config:recommended"],
   "enabledManagers": ["custom.regex"],
   "timezone": "Africa/Johannesburg",

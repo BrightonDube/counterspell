@@ -75,3 +75,19 @@ Items here stay open until the named person acts. Kiro left each task unchecked 
 - **Unblocks:** T20 to T24 and T25 to T33 (`sbx_` tests), then T34 to T39.
 - **Not done in this run:** no code changed. T21 onward were not started, because their dependencies are open.
 - **Note:** `run-lifecycle` T16 and T19 are already ticked, so the T24 dependency on them is met. The block is only the `sbx_` guard.
+
+
+## Assistant update (15 Nov 2026, 00:52 SAST)
+
+Resolved without a VPS or a new Kiro session:
+
+- Official image digests pinned in `languages/languages.toml` (verified with a registry digest read and `docker pull` on this machine; recorded in `deploy/sandbox-verification.md` run 2): Node, Temurin 21 and GCC 14. Python was already pinned on 14 Nov. JavaScript, Java and C++ stay disabled until their drivers exist.
+- The test-integrity hook now allows `#[ignore]` on `sbx_*` tests, matching the approved judge-sandbox convention (`brighton-decisions`, 15 Nov).
+- The 14 Nov local-verification decision is extended to later sandbox-verification blockers, including language-drivers. The identity guard still refuses a rootful daemon. T02 and T37 stay open.
+
+Still blocked or still needing Brighton:
+
+- A real rootless sandbox daemon (VPS T02/T37, or `sudo apt install uidmap` in WSL plus a rootless setup). Until then, `sbx_` tests can be written but cannot be ticked, and driver code still must not run on the host.
+- How `signature.json` is typed for T07: add a `counterspell-grimoire` dependency to the judge, or move a shared type into `counterspell-common`.
+- Pack review (grimoire-packs T28) before T10 fixtures for published packs.
+- Installing the free Renovate GitHub app, if weekly digest PRs should actually run.
