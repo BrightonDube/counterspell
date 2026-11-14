@@ -183,7 +183,7 @@ Conventions for every web task:
   - Preserve: tests use an admin pool for setup and `SET LOCAL ROLE` for role checks.
   - Rust lesson: `sqlx` queries and transactions that roll back after a test.
 
-- [ ] **T17 [S] (30 min) Pure `assess` and the engine-to-common mapping**
+- [x] **T17 [S] (30 min) Pure `assess` and the engine-to-common mapping**
   - Files: `crates/judge/src/familiar/assess.rs`.
   - Implement `AssessInput`, `Assessment`, `BenchState` and `assess` as in the design. One exhaustive `match` converts engine `Class`/`Confidence` to common `ClassId`/`Confidence`. The complexity payload, the familiar payload and the stored columns are built from the same values. Non-completed runs yield no mood.
   - Tests: P13 (one value, two uses) as PBT; a table of scenarios from the failure matrix (no bench, host busy, failed, incomplete, low, each gap, no baseline, slower constant, matches, better); engine and common agree on ids and ranks for all seven classes.
