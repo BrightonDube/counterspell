@@ -155,7 +155,7 @@ Conventions for every Rust task:
   - Preserve: expiry uses the injected Clock; consume is one atomic statement, never read-then-write.
   - Rust lesson: sharing a pool across tasks (`Arc`, `Clone` on `PgPool`) and `tokio::spawn`.
 
-- [ ] **T14 [S] (30 min) Mail senders and templates (parts of P14, P15)**
+- [x] **T14 [S] (30 min) Mail senders and templates (parts of P14, P15)**
   - Files: `crates/server/src/auth/email.rs`, `crates/server/tests/auth_mail.rs`.
   - `EmailSender` trait, `OutgoingMail`, `ResendSender` (reqwest, bearer key, body `{from,to:[to],subject,html,text}`, `Idempotency-Key`, 3 s / 10 s timeouts, one retry on connect error or `5xx`), `MemorySender`, `LogSender` (refused when `APP_ENV=production`), `GuardedSender` (refuses the demo address; applies the global daily cap through the limiter trait from T15 once available, otherwise a stub), fixed templates per purpose with HTML escaping, link builder `{PUBLIC_BASE_URL}/auth/verify#token=…`.
   - Tests: wiremock checks headers, JSON shape, one recipient, idempotency key, retry on `500` once, no retry on `422`; templates escape `<script>` in values; the link uses the fragment and the configured origin only; the demo address gets no mail.

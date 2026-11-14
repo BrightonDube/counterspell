@@ -891,3 +891,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `default-features = false` turns off the crate's optional defaults, so only the features named in `Cargo.toml` are compiled. The lock file then lists what really ships, and we can check it with `cargo tree`.
 - A Cargo feature is an opt-in switch, not a version. `rustls-tls` picks a TLS library, which is why it brings in a certificate list with its own licence.
 - `cargo deny` reads the licence of every crate in the lock file. One exception can name one crate, so a licence decision never widens to others.
+
+# Rust lesson: auth T14
+- `async fn` in a trait needs the `async_trait` macro here, so `Arc<dyn EmailSender>` can hold any sender. Handlers hold the trait object and tests swap in a recorder.
+- `reqwest::Error::is_connect()` and `status()` decide whether a retry makes sense. A rejected request (4xx) is not retried, because the same request would be rejected again.
+- `error_for_status()` turns an HTTP 4xx or 5xx into an `Err`, so the `?` operator and `match` handle network and HTTP failures in one place.
