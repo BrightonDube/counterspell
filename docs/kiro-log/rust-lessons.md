@@ -798,3 +798,15 @@ A test that enumerates the whole input space found a real problem: a pleased res
 `validate` returns `Result` and checks each rule with `if ... return Err(...)`, so bad input never reaches the arithmetic. Nothing in the fit can panic on user data.
 `windows(2)` gives each consecutive pair of points without indexing, so the "strictly increasing sizes" check reads as one line.
 A `Default` impl on `FitConfig` keeps every constant in one struct, so calibration (T12) changes one place.
+
+# Rust lesson: efficiency-familiar T07
+
+Each model is a small closed-form weighted least-squares solve (two normal equations). When a coefficient comes out negative, the code sets it to zero and refits the other one, so the result never has a negative parameter.
+`f64` can hold `u64::MAX` only approximately. `size_as_f64` is the one place that converts sizes, with a comment on why the rounding is harmless on a log scale.
+Modelling `2^n` in log space (`ln t = α + n·ln 2`) avoids `inf` for large `n`. Keeping an overflow-prone quantity in logs is a common numerical habit.
+
+# Rust lesson: efficiency-familiar T08
+
+`slice::windows(2)` pairs consecutive points with `zip`, which reads like the maths. `top_count` uses `usize::div_ceil`, which avoids a hand-written rounding step.
+`sort_by(f64::total_cmp)` sorts floats with a total order, so a stray NaN cannot make the sort panic or give a random result.
+A test that puts an expected value next to its hand-derived source (`Sxx = 2·(ln 2)²`) caught my own arithmetic error in the noise test. The literal was wrong, not the code.
