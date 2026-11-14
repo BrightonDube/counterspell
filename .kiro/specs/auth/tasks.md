@@ -185,7 +185,7 @@ Conventions for every Rust task:
   - Preserve: the guard is global to `/api`, not per route.
   - Rust lesson: Axum middleware with `from_fn_with_state` and `Next`.
 
-- [ ] **T17 [S] (30 min) Magic-link request and verify handlers (property P14)** [SUPERVISED]
+- [x] **T17 [S] (30 min) Magic-link request and verify handlers (property P14)** [SUPERVISED]
   - Files: `crates/server/src/auth/handlers/{magic.rs,verify.rs}`, `crates/server/tests/auth_magic.rs`.
   - `POST /api/auth/email/magic` (parse, sanitise `return_to`, limiter, issue, detached send, uniform `202`), `POST /api/auth/email/verify` (`peek`, purpose dispatch, consume; for `magic_link`: find or create the user in one transaction with a generated handle, create a session, set cookie, return `{user, return_to}`). Other purposes are stubs returning `invalid_or_expired_token` until T23 and T25.
   - Tests (`MemorySender`, `ManualClock`, real Postgres): known and unknown addresses give identical responses; the link extracted from the sent mail signs in once and fails on the second use and after 15 minutes; two concurrent verifies create one user; the demo address gets a `202` and no mail, and its tokens are refused; a request cannot choose the account except through the token; `GET` on the verify path never consumes.
