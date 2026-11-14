@@ -877,3 +877,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - Converting between two types with the same field names is easier with serde than with a hand-written mapper. The create request serialises to the same JSON shape the daemon returns, so a test can rebuild the daemon's answer from the request and read it back.
 - `Option` fields from the daemon mean "not reported". Using `unwrap_or` with a value that the checker rejects (for example `0` for memory) keeps a missing field a visible violation, not a silent default.
 - `let ... else` and `?` on `Option` keep the read-back short. A missing config becomes one typed error.
+
+# Rust lesson: language-drivers T01
+- A test can read a document and check its examples against the real parser. The test calls `parse_answer` on each answer example, so the protocol text and the judge code cannot drift apart without a failing test.
+- Slicing a `&str` with `find` and `&rest[start..]` walks through a file without copying it. Each slice borrows from the original text, and the function returns owned `String`s only for the examples it keeps.
+- `serde_json::from_str::<Value>` is enough to check that an example is valid JSON. Use `Value::get` to tell an answer example (it has `out`) from a call example.

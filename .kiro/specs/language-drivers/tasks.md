@@ -4,7 +4,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 0: protocol and registry foundations
 
-- [ ] **T01 [S] (25 min) Define the versioned driver protocol**
+- [x] **T01 [S] (25 min) Define the versioned driver protocol**
   - Files: `languages/protocol.md` and any narrowly scoped protocol fixture file.
   - Document the signature descriptor, JSON-lines request/answer envelopes, call IDs, supported JSON-safe types, stdout purity, stderr behavior, errors, source export conventions, and protocol version 1.
   - Depends on: repo-skeleton completion and the judge-sandbox interface being available.
