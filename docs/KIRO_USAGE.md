@@ -205,3 +205,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-14 02:18-02:22 SAST: 22-run-lifecycle-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-run-lifecycle-a3.md`. Transcript: `docs/kiro-log/2026-11-14T0218-22-run-lifecycle-implement-a3.log`. Exit 0.
 - Credits used (from /usage): 1.70 (hackathon credits used now 2974.49/4000).
+
+### 2026-11-14 02:26-02:29 SAST: 25-auth-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a1.md`. Transcript: `docs/kiro-log/2026-11-14T0226-25-auth-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 1.75 (hackathon credits used now 2976.24/4000).
