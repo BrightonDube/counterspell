@@ -855,3 +855,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `let ... else` returns early when a value is `None`, which keeps the happy path flat (the run that did not complete gets no mood).
 - `clone()` on an `Option` field lets a test read a value without moving it out of the struct; in production code, move the value once and pass it on.
 - Pure functions take everything as arguments and return a value. `assess` does no I/O, so its tests need no database and no clock.
+
+# Rust lesson: efficiency-familiar T18
+- A trait such as `LoadSource` is a seam: production reads `/proc/loadavg`, and a test passes a scripted reading. The decision code never knows which one it has.
+- `tokio::sync::Semaphore` gives a permit as an `OwnedSemaphorePermit`. Dropping the permit returns it, so a bench cannot hold the gate after an early return or an error.
+- `Option` means "unknown" here. `is_none_or` lets an unknown reading pass, and only a known reading above the limit discards a bench.
+- `parse::<f64>()` accepts `NaN` and `inf`. Checking `is_finite()` as well as `> 0.0` rejects them.
