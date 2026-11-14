@@ -257,3 +257,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 00:02-00:05 SAST: 23-judge-sandbox-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-judge-sandbox-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0002-23-judge-sandbox-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 2.13 (credits used now 3147.59/4000).
+
+### 2026-11-15 00:09-00:18 SAST: 24-language-drivers-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-language-drivers-a1.md`. Transcript: `docs/kiro-log/2026-11-15T0009-24-language-drivers-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 4.75 (credits used now 3152.34/4000).
+
+### 2026-11-15 00:18-00:20 SAST: 24-language-drivers-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-language-drivers-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0018-24-language-drivers-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.53 (credits used now 3153.87/4000).
