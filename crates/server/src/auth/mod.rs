@@ -185,6 +185,7 @@ pub fn router(state: AuthState) -> Router {
             "/api/auth/link/{provider}/start",
             post(handlers::link::start),
         )
+        .route("/api/auth/link/email", post(handlers::link::email))
         .route("/api/me", get(handlers::me::me))
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);

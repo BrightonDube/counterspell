@@ -42,3 +42,13 @@ Attempt 4 supervised items (T14 is not supervised, but it has a deliberate excep
 - Deviation: the link branch returns `oauth_failed` until T22 implements it.
 - TDD note: as in T18, the tests were written before the handler but not run red first.
 - Tests: `crates/server/tests/pg_auth_oauth_model.rs` (10 pg tests). The fake provider is `auth/oauth/fake.rs`, behind the existing `testkit` feature.
+
+## T22: link a provider identity (commit aa7188e)
+- Check `handlers/oauth.rs` `link_provider` and `flow_session_user`: the session must be the very session the flow was created from, and it is checked after the flow is taken.
+- Check `handlers/link.rs`: the demo check runs before any flow is created (test: no `oauth_flows` row for the demo account).
+- Known behaviour: when logout deletes the session, the cascade also deletes the link flow. The callback then cannot tell it was a link flow, so its error goes to `/login?error=state_invalid`, not to settings. The spec only requires that the flow stops working.
+
+## T23: link an email address (commit: see git log "auth T23")
+- Check `handlers/link.rs` `email` and `address_is_free`: the answer is `202` whether or not the address is taken, and no mail goes to a taken or demo address.
+- Check `handlers/verify.rs` `link_email`: a session is required, a token bound to another account is refused without being used up, and the `UPDATE` is guarded by `email IS NULL`.
+- Known behaviour: the token is used before the `UPDATE`. If another account takes the address in between, the answer is `409 email_in_use` and the token is spent. The user must ask for a new link, which is then refused because the address is taken.

@@ -921,3 +921,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A small struct can carry context that a plain error cannot. `Refused` holds the flow purpose next to the reason, so the one place that builds the redirect knows whether to send the browser to the settings page or the sign-in page.
 - `match` on the enum from a pure decision function (`LinkDecision`) with no `_` arm. Adding a new decision then stops the build until every caller handles it.
 - A unique-constraint error from a race is handled by reading the database again, not by guessing. The `Err(error) if is_unique_violation(&error)` match arm keeps other errors on their own path.
+
+# Rust lesson: auth T23
+- `Option::ok_or` turns a missing session into an error, and `Option` comparison (`bound_user != Some(id)`) checks ownership in one line.
+- A `match` on `sqlx::Result<PgQueryResult>` uses a match guard (`Ok(result) if result.rows_affected() == 1`). A guard lets one arm mean "the row was updated" and a later arm mean "it was already set", without a nested `if`.
+- A shared helper such as `send_in_background` moves an `Arc<dyn EmailSender>` into `tokio::spawn`. The `Arc` is cloned first, so the caller keeps its own handle.
