@@ -125,10 +125,34 @@ describe('labels', () => {
         total: 3,
         score: 0
       }),
-      runOutcomeLabel({ kind: 'error', code: 'internal_error', message: 'x' })
+      // test-change: IDE-3 (the judge sends retries_exhausted, never internal_error)
+      runOutcomeLabel({
+        kind: 'error',
+        code: 'retries_exhausted',
+        message: 'x'
+      })
     ];
     expect(new Set(labels).size).toBe(labels.length);
     expect(labels[0]).toBe('Compile error');
     expect(labels[5]).toBe('Internal error (not a wrong answer)');
+  });
+});
+
+describe('runOutcomeLabel for error events', () => {
+  const errorOutcome = (code: string) =>
+    runOutcomeLabel({ kind: 'error', code, message: 'x' });
+
+  // Infrastructure exhaustion is the judge's fault, not a wrong answer. Code from run_state.rs and status.rs.
+  it('labels retries_exhausted as an internal error, not a wrong answer', () => {
+    expect(errorOutcome('retries_exhausted')).toBe(
+      'Internal error (not a wrong answer)'
+    );
+  });
+
+  it('labels the other failure codes as a plain run failure', () => {
+    expect(errorOutcome('cancelled')).toBe('Run failed');
+    expect(errorOutcome('problem_unavailable')).toBe('Run failed');
+    expect(errorOutcome('language_unavailable')).toBe('Run failed');
+    expect(errorOutcome('expired')).toBe('Run failed');
   });
 });
