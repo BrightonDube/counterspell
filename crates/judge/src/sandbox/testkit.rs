@@ -35,6 +35,8 @@ pub enum Behaviour {
     Stderr(Vec<u8>),
     /// Never produces output.
     Hang,
+    /// Panics inside the worker's read, as a bug in the worker would.
+    Panic,
 }
 
 /// A record of what the fake backend did.
@@ -103,6 +105,7 @@ struct State {
     exec_exit: i64,
     readback: Option<ContainerPolicy>,
     block_writes: bool,
+    fired_on: Option<&'static str>,
     ledger: Ledger,
 }
 
@@ -146,6 +149,13 @@ impl FakeBackend {
         self.lock().exec_exits.extend(codes);
     }
 
+    /// The operation an injected fault fired on, or `None` if no fault has fired.
+    /// Operations are named after the backend method: `create`, `remove`, `write`, and so on.
+    #[must_use]
+    pub fn fault_fired_on(&self) -> Option<&'static str> {
+        self.lock().fired_on
+    }
+
     /// Makes every driver write wait forever, as a program that never reads its stdin does.
     pub fn set_block_writes(&self, blocked: bool) {
         self.lock().block_writes = blocked;
@@ -162,7 +172,7 @@ impl FakeBackend {
     }
 
     /// Counts one call and returns the injected fault if this is its number.
-    fn tick(&self) -> Result<(), InfraError> {
+    fn tick(&self, operation: &'static str) -> Result<(), InfraError> {
         let mut state = self.lock();
         state.calls += 1;
         let calls = state.calls;
@@ -170,6 +180,7 @@ impl FakeBackend {
             Some(fault) if fault.at_call == calls => {
                 let error = fault.error.clone();
                 state.fault = None;
+                state.fired_on = Some(operation);
                 Err(error)
             }
             _ => Ok(()),
@@ -184,7 +195,7 @@ impl Backend for FakeBackend {
         &self,
         spec: &SessionSpec,
     ) -> impl Future<Output = Result<FakeSession, InfraError>> + Send {
-        let result = self.tick().map(|()| {
+        let result = self.tick("create").map(|()| {
             self.lock().ledger.created.push(spec.name.clone());
             FakeSession {
                 backend: self.clone(),
@@ -212,7 +223,7 @@ impl BackendSession for FakeSession {
     }
 
     fn read_policy(&mut self) -> impl Future<Output = Result<ContainerPolicy, InfraError>> + Send {
-        let result = self.backend.tick().map(|()| {
+        let result = self.backend.tick("read_policy").map(|()| {
             self.backend
                 .lock()
                 .readback
@@ -223,7 +234,7 @@ impl BackendSession for FakeSession {
     }
 
     fn start(&mut self) -> impl Future<Output = Result<(), InfraError>> + Send {
-        ready(self.backend.tick())
+        ready(self.backend.tick("start"))
     }
 
     fn exec(
@@ -231,7 +242,7 @@ impl BackendSession for FakeSession {
         _spec: &ExecSpec,
         _stdin: &[u8],
     ) -> impl Future<Output = Result<ExecOutput, InfraError>> + Send {
-        let result = self.backend.tick().map(|()| {
+        let result = self.backend.tick("exec").map(|()| {
             let mut state = self.backend.lock();
             let exit_code = state.exec_exits.pop_front().unwrap_or(state.exec_exit);
             ExecOutput {
@@ -247,21 +258,21 @@ impl BackendSession for FakeSession {
         &mut self,
         _spec: &ExecSpec,
     ) -> impl Future<Output = Result<FakeDriver, InfraError>> + Send {
-        let result = self.backend.tick().map(|()| FakeDriver {
+        let result = self.backend.tick("open_driver").map(|()| FakeDriver {
             backend: self.backend.clone(),
         });
         ready(result)
     }
 
     fn kill(&mut self) -> impl Future<Output = Result<(), InfraError>> + Send {
-        let result = self.backend.tick().map(|()| {
+        let result = self.backend.tick("kill").map(|()| {
             self.backend.lock().ledger.killed.push(self.name.clone());
         });
         ready(result)
     }
 
     fn remove(&mut self) -> impl Future<Output = Result<(), InfraError>> + Send {
-        let result = self.backend.tick().map(|()| {
+        let result = self.backend.tick("remove").map(|()| {
             self.backend.lock().ledger.removed.push(self.name.clone());
         });
         ready(result)
@@ -276,7 +287,7 @@ pub struct FakeDriver {
 
 impl DriverChannel for FakeDriver {
     async fn write_line(&mut self, line: &[u8]) -> Result<(), InfraError> {
-        self.backend.tick()?;
+        self.backend.tick("write")?;
         if self.backend.lock().block_writes {
             return pending().await;
         }
@@ -285,7 +296,7 @@ impl DriverChannel for FakeDriver {
     }
 
     async fn next_event(&mut self) -> Result<DriverEvent, InfraError> {
-        self.backend.tick()?;
+        self.backend.tick("read")?;
         match self.take_behaviour() {
             Some(event) => Ok(event),
             // A hang, or an empty script, never produces output. The caller's deadline decides.
@@ -304,6 +315,7 @@ impl FakeDriver {
             Behaviour::Exit { code, oom_kill } => Some(DriverEvent::Exited { code, oom_kill }),
             Behaviour::Stderr(bytes) => Some(DriverEvent::Stderr(bytes)),
             Behaviour::Hang => None,
+            Behaviour::Panic => panic!("scripted panic in the driver read"),
         }
     }
 }
