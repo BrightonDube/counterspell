@@ -10,6 +10,20 @@
 
 use std::fmt;
 
+#[allow(dead_code)] // The fit uses these modules from task T09; the allow goes then.
+mod models;
+#[allow(dead_code)] // Same: removed in T09.
+mod noise;
+#[allow(dead_code)] // Same: removed in T09.
+mod views;
+
+/// Converts an input size to `f64`. Sizes are at most `u64::MAX`, so the rounding only
+/// affects the last few bits, which is fine on a log scale.
+#[allow(clippy::cast_precision_loss)]
+pub(crate) fn size_as_f64(n: u64) -> f64 {
+    n as f64
+}
+
 /// The fit version. Changing any constant or the algorithm must bump it.
 pub const FIT_VERSION: &str = "fit-1";
 

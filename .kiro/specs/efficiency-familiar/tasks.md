@@ -84,7 +84,7 @@ Conventions for every web task:
   - Preserve: the engine keeps only `serde` and `serde_json`; it does not depend on `counterspell-common`.
   - Rust lesson: `Result` and custom error enums, and why a crate's dependency list is part of its design.
 
-- [ ] **T07 [S] (30 min) Model fitting: basis, weighted non-negative least squares, residuals**
+- [x] **T07 [S] (30 min) Model fitting: basis, weighted non-negative least squares, residuals**
   - Files: `crates/engine/src/complexity/models.rs`.
   - Implement the six polynomial/logarithmic models as `t ≈ a + c·g(n)` with `a, c ≥ 0` (normal equations, clamp and refit), normalising the basis and the timings first, the log-space `2^n` model, and the RMS log residual `E_m` with the large constant for non-positive predictions.
   - Tests: exact data from each model with an offset is recovered with `E ≈ 0` for its own model and clearly larger for the others; flat data collapses every model to the constant; decreasing data does not produce negative parameters; huge `n` (up to `u64::MAX`) gives finite residuals and no overflow for `2^n`.
@@ -94,7 +94,7 @@ Conventions for every web task:
   - Preserve: all arithmetic is deterministic `f64`; no random numbers.
   - Rust lesson: `f64` pitfalls (NaN, infinity), `is_finite`, and clamping.
 
-- [ ] **T08 [S] (30 min) Noise, slope view and local exponents**
+- [x] **T08 [S] (30 min) Noise, slope view and local exponents**
   - Files: `crates/engine/src/complexity/{noise.rs,views.rs}`.
   - Implement per-point and combined noise (`σ_i`, `σ̄`), the least-squares log-log slope over the top `max(3, ceil(k/2))` points with `se_b = max(regression SE, σ̄/sqrt(Sxx))`, and the local exponents with their median over the same segment.
   - Tests: exact power laws give the right slope and exponents; known spread maps to the expected `σ_i`; unknown spread uses `DEFAULT_NOISE`; `k = 3` uses the noise-implied SE.
