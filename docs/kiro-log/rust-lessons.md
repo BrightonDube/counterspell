@@ -684,3 +684,9 @@ A plain data struct holds the policy, and a separate function checks it. The che
 A value built from typed parts cannot carry a stray path or command. `FileName` refuses separators, so `SandboxFiles` can only hold the three fixed names. The archive builder takes that type, not a string.
 `ExecSpec::compile` returns `Option<Self>`. A language with no compile step gives `None`, so the caller cannot forget that case.
 `tar::Builder::append_data` writes each entry from a byte slice. Setting the header size and owner first means the archive matches what the sandbox user expects.
+
+# Rust lesson: judge-sandbox T07
+
+`&[u8]` is a borrowed view of bytes, so `split` on a chunk returns slices without copying. The reader copies a segment into its own buffer only after the size check passes.
+`std::mem::take` moves a finished line out of the buffer and leaves an empty one behind. No clone is needed, and the buffer is reused.
+Bounded memory comes from checking the length before extending a `Vec`. Checking afterwards would let a flood allocate first.
