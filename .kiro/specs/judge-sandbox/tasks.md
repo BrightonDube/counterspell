@@ -175,7 +175,7 @@ Conventions:
 
 ## Wave 3: the real Docker backend [SUPERVISED]
 
-- [ ] **T19 [S] [SUPERVISED] (30 min) Daemon connection, identity guard and daemon info**
+- [x] **T19 [S] [SUPERVISED] (30 min) Daemon connection, identity guard and daemon info**
   - Files: `crates/judge/src/sandbox/daemon.rs`, `crates/judge/tests/model_daemon.rs`.
   - Connect with the Unix-socket constructor and an explicit path only. Refuse: empty, relative, `tcp://`, `/var/run/docker.sock`, `/run/docker.sock`. Never read `DOCKER_HOST`. `info()` check: rootless, data root not `/var/lib/docker`, cgroup v2, driver not `none`, runtime registered, no limit-support warnings. All API calls wrapped in `SANDBOX_API_TIMEOUT`.
   - Tests: P14 (path guard cases, no environment dependence, including with `DOCKER_HOST` set); `info` parsing against recorded fixture JSON from T02 and mutated copies.

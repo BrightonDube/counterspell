@@ -867,3 +867,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `u64::try_from(i64)` returns an error for a negative size instead of wrapping, so a bad pack value cannot become a huge number.
 - A function that takes `impl Into<String>` accepts both `&str` and `String` messages, which keeps the diagnostic call sites short.
 - Matching a text value to an enum with `_ => None` is the right shape for a declared name that might be unknown. Exhaustive matches are for values the code already holds.
+
+# Rust lesson: judge-sandbox T19
+- A `Result` returned by a validation function is the trust boundary. `validate_socket_path` turns a raw string into a `PathBuf` only after the empty, relative, URL and main-daemon checks pass, so the rest of the code never sees an unchecked path.
+- A `#[cfg(feature = "sandbox")]` module keeps the Docker client out of builds that do not need it. Only the edge module names `bollard`, and the pure checks compile everywhere.
+- A test can guard "does not read the environment" by scanning source text. Filtering out comment lines first avoids false positives from doc comments that mention a variable name.
