@@ -197,7 +197,7 @@ Conventions for every Rust task:
 
 ## Wave 4: OAuth sign-in
 
-- [ ] **T18 [S] (30 min) Provider trait, fake provider and flow store (property P7)** [SUPERVISED]
+- [x] **T18 [S] (30 min) Provider trait, fake provider and flow store (property P7)** [SUPERVISED]
   - Files: `crates/server/src/auth/oauth/{mod.rs,flow.rs,fake.rs}`, `crates/server/tests/pg_auth_flow.rs`.
   - `ProviderId`, `ProviderProfile`, `OAuthProvider` trait; `FakeProvider` (testkit) returning configured profiles per code; `FlowStore::{create_login, create_link, consume}` with PKCE via `oauth2::PkceCodeChallenge::new_random_sha256()`, hashed `state` and binding, 10-minute life, single-use `DELETE … RETURNING`.
   - Tests (`pg_`, `ManualClock`): the stored verifier hashes (S256) to the challenge in the authorize URL; a flow works once; wrong provider, altered `state`, expired flow, and (login) missing or wrong binding fail; a failed attempt still consumes the flow; link flows are bound to the session and are deleted when the session is deleted.
