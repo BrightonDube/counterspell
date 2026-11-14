@@ -251,15 +251,25 @@ fn sampled_spec(
     }
 }
 
+/// Converts a count to `f64`. Counts here are far below 2^53, so the conversion is exact.
+#[allow(clippy::cast_precision_loss)]
+fn u64_as_f64(count: u64) -> f64 {
+    count as f64
+}
+
 /// Calibration report (ignored by default). Prints one row per true class for `fit-1`.
 /// Run with `cargo test -p counterspell-engine --test properties_complexity -- --ignored --nocapture calibration`.
 #[test]
 #[ignore = "calibration report, run on demand"]
 fn calibration_report() {
     use counterspell_engine::complexity::Confidence;
-    let cases = 4000_u64;
-    println!("| true class | cases | Low | Medium correct | Medium adjacent | High correct | wrong at High |");
-    println!("|---|---|---|---|---|---|---|");
+    // The sample size can be raised with CALIBRATION_CASES, because rare failures need more draws.
+    let cases: u64 = std::env::var("CALIBRATION_CASES")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(4000);
+    println!("| true class | cases | Low | Medium correct | Medium adjacent | Medium wrong (2+ classes) | High correct | wrong at High |");
+    println!("|---|---|---|---|---|---|---|---|");
     for truth in [
         Class::Linear,
         Class::Linearithmic,
@@ -267,7 +277,14 @@ fn calibration_report() {
         Class::Cubic,
     ] {
         let mut rng = support::complexity::Rng::new(0x5EED_0000 + u64::from(truth.rank()));
-        let (mut low, mut med_ok, mut med_adj, mut high_ok, mut wrong_high) = (0, 0, 0, 0, 0);
+        let (mut low, mut med_ok, mut med_adj, mut high_ok, mut wrong_high, mut wrong_medium): (
+            u64,
+            u64,
+            u64,
+            u64,
+            u64,
+            u64,
+        ) = (0, 0, 0, 0, 0, 0);
         for _ in 0..cases {
             let spec = sampled_spec(&mut rng, truth);
             let report =
@@ -278,17 +295,43 @@ fn calibration_report() {
                 (Confidence::Medium, Some(c)) if adjacent(c, truth) => med_adj += 1,
                 (Confidence::High, Some(c)) if c == truth => high_ok += 1,
                 (Confidence::High, _) => wrong_high += 1,
-                _ => wrong_high += 0,
+                (Confidence::Medium, _) => wrong_medium += 1,
             }
         }
-        let pct = |n: u64| format!("{:.1}%", 100.0 * n as f64 / cases as f64);
+        let share = |n: u64| {
+            let percent = 100.0 * u64_as_f64(n) / u64_as_f64(cases);
+            format!("{percent:.1}%")
+        };
+        let wrong_medium_text = format!("{wrong_medium} ({})", share(wrong_medium));
         println!(
-            "| {:?} | {cases} | {} | {} | {} | {} | {wrong_high} |",
-            truth,
-            pct(low),
-            pct(med_ok),
-            pct(med_adj),
-            pct(high_ok)
+            "| {truth:?} | {cases} | {} | {} | {} | {wrong_medium_text} | {} | {wrong_high} |",
+            share(low),
+            share(med_ok),
+            share(med_adj),
+            share(high_ok)
         );
+    }
+}
+
+/// Regression for the P1 counterexample found on `fit-1` before calibration: a linear series
+/// with one spiked point (four sizes, range exactly 8×). It must not be reported as a wrong
+/// class at Medium. Its seed is also in the committed proptest regression file.
+#[test]
+fn the_spiked_linear_counterexample_is_never_a_wrong_medium_class() {
+    let spec = support::complexity::SeriesSpec {
+        truth: Class::Linear,
+        k: 4,
+        factor: 2,
+        n0: 64,
+        overhead: 0.0,
+        noise_sd: 0.0,
+        spike_p: 0.099_311_181_458_381_86,
+        spike_mult: 2.195_306_137_308_488,
+        spread_known: false,
+        seed: 10_597_930_103_001_781_020,
+    };
+    let report = fit(&realise(&spec), Mode::Full, &FitConfig::default()).expect("valid input");
+    if let Some(class) = report.class {
+        assert!(adjacent(class, Class::Linear), "{report:?}");
     }
 }

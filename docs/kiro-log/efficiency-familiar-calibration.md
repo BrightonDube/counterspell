@@ -2,77 +2,96 @@
 
 Recorded 14 Nov 2026 by the implementation run. Fit version: `fit-1`.
 
-## Constants (frozen as `fit-1`)
+## Summary
 
-No constant was changed during calibration. The values are those written in
-`FitConfig::default()` (`crates/engine/src/complexity/mod.rs`) when the algorithm was
-implemented in T09:
+- P1 (soundness) first failed on `fit-1` as first written. A linear series with one spiked
+  point was reported as Medium quadratic. That is two classes off, which R3.8 forbids.
+- One constant was changed: `se_k` from 2.5 to 1.0. That makes the agreement check stricter.
+  It moves confidence toward less certainty, as T12 allows. The algorithm is unchanged.
+- After the change, 1,000,000 seeded cases per true class gave **zero Medium results two or
+  more classes off** and **zero High results with the wrong class**. P1 and P2 pass.
+- Zero in a sample is not a proof. P1 is a sampled property, and the report says so.
 
-| Constant | Value |
-|---|---|
-| noise_floor / noise_cap | 0.03 / 1.0 |
-| spread_factor | 0.25 |
-| default_noise | 0.10 |
-| delta_floor / delta_k | 0.025 / 0.75 |
-| fit_ok_floor / fit_ok_k | 0.05 / 1.8 |
-| slope_tol / exp_tol / se_k | 0.30 / 0.35 / 2.5 |
-| min_range_medium / min_range_high | 8 / 32 |
-| min_points_high | 5 |
-| high_noise_max | 0.12 |
-| high_margin_k | 2.0 |
+## Frozen constants (`fit-1`)
 
-Calibration could only move constants toward less confidence, and it was needed only if P1
-or P2 failed. Both passed with these values, so T12 changed nothing.
+These are the values in `FitConfig::default()` (`crates/engine/src/complexity/mod.rs`):
 
-## Corpus parameters (`crates/engine/tests/support/complexity.rs`)
-
-- True classes: `n`, `n log n`, `n^2`, `n^3`.
-- Points `k`: 3 to 8. Size factor: 2 or 4. Smallest size `n_0`: 2^6 to 2^10.
-- Fixed overhead: 0 to 3 times the compute at `n_0` (noise-free property P2: 0 to 1).
-- Lognormal noise per repeat: sd 0 to 0.25. Spike probability 0 to 0.1, multiplier 1.5 to 3.
-- Five repeats per size; the median is kept and the spread is `(max − min) / median`.
-- Half the series carry their measured spread, half have none (noise then defaults).
-- Seeded by splitmix64, so every case replays.
-
-## T11: property run before calibration (`cargo test -p counterspell-engine --test properties_complexity`)
-
-| Property | Cases | Result |
+| Constant | Value | Note |
 |---|---|---|
-| P1 soundness (High is true, Medium is true or adjacent) | 4000 | pass |
-| P2 usefulness (noise-free, 32× span, at least Medium, true class) | 4000 | pass |
-| P3 scale invariance (powers of two) | 256 | pass |
-| P4 totality on arbitrary points, including NaN and infinite spreads | 256 | pass |
-| P5 determinism | 256 | pass |
-| P6 class only with Medium or High, leaning is plausible | 256 | pass |
-| P7 Quick never High | 256 | pass |
+| noise_floor / noise_cap | 0.03 / 1.0 | |
+| spread_factor | 0.25 | |
+| default_noise | 0.10 | |
+| delta_floor / delta_k | 0.025 / 0.75 | unchanged |
+| fit_ok_floor / fit_ok_k | 0.05 / 1.8 | unchanged |
+| slope_tol / exp_tol | 0.30 / 0.35 | unchanged |
+| se_k | **1.0** (was 2.5 in the first draft) | the only change |
+| min_range_medium / min_range_high | 8 / 32 | |
+| min_points_high | 5 | |
+| high_noise_max | 0.12 | |
+| high_margin_k | 2.0 | |
 
-A sanity check: with the plausibility slack and the goodness ceiling loosened on purpose
-(`delta_floor = 0`, `delta_k = 0`, `fit_ok_k = 100`, `min_range_medium = 1`), P1 fails. So the
-property does catch an over-confident fit. The source was restored afterwards and the
-mutant's proptest regression file was deleted, because it did not describe a real failure.
+## What went wrong, and the record of each attempt
 
-## T12: calibration table (`cargo test -p counterspell-engine --test properties_complexity -- --ignored --nocapture calibration`)
+1. **Calibration counter bug (fixed).** The first calibration table did not count Medium
+   results that were two or more classes off. Those rows fell into an empty arm. It now has a
+   column for them.
+2. **P1 counterexample (proptest, random seed).** Truth linear, four sizes 64 to 512, no
+   overhead, no noise, one spike of about 2.2× with spread unknown. The fit gave Medium
+   quadratic. The residuals were: linear 0.36, quadratic 0.11, with σ̄ = 0.10 and a range of
+   exactly 8×. The agreement check passed because its tolerance was `se_k × SE` with SE ≈ 0.33,
+   so the tolerance was about 0.82 and the slope gap was 0.43.
+3. **Mutation check.** Loosening the constants on purpose made P1 fail. That showed the
+   property can catch an over-confident fit. The source was restored afterwards.
 
-4000 seeded series per true class, `fit-1` constants.
+Attempts, all measured with the calibration test and the property tests. Each row changes
+one thing from `fit-1` as first written, unless noted.
 
-| true class | cases | Low | Medium correct | Medium adjacent | High correct | wrong at High |
-|---|---|---|---|---|---|---|
-| Linear | 4000 | 77.8% | 17.0% | 0.1% | 5.2% | 0 |
-| Linearithmic | 4000 | 67.9% | 21.3% | 0.1% | 10.7% | 0 |
-| Quadratic | 4000 | 11.9% | 47.7% | 0.0% | 40.4% | 0 |
-| Cubic | 4000 | 9.6% | 51.6% | 0.0% | 38.8% | 0 |
+| # | Change | Calibration (wrong Medium, linear) | P1 / P2 | Kept? |
+|---|---|---|---|---|
+| a | `delta_k` 0.75 → 1.5 and `fit_ok_k` 1.8 → 1.0 (together), 200k | 0 | P2 fails (clean linear with overhead, linearithmic 0.044 inside the wider slack) | no |
+| b | `delta_k` 0.75 → 1.5 alone, 200k | 0 | P2 fails (same cause) | no |
+| c | `fit_ok_k` 1.8 → 1.0 alone, 200k | 3 | pass | no (not zero) |
+| d | `fit_ok_k` 1.8 → 0.5, 1M | 4 | pass | no (not zero) |
+| e | `fit_ok_k` 1.8 → 0.3, 1M | 3 | pass | no (not zero) |
+| f | **`se_k` 2.5 → 1.0**, 1M | **0** | pass | **yes, frozen** |
 
-**Wrong-at-High count: 0 for every class.** This meets the requirement.
+## Final calibration table (`fit-1`)
 
-Reading the table honestly:
+`cargo test -p counterspell-engine --test properties_complexity -- --ignored --nocapture calibration`,
+with `CALIBRATION_CASES=1000000`, release build, 1,000,000 seeded series per class.
 
-- Noisy linear and `n log n` series are mostly `Low`. A linear curve with noise and spikes is
-  hard to tell from `n log n` over a short range. This is the blind spot the explainer must
-  state ("could be linear or n log n").
-- Quadratic and cubic series with the same noise are called `Medium` or `High` most of the time.
-- Medium-adjacent results are rare (0.1% or less). The table does not show why.
+| true class | cases | Low | Medium correct | Medium adjacent | Medium wrong (2+ classes) | High correct | wrong at High |
+|---|---|---|---|---|---|---|---|
+| Linear | 1000000 | 77.6% | 16.9% | 0.1% | 0 | 5.4% | 0 |
+| Linearithmic | 1000000 | 68.2% | 21.1% | 0.1% | 0 | 10.6% | 0 |
+| Quadratic | 1000000 | 17.0% | 45.0% | 0.0% | 0 | 38.1% | 0 |
+| Cubic | 1000000 | 14.5% | 47.5% | 0.0% | 0 | 38.0% | 0 |
+
+Percentages are rounded to 0.1%. The zero counts are zero in this sample only.
+
+Reading the table:
+
+- Noisy linear and `n log n` data are mostly `Low`. Those two classes are hard to separate
+  over a short range under noise. The explainer must say "could be linear or n log n".
+- Quadratic and cubic data are called `Medium` or `High` for most cases.
+- Medium results two or more classes off: none in the 1M sample per class.
+
+## Property runs after the change
+
+- P1 and P2 passed on three separate runs with fresh random seeds (`cargo test -p counterspell-engine --test properties_complexity`).
+- The regression test `the_spiked_linear_counterexample_is_never_a_wrong_medium_class` pins the
+  P1 counterexample, and passes.
+- `properties_complexity.proptest-regressions` holds the failing seed from the first draft.
+
+## Open risk for Brighton
+
+The guarantee in R3.8 ("for medium, not off by more than one class") rests on sampling. The
+sample found no violation after the change, but a rare one could exist. A stronger guarantee
+would need an algorithm change, such as requiring five or more points for `Medium`. T12
+forbids algorithm changes without a decision from Brighton, so this is reported, not made.
 
 ## Decision
 
-`FIT_VERSION` stays `fit-1`. Any future change to a constant or to the algorithm must bump it
-and rerun this table.
+`FIT_VERSION` stays `fit-1`. The fit has not been stored or shown to any learner yet, so no
+result needs migrating. Any later constant or algorithm change must bump it and rerun this
+table.

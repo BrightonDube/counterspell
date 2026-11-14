@@ -12,6 +12,8 @@ use decide::{decide, Inputs};
 use noise::point_noise;
 use std::fmt;
 
+pub use bench_input::{bench_seed, sized_input, BenchInputError};
+mod bench_input;
 mod decide;
 mod models;
 mod noise;
@@ -251,7 +253,7 @@ impl Default for FitConfig {
             fit_ok_k: 1.8,
             slope_tol: 0.30,
             exp_tol: 0.35,
-            se_k: 2.5,
+            se_k: 1.0,
             min_range_medium: 8.0,
             min_range_high: 32.0,
             min_points_high: 5,

@@ -142,7 +142,7 @@ Conventions for every web task:
   - Preserve: `FIT_VERSION` stays `fit-1` only if constants are frozen here; any later change bumps it.
   - Rust lesson: constants as configuration, and why tuning tests is different from tuning to the tests.
 
-- [ ] **T13 [P] (30 min) Sized bench inputs and the bench seed**
+- [x] **T13 [P] (30 min) Sized bench inputs and the bench seed**
   - Files: `crates/engine/src/complexity/bench_input.rs`.
   - Implement `sized_input` and `bench_seed` as in the design, using the engine's existing PRNG (`SplitMix64`) and `derive_seed`-style FNV-1a with length-prefixed fields plus `GENERATOR_VERSION`. Support `int_array`, `str` and `matrix` size parameters inside a tuple root; honour range, alphabet, `sorted`, `unique`; return `BenchInputError` when `unique` is impossible or the size parameter is not a supported kind.
   - Tests: P15 (exact size; valid by `Schema::contains` apart from the size parameter's length bound; deterministic; independent of anything but its arguments; error cases); pinned `bench_seed` values.

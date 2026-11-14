@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc 47dab262601d1cf4fe5302b081a40802fa77393088fca78a93a93ee7ad5c1f51 # shrinks to spec = SeriesSpec { truth: Linear, k: 4, factor: 2, n0: 64, overhead: 0.0, noise_sd: 0.0, spike_p: 0.09931118145838186, spike_mult: 2.195306137308488, spread_known: false, seed: 10597930103001781020 }
+cc 731aac69d3a97b25e294be8d6358fd6323cc91dc851633dcdf57a0f2f160af12 # shrinks to spec = SeriesSpec { truth: Linear, k: 6, factor: 2, n0: 1024, overhead: 0.6306819416336058, noise_sd: 0.0, spike_p: 0.0, spike_mult: 1.0, spread_known: true, seed: 0 }
