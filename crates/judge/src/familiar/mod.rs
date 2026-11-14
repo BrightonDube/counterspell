@@ -4,4 +4,6 @@
 //! their own modules and call into these functions.
 
 pub mod assess;
+pub mod gate;
+pub mod load;
 pub mod ratio;

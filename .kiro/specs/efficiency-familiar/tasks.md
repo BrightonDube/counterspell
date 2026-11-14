@@ -193,7 +193,7 @@ Conventions for every web task:
   - Preserve: pure; no clock, no I/O.
   - Rust lesson: conversion functions between types, `From`, and exhaustive `match` for safety.
 
-- [ ] **T18 [P] (25 min) Load guard and bench gate**
+- [x] **T18 [P] (25 min) Load guard and bench gate**
   - Files: `crates/judge/src/familiar/{load.rs,gate.rs}`.
   - `LoadSource` trait with `ProcLoadAvg` (reads the first field of `/proc/loadavg`, returns an error on parse failure) and a test double; `quiet(before, after, limit)` is a pure function; `BenchGate` is a one-permit `tokio::sync::Semaphore` wrapper controlled by `BENCH_SERIALISE` (default true), with `BENCH_MAX_LOAD` (default 3.0 [E]).
   - Tests: quiet/busy cases at the boundary; unreadable load is treated as unknown and does not discard the bench (logged); two tasks cannot hold the gate together; a waiter proceeds after release; the gate does not hold a database connection.
