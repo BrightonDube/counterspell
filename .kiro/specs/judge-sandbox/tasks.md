@@ -162,7 +162,7 @@ Conventions:
   - Depends on: T11, T16.
   - Rust lesson: state carried in a loop and early returns with `?`.
 
-- [ ] **T18 [S] (30 min) Fault-injection properties**
+- [x] **T18 [S] (30 min) Fault-injection properties**
   - Files: `crates/judge/tests/model_faults.rs`.
   - `proptest` over scripts, phases and fault points: P8 (ledger balanced after `execute`, cancel, abort and panic; no container shared between runs) and P9 (a fault at any Docker call gives `Err(Infrastructure)` and no verdict from the fault; partial results are never returned as a final result).
   - Requirements: R9.4, R9.5, R10.1, R10.7, R11.3.

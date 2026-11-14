@@ -750,3 +750,9 @@ A `select!` arm that does `return` leaves the function at once, so each abnormal
 A `for` loop with `break` and `return` is the normal way to stop early. Each exit is one line and the cleanup after the loop runs once.
 `match` on a small enum (`Step::Ran` or `Step::Stopped`) moves a "stopped" result out of the verdict path, so the verdict code never sees it.
 `Option::as_mut()` with `let ... else` avoids `unwrap` when the code needs a value it just checked. Clippy's line limit pushed the per-test call into its own function, which also made the loop easier to read.
+
+# Rust lesson: judge-sandbox T18
+
+A `proptest!` block runs many random cases. Each case builds its own runtime with `Builder::new_current_thread`, because a property test is a normal function, not an `async` one.
+A test can prove a cleanup rule by breaking it on purpose. With `Drop` cleanup removed, the cancel, panic and fault tests failed. Restoring the file brought them back.
+Casting `usize` to `u32` can silently truncate, so clippy warns. `u32::try_from(...)` or a `u32` counter avoids that, and `u32::try_from(...).unwrap()` is acceptable in a test.
