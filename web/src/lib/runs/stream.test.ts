@@ -100,6 +100,24 @@ describe('watchRun', () => {
     expect(states).toHaveLength(1);
   });
 
+  it('keeps the watch open through a transient drop and applies events after the browser reconnects', () => {
+    const { sources, states, done, closed } = setup();
+    const [source] = sources;
+    source.emit('compiling', 1, compiling);
+
+    // A drop while the browser is still CONNECTING: the browser retries on its own, on the same object.
+    source.readyState = 0;
+    source.onerror?.({});
+    expect(closed).toHaveLength(0);
+    expect(sources).toHaveLength(1);
+
+    source.emit('test', 2, passRow);
+    source.emit('done', 3, doneOk);
+    expect(states.map((state) => state.lastSeq)).toEqual([1, 2]);
+    expect(done[0].lastSeq).toBe(3);
+    expect(closed).toHaveLength(0);
+  });
+
   it('reopens from the last applied sequence after a gap', () => {
     const { sources, done } = setup();
     sources[0].emit('compiling', 1, compiling);

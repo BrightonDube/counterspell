@@ -318,7 +318,7 @@ Conventions for every Rust task:
 
 ## Wave 3: browser client logic (no screens)
 
-- [ ] **T32 [P] (30 min) Add vitest and the pure event reducer**
+- [x] **T32 [P] (30 min) Add vitest and the pure event reducer**
   - Files: `web/package.json`, `web/package-lock.json`, `web/src/lib/runs/types.ts`, `web/src/lib/runs/reducer.ts`, `web/src/lib/runs/reducer.test.ts`, `THIRD-PARTY-NOTICES.md`.
   - Add `vitest` as a dev dependency and an `npm test` script (`vitest run`). Implement `apply(state, event)` as in `design.md` Path 11. Tests (P10): duplicates ignored; stale `seq` ignored; a gap sets `gap`; `restarted` clears per-attempt state and keeps `lastSeq`; terminal events recorded; a seeded random generator inserts arbitrary duplicates and replays into the log and the final state equals applying the log once (200 iterations, fixed seeds).
   - Requirements: R14.1–R14.3, R14.5, P10.

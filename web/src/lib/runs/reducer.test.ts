@@ -170,4 +170,46 @@ describe('applyEvent', () => {
     expect(replayed).toEqual(once);
     expect(replayed.gap).toBe(false);
   });
+
+  // P10: 200 fixed seeds, each with random duplicates and replays of earlier events. Every seed must
+  // end in the same state as the log applied once.
+  it('matches the single-apply state for 200 seeded noisy replays (P10)', () => {
+    const log: RunEventEnvelope[] = [
+      envelope(1, { kind: 'compiling' }),
+      envelope(2, { kind: 'test', test: sampleRow(1, 'pass') }),
+      envelope(3, { kind: 'restarted', attempt: 2 }, 2),
+      envelope(4, { kind: 'test', test: hiddenRow(1, 'time_limit') }, 2),
+      envelope(
+        5,
+        {
+          kind: 'done',
+          verdict: 'wrong_answer',
+          passed: 0,
+          total: 1,
+          score: 0
+        },
+        2
+      )
+    ];
+    const applyAll = (events: RunEventEnvelope[]) =>
+      events.reduce(applyEvent, initialRunState('run-1'));
+    const once = applyAll(log);
+
+    for (let seedValue = 1; seedValue <= 200; seedValue += 1) {
+      let seed = seedValue;
+      const next = () => {
+        seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+        return seed / 2 ** 32;
+      };
+      const noisy: RunEventEnvelope[] = [];
+      log.forEach((event, index) => {
+        noisy.push(event);
+        const extra = Math.floor(next() * 3);
+        for (let copy = 0; copy < extra; copy += 1) {
+          noisy.push(log[Math.floor(next() * (index + 1))]);
+        }
+      });
+      expect(applyAll(noisy), `seed ${seedValue}`).toEqual(once);
+    }
+  });
 });
