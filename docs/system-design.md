@@ -5,7 +5,7 @@
 
 **Labels:** [V] = verified today on the primary source (see `docs/licence-rules.md` for licence and LLM evidence). [U] = unverified, so test it before relying on it. [E] = my estimate, with assumptions stated. **[D]** = a decision Brighton made in the multiple-choice rounds on 11 Nov.
 
-**Deadline:** Fri 4 Dec 2026 14:00 PT, which is **Sat 5 Dec 00:00 SAST**. Feature freeze is **Wed 2 Dec**. The app must stay free and online for judges until **Fri 29 Jan 2027 23:00 SAST** (rules, [V]).
+**Deadline:** Fri 4 Dec 2026 14:00 PT, which is **Sat 5 Dec 00:00 SAST**. Feature freeze is **Wed 2 Dec**. The app must stay free and online for reviewers until **Fri 29 Jan 2027 23:00 SAST** (rules, [V]).
 
 ---
 
@@ -16,7 +16,7 @@
 - **Live results:** the worker writes one event per test to a Postgres `run_events` table with a per-run sequence number, and the browser receives them via **Server-Sent Events** with `Last-Event-ID` replay. [D] [D 12 Nov]
 - **Ghost-input engine (`counterspell-engine`, Rust library)**: seeded generation, then the reference solution versus the user's code, then shrinking to a **minimized counterexample** (the smallest failing input *found* within the budget, not a proven global minimum). It runs **server-side only** and executes code only through the judge's sandbox. [D] [D 12 Nov] The same crate powers **`counterspell-mcp`** (Rust MCP server, `rmcp`) for Kiro; its code-running tools go through the same sandbox and judge, never directly on the developer's machine. [D 12 Nov]
 - **Data:** **Postgres** (truth, job queue and run events) and **Valkey** (cache and rate limits only), on one **OVH VPS-2 (4 vCPU, 8 GB, 75 GB NVMe, €8.49/month ex. VAT)**. [D] [D 12 Nov]
-- **Auth built into Axum:** GitHub and Google OAuth, plus email (magic link, or password with Argon2id). Mail goes through **Resend**. [D] **No automatic account linking by matching email**; a signed-in user links a provider themselves, with verification. A judge demo account is provided. [D 12 Nov]
+- **Auth built into Axum:** GitHub and Google OAuth, plus email (magic link, or password with Argon2id). Mail goes through **Resend**. [D] **No automatic account linking by matching email**; a signed-in user links a provider themselves, with verification. A demo account is provided. [D 12 Nov]
 - **Frontend:** SvelteKit (static adapter), **Bits UI**, **Tailwind**, **GSAP** and **Monaco** (custom "Crypt" theme). Chess uses **chess.js** with **cm-chessboard** (MIT). [D]
 - **Look:** "Steel Night". Steel-blue base, subtle moss grey-green accent, candle amber second accent, bright green only for pass and red only for failures. Geist and JetBrains Mono. A cinematic landing page and a calm IDE. Dark mode only at launch, with tokens ready for light mode (§16). [D]
 - **Efficiency Familiar (§8b):** a jack-o'-lantern docked in the IDE with 5 moods (furious → laughing). **Its mood is set only by measured facts** on Run/Submit: correctness plus observed scaling against `reference_complexity`, with a confidence level. It says "looks quadratic", never "optimal". An LLM writes its speech-bubble hint, labelled as an AI hint, and can't change the verdict or mood. A live typing guess is a stretch goal and never changes the mood. [D 12 Nov]
@@ -31,7 +31,7 @@
 ### 1.1 Functional (MVP = submitted on Dec 4)
 | # | Requirement | MVP | Later |
 |---|---|---|---|
-| F1 | Sign up / log in: GitHub, Google, email (magic link + password). No automatic linking by email; user-initiated linking only. Judge demo account [D 12 Nov] | ✅ | org SSO |
+| F1 | Sign up / log in: GitHub, Google, email (magic link + password). No automatic linking by email; user-initiated linking only. Demo account [D 12 Nov] | ✅ | org SSO |
 | F2 | Problem catalogue: tracks ("Crypts") → concepts → problems, filters | ✅ 10 polished problems [D 12 Nov] | 150+, community packs |
 | F3 | VS Code-style IDE: Monaco, language picker, Run (samples), Submit (hidden), console, test panel with per-test pass/fail streamed live | ✅ Python + JS; Java + C++ stretch [D 12 Nov] | more languages via config |
 | F4 | **Ghost input**: on a wrong submit, find a failing input and shrink it to a **minimized counterexample**, then show input / expected / got | ✅ hero | trees/graphs |
@@ -46,7 +46,7 @@
 | F11 | `counterspell-mcp` for Kiro (find_ghost_input, shrink_input, explain_ghost, validate_grimoire_pack). Tools that run code go through the same sandbox and judge as production [D 12 Nov] | ✅ | Kiro Power |
 | F11a | **Kiro dogfooding demo**: Kiro uses `counterspell-mcp` to find a counterexample in a deliberately buggy reference or implementation, fixes it and re-verifies (for the video and the Kiro write-up) [D 12 Nov] | ✅ Should | — |
 | F13 | **Efficiency Familiar**: a jack-o'-lantern mascot in the IDE whose 5 moods reflect measured efficiency on Run/Submit, plus an LLM speech-bubble hint labelled as AI (§8b). Live typing guess is stretch [D 12 Nov] | ✅ (jack-o'-lantern; measured mood) | ghost/skeleton skins |
-| F12 | Payments | ❌ (judges must test free) | ✅ |
+| F12 | Payments | ❌ (reviewers must test free) | ✅ |
 
 ### 1.2 Non-functional
 - **Security first:** untrusted code runs only in sandboxes (§7). Secrets stay server-side. Cookies are HttpOnly, Secure and SameSite=Lax, with CSRF protection on state-changing forms.
@@ -460,7 +460,7 @@ Browser checks are UX only and can be skipped (for example with curl). The serve
 | `POST /api/auth/email/magic` / `GET /api/auth/email/verify?token=` | Magic link: a single-use token valid for 15 minutes, stored hashed |
 | `POST /api/auth/register` / `POST /api/auth/login` / `POST /api/auth/password/reset` | Email and password (Argon2id), verification email via Resend |
 | `POST /api/auth/logout`, `GET /api/me` | session |
-| Judge demo account [D 12 Nov] | a seeded demo user signs in through `POST /api/auth/login`; credentials go in the Devpost private field, and the sign-in page has a "Judging? Use the demo account" link. The demo user can't link providers, change credentials or delete the account; its data resets daily [E]. Normal rate limits apply |
+| Demo account [D 12 Nov] | a seeded demo user signs in through `POST /api/auth/login`; credentials go in the private field of the external submission form, and the sign-in page has a "Try the demo account" link. The demo user can't link providers, change credentials or delete the account; its data resets daily [E]. Normal rate limits apply |
 | `GET /api/languages` | from languages.toml (name, version, limits) for the IDE picker and the `/environment` page |
 | `GET /api/problems?track=&difficulty=&concept=`, `GET /api/problems/{slug}` | catalogue. Detail includes samples, signature and per-language starter code |
 | `POST /api/runs` `{problem, lang, code, mode}` + `Idempotency-Key` header → `202 {run_id}` | validate, then insert submission + job in one transaction |
@@ -506,7 +506,7 @@ Browser checks are UX only and can be skipped (for example with curl). The serve
   - Caddy obtains certificates automatically.
 - **Backups:** a nightly `pg_dump` with 7 dumps kept locally and copied off-box. OVH's backup option or any off-box storage is an **extra cost on top of the €8.49** [U price, not checked].
 - **CI:** GitHub Actions on push runs `cargo fmt --check`, `clippy -D warnings`, `cargo test` (engine, grimoire, server with testcontainers or a service Postgres), `npm run check && npm run build`, and `cargo deny check licenses`. Deploys are manual (`ssh` + `docker compose pull && up -d`) to keep it simple.
-- **Judges:** a public demo account (credentials in the Devpost private field), plus GitHub and Google sign-in. Uptime must hold until **29 Jan 2027 23:00 SAST**.
+- **Reviewers:** a public demo account (credentials in the private field of the external submission form), plus GitHub and Google sign-in. Uptime must hold until **29 Jan 2027 23:00 SAST**.
 
 **Memory budget on 8 GB [E]:**
 
@@ -598,19 +598,19 @@ Run `cargo deny check licenses` in CI with an allow-list of MIT, Apache-2.0, BSD
 | Thu 12 – Fri 13 Nov | Order the VPS (OVH VPS-2). Create the repo (MIT LICENSE, `docs/` brief, Kiro-generated steering, THIRD-PARTY-NOTICES). `repo-skeleton`: Cargo workspace (canonical layout §2), Axum hello, SvelteKit static served by Axum, Compose with Postgres and Valkey, CI. Set up the rootless sandbox daemon | `https://<domain>` serves the Svelte page from the Rust binary |
 | Sat 14 – Mon 16 Nov | **Visuals first:** `landing-steel-night` (moon/graveyard hero, cinematic GSAP, palette v2 "Steel Night"), Monaco "Crypt" theme, the `ide-workspace` shell, the familiar's SVG art and 5 mood animations, and prototypes of the ghost card, shrink animation and Bug Autopsy on labelled fixtures. Kiro writes the `ghost-engine` spec in parallel | landing live on the VPS; IDE shell renders |
 | Tue 17 – Sun 22 Nov | `ghost-engine` (generators, comparators, shrinkers, shrink trace, proptest). `grimoire-packs` with the first packs. `judge-sandbox`: Python only, rootless sandbox daemon, worker-owned verdicts, hostile-program tests. `run-lifecycle`: Postgres job queue, `run_events`, SSE replay. **Soft check Sun 22:** a wrong Python solution gives a minimized counterexample through the sandbox, locally | ghost under 8 s on 3 problem shapes |
-| Mon 23 – Wed 25 Nov | Deploy the core to the VPS. IDE wired to the real API (SSE client, ghost card). `auth` (GitHub, Google, email; no automatic linking; judge demo account). **HARD CHECKPOINT Wed 25 Nov 22:00 SAST:** on the VPS, a real wrong Python submission goes through the queue and sandbox and shows a real minimized counterexample on the ghost card over SSE. **If not, all visual work pauses until it does** | fail → ghost works on the VPS |
+| Mon 23 – Wed 25 Nov | Deploy the core to the VPS. IDE wired to the real API (SSE client, ghost card). `auth` (GitHub, Google, email; no automatic linking; demo account). **HARD CHECKPOINT Wed 25 Nov 22:00 SAST:** on the VPS, a real wrong Python submission goes through the queue and sandbox and shows a real minimized counterexample on the ghost card over SSE. **If not, all visual work pauses until it does** | fail → ghost works on the VPS |
 | Thu 26 – Sun 29 Nov | `language-drivers` (JavaScript). 10 polished problems. `hints`. `efficiency-familiar` (measured mood + LLM speech bubble). Shrink animation and Bug Autopsy wired to real shrink traces. `counterspell-mcp-power` (sandboxed execution) and the recorded **Kiro dogfooding demo**. `dashboard-fsrs` (basic dashboard; FSRS stretch) | full loop: fail → ghost → autopsy → hint → retry → dashboard updates |
 | Mon 30 Nov – Tue 1 Dec | **Stretch only if the core is freeze-safe:** Java and C++ drivers, FSRS reviews, the live typing guess, Night Shift, `break-room`. Hardening and deploy | core stable; stretch playable, or cut |
 | **Wed 2 Dec** | **Feature freeze.** Security pass (§7 checklist), accessibility, load test (20 concurrent submits; decide whether `JUDGE_CONCURRENCY` can rise above 2), demo account | no P0 bugs |
-| Thu 3 Dec | Record the YouTube video (<3 min). Write `README`, `docs/KIRO_USAGE.md` and the Devpost text, and update screenshots | video public |
-| Fri 4 Dec by 20:00 SAST | Final Devpost submit (4 h buffer) | submitted |
+| Thu 3 Dec | Record the YouTube video (<3 min). Write `README`, `docs/KIRO_USAGE.md` and the external submission text, and update screenshots | video public |
+| Fri 4 Dec by 20:00 SAST | Final external submission (4 h buffer) | submitted |
 
 **Cut order if behind:** brain game → chess bot → puzzle → Night Shift → FSRS (keep the dashboard) → live-typing guess → Java/C++ (all stretch) → familiar speech bubble (keep the measured mood) → familiar entirely. **Never cut:** ghost loop, login, IDE with live results, dashboard, landing polish.
 
 ---
 
 ## 15. How Kiro is used
-See `docs/kiro-playbook.md` (hackathon process doc). This file is the product/architecture brief only.
+See `docs/kiro-playbook.md` (external submission process doc). This file is the product/architecture brief only.
 
 ---
 
@@ -638,7 +638,7 @@ See `docs/licence-rules.md` for the full list. Added here:
 - Hetzner Cost-Optimized (comparison only): https://www.hetzner.com/cloud/cost-optimized/ (11 Nov 2026)
 - Kiro hooks: https://kiro.dev/docs/hooks/ ; hook types: https://kiro.dev/docs/hooks/types/ ; hook actions: https://kiro.dev/docs/hooks/actions/ (11 Nov 2026)
 - Kiro steering: https://kiro.dev/docs/steering/ ; MCP configuration: https://kiro.dev/docs/mcp/configuration/ ; specs: https://kiro.dev/docs/specs/ (11 Nov 2026)
-- Kiroween rules: https://kiroween.devpost.com/rules (11 Nov 2026)
+- Official competition rules: https://kiroween.devpost.com/rules (11 Nov 2026)
 
 ---
 
@@ -652,7 +652,7 @@ Brighton's answers in the grill-me review of ChatGPT's critique (research review
 | 3 | `counterspell-mcp` code-running tools (`run_reference`, `find_ghost_input`, …) go through the same sandbox and judge, never directly on the dev machine | §0, §1.1, §2, §3, §8 |
 | 4 | Ghost engine returns a **minimized counterexample** (smallest found within budget; seed, problem version and shrink steps recorded). Familiar mood comes **only from measured facts** ("looks quadratic"; top mood = "matches reference complexity"). An LLM (gpt-6-luna, Groq backup) writes the labelled speech-bubble hint on Run/Submit only and can't change verdict or mood | §0, §4, §5, §8, §8b, §9 |
 | 5 | **Python and JavaScript at launch**; Java and C++ are stretch after the core is freeze-safe | §0, §1.1, §6, §13, §14 |
-| 6 | Keep GitHub, Google and email sign-in; **no automatic linking by email**; user-initiated linking with verification; judge demo account | §0, §1.1, §4, §9 |
+| 6 | Keep GitHub, Google and email sign-in; **no automatic linking by email**; user-initiated linking with verification; demo account | §0, §1.1, §4, §9 |
 | 7 | **10 polished problems** at launch | §1.1, §14 |
 | 8 | Extras (chess, brain games, FSRS, live typing guess, timed assessments) are **stretch goals after the freeze-safe core** | §1.1, §8b, §9, §14 |
 | 9 | **Postgres job queue** (SKIP LOCKED, leases, retries, terminal states, idempotency) and persisted `run_events` with sequence numbers for SSE replay. **Valkey only for cache and rate limits** | §0, §2, §3, §4, §5, §7.1, §10, §13 |
