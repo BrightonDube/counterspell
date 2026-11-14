@@ -70,7 +70,7 @@ Conventions:
   - Depends on: T04, T05.
   - Rust lesson: building values from typed parts instead of formatting strings.
 
-- [ ] **T07 [P] (25 min) Bounded line reader**
+- [x] **T07 [P] (25 min) Bounded line reader**
   - Files: `crates/judge/src/sandbox/stream.rs`, `crates/judge/tests/model_stream.rs`.
   - Pure state machine: `LineReader::new(cap)`, `push(chunk) -> Vec<Line> | Overflow` for stdout (1 MiB per call). `StderrBuffer` keeps the first 64 KiB, appends a truncation marker once it is exceeded, keeps only the last complete line (capped at 4 KiB) for exception-class extraction, and drains the rest without storing it (A2). It never reports overflow.
   - Tests: P5 (any chunking gives the same lines and overflow point for stdout; held bytes never exceed cap + one chunk; a line exactly at the cap is accepted; one byte over overflows). For stderr, any chunking gives the same stored text, marker and last line; stored bytes never exceed 64 KiB plus the marker; the last line survives a flood.
