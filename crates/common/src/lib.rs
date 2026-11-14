@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 pub mod events;
+pub mod familiar;
 pub mod ids;
 pub mod limits;
 pub mod run_state;
