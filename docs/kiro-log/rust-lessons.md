@@ -678,3 +678,9 @@ A newtype with a private field makes an invalid value impossible to build. `Pinn
 A plain data struct holds the policy, and a separate function checks it. The checker is what catches a weakened value, so it gets its own tests: each test weakens one field and expects exactly one named error back.
 `#[derive(thiserror::Error)]` on an enum gives each control its own variant with a message. A violation is a value the caller can match on, not a string to parse.
 `#[must_use]` on functions whose result matters stops a caller from calling the checker and ignoring its answer.
+
+# Rust lesson: judge-sandbox T06
+
+A value built from typed parts cannot carry a stray path or command. `FileName` refuses separators, so `SandboxFiles` can only hold the three fixed names. The archive builder takes that type, not a string.
+`ExecSpec::compile` returns `Option<Self>`. A language with no compile step gives `None`, so the caller cannot forget that case.
+`tar::Builder::append_data` writes each entry from a byte slice. Setting the header size and owner first means the archive matches what the sandbox user expects.

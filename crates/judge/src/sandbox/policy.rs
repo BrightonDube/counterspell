@@ -12,8 +12,8 @@ use super::config::OciRuntime;
 use crate::languages::{LanguageDefinition, PinnedImage};
 
 const MIB: u64 = 1024 * 1024;
-const SANDBOX_USER: &str = "65534:65534";
-const WORKING_DIR: &str = "/box";
+pub(super) const SANDBOX_USER: &str = "65534:65534";
+pub(super) const WORKING_DIR: &str = "/box";
 const NANO_CPUS_ONE: i64 = 1_000_000_000;
 const PIDS_LIMIT: i64 = 64;
 const NOFILE_LIMIT: i64 = 64;
@@ -507,7 +507,7 @@ fn scratch_options(noexec: bool) -> Vec<String> {
     options
 }
 
-fn fixed_env() -> Vec<(String, String)> {
+pub(super) fn fixed_env() -> Vec<(String, String)> {
     vec![
         ("PATH".to_owned(), "/usr/local/bin:/usr/bin:/bin".to_owned()),
         ("LANG".to_owned(), "C.UTF-8".to_owned()),
