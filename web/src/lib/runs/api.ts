@@ -35,6 +35,23 @@ export function startRun(
   });
 }
 
+/** One user action to start a run. Every `send` reuses the same key, so retries cannot queue a second run. */
+export interface StartRunAction {
+  /** The idempotency key shared by every attempt of this action. */
+  readonly key: string;
+  /** Sends the request with this action's key and resolves with the run id. */
+  send(options?: RequestOptions): Promise<string>;
+}
+
+/** Creates one action (one click on Run or Submit) with a single idempotency key. */
+export function startRunAction(input: StartRunInput): StartRunAction {
+  const key = crypto.randomUUID();
+  return {
+    key,
+    send: (options = {}) => startRun(input, key, options)
+  };
+}
+
 /** Reads the authoritative run read model, for reloads and for a stream that closed early. */
 export function getRun(
   runId: string,

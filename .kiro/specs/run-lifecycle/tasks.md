@@ -327,7 +327,7 @@ Conventions for every Rust task:
   - Preserve: follows `.kiro/steering/frontend.md`; no UI, no GSAP, no colour decisions; server text is stored as plain strings.
   - Rust lesson: none (no Rust changed).
 
-- [ ] **T33 [S] (30 min) Stream client**
+- [x] **T33 [S] (30 min) Stream client**
   - Files: `web/src/lib/runs/stream.ts`, `web/src/lib/runs/stream.test.ts`, `web/src/lib/runs/api.ts`.
   - `startRun`, `getRun` and `watchRun`. `watchRun` wraps `EventSource`, feeds the reducer, closes on the terminal event, closes and reopens with `?last_event_id=` on a gap, treats a `204` or an immediate close of a terminal run as "fetch the result", then calls `GET /api/runs/{id}`. `startRun` creates one `Idempotency-Key` per user action and reuses it for retries of the same action. Test with a fake `EventSource`: drop and resume, duplicate delivery, gap recovery, terminal close prevents reconnect, a `429` is surfaced with `retry_after_seconds`.
   - Requirements: R14, R3.1.

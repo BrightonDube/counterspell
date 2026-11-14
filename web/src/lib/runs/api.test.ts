@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ApiRequestError } from '../api/client';
 import type { FetchLike } from '../api/client';
-import { getRun, startRun } from './api';
+import { getRun, startRun, startRunAction } from './api';
 
 function fakeFetch(
   status: number,
@@ -120,5 +120,54 @@ describe('getRun', () => {
     }).catch((caught: unknown) => caught);
     expect(error).toBeInstanceOf(ApiRequestError);
     expect(error).toMatchObject({ code: 'malformed_response' });
+  });
+});
+
+describe('startRunAction', () => {
+  it('reuses one idempotency key for every retry of the same action', async () => {
+    const calls: Array<{ path: string; init?: RequestInit }> = [];
+    let attempts = 0;
+    const flaky: FetchLike = async (path, init) => {
+      calls.push({ path, init });
+      attempts += 1;
+      if (attempts === 1) {
+        return new Response('{}', { status: 500 });
+      }
+      return new Response(JSON.stringify({ run_id: 'run-7' }), {
+        status: 202,
+        headers: { 'content-type': 'application/json' }
+      });
+    };
+
+    const action = startRunAction({
+      problem: 'two-sum',
+      lang: 'python',
+      code: 'print(1)',
+      mode: 'run'
+    });
+    await expect(action.send({ fetchImpl: flaky })).rejects.toBeInstanceOf(
+      ApiRequestError
+    );
+    const runId = await action.send({ fetchImpl: flaky });
+
+    expect(runId).toBe('run-7');
+    const keys = calls.map((call) =>
+      new Headers(call.init?.headers).get('Idempotency-Key')
+    );
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
+  });
+
+  it('uses a fresh idempotency key for each new user action', () => {
+    const input = {
+      problem: 'two-sum',
+      lang: 'python',
+      code: 'x',
+      mode: 'run' as const
+    };
+    const first = startRunAction(input);
+    const second = startRunAction(input);
+    expect(first.key).not.toBe(second.key);
   });
 });
