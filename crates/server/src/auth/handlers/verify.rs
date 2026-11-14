@@ -19,8 +19,9 @@ use crate::auth::{
     accounts::new_handle,
     cookies::CookieSlot,
     email::EmailAddress,
-    errors::{database, AuthError},
+    errors::{database, is_unique_violation, AuthError},
     extract::{AuthUser, MaybeAuthUser},
+    handlers::register::finish_registration,
     return_to::sanitize_return_to,
     session::AuthMethod,
     tokens::Purpose,
@@ -58,9 +59,9 @@ pub async fn verify(
     match peeked.purpose {
         Purpose::MagicLink => sign_in_with_link(&state, &slot, &request.token).await,
         Purpose::LinkEmail => link_email(&state, &request.token, peeked.user_id, session).await,
-        // Account confirmation and password reset are added by later tasks. The token is left
-        // unused, so nothing is lost when they arrive.
-        Purpose::Verify | Purpose::Reset => Err(AuthError::InvalidOrExpiredToken),
+        Purpose::Verify => finish_registration(&state, &slot, &request.token).await,
+        // A reset link is used only by the reset confirmation, so it is refused here unused.
+        Purpose::Reset => Err(AuthError::InvalidOrExpiredToken),
     }
 }
 
@@ -97,11 +98,6 @@ async fn link_email(
         Err(error) if is_unique_violation(&error) => Err(AuthError::EmailInUse),
         Err(error) => Err(database(error)),
     }
-}
-
-/// Whether a database error is a unique-constraint violation.
-fn is_unique_violation(error: &sqlx::Error) -> bool {
-    matches!(error, sqlx::Error::Database(db) if db.is_unique_violation())
 }
 
 /// Uses a sign-in link, finds or creates the account, and starts a session.

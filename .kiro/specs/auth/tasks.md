@@ -271,7 +271,7 @@ Conventions for every Rust task:
   - Preserve: hashing never runs on async worker threads.
   - Rust lesson: `spawn_blocking` and why CPU-heavy work must leave the async runtime.
 
-- [ ] **T25 [S] (30 min) Register and password reset (Should)** [SUPERVISED]
+- [x] **T25 [S] (30 min) Register and password reset (Should)** [SUPERVISED]
   - Files: `crates/server/src/auth/handlers/{register.rs,reset.rs,verify.rs}`, `crates/server/tests/pg_auth_register_reset.rs`.
   - `POST /api/auth/register` (policy, limiter, hash through the gate, `issue(Verify, …, {"password_hash","return_to"})`, uniform `202`), the `verify` branch (create the user and a `register` session, or `409 account_exists` with no change and no session), `POST /api/auth/password/reset` (uniform `202`; mail only for an existing, passworded, non-demo account), `POST /api/auth/password/reset/confirm` (consume `Reset`, policy, update the hash, `revoke_all`, `204`, no sign-in).
   - Tests: no `users` row exists before verification; a mailbox owner registering an address that has an account changes nothing and signs in nobody; responses are identical for known and unknown addresses (P14); reset revokes every session of the user; reset for the demo or for a passwordless account sends nothing; a password can only be set by these two paths (assert over all handlers).

@@ -7,5 +7,7 @@ pub mod login;
 pub mod magic;
 pub mod me;
 pub mod oauth;
+pub mod register;
+pub mod reset;
 pub mod session;
 pub mod verify;

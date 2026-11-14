@@ -168,6 +168,15 @@ pub fn router(state: AuthState) -> Router {
         .route("/api/auth/logout", post(handlers::session::logout))
         .route("/api/auth/logout-all", post(handlers::session::logout_all))
         .route("/api/auth/login", post(handlers::login::login))
+        .route("/api/auth/register", post(handlers::register::register))
+        .route(
+            "/api/auth/password/reset",
+            post(handlers::reset::request_reset),
+        )
+        .route(
+            "/api/auth/password/reset/confirm",
+            post(handlers::reset::confirm_reset),
+        )
         .route(
             "/api/auth/email/magic",
             post(handlers::magic::request_magic),

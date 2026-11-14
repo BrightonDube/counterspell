@@ -24,7 +24,7 @@ use crate::{
             decide_link, decide_oauth_login, Actor, LinkDecision, OAuthDecision, ProfileEmail,
         },
         email::EmailAddress,
-        errors::AuthError,
+        errors::{is_unique_violation, AuthError},
         limits::{Action, Scope},
         oauth::{
             flow::{Flow, FlowPurpose},
@@ -491,11 +491,6 @@ fn provider_label(profile: &ProviderProfile) -> Option<String> {
         .label
         .as_ref()
         .map(|text| text.chars().take(100).collect())
-}
-
-/// Whether a database error is a unique-constraint violation.
-fn is_unique_violation(error: &sqlx::Error) -> bool {
-    matches!(error, sqlx::Error::Database(db) if db.is_unique_violation())
 }
 
 /// The callback URL for one provider. It is built from configuration only, never from the request.
