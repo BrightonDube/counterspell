@@ -64,3 +64,18 @@ Newly done: T06 (statement panel), T07 (lazy Monaco and Crypt theme). T09 is bui
 - **T09, T21, T22, T23 deferred: E2E.** Their verification lists browser layout, zoom, keyboard-only and media-query checks.
 - **T13, T18, T20 blocked by upstream.** They need the run SSE route (run-lifecycle T29 to T31), the problem and language routes, and the Familiar and hint routes.
 - **T24 to T27 deferred: E2E.** T28 needs `cargo deny`, `docker compose config` and the real acceptance suite, which need services not available here.
+
+## Attempt 6 update (14 Nov 2026, non-interactive resume)
+
+No new task was completed in this pass. Checked tasks in `tasks.md`: T01, T03, T04, T06, T07, T08, T10, T11, T12, T14, T16, T19. Partial, left unchecked: T09, T15, T17, T20.
+
+- **Stale entries corrected.** T08 (draft persistence) and T12 (test panels) are checked in `tasks.md`. The earlier notes that called T12 blocked by T11 are out of date, because T11 is done.
+- **Web gate re-run this session:** `npm run check` reports 0 errors and 0 warnings. `npx vitest run` reports 36 files and 243 tests passing. The Vitest pool warning about happy-dom is an open Minor finding.
+- **T02 still blocked.** The `migrations/` folder has run-lifecycle and auth migrations only. There is no `problems` table, no `ghosts` table and no catalogue load path. Unblock: a grimoire-packs catalogue migration and ghost persistence from judge-sandbox. grimoire-packs T20 and T28 to T30 are also blocked, so this will not change until those land.
+- **T13 still blocked.** `crates/server/src/lib.rs` routes only `POST /api/runs`, `GET /api/runs/{id}`, cancel and health. `GET /api/runs/{id}/events` is run-lifecycle T29 to T31, all unchecked. `GET /api/problems/{slug}` and `GET /api/languages` do not exist.
+- **T18 and T20 still blocked.** T18 needs T02 and T13. T20 needs T13 and the Familiar and hint routes, which are not in the server.
+- **T05 still blocked on Brighton.** The Geist and JetBrains Mono font packages need approval and a `THIRD-PARTY-NOTICES.md` entry.
+- **T09, T15 (visual check), T21, T22, T23:** the remaining checks in each task need a real browser (focus order, zoom, media-query behaviour, contrast). Rule 7 defers them as E2E. The unit parts that exist are already covered by the component tests listed in the attempt 2 to 5 notes.
+- **T24 to T27:** deferred: E2E.
+- **T28:** blocked on judge-sandbox (0 of 56 done), language-drivers (0 of 27) and hints (0 of 29), and it needs services not available here.
+- **Brighton questions unchanged:** the Ctrl/Cmd+Enter override inside Monaco, the `adapter({ fallback: 'index.html' })` change in `web/vite.config.js`, and the font approval.
