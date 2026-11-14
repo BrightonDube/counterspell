@@ -174,3 +174,8 @@
  docs/kiro-log/judge-sandbox-blockers.md | 12 ++++++++++++
  docs/kiro-log/sessions.md               |  2 ++
  3 files changed, 18 insertions(+)
+- 2026-11-14T22:20:15Z | model: not reported | last commit: ab0f599 language-drivers: record attempt 2 stop point (no task ticked)
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
