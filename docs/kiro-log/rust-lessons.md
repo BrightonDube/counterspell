@@ -832,3 +832,14 @@ Mutation check: loosening a constant on purpose made P1 fail. A property that ne
 
 Constants live in one `Default` impl, and the calibration table is an `#[ignore]`d test that prints the numbers. Tuning is then visible in a diff and reproducible, not a hidden edit.
 A count that must be zero (wrong-at-High) is asserted by a property, not eyeballed from the table.
+
+# Rust lesson: efficiency-familiar T13
+
+The bench seed is an FNV-1a hash over length-prefixed fields. Writing the length first means `"ab" + "c"` and `"a" + "bc"` hash differently, the classic field-boundary bug.
+A pinned constant is checked against an independent calculation (Python, same fields). Pinning a value that the code itself produced proves nothing until a second implementation agrees.
+`isqrt` by binary search with `checked_mul` avoids both floating-point rounding and a linear loop that would be far too slow for large `n`.
+
+# Rust lesson: efficiency-familiar T12 (revised)
+
+A calibration can disagree with a sampled property. The 4,000-case table showed zero wrong Medium, but a 200,000-case run and a random property run both found one. Larger samples and the property together were needed.
+An `as` conversion inside a test helper still trips Clippy's pedantic lints. A narrow `#[allow]` with a reason is clearer than a wider blanket.
