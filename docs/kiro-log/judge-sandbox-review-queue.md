@@ -35,3 +35,12 @@ Reviewed by the semantic reviewer over `git diff 898c150..105208f -- crates/judg
 - **Important, duplicate mounts and ulimits:** the checker looked only at the first match. Each ulimit must now appear once, and a duplicate `/tmp` mount is a violation. Mutation rows added.
 - **Important, duplicate JSON keys:** `serde_json::Value` kept the last `t`, so `{"t":2,"t":1,...}` answered call 1. The protocol now reports `DuplicateKey`. Test added.
 - **Minor, not fixed:** (a) `ExtraKey(String)` holds an unbounded user key that goes into the reason value (`driver_protocol.rs`). (b) `sanitize_display` passes C1 controls U+0080 to U+009F through, and it turns CR into U+FFFD, which garbles CRLF output. The design lists only C0 and DEL, so I kept that behaviour. (c) The run argv is not checked against the driver file name in the loader. Java's `Driver` name would need a rule that does not yet exist.
+
+## T15 session lifecycle and cleanup guard (commit 9b85496) [SUPERVISED]
+- **Files:** `crates/judge/src/sandbox/session.rs`, `crates/judge/tests/model_session.rs`. The backend seam gained `read_policy` (`backend.rs`), `ExecSpec::extract()` (`spec.rs`), and fake-backend support for scripted exec exits and read-back overrides.
+- **Check:**
+  - `Drop` spawns kill then force-remove on the runtime. The normal path awaits `close()`. The fake tests cover success, `?` return, task abort and panic.
+  - Kill errors are logged, not returned, because forced removal also stops a running container. Brighton should confirm this is acceptable.
+  - A read-back that fails `hardening_violations` removes the container and returns `PolicyReadbackMismatch`.
+  - The compile step has a budget and a 64 KiB output cap. **Not tested:** the timeout branch, because the fake's exec never hangs and the real budget is 5 s. T21 or T16 should add a test once a scripted hang exists.
+- **Real daemon:** nothing here talks to Docker yet. The real read-back and kill behaviour is checked by T20, T21 and the `sbx_` tests.
