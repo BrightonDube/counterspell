@@ -2,7 +2,7 @@
 
 No task in this document has been executed. This spec-generation run only wrote `requirements.md`, `design.md` and `tasks.md`.
 
-**Do not start T01 until T00 is signed off.** T00 is Brighton's review of the trusted/untrusted boundary and his answers to the isolation questions in `design.md` ("Open questions" 1 to 7 and 16).
+**T00 is signed off (14 Nov 2026, see `design.md` "Review decisions", amendments A1 to A3). T01 may start.** T00 was Brighton's review of the trusted/untrusted boundary and his answers to the isolation questions in `design.md` ("Open questions" 1 to 7 and 16, plus 8 to 25).
 
 Conventions:
 
@@ -15,12 +15,12 @@ Conventions:
 
 ## Wave 0: gate and early facts
 
-- [ ] **T00 [S] [GATE] Boundary review (Brighton)**
+- [x] **T00 [S] [GATE] Boundary review (Brighton)**
   - Read `design.md` sections 1 to 4. Tick the checklist in section 4. Answer open questions 1 to 7 and 16 (each lists the assumed choice).
-  - Also click **Analyze Requirements** on `requirements.md` in the IDE (this run could not).
+  - Also click **Analyze Requirements** on `requirements.md` in the IDE (this run could not). **Still pending for Brighton; not a blocker for T01.**
   - Output: a short note appended to `design.md` ("Review decisions") listing the answers. If any answer weakens or changes an isolation control, update `requirements.md` before T01.
   - Depends on: none.
-  - Verify: no implementation task is started before this note exists.
+  - Verify: no implementation task is started before this note exists. **Done 14 Nov 2026: the note is in `design.md`, with amendments A1 (hidden-test ordering and output visibility), A2 (stderr truncation) and A3 (automated digest refresh).**
 
 - [ ] **T01 [S] (25 min) Judge dependencies, features, lint bans and configuration struct**
   - Files: `crates/judge/Cargo.toml`, `crates/judge/clippy.toml`, `crates/judge/src/sandbox/{mod,config}.rs`, `THIRD-PARTY-NOTICES.md`.
@@ -72,8 +72,8 @@ Conventions:
 
 - [ ] **T07 [P] (25 min) Bounded line reader**
   - Files: `crates/judge/src/sandbox/stream.rs`, `crates/judge/tests/model_stream.rs`.
-  - Pure state machine: `LineReader::new(cap)`, `push(chunk) -> Vec<Line> | Overflow`; `StderrBuffer` with a 64 KiB cap that keeps the first bytes and reports overflow.
-  - Tests: P5 (any chunking gives the same lines and overflow point; held bytes never exceed cap + one chunk; a line exactly at the cap is accepted; one byte over overflows).
+  - Pure state machine: `LineReader::new(cap)`, `push(chunk) -> Vec<Line> | Overflow` for stdout (1 MiB per call). `StderrBuffer` keeps the first 64 KiB, appends a truncation marker once it is exceeded, keeps only the last complete line (capped at 4 KiB) for exception-class extraction, and drains the rest without storing it (A2). It never reports overflow.
+  - Tests: P5 (any chunking gives the same lines and overflow point for stdout; held bytes never exceed cap + one chunk; a line exactly at the cap is accepted; one byte over overflows). For stderr, any chunking gives the same stored text, marker and last line; stored bytes never exceed 64 KiB plus the marker; the last line survives a flood.
   - Requirements: R6.1 to R6.4.
   - Depends on: T01.
   - Rust lesson: ownership of byte buffers and why the reader never copies more than it must.
@@ -122,8 +122,9 @@ Conventions:
 - [ ] **T13 [S] (30 min) Public records with redaction**
   - Files: `crates/judge/src/sandbox/records.rs`, `crates/judge/tests/model_records.rs`.
   - Build `TestRecord`, `PublicTest::Hidden` / `Sample` and the final `FinalResult` shape from executed tests. Hidden tests carry verdict and time only. Sample detail (`input`, `expected`, `got`) is sanitised and bounded to 4 KiB per field; `stderr_snip` for samples only.
-  - Tests: P12 (canaries in hidden inputs, expected values and fake program output never appear in any serialised record or event for a hidden test); sample fields bounded; the run-lifecycle `test_results` check (hidden rows have null snippets) holds for every produced row.
-  - Requirements: R13.1, R13.2, R13.6, R8.5.
+  - Add the A1 output-visibility guard. Records are built through a visibility tracker that becomes "hidden-phase" at the first hidden test. In that phase it drops stdout, stderr, exception text, snippets and sample detail, and keeps verdict and time only, even if a sample test somehow arrives later.
+  - Tests: P12 (canaries in hidden inputs, expected values and fake program output never appear in any serialised record or event for a hidden test); P15 (after the first hidden test, no public record or event contains any output text, whatever the program printed); sample fields bounded; the run-lifecycle `test_results` check (hidden rows have null snippets) holds for every produced row.
+  - Requirements: R13.1, R13.2, R13.6, R13.7, R13.8, R8.5.
   - Depends on: T09, T11.
   - Rust lesson: making impossible states unrepresentable with enum variants.
 
@@ -147,17 +148,17 @@ Conventions:
 
 - [ ] **T16 [S] [SUPERVISED] (30 min) Call runner: deadline, kill, output limit**
   - Files: `crates/judge/src/sandbox/call.rs`, `crates/judge/tests/model_call.rs`.
-  - Implement the algorithm in `design.md` section 9 with `tokio::select! { biased; … }`: deadline, stop signal, write+read within the bounded reader, stdout cap, stderr cap, stream end. On abnormal end read kernel facts if the container is alive (`memory.events` `oom_kill`, `pids.events`) through a fixed exec, then kill and confirm absence within `KILL_SLACK`. Produce `CallFacts` only; no comparison, no expected values.
-  - Tests: P6 (virtual time: returns within limit + slack for any scripted timing; verdict is `time_limit` iff the answer is late; deadline wins ties); stdout flood; stderr flood; endless line; write that blocks because the program never reads; driver exit with and without OOM evidence; stop signal.
+  - Implement the algorithm in `design.md` section 9 with `tokio::select! { biased; … }`: deadline, stop signal, write+read within the bounded reader, stdout cap, stream end, and continued draining of stderr (no kill for stderr, A2). On abnormal end read kernel facts if the container is alive (`memory.events` `oom_kill`, `pids.events`) through a fixed exec, then kill and confirm absence within `KILL_SLACK`. Produce `CallFacts` only; no comparison, no expected values. `CallFacts` has no stderr-overflow variant.
+  - Tests: P6 (virtual time: returns within limit + slack for any scripted timing; verdict is `time_limit` iff the answer is late; deadline wins ties); stdout flood gives `OutputLimit(Stdout)`; a stderr flood does not kill the container and does not change the call's result, and a stuck program that floods stderr still hits its deadline; endless line; write that blocks because the program never reads; driver exit with and without OOM evidence (last stderr line still found after truncation); stop signal.
   - Requirements: R5.1, R5.2, R5.5, R5.9, R6.2, R6.3, R9.3.
   - Depends on: T07, T08, T14, T15.
   - Rust lesson: `select!`, cancellation safety, and why `biased` matters for fairness.
 
 - [ ] **T17 [S] (30 min) Run orchestration**
   - Files: `crates/judge/src/sandbox/run.rs`, `crates/judge/tests/model_run.rs`.
-  - Compile phase, then tests in ordinal order: per call limit, run cap, a fresh session after any abnormal end, fail-fast after `SANDBOX_MAX_CONSECUTIVE_ABNORMAL`, stop handling. Compare each answer through `compare::judge_answer`. Return `RunResult { executed, facts }` or `Err(InfraError)`. The run code never imports an expected-value type except through `compare`.
-  - Tests: P7 (every call hangs; restarts only while the cap allows; fail-fast; cap cut gives `time_limit`; compile failure runs no test); restart after a timeout uses a new container; unexecuted tests are omitted.
-  - Requirements: R5.3, R5.4, R5.6, R5.7, R5.8, R7.3, R9.2.
+  - Compile phase, then tests in plan order: all sample tests in ordinal order, then all hidden tests in ordinal order (A1: no visible test is ever scheduled after the first hidden test). Per call limit, run cap, a fresh session after any abnormal end, fail-fast after `SANDBOX_MAX_CONSECUTIVE_ABNORMAL`, stop handling. Compare each answer through `compare::judge_answer`. Return `RunResult { executed, facts }` or `Err(InfraError)`. The run code never imports an expected-value type except through `compare`.
+  - Tests: P7 (every call hangs; restarts only while the cap allows; fail-fast; cap cut gives `time_limit`; compile failure runs no test); restart after a timeout uses a new container; unexecuted tests are omitted; P15 (for any test plan, every sample precedes the first hidden test in the schedule, and no sample is scheduled after it).
+  - Requirements: R5.3, R5.4, R5.6, R5.7, R5.8, R7.3, R9.2, R13.7.
   - Depends on: T11, T16.
   - Rust lesson: state carried in a loop and early returns with `?`.
 
@@ -227,10 +228,10 @@ Conventions:
   - Depends on: T24.
   - Rust lesson: integration test helpers and `#[ignore]` with environment guards.
 
-- [ ] **T26 [P] [SUPERVISED] (30 min) Functional and forgery scenarios: S01 to S04, S14, S15, S27**
-  - Files: `crates/judge/tests/sbx/{functional,forgery}.rs`, `crates/judge/tests/hostile/{fake_verdict,forged_lines,early_exit,self_kill,stdout_close,import_all}.py`.
-  - Correct solution accepted with `compiling` first; wrong solution fails with sample detail and redacted hidden tests; syntax error and disabled language; exception class; fake verdict JSON printed with `print` and with raw `os.write`; forged and early answer lines; premature exit; harmless program that imports `os`, `subprocess`, `socket`, `ctypes` is accepted (S27).
-  - Requirements: R8.4, R14.7, R15.1, R16.3.
+- [ ] **T26 [P] [SUPERVISED] (30 min) Functional and forgery scenarios: S01 to S04, S14, S15, S27, S28**
+  - Files: `crates/judge/tests/sbx/{functional,forgery}.rs`, `crates/judge/tests/hostile/{fake_verdict,forged_lines,early_exit,self_kill,stdout_close,import_all,remember_replay}.py`.
+  - Correct solution accepted with `compiling` first; wrong solution fails with sample detail and redacted hidden tests; syntax error and disabled language; exception class; fake verdict JSON printed with `print` and with raw `os.write`; forged and early answer lines; premature exit; harmless program that imports `os`, `subprocess`, `socket`, `ctypes` is accepted (S27). S28 (remember-and-replay, A1): the program keeps each input and prints earlier ones during later calls; visible tests run first, the public events after the first hidden test carry no output text and no hidden input, and the run is not `accepted`.
+  - Requirements: R8.4, R13.7, R13.8, R14.7, R15.1, R16.3.
   - Depends on: T25.
 
 - [ ] **T27 [P] [SUPERVISED] (30 min) Time, memory and process scenarios: S05 to S08**
@@ -241,8 +242,8 @@ Conventions:
 
 - [ ] **T28 [P] [SUPERVISED] (25 min) Output scenarios: S09 to S11**
   - Files: `crates/judge/tests/sbx/output.rs`, `crates/judge/tests/hostile/{stdout_flood,stdout_flood_raw,stderr_flood,long_line}.py`.
-  - `output_limit` for each; the worker's resident memory stays bounded during the flood (sample before and after); verdict not accepted.
-  - Requirements: R6.
+  - S09 and S11: `output_limit` for stdout (print and raw `os.write`) and for one long stdout line. S10 (A2): an endless stderr flood with no answer gives `time_limit` from the missed deadline, not `output_limit`. The stored stderr is truncated with the marker, the container is not killed for stderr alone, and the last stderr line is still available for exception-class extraction when the program then exits with an exception. The worker's resident memory stays bounded during every flood (sample before and after). No flood produces `accepted`.
+  - Requirements: R6, R6.3, R6.5.
   - Depends on: T25.
 
 - [ ] **T29 [P] [SUPERVISED] (30 min) Network scenario: S12**
@@ -305,9 +306,10 @@ Conventions:
   - Verify: the report's definition-of-done table is filled with measured results only.
 
 - [ ] **T38 [P] (30 min) Deployment notes and CI**
-  - Files: `deploy/rootless-sandbox-daemon.md`, `.github/workflows/ci.yml`, `docker-compose.yml` (judge environment only).
-  - Notes: the `Delegate=cpu cpuset io memory pids` drop-in and the check from T02; socket ownership and group so the unprivileged judge container can use it (and no other container can); aggregate CPU, memory and task limits on the `sandbox` user's systemd slice; the image pull-by-digest procedure and weekly refresh; `preflight` on every deploy; the `sandbox` user's home holds nothing sensitive and application secrets are mode 0600 for another user. CI: add the model tests (already run by `cargo test --workspace`) and a non-blocking `sandbox-integration` job (open question 14). Compose: add `SANDBOX_DOCKER_SOCKET` and the socket mount to the judge only.
-  - Requirements: R1.7, R4, R16.
+  - Files: `deploy/rootless-sandbox-daemon.md`, `.github/workflows/ci.yml`, `docker-compose.yml` (judge environment only), `renovate.json` (new, repo root).
+  - Notes: the `Delegate=cpu cpuset io memory pids` drop-in and the check from T02; socket ownership and group so the unprivileged judge container can use it (and no other container can); aggregate CPU, memory and task limits on the `sandbox` user's systemd slice; the image pull-by-digest procedure; `preflight` on every deploy; the `sandbox` user's home holds nothing sensitive and application secrets are mode 0600 for another user. CI: add the model tests (already run by `cargo test --workspace`) and a non-blocking `sandbox-integration` job (open question 14). Compose: add `SANDBOX_DOCKER_SOCKET` and the socket mount to the judge only.
+  - **Weekly digest refresh automated (A3):** a Renovate configuration opens a pull request each week that updates the `@sha256:` digest of each enabled image in `languages/languages.toml`, using a custom regex manager for that file. Constraints: digest-only updates, one pull request per refresh, no auto-merge, and a human reviews and merges it. The loader still rejects tags, so a bot change cannot introduce a tag. CI runs on the pull request. After a merge, `preflight` runs on the VPS before user runs resume. The manual procedure stays in the deploy doc as a fallback when the bot PR is not merged. Renovate is the chosen free bot; confirm its current plan terms when installing. Dependabot is not used because it does not update digests in `languages.toml`.
+  - Requirements: R1.7, R2.1, R4, R16.
   - Depends on: T02, T36.
 
 - [ ] **T39 [S] [SUPERVISED] (30 min) Security review pass**
@@ -328,11 +330,13 @@ Conventions:
 
 Nothing here may be ticked from reasoning alone. Each item is ticked from the evidence in `verification-report.md`.
 
-- [ ] T00 signed off, open questions answered.
+- [x] T00 signed off 14 Nov 2026 with amendments A1 to A3, open questions answered (see `design.md`, "Review decisions").
 - [ ] A correct Python solution is accepted and a wrong one fails (S01, S02).
-- [ ] Every hostile scenario (S05 to S15, S26) is contained within its documented limits, measured on the VPS.
+- [ ] Every hostile scenario (S05 to S15, S26, S28) is contained within its documented limits, measured on the VPS.
 - [ ] Wall time per call is at most the limit plus 1 s; the run is decided within the run cap plus 1 s (P6, P7, S05, S17).
 - [ ] No program output can forge `accepted` (P1, P2, S14).
+- [ ] Visible tests run before any hidden test, and no program output is shown from the first hidden test onward (P15, S28).
+- [ ] A stdout flood gives `output_limit` (S09, S11); a stderr flood is truncated with a marker and does not kill the container or change the verdict (S10, A2).
 - [ ] No labelled container remains after worker recovery, including with the sweeper alone (S16, S17).
 - [ ] No network connection reaches any host listener (S12), and the control result is stated.
 - [ ] Preflight passes on the VPS and fails for a weakened policy (S20).
