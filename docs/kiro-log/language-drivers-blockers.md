@@ -57,3 +57,15 @@ Not started. The spec's core gate (T12) has not passed, so Java and C++ stay out
 
 - Next start: T02, once the JavaScript digest is pinned, or T03 once the sandbox tests can run.
 - The next run's `driver.py` should start from `protocol.md` and the `ExecSpec` argv.
+
+## Run stop point (attempt 2, 15 Nov 2026): nothing ticked, no code changed
+
+- **Checked:** the judge-sandbox blockers are unchanged. `sbx_*` tests still cannot carry `#[ignore]` under the PreToolUse guard, so no real-daemon test can run. `languages.toml` still has the all-zero JavaScript digest, and `drivers/python/driver.py` and `drivers/javascript/driver.js` still do not exist.
+- **T02:** `crates/judge/tests/model_languages.rs` already covers the malformed-entry and missing-driver rules (tag refused, short or uppercase digest refused, repeated table, unknown field, zero limit, bad file name, unsupported protocol, empty run, missing driver for an enabled language). The open criterion is "Python and JavaScript load as enabled". Python needs `driver.py` (T03). JavaScript needs a digest pinned by a human (`docker buildx imagetools inspect node:22-slim` on the sandbox host, then Brighton records it), plus `driver.js` (T04). Java and C++ stay disabled.
+- **T03 to T12:** not started. Each one needs the driver run inside the sandbox runner, and the spec says nothing runs on the host. Running the Python or Node driver on the host to get a red test would break that rule, so I did not do it.
+- **Stretch T13 to T16:** not started. T12 has not passed.
+- **Decisions Brighton still needs, in order:**
+  1. Allow `#[ignore]` on `sbx_*` tests (judge-sandbox T20 onward), or name another approved gate.
+  2. Pin the `node:22-slim` digest (human step).
+  3. Choose how `signature.json` is typed (add a `counterspell-grimoire` dependency to the judge, or move the signature type into `counterspell-common`). This is needed for T07.
+- **Next start:** T03 once the sandbox can run driver tests, starting from the protocol fixtures in `languages/protocol.md`.
