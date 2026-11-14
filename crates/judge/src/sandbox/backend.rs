@@ -60,6 +60,8 @@ pub enum DriverEvent {
     Line(Vec<u8>),
     /// A chunk of stdout that does not end a line yet.
     Chunk(Vec<u8>),
+    /// Bytes the driver wrote to stderr. They never change a call's outcome by themselves.
+    Stderr(Vec<u8>),
     /// The driver process ended, with its exit code and the kernel's OOM-kill count.
     Exited {
         /// The exit code.

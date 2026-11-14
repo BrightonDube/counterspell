@@ -7,6 +7,7 @@
 //! the filesystem, so their tests run anywhere.
 
 pub mod backend;
+pub mod call;
 pub mod compare;
 pub mod config;
 pub mod driver_protocol;

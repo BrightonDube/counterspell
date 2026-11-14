@@ -738,3 +738,9 @@ A `Mutex` guard must not live across an `.await`. The fake takes the lock in sho
 `Drop` cannot `.await`, so the cleanup guard moves the container into a spawned task with `Handle::try_current().spawn(...)`. The normal path still awaits `close()`, so the caller knows the removal finished.
 `Option::take()` in `close` and `Drop` means the container is cleaned up once. After `take`, the `Drop` impl sees `None` and does nothing.
 A `?` inside `prepare` still closes the container, because `open_session` closes it on every error before it returns. Returning the error is then safe, and no code can leak a container by returning early.
+
+# Rust lesson: judge-sandbox T16
+
+`tokio::select!` with `biased;` checks its branches in the order written. Putting the deadline first means a late answer can't win a tie against the clock.
+A `select!` arm that does `return` leaves the function at once, so each abnormal end is one arm and one `return`.
+`let Ok(lines) = io.stdout.push(&bytes) else { ... };` (let-else) handles the overflow error in one line and keeps the happy path flat.

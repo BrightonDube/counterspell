@@ -31,6 +31,8 @@ pub enum Behaviour {
         /// The OOM-kill count.
         oom_kill: u64,
     },
+    /// Writes these bytes to stderr, then continues with the next behaviour.
+    Stderr(Vec<u8>),
     /// Never produces output.
     Hang,
 }
@@ -100,6 +102,7 @@ struct State {
     exec_exits: VecDeque<i64>,
     exec_exit: i64,
     readback: Option<ContainerPolicy>,
+    block_writes: bool,
     ledger: Ledger,
 }
 
@@ -141,6 +144,11 @@ impl FakeBackend {
     /// is empty returns the code set by [`FakeBackend::set_exec_exit`].
     pub fn script_exec_exits(&self, codes: impl IntoIterator<Item = i64>) {
         self.lock().exec_exits.extend(codes);
+    }
+
+    /// Makes every driver write wait forever, as a program that never reads its stdin does.
+    pub fn set_block_writes(&self, blocked: bool) {
+        self.lock().block_writes = blocked;
     }
 
     /// Makes every read-back return `policy` instead of the policy the container was created with.
@@ -267,11 +275,13 @@ pub struct FakeDriver {
 }
 
 impl DriverChannel for FakeDriver {
-    fn write_line(&mut self, line: &[u8]) -> impl Future<Output = Result<(), InfraError>> + Send {
-        let result = self.backend.tick().map(|()| {
-            self.backend.lock().ledger.inputs.push(line.to_vec());
-        });
-        ready(result)
+    async fn write_line(&mut self, line: &[u8]) -> Result<(), InfraError> {
+        self.backend.tick()?;
+        if self.backend.lock().block_writes {
+            return pending().await;
+        }
+        self.backend.lock().ledger.inputs.push(line.to_vec());
+        Ok(())
     }
 
     async fn next_event(&mut self) -> Result<DriverEvent, InfraError> {
@@ -292,6 +302,7 @@ impl FakeDriver {
             Behaviour::Answer(bytes) => Some(DriverEvent::Line(bytes)),
             Behaviour::Flood(size) => Some(DriverEvent::Chunk(vec![b'x'; size])),
             Behaviour::Exit { code, oom_kill } => Some(DriverEvent::Exited { code, oom_kill }),
+            Behaviour::Stderr(bytes) => Some(DriverEvent::Stderr(bytes)),
             Behaviour::Hang => None,
         }
     }
