@@ -10,6 +10,7 @@ pub mod backend;
 pub mod call;
 pub mod compare;
 pub mod config;
+pub mod daemon;
 pub mod driver_protocol;
 pub mod policy;
 pub mod precheck;

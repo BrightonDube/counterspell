@@ -36,3 +36,9 @@ Items here stay open until the named person acts. Kiro left each task unchecked 
 - **New dependency to watch:** the sweeper (T23) is what makes a failed removal safe. Until T23 lands, a removal failure leaves a container behind. See the wave 2 entry in `judge-sandbox-review-queue.md`.
 - **Contracts the bollard backend must meet (written in `backend.rs`):** every daemon call times out at `SANDBOX_API_TIMEOUT`; `Exited` only after a successful inspect; exec output capped at 64 KiB with `overflowed` set.
 - **Residual risk, not fixed:** a program can answer a later call before that call's input is written, if its answer matches. See the review queue.
+
+## Run stop point (attempt 3, 14 Nov 2026)
+- **Done this run:** T19 code (`crates/judge/src/sandbox/daemon.rs`, `crates/judge/tests/model_daemon.rs`). Path guard (P14 cases, without the `DOCKER_HOST` test), the pure `check_facts`, `From<&SystemInfo>` and `connect`/`verify`. 15 tests pass, clippy and fmt clean.
+- **T19 is NOT ticked.** Its verification asks for parsing against recorded daemon fixtures from T02. The tests here use hand-written synthetic facts, which are labelled as such. T19 can be ticked once T02 records real `docker info` output and those fixtures are added.
+- **Blocked, unchanged:** T20 (depends on T19), T21, T22 (T02 facts), T23 and T24 (depend on T20 and run-lifecycle), T25 to T31 (need a real sandbox daemon on the VPS). T02 and T03 are HUMAN steps in `docs/kiro-log/judge-sandbox-human-steps.md`.
+- **Open for Brighton:** the VPS spike (T02) and the Python digest pin (T03). Nothing after T19 can be verified without them.
