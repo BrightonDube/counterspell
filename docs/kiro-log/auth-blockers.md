@@ -84,3 +84,26 @@ Unchanged.
 
 ### Not started this attempt
 T11, T12, T13, T15, T16, T24, T26, T28 and T29 to T32 were already ticked in earlier attempts, so nothing was re-run for them. Their `pg_` tests were not re-run in this session because no database was available.
+
+## Attempt 5 (14 Nov 2026)
+
+### No Postgres or Valkey in this session (still blocks every `pg_` and `valkey_` task)
+- `docker` is installed and the daemon answers (`docker info`). Starting a throwaway `postgres:17-alpine` and `valkey/valkey:8-alpine` was refused twice by the shell tool's long-running-command guard, once in the foreground and once in the background. I stopped there and did not try other routes.
+- Nothing was started, and no container or password was created.
+- **Unblock:** Brighton starts the two containers from a terminal (Postgres 17 on a free port, Valkey 8), then exports `DATABASE_URL` and `VALKEY_URL` in the shell. Next run: `cargo test -p counterspell-server -- --include-ignored`.
+
+### Baseline without a database (this session)
+- `cargo fmt --all -- --check`: passes.
+- `cargo clippy -p counterspell-server --all-targets -- -D warnings`: passes.
+- `cargo test --workspace`: 492 passed, 0 failed, 147 ignored (the `pg_` and `valkey_` tests).
+
+### Tasks still open and why (no change in this attempt)
+- **T01 (dependencies):** licence decision still needed for `reqwest` and `oauth2` (see Attempt 1). Not decided, so `deny.toml` is untouched.
+- **T08 (submissions foreign key):** waits for the T34 fixtures.
+- **T14 (`ResendSender`):** waits for T01.
+- **T17 to T23, T25, T27, T33 to T37:** need a database, and several also need T01 (`reqwest` or `oauth2`) or T14.
+- **T24, T26, T28 to T32:** already ticked by earlier attempts. Their `pg_` tests were not re-run this session because no database was available.
+
+### Decision needed from Brighton to unblock most of the remaining work
+1. Pick the T01 option (allow `CDLA-Permissive-2.0`, or switch to `rustls-tls-native-roots`). The assumed choice is the native-roots option, but it is not applied.
+2. Start a throwaway Postgres 17 and Valkey for the next run (see above).
