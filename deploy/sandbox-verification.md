@@ -39,3 +39,16 @@ Reason: tar over exec works (5.1), and archive upload into a read-only container
 - Check: `docker pull python:3.13-slim@sha256:e48f...` then `docker image inspect --format '{{json .RepoDigests}}'` gave `["python@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90"]` on the local daemon. Same digest.
 - Refresh: Renovate (`renovate.json`) opens a weekly digest-only pull request for `languages/languages.toml`; a human merges it; never auto-merged (judge-sandbox amendment A3). Renovate only starts once the free Renovate GitHub app is installed on the repository.
 - On the VPS: pull by this digest into the rootless sandbox daemon and repeat the inspect check (T37).
+
+## Run 2: official digest pins for Node, Temurin and GCC (15 Nov 2026)
+
+Host: same WSL Docker daemon as run 1. Date: 15 Nov 2026 00:51 SAST.
+Method: same as T03. For each tag, the Docker Hub `Docker-Content-Digest` (image index) was read, then `docker pull <name>@<digest>` and `docker image inspect --format '{{json .RepoDigests}}'` confirmed the same digest.
+
+| Image | Digest | Inspect |
+|---|---|---|
+| `node:22-slim` | `sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee` | `["node@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee"]` |
+| `eclipse-temurin:21-jdk` | `sha256:0a3f329821dcadf54b2a3033a15e2e9f007069a9db43d7f51897e6b80e726b07` | `["eclipse-temurin@sha256:0a3f329821dcadf54b2a3033a15e2e9f007069a9db43d7f51897e6b80e726b07"]` |
+| `gcc:14` | `sha256:a6f425a380ee03e682df3b436fc9077c544fb0fea0a9cab943c3b8320db10765` | `["gcc@sha256:a6f425a380ee03e682df3b436fc9077c544fb0fea0a9cab943c3b8320db10765"]` |
+
+These are recorded in `languages/languages.toml`. The JavaScript, Java and C++ entries stay `enabled = false` until their drivers exist. No container from these images was used to run untrusted code. Rootless behaviour is still NOT TESTED (see run 1).

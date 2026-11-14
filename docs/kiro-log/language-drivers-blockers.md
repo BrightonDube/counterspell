@@ -69,3 +69,18 @@ Not started. The spec's core gate (T12) has not passed, so Java and C++ stay out
   2. Pin the `node:22-slim` digest (human step).
   3. Choose how `signature.json` is typed (add a `counterspell-grimoire` dependency to the judge, or move the signature type into `counterspell-common`). This is needed for T07.
 - **Next start:** T03 once the sandbox can run driver tests, starting from the protocol fixtures in `languages/protocol.md`.
+
+
+## Assistant update (15 Nov 2026, 00:52 SAST)
+
+Resolved:
+
+- The `node:22-slim` digest is now pinned (and Temurin 21 and GCC 14, still disabled). See `deploy/sandbox-verification.md` run 2 and `brighton-decisions`.
+- `#[ignore]` on `sbx_*` tests is allowed by the hook, so the next judge-sandbox run can write the real-daemon tests. They still cannot be ticked until they pass on a rootless daemon.
+- Sandbox-verification blockers follow the 14 Nov local-equivalent decision, extended on 15 Nov: work that does not need a real daemon may proceed; container starts on the rootless daemon stay open; do not run driver code on the host.
+
+Still needs Brighton or the VPS:
+
+- Rootless daemon (VPS, or local `uidmap` + rootless Docker). This still blocks ticking T03 to T12 verification that starts a sandbox.
+- The T07 signature-type crate-graph choice (grimoire vs `counterspell-common`).
+- Starter pack review before T10 published-pack fixtures.
