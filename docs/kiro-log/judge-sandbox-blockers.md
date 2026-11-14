@@ -91,3 +91,15 @@ Still blocked or still needing Brighton:
 - How `signature.json` is typed for T07: add a `counterspell-grimoire` dependency to the judge, or move a shared type into `counterspell-common`.
 - Pack review (grimoire-packs T28) before T10 fixtures for published packs.
 - Installing the free Renovate GitHub app, if weekly digest PRs should actually run.
+
+
+## Assistant update (15 Nov 2026, 01:03 SAST)
+
+A local rootless Docker daemon is now running for user `brighton` (systemd user `docker.service`, socket `/run/user/1000/docker.sock`, CLI context `rootless`). The default Docker context is still Docker Desktop. `cs-dev-pg` and `cs-dev-valkey` were not disturbed. `SANDBOX_DOCKER_SOCKET` is in `~/.config/counterspell/dev-test.env`, and `scripts/kiro-implement-all.sh` sources that file.
+
+Still blocked for ticking `sbx_` tests (T20, T25–T33):
+
+- Cgroup v2 `cpuset` and `io` are not delegated (`cpu memory pids` only). `docker --context rootless info` warns "No cpuset support" and "No io.* support", so the judge identity check will refuse the daemon until Brighton applies the `Delegate=cpu cpuset io memory pids` drop-in (commands in `brighton-decisions.md`, 15 Nov 01:03).
+- No `sbx_*` test files exist yet. They can be written (the hook now allows `#[ignore]` on `sbx_*`), but they cannot be ticked until they pass after the delegation drop-in.
+
+T02 and T37 stay open for the real VPS. The 15 Nov 00:55 signature-type decision is already recorded. Pack review and the Renovate GitHub app still need Brighton.

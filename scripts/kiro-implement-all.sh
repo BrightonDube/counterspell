@@ -6,6 +6,8 @@
 set -u
 cd "$(dirname "$0")/.."
 . ~/.cargo/env
+# Outside the repo: DATABASE_URL, VALKEY_URL, SANDBOX_DOCKER_SOCKET. Never print this file.
+[ -f "$HOME/.config/counterspell/dev-test.env" ] && . "$HOME/.config/counterspell/dev-test.env"
 P=/tmp/kiro-impl.progress
 BRANCH=brighton/kiro-setup
 FLOOR=250          # never start a spec if remaining credits are below this
