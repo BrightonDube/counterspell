@@ -65,3 +65,9 @@ Brighton reviews each entry before the next task that depends on it starts.
   - Mutation check (run once, restored): with the advisory lock removed, `pg_parallel_enqueues_by_one_user_respect_the_cap` created 6 runs against a cap of 3 on each of three runs. With the lock it passes. So the test does catch the race.
   - Deviation from design Path 1: a unique-index violation on `(user_id, idempotency_key)` is returned as a database error (a `500` once wired), not as a replay. The advisory lock serialises same-user requests, so this should not happen. Brighton to decide whether to add a re-read after a unique violation.
   - `NewRun::new` computes the SHA-256 of the code itself, so a caller cannot pass a digest that does not match.
+
+## Attempt 6 (14 Nov 2026): items for Brighton
+
+- **T38 (commits 4e9d4a2, 025c526), not SUPERVISED, listed because it changes deployment.** The judge in `docker-compose.yml` now reads `DATABASE_URL` from `JUDGE_DATABASE_URL`, and the server reads `SERVER_DATABASE_URL`. Until those host variables are set to login users, both services start with an empty URL and fail. Check that the login users in `deploy/run-lifecycle.md` exist before the next `docker compose up`.
+- **T38 Caddy route:** `/api/runs/{id}/events` now bypasses compression and flushes at once. Validated with `caddy validate`. Manual check through a running stack is still needed (deferred: E2E).
+- **T33 (commit a4a6e3e):** `startRunAction` is a new helper in `web/src/lib/runs/api.ts`. Components that start runs should call it once per click. It has not been wired into any screen (screens belong to the ide-workspace spec).
