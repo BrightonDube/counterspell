@@ -157,3 +157,11 @@ Done this session, each with its gate green:
 - Checks run: `docker compose config` exits 0. The judge has no `ports:` and no Docker socket. `caddy validate` (image `caddy:2.10.2-alpine`) prints "Valid configuration".
 - **Deferred: E2E.** The manual check that an SSE request through Caddy delivers events as they are written needs a running stack. It is out of scope for this run (no browser or localhost E2E). Brighton can run it after deploy.
 - Unblock nothing else for T38. T29, T30, T31, T34–T37 and T39 remain blocked on the `futures-util` approval (T29) and on T36.
+
+## Attempt 7 (14 Nov 2026, resumed run): no task could be started
+
+- **Start point:** the first unchecked task is T29 (SSE endpoint core). It is blocked on the `futures-util` / `futures-core` approval described above. axum 0.8.9 does not re-export a stream trait (checked in `axum-0.8.9/src/body/mod.rs` and `response/sse`), so `Sse` and `Body::from_stream` cannot be used without a direct dependency. No task names one, so I did not add it.
+- **Everything after T29 depends on it:** T30 and T31 (SSE), T34 (canary), T35 (restart), T36 (DoD, SUPERVISED), T37 (CI, depends on T36) and T39 (docs). No other unchecked task is free of that dependency, so this pass made no task progress.
+- **Verified in this pass:** `npm run check` reports 0 errors and 0 warnings. `vitest run src/lib/runs` passes 37 of 37 tests across 4 files (T32 and T33 still hold).
+- **Unblock:** Brighton approves one of `futures-util` (preferred, already in `Cargo.lock`, MIT or Apache-2.0) or `futures-core` as a direct dependency of `counterspell-server`. Add it to `THIRD-PARTY-NOTICES.md` in the same change, then T29 can start.
+- **Wave-end review:** Wave 2 cannot be reviewed until T29 to T31 are done. Wave 3 (T32, T33) has no recorded wave-end review yet; it can run once Brighton is available or at the next pass.
