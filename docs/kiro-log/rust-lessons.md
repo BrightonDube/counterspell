@@ -906,3 +906,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `async_trait` lets an `OAuthProvider` trait object be stored and called with `.await`. Each provider adapter can then sit behind one type.
 - Deleting a row with `DELETE ... RETURNING` reads and removes it in one statement. A flow cannot be read twice, even when two callbacks race.
 - A type alias such as `FlowRow` names a long tuple. Clippy's complexity lint asks for this, and the alias keeps the column order in one place.
+
+# Rust lesson: auth T19 and T20
+- A builder-style API such as `BasicClient::new(...).set_...(...)` returns a new value each call. The final value is used once for the request, and the chain is easy to read with one call per line.
+- `serde` skips unknown JSON fields by default, so a provider adding a field does not break sign-in. A required field such as `sub` that is missing becomes a clear error.
+- `Option<T>` with `.is_some_and(...)` tests a length limit without unwrapping, which keeps the body cap in one readable line.
