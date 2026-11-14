@@ -374,7 +374,7 @@ Conventions for every Rust task:
   - Preserve: `cargo test --workspace` without services must still pass (database tests are ignored).
   - Rust lesson: none (no Rust changed).
 
-- [ ] **T38 [P] (25 min) Caddy, Compose and deployment notes**
+- [x] **T38 [P] (25 min) Caddy, Compose and deployment notes**
   - Files: `Caddyfile`, `docker-compose.yml` (server and judge environment only), `deploy/run-lifecycle.md`.
   - Check that Caddy does not buffer or compress `text/event-stream` (set `flush_interval -1` on the reverse proxy and exclude event streams from `encode` if needed). Give the server and judge separate `DATABASE_URL` variables that refer to login users in `counterspell_server` and `counterspell_judge` respectively (variable names only, no values). Add `deploy/run-lifecycle.md` describing how to create the two login users and grant membership, the config table, the single-server-process assumption, and how to read the DoD report.
   - Requirements: R13.7, R19.1, R1.6.
