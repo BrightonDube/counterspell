@@ -886,3 +886,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 # Rust lesson: language-drivers T05 (partial: bench argv)
 - `to_vec()` copies the catalogue's command into an owned `Vec`, and `extend_from_slice` adds the bench arguments to that copy. The catalogue value is never changed, so the normal driver command stays as it was.
 - A test that checks two commands side by side (normal and bench) catches a shared-state bug where one command leaks into the other.
+
+# Rust lesson: auth T01
+- `default-features = false` turns off the crate's optional defaults, so only the features named in `Cargo.toml` are compiled. The lock file then lists what really ships, and we can check it with `cargo tree`.
+- A Cargo feature is an opt-in switch, not a version. `rustls-tls` picks a TLS library, which is why it brings in a certificate list with its own licence.
+- `cargo deny` reads the licence of every crate in the lock file. One exception can name one crate, so a licence decision never widens to others.

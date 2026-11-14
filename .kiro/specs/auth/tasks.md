@@ -20,7 +20,7 @@ Conventions for every Rust task:
 
 ## Wave 0: foundations (no database yet)
 
-- [ ] **T01 [S] (25 min) Add dependencies and notices**
+- [x] **T01 [S] (25 min) Add dependencies and notices**
   - Files: `crates/server/Cargo.toml`, `THIRD-PARTY-NOTICES.md`, `Cargo.lock`.
   - Add to `counterspell-server` (only those that are not already present from `run-lifecycle`): `sqlx` (Postgres, Tokio runtime with rustls not needed, `uuid`, `time`, `json`, `migrate`), `axum-extra` (feature `cookie`), `argon2`, `sha2`, `hmac`, `rand`, `base64`, `hex`, `subtle`, `time`, `url`, `percent-encoding`, `oauth2`, `reqwest` (`default-features = false`, features `json`, `rustls-tls`), `async-trait`, `serde`, `serde_json`, `uuid` (`v4`, `serde`), `tracing`, plus whatever Valkey client `run-lifecycle` chose. Dev-dependencies: `proptest`, `wiremock`, `tower` (feature `util`), `tracing-subscriber`.
   - Add one line per crate to `THIRD-PARTY-NOTICES.md` (name, licence).

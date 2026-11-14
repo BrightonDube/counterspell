@@ -109,8 +109,11 @@ The auth module adds these direct dependencies to `counterspell-server`. `cargo 
 - **time 0.3.55** — Time contributors — MIT OR Apache-2.0 — <https://crates.io/crates/time>
 - **wiremock 0.6.5** (dev) — Kenton Varda and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/wiremock>
 - **tower 0.5.3** (dev, feature `util`) — Tower contributors — MIT — <https://crates.io/crates/tower>
+- **reqwest 0.12.28** (features `json`, `rustls-tls`, default features off) — Sean McArthur and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/reqwest>
+- **oauth2 5.0.0** (default features off) — David Ramsay and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/oauth2>
+- **webpki-roots 1.0.12** (transitive through `reqwest` `rustls-tls`; Mozilla root certificate list) — Chromium and webpki-roots contributors — CDLA-Permissive-2.0, approved by Brighton on 14 Nov 2026 for this crate only (`deny.toml` exception) — <https://crates.io/crates/webpki-roots>
 
-Held back: **reqwest** (for Resend, GitHub and Google calls) and **oauth2** (PKCE and the code exchange). Their rustls path pulls in `webpki-roots 1.0.12`, which is licensed `CDLA-Permissive-2.0`, and `deny.toml` does not allow it. The licence decision is logged in `docs/kiro-log/auth-blockers.md` for Brighton.
+The licence decision for `reqwest` and `oauth2` was approved on 14 Nov 2026 (`webpki-roots` option). The earlier "held back" note is superseded.
 
 ## Web editor dependencies (ide-workspace T07)
 
