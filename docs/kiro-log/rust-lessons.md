@@ -702,3 +702,9 @@ Bounded memory comes from checking the length before extending a `Vec`. Checking
 A struct with a private field can only be built in the module that defines it. `Verified(())` is that proof: only `compare.rs` can make one, so only `judge_answer` can make `TestVerdict::Pass`.
 A `compile_fail` doc test proves the rule to the compiler. If someone makes the field public, the doc test fails.
 `impl Debug` written by hand can hide a value. `Expected` prints a placeholder, so a hidden expected output cannot leak into a log or an error.
+
+# Rust lesson: judge-sandbox T11
+
+An enum with data (`TestVerdict`) plus a `match` makes the compiler list every case. Adding a new verdict later breaks the build until each `match` handles it.
+`filter_map` with an `Option`-returning helper drops the passing cases without needing an `unreachable!()` arm, so the code has no panic path.
+`min_by_key` picks the lowest ordinal, so the first failure is deterministic, even when the tests arrive in a different order.

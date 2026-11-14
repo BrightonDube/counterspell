@@ -102,7 +102,7 @@ Conventions:
   - Depends on: T08.
   - Rust lesson: privacy as a security tool; `pub(super)` and private tuple fields.
 
-- [ ] **T11 [S] [SUPERVISED] (30 min) Final verdict function**
+- [x] **T11 [S] [SUPERVISED] (30 min) Final verdict function**
   - Files: `crates/judge/src/sandbox/verdict.rs`, `crates/judge/tests/model_verdict.rs`.
   - `ExecutedTest`, `RunFacts { compiled, planned, cut_by_cap, stopped }`, `decide(...) -> FinalVerdict` implementing the table and precedence of `design.md` section 9. `Accepted` is built in exactly one branch.
   - Tests: P1 and P10 (generated facts; accepted soundness; determinism; first-non-pass precedence; adding a failing test never produces accepted; cap-cut run is `time_limit`; compile failure wins). Exhaustive table test of every row.
