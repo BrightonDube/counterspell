@@ -28,6 +28,9 @@ pub enum InfraError {
     /// The image on the daemon has a different digest from the pinned one.
     #[error("sandbox image digest mismatch: {0}")]
     DigestMismatch(String),
+    /// The container policy failed its own hardening check before anything was created.
+    #[error("container policy rejected before create: {0}")]
+    PolicyRejected(String),
     /// The container's configuration, read back from the daemon, weakens the policy.
     #[error("container policy read-back mismatch: {0}")]
     PolicyReadbackMismatch(String),
@@ -43,14 +46,20 @@ pub enum InfraError {
 }
 
 /// The result of a bounded command that ran to completion (compile, probe, file load).
+///
+/// Contract for implementations: `stdout` and `stderr` hold at most 64 KiB together. A
+/// command that writes more is killed as soon as the limit is crossed, and `overflowed` is
+/// set. The worker never buffers more than that.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ExecOutput {
     /// The process exit code.
     pub exit_code: i64,
-    /// Bytes the command wrote to stdout.
+    /// Bytes the command wrote to stdout, up to the cap.
     pub stdout: Vec<u8>,
-    /// Bytes the command wrote to stderr.
+    /// Bytes the command wrote to stderr, up to the cap.
     pub stderr: Vec<u8>,
+    /// True when the command wrote more than the cap and was killed for it.
+    pub overflowed: bool,
 }
 
 /// One thing the driver process did while the worker waited for it.
@@ -71,6 +80,15 @@ pub enum DriverEvent {
     },
 }
 
+/// Contracts every implementation must keep (checked by the bollard backend's ignored
+/// `sbx_` tests, not by the fake):
+///
+/// - Each daemon call returns within the API timeout, or fails with [`InfraError::ApiTimeout`].
+/// - [`DriverEvent::Exited`] is sent only after the container was inspected successfully. If
+///   the inspect or the OOM-count read fails, the implementation sends an error, never an
+///   exit. A failed read must never become the user's verdict.
+/// - Output for an exec is capped as described on [`ExecOutput`].
+///
 /// Creates sandbox containers.
 pub trait Backend {
     /// The live container type this backend returns.

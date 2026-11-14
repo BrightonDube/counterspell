@@ -109,6 +109,27 @@ async fn a_compile_that_exits_non_zero_is_a_compile_failure_and_the_container_is
 }
 
 #[tokio::test]
+async fn a_compile_whose_output_overflows_the_cap_is_a_compile_failure() {
+    let (_dir, catalog) = catalogue();
+    let backend = FakeBackend::new();
+    backend.set_exec_overflow(true);
+
+    let result = open_session(
+        &backend,
+        &session_spec(&catalog, 1),
+        catalog.get("python").unwrap(),
+        ARCHIVE,
+    )
+    .await;
+
+    assert!(matches!(
+        result,
+        Err(SessionError::CompileFailed(CompileFailure::OutputTooLarge))
+    ));
+    assert_eq!(backend.ledger().live(), 0);
+}
+
+#[tokio::test]
 async fn a_read_back_that_weakens_the_policy_removes_the_container() {
     let (_dir, catalog) = catalogue();
     let backend = FakeBackend::new();

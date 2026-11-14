@@ -7,7 +7,6 @@
 //! in a fresh container.
 
 use std::cmp::min;
-use std::collections::VecDeque;
 use std::time::Duration;
 
 use serde_json::Value;
@@ -47,6 +46,9 @@ pub enum CallFacts {
     Deadline,
     /// The stop signal fired first. The container has been killed.
     Stopped,
+    /// The program wrote more than one line in a single read, or data after its answer.
+    /// The protocol allows exactly one answer line per call (R8.4). The container has been killed.
+    ExtraOutput,
     /// The program wrote more than the stdout budget. The container has been killed.
     OutputLimit,
     /// The driver process exited before answering. The container has been removed.
@@ -60,12 +62,11 @@ pub enum CallFacts {
     },
 }
 
-/// The per-session I/O state that outlives one call: the stdout reader, answer lines
-/// that arrived early, and the stderr buffer.
+/// The per-driver I/O state: the stdout reader and the stderr buffer. A new driver gets a new
+/// `CallIo`, so nothing carries over from a container that has ended.
 #[derive(Debug)]
 pub struct CallIo {
     stdout: LineReader,
-    pending: VecDeque<Vec<u8>>,
     stderr: StderrBuffer,
 }
 
@@ -75,7 +76,6 @@ impl CallIo {
     pub fn new() -> Self {
         Self {
             stdout: LineReader::with_budget(STDOUT_BUDGET, STDOUT_BUDGET),
-            pending: VecDeque::new(),
             stderr: StderrBuffer::new(),
         }
     }
@@ -104,11 +104,30 @@ async fn stopped(stop: &mut watch::Receiver<bool>) {
 /// Each wait is a biased `select!`. The deadline is checked first, then the stop signal,
 /// then the I/O, so a late answer can never beat the deadline by luck.
 ///
+/// An infrastructure error ends the container before this returns, so an error path never
+/// leaves a program running. The caller still gets the original error.
+///
 /// # Errors
 ///
 /// Returns an [`InfraError`] when the daemon fails or the kill cannot be confirmed. A
-/// daemon error is never a verdict. The caller closes the session when it sees one.
+/// daemon error is never a verdict.
 pub async fn run_call<S: BackendSession + 'static>(
+    opened: &mut Opened<S>,
+    io: &mut CallIo,
+    id: u64,
+    args: &[Value],
+    limits: CallLimits,
+    stop: &mut watch::Receiver<bool>,
+) -> Result<CallFacts, InfraError> {
+    let result = call_once(opened, io, id, args, limits, stop).await;
+    if result.is_err() {
+        // Best effort: the daemon may be the thing that failed. The sweeper is the backstop.
+        let _ = opened.session.abort(limits.kill_slack).await;
+    }
+    result
+}
+
+async fn call_once<S: BackendSession + 'static>(
     opened: &mut Opened<S>,
     io: &mut CallIo,
     id: u64,
@@ -118,10 +137,6 @@ pub async fn run_call<S: BackendSession + 'static>(
 ) -> Result<CallFacts, InfraError> {
     let started = Instant::now();
     let Opened { session, driver } = opened;
-
-    if let Some(line) = io.pending.pop_front() {
-        return Ok(answer(line, started));
-    }
 
     let deadline = min(started + limits.time, limits.run_deadline);
     let line = encode_call(id, args)
@@ -153,9 +168,14 @@ pub async fn run_call<S: BackendSession + 'static>(
                     let Ok(lines) = io.stdout.push(&bytes) else {
                         return abnormal(session, limits, CallFacts::OutputLimit).await;
                     };
-                    io.pending.extend(lines);
-                    if let Some(line) = io.pending.pop_front() {
-                        return Ok(answer(line, started));
+                    // One answer line and nothing after it. Any further line, or a partial
+                    // line after the answer, is data the protocol does not allow.
+                    match lines.as_slice() {
+                        [] => {}
+                        [line] if io.stdout.held() == 0 => {
+                            return Ok(answer(line.clone(), started));
+                        }
+                        _ => return abnormal(session, limits, CallFacts::ExtraOutput).await,
                     }
                 }
                 DriverEvent::Stderr(bytes) => io.stderr.push(&bytes),
