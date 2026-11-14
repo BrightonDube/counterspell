@@ -22,3 +22,21 @@ Recorded 14 Nov 2026 by Brighton.
 - 15 Nov 2026 (same rule; Brighton may overrule): the test-integrity hook allows `#[ignore]` on `sbx_*` tests, as the approved judge-sandbox spec already requires, in addition to `pg_*` and `valkey_*`. Those tests still do not run in `cargo test --workspace`. They are not a reason to tick a task until they pass on a rootless sandbox daemon (T37). A missing-socket runtime skip is still not allowed.
 - 15 Nov 2026 (same rule; Brighton may overrule): the 14 Nov local-verification decision for judge-sandbox also applies to later sandbox-verification blockers, including language-drivers. Work that does not need a real daemon may proceed. Any check that starts a container on the rootless sandbox daemon stays open until it is run on that daemon (T02/T37 on the VPS, or a local rootless setup). The identity guard still refuses a rootful daemon. Do not run driver or pack code on the host. T02 and T37 stay open.
 - 15 Nov 2026 00:55 (routine design call per Brighton's rule): the shared signature type for `signature.json` moves into `counterspell-common`, so the judge does not depend on `counterspell-grimoire`. This keeps the judge crate small and avoids pulling authoring code into the sandbox path. This is the language-drivers T07 crate-graph choice.
+
+- 15 Nov 2026 01:03 (after Brighton installed uidmap): a local rootless Docker daemon is running for user `brighton` in WSL, separate from Docker Desktop. The systemd user service `docker.service` is enabled (linger was already yes). The socket is `/run/user/1000/docker.sock`. The CLI context `rootless` points at it. The default context is still `unix:///var/run/docker.sock` (Docker Desktop). Do not change the default context, do not set `DOCKER_HOST` in a shell rc, and do not stop the Desktop containers (`cs-dev-pg`, `cs-dev-valkey`).
+- Verification uses `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock` in `~/.config/counterspell/dev-test.env` (plain path, never `DOCKER_HOST`, never the main daemon socket). `scripts/kiro-implement-all.sh` sources that file so later Kiro runs see it.
+- Identity facts that already match the judge: `name=rootless`, data root `/home/brighton/.local/share/docker` (not `/var/lib/docker`), cgroup v2, cgroup driver `systemd` (not `none`).
+- Still missing: cgroup v2 delegation of `cpuset` and `io`. The user slice currently has only `cpu memory pids`. `docker --context rootless info` therefore warns "No cpuset support" and several "No io.* support" lines. The judge identity check will refuse this daemon until those warnings are gone. Brighton needs to run these sudo commands (copy as-is; do not try the password from an agent):
+
+```
+sudo mkdir -p /etc/systemd/system/user@.service.d
+sudo tee /etc/systemd/system/user@.service.d/delegate.conf >/dev/null <<'EOF'
+[Service]
+Delegate=cpu cpuset io memory pids
+EOF
+sudo systemctl daemon-reload
+sudo systemctl restart user@1000.service
+```
+
+  Restarting `user@1000` briefly restarts this user's systemd services, including the rootless daemon (it is enabled and should come back). Docker Desktop and `cs-dev-pg`/`cs-dev-valkey` are not affected. Afterwards, `cgroup.controllers` for `user@1000.service` should include `cpu cpuset io memory pids`, and `docker --context rootless info` should have no "No ... support" warnings.
+- `sbx_*` tests have not been written yet, so they were not run or ticked. T25–T33 stay open until those tests exist and pass after the delegation drop-in. T02 and T37 stay open for the real VPS.

@@ -84,3 +84,7 @@ Still needs Brighton or the VPS:
 - Rootless daemon (VPS, or local `uidmap` + rootless Docker). This still blocks ticking T03 to T12 verification that starts a sandbox.
 - The T07 signature-type crate-graph choice (grimoire vs `counterspell-common`).
 - Starter pack review before T10 published-pack fixtures.
+
+## Assistant update (15 Nov 2026, 01:03 SAST)
+
+A local rootless Docker daemon is now running (see `deploy/sandbox-verification.md` run 3 and `brighton-decisions.md`). Driver work that starts a container on that daemon still cannot be ticked until Brighton applies the cgroup `cpuset`/`io` delegation drop-in (the judge will refuse the daemon while those warnings remain) and the relevant `sbx_` tests exist and pass. T02 and T37 stay open for the VPS. Do not run driver or pack code on the host.

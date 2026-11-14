@@ -52,3 +52,17 @@ Method: same as T03. For each tag, the Docker Hub `Docker-Content-Digest` (image
 | `gcc:14` | `sha256:a6f425a380ee03e682df3b436fc9077c544fb0fea0a9cab943c3b8320db10765` | `["gcc@sha256:a6f425a380ee03e682df3b436fc9077c544fb0fea0a9cab943c3b8320db10765"]` |
 
 These are recorded in `languages/languages.toml`. The JavaScript, Java and C++ entries stay `enabled = false` until their drivers exist. No container from these images was used to run untrusted code. Rootless behaviour is still NOT TESTED (see run 1).
+
+
+## Run 3: local rootless daemon for user brighton (15 Nov 2026 01:00 SAST)
+
+Host: same WSL machine as run 1. Brighton had installed `uidmap`. The rootless extras package was already present, so `dockerd-rootless-setuptool.sh install --force` was used (without sudo, and without stopping Docker Desktop). The tool created CLI context `rootless` and briefly selected it; the default context was immediately restored to `unix:///var/run/docker.sock`. Desktop containers (`cs-dev-pg`, `cs-dev-valkey`, and the unrelated bizpilot/evorayn containers) stayed up. No `DOCKER_HOST` was written to a shell rc. Linger was already yes.
+
+- User service: `systemctl --user enable --now docker` (active, enabled). Engine 29.4.3, rootlesskit 2.3.6, slirp4netns, storage overlayfs, data root `/home/brighton/.local/share/docker`.
+- Socket: `/run/user/1000/docker.sock` (also `$XDG_RUNTIME_DIR/docker.sock`).
+- `docker --context rootless info`: SecurityOptions include `name=rootless`; CgroupVersion=2; CgroupDriver=systemd; DockerRootDir=`/home/brighton/.local/share/docker`.
+- Warnings (identity check will refuse this daemon until they are gone): `No cpuset support`; `No io.weight support`; `No io.weight (per device) support`; `No io.max (rbps/wbps/riops/wiops) support`.
+- `user@1000.service` cgroup.controllers: `cpu memory pids` only. `cpuset` and `io` are not delegated. The sudo drop-in for `Delegate=cpu cpuset io memory pids` is recorded in `brighton-decisions.md`; it was not applied because it needs Brighton's sudo.
+- `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock` is set in `~/.config/counterspell/dev-test.env` (outside the repo).
+- `sbx_*` tests: none present in the tree yet, so they were not run. A compile-only `cargo test -p counterspell-judge --features sandbox -- --ignored sbx` in an isolated `/tmp` target filled the 3.9G tmpfs and was deleted; the repo `target/` and kiro-impl were not used.
+- T02 and T37 stay open for the real VPS. This run is not a substitute for T37.
