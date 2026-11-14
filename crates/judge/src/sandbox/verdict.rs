@@ -98,8 +98,7 @@ pub fn decide(tests: &[ExecutedTest], facts: &RunFacts) -> FinalVerdict {
         return FinalVerdict::TimeLimit;
     }
 
-    let complete =
-        facts.planned > 0 && u32::try_from(tests.len()).is_ok_and(|ran| ran == facts.planned);
+    let complete = facts.planned > 0 && planned_tests_ran_once(tests, facts.planned);
     if complete {
         FinalVerdict::Accepted
     } else {
@@ -117,4 +116,15 @@ fn failure_kind(verdict: &TestVerdict) -> Option<FinalVerdict> {
         TestVerdict::MemoryLimit => Some(FinalVerdict::MemoryLimit),
         TestVerdict::OutputLimit => Some(FinalVerdict::OutputLimit),
     }
+}
+
+/// True when exactly `planned` tests ran and no ordinal appears twice.
+fn planned_tests_ran_once(tests: &[ExecutedTest], planned: u32) -> bool {
+    let Ok(ran) = u32::try_from(tests.len()) else {
+        return false;
+    };
+    let mut ordinals: Vec<u32> = tests.iter().map(ExecutedTest::ordinal).collect();
+    ordinals.sort_unstable();
+    ordinals.dedup();
+    ran == planned && ordinals.len() == tests.len()
 }
