@@ -144,3 +144,9 @@ Done this session, each with its gate green:
 **Gate at the last Rust commit (T28):** `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace -- --include-ignored` (database and Valkey tests included) were all green. The full workspace run was done before T28; `cargo clippy` for the server crate was run after T28 and passed.
 
 **Final gate for this session (after T32).** `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace -- --include-ignored` with fresh throwaway Postgres 17 and Valkey 8: 639 passed, 0 failed. One earlier run failed six `pg_claim_*` tests with `PoolTimedOut` while connecting to the test database. The cause was my own step: I had stopped the `--rm` containers and tried `docker start` on them, so the database was gone. Recreating the containers cleared it, and the failure did not come back.
+
+## Attempt 6 (14 Nov 2026): T33 done; T29 onward still blocked
+
+- **T33 done.** `startRunAction` in `web/src/lib/runs/api.ts` makes one idempotency key per user action and reuses it on every retry. Two tests in `api.test.ts` cover key reuse after a 500 and a fresh key per action. `stream.test.ts` already covered drop and resume, duplicates, gap recovery, terminal close and reconnect limits; the 429 `retry_after_seconds` case is in `api.test.ts`. Gate: `svelte-check` 0 errors, 243 web tests pass, `npm run build` ok.
+- **T29 still blocked (unchanged).** The SSE endpoint needs a `Stream` trait for axum's `Sse`. No task names `futures-util`, so it was not added. Unblock: Brighton approves `futures-util` for `counterspell-server`.
+- **T30, T31, T34, T35, T36, T37, T39** depend on T29 and stay unchecked. T38 (Caddy and deploy notes) does not depend on T29 and could run next.
