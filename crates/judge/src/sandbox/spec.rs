@@ -208,6 +208,15 @@ impl ExecSpec {
         Self::with_argv(lang.run())
     }
 
+    /// The driver command for bench mode: the run argv followed by the catalogue's
+    /// `bench_args`. The normal driver command is not changed.
+    #[must_use]
+    pub fn bench(lang: &LanguageDefinition) -> Self {
+        let mut argv = lang.run().to_vec();
+        argv.extend_from_slice(lang.bench_args());
+        Self::with_argv(&argv)
+    }
+
     fn with_argv(argv: &[String]) -> Self {
         Self {
             argv: argv.to_vec(),

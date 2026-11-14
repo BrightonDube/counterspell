@@ -186,6 +186,24 @@ fn the_driver_exec_is_the_catalogue_run_argv() {
     assert_eq!(driver.argv, ["python3", "-I", "-S", "driver.py"]);
 }
 
+#[test]
+fn the_bench_exec_appends_the_bench_arguments_and_keeps_the_run_argv() {
+    let (_dir, catalog) = shipped_catalogue(false);
+    let python = catalog.get("python").unwrap();
+    let bench = ExecSpec::bench(python);
+    assert_eq!(
+        bench.argv,
+        ["python3", "-I", "-S", "driver.py", "--mode", "bench"]
+    );
+    assert_eq!(bench.user, "65534:65534");
+    assert_eq!(bench.working_dir, "/box");
+    assert_eq!(
+        ExecSpec::driver(python).argv,
+        ["python3", "-I", "-S", "driver.py"],
+        "the normal driver command must not gain the bench arguments"
+    );
+}
+
 proptest! {
     /// P4: sources and inputs differ, but the session, the entry names and the archive
     /// shape stay the same. Only the content bytes change.

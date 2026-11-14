@@ -882,3 +882,7 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A test can read a document and check its examples against the real parser. The test calls `parse_answer` on each answer example, so the protocol text and the judge code cannot drift apart without a failing test.
 - Slicing a `&str` with `find` and `&rest[start..]` walks through a file without copying it. Each slice borrows from the original text, and the function returns owned `String`s only for the examples it keeps.
 - `serde_json::from_str::<Value>` is enough to check that an example is valid JSON. Use `Value::get` to tell an answer example (it has `out`) from a call example.
+
+# Rust lesson: language-drivers T05 (partial: bench argv)
+- `to_vec()` copies the catalogue's command into an owned `Vec`, and `extend_from_slice` adds the bench arguments to that copy. The catalogue value is never changed, so the normal driver command stays as it was.
+- A test that checks two commands side by side (normal and bench) catches a shared-state bug where one command leaks into the other.
