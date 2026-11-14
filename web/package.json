@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "bits-ui": "^2.14.0",
+    "gsap": "^3.15.1",
     "monaco-editor": "0.57.0"
   },
   "imports": {

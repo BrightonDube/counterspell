@@ -63,3 +63,8 @@ Recorded by the implementation run on 14 Nov 2026. No source was changed by this
 - The art is absent (design Open question 1). The placeholder path in T26 follows the contract and is labelled.
 - `packs/` has `count-pairs`, `diagonal-total`, `longest-run-length` and `_test`. Their `[bench]` tables are not yet present, so no pack has bench enabled.
 - No Postgres runs locally. `pg_` tests need a throwaway container, which this run does not start.
+
+## T26 result (14 Nov 2026)
+- `web/static/familiar/` did not exist. Added `jack-o-lantern.placeholder.svg`, labelled PLACEHOLDER ART, 2,044 bytes, carrying all 15 contract ids (checked by `contract.test.ts` and a node check).
+- Real jack-o'-lantern art is still needed (design Open question 1). When it arrives, add `jack-o-lantern.svg` and remove the placeholder.
+- `gsap` 3.15.1 added as an npm dependency and listed in `THIRD-PARTY-NOTICES.md` (accepted exception in `docs/licence-rules.md`).
