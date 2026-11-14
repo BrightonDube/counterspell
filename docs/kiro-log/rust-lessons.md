@@ -768,3 +768,15 @@ When a function can fail after an external side effect, do the cleanup before re
 Validating a socket path is a trust decision, so `validate_socket_path` returns a `Result` with a named error for each refusal (empty, relative, URL, main daemon). A bare `bool` would not say why the judge refused.
 The daemon's `info` is turned into a plain `DaemonFacts` struct through `From<&SystemInfo>`. Only that conversion touches bollard types, so the checker itself is ordinary data that tests can build by hand.
 Missing facts (for example no `SecurityOptions`) become "not rootless" or "not v2". This fails closed: an unknown answer never passes the check.
+
+# Rust lesson: efficiency-familiar T02
+
+An `enum` with no data is a fixed list of names, and the compiler makes every `match` on it cover all names. `ClassId::rank` returns the ordering number from one `match`, so adding a class without a rank fails to compile.
+`Mood` is a newtype that holds a private `u8`. `TryFrom` is the only way to build one, so an out-of-range mood cannot exist anywhere in the program.
+`impl FromStr` lets `"n log n".parse::<ClassId>()` reject unknown spellings with a named error, instead of accepting a loose string.
+
+# Rust lesson: efficiency-familiar T03
+
+`match` on the verdict first, then on the bench. Each `return` path gives one mood, so the rule reads as the same table the requirements use.
+A `match` on an `i16` gap with range patterns (`3..`) covers every integer, so the compiler checks that no case is missing. A gap is a small number, so `i16::from` avoids an `as` cast that Clippy would flag.
+Tests that enumerate every combination (`Verdict::ALL` times modes times bench variants) check invariants directly, without a random generator.

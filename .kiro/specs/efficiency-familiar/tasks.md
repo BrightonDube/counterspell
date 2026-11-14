@@ -31,7 +31,7 @@ Conventions for every web task:
   - Verify: the file names every seam row from the design's seam table with a status.
   - Preserve: nothing is created outside the log file. Do not generate art.
 
-- [ ] **T02 [P] (25 min) Class, confidence, mood and effect types in `counterspell-common`**
+- [x] **T02 [P] (25 min) Class, confidence, mood and effect types in `counterspell-common`**
   - Files: `crates/common/src/familiar/{mod.rs,class.rs}`, `crates/common/src/lib.rs` (module line only).
   - Implement `ClassId` (seven ids exactly as GRM-16: `1`, `log n`, `n`, `n log n`, `n^2`, `n^3`, `2^n`) with `rank()`, `id()`, `display_name()` ("constant" … "exponential"), `FromStr`, and serde as the id string; `Confidence`; `Mood` (newtype checked 1 to 5, `name()`: furious … laughing); `Effect` (`none`, `crack_burst`, `laugh_burst`).
   - Tests: ranks 0 to 6 in order; every id round-trips; unknown ids are rejected; `Mood::try_from` accepts only 1 to 5; serde forms are stable.
@@ -41,7 +41,7 @@ Conventions for every web task:
   - Preserve: `counterspell-common` gains no dependency and no async, DB or Docker code.
   - Rust lesson: enums with data-free variants, `FromStr`, newtypes that enforce a range.
 
-- [ ] **T03 [S] (30 min) `MeasuredFacts` and the `decide` function**
+- [x] **T03 [S] (30 min) `MeasuredFacts` and the `decide` function**
   - Files: `crates/common/src/familiar/{facts.rs,mood.rs}`.
   - Implement `MeasuredFacts`, `BenchFacts`, `NoMeasurement`, `MoodReason` (every reason code in R5.1) and `decide` exactly as the R5.1 table, including gap calculation, the `<= 2.0` ratio rule, effects, and Run versus Submit.
   - Tests: one example per table row; property P8 (totality and table), P9 (monotone in gap), P10 (effects); an exhaustive test over the finite combinations (verdicts × modes × no-measurement × classes × confidences × ratio buckets).
