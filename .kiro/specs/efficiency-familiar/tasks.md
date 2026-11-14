@@ -52,7 +52,7 @@ Conventions for every web task:
   - Preserve: `decide` is pure, takes only `&MeasuredFacts`, and has no other input path.
   - Rust lesson: exhaustive `match`, why the compiler checks you covered every case, and small pure functions.
 
-- [ ] **T04 [P] (30 min) Payload and column types**
+- [x] **T04 [P] (30 min) Payload and column types**
   - Files: `crates/common/src/familiar/payload.rs`.
   - Implement `ComplexityPayload`, `FamiliarPayload`, `ComplexitySection`, `FamiliarSection`, `FitSummary`, `BenchStatus` (`measured`, `not_specified`, `host_busy`, `failed`, `incomplete`) and `MeasuredColumns` (the five stored values). All `Serialize`/`Deserialize` with `deny_unknown_fields` on inputs. Add `to_bounded_json` helpers that use run-lifecycle's `BoundedJson`.
   - Tests: JSON shapes match the design examples; a maximal `FitSummary` (32 points) stays under 4 KiB or is truncated by documented rules (points capped at 8 in storage); payloads stay under 16 KiB; unknown fields are rejected.
@@ -62,7 +62,7 @@ Conventions for every web task:
   - Preserve: no field can hold source, hidden input, expected output or stderr.
   - Rust lesson: `serde` derive, `deny_unknown_fields`, and why wire types are separate from internal types.
 
-- [ ] **T05 [S] (30 min) Wording: headline, badge, template**
+- [x] **T05 [S] (30 min) Wording: headline, badge, template**
   - Files: `crates/common/src/familiar/words.rs`.
   - Implement `headline`, `badge` and `template_bubble` as pure functions of (decision, observed class, confidence, plausible classes, reference, ratio, mode, verdict) following the design's wording table. Add `FORBIDDEN_WORDS`. "Quick check: " prefix for Run in measured cases.
   - Tests: P12 as an exhaustive enumeration over all (mood, reason, class, confidence, mode) combinations: headline ≤ 160 characters, badge ≤ 40, plain text (no `<`, `>`, backticks), no forbidden word, the top mood uses exactly "Matches reference complexity" or "Scales better than the reference", failure text never mentions complexity.

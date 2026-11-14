@@ -780,3 +780,15 @@ An `enum` with no data is a fixed list of names, and the compiler makes every `m
 `match` on the verdict first, then on the bench. Each `return` path gives one mood, so the rule reads as the same table the requirements use.
 A `match` on an `i16` gap with range patterns (`3..`) covers every integer, so the compiler checks that no case is missing. A gap is a small number, so `i16::from` avoids an `as` cast that Clippy would flag.
 Tests that enumerate every combination (`Verdict::ALL` times modes times bench variants) check invariants directly, without a random generator.
+
+# Rust lesson: efficiency-familiar T04
+
+`#[derive(Serialize, Deserialize)]` with `#[serde(deny_unknown_fields)]` turns an unexpected key into an error. A payload from a newer or hostile writer cannot slip extra data into storage.
+`#[serde(skip_serializing_if = "Option::is_none")]` leaves a missing value out of the JSON entirely. A "nothing was fitted" summary then holds only the fields that are known.
+A `Result` from `to_bounded_json` makes the size cap part of the type: the only way to get an event object is through the cap check.
+
+# Rust lesson: efficiency-familiar T05
+
+Wording is a function from stored facts to text, so every headline can be tested by listing every combination. Each `match` arm names one reason, so the compiler catches a reason with no sentence.
+`str::strip_prefix` removes the Run-only "Quick check: " prefix before a test checks the top label. A plain `starts_with` would miss it.
+A test that enumerates the whole input space found a real problem: a pleased result began with the top-mood label. The fix was a different sentence, not a weaker test.
