@@ -5,5 +5,6 @@ pub mod config;
 pub mod login;
 pub mod magic;
 pub mod me;
+pub mod oauth;
 pub mod session;
 pub mod verify;

@@ -911,3 +911,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A builder-style API such as `BasicClient::new(...).set_...(...)` returns a new value each call. The final value is used once for the request, and the chain is easy to read with one call per line.
 - `serde` skips unknown JSON fields by default, so a provider adding a field does not break sign-in. A required field such as `sub` that is missing becomes a clear error.
 - `Option<T>` with `.is_some_and(...)` tests a length limit without unwrapping, which keeps the body cap in one readable line.
+
+# Rust lesson: auth T21
+- A handler that must always redirect returns `Response`, not `Result`. Its inner function returns `Result<String, Refusal>`, and the outer function turns each refusal into a redirect code in one `match`.
+- `Option` with `ok_or(...)` and `?` makes each callback step stop at the first failure, so the steps run in the order the security rules require.
+- `Redirect::to` builds a `303 See Other` response, which makes the browser follow the redirect with GET.

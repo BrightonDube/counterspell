@@ -13,7 +13,7 @@ use axum::{
     response::Response,
 };
 
-use super::{errors::AuthError, session::SESSION_IDLE};
+use super::{errors::AuthError, session::SESSION_IDLE, tokens::FLOW_TTL};
 
 /// The cookie names and attributes for this deployment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -72,6 +72,43 @@ impl CookieSettings {
         ))
     }
 
+    /// The name of the short-lived cookie that binds a sign-in flow to this browser.
+    #[must_use]
+    pub fn binding_name(self) -> &'static str {
+        if self.secure {
+            "__Host-cs_oauth"
+        } else {
+            "cs_oauth"
+        }
+    }
+
+    /// The `Set-Cookie` value that stores the binding for as long as a flow lasts.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Internal`] when the header cannot be built.
+    pub fn binding_value(self, raw: &str) -> Result<HeaderValue, AuthError> {
+        header_value(&format!(
+            "{}={raw}; {}; Max-Age={}",
+            self.binding_name(),
+            self.attributes(),
+            FLOW_TTL.whole_seconds()
+        ))
+    }
+
+    /// The `Set-Cookie` value that removes the binding cookie.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`AuthError::Internal`] when the header cannot be built.
+    pub fn clear_binding(self) -> Result<HeaderValue, AuthError> {
+        header_value(&format!(
+            "{}=; {}; Max-Age=0",
+            self.binding_name(),
+            self.attributes()
+        ))
+    }
+
     fn attributes(self) -> &'static str {
         if self.secure {
             "Path=/; HttpOnly; Secure; SameSite=Lax"
@@ -98,19 +135,29 @@ pub fn read_cookie<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
         .map(|(_, value)| value)
 }
 
-/// A place for one `Set-Cookie` header. Extractors fill it, and the middleware adds it to the
-/// response, so a renewed or cleared cookie reaches the browser even when a handler fails.
+/// A place for `Set-Cookie` headers. Extractors and handlers fill it, and the middleware adds
+/// everything it holds to the response, so a renewed or cleared cookie reaches the browser even
+/// when a handler fails.
 #[derive(Debug, Clone, Default)]
-pub struct CookieSlot(Arc<Mutex<Option<HeaderValue>>>);
+pub struct CookieSlot(Arc<Mutex<Vec<HeaderValue>>>);
 
 impl CookieSlot {
-    /// Stores the header to send. A later call replaces an earlier one.
+    /// Replaces everything stored so far with this one header.
     pub fn set(&self, value: HeaderValue) {
-        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = Some(value);
+        *self.0.lock().unwrap_or_else(PoisonError::into_inner) = vec![value];
     }
 
-    fn take(&self) -> Option<HeaderValue> {
-        self.0.lock().unwrap_or_else(PoisonError::into_inner).take()
+    /// Adds a header, keeping the ones already stored. A sign-in that also clears the binding
+    /// cookie needs both.
+    pub fn push(&self, value: HeaderValue) {
+        self.0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .push(value);
+    }
+
+    fn take(&self) -> Vec<HeaderValue> {
+        std::mem::take(&mut *self.0.lock().unwrap_or_else(PoisonError::into_inner))
     }
 }
 
@@ -119,7 +166,7 @@ pub async fn session_cookie(mut request: Request, next: Next) -> Response {
     let slot = CookieSlot::default();
     request.extensions_mut().insert(slot.clone());
     let mut response = next.run(request).await;
-    if let Some(value) = slot.take() {
+    for value in slot.take() {
         response.headers_mut().append(header::SET_COOKIE, value);
     }
     response

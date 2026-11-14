@@ -16,6 +16,7 @@ use serde_json::{json, Value};
 use sqlx::types::Uuid;
 
 use crate::auth::{
+    accounts::new_handle,
     cookies::CookieSlot,
     email::EmailAddress,
     errors::{database, AuthError},
@@ -110,24 +111,4 @@ async fn find_or_create_user(state: &AuthState, email: &EmailAddress) -> Result<
     }
     transaction.commit().await.map_err(database)?;
     Ok(UserId::from_uuid(id))
-}
-
-/// A random handle that matches the database rule: lower case, starts with a letter or digit.
-fn new_handle() -> String {
-    let simple = Uuid::new_v4().simple().to_string();
-    format!("p{}", &simple[..12])
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn generated_handles_match_the_database_rule() {
-        let handle = new_handle();
-        assert_eq!(handle.len(), 13);
-        assert!(handle
-            .chars()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit()));
-    }
 }

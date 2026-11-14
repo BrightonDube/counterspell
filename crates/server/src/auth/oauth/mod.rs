@@ -4,6 +4,8 @@
 //! A provider adapter only talks to its provider. It never decides who signs in; the pure
 //! decisions in `auth::decision` do that, so the "no automatic linking" rule lives in one place.
 
+#[cfg(feature = "testkit")]
+pub mod fake;
 pub mod flow;
 pub mod github;
 pub mod google;
