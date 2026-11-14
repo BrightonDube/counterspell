@@ -239,7 +239,7 @@ Conventions for every Rust task:
 
 ## Wave 5: user-initiated linking
 
-- [ ] **T22 [S] (30 min) Link a provider identity (property P8)** [SUPERVISED]
+- [x] **T22 [S] (30 min) Link a provider identity (property P8)** [SUPERVISED]
   - Files: `crates/server/src/auth/handlers/link.rs`, `crates/server/src/auth/handlers/oauth.rs` (the `link` branch), `crates/server/tests/pg_auth_link_provider.rs`.
   - `POST /api/auth/link/{provider}/start` (session, capability, limiter, `create_link`, `200 {authorize_url}`) and the `link` branch of the callback (current session must equal the flow's session key and user, `fetch_profile`, `decide_link`, insert, redirect to `/settings/account?linked=` or `?error=`).
   - Tests: linking adds exactly one identity to the signed-in user; a callback made with another user's session or no session fails with `state_invalid`; logging out before the callback kills the flow; an identity owned by another user gives `identity_already_linked` and changes nothing; the same identity again is a no-op; a second identity for the same provider gives `provider_already_linked`; the provider's email is ignored (a different or colliding email changes nothing); the demo session is refused with `403`.

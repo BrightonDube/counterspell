@@ -916,3 +916,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A handler that must always redirect returns `Response`, not `Result`. Its inner function returns `Result<String, Refusal>`, and the outer function turns each refusal into a redirect code in one `match`.
 - `Option` with `ok_or(...)` and `?` makes each callback step stop at the first failure, so the steps run in the order the security rules require.
 - `Redirect::to` builds a `303 See Other` response, which makes the browser follow the redirect with GET.
+
+# Rust lesson: auth T22
+- A small struct can carry context that a plain error cannot. `Refused` holds the flow purpose next to the reason, so the one place that builds the redirect knows whether to send the browser to the settings page or the sign-in page.
+- `match` on the enum from a pure decision function (`LinkDecision`) with no `_` arm. Adding a new decision then stops the build until every caller handles it.
+- A unique-constraint error from a race is handled by reading the database again, not by guessing. The `Err(error) if is_unique_violation(&error)` match arm keeps other errors on their own path.

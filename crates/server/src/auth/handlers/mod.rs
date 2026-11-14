@@ -2,6 +2,7 @@
 //! never from the request.
 
 pub mod config;
+pub mod link;
 pub mod login;
 pub mod magic;
 pub mod me;
