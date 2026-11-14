@@ -10,6 +10,7 @@
 pub mod config;
 pub mod executor;
 pub mod queue;
+pub mod sandbox;
 pub mod service;
 #[cfg(feature = "testkit")]
 pub mod testkit;

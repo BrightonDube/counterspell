@@ -1,0 +1,10 @@
+# Judge rule: user code never runs on the host. Only the sandbox backend may start
+# processes, and it does so through the Docker API, never through a host shell or
+# a host interpreter. Any other process call is a lint error.
+#
+# `allow-invalid` lets the tokio entry stay silent while tokio's `process` feature is off
+# (it is off today), so the ban applies as soon as that feature is enabled.
+disallowed-methods = [
+    { path = "std::process::Command::new", reason = "judge code must not spawn host processes; run code only through the sandbox backend" },
+    { path = "tokio::process::Command::new", reason = "judge code must not spawn host processes; run code only through the sandbox backend", allow-invalid = true },
+]

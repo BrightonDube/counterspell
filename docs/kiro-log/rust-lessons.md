@@ -660,3 +660,9 @@ The hand-written `Debug` on `OutgoingMail` hides the body, so printing a mail wi
 `broadcast::Sender` sends one value to many receivers. Each receiver gets its own copy, and a receiver that falls too far behind gets `RecvError::Lagged` instead of blocking the sender.
 `PgListener::try_recv` returns `Ok(None)` when the connection drops. The caller then decides what to do, which is why the waker sends a "read again" marker at that point.
 `Result` patterns can name the error (`Err(elapsed)`) or match a whole group (`Ok(Ok(_) | Err(RecvError::Lagged(_)))`). Clippy asks for named bindings when a bare `Err(_)` would hide a failure in a test.
+
+# Rust lesson: judge-sandbox T01
+
+Cargo features switch code on and off at build time. `bollard` is an optional dependency behind the `sandbox` feature, so builds without it never compile the Docker client.
+`clippy.toml` `disallowed-methods` turns a forbidden function into a lint error. Judge code cannot call `Command::new` by accident.
+Configuration errors are a typed enum (`thiserror`). Each variant names the variable and never echoes its value, so a secret in a bad setting cannot leak into a log.

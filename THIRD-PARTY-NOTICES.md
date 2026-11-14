@@ -63,6 +63,18 @@ The judge crate (`counterspell-judge`) adds these direct dependencies. `cargo de
 
 The judge also uses `serde_json`, `uuid` and `counterspell-common` as listed above.
 
+Added by judge-sandbox T01 (14 November 2026; `cargo deny check licenses` passed):
+
+- **bollard 0.21.1** — Bollard contributors — Apache-2.0 — <https://crates.io/crates/bollard> (Docker API client; optional, behind the `sandbox` feature; used only on the sandbox daemon)
+- **tar 0.4.46** — tar-rs contributors — MIT OR Apache-2.0 — <https://crates.io/crates/tar> (builds the source archive delivered into a container)
+- **toml 0.8.23** — toml-rs contributors — MIT OR Apache-2.0 — <https://crates.io/crates/toml> (reads `languages/languages.toml`)
+- **bytes 1.12.1** — Tokio contributors — MIT — <https://crates.io/crates/bytes>
+- **futures-util 0.3.34** — Rust async working group — MIT OR Apache-2.0 — <https://crates.io/crates/futures-util>
+- **sha2 0.10.9** — RustCrypto developers — MIT OR Apache-2.0 — <https://crates.io/crates/sha2>
+- **tempfile 3.27.0** (dev) — Steven Allen and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/tempfile>
+
+The judge's `counterspell-engine` dependency is a workspace crate and carries the MIT licence of this repository.
+
 ## Server dependencies (run-lifecycle T20)
 
 The server crate (`counterspell-server`) adds these direct dependencies. Licences are from the crates.io metadata in `Cargo.lock`. `sqlx`, `tracing` and `thiserror` are listed above under the judge.
