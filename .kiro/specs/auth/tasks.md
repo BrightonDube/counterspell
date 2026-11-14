@@ -249,7 +249,7 @@ Conventions for every Rust task:
   - Preserve: an identity is never moved between accounts.
   - Rust lesson: borrowing a request-scoped value across `.await` points.
 
-- [ ] **T23 [S] (30 min) Link an email address** [SUPERVISED]
+- [x] **T23 [S] (30 min) Link an email address** [SUPERVISED]
   - Files: `crates/server/src/auth/handlers/link.rs`, `crates/server/src/auth/handlers/verify.rs` (the `link_email` branch), `crates/server/tests/pg_auth_link_email.rs`.
   - `POST /api/auth/link/email` (session, capability, `409 email_already_set`, limiter, uniform `202`, no mail when the address belongs to another account) and the verify branch: `peek` then `MaybeAuthUser`; no session → `401`; other user → `invalid_or_expired_token` without consuming; same user → consume with the bound user, `UPDATE users SET email …, email_verified_at … WHERE id = $u AND email IS NULL`; unique violation → `409 email_in_use`. No session is created or changed.
   - Tests: full happy path through `MemorySender`; response identical for free and taken addresses (P14); wrong-session attempt does not burn the token and the right session still works; second use fails; expiry at 15 minutes; demo refused; a user who already has an email gets `409`.

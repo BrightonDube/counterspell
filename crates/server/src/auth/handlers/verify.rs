@@ -20,6 +20,7 @@ use crate::auth::{
     cookies::CookieSlot,
     email::EmailAddress,
     errors::{database, AuthError},
+    extract::{AuthUser, MaybeAuthUser},
     return_to::sanitize_return_to,
     session::AuthMethod,
     tokens::Purpose,
@@ -39,11 +40,12 @@ pub struct VerifyRequest {
 /// # Errors
 ///
 /// Returns [`AuthError::InvalidJson`] for a malformed body and
-/// [`AuthError::InvalidOrExpiredToken`] for every token that cannot be used, including tokens
-/// for purposes this route does not handle yet.
+/// [`AuthError::InvalidOrExpiredToken`] for every token that cannot be used, including a link
+/// for another account. A `link_email` token without a session gives [`AuthError::Unauthenticated`].
 pub async fn verify(
     State(state): State<AuthState>,
     axum::Extension(slot): axum::Extension<CookieSlot>,
+    MaybeAuthUser(session): MaybeAuthUser,
     body: Bytes,
 ) -> Result<Response, AuthError> {
     let request: VerifyRequest =
@@ -55,12 +57,51 @@ pub async fn verify(
         .ok_or(AuthError::InvalidOrExpiredToken)?;
     match peeked.purpose {
         Purpose::MagicLink => sign_in_with_link(&state, &slot, &request.token).await,
-        // Account confirmation, password reset and email linking are added by later tasks.
-        // The token is left unused, so nothing is lost when they arrive.
-        Purpose::Verify | Purpose::Reset | Purpose::LinkEmail => {
-            Err(AuthError::InvalidOrExpiredToken)
-        }
+        Purpose::LinkEmail => link_email(&state, &request.token, peeked.user_id, session).await,
+        // Account confirmation and password reset are added by later tasks. The token is left
+        // unused, so nothing is lost when they arrive.
+        Purpose::Verify | Purpose::Reset => Err(AuthError::InvalidOrExpiredToken),
     }
+}
+
+/// Attaches a verified address to the signed-in account that asked for it. The token must belong
+/// to that account, and nothing is used up when it does not. The session itself is not changed.
+async fn link_email(
+    state: &AuthState,
+    raw: &str,
+    bound_user: Option<UserId>,
+    session: Option<AuthUser>,
+) -> Result<Response, AuthError> {
+    let signed_in = session.ok_or(AuthError::Unauthenticated)?;
+    if bound_user != Some(signed_in.user_id) {
+        return Err(AuthError::InvalidOrExpiredToken);
+    }
+    let consumed = state
+        .tokens
+        .consume(raw, Purpose::LinkEmail, Some(signed_in.user_id))
+        .await?;
+    let updated = sqlx::query(
+        "UPDATE users SET email = $2, email_verified_at = $3
+          WHERE id = $1 AND email IS NULL",
+    )
+    .bind(signed_in.user_id.as_uuid())
+    .bind(consumed.email.as_str())
+    .bind(state.clock.now())
+    .execute(&state.pool)
+    .await;
+    match updated {
+        Ok(result) if result.rows_affected() == 1 => {
+            Ok(Json(json!({ "status": "email_linked" })).into_response())
+        }
+        Ok(_) => Err(AuthError::EmailAlreadySet),
+        Err(error) if is_unique_violation(&error) => Err(AuthError::EmailInUse),
+        Err(error) => Err(database(error)),
+    }
+}
+
+/// Whether a database error is a unique-constraint violation.
+fn is_unique_violation(error: &sqlx::Error) -> bool {
+    matches!(error, sqlx::Error::Database(db) if db.is_unique_violation())
 }
 
 /// Uses a sign-in link, finds or creates the account, and starts a session.

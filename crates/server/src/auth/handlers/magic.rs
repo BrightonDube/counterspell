@@ -4,7 +4,7 @@
 //! response does not reveal who is registered (R5.1, R5.2). The mail is sent in the background,
 //! so the response time does not depend on the account either.
 
-use std::net::SocketAddr;
+use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
     body::Bytes,
@@ -19,7 +19,7 @@ use uuid::Uuid;
 
 use crate::{
     auth::{
-        email::{compose, magic_link_url, EmailAddress},
+        email::{compose, magic_link_url, EmailAddress, EmailSender, OutgoingMail},
         errors::AuthError,
         limits::{Action, Scope},
         return_to::sanitize_return_to,
@@ -85,17 +85,21 @@ pub async fn request_magic(
         &link,
         &Uuid::new_v4().to_string(),
     );
-    let sender = port.sender.clone();
-    tokio::spawn(async move {
-        // The failure is logged without the link or the address. The token simply expires.
-        if sender.send(mail).await.is_err() {
-            tracing::warn!("a sign-in link could not be sent");
-        }
-    });
+    send_in_background(port.sender.clone(), mail);
     Ok(sent())
 }
 
 /// The uniform answer for every address.
-fn sent() -> Response {
+pub(crate) fn sent() -> Response {
     (StatusCode::ACCEPTED, Json(json!({ "status": "sent" }))).into_response()
+}
+
+/// Sends one mail without making the caller wait. A failure is logged without the link or the
+/// address. The token simply expires.
+pub(crate) fn send_in_background(sender: Arc<dyn EmailSender>, mail: OutgoingMail) {
+    tokio::spawn(async move {
+        if sender.send(mail).await.is_err() {
+            tracing::warn!("a mail could not be sent");
+        }
+    });
 }
