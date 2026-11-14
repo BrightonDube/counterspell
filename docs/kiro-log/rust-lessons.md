@@ -792,3 +792,9 @@ A `Result` from `to_bounded_json` makes the size cap part of the type: the only 
 Wording is a function from stored facts to text, so every headline can be tested by listing every combination. Each `match` arm names one reason, so the compiler catches a reason with no sentence.
 `str::strip_prefix` removes the Run-only "Quick check: " prefix before a test checks the top label. A plain `starts_with` would miss it.
 A test that enumerates the whole input space found a real problem: a pleased result began with the top-mood label. The fix was a different sentence, not a weaker test.
+
+# Rust lesson: efficiency-familiar T06
+
+`validate` returns `Result` and checks each rule with `if ... return Err(...)`, so bad input never reaches the arithmetic. Nothing in the fit can panic on user data.
+`windows(2)` gives each consecutive pair of points without indexing, so the "strictly increasing sizes" check reads as one line.
+A `Default` impl on `FitConfig` keeps every constant in one struct, so calibration (T12) changes one place.

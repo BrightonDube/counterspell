@@ -74,7 +74,7 @@ Conventions for every web task:
 
 ## Wave 1: the fit and bench inputs (engine)
 
-- [ ] **T06 [S] (25 min) Engine complexity module skeleton and validation**
+- [x] **T06 [S] (25 min) Engine complexity module skeleton and validation**
   - Files: `crates/engine/src/complexity/mod.rs`, `crates/engine/src/lib.rs` (module line, docs), `crates/engine/Cargo.toml` is **not** changed.
   - Add `Class` (seven classes, rank, id), `Point`, `Mode`, `Confidence`, `Reason`, `FitConfig` with the design's constants and `Default`, `FitError`, `FitReport`, `Comparison`, `FIT_VERSION = "fit-1"`. Implement input validation only. Until T09, `fit` returns the temporary variant `FitError::NotImplemented` after validation succeeds; T09 removes that variant.
   - Tests: every R3.1 rejection (2 points, 33 points, `n < 2`, not increasing, zero median, negative, NaN and infinite spread).
