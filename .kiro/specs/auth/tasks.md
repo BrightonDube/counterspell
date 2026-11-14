@@ -325,7 +325,7 @@ Conventions for every Rust task:
 
 - [x] **T30 [S] (30 min) Login page**
   - Files: `web/src/routes/login/+page.svelte` (and small components under `web/src/lib/auth/`).
-  - Provider buttons for enabled providers (plain links), email form with magic-link and password modes (Bits UI tabs), the "Judging? Use the demo account" link that opens the demo form (demo email shown, empty password field), `aria-live` error banner for `?error=`, labelled inputs, visible focus. Semantic tokens only.
+  - Provider buttons for enabled providers (plain links), email form with magic-link and password modes (Bits UI tabs), the "Try the demo account" link that opens the demo form (demo email shown, empty password field), `aria-live` error banner for `?error=`, labelled inputs, visible focus. Semantic tokens only.
   - Requirements: R20.1, R20.4, R20.5, R16.3.
   - Depends on: T29.
   - Verify: `cd web && npm run check && npm run build`; manual keyboard-only pass; no raw hex colours (`grep` the new files).

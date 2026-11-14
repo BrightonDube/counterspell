@@ -349,6 +349,6 @@ Each question includes the choice this spec assumed. Brighton can change any of 
 7. **Cut mechanism.** Assumed: delete the paths and the two hooks, with no runtime or compile-time flag. The alternative is a `breakroom` Cargo feature, which makes the cut a single switch but adds a permanent build option.
 8. **Daily boundary.** Assumed: the daily puzzle changes at 00:00 SAST (UTC+2). A player who solves just before midnight and saves after midnight gets `wrong_date`. The alternative is to accept yesterday's date for ten minutes, which adds a rule for little gain.
 9. **Bot results when signed out.** Assumed: they are not saved and the page says so.
-10. **Demo account.** Assumed: the judge demo account can use the whole feature. It has no extra restrictions, and the demo reset clears its `game_scores` rows through the existing cascade rule.
+10. **Demo account.** Assumed: the demo account can use the whole feature. It has no extra restrictions, and the demo reset clears its `game_scores` rows through the existing cascade rule.
 11. **Hints in puzzles.** Assumed: one text hint per puzzle, built from the Lichess themes (for example "Look for a mate"). The alternative is no hints, which is simpler.
 12. **Migration timestamp.** Assumed: the break-room migration runs after the auth migration, because `game_scores` references `users`. The exact timestamp is set by `sqlx migrate add` when the task runs.
