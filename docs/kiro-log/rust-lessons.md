@@ -872,3 +872,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A `Result` returned by a validation function is the trust boundary. `validate_socket_path` turns a raw string into a `PathBuf` only after the empty, relative, URL and main-daemon checks pass, so the rest of the code never sees an unchecked path.
 - A `#[cfg(feature = "sandbox")]` module keeps the Docker client out of builds that do not need it. Only the edge module names `bollard`, and the pure checks compile everywhere.
 - A test can guard "does not read the environment" by scanning source text. Filtering out comment lines first avoids false positives from doc comments that mention a variable name.
+
+# Rust lesson: judge-sandbox T20
+- Converting between two types with the same field names is easier with serde than with a hand-written mapper. The create request serialises to the same JSON shape the daemon returns, so a test can rebuild the daemon's answer from the request and read it back.
+- `Option` fields from the daemon mean "not reported". Using `unwrap_or` with a value that the checker rejects (for example `0` for memory) keeps a missing field a visible violation, not a silent default.
+- `let ... else` and `?` on `Option` keep the read-back short. A missing config becomes one typed error.

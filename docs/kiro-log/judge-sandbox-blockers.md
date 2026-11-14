@@ -42,3 +42,24 @@ Items here stay open until the named person acts. Kiro left each task unchecked 
 - **T19 is NOT ticked.** Its verification asks for parsing against recorded daemon fixtures from T02. The tests here use hand-written synthetic facts, which are labelled as such. T19 can be ticked once T02 records real `docker info` output and those fixtures are added.
 - **Blocked, unchanged:** T20 (depends on T19), T21, T22 (T02 facts), T23 and T24 (depend on T20 and run-lifecycle), T25 to T31 (need a real sandbox daemon on the VPS). T02 and T03 are HUMAN steps in `docs/kiro-log/judge-sandbox-human-steps.md`.
 - **Open for Brighton:** the VPS spike (T02) and the Python digest pin (T03). Nothing after T19 can be verified without them.
+
+
+## Run stop point (14 Nov 2026, run 4): T19 ticked, T20 code done but not ticked
+
+**Decision needed from Brighton: `#[ignore]` on `sbx_` tests.**
+- The PreToolUse guard (tdd-and-quality, Test integrity) refused to write `crates/judge/tests/sbx_bollard_create.rs`. It allows `#[ignore]` only on `pg_*` and `valkey_*` tests.
+- The judge-sandbox spec (tasks.md conventions, T20 to T37) requires real-daemon tests named `sbx_` and marked `#[ignore]`, so they never run in `cargo test --workspace` without `SANDBOX_DOCKER_SOCKET`.
+- Kiro did not add a workaround (no feature gate, no runtime skip, no shell write). The file was not created.
+- **Needs:** Brighton to choose one: (a) allow `#[ignore]` on `sbx_` tests in the guard, or (b) another gating method he approves in writing.
+- **Unblocks:** T20's last verification item (`sbx_create_readback_matches`), and then T21, T22, T23, T25 to T33, T34 and T35, which each have an `sbx_` test. T36 has no `sbx_` test but depends on T24.
+- **Note:** the T20 code is complete and its model tests pass. T20 stays `[ ]` until the real-daemon test exists and passes on the rootless sandbox daemon (T37).
+
+**Done this run:**
+- T19 ticked (`cd7b8d5`): the recorded rootful WSL `docker info` is a real rejected fixture. The accepted rootless fixture is still synthetic. A source scan replaces the `DOCKER_HOST` environment check (P14).
+- T20 code (not ticked): `crates/judge/src/sandbox/bollard_backend.rs` and `tests/model_bollard.rs` (10 tests, including a 26-row mutation table). Workspace tests: 860 passed, 0 failed. Clippy and fmt clean.
+
+**Not started:** T21 onward, because they depend on T20 and on the `sbx_` decision above.
+
+**Minor findings (T20):**
+- The read-back assumes the daemon echoes the tmpfs option string unchanged. The ignored real-daemon test must confirm it (T37).
+- `host_resources` reads inspect `Mounts`, so an image-declared `VOLUME` is reported as a host resource. That is a fail-closed choice, but it is not in the design text. Brighton should confirm it.
