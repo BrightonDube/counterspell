@@ -52,3 +52,9 @@ Attempt 4 supervised items (T14 is not supervised, but it has a deliberate excep
 - Check `handlers/link.rs` `email` and `address_is_free`: the answer is `202` whether or not the address is taken, and no mail goes to a taken or demo address.
 - Check `handlers/verify.rs` `link_email`: a session is required, a token bound to another account is refused without being used up, and the `UPDATE` is guarded by `email IS NULL`.
 - Known behaviour: the token is used before the `UPDATE`. If another account takes the address in between, the answer is `409 email_in_use` and the token is spent. The user must ask for a new link, which is then refused because the address is taken.
+
+## T25: register and password reset (Should; commit: see git log "auth T25")
+- Check `handlers/register.rs`: the password is hashed before the link is issued, and no account row is written until the link is opened (`finish_registration`).
+- Check `handlers/reset.rs` `confirm_reset`: the policy runs before the token is used, every session is revoked, and nobody is signed in.
+- Known behaviour: a link for an address that already has an account is still mailed, and opening it gives `account_exists` and spends the link. This matches R15.7 and keeps the request answer uniform.
+- `is_unique_violation` moved to `errors.rs`, and the copies in `oauth.rs` and `verify.rs` now use it.

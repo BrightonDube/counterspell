@@ -184,6 +184,12 @@ pub fn database(error: sqlx::Error) -> AuthError {
     AuthError::Internal
 }
 
+/// Whether a database error is a unique-constraint violation, such as a duplicate email address.
+#[must_use]
+pub fn is_unique_violation(error: &sqlx::Error) -> bool {
+    matches!(error, sqlx::Error::Database(db) if db.is_unique_violation())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

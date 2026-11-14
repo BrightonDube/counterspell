@@ -926,3 +926,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option::ok_or` turns a missing session into an error, and `Option` comparison (`bound_user != Some(id)`) checks ownership in one line.
 - A `match` on `sqlx::Result<PgQueryResult>` uses a match guard (`Ok(result) if result.rows_affected() == 1`). A guard lets one arm mean "the row was updated" and a later arm mean "it was already set", without a nested `if`.
 - A shared helper such as `send_in_background` moves an `Arc<dyn EmailSender>` into `tokio::spawn`. The `Arc` is cloned first, so the caller keeps its own handle.
+
+# Rust lesson: auth T25
+- Keeping a password hash inside a token's JSON payload means nothing is stored until the mailbox is proven. The payload is read only after the token is consumed.
+- `if let Some((id, false)) = account` matches a tuple and a literal in one pattern. Only an ordinary account gets mail, and the same `202` is returned either way.
+- The unique email constraint is the final guard. A racing registration gets a database error, and `is_unique_violation` maps it to `account_exists`, so no check-then-insert race exists.
