@@ -138,7 +138,7 @@ Conventions:
   - Depends on: T05, T06.
   - Rust lesson: traits with async methods and generics; `thiserror` error enums.
 
-- [ ] **T15 [S] [SUPERVISED] (30 min) Session lifecycle and the cleanup guard**
+- [x] **T15 [S] [SUPERVISED] (30 min) Session lifecycle and the cleanup guard**
   - Files: `crates/judge/src/sandbox/session.rs`.
   - Implement create → read-back check → start → load files → compile → start driver → close, with `SessionGuard` whose `Drop` spawns `kill + remove` on the runtime handle, and `close().await` that confirms removal. Compile runs the configured argv with `compile_budget_ms` and a 64 KiB output cap; a non-zero exit or a missed deadline is `CompileFailed`.
   - Tests (fake backend): ledger shows removal on success, on `?` early return, on task abort, and on panic; compile failure removes the container; a read-back mismatch removes the container.

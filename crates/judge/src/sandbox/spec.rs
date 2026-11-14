@@ -188,6 +188,20 @@ impl ExecSpec {
         (!lang.compile().is_empty()).then(|| Self::with_argv(lang.compile()))
     }
 
+    /// The command that unpacks the archive into the working directory. The argv is fixed.
+    #[must_use]
+    pub fn extract() -> Self {
+        Self::with_argv(&[
+            "tar".to_owned(),
+            "-x".to_owned(),
+            "-f".to_owned(),
+            "-".to_owned(),
+            "-C".to_owned(),
+            WORKING_DIR.to_owned(),
+            "--no-same-owner".to_owned(),
+        ])
+    }
+
     /// The driver command that answers test calls.
     #[must_use]
     pub fn driver(lang: &LanguageDefinition) -> Self {
