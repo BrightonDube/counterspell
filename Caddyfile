@@ -1,4 +1,17 @@
 :80 {
     log
-    reverse_proxy server:8080
+
+    # Run event streams must reach the browser as each event is written.
+    # Flushing immediately and skipping compression keeps SSE live.
+    @run_events path_regexp run_events ^/api/runs/[^/]+/events$
+    handle @run_events {
+        reverse_proxy server:8080 {
+            flush_interval -1
+        }
+    }
+
+    handle {
+        encode zstd gzip
+        reverse_proxy server:8080
+    }
 }
