@@ -245,3 +245,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-14 23:19-23:28 SAST: 38-private-pack-split (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/38-private-pack-split.md`. Transcript: `docs/kiro-log/2026-11-14T2319-38-private-pack-split.log`. Exit 0.
 - Credits used (from /usage): 6.56 (credits used now 3131.91/4000).
+
+### 2026-11-14 23:29-23:42 SAST: 37-remove-hackathon-mentions (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `docs/kiro-prompts/37-remove-hackathon-mentions.md`. Transcript: `docs/kiro-log/2026-11-14T2329-37-remove-hackathon-mentions.log`. Exit 0.
+- Credits used (from /usage): 5.03 (credits used now 3136.94/4000).
