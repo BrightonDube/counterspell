@@ -32,3 +32,13 @@ Attempt 4 supervised items (T14 is not supervised, but it has a deliberate excep
 - Check: `auth/oauth/flow.rs`. `consume` deletes the row before checking provider, expiry or binding, so every callback uses up its flow. `binding_matches` compares hashes in constant time.
 - Deviation from the task list: `FakeProvider` is not in this commit. It is first used by T21's callback tests, so it is added there. The task text names it, so this is a known gap until T21.
 - TDD note: the 7 `pg_auth_flow` tests were written first, but I did not run them red before writing the flow store. They pass now (`cargo test -p counterspell-server --test pg_auth_flow -- --include-ignored`).
+
+## T21 OAuth sign-in start and callback (SUPERVISED)
+- Check `handlers/oauth.rs`: `finish` runs in this order: take the flow, check the binding cookie (login only), check `error`, then exchange the code. The binding cookie is cleared on every outcome. Success and failure are redirects only.
+- Check the no-linking rule in `sign_in`: the only email lookup is `profile_email`, which marks an address as taken when any account holds it, including the demo account. An existing identity is the only way to select an account.
+- `CookieSlot` now holds several headers: `set` replaces, `push` adds. Existing callers are unchanged.
+- `AuthState` gained `flows` and an optional `oauth` port (`with_oauth`). `AuthState::new` keeps its signature.
+- Deviation: P6 asks for a randomised model test. I wrote a fixed four-step sequence (`pg_auth_oauth_model_a_sequence_of_callbacks_keeps_one_account_per_identity`). A proptest over random profile sequences is not written yet.
+- Deviation: the link branch returns `oauth_failed` until T22 implements it.
+- TDD note: as in T18, the tests were written before the handler but not run red first.
+- Tests: `crates/server/tests/pg_auth_oauth_model.rs` (10 pg tests). The fake provider is `auth/oauth/fake.rs`, behind the existing `testkit` feature.

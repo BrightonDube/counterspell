@@ -3,6 +3,7 @@
 //! Everything in this module is server-side. Postgres is the only store for users, identities,
 //! sessions, email tokens and OAuth flows. Valkey holds counters only.
 
+pub mod accounts;
 pub mod capabilities;
 pub mod clock;
 pub mod config;
@@ -22,7 +23,7 @@ pub mod return_to;
 pub mod session;
 pub mod tokens;
 
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use axum::{
     middleware,
@@ -38,6 +39,7 @@ use self::{
     cookies::CookieSettings,
     email::{EmailAddress, EmailSender},
     limits::AuthLimiter,
+    oauth::{flow::FlowStore, OAuthProvider, ProviderId},
     password::HashGate,
     session::SessionService,
     tokens::TokenStore,
@@ -53,6 +55,15 @@ pub struct MailPort {
     pub public_base_url: String,
     /// The demo account's address. Mail to it is never sent and no token is issued for it.
     pub demo_email: Option<EmailAddress>,
+}
+
+/// The OAuth providers that are enabled, and the public origin that callback URLs start with.
+#[derive(Clone)]
+pub struct OAuthPort {
+    /// The origin for callback URLs, for example `https://counterspell.example`.
+    pub base_url: String,
+    /// One adapter per enabled provider. A provider with no entry is disabled.
+    pub providers: HashMap<ProviderId, Arc<dyn OAuthProvider>>,
 }
 
 /// Everything the auth routes need. It is cheap to clone; each part is shared.
@@ -76,6 +87,10 @@ pub struct AuthState {
     pub trusted: Arc<TrustedProxies>,
     /// Mail settings. `None` means mail is not wired, so mail routes answer with an error.
     pub mail: Option<MailPort>,
+    /// One-time OAuth flows: create and take.
+    pub flows: FlowStore,
+    /// The enabled OAuth providers. `None` means no provider is enabled.
+    pub oauth: Option<OAuthPort>,
 }
 
 impl AuthState {
@@ -91,6 +106,7 @@ impl AuthState {
     ) -> Self {
         let sessions = SessionService::new(pool.clone(), clock.clone());
         let tokens = TokenStore::new(pool.clone(), clock.clone());
+        let flows = FlowStore::new(pool.clone(), clock.clone());
         Self {
             pool,
             clock,
@@ -101,6 +117,8 @@ impl AuthState {
             hashes,
             trusted: Arc::new(trusted),
             mail: None,
+            flows,
+            oauth: None,
         }
     }
 
@@ -109,6 +127,26 @@ impl AuthState {
     pub fn with_mail(mut self, mail: MailPort) -> Self {
         self.mail = Some(mail);
         self
+    }
+
+    /// Enables OAuth providers. Each adapter is keyed by the provider it serves.
+    #[must_use]
+    pub fn with_oauth(mut self, base_url: String, providers: Vec<Arc<dyn OAuthProvider>>) -> Self {
+        let providers = providers.into_iter().map(|p| (p.id(), p)).collect();
+        self.oauth = Some(OAuthPort {
+            base_url,
+            providers,
+        });
+        self
+    }
+
+    /// The OAuth settings, or an internal error when none were set.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`errors::AuthError::Internal`] when [`AuthState::with_oauth`] was never called.
+    pub fn oauth_port(&self) -> Result<&OAuthPort, errors::AuthError> {
+        self.oauth.as_ref().ok_or(errors::AuthError::Internal)
     }
 
     /// The mail settings, or an internal error when mail is not wired.
@@ -135,6 +173,14 @@ pub fn router(state: AuthState) -> Router {
             post(handlers::magic::request_magic),
         )
         .route("/api/auth/email/verify", post(handlers::verify::verify))
+        .route(
+            "/api/auth/oauth/{provider}/start",
+            get(handlers::oauth::start),
+        )
+        .route(
+            "/api/auth/oauth/{provider}/callback",
+            get(handlers::oauth::callback),
+        )
         .route("/api/me", get(handlers::me::me))
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);

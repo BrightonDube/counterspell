@@ -227,7 +227,7 @@ Conventions for every Rust task:
   - Preserve: no ID-token parsing, so no JWT dependency.
   - Rust lesson: `serde` structs with optional fields and why unknown fields are ignored.
 
-- [ ] **T21 [S] (30 min) OAuth start and callback for sign-in (properties P6, P7)** [SUPERVISED]
+- [x] **T21 [S] (30 min) OAuth start and callback for sign-in (properties P6, P7)** [SUPERVISED]
   - Files: `crates/server/src/auth/handlers/oauth.rs`, `crates/server/tests/pg_auth_oauth_model.rs`.
   - `GET …/start` (provider enabled, limiter, `create_login`, binding cookie, `303`) and `GET …/callback` for `login` flows: the order of checks of R6.3 (flow consumed first, binding checked before the code is spent), `fetch_profile`, the `ProfileEmail` lookup, `decide_oauth_login`, the transaction for `CreateAccount` with the retry rules of `design.md`, new session, cookie, `303 → return_to`; every failure redirects to `/login?error=<code>`. Callback never returns JSON. The `link` branch is a stub until T22.
   - Tests (`FakeProvider`, real Postgres): happy path creates one user and one identity; second sign-in reuses it; provider email equal to an existing account's email gives `account_exists`, no session, and every table unchanged (P6); the model test applies random sequences of callbacks with random profiles and asserts the invariants of P6; a replayed or foreign `state` fails; a callback without the binding cookie fails and still consumes the flow; `access_denied` redirects with `oauth_denied`; an unverified provider email creates a user without an email; the demo address is treated as taken.
