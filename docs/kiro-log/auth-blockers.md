@@ -107,3 +107,23 @@ T11, T12, T13, T15, T16, T24, T26, T28 and T29 to T32 were already ticked in ear
 ### Decision needed from Brighton to unblock most of the remaining work
 1. Pick the T01 option (allow `CDLA-Permissive-2.0`, or switch to `rustls-tls-native-roots`). The assumed choice is the native-roots option, but it is not applied.
 2. Start a throwaway Postgres 17 and Valkey for the next run (see above).
+
+## Attempt 6 (15 Nov 2026): blockers resolved, sign-in tasks done
+
+### Resolved
+- **T01 licence decision:** applied Brighton's standing decision of 14 Nov (allow `CDLA-Permissive-2.0` for `webpki-roots` only). `deny.toml` has one exception for that crate. `reqwest` and `oauth2` are added. `cargo deny check licenses` passes. The earlier "held back" notes are superseded.
+- **Database:** the test URLs come from `~/.config/counterspell/dev-test.env`, the same file the runner uses. Its values were exported in the shell only, and they were not printed or written to any file. All `pg_` tests run against the dev Postgres 17.
+
+### Done this attempt (ticked, committed)
+- T01 (`d0d43d4`), T14 (`8046c4f`), T17 (`1675341`), T18 (`f191cb1`), T19 and T20 (`7b95db6`), T21 (`b22102a`).
+- Wave-end gate on `b22102a`: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test -p counterspell-server -- --include-ignored` (280 passed, 0 failed), and `cargo deny check licenses`.
+
+### Still open (not started in this attempt)
+- **T08 submissions foreign key:** waits for the run-lifecycle fixtures in T34. Unchanged decision.
+- **T22 to T23, T25, T27, T33 to T37:** not started. Reason: the budget for this run was used up by T01 to T21. Pick up at T22 (SUPERVISED, link a provider identity). The `link` branch of the callback is a stub that returns `oauth_failed` until T22.
+- **T33 wiring:** `AuthState::with_mail` and `AuthState::with_oauth` must be called in `main.rs`. Until then, the magic-link and OAuth routes return an internal error. This needs `docs/kiro-log/auth-review-queue.md` review.
+- **Caddy log filter (T33):** needs Brighton's approval for the Caddyfile change, as the task says.
+
+### Notes for Brighton
+- `counterspell-judge` is a dev-dependency of `counterspell-server`. Run-lifecycle added it for the test kit, before auth existed. The T01 check "cargo tree shows no counterspell-judge" passes for normal dependencies only. Decide whether the dev-dependency is acceptable.
+- Two SUPERVISED tasks deviate from their text: T18 ships the fake provider later than the task list says (in T21), and T21's P6 randomised model is a fixed sequence test.
