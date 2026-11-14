@@ -762,3 +762,9 @@ Casting `usize` to `u32` can silently truncate, so clippy warns. `u32::try_from(
 `timeout_at(deadline, future)` bounds an async step by an absolute `Instant`, so a slow daemon cannot hold a slot past the run cap.
 `match lines.as_slice() { [] => ..., [line] if held == 0 => ..., _ => ... }` matches on slice shape. It states "exactly one line and nothing after it" in one place.
 When a function can fail after an external side effect, do the cleanup before returning the error, so the caller sees a clean state. A `Drop` guard alone only starts the cleanup.
+
+# Rust lesson: judge-sandbox T19
+
+Validating a socket path is a trust decision, so `validate_socket_path` returns a `Result` with a named error for each refusal (empty, relative, URL, main daemon). A bare `bool` would not say why the judge refused.
+The daemon's `info` is turned into a plain `DaemonFacts` struct through `From<&SystemInfo>`. Only that conversion touches bollard types, so the checker itself is ordinary data that tests can build by hand.
+Missing facts (for example no `SecurityOptions`) become "not rootless" or "not v2". This fails closed: an unknown answer never passes the check.
