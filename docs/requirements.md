@@ -10,7 +10,7 @@
 ## 1. Purpose and scope
 **Purpose:** help people practise coding-interview problems and learn *why* their code is wrong. When a solution fails, Counterspell finds an input that breaks it and shrinks it to a **minimized counterexample** (the "ghost input": the smallest failing input it can find within a time budget, not a proven minimum) [D 12 Nov], explains it, offers graded hints, and shows how efficient a correct solution is through a reactive mascot (the Efficiency Familiar) whose mood comes only from measured results. It's wrapped in a polished horror theme ("Steel Night").
 
-**Scope for the hackathon** (submit by Fri 4 Dec 2026 14:00 PT = Sat 5 Dec 00:00 SAST; feature freeze Wed 2 Dec):
+**Scope for v1** (v1 deadline Fri 4 Dec 2026 14:00 PT = Sat 5 Dec 00:00 SAST; feature freeze Wed 2 Dec):
 - a web app (desktop-first, usable on tablet);
 - accounts;
 - 10 polished original problems [D 12 Nov];
@@ -25,7 +25,7 @@
 
 Stretch, only after the core is freeze-safe [D 12 Nov]: Java and C++, spaced review (FSRS), the familiar's live typing guess, timed trials and the break room.
 
-**Hackathon category:** **Costume Contest** (one main category). Frankenstein-style elements may appear in the build, but Frankenstein is not a second category [D 12 Nov]. Judges must be able to use it **free until Fri 29 Jan 2027 23:00 SAST**.
+**Access:** reviewers must be able to use the app free until Fri 29 Jan 2027 23:00 SAST.
 
 ---
 
@@ -36,7 +36,7 @@ Stretch, only after the core is freeze-safe [D 12 Nov]: Java and C++, spaced rev
 | **P2 Student**, e.g. **Thandi** (example) | A 2nd-year CS student on a mid-range laptop and a capped mobile data plan | Learn data structures by doing; get unstuck without being handed the answer | Long editorials; gives up when stuck; heavy sites on slow connections |
 | **P3 Bootcamp instructor**, e.g. **Ms Naidoo** (example) | Runs a 12-week bootcamp cohort | See which concepts the cohort struggles with; assign practice | No cheap way to see *why* students fail |
 | **P4 Problem author**, e.g. **Kwame** (example) | Writes original problems (might be Brighton, or a contributor using Kiro) | Write problems with generators and reference solutions quickly and safely | Writing test data by hand; no tools to check edge cases |
-| **P5 Hackathon judge**, e.g. **Judge J** (example) | A Kiroween judge with ~10 minutes | Sign in fast, see the core idea working, check how Kiro was used | Broken demos, sign-up friction, paywalls |
+| **P5 Reviewer**, e.g. **Judge J** (example) | An external reviewer with about 10 minutes | Sign in fast, see the core idea working, check how Kiro was used | Broken demos, sign-up friction, paywalls |
 
 ---
 
@@ -49,7 +49,7 @@ Format: *As a … I want … so that …* IDs are `EPIC-n`. Stories marked ★ h
 - ★ **ACC-3:** As a signed-in user, I want to link GitHub, Google or an email address myself, with verification, so that I can use either to sign in, and nobody can take over my account just by having a matching email [D 12 Nov].
 - **ACC-4:** As a user, I want to sign out of all devices, so that a lost laptop isn't a risk.
 - **ACC-5:** As a user, I want to delete my account and data, so that I control my information.
-- ★ **ACC-6:** As a judge, I want a demo account (credentials in the Devpost form), so that I can test without creating an account.
+- ★ **ACC-6:** As a reviewer, I want a demo account (credentials in the external submission form), so that I can test without creating an account.
 
 ### E2 Problem browsing
 - **PRB-1:** As a learner, I want to browse problems by track ("Crypt"), concept and difficulty, so that I practise what I need.
@@ -104,8 +104,8 @@ Format: *As a … I want … so that …* IDs are `EPIC-n`. Stories marked ★ h
 - **BRK-2:** As a learner, I want to play a quick game against a simple chess bot, so that I have a short fun break.
 - **BRK-3:** As a learner, I want one small brain game (e.g. a pattern or memory game), so that there's a non-chess option.
 
-### E11 Pricing and subscription (later; NOT in the hackathon build)
-- **PAY-1:** As a heavy user, I want a paid tier with more AI hints and timed trials, so that I can support the product. *(Later; judges must test free.)*
+### E11 Pricing and subscription (later; NOT in the v1 build)
+- **PAY-1:** As a heavy user, I want a paid tier with more AI hints and timed trials, so that I can support the product. *(Later; reviewers must test free.)*
 - **PAY-2:** As an instructor, I want a cohort plan with a class dashboard, so that I can track students. *(Later.)*
 
 ### E12 Admin and moderation
@@ -117,7 +117,7 @@ Format: *As a … I want … so that …* IDs are `EPIC-n`. Stories marked ★ h
 ### E13 MCP for Kiro (developer-facing)
 - ★ **MCP-1:** As a developer using Kiro, I want a `counterspell-mcp` server with tools like `validate_pack`, `find_ghost_input`, `shrink_input`, `explain_verdict` and `fit_complexity`, so that Kiro can author and debug problems with the same engine.
 - **MCP-2:** As a developer, I want a Kiro Power that bundles the MCP server with "author a problem" and "hunt a ghost" skills, so that anyone can install it in one click.
-- ★ **MCP-3:** As a hackathon judge watching the video, I want to see Kiro use `counterspell-mcp` to find a counterexample in a deliberately buggy reference or implementation, fix it and re-verify, so that I see the ghost engine and Kiro working together [D 12 Nov].
+- ★ **MCP-3:** As an external reviewer watching the demo video, I want to see Kiro use `counterspell-mcp` to find a counterexample in a deliberately buggy reference or implementation, fix it and re-verify, so that I see the ghost engine and Kiro working together [D 12 Nov].
 
 ### E14 Submission validation (pre-sandbox)
 **Principle:** browser checks are for quick feedback only. Anyone can skip them and call the API directly, so the server repeats every check. These checks are a first filter, not the main protection. The sandbox (§6; no network, a read-only filesystem, a non-root user, and caps on CPU, memory, processes and time) is the real security boundary. The system does not use keyword or API blocklists (for example `os` or `system`), which are easy to bypass. Valid code can still be hostile; the sandbox has to contain it.
@@ -148,9 +148,9 @@ EARS patterns: *Ubiquitous* (THE SYSTEM SHALL …), *Event* (WHEN … THE SYSTEM
 1. THE SYSTEM SHALL keep sessions in HttpOnly, Secure, SameSite=Lax cookies for 30 days with rolling renewal.
 2. IF a request carries an invalid or expired session, THEN THE SYSTEM SHALL treat it as signed out and return 401 for API calls.
 
-**ACC-6 Judge access**
+**ACC-6 Demo access**
 1. THE SYSTEM SHALL provide a demo account, and all features in the video SHALL work without payment until 29 Jan 2027 23:00 SAST.
-2. THE SYSTEM SHALL let a judge sign in to the demo account from the sign-in page with the credentials given in the Devpost private field [D 12 Nov].
+2. THE SYSTEM SHALL let a reviewer sign in to the demo account from the sign-in page with the credentials given in the private field of the external submission form [D 12 Nov].
 3. THE SYSTEM SHALL NOT let the demo account link providers, change its credentials or delete itself, and SHALL reset its data daily [E].
 
 **IDE-1 Editor**
@@ -297,7 +297,7 @@ EARS patterns: *Ubiquitous* (THE SYSTEM SHALL …), *Event* (WHEN … THE SYSTEM
 4. The pack passes validation, and the operator imports and publishes it (ADM-1).
 
 ### W4: Judge J tests the submission (example)
-1. Judge J opens the Devpost link and signs in with the demo account from the private submission field.
+1. Judge J opens the submission link and signs in with the demo account from the private submission field.
 2. They submit a deliberately wrong Python answer to a starter problem and see the shrink animation, the ghost card and the Bug Autopsy in under 10 s, then the familiar's reaction.
 3. They open the GitHub repo: the `LICENSE` (MIT) shows in About, `/.kiro` contains specs, hooks, steering, agents and MCP settings, and `docs/KIRO_USAGE.md` explains how Kiro was used.
 
@@ -365,7 +365,7 @@ EARS patterns: *Ubiquitous* (THE SYSTEM SHALL …), *Event* (WHEN … THE SYSTEM
   - One **OVH VPS-2** (4 vCPU, 8 GB, 75 GB NVMe; **€8.49/month ex. VAT**, with VAT and backups extra) [D 12 Nov]. **2 concurrent sandbox runs by default** until benchmarked [D 12 Nov], with the rest queued in Postgres.
   - It must survive about 20 concurrent submits (load test on freeze day) without failures, only queueing.
   - Docker Compose + Caddy (HTTPS).
-- **Availability:** reachable and **free for judges until Fri 29 Jan 2027 23:00 SAST** (Judging Period ends 29 Jan 2027 1:00 pm PT). Daily Postgres backup. Uptime monitor.
+- **Availability:** reachable and **free for reviewers until Fri 29 Jan 2027 23:00 SAST** (the review period ends 29 Jan 2027 1:00 pm PT). Daily Postgres backup. Uptime monitor.
 - **Accessibility:**
   - WCAG 2.2 AA contrast (palette v2 checked);
   - a full keyboard path for the IDE;
@@ -382,10 +382,10 @@ EARS patterns: *Ubiquitous* (THE SYSTEM SHALL …), *Event* (WHEN … THE SYSTEM
   - MIT licence; `/.kiro` committed.
 - **Determinism:** the ghost seed is derived from (problem, code hash, language, engine version), and the result is stored with the seed, generator version, problem version, image digest and shrink steps.
 
-## 8. MoSCoW priority (hackathon build)
+## 8. MoSCoW priority (v1 build)
 | Priority | Items |
 |---|---|
-| **Must** | ACC-1, ACC-2, ACC-6 (judge demo account) · PRB-1, PRB-3 · IDE-1 (Python + JavaScript), IDE-2, IDE-3, IDE-6 · **VAL-1, VAL-2, VAL-3, VAL-4, VAL-5** · **GHO-1, GHO-2** · HNT-1 · **FAM-1** (measured mood) · DSH-1 · PCK-1, PCK-2 · sandbox criteria (worker-owned verdicts, rootless sandbox daemon) · landing page · MCP-1 · **10 polished original problems** in Python + JS [D 12 Nov] |
+| **Must** | ACC-1, ACC-2, ACC-6 (demo account) · PRB-1, PRB-3 · IDE-1 (Python + JavaScript), IDE-2, IDE-3, IDE-6 · **VAL-1, VAL-2, VAL-3, VAL-4, VAL-5** · **GHO-1, GHO-2** · HNT-1 · **FAM-1** (measured mood) · DSH-1 · PCK-1, PCK-2 · sandbox criteria (worker-owned verdicts, rootless sandbox daemon) · landing page · MCP-1 · **10 polished original problems** in Python + JS [D 12 Nov] |
 | **Should** | **GHO-5 (shrink animation), GHO-6 (Bug Autopsy), MCP-3 (Kiro dogfooding demo)** [D 12 Nov] · FAM-6 (AI speech bubble) · IDE-4, IDE-5 · GHO-3, GHO-4 · HNT-2, HNT-3 · FAM-3, FAM-4, FAM-5 · DSH-3 · PRB-2 · ACC-3 (user-initiated linking), ACC-4 · ADM-1 · MCP-2 (Power) |
 | **Could (stretch; won't start before the freeze-safe core)** [D 12 Nov] | Java + C++ · DSH-2 (FSRS) · FAM-2 (live typing guess) · TRL-1, TRL-2 (Night Shift) · BRK-1, BRK-2, BRK-3 (break room) · ADM-2, ADM-3, ADM-4 · ACC-5 · gVisor runtime |
 | **Won't (this time)** | PAY-1, PAY-2 · cohort/instructor dashboards · mobile apps |
