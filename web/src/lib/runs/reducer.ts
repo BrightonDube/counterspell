@@ -119,9 +119,25 @@ function applyPayload(
     case 'error':
       return {
         ...state,
-        status: payload.code === 'internal_error' ? 'internal_error' : 'failed',
+        status: statusForErrorCode(payload.code),
         terminal: payload
       };
+  }
+}
+
+/**
+ * The run status for an `error` event code. The codes are the `FailureReason` wire values, and the
+ * mapping follows `status_after_event` in crates/common/src/run_state.rs. Any code not listed there is
+ * a failure, never a wrong answer.
+ */
+function statusForErrorCode(code: string): RunStatus {
+  switch (code) {
+    case 'expired':
+      return 'expired';
+    case 'retries_exhausted':
+      return 'internal_error';
+    default:
+      return 'failed';
   }
 }
 
