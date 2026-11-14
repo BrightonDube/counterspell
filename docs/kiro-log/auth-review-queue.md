@@ -27,3 +27,8 @@ Attempt 4 supervised items (T14 is not supervised, but it has a deliberate excep
 - Check: `handlers/magic.rs` answers `202` before any account lookup, and the demo address gets no token and no mail. `handlers/verify.rs` consumes the token in one statement, and creates the account through `INSERT ... ON CONFLICT DO NOTHING`, refusing the demo row. Only the `MagicLink` purpose can sign in; the other purposes are refused until T23 and T25.
 - Design choice: `AuthState` gained `clock`, `tokens` and an optional `mail` (`MailPort`), set by `with_mail`. `AuthState::new` keeps its signature, so existing tests still compile. T33 must call `with_mail` in production.
 - Tests: `crates/server/tests/auth_magic.rs` (8 `pg_` tests, all passing against the dev Postgres).
+
+## T18 provider trait and flow store (SUPERVISED)
+- Check: `auth/oauth/flow.rs`. `consume` deletes the row before checking provider, expiry or binding, so every callback uses up its flow. `binding_matches` compares hashes in constant time.
+- Deviation from the task list: `FakeProvider` is not in this commit. It is first used by T21's callback tests, so it is added there. The task text names it, so this is a known gap until T21.
+- TDD note: the 7 `pg_auth_flow` tests were written first, but I did not run them red before writing the flow store. They pass now (`cargo test -p counterspell-server --test pg_auth_flow -- --include-ignored`).

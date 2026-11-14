@@ -15,6 +15,7 @@ pub mod errors;
 pub mod extract;
 pub mod handlers;
 pub mod limits;
+pub mod oauth;
 pub mod password;
 pub mod resolver;
 pub mod return_to;

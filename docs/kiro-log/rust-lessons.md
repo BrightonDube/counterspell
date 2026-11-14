@@ -901,3 +901,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option<T>` in a struct field (`mail: Option<MailPort>`) makes "not wired yet" a value. The handler turns `None` into an error with `?`, so a route can never send mail through an unset sender.
 - `tokio::spawn` takes ownership. The handler moves the sender `Arc` and the message into the task and returns `202` at once, so the response does not wait for the mail provider.
 - `tokio::join!` runs two futures on one task. The concurrency test uses it to race two verifies of one token, and the database's single `UPDATE ... RETURNING` decides the winner.
+
+# Rust lesson: auth T18
+- `async_trait` lets an `OAuthProvider` trait object be stored and called with `.await`. Each provider adapter can then sit behind one type.
+- Deleting a row with `DELETE ... RETURNING` reads and removes it in one statement. A flow cannot be read twice, even when two callbacks race.
+- A type alias such as `FlowRow` names a long tuple. Clippy's complexity lint asks for this, and the alias keeps the column order in one place.
