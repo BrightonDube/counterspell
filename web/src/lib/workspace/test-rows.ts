@@ -92,7 +92,8 @@ export function statusLabel(status: RunStatus): string {
 export function runOutcomeLabel(terminal: TerminalPayload): string {
   if (terminal.kind === 'done')
     return DONE_LABELS[terminal.verdict] ?? 'Finished';
-  return terminal.code === 'internal_error'
+  // `retries_exhausted` is the only wire code the judge sends for infrastructure failure (run_state.rs).
+  return terminal.code === 'retries_exhausted'
     ? 'Internal error (not a wrong answer)'
     : 'Run failed';
 }
