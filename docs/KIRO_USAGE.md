@@ -213,3 +213,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-14 02:33-02:39 SAST: 26-ide-workspace-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-ide-workspace-a1.md`. Transcript: `docs/kiro-log/2026-11-14T0233-26-ide-workspace-implement-a1.log`. Exit 0.
 - Credits used (from /usage): 1.59 (hackathon credits used now 2977.96/4000).
+
+### 2026-11-14 18:13-18:15 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-run-lifecycle-a1.md`. Transcript: `docs/kiro-log/2026-11-14T1813-22-run-lifecycle-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 1.47 (hackathon credits used now 2993.98/4000).

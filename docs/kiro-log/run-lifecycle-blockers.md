@@ -165,3 +165,11 @@ Done this session, each with its gate green:
 - **Verified in this pass:** `npm run check` reports 0 errors and 0 warnings. `vitest run src/lib/runs` passes 37 of 37 tests across 4 files (T32 and T33 still hold).
 - **Unblock:** Brighton approves one of `futures-util` (preferred, already in `Cargo.lock`, MIT or Apache-2.0) or `futures-core` as a direct dependency of `counterspell-server`. Add it to `THIRD-PARTY-NOTICES.md` in the same change, then T29 can start.
 - **Wave-end review:** Wave 2 cannot be reviewed until T29 to T31 are done. Wave 3 (T32, T33) has no recorded wave-end review yet; it can run once Brighton is available or at the next pass.
+
+## Attempt 8 (14 Nov 2026, non-interactive resume): no task could be started
+
+- **Start point:** T29 (SSE endpoint core, SUPERVISED) is the first unchecked task. It is blocked on the `futures-util` / `futures-core` approval logged in attempt 7. No task names that crate, so it was not added.
+- **Remaining unchecked tasks and why each waits:** T30 and T31 need T29. T34 needs T31. T35 needs T31. T36 needs T34 and T35. T37 needs T36. T39 needs T36, T37 and T38's sibling work. The spec's declared dependencies make all of them wait on T29.
+- **Not done on purpose:** T35's `restart_with_no_judge_expires_stale_queue` and `pg_retries_exhausted_end_to_end` do not use SSE, so they could run now. The spec still lists T31 as a dependency, so I did not reorder them. Brighton can approve that reordering.
+- **Verified at HEAD in this pass:** `cargo fmt --all -- --check` passes. `cargo test --workspace` (without database tests) passes with 0 failures.
+- **Unblock:** Brighton approves `futures-util` as a direct dependency of `counterspell-server`, with a `THIRD-PARTY-NOTICES.md` entry in the same change. Then T29, T30 and T31 can run, followed by T34 to T37 and T39.

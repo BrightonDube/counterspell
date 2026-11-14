@@ -1,0 +1,74 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=8
+I'll start with the spec's task list and the conventions it names.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Read File
+[tool] status: InProgress
+[tool] List Directory
+[tool] status: InProgress
+[tool] Check repo state and existing kiro logs
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The spec has been attempted several times already. I'll find the first unchecked task and read the blockers file before touching code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=93
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The blockers log says T29 (SSE core) is stuck on a `futures-util` approval that no task names. I'll read the rest of tasks.md to see whether any unchecked task avoids that dependency.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=113
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=60
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+Every unchecked task (T29–T31, T34–T37, T39) depends on T29, which needs `futures-util` approval the spec does not name. I'll check the current build state and whether a wave-end review is still owed, then stop short of the blocked work.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=197
+
+[tool] Check reviews, queue file, fmt and non-database tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The workspace gate is green at HEAD: fmt passes and every non-database test passes. I'll record this attempt in the blockers file.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=225
+[tool] status: Pending
+[tool] status: Completed
+I made no new progress on run-lifecycle this pass. The first unchecked task, T29 (SSE endpoint core), is blocked, and every later unchecked task depends on it.
+
+**Why T29 is blocked:** axum 0.8's `Sse` and `Body::from_stream` need a `Stream` trait that axum does not re-export. The fix is a direct dependency on `futures-util` (or `futures-core`). No task names it, and the steering rules forbid adding unnamed crates, so I did not add it. Brighton needs to approve it, with a `THIRD-PARTY-NOTICES.md` entry in the same change.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T29 SSE core | Blocked (needs `futures-util` approval) | None | Not run | None |
+| T30 SSE hardening | Waiting on T29 | None | Not run | None |
+| T31 SSE integration tests | Waiting on T29, T30 | None | Not run | None |
+| T34 Canary privacy | Waiting on T31 | None | Not run | None |
+| T35 Restart recovery | Waiting on T31 | None | Not run | None |
+| T36 DoD, 20 runs (SUPERVISED) | Waiting on T34, T35 | None | Not run | None |
+| T37 CI | Waiting on T36 | None | Not run | None |
+| T39 Docs and results | Waiting on T36, T37 | None | Not run | None |
+
+**Verification at HEAD:** `cargo fmt --all -- --check` passes. `cargo test --workspace` (database tests excluded) passes with 0 failures. I did not run the `pg_` or `valkey_` suites this pass.
+
+**Blockers:** One new entry, "Attempt 8", is appended to `docs/kiro-log/run-lifecycle-blockers.md`. It records the dependency chain above.
+
+**Review queue:** Nothing new. The existing items in `docs/kiro-log/run-lifecycle-review-queue.md` still stand. Brighton should check these before deploy:
+- T17's heartbeat now runs inside the run's task, not a separate spawned task. This deviates from the design text.
+- T24 returns a unique-index violation as a database error instead of a replay.
+- T38 needs the `JUDGE_DATABASE_URL` and `SERVER_DATABASE_URL` login users to exist before `docker compose up`.
+
+**Open minor findings:** Two items from earlier attempts remain. The claim loop polls only, with no `NOTIFY` wake-up, so it is slower but correct. The T23 `valkey_outage_fails_open` test is not marked `#[ignore]`, which is deliberate because it needs no server.
+
+**Unblock:** Approve `futures-util` for `counterspell-server`. T29 to T31 can then run, followed by T34 to T37 and T39.
+
+**Optional decision:** T35's `restart_with_no_judge_expires_stale_queue` and `pg_retries_exhausted_end_to_end` do not use SSE. Brighton could let them run now by removing the T31 dependency. I did not do that without approval.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=201
+
