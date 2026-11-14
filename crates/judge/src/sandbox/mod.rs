@@ -14,6 +14,7 @@ pub mod driver_protocol;
 pub mod policy;
 pub mod precheck;
 pub mod records;
+pub mod run;
 pub mod sanitize;
 pub mod session;
 pub mod spec;

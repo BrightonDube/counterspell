@@ -154,7 +154,7 @@ Conventions:
   - Depends on: T07, T08, T14, T15.
   - Rust lesson: `select!`, cancellation safety, and why `biased` matters for fairness.
 
-- [ ] **T17 [S] (30 min) Run orchestration**
+- [x] **T17 [S] (30 min) Run orchestration**
   - Files: `crates/judge/src/sandbox/run.rs`, `crates/judge/tests/model_run.rs`.
   - Compile phase, then tests in plan order: all sample tests in ordinal order, then all hidden tests in ordinal order (A1: no visible test is ever scheduled after the first hidden test). Per call limit, run cap, a fresh session after any abnormal end, fail-fast after `SANDBOX_MAX_CONSECUTIVE_ABNORMAL`, stop handling. Compare each answer through `compare::judge_answer`. Return `RunResult { executed, facts }` or `Err(InfraError)`. The run code never imports an expected-value type except through `compare`.
   - Tests: P7 (every call hangs; restarts only while the cap allows; fail-fast; cap cut gives `time_limit`; compile failure runs no test); restart after a timeout uses a new container; unexecuted tests are omitted; P15 (for any test plan, every sample precedes the first hidden test in the schedule, and no sample is scheduled after it).
