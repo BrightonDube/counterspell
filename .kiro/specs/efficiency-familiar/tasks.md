@@ -22,7 +22,7 @@ Conventions for every web task:
 
 ## Wave 0: prerequisites and shared types
 
-- [ ] **T01 [S] (20 min) Audit prerequisites and record what exists**
+- [x] **T01 [S] (20 min) Audit prerequisites and record what exists**
   - Files: `docs/kiro-log/efficiency-familiar-prereqs.md` (new). No source changes.
   - Check and record, as a table of present / missing / blocked tasks: run-lifecycle migrations, `FinalResult`, `PublicEvent::{Complexity, Familiar}`, `RunContext::emit`, read model and shared JSON error envelope; `Verdict` and `RunMode` in `counterspell-common`; `language-drivers` bench code and its `run_timings` use; `hints::ai::generate(Kind::Familiar, …)` and the `hints` table; `.kiro/specs/judge-sandbox/` and the sandbox runner and image digest; `PackRunner::bench`; `web/static/familiar/` and any `assets/` art; `vitest` in `web/package.json`; existing `web/src/lib/familiar/**` from `ide-workspace`.
   - For every missing item, list the tasks below that it blocks.
