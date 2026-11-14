@@ -10,6 +10,7 @@ pub mod compare;
 pub mod config;
 pub mod driver_protocol;
 pub mod policy;
+pub mod precheck;
 pub mod sanitize;
 pub mod spec;
 pub mod stream;

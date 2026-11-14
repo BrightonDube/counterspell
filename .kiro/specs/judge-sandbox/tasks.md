@@ -110,7 +110,7 @@ Conventions:
   - Depends on: T10.
   - Rust lesson: enums with data and exhaustive `match`.
 
-- [ ] **T12 [P] (30 min) Source re-check and shared validation vectors**
+- [x] **T12 [P] (30 min) Source re-check and shared validation vectors**
   - Files: `crates/judge/src/sandbox/precheck.rs`, `crates/judge/tests/data/source_vectors.json`, `crates/judge/tests/model_precheck.rs`.
   - `precheck(bytes, max_bytes) -> Result<&str, SourceRejection>`: size in bytes (not lines), UTF-8, no NUL or control characters except tab, LF, CR. Write the vectors file (oversize by one byte, exactly at the limit, multi-byte at the boundary, invalid UTF-8, NUL, BEL, ESC, tab/LF/CR allowed, empty, BOM, long single line, many lines, a source containing `import os, subprocess, socket, ctypes`). A test asserts that no keyword list exists in the judge crate.
   - Tests: every vector; the "forbidden words are accepted" vector passes the check.

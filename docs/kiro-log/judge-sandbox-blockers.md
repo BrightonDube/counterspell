@@ -19,3 +19,6 @@ Items here stay open until the named person acts. Kiro left each task unchecked 
 
 ## Design open item
 - The design says stderr over 64 KiB kills the run (`docs/system-design.md` section 7 and VAL-5). Amendment A2 changed this to truncation. Brighton must decide whether to update the brief documents. Recorded in `design.md` follow-ups, not edited here.
+
+## Follow-up for run-lifecycle T22 (note, not a blocker)
+- `crates/judge/tests/data/source_vectors.json` is the shared validation vector file (judge-sandbox T12). Run-lifecycle T22 tests should load the same file. This was recorded here, and the run-lifecycle spec was not edited.

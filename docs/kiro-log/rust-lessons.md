@@ -708,3 +708,9 @@ A `compile_fail` doc test proves the rule to the compiler. If someone makes the 
 An enum with data (`TestVerdict`) plus a `match` makes the compiler list every case. Adding a new verdict later breaks the build until each `match` handles it.
 `filter_map` with an `Option`-returning helper drops the passing cases without needing an `unreachable!()` arm, so the code has no panic path.
 `min_by_key` picks the lowest ordinal, so the first failure is deterministic, even when the tests arrive in a different order.
+
+# Rust lesson: judge-sandbox T12
+
+`&[u8]` is raw bytes and `&str` is checked UTF-8. `std::str::from_utf8` turns one into the other and returns `Result`, so invalid input can't become a `str` by accident.
+`char::is_control` covers every control character in one call, so one rule catches NUL, ESC, BEL and DEL.
+A returned `&str` borrows from the input. The source is checked once and never copied.
