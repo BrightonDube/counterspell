@@ -6,6 +6,7 @@
 //! Modules marked "pure" in `design.md` section 5 do not touch Docker, the clock or
 //! the filesystem, so their tests run anywhere.
 
+pub mod compare;
 pub mod config;
 pub mod driver_protocol;
 pub mod policy;

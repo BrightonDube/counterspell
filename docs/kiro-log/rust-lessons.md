@@ -696,3 +696,9 @@ Bounded memory comes from checking the length before extending a `Vec`. Checking
 `serde_json::Value` holds any JSON. Parsing it first and checking keys afterwards lets the code report the exact broken rule (extra key, wrong id) instead of a generic error.
 `let ... else` returns early when a pattern does not match, which keeps the happy path flat.
 `String::from_utf8_lossy` turns invalid bytes into U+FFFD. `is_char_boundary` finds a safe cut point, so a multi-byte character is never split.
+
+# Rust lesson: judge-sandbox T10
+
+A struct with a private field can only be built in the module that defines it. `Verified(())` is that proof: only `compare.rs` can make one, so only `judge_answer` can make `TestVerdict::Pass`.
+A `compile_fail` doc test proves the rule to the compiler. If someone makes the field public, the doc test fails.
+`impl Debug` written by hand can hide a value. `Expected` prints a placeholder, so a hidden expected output cannot leak into a log or an error.
