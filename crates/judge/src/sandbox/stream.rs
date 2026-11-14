@@ -82,6 +82,12 @@ impl LineReader {
         Ok(lines)
     }
 
+    /// Starts a new call with a fresh byte budget. The unfinished line and any overflow
+    /// carry over, so a line split across two calls is still one line.
+    pub fn reset_budget(&mut self, budget: usize) {
+        self.budget_left = budget;
+    }
+
     /// How many bytes of the unfinished line are held right now.
     #[must_use]
     pub fn held(&self) -> usize {

@@ -146,7 +146,7 @@ Conventions:
   - Depends on: T14.
   - Rust lesson: RAII with `Drop`, why `Drop` cannot be async, and spawning cleanup.
 
-- [ ] **T16 [S] [SUPERVISED] (30 min) Call runner: deadline, kill, output limit**
+- [x] **T16 [S] [SUPERVISED] (30 min) Call runner: deadline, kill, output limit**
   - Files: `crates/judge/src/sandbox/call.rs`, `crates/judge/tests/model_call.rs`.
   - Implement the algorithm in `design.md` section 9 with `tokio::select! { biased; … }`: deadline, stop signal, write+read within the bounded reader, stdout cap, stream end, and continued draining of stderr (no kill for stderr, A2). On abnormal end read kernel facts if the container is alive (`memory.events` `oom_kill`, `pids.events`) through a fixed exec, then kill and confirm absence within `KILL_SLACK`. Produce `CallFacts` only; no comparison, no expected values. `CallFacts` has no stderr-overflow variant.
   - Tests: P6 (virtual time: returns within limit + slack for any scripted timing; verdict is `time_limit` iff the answer is late; deadline wins ties); stdout flood gives `OutputLimit(Stdout)`; a stderr flood does not kill the container and does not change the call's result, and a stuck program that floods stderr still hits its deadline; endless line; write that blocks because the program never reads; driver exit with and without OOM evidence (last stderr line still found after truncation); stop signal.

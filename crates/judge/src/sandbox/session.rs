@@ -62,6 +62,28 @@ impl<S: BackendSession + 'static> Session<S> {
             .ok_or_else(|| InfraError::Unexpected("session already closed".to_owned()))
     }
 
+    /// Ends the container at once, because the program misbehaved. The call runner uses this
+    /// after a deadline, an output limit or a stop. If the removal does not finish within
+    /// `within`, the removal keeps running in the background and the error is `KillFailed`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`InfraError::KillFailed`] when the container is not confirmed gone in time.
+    pub async fn abort(&mut self, within: Duration) -> Result<(), InfraError> {
+        let Some(mut container) = self.container.take() else {
+            return Ok(());
+        };
+        match tokio::time::timeout(within, finish(&mut container)).await {
+            Ok(result) => result.map_err(|error| InfraError::KillFailed(error.to_string())),
+            Err(_elapsed) => {
+                spawn_cleanup(container);
+                Err(InfraError::KillFailed(
+                    "container still present after the kill slack".to_owned(),
+                ))
+            }
+        }
+    }
+
     /// Kills and removes the container, and waits for the removal.
     ///
     /// A failed kill is logged and not returned: a forced removal stops a running container
@@ -88,22 +110,26 @@ async fn finish<S: BackendSession>(container: &mut S) -> Result<(), InfraError> 
 
 impl<S: BackendSession + 'static> Drop for Session<S> {
     fn drop(&mut self) {
-        let Some(mut container) = self.container.take() else {
-            return;
-        };
-        match tokio::runtime::Handle::try_current() {
-            Ok(handle) => {
-                handle.spawn(async move {
-                    if let Err(error) = finish(&mut container).await {
-                        tracing::error!(%error, "sandbox cleanup failed; the sweeper will remove it");
-                    }
-                });
-            }
-            Err(_) => {
-                tracing::error!(
-                    "no runtime to clean up a sandbox container; the sweeper will remove it"
-                );
-            }
+        if let Some(container) = self.container.take() {
+            spawn_cleanup(container);
+        }
+    }
+}
+
+/// Runs the kill and removal on the runtime, after the caller has let go of the container.
+fn spawn_cleanup<S: BackendSession + 'static>(mut container: S) {
+    match tokio::runtime::Handle::try_current() {
+        Ok(handle) => {
+            handle.spawn(async move {
+                if let Err(error) = finish(&mut container).await {
+                    tracing::error!(%error, "sandbox cleanup failed; the sweeper will remove it");
+                }
+            });
+        }
+        Err(_) => {
+            tracing::error!(
+                "no runtime to clean up a sandbox container; the sweeper will remove it"
+            );
         }
     }
 }
