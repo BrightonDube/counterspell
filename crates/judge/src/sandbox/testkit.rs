@@ -14,6 +14,7 @@ use std::future::{pending, ready, Future};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
 use super::backend::{Backend, BackendSession, DriverChannel, DriverEvent, ExecOutput, InfraError};
+use super::policy::ContainerPolicy;
 use super::spec::{ExecSpec, SessionSpec};
 
 /// What the scripted program does on its next read.
@@ -96,7 +97,9 @@ struct State {
     calls: usize,
     fault: Option<Fault>,
     program: VecDeque<Behaviour>,
+    exec_exits: VecDeque<i64>,
     exec_exit: i64,
+    readback: Option<ContainerPolicy>,
     ledger: Ledger,
 }
 
@@ -129,9 +132,20 @@ impl FakeBackend {
         self.lock().program.extend(behaviours);
     }
 
-    /// Sets the exit code that every `exec` returns.
+    /// Sets the exit code that every `exec` returns, once the scripted exits are used up.
     pub fn set_exec_exit(&self, code: i64) {
         self.lock().exec_exit = code;
+    }
+
+    /// Queues exit codes for the next `exec` calls, in order. An exec after the queue
+    /// is empty returns the code set by [`FakeBackend::set_exec_exit`].
+    pub fn script_exec_exits(&self, codes: impl IntoIterator<Item = i64>) {
+        self.lock().exec_exits.extend(codes);
+    }
+
+    /// Makes every read-back return `policy` instead of the policy the container was created with.
+    pub fn set_readback(&self, policy: ContainerPolicy) {
+        self.lock().readback = Some(policy);
     }
 
     fn lock(&self) -> MutexGuard<'_, State> {
@@ -167,6 +181,7 @@ impl Backend for FakeBackend {
             FakeSession {
                 backend: self.clone(),
                 name: spec.name.clone(),
+                policy: spec.policy.clone(),
             }
         });
         ready(result)
@@ -178,6 +193,7 @@ impl Backend for FakeBackend {
 pub struct FakeSession {
     backend: FakeBackend,
     name: String,
+    policy: ContainerPolicy,
 }
 
 impl BackendSession for FakeSession {
@@ -185,6 +201,17 @@ impl BackendSession for FakeSession {
 
     fn name(&self) -> &str {
         &self.name
+    }
+
+    fn read_policy(&mut self) -> impl Future<Output = Result<ContainerPolicy, InfraError>> + Send {
+        let result = self.backend.tick().map(|()| {
+            self.backend
+                .lock()
+                .readback
+                .clone()
+                .unwrap_or_else(|| self.policy.clone())
+        });
+        ready(result)
     }
 
     fn start(&mut self) -> impl Future<Output = Result<(), InfraError>> + Send {
@@ -196,10 +223,14 @@ impl BackendSession for FakeSession {
         _spec: &ExecSpec,
         _stdin: &[u8],
     ) -> impl Future<Output = Result<ExecOutput, InfraError>> + Send {
-        let result = self.backend.tick().map(|()| ExecOutput {
-            exit_code: self.backend.lock().exec_exit,
-            stdout: Vec::new(),
-            stderr: Vec::new(),
+        let result = self.backend.tick().map(|()| {
+            let mut state = self.backend.lock();
+            let exit_code = state.exec_exits.pop_front().unwrap_or(state.exec_exit);
+            ExecOutput {
+                exit_code,
+                stdout: Vec::new(),
+                stderr: Vec::new(),
+            }
         });
         ready(result)
     }

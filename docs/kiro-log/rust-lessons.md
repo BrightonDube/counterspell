@@ -732,3 +732,9 @@ A manual `impl Debug` that prints a placeholder keeps a type's contents out of `
 A trait can declare an `async` method by returning `impl Future + Send`. Generics then pick the backend at compile time, so there is no `dyn` and no boxed future.
 `std::future::ready(value)` gives a ready future for a fake that does no waiting, which keeps the fake free of `async` functions that never `.await`.
 A `Mutex` guard must not live across an `.await`. The fake takes the lock in short sync blocks and releases it before returning, so the future stays `Send`.
+
+# Rust lesson: judge-sandbox T15
+
+`Drop` cannot `.await`, so the cleanup guard moves the container into a spawned task with `Handle::try_current().spawn(...)`. The normal path still awaits `close()`, so the caller knows the removal finished.
+`Option::take()` in `close` and `Drop` means the container is cleaned up once. After `take`, the `Drop` impl sees `None` and does nothing.
+A `?` inside `prepare` still closes the container, because `open_session` closes it on every error before it returns. Returning the error is then safe, and no code can leak a container by returning early.

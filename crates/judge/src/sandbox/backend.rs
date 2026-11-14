@@ -9,6 +9,7 @@ use std::future::Future;
 
 use thiserror::Error;
 
+use super::policy::ContainerPolicy;
 use super::spec::{ExecSpec, SessionSpec};
 
 /// A failure of the sandbox infrastructure. It is never a verdict on the user's code:
@@ -71,7 +72,7 @@ pub enum DriverEvent {
 /// Creates sandbox containers.
 pub trait Backend {
     /// The live container type this backend returns.
-    type Session: BackendSession;
+    type Session: BackendSession + 'static;
 
     /// Creates one container from the spec. Nothing is started yet.
     fn create(
@@ -87,6 +88,9 @@ pub trait BackendSession: Send {
 
     /// The container name, as given to the daemon.
     fn name(&self) -> &str;
+
+    /// Reads the container's configuration back from the daemon, as a policy to check.
+    fn read_policy(&mut self) -> impl Future<Output = Result<ContainerPolicy, InfraError>> + Send;
 
     /// Starts the container's idle PID 1.
     fn start(&mut self) -> impl Future<Output = Result<(), InfraError>> + Send;
