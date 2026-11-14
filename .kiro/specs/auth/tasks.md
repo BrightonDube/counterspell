@@ -207,7 +207,7 @@ Conventions for every Rust task:
   - Preserve: the verifier and `state` are never logged; `redirect_uri` comes from configuration.
   - Rust lesson: `async_trait` and trait objects.
 
-- [ ] **T19 [P] (30 min) GitHub adapter**
+- [x] **T19 [P] (30 min) GitHub adapter**
   - Files: `crates/server/src/auth/oauth/github.rs`, `crates/server/tests/auth_github.rs`.
   - Real `OAuthProvider` for GitHub using the `oauth2` crate for the code exchange with the PKCE verifier and `reqwest` for `GET /user` and `GET /user/emails`. Use the numeric `id` as the stable key; use only the primary, verified email; timeouts, 64 KiB response cap, no redirects on the token call. Pin the `oauth2` major version and adapt the API (marked **[U]** in the design).
   - Tests with `wiremock` standing in for GitHub (base URLs configurable): the token request carries `code_verifier`; profile requests carry the bearer token, `Accept` and `User-Agent`; an unverified or non-primary email yields `verified_email: None`; a `500` or malformed body yields a `ProviderError` without leaking the body.
@@ -217,7 +217,7 @@ Conventions for every Rust task:
   - Preserve: the access token is dropped after use and never logged.
   - Rust lesson: lifetimes in builder-style APIs, in plain terms.
 
-- [ ] **T20 [P] (30 min) Google adapter**
+- [x] **T20 [P] (30 min) Google adapter**
   - Files: `crates/server/src/auth/oauth/google.rs`, `crates/server/tests/auth_google.rs`.
   - Real `OAuthProvider` for Google: code exchange with the verifier, then `userinfo`. Use `sub` as the stable key; use the email only when `email_verified` is true. Same limits as T19.
   - Tests with `wiremock`: verifier sent; `email_verified: false` yields no email; missing `sub` is an error; error bodies are not echoed.
