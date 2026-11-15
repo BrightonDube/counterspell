@@ -25,6 +25,10 @@ const SUGGESTION_LIMIT: usize = 3;
 /// One statement for the whole dashboard. It returns one row: the JSON object and the UTC dates of
 /// the owner's completed runs. Only completed runs count as activity, and only accepted ones solve a
 /// problem. Only published problems can be solved, suggested or listed as candidates.
+///
+/// Weak concepts and recent runs are the owner's own history, so they also include problems that
+/// have since been unpublished. Their titles and concept names are public catalogue data, and no
+/// other learner's rows are read.
 const DASHBOARD_SQL: &str = r#"
 WITH owned_completed AS (
     SELECT s.id, s.problem_slug, s.verdict, s.finished_at
