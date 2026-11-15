@@ -95,7 +95,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 2: core frontend, after API tests are green
 
-- [ ] **T09 [S] (30 min) Build the core dashboard screen**
+- [x] **T09 [S] (30 min) Build the core dashboard screen**
   - Files: `web/src/routes/dashboard/+page.svelte`, `web/src/lib/dashboard/{client.ts,types.ts}`, and small components under `web/src/lib/dashboard/components/`.
   - Fetch `GET /api/dashboard` with the existing cookie session, display solved counts, streak, weak concepts, ten recent submissions, and suggested challenges.
   - Implement loading, no-activity, unauthenticated, retry/error, and active-run states. Do not use fixture values as production data and do not expose code or hidden outputs.
