@@ -50,3 +50,11 @@ Items that need Brighton, another spec, or a decision Kiro may not take alone. E
 3. **Dead-job alert window.** R9.5 measures dead jobs over 24 hours, and R9.6 alerts on one in the last hour. The report prints both `dead_jobs_24h` and `dead_jobs_1h`, and alerts on the hour.
 4. **P11 (grant check against Postgres 17): MODEL ONLY.** `ops-role.sql` and `ops-report.sql` were checked against the migration columns (`jobs`: state, run_after, lease_expires_at, updated_at; `submissions`: id, status, created_at, finished_at, verdict). They were not run on a server. The check is due when a Postgres 17 container is free (T27).
 5. **`jq` and `psql` on the host.** The report needs `jq` and `psql`. The base role does not install them yet.
+
+## Gaps found in review (fix before T24 and T28)
+
+1. **Install list.** The app role installs only the two deploy scripts. The backup (`counterspell-backup` plus its service and timer), the ops report (script, SQL, service and timer) and the restore drill (script, service and the drill template) are not installed yet. Add them to `app_scripts` (and the unit files) before T28. The SQL files install to `/usr/local/share/counterspell/`, the drill template to `/usr/local/share/counterspell/restore-drill-template.md`.
+2. **Host tools.** `jq` (ops report), `age` (backup and drill), `rclone` (backup and drill) and the `psql` client (ops report, role setup) are not installed by the base role. Add them to the base role's apt list before T24.
+3. **Fifth and sixth env files.** `/etc/counterspell/ops.env` (cs_ops_ro login, see T17) and `/etc/counterspell/drill.env` (`DRILL_IDENTITY_FILE` and the bucket) are new. The app role's env check covers only the four service files. Brighton confirms both files and their modes (0600 for ops.env, 0600 for drill.env).
+4. **Judge sandbox socket mount.** `compose.prod.yml` does not yet mount the sandbox socket into judge (the P1 red check). The T15 overlay adds it, as the design's judge block shows.
+5. **Deploy-side `preflight`.** The deploy script refuses at the preflight step until `counterspell-judge preflight` exists (judge-sandbox T22 is in progress). This is deliberate.
