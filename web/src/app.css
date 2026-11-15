@@ -105,3 +105,12 @@ body {
     transition-duration: 0ms;
   }
 }
+
+/* Hero scrim: the art fades into the page background behind the headline, so text keeps its contrast. */
+.hero-scrim {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--bg) 15%, transparent) 0%,
+    var(--bg) 88%
+  );
+}
