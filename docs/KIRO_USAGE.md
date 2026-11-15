@@ -357,3 +357,15 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 13:24-13:45 SAST: 34-problem-catalogue-implement-a5 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-problem-catalogue-a5.md`. Transcript: `docs/kiro-log/2026-11-15T1324-34-problem-catalogue-implement-a5.log`. Exit 0.
 - Credits used (from /usage): 8.87 (credits used now 3345.73/4000).
+
+### 2026-11-15 13:54-16:10 SAST: 29-dashboard-fsrs-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-dashboard-fsrs-a1.md`. Transcript: `docs/kiro-log/2026-11-15T1354-29-dashboard-fsrs-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 51.66 (credits used now 3397.39/4000).
+
+### 2026-11-15 16:16-16:34 SAST: 34-problem-catalogue-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-problem-catalogue-a1.md`. Transcript: `docs/kiro-log/2026-11-15T1616-34-problem-catalogue-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 6.36 (credits used now 3403.75/4000).
+
+### 2026-11-15 16:34-16:36 SAST: 34-problem-catalogue-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-problem-catalogue-a2.md`. Transcript: `docs/kiro-log/2026-11-15T1634-34-problem-catalogue-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.34 (credits used now 3405.09/4000).
