@@ -430,3 +430,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-16 00:32-00:34 SAST: 24-language-drivers-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-language-drivers-a1.md`. Transcript: `docs/kiro-log/2026-11-16T0032-24-language-drivers-implement-a1.log`. Exit 0.
 - Credits used (from /usage): 1.75 (credits used now 3545.06/4000).
+
+### 2026-11-16 00:40-01:42 SAST: 35-deploy-ops-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-deploy-ops-a1.md`. Transcript: `docs/kiro-log/2026-11-16T0040-35-deploy-ops-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 50.05 (credits used now 3595.11/4000).
+
+### 2026-11-16 01:42-01:45 SAST: 35-deploy-ops-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-deploy-ops-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0142-35-deploy-ops-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.87 (credits used now 3596.98/4000).
