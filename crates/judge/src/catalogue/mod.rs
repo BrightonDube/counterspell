@@ -7,6 +7,7 @@ pub mod approval;
 pub mod discover;
 pub mod manifest;
 pub mod plan;
+pub mod report;
 pub mod private_tree;
 pub mod retired;
 pub mod starter;

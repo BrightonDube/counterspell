@@ -173,7 +173,7 @@ Conventions for every task (same as `run-lifecycle`):
 
 ## Wave 3: importer writes and CLI
 
-- [ ] **C13 [S] [SUPERVISED] (30 min) Report model and log hygiene**
+- [x] **C13 [S] [SUPERVISED] (30 min) Report model and log hygiene**
   - Files: `crates/judge/src/catalogue/report.rs`, `crates/judge/tests/catalogue_logs.rs`.
   - Typed `Outcome` per pack (`Created`, `Unchanged`, `Refused(code)`, `Failed(code)`). Text and JSON renderers. Fields: slug, version, codes, counts, the first 12 hex characters of the hash. A test plants canary values in a fixture and asserts that no rendered line contains them.
   - Requirements: CAT-I20, CAT-X1, CAT-X4, CAT-X2.

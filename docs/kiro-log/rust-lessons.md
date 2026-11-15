@@ -1076,3 +1076,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option<&Approval>` lets the caller say "no record" with `None`, and the checker turns that into a named refusal rather than a panic.
 - A property test with a `Vec` as the model store is the simplest reference: it does the obvious thing, so the real planner can be compared against it.
 - Clippy `manual_contains` prefers `slice.contains(&value)` over `iter().any(|x| *x == value)`. The test helper must use `write!` for hex, because clippy rejects `format!` inside a collect.
+
+# Rust lesson: problem-catalogue C13
+- The renderers take `&PackReport`. Printing borrows the report, so the caller can print it and still use it afterwards.
+- `Outcome` is an enum with data in two variants. `label()` and `kind()` each `match` on it, so a new outcome is a compile error until every renderer handles it.
+- `chars().take(12).collect()` makes the hash prefix by character, not by byte, so the cut is always on a character boundary.
