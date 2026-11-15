@@ -33,3 +33,14 @@ Not started (remaining work, in tasks.md order):
 Design gap noticed in C02: the publish gate cannot see an unknown track, because `problems.track_slug` is a foreign key. An unknown track is refused by the key (23503), not by the gate. The test `pg_catalogue_publish_gate_unknown_track_refused_by_key` records that. Brighton may want the gate's wording changed in the spec.
 
 Left untracked on purpose: `crates/server/tests/pg_auth_tokens.proptest-regressions`, a seed file written by a proptest run that failed on the stale migration embed (`VersionMissing`). It is not part of this work.
+
+## Run of 15 Nov 2026 (attempt 2)
+
+Done this run: C14 (static import transaction, commit f23934f) and C15 (read-only dry run, commit 115bfd0).
+- C14 tests: `pg_catalogue_import_idempotent`, `pg_catalogue_versions_history`, `pg_catalogue_refusals_write_nothing`, `pg_catalogue_rollback_on_failure`.
+- C15 tests: `pg_catalogue_dry_run_no_writes`, `pg_catalogue_dry_run_reports_generator_change`, plus unit tests for `diff_files`.
+- The pack builder moved into `catalogue/testkit.rs` as `static_import`, so the test files share it. No test assertion changed.
+
+Not started, in tasks.md order: C16 (sandbox checks through `PackRunner`), C17, C18, C19, C19b, C20 to C23, C24 onward. Nothing is blocked on Brighton for C16 to C23 except sandbox runs, which stay open until T37 on a real rootless daemon. C00a and the HUMAN tasks C38 to C40 are unchanged.
+
+Open design note from C14/C15: the `VersionNotBumped` changed-file list covers public files only, because `problem_versions.manifest` holds public entries only (CAT-PT9). A private-only change still refuses, but its path is not named. Brighton should decide whether the refusal should name private paths by hash prefix.
