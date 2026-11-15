@@ -11,6 +11,7 @@ pub mod catalogue;
 pub mod config;
 pub mod executor;
 pub mod familiar;
+pub mod health;
 pub mod languages;
 pub mod problem_store;
 pub mod queue;

@@ -5,6 +5,7 @@
 
 use crate::config::JudgeConfig;
 use crate::executor::RunExecutor;
+use crate::health;
 use crate::queue::reap::run_reaper;
 use crate::worker::Worker;
 use sqlx::PgPool;
@@ -25,6 +26,7 @@ pub async fn serve<E: RunExecutor>(
     let worker = Arc::new(Worker::new(pool.clone(), cfg.clone(), executor, worker_id));
     tokio::join!(
         run_reaper(&pool, &cfg, shutdown.clone()),
-        Arc::clone(&worker).run(shutdown),
+        Arc::clone(&worker).run(shutdown.clone()),
+        health::beat_until_shutdown(health::heartbeat_path(), health::BEAT_EVERY, shutdown),
     );
 }
