@@ -1147,3 +1147,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option<DateTime>` in the test helper uses `bool::then_some`. A finished status gets a finish time and an unfinished one gets `None`, so the NULL matches what the database stores.
 - The privacy checks search the serialised private sections for another learner's ids. They fail on the exact string, so a leak cannot hide behind an equal count.
 - Removing the owner filter from the SQL made the isolation test fail, which shows that the assertion catches the leak.
+
+## dashboard-fsrs T07: HTTP contract and failure tests
+
+- A test server with a pool that cannot connect (`connect_lazy` plus a short `acquire_timeout`) forces the real failure path. The test then checks the response body, not only the status code.
+- `Value::as_object().keys()` gives the top-level keys. Sorting them and comparing with a literal list catches an extra field, such as a leaked code column, that a "contains" check would miss.
+- `Option` fields serialise as `null`. `is_null()` checks an unfinished run, and `get("code").is_none()` checks that a field is absent, so the two checks are different.

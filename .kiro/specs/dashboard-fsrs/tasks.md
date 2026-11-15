@@ -75,7 +75,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T03 and T05.
   - Rust lesson: explain test fixture ownership, `Option` for nullable database values, and why canary assertions catch aggregate leakage.
 
-- [ ] **T07 [P] (25 min) Add core API contract and failure tests**
+- [x] **T07 [P] (25 min) Add core API contract and failure tests**
   - Files: `crates/server/tests/dashboard_api.rs` or the existing HTTP test location.
   - Test JSON field names, zero/empty response shape, stable `401` and `503` errors, active submission with no verdict, and safe output that contains no code or hidden-test fields.
   - Verify: tests use the repository's authenticated test resolver and do not call external OAuth, Resend, Valkey, or Docker services.
