@@ -1,6 +1,23 @@
-import { render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import Hero from './Hero.svelte';
+import type { LandingPlan } from './motion-plan';
+
+const STATIC: LandingPlan = {
+	mode: 'static',
+	loadGsap: false,
+	layers: { moon: true, far: true, near: true, smoke: false },
+	bats: false,
+	reveals: false
+};
+
+const MOTION: LandingPlan = {
+	mode: 'motion',
+	loadGsap: true,
+	layers: { moon: true, far: true, near: true, smoke: true },
+	bats: true,
+	reveals: true
+};
 
 describe('Hero', () => {
 	it('renders the approved headline as the page h1', () => {
@@ -37,5 +54,51 @@ describe('Hero', () => {
 	it('does not mount the video before first paint', () => {
 		const { container } = render(Hero);
 		expect(container.querySelector('video')).toBeNull();
+	});
+
+	it('shows the fog and embers overlays in the static plan, and no smoke or bats (T16)', () => {
+		const { container } = render(Hero, { props: { plan: STATIC } });
+		const sources = Array.from(container.querySelectorAll('img')).map((img) =>
+			img.getAttribute('src')
+		);
+		expect(sources).toContain('/art/fx/fog-layer-cold.webp');
+		expect(sources).toContain('/art/fx/embers.webp');
+		expect(sources).not.toContain('/art/fx/smoke-plume-ash.webp');
+		expect(sources).not.toContain('/art/fx/bat-swarm.webp');
+	});
+
+	it('adds smoke and bats in the motion plan, hidden until GSAP sets them (T16)', () => {
+		const { container } = render(Hero, { props: { plan: MOTION } });
+		const smoke = container.querySelector('img.layer-smoke');
+		const bats = container.querySelector('img.layer-bats');
+		expect(smoke?.getAttribute('src')).toBe('/art/fx/smoke-plume-ash.webp');
+		expect(bats?.getAttribute('src')).toBe('/art/fx/bat-swarm.webp');
+		// Starts invisible so the overlays do not pop in before the scene timelines load.
+		expect(smoke?.getAttribute('style')).toContain('opacity: 0');
+		expect(bats?.getAttribute('style')).toContain('opacity: 0');
+	});
+
+	it('drops the far fog layer when the plan turns it off (phone rule, R26)', () => {
+		const sourcesOf = (container: HTMLElement) =>
+			Array.from(container.querySelectorAll('img')).map((img) => img.getAttribute('src'));
+		const desktop = render(Hero, { props: { plan: MOTION } });
+		expect(sourcesOf(desktop.container)).toContain('/art/fx/fog-layer-cold.webp');
+		desktop.unmount();
+
+		const phone: LandingPlan = { ...MOTION, layers: { ...MOTION.layers, far: false }, bats: false };
+		const { container } = render(Hero, { props: { plan: phone } });
+		expect(sourcesOf(container)).not.toContain('/art/fx/fog-layer-cold.webp');
+	});
+
+	it('shows the flat moon and graveyard SVGs when the poster fails to load (T16 fallback)', async () => {
+		const { container } = render(Hero, { props: { plan: STATIC } });
+		const poster = container.querySelector('picture img') as HTMLImageElement;
+		await fireEvent.error(poster);
+		const sources = Array.from(container.querySelectorAll('img')).map((img) =>
+			img.getAttribute('src')
+		);
+		expect(sources).toContain('/landing/moon.svg');
+		expect(sources).toContain('/landing/graveyard-far.svg');
+		expect(sources).toContain('/landing/graveyard-near.svg');
 	});
 });

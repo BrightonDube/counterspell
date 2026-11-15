@@ -53,7 +53,7 @@
 	data-smoke-marker="counterspell-svelte-static"
 	data-motion={plan.mode}
 >
-	<Hero />
+	<Hero {plan} />
 	<div class="mx-auto flex max-w-3xl flex-col gap-16 px-6 py-16 sm:px-10">
 		<div data-reveal>
 			<GhostBeats />

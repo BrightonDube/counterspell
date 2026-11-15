@@ -160,4 +160,13 @@ describe('startScenes', () => {
 		dispose();
 		expect(stub.revert).toHaveBeenCalledTimes(1);
 	});
+
+	it('moves the poster with scale only, so the LCP image is never hidden (T16)', async () => {
+		const stub = fakeGsap();
+		await startScenes(MOTION, sceneRoot(), deps(stub));
+		const moon = stub.calls.find((c) => c.target === '.layer-moon');
+		expect(moon?.vars?.scale).toBe(1.03);
+		expect(moon?.vars?.opacity).toBeUndefined();
+		expect(moon?.from?.opacity).toBeUndefined();
+	});
 });
