@@ -84,6 +84,11 @@ body {
   outline-offset: 2px;
 }
 
+::selection {
+  background: var(--accent-moss-deep);
+  color: var(--text);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -16,12 +16,15 @@
 	let videoEl = $state<HTMLVideoElement | undefined>(undefined);
 	// If the poster cannot load, the flat placeholder SVGs stand in for it.
 	let posterFailed = $state(false);
+	// Overlays wait for first paint, so the poster is the only image competing for the first bytes.
+	let overlaysReady = $state(false);
 
 	// The video is mounted only after first paint, and only when the visitor's settings allow it.
 	onMount(() => {
 		let active = true;
 		afterPaint(() => {
 			if (!active) return;
+			overlaysReady = true;
 			const connection = (navigator as Navigator & { connection?: { saveData?: boolean } })
 				.connection;
 			video = chooseHeroVideo({
@@ -123,7 +126,7 @@
 			</video>
 		{/if}
 
-		{#if plan.layers.far}
+		{#if overlaysReady && plan.layers.far}
 			<img
 				class="layer-far absolute inset-x-0 bottom-0 h-auto w-full"
 				src="/art/fx/fog-layer-cold.webp"
@@ -135,7 +138,7 @@
 			/>
 		{/if}
 
-		{#if plan.layers.near}
+		{#if overlaysReady && plan.layers.near}
 			<img
 				class="layer-near absolute bottom-0 left-0 h-auto w-2/3"
 				src="/art/fx/embers.webp"
@@ -147,7 +150,7 @@
 			/>
 		{/if}
 
-		{#if plan.layers.smoke}
+		{#if overlaysReady && plan.layers.smoke}
 			<!-- Starts at opacity 0 so it never pops in before the scene timelines set it. -->
 			<img
 				class="layer-smoke absolute right-[10%] bottom-0 h-[70%] w-auto"
@@ -161,7 +164,7 @@
 			/>
 		{/if}
 
-		{#if plan.bats}
+		{#if overlaysReady && plan.bats}
 			<!-- Starts at opacity 0 so the flock is not visible before the one-shot flight begins. -->
 			<img
 				class="layer-bats absolute top-[18%] left-0 h-auto w-1/2"

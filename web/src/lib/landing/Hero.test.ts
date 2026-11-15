@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/svelte';
+import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
 import { describe, expect, it } from 'vitest';
 import Hero from './Hero.svelte';
 import type { LandingPlan } from './motion-plan';
@@ -18,6 +18,21 @@ const MOTION: LandingPlan = {
 	bats: true,
 	reveals: true
 };
+
+const sourcesOf = (container: HTMLElement) =>
+	Array.from(container.querySelectorAll('img')).map((img) => img.getAttribute('src'));
+
+/**
+ * Renders the hero and waits for the overlays. They are added after first paint (T18), so a
+ * plain render does not contain them yet. The embers layer is in every plan, so it marks "settled".
+ */
+async function renderSettled(plan?: LandingPlan) {
+	const result = render(Hero, plan ? { props: { plan } } : undefined);
+	await waitFor(() => expect(result.container.querySelector('img.layer-near')).not.toBeNull(), {
+		timeout: 3000
+	});
+	return result;
+}
 
 describe('Hero', () => {
 	it('renders the approved headline as the page h1', () => {
@@ -56,19 +71,26 @@ describe('Hero', () => {
 		expect(container.querySelector('video')).toBeNull();
 	});
 
-	it('shows the fog and embers overlays in the static plan, and no smoke or bats (T16)', () => {
+	it('defers every overlay until after first paint, so the poster is the only first-load image (T18)', async () => {
 		const { container } = render(Hero, { props: { plan: STATIC } });
-		const sources = Array.from(container.querySelectorAll('img')).map((img) =>
-			img.getAttribute('src')
-		);
+		expect(sourcesOf(container)).not.toContain('/art/fx/fog-layer-cold.webp');
+		expect(sourcesOf(container)).not.toContain('/art/fx/embers.webp');
+		await waitFor(() => expect(sourcesOf(container)).toContain('/art/fx/embers.webp'), {
+			timeout: 3000
+		});
+	});
+
+	it('shows the fog and embers overlays in the static plan, and no smoke or bats (T16)', async () => {
+		const { container } = await renderSettled(STATIC);
+		const sources = sourcesOf(container);
 		expect(sources).toContain('/art/fx/fog-layer-cold.webp');
 		expect(sources).toContain('/art/fx/embers.webp');
 		expect(sources).not.toContain('/art/fx/smoke-plume-ash.webp');
 		expect(sources).not.toContain('/art/fx/bat-swarm.webp');
 	});
 
-	it('adds smoke and bats in the motion plan, hidden until GSAP sets them (T16)', () => {
-		const { container } = render(Hero, { props: { plan: MOTION } });
+	it('adds smoke and bats in the motion plan, hidden until GSAP sets them (T16)', async () => {
+		const { container } = await renderSettled(MOTION);
 		const smoke = container.querySelector('img.layer-smoke');
 		const bats = container.querySelector('img.layer-bats');
 		expect(smoke?.getAttribute('src')).toBe('/art/fx/smoke-plume-ash.webp');
@@ -78,15 +100,13 @@ describe('Hero', () => {
 		expect(bats?.getAttribute('style')).toContain('opacity: 0');
 	});
 
-	it('drops the far fog layer when the plan turns it off (phone rule, R26)', () => {
-		const sourcesOf = (container: HTMLElement) =>
-			Array.from(container.querySelectorAll('img')).map((img) => img.getAttribute('src'));
-		const desktop = render(Hero, { props: { plan: MOTION } });
+	it('drops the far fog layer when the plan turns it off (phone rule, R26)', async () => {
+		const desktop = await renderSettled(MOTION);
 		expect(sourcesOf(desktop.container)).toContain('/art/fx/fog-layer-cold.webp');
 		desktop.unmount();
 
 		const phone: LandingPlan = { ...MOTION, layers: { ...MOTION.layers, far: false }, bats: false };
-		const { container } = render(Hero, { props: { plan: phone } });
+		const { container } = await renderSettled(phone);
 		expect(sourcesOf(container)).not.toContain('/art/fx/fog-layer-cold.webp');
 	});
 
@@ -94,9 +114,7 @@ describe('Hero', () => {
 		const { container } = render(Hero, { props: { plan: STATIC } });
 		const poster = container.querySelector('picture img') as HTMLImageElement;
 		await fireEvent.error(poster);
-		const sources = Array.from(container.querySelectorAll('img')).map((img) =>
-			img.getAttribute('src')
-		);
+		const sources = sourcesOf(container);
 		expect(sources).toContain('/landing/moon.svg');
 		expect(sources).toContain('/landing/graveyard-far.svg');
 		expect(sources).toContain('/landing/graveyard-near.svg');
