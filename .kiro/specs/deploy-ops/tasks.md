@@ -157,7 +157,7 @@ Conventions:
   - Verify: `bash deploy/vps/tests/compose_shape.sh` green; `docker compose -f docker-compose.yml config` (base, with `.env` absent) still works for local development; `docker compose ... config` with the prod override shows no `build:` for the three app services.
   - Note: Compose `!reset` needs Compose 2.24 or later. Record the local `docker compose version` in the task note.
 
-- [ ] **T16 [P] (30 min) Nightly encrypted backup**
+- [x] **T16 [P] (30 min) Nightly encrypted backup**
   - Files: `deploy/vps/backup/counterspell-backup` (script), `deploy/vps/backup/counterspell-backup.service`, `deploy/vps/backup/counterspell-backup.timer`, `deploy/vps/backup/backup.env.example`, `deploy/vps/tests/backup.bats`.
   - Script: `pg_dump --format=custom --no-owner --no-privileges` through `docker compose exec -T postgres`, piped into `age -r "$AGE_RECIPIENT"` into `dumps/counterspell-<UTC>.dump.age`; SHA-256 line in `manifests/`; prune to 7 newest after the new file is written (R8.2, R8.3); `rclone copy` to the bucket (R8.4); Healthchecks `/success` or `/fail` (R8.7). Timer at `01:30:00` UTC with `Persistent=true` (R8.1).
   - Tests with fakes: plaintext never written to disk (the fake `pg_dump` output goes to a pipe and the test checks no plaintext file exists); prune keeps exactly 7; a failed `age` keeps old dumps; a failed upload still keeps the local encrypted dump and signals `/fail`. Use an `age` key generated in the test's temporary directory and deleted after (R12.6).
