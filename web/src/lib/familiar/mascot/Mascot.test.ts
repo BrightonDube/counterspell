@@ -212,3 +212,37 @@ describe('Mascot effects', () => {
 		clock.mockRestore();
 	});
 });
+
+describe('Mascot mute, hide and reduced motion (T31)', () => {
+	// Breaks if muting hides the words, so a muted learner loses the measured result.
+	it('keeps the headline visible when muted, with a static face', async () => {
+		render(Mascot, { props: props(4, { muted: true }) });
+		await artDrawn();
+		expect(screen.getByText('Looks linear, medium confidence. Reference linear.')).toBeTruthy();
+		expect(document.getElementById('fam-eyes-4')).not.toBeNull();
+	});
+
+	// Breaks if the show button does nothing, so a hidden learner cannot bring the figure back.
+	it('calls the parent when the hidden dot is pressed', async () => {
+		const onToggleHidden = vi.fn();
+		render(Mascot, { props: props(2, { hidden: true, onToggleHidden }) });
+		await screen.getByRole('button', { name: 'Show Familiar' }).click();
+		expect(onToggleHidden).toHaveBeenCalledTimes(1);
+	});
+
+	// Breaks if reduced motion removes the failure text, so the learner gets no signal once the burst is skipped.
+	it('shows the badge text and no particles for a failure under reduced motion', async () => {
+		render(Mascot, {
+			props: props(1, {
+				effect: 'crack_burst',
+				live: true,
+				reducedMotion: true,
+				badge: 'Timeout',
+				failed: true
+			})
+		});
+		await artDrawn();
+		expect(screen.getByText('Timeout')).toBeTruthy();
+		expect(fxChildren()).toBe(0);
+	});
+});
