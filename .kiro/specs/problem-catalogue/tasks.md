@@ -334,7 +334,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_api` (filters; solved, attempted and unattempted from the caller's own submissions only; another user's solved submission does not change the status; unpublished problems are absent). The unit test checks the invalid filter error code.
   - Rust lesson: the handler builds the response from `dto` structs, so a column that is not in the struct cannot reach the JSON, even if the query returns it.
 
-- [ ] **C31 [S] [SUPERVISED] (30 min) `GET /api/problems/{slug}` detail and the no-leak tests**
+- [x] **C31 [S] [SUPERVISED] (30 min) `GET /api/problems/{slug}` detail and the no-leak tests**
   - Files: `crates/server/src/catalogue/{read.rs,dto.rs,handlers.rs}`, `crates/server/tests/pg_catalogue_api.rs`, `crates/server/tests/catalogue_no_leak.rs`.
   - Build the detail response from the explicit struct in `design.md`. Examples are public samples only. No hint bodies. Unknown and unpublished slugs give the same `404 not_found` body.
   - Requirements: CAT-A4, CAT-A5, CAT-A6, CAT-A8, CAT-A9, CAT-X1 to CAT-X3, PRB-3.

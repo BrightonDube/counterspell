@@ -16,7 +16,7 @@ use counterspell_server::{
     testkit::BearerTestResolver,
     AppState,
 };
-use serde_json::Value;
+use serde_json::{json, Value};
 use sqlx::PgPool;
 use support::{config_for, get, serve, Fixture};
 use uuid::Uuid;
@@ -133,6 +133,67 @@ async fn pg_anonymous_callers_see_a_null_status(pool: PgPool) {
 
     let body: Value = serde_json::from_str(&reply.body).expect("JSON");
     assert_eq!(status_of(&body, "two-sum"), Value::Null);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_detail_returns_the_pinned_public_fields(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("published");
+    let fixture = Fixture::new();
+    let address = app(&pool, &fixture.dir).await;
+
+    let reply = get(address, "/api/problems/two-sum", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    let body: Value = serde_json::from_str(&reply.body).expect("JSON");
+    assert_eq!(body["slug"], "two-sum");
+    assert_eq!(body["title"], "Two Sum");
+    assert_eq!(body["track"]["slug"], "arrays");
+    assert_eq!(body["difficulty"], "easy");
+    assert_eq!(body["constraints"], json!([]));
+    assert_eq!(
+        body["examples"],
+        json!([
+            {"input": [1], "expected": 1},
+            {"input": [2], "expected": 2}
+        ])
+    );
+    assert_eq!(body["signature"]["function_name"], "two_sum");
+    assert_eq!(
+        body["signature"]["parameters"],
+        json!([
+            {"name": "values", "type": "list[int]"},
+            {"name": "target", "type": "int"}
+        ])
+    );
+    assert_eq!(body["signature"]["return_type"], "list[int]");
+    assert_eq!(body["limits"], json!({"time_ms": 2000, "mem_mb": 256}));
+    assert_eq!(body["enabled_languages"], json!(["javascript", "python"]));
+    assert_eq!(body["hint_count"], 4);
+    assert!(body["starters"]["python"].is_string());
+    assert!(body["starters"]["javascript"].is_string());
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_detail_unknown_and_unpublished_slugs_get_the_same_404(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("published");
+    insert_static_fixture(&pool, "count-pairs", 1)
+        .await
+        .expect("static only");
+    let fixture = Fixture::new();
+    let address = app(&pool, &fixture.dir).await;
+
+    let unknown = get(address, "/api/problems/no-such-problem", &[]).await;
+    let unpublished = get(address, "/api/problems/count-pairs", &[]).await;
+
+    assert_eq!(unknown.status, 404);
+    assert_eq!(unpublished.status, 404);
+    assert_eq!(unknown.body, unpublished.body);
 }
 
 #[ignore = "needs DATABASE_URL"]

@@ -3,12 +3,19 @@
 //! Only published problems appear. The caller's status is computed in SQL from that caller's own
 //! submissions only, so one learner's runs can never change another learner's status.
 
+use std::collections::BTreeMap;
+
+use serde::Deserialize;
 use serde_json::Value;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use super::dto::{ConceptRef, ProblemSummary, SolveStatus, TrackRef};
+use super::dto::{
+    ConceptRef, Example, LimitsView, ParameterView, ProblemDetail, ProblemSummary, SignatureView,
+    SolveStatus, TrackRef,
+};
 use crate::error::ApiError;
+use crate::seams::LanguageCatalog;
 
 /// The most problems one list response can hold (CAT-A3, design decision D15).
 pub const LIST_CAP: i64 = 200;
@@ -73,6 +80,154 @@ fn check_slug(value: &str, name: &str) -> Result<(), ApiError> {
 
 fn invalid(message: &str) -> ApiError {
     ApiError::bad_request("invalid_filter", message.to_owned())
+}
+
+/// The signature as the importer stores it, with grimoire's field names. Every field is required, so a
+/// malformed stored value is an error rather than a silently empty signature.
+#[derive(Deserialize)]
+struct StoredSignature {
+    function: String,
+    params: Vec<StoredParam>,
+    returns: String,
+}
+
+/// One stored parameter.
+#[derive(Deserialize)]
+struct StoredParam {
+    name: String,
+    #[serde(rename = "type")]
+    kind: String,
+}
+
+type DetailRow = (
+    i32,
+    String,
+    String,
+    String,
+    String,
+    String,
+    Value,
+    String,
+    Value,
+    Value,
+    Value,
+    i64,
+);
+
+/// Reads the pinned published version of one problem (CAT-L1, CAT-A4). Returns `None` for an unknown
+/// slug or an unpublished problem, so both cases look the same to the caller (CAT-A6).
+///
+/// `languages` decides which starter languages are listed as enabled.
+///
+/// # Errors
+///
+/// Returns the database error when a query fails, or a decode error when a stored value is not in the
+/// expected shape.
+pub async fn published_detail(
+    pool: &PgPool,
+    slug: &str,
+    languages: &LanguageCatalog,
+) -> Result<Option<ProblemDetail>, sqlx::Error> {
+    let row: Option<DetailRow> = sqlx::query_as(
+        "SELECT v.version, p.slug, v.title, t.slug, t.name, v.difficulty, \
+                COALESCE(c.concepts, '[]'::jsonb), v.statement_markdown, v.constraints, v.signature, \
+                v.limits, \
+                (SELECT count(*) FROM problem_hints h WHERE h.problem_slug = p.slug AND h.version = v.version) \
+         FROM problems p \
+         JOIN problem_versions v ON v.problem_slug = p.slug AND v.version = p.published_version \
+         JOIN tracks t ON t.slug = v.track_slug \
+         LEFT JOIN LATERAL ( \
+             SELECT jsonb_agg(jsonb_build_object('slug', k.id, 'name', k.name) ORDER BY k.id) AS concepts \
+             FROM problem_concepts pc JOIN concepts k ON k.id = pc.concept_id \
+             WHERE pc.problem_slug = p.slug \
+         ) c ON true \
+         WHERE p.slug = $1 AND p.publication_state = 'published'",
+    )
+    .bind(slug)
+    .fetch_optional(pool)
+    .await?;
+    let Some((
+        version,
+        slug,
+        title,
+        track_slug,
+        track_name,
+        difficulty,
+        concepts,
+        statement,
+        constraints,
+        signature,
+        limits,
+        hint_count,
+    )) = row
+    else {
+        return Ok(None);
+    };
+
+    let examples: Vec<(Value, Value)> = sqlx::query_as(
+        "SELECT input, expected FROM problem_examples \
+         WHERE problem_slug = $1 AND version = $2 ORDER BY ordinal",
+    )
+    .bind(&slug)
+    .bind(version)
+    .fetch_all(pool)
+    .await?;
+
+    let starters: Vec<(String, String)> = sqlx::query_as(
+        "SELECT lang, code FROM problem_starters WHERE problem_slug = $1 AND version = $2 ORDER BY lang",
+    )
+    .bind(&slug)
+    .bind(version)
+    .fetch_all(pool)
+    .await?;
+
+    let concepts: Vec<ConceptRef> = serde_json::from_value(concepts).map_err(decode)?;
+    let constraints: Vec<String> = serde_json::from_value(constraints).map_err(decode)?;
+    let signature: StoredSignature = serde_json::from_value(signature).map_err(decode)?;
+    let limits: LimitsView = serde_json::from_value(limits).map_err(decode)?;
+    let starters: BTreeMap<String, String> = starters.into_iter().collect();
+    let enabled_languages = starters
+        .keys()
+        .filter(|lang| languages.find(lang).is_some())
+        .cloned()
+        .collect();
+
+    Ok(Some(ProblemDetail {
+        slug,
+        title,
+        track: TrackRef {
+            slug: track_slug,
+            name: track_name,
+        },
+        difficulty,
+        concepts,
+        statement_markdown: statement,
+        constraints,
+        examples: examples
+            .into_iter()
+            .map(|(input, expected)| Example { input, expected })
+            .collect(),
+        signature: SignatureView {
+            function_name: signature.function,
+            parameters: signature
+                .params
+                .into_iter()
+                .map(|param| ParameterView {
+                    name: param.name,
+                    kind: param.kind,
+                })
+                .collect(),
+            return_type: signature.returns,
+        },
+        starters,
+        enabled_languages,
+        limits,
+        hint_count,
+    }))
+}
+
+fn decode(error: serde_json::Error) -> sqlx::Error {
+    sqlx::Error::Decode(Box::new(error))
 }
 
 type ListRow = (

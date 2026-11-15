@@ -9,9 +9,11 @@ mod support;
 use std::collections::BTreeSet;
 
 use counterspell_server::catalogue::dto::{
-    ConceptRef, ProblemListResponse, ProblemSummary, SolveStatus, TrackRef,
+    ConceptRef, Example, LimitsView, ParameterView, ProblemDetail, ProblemListResponse,
+    ProblemSummary, SignatureView, SolveStatus, TrackRef,
 };
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 use support::{get, serve, state_for, Fixture};
 
 fn keys(value: &Value) -> BTreeSet<String> {
@@ -88,6 +90,77 @@ fn list_item_keys_match_the_allow_list_exactly() {
         keys(&value["problems"][0]["concepts"][0]),
         set(&["slug", "name"])
     );
+}
+
+fn detail_sample() -> ProblemDetail {
+    ProblemDetail {
+        slug: "count-pairs".to_owned(),
+        title: "Count the Pairs".to_owned(),
+        track: TrackRef {
+            slug: "arrays".to_owned(),
+            name: "Arrays".to_owned(),
+        },
+        difficulty: "easy".to_owned(),
+        concepts: vec![ConceptRef {
+            slug: "pairs".to_owned(),
+            name: "Pairs".to_owned(),
+        }],
+        statement_markdown: "# Count the Pairs".to_owned(),
+        constraints: vec!["At most 10 items.".to_owned()],
+        examples: vec![Example {
+            input: json!([[1, 2], 3]),
+            expected: json!(1),
+        }],
+        signature: SignatureView {
+            function_name: "count_pairs".to_owned(),
+            parameters: vec![ParameterView {
+                name: "values".to_owned(),
+                kind: "list[int]".to_owned(),
+            }],
+            return_type: "int".to_owned(),
+        },
+        starters: BTreeMap::from([("python".to_owned(), "def count_pairs(values):".to_owned())]),
+        enabled_languages: vec!["python".to_owned()],
+        limits: LimitsView {
+            time_ms: 2000,
+            mem_mb: 256,
+        },
+        hint_count: 4,
+    }
+}
+
+#[test]
+fn detail_keys_match_the_allow_list_exactly() {
+    let value = serde_json::to_value(detail_sample()).expect("serialises");
+
+    assert_eq!(
+        keys(&value),
+        set(&[
+            "slug",
+            "title",
+            "track",
+            "difficulty",
+            "concepts",
+            "statement_markdown",
+            "constraints",
+            "examples",
+            "signature",
+            "starters",
+            "enabled_languages",
+            "limits",
+            "hint_count",
+        ])
+    );
+    assert_eq!(keys(&value["examples"][0]), set(&["input", "expected"]));
+    assert_eq!(
+        keys(&value["signature"]),
+        set(&["function_name", "parameters", "return_type"])
+    );
+    assert_eq!(
+        keys(&value["signature"]["parameters"][0]),
+        set(&["name", "type"])
+    );
+    assert_eq!(keys(&value["limits"]), set(&["time_ms", "mem_mb"]));
 }
 
 #[test]

@@ -44,3 +44,9 @@ C03's `submissions_problem_fk` broke about 75 existing database tests, because t
 | Task | Commit | What Brighton should check |
 |---|---|---|
 | C28 | 455e8db | `PgProblemLookup` in `crates/server/src/catalogue/lookup.rs`. Check: (1) `AppState::new` now uses the database lookup, so every server test that builds state reads `problems`; the `pg_` suite passed; (2) a database error is logged and answered as "not found" (fail closed), not as a 500; (3) the publication check is in the SQL `WHERE`. |
+
+## C31 (attempt 6)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C31 | (see git log "problem-catalogue C31") | `read::published_detail` and `GET /api/problems/{slug}` in `crates/server/src/catalogue/`. Check: (1) the detail fields come from the pinned `published_version` only; (2) unknown and unpublished slugs return one identical 404 body; (3) the judge test-kit signature and constraints were changed to the full stored shape (`params`, `returns`), with no assertion weakened; (4) the no-leak test plants no canary in a synthetic private fixture yet, because `crates/judge/tests/fixtures/private/` does not exist. Canaries come from the judge test kit's hidden tests, reference and known ghosts. |
