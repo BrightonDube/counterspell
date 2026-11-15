@@ -56,6 +56,28 @@ The server uses `HOST=0.0.0.0`, `PORT=8080`, and `STATIC_DIR=web/build` by
 default. Configuration is supplied through the process environment. Do not
 commit secrets or `.env` files.
 
+## Run lifecycle
+
+A run moves from `POST /api/runs` to one terminal result, and Postgres is the only store for it.
+
+- The server saves the submission and its queue job in one transaction. An `Idempotency-Key` returns the same run on a retry.
+- A judge claims the job with `FOR UPDATE SKIP LOCKED` and a renewable lease. Every judge write must pass the claim's fence (job, owner and attempt).
+- Each event is a row in `run_events` with a gap-free sequence number. The terminal result is written once.
+- `GET /api/runs/{id}/events` streams the events as Server-Sent Events. The `id:` is the sequence number, so a reconnect with `Last-Event-ID` resumes where it stopped.
+- Valkey holds rate-limit counters only. It is not a queue or an event bus.
+
+Database tests use the `pg_` (and `valkey_`) prefix and are ignored by default. To run them, start a throwaway Postgres 17 and export its URL in your shell. Do not write the URL or password to a file:
+
+```bash
+docker run --rm -d --name cs-pg -e POSTGRES_PASSWORD=<throwaway> -p 5432:5432 postgres:17-alpine
+export DATABASE_URL=postgres://postgres:<throwaway>@127.0.0.1:5432/postgres
+export VALKEY_URL=redis://127.0.0.1:6379
+cargo test --workspace --all-features -- --ignored pg_ valkey_
+docker stop cs-pg
+```
+
+The definition-of-done test writes `target/run-lifecycle/dod-report.json`. Results from one recorded run are in `docs/kiro-log/run-lifecycle-dod.md`.
+
 ## Compose smoke test
 
 With Docker Engine and Compose available:

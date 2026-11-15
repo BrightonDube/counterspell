@@ -385,3 +385,8 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 18:42-18:57 SAST: 25-auth-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a2.md`. Transcript: `docs/kiro-log/2026-11-15T1842-25-auth-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 2.39 (credits used now 3440.24/4000).
+
+### 2026-11-15 run-lifecycle: SSE, restart tests, DoD and CI (Kiro CLI, claude-haiku-5.5)
+- Continued the run-lifecycle spec from T29 to T37 and T39. Each task was test-first, with a wave-end review after Wave 2 and the fixes it led to. Transcript: `docs/kiro-log/2026-11-15T1903-22-run-lifecycle-implement-a1.log`.
+- Brighton approved the `futures-util` dependency in the standing decisions on 14 November, which unblocked the SSE work.
+- Records of what Kiro changed and what Brighton must check are in `docs/kiro-log/run-lifecycle-review-queue.md` and `docs/kiro-log/run-lifecycle-blockers.md`.
