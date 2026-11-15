@@ -33,6 +33,11 @@ use tower_http::{
 };
 
 use crate::{
+    auth::{
+        csrf::{apply_api_hardening, WebOrigin},
+        resolver::SessionUserResolver,
+        AuthState,
+    },
     config::ServerConfig,
     error::ApiError,
     ratelimit::Limiter,
@@ -56,6 +61,10 @@ pub struct AppState {
     pub limiter: Limiter,
     /// Tells open event streams when a run has new events. Idle until `main` starts the listener.
     pub run_waker: runs::wake::RunWaker,
+    /// The auth state. `None` mounts no auth routes and leaves the user resolver as it was.
+    pub auth: Option<AuthState>,
+    /// The site's own origin for the CSRF guard. Set together with `auth`.
+    pub origin: Option<Arc<WebOrigin>>,
 }
 
 impl AppState {
@@ -71,7 +80,30 @@ impl AppState {
             languages: Arc::new(languages),
             limiter,
             run_waker: runs::wake::RunWaker::idle(),
+            auth: None,
+            origin: None,
         }
+    }
+
+    /// Mounts the auth routes, makes sessions identify the caller, and turns on the CSRF guard for
+    /// every `/api` route. `public_base_url` is the site origin the guard compares `Origin` with.
+    ///
+    /// # Errors
+    ///
+    /// Returns the URL parser's error when `public_base_url` is not an absolute URL.
+    pub fn with_auth(
+        mut self,
+        auth: AuthState,
+        public_base_url: &str,
+    ) -> Result<Self, url::ParseError> {
+        let origin = WebOrigin::from_base_url(public_base_url)?;
+        self.user_resolver = Arc::new(SessionUserResolver::new(
+            auth.sessions.clone(),
+            auth.cookies.session_name().to_owned(),
+        ));
+        self.auth = Some(auth);
+        self.origin = Some(Arc::new(origin));
+        Ok(self)
     }
 
     /// Replaces the user resolver. Used by tests and, later, by the auth spec.
@@ -106,20 +138,26 @@ pub fn build_router(state: AppState) -> Router {
     let body_limit =
         usize::try_from(state.config.limits.request_body_limit_bytes).unwrap_or(usize::MAX);
 
-    Router::new()
+    let hardening = state.auth.clone().zip(state.origin.clone());
+    let api = Router::new()
         .route("/api/health", get(health))
         .route("/api/runs", post(runs::create::post_run))
         .route("/api/runs/{id}", get(runs::read::get_run))
         .route("/api/runs/{id}/cancel", post(runs::cancel::cancel_run))
         .route("/api", any(api_not_found))
         .route("/api/{*path}", any(api_not_found))
-        .fallback_service(static_files)
+        .with_state(state);
+    let api = match hardening {
+        Some((auth, origin)) => apply_api_hardening(api.merge(auth::router(auth)), origin),
+        None => api,
+    };
+
+    api.fallback_service(static_files)
         .layer(RequestBodyLimitLayer::new(body_limit))
         .layer(SetResponseHeaderLayer::overriding(
             HeaderName::from_static("x-content-type-options"),
             HeaderValue::from_static("nosniff"),
         ))
-        .with_state(state)
 }
 
 async fn health() -> Json<Value> {

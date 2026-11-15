@@ -127,3 +127,34 @@ T11, T12, T13, T15, T16, T24, T26, T28 and T29 to T32 were already ticked in ear
 ### Notes for Brighton
 - `counterspell-judge` is a dev-dependency of `counterspell-server`. Run-lifecycle added it for the test kit, before auth existed. The T01 check "cargo tree shows no counterspell-judge" passes for normal dependencies only. Decide whether the dev-dependency is acceptable.
 - Two SUPERVISED tasks deviate from their text: T18 ships the fake provider later than the task list says (in T21), and T21's P6 randomised model is a fixed sequence test.
+
+## Attempt 7 (15 Nov 2026, this run): T22 to T27 and most of T33
+
+### Done and committed this run
+- T22 `aa7188e`, T23 `5c419af`, T25 `c20e951`, T27 `acfc31a`. Each has tests and a review-queue entry.
+- T28 is still ticked from attempt 3. Its reset function was changed in an earlier run.
+- T33 code: `auth/setup.rs` (builds the state from `AuthConfig`), `auth/cleanup.rs` (hourly purge), `lib.rs` (`AppState::with_auth`, CSRF guard on `/api`), `main.rs`, `docker-compose.yml` (auth variables on `server` only), `deploy/auth-setup.md`. Committed in the T33 commit below.
+
+### T33 still open (needs Brighton)
+- **Caddy log filter.** The task says to ask Brighton before editing `Caddyfile`. Not done. Question: may the Caddy access log drop the query string on `/api/auth/oauth/*/callback`?
+- **Manual stack run.** Starting the Compose stack, requesting a magic link and checking that a second `curl -X POST` without `Origin` is refused needs a running stack. Deferred.
+- **README paragraph.** Not written yet.
+- Unchecked until those three are done.
+
+### T08 (submissions foreign key) still waits for T34
+Unchanged from attempt 1. The run-lifecycle tests (`enqueue.rs`, `cancel.rs`, `get_run.rs`) insert submissions for random user ids, so the FK would break them. Needs the T34 fixtures.
+
+### T34 not started
+It needs T08 and the SSE revalidation edit in run-lifecycle. Not enough budget left in this run.
+
+### T35 (log canary test) not started
+It depends on T33 being finished.
+
+### T36 (delete account, Could) not started
+It is on the cut list. Left open on purpose.
+
+### T37 (final verification) not started
+It needs the T33 manual steps, the VPS checks and PROPTEST_CASES=512. The VPS checks are deferred: E2E or real services.
+
+### Test status at the last full run
+`cargo test -p counterspell-server -- --include-ignored`: 320 passed, 0 failed. `cargo clippy -p counterspell-server --all-targets -- -D warnings` is clean. `docker compose config -q` passes.
