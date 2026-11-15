@@ -196,3 +196,20 @@ Pre-existing: the earlier `cargo build` run printed three unused-import warnings
 - **T40 and T41: blocked** on the VPS, a real rootless sandbox and language-drivers. These need Brighton's admission run and cannot be done from this machine.
 - **T42: deferred: E2E** (browser pass). **T43** depends on T38 and T39. **T44** depends on T42. **T45** depends on T43 and T44.
 - **T46 to T48: stretch.** Not started, as the brief says.
+
+## Run 8 (15 Nov 2026, resume): status
+
+Open non-stretch tasks and the reason each stays open:
+
+| Task | Reason | Unblock |
+|---|---|---|
+| T20 | Executor wiring and `pg_` cases need language-drivers T08/T09 (still 0 of the bench tasks done; the language-drivers spec has 2 of 27 tasks done). | language-drivers T08/T09, then T23 is already done. |
+| T22, T25 | Need judge-sandbox runner (20 of 58 done) and language-drivers bench. | Same. |
+| T24 | Span warning (R13.4) needs new code `BEN-02` and a change to the codes test. Brighton has not approved this. A BEN-01 test for an impossible `unique` size was tried and reverted: the `unique` flag also makes the samples invalid, so the fixture cannot isolate the case. It needs a dedicated fixture pack. | Brighton approves `BEN-02`. A new fixture for the unique case can then be written. |
+| T37 to T39 | The hints spec has 0 of 29 tasks done. `hints::ai::generate(Kind::Familiar)`, the `hints` table and the Valkey marker do not exist. | Hints spec implementation. |
+| T40, T41 | VPS, real sandbox and Brighton's admission run. | Brighton's VPS run. |
+| T42 | Browser end-to-end pass. | Deferred: E2E. |
+| T43 to T45 | Depend on T20 (canary), T38, T39 and T42. | As above. |
+| T46 to T48 | Stretch. Skipped. | Stretch. |
+
+No code change this run. The grimoire test suite passes at 16 of 16.
