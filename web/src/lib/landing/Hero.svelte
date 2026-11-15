@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { HEADLINE, SUPPORT_LINE } from './copy';
+	import { TAGLINE, WORDMARK } from './copy';
 	import { afterPaint } from './after-paint';
 	import { chooseHeroVideo, type HeroVideo } from './hero-media';
 	import { planLanding, type LandingPlan } from './motion-plan';
@@ -176,12 +176,9 @@
 		<div class="hero-scrim absolute inset-0"></div>
 	</div>
 
-	<div class="relative mx-auto flex w-full max-w-3xl flex-col gap-6">
-		<p class="font-mono text-sm tracking-[0.2em] text-accent-candle uppercase">Counterspell</p>
-		<h1 class="text-[2.5rem] leading-tight font-semibold tracking-[-0.01em] text-text sm:text-[3.5rem]">
-			{HEADLINE}
-		</h1>
-		<p class="max-w-xl text-lg leading-8 text-text-muted">{SUPPORT_LINE}</p>
+	<div class="hero-brand relative mx-auto flex w-full max-w-3xl flex-col items-center gap-4 text-center">
+		<h1 class="wordmark">{WORDMARK}</h1>
+		<p class="tagline">{TAGLINE}</p>
 	</div>
 </section>
 
@@ -234,6 +231,55 @@
 		mix-blend-mode: screen;
 		filter: blur(1.5px);
 		animation: ember-pulse 2.8s ease-in-out infinite;
+	}
+
+	/* Wordmark and tagline: real text in Creepster and Geist, lit by the same ember colour as the pumpkin. */
+	.wordmark {
+		font-family: var(--font-wordmark);
+		font-size: clamp(2.4rem, 9.2vw, 7.2rem);
+		font-weight: 400;
+		line-height: 0.95;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--color-text);
+		text-shadow:
+			0 0 8px color-mix(in oklab, var(--bg) 95%, transparent),
+			0 2px 8px color-mix(in oklab, var(--bg) 95%, transparent),
+			0 0 16px rgb(var(--hero-ember) / 0.55),
+			0 0 42px rgb(var(--hero-ember) / 0.45),
+			0 0 70px rgb(var(--hero-ember) / 0.2);
+	}
+
+	.tagline {
+		font-weight: 500;
+		font-size: clamp(0.8rem, 1.35vw, 1.125rem);
+		letter-spacing: 0.28em;
+		text-indent: 0.28em;
+		text-transform: uppercase;
+		color: var(--color-text);
+		text-shadow:
+			0 0 8px rgb(var(--hero-ember) / 0.55),
+			0 0 22px rgb(var(--hero-ember) / 0.35),
+			0 2px 10px color-mix(in oklab, var(--bg) 95%, transparent);
+	}
+
+	/* A soft dark pool behind the wordmark keeps the bone letters legible over the bright moon. */
+	.hero-brand::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 44%;
+		width: 118%;
+		height: 165%;
+		transform: translate(-50%, -50%);
+		background: radial-gradient(
+			ellipse at 50% 48%,
+			color-mix(in oklab, var(--bg) 52%, transparent) 0%,
+			color-mix(in oklab, var(--bg) 18%, transparent) 48%,
+			transparent 72%
+		);
+		z-index: -1;
+		pointer-events: none;
 	}
 
 	@keyframes ember-pulse {

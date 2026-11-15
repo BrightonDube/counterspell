@@ -26,6 +26,7 @@
 @theme {
   --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-wordmark: 'Creepster', cursive;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-raised: var(--raised);

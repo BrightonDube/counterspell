@@ -10,8 +10,9 @@ describe('landing page', () => {
         '[data-smoke-marker="counterspell-svelte-static"]'
       )
     ).toBeTruthy();
+    // test-change: R20 (the wordmark is the page h1; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T23)
     expect(
-      screen.getByRole('heading', { name: /learn why your code breaks/i })
+      screen.getByRole('heading', { name: /^counterspell$/i, level: 1 })
     ).toBeTruthy();
   });
 });

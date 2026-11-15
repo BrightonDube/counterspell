@@ -12,11 +12,10 @@ describe('landing route composition (T08)', () => {
 		expect(main?.getAttribute('lang')).toBe('en');
 	});
 
-	it('shows the headline, the three beat headings in order and the sign-up link', () => {
+	it('shows the wordmark h1, the three beat headings in order and the sign-up link', () => {
 		const { container } = render(Page);
-		expect(screen.getByRole('heading', { level: 1 }).textContent?.trim()).toBe(
-			'Learn why your code breaks.'
-		);
+		// test-change: R20 (the title-screen wordmark is the page h1; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T23)
+		expect(screen.getByRole('heading', { level: 1 }).textContent?.trim()).toBe('Counterspell');
 		const beats = Array.from(container.querySelectorAll('section h2')).map((h) =>
 			h.textContent?.trim()
 		);
