@@ -46,7 +46,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T01, T02, run-lifecycle tables, and catalogue schema.
   - Rust lesson: explain borrowing a `UserId` into a SQL query, why parameterisation matters, and how `?` preserves database errors.
 
-- [ ] **T04 [P] (25 min) Add pure streak and recommendation helpers**
+- [x] **T04 [P] (25 min) Add pure streak and recommendation helpers**
   - Files: `crates/server/src/dashboard/recommendations.rs` and/or `streak.rs`.
   - Implement UTC streak calculation for no activity, today, yesterday, gaps, duplicate same-day activity, and old activity. Implement deterministic suggestion ranking, solved/unpublished exclusion, weak-concept reasons, and slug tie-breaks.
   - Keep helpers independent of Axum and PostgreSQL so property/unit tests can cover them directly.
