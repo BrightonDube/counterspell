@@ -15,7 +15,7 @@ placeholders in `web/static/landing/` and `web/static/familiar/`, which stay as 
 ## Folders
 | Folder | Contents | Notes |
 |---|---|---|
-| `landing/` | `moon-graveyard-loop-1920.{webm,mp4}` (12 s seamless loop, ~2.3-2.6 MB), `-960.{webm,mp4}` (phone, ~0.5-0.7 MB), posters `moon-graveyard-poster-{1920.jpg,1920.webp,960.webp}` | Use the poster as LCP image and reduced-motion still; load video after first paint, 960 on narrow screens. |
+| `landing/` | Title-screen loop `hero-moon-living-{1920,960}.{webm,mp4}` and `hero-moon-living-poster.jpg` (approved 15 Nov 2026 19:20). Earlier `moon-graveyard-loop-*` and `moon-graveyard-poster-*` remain and must not be deleted. | Title-screen hero: poster first, living video after first paint, 960 on narrow screens. See `landing/README.md`. |
 | `familiar/` | `jack-o-lantern-orange` and `jack-o-lantern-poison`: `.svg` (self-contained animated, embedded WebP), `.png`/`.webp` 512 px transparent, `.webm` (VP9 alpha loop) | Kept for other surfaces (landing CTA accent, dashboard empty/streak/loading, 404/error, celebration). Not the IDE mascot body. Do not delete. |
 | `familiar/moods/` | `familiar-1-furious` … `familiar-5-laughing`: 1024 px transparent `.png`/`.webp`, self-contained animated `.svg` | Approved 15 Nov 2026 15:21 SAST. The IDE mascot: one image per mood, same framing, opacity cross-fade. |
 | `creatures/` | wraiths (green, pale, lunge), skulls (green/blood eyes), raven, black cat, spider drop, bat, grave hand, reaper tarot | `.svg` animated, `.png`/`.webp` stills. Empty, error and failure states. |
