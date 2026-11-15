@@ -1,0 +1,5 @@
+# Managed by Ansible (sandbox role). Lets the sandbox user's manager delegate the cgroup controllers that
+# rootless Docker needs for memory, CPU and PID limits (deploy-ops R3.2). Without this drop-in the
+# controllers are not delegated and the limits do not apply.
+[Service]
+Delegate=cpu cpuset io memory pids

@@ -1,9 +1,6 @@
 # Docker for the main daemon (the web stack only; sandboxes use the separate rootless daemon).
-# [U] The version strings below are placeholders until Brighton confirms them at T24 with
-# `apt-cache madison docker-ce docker-compose-plugin` on the host. Compose must be 2.24 or later for
-# `!reset` (deploy-ops R4.10, design §Production Compose).
-docker_ce_version: "5:28.0.0-1~ubuntu.24.04~noble"
-docker_compose_plugin_version: "2.24.0-1~ubuntu.24.04~noble"
+# The version pins live in inventory/group_vars/all.yml (docker_ce_version), so the sandbox role can use them.
+# [U] Compose must be 2.24 or later for `!reset` (deploy-ops R4.10, design §Production Compose).
 docker_apt_repo_url: https://download.docker.com/linux/ubuntu
 docker_apt_key_url: https://download.docker.com/linux/ubuntu/gpg
 docker_log_max_size: 10m

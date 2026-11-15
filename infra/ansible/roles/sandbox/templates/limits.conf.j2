@@ -1,0 +1,6 @@
+# Managed by Ansible (sandbox role). Caps the aggregate of the sandbox user's services (deploy-ops R3.3).
+# The main daemon, Postgres and Caddy run outside this slice.
+[Service]
+MemoryMax={{ sandbox_memory_max }}
+TasksMax={{ sandbox_tasks_max }}
+CPUQuota={{ sandbox_cpu_quota }}

@@ -1,0 +1,15 @@
+# Fixture for prepull.bats. Fake digests only; nothing with these digests is ever pulled.
+[python]
+enabled = true
+image = "python:fixture@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+file = "solution.py"
+
+[javascript]
+enabled = true
+image = "node:fixture@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+file = "solution.js"
+
+[java]
+enabled = false
+image = "eclipse-temurin:fixture@sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+file = "Solution.java"

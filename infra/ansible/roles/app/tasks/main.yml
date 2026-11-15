@@ -54,7 +54,7 @@
 
 - name: Install the root-only deploy scripts (mode 0755)
   ansible.builtin.copy:
-    src: "{{ app_src }}/{{ item.src }}"
+    src: "{{ repo_root }}/{{ item.src }}"
     dest: "/usr/local/sbin/{{ item.dest }}"
     owner: root
     group: root

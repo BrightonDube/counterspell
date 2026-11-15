@@ -12,3 +12,5 @@
       tags: [docker]
     - role: app
       tags: [app]
+    - role: sandbox
+      tags: [sandbox]
