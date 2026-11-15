@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Test stub for docker. Records the call; fails `migrate` runs when FAIL_MIGRATE is set.
+echo "docker $*" >> "${STUB_LOG:?}"
+if [[ "$*" == *" run --rm migrate"* && -n "${FAIL_MIGRATE:-}" ]]; then exit 1; fi
+exit 0
