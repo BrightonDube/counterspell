@@ -165,7 +165,7 @@ Conventions:
   - Depends on: T00.
   - Verify: `bats deploy/vps/tests/backup.bats`; `shellcheck`; `systemd-analyze verify` on the unit files (on a Linux machine; if unavailable, record "not run" for that line).
 
-- [ ] **T17 [P] (30 min) Ops report and the read-only role**
+- [x] **T17 [P] (30 min) Ops report and the read-only role**
   - Files: `deploy/vps/ops/counterspell-ops-report` (script), `deploy/vps/ops/sql/ops-role.sql`, `deploy/vps/ops/sql/ops-report.sql`, `deploy/vps/ops/counterspell-ops-report.{service,timer}`, `deploy/vps/tests/ops.bats`.
   - The SQL grants `cs_ops_ro` column-level SELECT only on `jobs(state, run_after, lease_expires_at, updated_at)` and `submissions(id, status, created_at, finished_at)` (R9.4). The report runs the six queries of design §Ops report, prints one JSON line to journald, pings Healthchecks, and pings `/fail` on the R9.6 thresholds.
   - Tests: bats with a fake `psql` that returns fixture rows, checking the thresholds and that the JSON holds counts only. A grep test asserts that no query reads `code`, `payload`, `stdout` or `stderr`. A test asserts the grant file names no other column.

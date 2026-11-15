@@ -42,3 +42,11 @@ Items that need Brighton, another spec, or a decision Kiro may not take alone. E
 - The deploy root script takes argv, not `SSH_ORIGINAL_COMMAND`. sudo clears that variable, so the entry point (`counterspell-deploy-entry`) passes fixed arguments. The bats harness was updated for this. No assertion was removed.
 - The judge's clippy policy bans `Command::new`, so the healthcheck test calls `health::report` in-process rather than spawning the binary.
 - `lint` on the Ansible roles uses the production profile. Role variables carry role prefixes (`app_`) to pass it.
+
+## T17 decisions for Brighton (ops report)
+
+1. **Kill-verdict counts are not measured.** R9.5 asks for `output_limit`, `time_limit` and `memory_limit`. In the real schema those are `submissions.verdict`, which R9.4 does not grant to `cs_ops_ro`. Granting `verdict` widens a security control, so it is not done. Options: (a) grant `verdict` to `cs_ops_ro` (the column holds no user content); (b) keep it out and measure those kills from the judge's own `run_events`. Brighton chooses. The report currently omits these counts and says so in `ops-report.sql`.
+2. **A fifth env file, `/etc/counterspell/ops.env`.** The report needs the `cs_ops_ro` password. The design's list had four service files. This adds `ops.env` (root, 0600, written by hand at T27). Brighton confirms, or names another home for the password.
+3. **Dead-job alert window.** R9.5 measures dead jobs over 24 hours, and R9.6 alerts on one in the last hour. The report prints both `dead_jobs_24h` and `dead_jobs_1h`, and alerts on the hour.
+4. **P11 (grant check against Postgres 17): MODEL ONLY.** `ops-role.sql` and `ops-report.sql` were checked against the migration columns (`jobs`: state, run_after, lease_expires_at, updated_at; `submissions`: id, status, created_at, finished_at, verdict). They were not run on a server. The check is due when a Postgres 17 container is free (T27).
+5. **`jq` and `psql` on the host.** The report needs `jq` and `psql`. The base role does not install them yet.
