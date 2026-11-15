@@ -313,3 +313,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 05:10-05:12 SAST: 24-language-drivers-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-language-drivers-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0510-24-language-drivers-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.54 (credits used now 3265.71/4000).
+
+### 2026-11-15 05:53-06:12 SAST: 29-dashboard-fsrs-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-dashboard-fsrs-a1.md`. Transcript: `docs/kiro-log/2026-11-15T0553-29-dashboard-fsrs-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 6.54 (credits used now 3272.25/4000).
+
+### 2026-11-15 06:12-06:14 SAST: 29-dashboard-fsrs-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-dashboard-fsrs-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0612-29-dashboard-fsrs-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.03 (credits used now 3273.28/4000).
