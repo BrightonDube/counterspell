@@ -274,7 +274,7 @@ Conventions for every task (same as `run-lifecycle`):
 
 ## Wave 4: judge runtime (hidden data, judge role only)
 
-- [ ] **C24 [S] [SUPERVISED] (30 min) `PgProblemTests` (runtime read path)**
+- [x] **C24 [S] [SUPERVISED] (30 min) `PgProblemTests` (runtime read path)**
   - Files: `crates/judge/src/problem_store.rs`, `crates/judge/tests/pg_catalogue_judge_reads.rs`.
   - `load(slug, version, mode)` reads the pinned version. Examples for `Run`; examples plus `hidden_tests` for `Submit`; `reference_solutions`; `known_ghosts` for autopsy matching. Returns `Ok(None)` for a missing version. Uses only the judge role's connection pool.
   - Requirements: CAT-L4, CAT-R4, CAT-X1, P9 (test side).

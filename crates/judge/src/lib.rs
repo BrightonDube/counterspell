@@ -12,6 +12,7 @@ pub mod config;
 pub mod executor;
 pub mod familiar;
 pub mod languages;
+pub mod problem_store;
 pub mod queue;
 pub mod sandbox;
 pub mod service;
