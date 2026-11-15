@@ -1097,3 +1097,14 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `INSERT ... ON CONFLICT (slug) DO UPDATE` is one SQL statement. Two syncs running at the same time cannot both insert the same slug, because the database resolves the conflict on the row itself.
 - The function takes `&PgPool` and returns `Result<(), sqlx::Error>`. The `?` operator returns the first database error to the caller, and the caller decides whether to retry.
 - `enumerate()` gives each file entry its position, and `sort_order` converts that position with `i32::try_from(...).unwrap_or(i32::MAX)`. This avoids `unwrap()` in production code.
+
+## problem-catalogue C24 and C25: judge read path
+
+- The loader returns `Result<Option<T>, StoreError>`. The outer `Result` is an infrastructure failure, such as a missing grant. The inner `Option` means "no such version". The judge treats them differently: a `None` is a clean "not found", and an `Err` is a fault to report.
+- Tests run as a real database role with `SET ROLE`, so a grant that is missing fails the test. This proves the permission, not only the Rust code.
+- A type alias (`type GhostRecord = (...)`) names a long tuple. Clippy's `type_complexity` lint asks for this.
+
+## problem-catalogue C27: async seam
+
+- `#[async_trait]` boxes the future so that a trait object (`Arc<dyn ProblemLookup>`) can hold an async method. A plain `async fn` in a trait cannot be called through `dyn` in this version of the language.
+- Adding a field (`version`) to a struct breaks every struct literal. The compiler lists each one, so the change is complete when it compiles.
