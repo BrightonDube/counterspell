@@ -301,3 +301,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 04:45-04:48 SAST: 27-efficiency-familiar-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-efficiency-familiar-a3.md`. Transcript: `docs/kiro-log/2026-11-15T0445-27-efficiency-familiar-implement-a3.log`. Exit 0.
 - Credits used (from /usage): 2.48 (credits used now 3258.17/4000).
+
+### 2026-11-15 04:57-05:01 SAST: 23-judge-sandbox-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a1.md`. Transcript: `docs/kiro-log/2026-11-15T0457-23-judge-sandbox-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 2.78 (credits used now 3260.95/4000).
