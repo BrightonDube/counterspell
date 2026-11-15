@@ -7,6 +7,7 @@
 
 #![warn(missing_docs)]
 
+pub mod catalogue;
 pub mod config;
 pub mod executor;
 pub mod familiar;

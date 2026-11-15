@@ -84,7 +84,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_privileges` loops over every table and privilege with `has_table_privilege` for `PUBLIC`, `counterspell_server`, `counterspell_judge`, and asserts the exact matrix (P8 database part). The test also asserts that `pg_roles` contains no new role name.
   - Rust lesson: `has_table_privilege` answers "could this role do X" from the catalogue, so the test checks the rule itself rather than a sample query.
 
-- [ ] **C05 [S] [SUPERVISED] (30 min) Test kit: published fixture with canary hidden data**
+- [x] **C05 [S] [SUPERVISED] (30 min) Test kit: published fixture with canary hidden data**
   - Files: `crates/judge/src/catalogue/testkit.rs` (behind the `testkit` feature), `crates/judge/tests/pg_catalogue_testkit.rs`.
   - Provide `insert_published_fixture(pool, slug, version)` that inserts a track, concepts, a problem, a version, four hints, two examples, a starter per language, reference, known ghosts, hidden tests and the sandbox fields, through the same triggers as production. Hidden rows carry canary strings. Also a `insert_static_fixture` that skips hidden data.
   - Requirements: CAT-X2, CAT-L7 (X2 and X13 seam).
