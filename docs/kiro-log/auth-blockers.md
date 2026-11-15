@@ -206,3 +206,21 @@ It needs the T33 manual steps, the VPS checks and PROPTEST_CASES=512. The VPS ch
 ### Decision for Brighton
 - Approve the Caddy log filter for `/api/auth/oauth/*/callback` (open question 16), so T33 can be ticked.
 - Confirm that the shell for auth runs exports `DATABASE_URL` and `VALKEY_URL` (through the runner, as the standing decision says).
+
+## Attempt 10 (15 Nov 2026, this run): T35 and T36 done, T37 gates pass
+
+### Done this run
+- **T35** ticked (commit `4dc930b`). Log canaries now cover the OAuth sign-in and link (code, state, binding, PKCE verifiers, session), the GitHub exchange (client secret, access token, code, verifier, primary email) and the Resend failure path (API key, recipient, response body). The HTTP trace lines for the callback and verify routes are still not covered, because the auth router has no trace layer.
+- **T36** ticked (commit `4b489f2`). `DELETE /api/me` with handle confirmation, the active-run block, the demo refusal and the cookie clear. Settings page has a "Delete account" section that stays disabled until the handle matches.
+- **T37 gates** all pass (see `auth-dod.md`). The manual checklist is deferred. T37 stays unchecked.
+
+### Still open
+- **T33 (wire into server, Compose and Caddy):** unchecked. The Caddy log filter for the OAuth callback query string needs Brighton's approval (open question 16). The manual stack run and the README paragraph are the other half of the task. Unblock: Brighton approves the `Caddyfile` change, and someone runs the stack.
+- **T34 (run-lifecycle integration):** unchecked. The SSE heartbeat check needs run-lifecycle T29 (SSE endpoint). No `text/event-stream` handler exists in `crates/server/src` yet. Unblock: implement run-lifecycle T29, then add the heartbeat revalidation and its test.
+- **T37 manual checklist:** needs the VPS and real provider and Resend accounts. Deferred (E2E and deployment, rule 7).
+
+### Decisions taken without asking
+- `DELETE /api/me` is not in `MUTATING_ROUTES`. The matrix test POSTs to every listed path and would get `405`. The delete endpoint is covered by `pg_auth_delete.rs` instead.
+- Delete compares the handle exactly (case and spaces matter). The server and the web rule agree.
+- The canary test helper `shared_logs()` installs one global subscriber. Tests share its buffer, so a leak from any flow fails the check.
+- `gitleaks:allow` comments mark two canary literals in `auth_logs.rs`, following the file's existing convention.
