@@ -51,3 +51,14 @@ No [stretch] task (T11 to T18) was started, as the instructions require.
   replaced by a partial index `(user_id, problem_slug) WHERE verdict = 'accepted'`. It covers the
   distinct solved set with fewer rows, and the verdict column is not needed in the index because
   the predicate fixes it.
+
+## Attempt 2 (15 Nov 2026, later run): no change to the T03 block
+
+- Checked again: `migrations/` still has no `problems`, `concepts` or `problem_concepts` table, and
+  the only catalogue commits are the spec commits (`4e2fd2b`, `69e42b0`, `c94504f`). Brighton's
+  14 Nov 2026 rule keeps `problem-catalogue` spec-only, so T03 stays unchecked.
+- Every unchecked Must task depends on T03 (T05 through T10), and the stretch gate opens only after
+  T08. So this run has no task it can start without faking catalogue data. No code was written.
+- Unblock: Brighton approves `problem-catalogue` (or confirms that a minimal `problems` and
+  `problem_concepts` read contract may ship inside this spec). Then T03 can start on the real schema.
+- Tasks T01, T02 and T04 remain ticked from attempt 1 and are unchanged.
