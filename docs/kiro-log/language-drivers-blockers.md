@@ -96,3 +96,16 @@ A local rootless Docker daemon is now running (see `deploy/sandbox-verification.
 - **T03 to T12 still blocked.** `crates/judge/src/main.rs` still runs `NoExecutor`. There is no sandbox executor, so no driver can be started and no red-green cycle can run against a container. Running driver code on the host is forbidden by the spec.
 - **Brighton decisions still open:** the T07 signature-type crate choice (grimoire dependency or `counterspell-common`), and the judge-sandbox `sbx_` ignore decision and cgroup delegation drop-in.
 - **Stretch T13 to T16:** not started. T12 has not passed.
+
+## Run stop point (attempt 3, 15 Nov 2026 later): nothing ticked, no driver code written
+
+- **Re-checked the state.** `crates/judge/src/sandbox/` now has the sandbox runner library (`run.rs`, `session.rs`, `call.rs`, `driver_protocol.rs` parser for `{t,out}` answers). `crates/judge/src/executor.rs` still wires only `NoExecutor`, so no production path starts a driver in a container. `languages/drivers/` does not exist, so the real `languages.toml` still fails `LanguageCatalog::load` (Python and JavaScript are enabled).
+- **Rootless daemon.** `/run/user/1000/docker.sock` answers (Docker 29.4.3, rootless, cgroup v2, systemd driver). It still prints "No cpuset support" and "No io.* support". The cgroup delegation drop-in in `brighton-decisions` is not yet applied, so the judge identity guard will refuse this daemon.
+- **T03 (Python driver) not started.** Its red step is a protocol fixture run through a container. Running `driver.py` on the host is forbidden, and no sandbox executor path exists to run it through. Writing `driver.py` without a failing test would break the TDD rule.
+- **T04 to T12 not started.** They depend on T03 or on the executor. T13 to T16 are stretch and wait for T12.
+- **T07 signature-type choice is settled.** `brighton-decisions` (15 Nov 00:55) moves the shared signature type into `counterspell-common`. T07 no longer waits on that decision. It still waits on the executor and the cgroup drop-in.
+
+**Unblock, in order:**
+1. Apply the cgroup `cpuset`/`io` delegation drop-in (Brighton, sudo) so `docker --context rootless info` has no "No ... support" warnings.
+2. Judge-sandbox: write the `sbx_` tests and a production `RunExecutor` that uses `sandbox::run::execute_run` with the rootless socket. Until then no driver can be run in a container.
+3. Then T03 starts as RED: a Python protocol fixture (scalar, list, nested list, bool, string, null, exception, invalid output, repeated calls) run through that executor.
