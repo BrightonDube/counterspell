@@ -78,3 +78,14 @@ T08 and T12 can proceed once this is implemented. T13 and T14 still have deferre
 - T12 done (commit 7924b0d). The built `index.html` contains every visible string with no JavaScript. No inline hiding is in the markup. The `data-reveal` content is hidden only by GSAP `from` tweens with `immediateRender: false`, so no stylesheet hides it. `npm run check` and `npm test -- landing` (8 files, 39 tests) pass.
 - T13 (Lighthouse mobile median) stays unchecked. It needs headless Chrome and a running server: a browser or E2E step, deferred.
 - T14 (keyboard, focus, contrast, network log, Compose smoke through Caddy) stays unchecked: deferred E2E and Compose stack.
+
+## Run note (15 Nov 2026, implement pass 3): T13 and T14 stay open; static part of T14 checked
+
+- Remaining open tasks: T13 and T14. Both stay unchecked. No code changed in this pass, so no new commit for T13/T14 beyond this note.
+- T13 (Lighthouse mobile median, three runs): deferred E2E. It needs headless Chrome and a running `counterspell-server`. Unblock: run the three Lighthouse commands on a machine with Chrome, then record the numbers in `docs/kiro-log/landing-steel-night-lighthouse.md`.
+- T14, static checks done without a browser (15 Nov 2026):
+  - Contrast, recomputed with the WCAG relative-luminance formula against the `app.css` tokens: bone on bg 14.96, fog on bg 8.01, ash on bg 5.64, moss link on bg 6.86, dark ink on candle CTA 8.63, candle focus on bg 8.63, success on bg 9.21, danger on bg 5.82. All pass AA (4.5:1 for text).
+  - Landing components (`web/src/lib/landing`, `+page.svelte`) use semantic tokens only. No raw hex found outside tests.
+  - `web/src/app.html` has no `<script>`. The built `index.html` has one inline `<script>`, which is SvelteKit's own hydration bootstrap, not app code.
+  - Built CSS has one `tailwindcss.com` string, inside the licence banner comment. No external fetch was found in the built HTML, CSS or JS.
+- T14 still open, deferred E2E / Compose: the keyboard path and visible focus in a browser, the network log in devtools, and the Compose smoke test for `http://localhost/` through Caddy. Unblock: a browser pass and the Compose stack, both outside this run's scope.
