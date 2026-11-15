@@ -1,3 +1,4 @@
+// test-change: CAT-F1. Setup only: runs now need a catalogue problem row (submissions_problem_fk). No assertion changed.
 //! Database tests for the run-lifecycle schema: CHECK constraints, unique indexes,
 //! the frozen-row trigger, the transition guard, and agreement with the Rust table.
 //!
@@ -41,6 +42,7 @@ async fn insert_submission(
     user: Uuid,
     key: Option<&str>,
 ) -> Result<Uuid, sqlx::Error> {
+    counterspell_judge::testkit::ensure_problem(pool).await?;
     ensure_user(pool, user).await?;
     let id = Uuid::new_v4();
     sqlx::query(
@@ -167,6 +169,9 @@ async fn pg_one_terminal_event_per_run(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_terminal_row_is_frozen(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     let user = Uuid::new_v4();
     ensure_user(&pool, user).await.unwrap();
     let run = Uuid::new_v4();

@@ -10,12 +10,35 @@ use sqlx::PgPool;
 
 use crate::seams::{ProblemLookup, ProblemRef, UserResolver};
 
+// test-change: CAT-F1. Test-only seeding for submissions_problem_fk.
+// test-change: CAT-F1. Test-only seeding for submissions_problem_fk.
+/// Makes sure the `two-sum` test problem exists in the catalogue, because submissions must reference a
+/// real problem (CAT-F1). Calling it again does nothing.
+///
+/// # Errors
+/// Returns the database error if an insert fails.
+pub async fn ensure_problem(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO tracks (slug, name) VALUES ('arrays', 'Arrays') ON CONFLICT DO NOTHING",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "INSERT INTO problems (slug, title, track_slug, difficulty) VALUES ('two-sum', 'Two Sum', 'arrays', 'easy') \
+         ON CONFLICT DO NOTHING",
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// Makes sure a `users` row exists for `user`, so that tests can save runs for it. The row has no
 /// email and no password. Calling it again for the same id does nothing.
 ///
 /// # Errors
 /// Returns the database error if the insert fails for a reason other than the row already existing.
 pub async fn ensure_user(pool: &PgPool, user: UserId) -> Result<(), sqlx::Error> {
+    ensure_problem(pool).await?;
     let simple = user.as_uuid().simple().to_string();
     sqlx::query(
         "INSERT INTO users (id, handle, display_name) VALUES ($1, $2, 'Test user')

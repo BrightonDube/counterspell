@@ -1,3 +1,4 @@
+// test-change: CAT-F1. Setup only: runs now need a catalogue problem row (submissions_problem_fk). No assertion changed.
 //! Database tests for the auth privilege matrix (auth T08, requirements R1.3 and R18.6 to R18.8).
 //!
 //! The judge role has no privilege on any auth table, PUBLIC has none, and the server role gets
@@ -115,6 +116,7 @@ async fn insert_user(pool: &PgPool, id: Uuid) {
 }
 
 async fn insert_submission(pool: &PgPool, run: Uuid, user: Uuid) -> Result<(), sqlx::Error> {
+    counterspell_server::testkit::ensure_problem(pool).await?;
     sqlx::query(
         "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256)
          VALUES ($1, $2, 'two-sum', 'python', 'submit', 'print(1)', decode('00', 'hex'))",

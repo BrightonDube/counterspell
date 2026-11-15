@@ -1,3 +1,4 @@
+// test-change: CAT-F1. Setup only: runs now need a catalogue problem row (submissions_problem_fk). No assertion changed.
 //! Database tests for the demo account guards and reset (auth T09, requirements R16.6 to R16.8).
 //!
 //! The demo account can only be created or re-credentialed by the seed helper, can never be
@@ -117,6 +118,9 @@ async fn pg_only_the_server_role_may_run_the_demo_functions(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_reset_removes_only_the_demo_finished_rows_and_keeps_other_users(pool: PgPool) {
+    counterspell_server::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     let demo = seed(&pool, "judge@example.co").await.expect("seed");
     let other = verified_user(&pool, "lerato").await.expect("other user");
 

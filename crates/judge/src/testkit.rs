@@ -59,12 +59,35 @@ pub fn token_with(token: &ClaimToken, owner: &str, attempts: i16) -> ClaimToken 
     ClaimToken::new(token.job_id(), token.run_id(), owner.to_owned(), attempts)
 }
 
+// test-change: CAT-F1. Test-only seeding for submissions_problem_fk.
+/// Makes sure the `two-sum` test problem exists in the catalogue. Submissions must reference a real
+/// problem (CAT-F1), so every test that saves a run calls this first. Calling it again does nothing.
+///
+/// # Errors
+///
+/// Returns the database error when either insert fails.
+pub async fn ensure_problem(pool: &PgPool) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO tracks (slug, name) VALUES ('arrays', 'Arrays') ON CONFLICT DO NOTHING",
+    )
+    .execute(pool)
+    .await?;
+    sqlx::query(
+        "INSERT INTO problems (slug, title, track_slug, difficulty) VALUES ('two-sum', 'Two Sum', 'arrays', 'easy') \
+         ON CONFLICT DO NOTHING",
+    )
+    .execute(pool)
+    .await?;
+    Ok(())
+}
+
 /// Inserts one queued run and its job in a single transaction.
 ///
 /// # Errors
 ///
 /// Returns the database error when either insert fails.
 pub async fn seed_run(pool: &PgPool) -> Result<RunId, sqlx::Error> {
+    ensure_problem(pool).await?;
     let run = RunId::new();
     let user = UserId::new();
     let mut tx = pool.begin().await?;
