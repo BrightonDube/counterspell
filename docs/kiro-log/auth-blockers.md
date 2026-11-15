@@ -184,3 +184,25 @@ It needs the T33 manual steps, the VPS checks and PROPTEST_CASES=512. The VPS ch
 - Test canary in `auth_logs.rs` is marked `// gitleaks:allow` on its line. The generic key rule flagged a fake password. The shared scanner config is unchanged.
 - The submissions FK migration fails loudly on orphan rows instead of deleting them.
 - Dev Postgres URLs come from `~/.config/counterspell/dev-test.env`, sourced in the shell. Values were not printed or written to any file.
+
+## Attempt 9 (this run): no database in the shell, nothing new ticked
+
+### Environment
+- `DATABASE_URL`, `VALKEY_URL` and `SANDBOX_DOCKER_SOCKET` are unset in this shell. Every `pg_` and `valkey_` test is therefore skipped, and those tasks cannot be verified.
+- The dev database URLs live in `~/.config/counterspell/dev-test.env`. That file holds credentials, so this run did not read or source it. Brighton's standing decision says the runner (`scripts/kiro-implement-all.sh`) sources it. Run the auth tests through that runner, or export the two variables in the shell for one session.
+
+### Baseline without a database (this run)
+- `cargo fmt --all -- --check`: pass.
+- `cargo clippy -p counterspell-server --all-targets -- -D warnings`: pass.
+- `cargo test --workspace` (ignored tests excluded): every suite passes, 0 failures.
+
+### Open tasks and what unblocks each
+- **T33 (wire into server, Compose and Caddy), unchecked.** The Caddy log filter for the OAuth callback query string still needs Brighton's approval (open question 16). The manual stack run and the README paragraph count as the other half of the task. Unblock: Brighton approves the Caddyfile change, and someone runs the Compose stack and records the magic-link and `Origin` checks.
+- **T34 (run-lifecycle integration), unchecked.** The SSE heartbeat revalidation needs run-lifecycle T29 (`SSE endpoint core`), which is still unchecked in `.kiro/specs/run-lifecycle/tasks.md`. Unblock: implement run-lifecycle T29, then add the heartbeat check and its test.
+- **T35 (log-capture test), unchecked.** The OAuth canaries (`code`, `state`, verifier, access token, client secret) and the Resend key canary are not in `crates/server/tests/auth_logs.rs` yet. Writing them needs a database for the flows. Unblock: a database in the shell, then add the OAuth flows with `FakeProvider` and the canaries.
+- **T36 (delete account, Could, on the cut list), unchecked.** Not started. It needs a database for the cascade and `runs_active` tests. It is the first task to cut if time runs short.
+- **T37 (final verification), unchecked.** The PROPTEST_CASES=512 run, the web gate, `cargo deny check licenses`, `docker compose config` and the VPS manual checklist all need a database or real services. The manual checklist is deferred (E2E and VPS). Results go to `docs/kiro-log/auth-dod.md` once they run.
+
+### Decision for Brighton
+- Approve the Caddy log filter for `/api/auth/oauth/*/callback` (open question 16), so T33 can be ticked.
+- Confirm that the shell for auth runs exports `DATABASE_URL` and `VALKEY_URL` (through the runner, as the standing decision says).
