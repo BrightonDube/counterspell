@@ -230,3 +230,23 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-15T10:36:19Z | model: not reported | last commit: 5458fb7 problem-catalogue: record attempt-2 progress and open design note
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-15T10:58:39Z | model: not reported | last commit: d70d39e problem-catalogue: Rust lessons for C24, C25, C27
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 15 insertions(+)
+- 2026-11-15T11:23:56Z | model: not reported | last commit: ef57f3e problem-catalogue: record attempt-5 blockers and C28/C30 review notes
+ | diff stat:
+ docs/KIRO_USAGE.md        | 12 ++++++++++++
+ docs/kiro-log/sessions.md | 12 ++++++++++++
+ 2 files changed, 24 insertions(+)
+- 2026-11-15T11:45:12Z | model: not reported | last commit: 9ea491f problem-catalogue: attempt 6 blockers note
+ | diff stat:
+ docs/KIRO_USAGE.md        | 16 ++++++++++++++++
+ docs/kiro-log/sessions.md | 17 +++++++++++++++++
+ 2 files changed, 33 insertions(+)

@@ -337,3 +337,23 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 10:56-10:57 SAST: 31-landing-steel-night-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-landing-steel-night-a2.md`. Transcript: `docs/kiro-log/2026-11-15T1056-31-landing-steel-night-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.33 (credits used now 3291.19/4000).
+
+### 2026-11-15 11:03-12:16 SAST: 34-problem-catalogue-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-problem-catalogue-a1.md`. Transcript: `docs/kiro-log/2026-11-15T1103-34-problem-catalogue-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 21.18 (credits used now 3312.57/4000).
+
+### 2026-11-15 12:16-12:36 SAST: 34-problem-catalogue-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-problem-catalogue-a2.md`. Transcript: `docs/kiro-log/2026-11-15T1216-34-problem-catalogue-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 6.39 (credits used now 3318.96/4000).
+
+### 2026-11-15 12:36-12:58 SAST: 34-problem-catalogue-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-problem-catalogue-a3.md`. Transcript: `docs/kiro-log/2026-11-15T1236-34-problem-catalogue-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 7.25 (credits used now 3326.21/4000).
+
+### 2026-11-15 12:58-13:24 SAST: 34-problem-catalogue-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-problem-catalogue-a4.md`. Transcript: `docs/kiro-log/2026-11-15T1258-34-problem-catalogue-implement-a4.log`. Exit 0.
+- Credits used (from /usage): 9.93 (credits used now 3336.86/4000).
+
+### 2026-11-15 13:24-13:45 SAST: 34-problem-catalogue-implement-a5 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-problem-catalogue-a5.md`. Transcript: `docs/kiro-log/2026-11-15T1324-34-problem-catalogue-implement-a5.log`. Exit 0.
+- Credits used (from /usage): 8.87 (credits used now 3345.73/4000).
