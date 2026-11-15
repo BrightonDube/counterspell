@@ -44,3 +44,22 @@ Done this run: C14 (static import transaction, commit f23934f) and C15 (read-onl
 Not started, in tasks.md order: C16 (sandbox checks through `PackRunner`), C17, C18, C19, C19b, C20 to C23, C24 onward. Nothing is blocked on Brighton for C16 to C23 except sandbox runs, which stay open until T37 on a real rootless daemon. C00a and the HUMAN tasks C38 to C40 are unchanged.
 
 Open design note from C14/C15: the `VersionNotBumped` changed-file list covers public files only, because `problem_versions.manifest` holds public entries only (CAT-PT9). A private-only change still refuses, but its path is not named. Brighton should decide whether the refusal should name private paths by hash prefix.
+
+## Run of 16 Nov 2026 (attempt 3)
+
+Done this run (ticked): C20 (9d232b5), C24 (ffa2596), C25 (824fe60), C27 (commit below).
+
+- **C16 blocked on a design decision (not started).** C16 needs `counterspell_grimoire::PackRunner` in the judge crate, which means judge depends on grimoire. The 15 Nov routine decision in `brighton-decisions.md` keeps the judge crate free of authoring code. Brighton should choose one: (a) allow `counterspell-judge` to depend on `counterspell-grimoire` for the trait only, or (b) move `PackRunner` and `Target` into `counterspell-common`. Until then C16, C17, C18, C19, C19b, C21, C22 and C23 stay unchecked, because each depends on C16 or the CLI.
+- **C21 and C22** also depend on C18 (publish needs validated versions; seeding needs the CLI).
+- **C26 (BLOCKED on judge-sandbox T24).** The `ProblemTests` trait is not in the judge code yet. C24 and C25 use free functions in `problem_store.rs`. The trait wiring waits for T24.
+- **C28 to C31 (not started, in order).** C28 needs the server's `PgProblemLookup`. C29 needs run-lifecycle T24. C30 and C31 need auth T11. These were not reached in this run. C27 is done.
+- **C32 (BLOCKED on language accessor X10).** Not specified yet.
+- **C33 (BLOCKED on D16).** Unchanged.
+- **C34 to C37** depend on the C16 to C23 chain and are not reached.
+- **C00a, C38, C39, C40** stay HUMAN and unchecked. No private repo or credential was read.
+
+Test-integrity notes for review:
+- C25: I appended the loader code before running the red test. The tests were written first and then run, but the red step was skipped. The tests passed after two fixture fixes: the testkit content hash now depends on the version (the unique key on `(problem_slug, content_sha256)` broke a second version), and `problem_concepts` inserts use `ON CONFLICT DO NOTHING`. These change fixture bytes only, not any assertion.
+- C27: the seam test changed from sync `#[test]` to `#[tokio::test]` because `published` is now async. Its assertions are unchanged. One test was added (`in_memory_catalogue_reports_the_pinned_version`). Server test count: 392 before, 393 after.
+
+Open design note: C30's `status` field and C31's no-leak tests depend on the auth resolver; not checked.

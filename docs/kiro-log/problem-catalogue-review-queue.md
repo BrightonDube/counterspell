@@ -30,3 +30,11 @@ C03's `submissions_problem_fk` broke about 75 existing database tests, because t
 | Task | Commit | What Brighton should check |
 |---|---|---|
 | C15 | (see git log "problem-catalogue C15") | `dry_run_static` in `write.rs` runs in a read-only transaction and returns the plan, a public-file diff and the generator-version change. Check: the diff lists public files only, as with C14. The approval state, the retired-value count and the private commit id are not in this function yet; they belong to the CLI task C19, which must print them. |
+
+## C20, C24, C25 (supervised, attempt 3)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C20 | 9d232b5 | `sync_taxonomy` in `taxonomy.rs` upserts with `ON CONFLICT DO UPDATE` and never deletes. Check the rename and keep-on-removal behaviour in `pg_catalogue_taxonomy`. |
+| C24 | ffa2596 | `problem_store::load` is a free function, not the `ProblemTests` trait, because judge-sandbox T24 is not in the code yet. Check that `Run` never loads hidden rows and that a missing version gives `None`. C26 must wire the trait later. |
+| C25 | 824fe60 | `reference_for` and `known_ghosts_for` read through the judge role. The server role is denied, as tested in `pg_catalogue_judge_ghosts`. Check that the testkit change (version-dependent content hash, idempotent concept link) only changes fixture bytes. |

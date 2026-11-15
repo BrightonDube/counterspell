@@ -40,12 +40,15 @@ impl UserResolver for Unauthenticated {
 pub struct ProblemRef {
     /// The problem's URL-safe identifier.
     pub slug: String,
+    /// The version that is published now. A run is pinned to this version (CAT-L1).
+    pub version: i32,
 }
 
 /// Finds published problems by slug.
+#[async_trait]
 pub trait ProblemLookup: Send + Sync {
-    /// Returns the problem when it exists and is published.
-    fn published(&self, slug: &str) -> Option<ProblemRef>;
+    /// Returns the problem when it exists and is published, with the version to pin.
+    async fn published(&self, slug: &str) -> Option<ProblemRef>;
 }
 
 /// The production catalogue until the grimoire import lands. It publishes nothing, so every run
@@ -53,8 +56,9 @@ pub trait ProblemLookup: Send + Sync {
 #[derive(Debug, Clone, Copy, Default)]
 pub struct EmptyCatalogue;
 
+#[async_trait]
 impl ProblemLookup for EmptyCatalogue {
-    fn published(&self, _slug: &str) -> Option<ProblemRef> {
+    async fn published(&self, _slug: &str) -> Option<ProblemRef> {
         None
     }
 }

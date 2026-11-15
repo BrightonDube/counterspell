@@ -81,13 +81,15 @@ impl InMemoryProblems {
     }
 }
 
+#[async_trait]
 impl ProblemLookup for InMemoryProblems {
-    fn published(&self, slug: &str) -> Option<ProblemRef> {
+    async fn published(&self, slug: &str) -> Option<ProblemRef> {
         self.slugs
             .iter()
             .any(|known| known == slug)
             .then(|| ProblemRef {
                 slug: slug.to_owned(),
+                version: 1,
             })
     }
 }

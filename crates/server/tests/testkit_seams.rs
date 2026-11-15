@@ -41,15 +41,23 @@ async fn bearer_resolver_reads_numbered_test_users() {
     assert!(resolver.resolve(&HeaderMap::new()).await.is_none());
 }
 
-#[test]
-fn in_memory_catalogue_publishes_only_listed_slugs() {
+#[tokio::test]
+async fn in_memory_catalogue_publishes_only_listed_slugs() {
     let problems = InMemoryProblems::new(&["two-sum"]);
 
     assert_eq!(
-        problems.published("two-sum").map(|p| p.slug),
+        problems.published("two-sum").await.map(|p| p.slug),
         Some("two-sum".to_owned())
     );
-    assert!(problems.published("three-sum").is_none());
+    assert!(problems.published("three-sum").await.is_none());
+}
+
+#[tokio::test]
+async fn in_memory_catalogue_reports_the_pinned_version() {
+    let problems = InMemoryProblems::new(&["two-sum"]);
+
+    let found = problems.published("two-sum").await;
+    assert_eq!(found.map(|p| p.version), Some(1));
 }
 
 #[tokio::test]
