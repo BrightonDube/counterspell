@@ -390,3 +390,15 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 - Continued the run-lifecycle spec from T29 to T37 and T39. Each task was test-first, with a wave-end review after Wave 2 and the fixes it led to. Transcript: `docs/kiro-log/2026-11-15T1903-22-run-lifecycle-implement-a1.log`.
 - Brighton approved the `futures-util` dependency in the standing decisions on 14 November, which unblocked the SSE work.
 - Records of what Kiro changed and what Brighton must check are in `docs/kiro-log/run-lifecycle-review-queue.md` and `docs/kiro-log/run-lifecycle-blockers.md`.
+
+### 2026-11-15 19:03-20:45 SAST: 22-run-lifecycle-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-run-lifecycle-a1.md`. Transcript: `docs/kiro-log/2026-11-15T1903-22-run-lifecycle-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 42.85 (credits used now 3483.09/4000).
+
+### 2026-11-15 20:50-22:04 SAST: 31-landing-steel-night-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-landing-steel-night-a1.md`. Transcript: `docs/kiro-log/2026-11-15T2050-31-landing-steel-night-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 14.13 (credits used now 3497.22/4000).
+
+### 2026-11-15 22:04-22:08 SAST: 31-landing-steel-night-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-landing-steel-night-a2.md`. Transcript: `docs/kiro-log/2026-11-15T2204-31-landing-steel-night-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 0.91 (credits used now 3498.13/4000).
