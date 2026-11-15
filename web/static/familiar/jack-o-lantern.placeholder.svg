@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="PLACEHOLDER ART">
-  <!-- PLACEHOLDER ART: not the final jack-o'-lantern. It only satisfies the id contract in
-       web/src/lib/familiar/mascot/contract.ts so the mascot code can be built and tested. -->
+  <!-- PLACEHOLDER ART: not the final jack-o'-lantern. Fallback only, used if the approved art
+       fails to load or validate. It satisfies the id contract in
+       web/src/lib/familiar/mascot/contract.ts so the mascot code can still be built and tested. -->
   <title>PLACEHOLDER ART</title>
   <defs>
     <radialGradient id="fam-glow" cx="50%" cy="50%" r="50%">
@@ -8,18 +9,14 @@
       <stop id="fam-glow-stop-outer" offset="100%" stop-color="#080d0e"/>
     </radialGradient>
   </defs>
-  <ellipse id="fam-body" cx="100" cy="105" rx="80" ry="70" fill="url(#fam-glow)" stroke="#33494f"/>
-  <g id="fam-eyes-1"><circle cx="72" cy="90" r="6" fill="#080d0e"/><circle cx="128" cy="90" r="6" fill="#080d0e"/></g>
-  <g id="fam-eyes-2"><circle cx="72" cy="92" r="5" fill="#080d0e"/><circle cx="128" cy="92" r="5" fill="#080d0e"/></g>
-  <g id="fam-eyes-3"><circle cx="72" cy="94" r="4" fill="#080d0e"/><circle cx="128" cy="94" r="4" fill="#080d0e"/></g>
-  <g id="fam-eyes-4"><circle cx="72" cy="90" r="6" fill="#080d0e"/><circle cx="128" cy="90" r="6" fill="#080d0e"/></g>
-  <g id="fam-eyes-5"><circle cx="72" cy="90" r="7" fill="#080d0e"/><circle cx="128" cy="90" r="7" fill="#080d0e"/></g>
-  <g id="fam-mouth-1"><path d="M70 150 Q100 135 130 150" stroke="#080d0e" stroke-width="5" fill="none"/></g>
-  <g id="fam-mouth-2"><path d="M70 150 Q100 140 130 150" stroke="#080d0e" stroke-width="5" fill="none"/></g>
-  <g id="fam-mouth-3"><path d="M70 148 L130 148" stroke="#080d0e" stroke-width="5" fill="none"/></g>
-  <g id="fam-mouth-4"><path d="M70 140 Q100 162 130 140" stroke="#080d0e" stroke-width="5" fill="none"/></g>
-  <g id="fam-mouth-5"><path d="M68 138 Q100 170 132 138" stroke="#080d0e" stroke-width="5" fill="none"/></g>
-  <path id="fam-cracks" pathLength="1" d="M100 40 L108 70 L96 90" stroke="#e0675a" stroke-width="2" fill="none"/>
+  <g id="fam-body">
+    <ellipse cx="100" cy="105" rx="80" ry="70" fill="url(#fam-glow)" stroke="#33494f"/>
+    <g id="fam-mood-1" opacity="0"><text x="100" y="110" text-anchor="middle" font-size="12" fill="#e6e1d3">1</text></g>
+    <g id="fam-mood-2" opacity="0"><text x="100" y="110" text-anchor="middle" font-size="12" fill="#e6e1d3">2</text></g>
+    <g id="fam-mood-3" opacity="0"><text x="100" y="110" text-anchor="middle" font-size="12" fill="#e6e1d3">3</text></g>
+    <g id="fam-mood-4" opacity="0"><text x="100" y="110" text-anchor="middle" font-size="12" fill="#e6e1d3">4</text></g>
+    <g id="fam-mood-5" opacity="0"><text x="100" y="110" text-anchor="middle" font-size="12" fill="#e6e1d3">5</text></g>
+  </g>
   <g id="fam-fx"></g>
   <text x="100" y="192" text-anchor="middle" font-size="10" fill="#e6e1d3">PLACEHOLDER ART</text>
 </svg>

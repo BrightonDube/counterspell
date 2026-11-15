@@ -28,6 +28,8 @@ export interface FamiliarView {
   mood: Mood | null;
   moodLabel: string;
   badge: string;
+  /** The result sentence without the mood prefix, for the mascot's headline. Empty without a mood. */
+  headline: string;
   liveText: string;
 }
 
@@ -102,6 +104,13 @@ export function applyTerminal(
   return { ...state, terminal };
 }
 
+/** The sentence about the measured class, or empty when there is no measured mood. */
+function headlineFor(state: FamiliarState): string {
+  const fact = state.complexity;
+  if (state.mood === null || fact === null) return '';
+  return `Looks ${fact.measuredClass} (${CONFIDENCE_TEXT[fact.confidence]}). Reference ${fact.reference}.`;
+}
+
 function liveTextFor(state: FamiliarState): string {
   if (state.mood === null) {
     if (state.terminal?.verdict === 'accepted' && !state.terminal.hasBench) {
@@ -113,9 +122,8 @@ function liveTextFor(state: FamiliarState): string {
     return 'Familiar: waiting for a measured result.';
   }
   const head = `Familiar: ${MOOD_WORD[state.mood]}.`;
-  const fact = state.complexity;
-  if (fact === null) return head;
-  return `${head} Looks ${fact.measuredClass} (${CONFIDENCE_TEXT[fact.confidence]}). Reference ${fact.reference}.`;
+  const headline = headlineFor(state);
+  return headline === '' ? head : `${head} ${headline}`;
 }
 
 /** Builds what the component shows from the measured state and the learner's preferences. */
@@ -131,6 +139,7 @@ export function familiarView(
     moodLabel:
       state.mood === null ? 'No measured mood yet' : MOOD_LABEL[state.mood],
     badge: state.mood === null ? '' : BADGE[state.mood],
+    headline: headlineFor(state),
     liveText: liveTextFor(state)
   };
 }

@@ -55,6 +55,20 @@ describe('Familiar panel', () => {
     ).toBeTruthy();
   });
 
+  // Breaks if the dock shows only text for a measured mood, so the learner never sees the painted mood.
+  it('draws the mascot for a measured mood', () => {
+    const { container } = render(Familiar, { props: { measured: angryState } });
+    expect(container.querySelector('[data-mood="2"]')).not.toBeNull();
+  });
+
+  // Breaks if the dock shows a mascot before any measured mood exists, which would look like a result.
+  it('shows no mascot before a measured mood exists', () => {
+    const { container } = render(Familiar, {
+      props: { measured: initialFamiliarState() }
+    });
+    expect(container.querySelector('[data-mood]')).toBeNull();
+  });
+
   // Breaks if the explanation drops the limits the spec requires the learner to see.
   it('explains the measurement and its limits in How does it judge me', () => {
     const { container } = render(Familiar, { props: { measured: angryState } });

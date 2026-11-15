@@ -30,13 +30,12 @@ describe('moodStyle', () => {
 		]);
 	});
 
-	it('draws each mood with its own eye and mouth layers that the artwork contract requires', () => {
+	// Breaks if a mood points at a layer the approved art does not have, so that mood shows no painting.
+	it('shows each mood with its own painted image layer, which the artwork contract requires', () => {
 		for (const mood of MOODS) {
 			const style = moodStyle(mood);
-			expect(style.eyesLayer).toBe(`fam-eyes-${mood}`);
-			expect(style.mouthLayer).toBe(`fam-mouth-${mood}`);
-			expect(LAYER_IDS).toContain(style.eyesLayer);
-			expect(LAYER_IDS).toContain(style.mouthLayer);
+			expect(style.layer).toBe(`fam-mood-${mood}`);
+			expect(LAYER_IDS).toContain(style.layer);
 		}
 	});
 

@@ -19,7 +19,6 @@ export type BurstEffect = 'crack_burst' | 'laugh_burst';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const CROSSFADE_SECONDS = 0.3;
-const CRACK_DRAW_SECONDS = 0.25;
 const SHAKE_PIXELS = 3;
 const SHAKE_HALF_SECONDS = 0.0625;
 const RING_DELAY_SECONDS = 0.1;
@@ -101,23 +100,17 @@ function scatter(
 	);
 }
 
-/** The crack-and-burst: the crack lines draw on, then the crimson particles fly out. */
+/** The crack-and-burst: the crimson particles fly out of the artwork's effect layer. */
 function playCrack(gsap: Gsap, art: SVGSVGElement, owned: Owned, seed: number): void {
 	const fx = groupById(art, 'fam-fx');
 	if (fx === null) return;
 	const timeline = gsap.timeline();
 	owned.timelines.push(timeline);
 	owned.targets.push(art);
-	const cracks = groupById(art, 'fam-cracks');
-	if (cracks !== null) {
-		const paths = [...cracks.querySelectorAll('path')];
-		owned.targets.push(...paths);
-		timeline.fromTo(paths, { strokeDashoffset: 1 }, { strokeDashoffset: 0, duration: CRACK_DRAW_SECONDS });
-	}
 	const plan = crackPlan(seed);
 	const circles = spawn(fx, plan.particles, owned);
 	owned.targets.push(...circles);
-	scatter(timeline, circles, plan.particles, plan.durationMs / 1000, CRACK_DRAW_SECONDS);
+	scatter(timeline, circles, plan.particles, plan.durationMs / 1000, 0);
 }
 
 /** The laugh burst: one short shake, then a ring of embers and green sparks. */

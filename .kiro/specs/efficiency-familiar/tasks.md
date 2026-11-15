@@ -348,17 +348,17 @@ Conventions for every web task:
 
 ## Mascot real art (amendment 15 Nov 2026)
 
-- [ ] **T49 [S] (30 min) Real jack-o'-lantern contract SVG and loader**
+- [x] **T49 [S] (30 min) Real jack-o'-lantern contract SVG and loader**
   - Files: `web/static/familiar/jack-o-lantern.svg` (new), `web/src/lib/familiar/mascot/contract.test.ts`, the mascot loader.
   - Build the contract SVG around the five `/art/familiar/moods/familiar-N-mood.webp` stills as in the design amendment (one `<image>` layer per mood, rasters not embedded). Make it the default; fall back to the placeholder only if the real file fails to load or validate. Do not use `jack-o-lantern-orange` or `-poison` as the mascot body.
   - Verify: `validate()` passes on the new file with every id in the updated contract; SVG <= 120 KB (raster bytes recorded separately in `docs/kiro-log/efficiency-familiar-art.md`); `cd web && npm test && npm run check && npm run build`.
   - Requirements: R9.1, R9.11, R9.12. Preserve: no generated replacement art; the placeholder file is kept; `web/static/art/familiar/jack-o-lantern-orange` and `-poison` are left untouched.
-- [ ] **T50 [S] (30 min) Cross-fade the five realistic mood images**
+- [x] **T50 [S] (30 min) Cross-fade the five realistic mood images**
   - Files: `mood-style.ts`, `Mascot.svelte`, the GSAP timelines, their tests.
   - Show exactly one of the five approved mood images at a time and cross-fade to the next on mood change. No drawn-over face paths, and no overlay eyes, mouths or cracks that invent a new carving. Keep existing rules: mood only from `decide`; calm while typing; at most one change per 2 s; reduced motion and mute give the static WebP frame (instant swap, no animation).
   - Verify: pure mapping tests for all five moods; component tests for reduced motion and the 2 s / typing calm rules; existing P22 to P24 tests green.
   - Requirements: R9 (mascot). Preserve: the mood still comes only from `decide`.
-- [ ] **T51 [P] (20 min) Impeccable polish of the Familiar dock**
+- [x] **T51 [P] (20 min) Impeccable polish of the Familiar dock**
   - Files: the dock or `Familiar.svelte` styles, `docs/kiro-log/efficiency-familiar-art.md`.
   - Apply the Impeccable craft-floor and polish playbooks to the editor-corner Familiar, now using the five mood stills: size, crop, token halo, spacing, no ambient loop in the IDE. Record findings and fixes.
   - Verify: `npm run check && npm run build`; the log lists the findings and fixes.

@@ -19,45 +19,30 @@ export interface GlowRecipe {
 /** Everything the view needs to draw one mood. */
 export interface MoodStyle {
 	name: 'furious' | 'angry' | 'uneasy' | 'pleased' | 'laughing';
-	eyesLayer: string;
-	mouthLayer: string;
+	/** The artwork layer (an `<image>` in the contract SVG) that shows this mood's painting. */
+	layer: string;
 	icon: MoodIcon;
 	glow: GlowRecipe;
 }
 
 const STYLES: Record<Mood, MoodStyle> = {
-	1: {
-		name: 'furious',
-		eyesLayer: 'fam-eyes-1',
-		mouthLayer: 'fam-mouth-1',
-		icon: 'cross',
-		glow: { base: '--danger-fill' }
-	},
+	1: { name: 'furious', layer: 'fam-mood-1', icon: 'cross', glow: { base: '--danger-fill' } },
 	2: {
 		name: 'angry',
-		eyesLayer: 'fam-eyes-2',
-		mouthLayer: 'fam-mouth-2',
+		layer: 'fam-mood-2',
 		icon: 'warning',
 		glow: { base: '--danger-fill', mixWith: '--accent-candle', mixPercent: 55 }
 	},
 	3: {
 		name: 'uneasy',
-		eyesLayer: 'fam-eyes-3',
-		mouthLayer: 'fam-mouth-3',
+		layer: 'fam-mood-3',
 		icon: 'caution',
 		glow: { base: '--accent-candle', mixWith: '--bg', mixPercent: 55 }
 	},
-	4: {
-		name: 'pleased',
-		eyesLayer: 'fam-eyes-4',
-		mouthLayer: 'fam-mouth-4',
-		icon: 'smile',
-		glow: { base: '--accent-candle' }
-	},
+	4: { name: 'pleased', layer: 'fam-mood-4', icon: 'smile', glow: { base: '--accent-candle' } },
 	5: {
 		name: 'laughing',
-		eyesLayer: 'fam-eyes-5',
-		mouthLayer: 'fam-mouth-5',
+		layer: 'fam-mood-5',
 		icon: 'sparkle',
 		glow: { base: '--accent-candle-glow' }
 	}
