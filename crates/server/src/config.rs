@@ -66,6 +66,21 @@ pub struct ServerConfig {
     pub limits: RunLimits,
     /// Proxies whose `X-Forwarded-For` header is believed for the per-IP limit.
     pub trusted_proxies: TrustedProxies,
+    /// Timing and limits for the live event stream.
+    pub sse: SseSettings,
+}
+
+/// Timing and limits for `GET /api/runs/{id}/events`. The defaults come from the run-lifecycle design.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SseSettings {
+    /// How often a stream checks Postgres when no wake-up arrives, in milliseconds.
+    pub poll_ms: u64,
+    /// How often a comment heartbeat is sent, in seconds.
+    pub heartbeat_secs: u64,
+    /// The longest a stream stays open before the client reconnects, in seconds.
+    pub max_age_secs: u64,
+    /// How many streams one user may hold open at once.
+    pub max_streams_per_user: u64,
 }
 
 impl fmt::Debug for ServerConfig {
@@ -79,6 +94,7 @@ impl fmt::Debug for ServerConfig {
             .field("valkey_url", &"<redacted>")
             .field("limits", &self.limits)
             .field("trusted_proxies", &self.trusted_proxies)
+            .field("sse", &self.sse)
             .finish()
     }
 }
@@ -127,6 +143,13 @@ impl ServerConfig {
             TrustedProxies::parse(proxies_text.as_deref().unwrap_or(DEFAULT_TRUSTED_PROXIES))
                 .map_err(|reason| invalid("TRUSTED_PROXIES", reason))?;
 
+        let sse = SseSettings {
+            poll_ms: ranged(&lookup, "SSE_POLL_MS", 250, 50, 10_000)?,
+            heartbeat_secs: ranged(&lookup, "SSE_HEARTBEAT_SECS", 15, 1, 300)?,
+            max_age_secs: ranged(&lookup, "SSE_MAX_AGE_SECS", 900, 60, 86_400)?,
+            max_streams_per_user: ranged(&lookup, "SSE_MAX_STREAMS_PER_USER", 5, 1, 100)?,
+        };
+
         Ok(Self {
             host,
             port,
@@ -135,6 +158,7 @@ impl ServerConfig {
             valkey_url,
             limits,
             trusted_proxies,
+            sse,
         })
     }
 

@@ -71,3 +71,11 @@ Brighton reviews each entry before the next task that depends on it starts.
 - **T38 (commits 4e9d4a2, 025c526), not SUPERVISED, listed because it changes deployment.** The judge in `docker-compose.yml` now reads `DATABASE_URL` from `JUDGE_DATABASE_URL`, and the server reads `SERVER_DATABASE_URL`. Until those host variables are set to login users, both services start with an empty URL and fail. Check that the login users in `deploy/run-lifecycle.md` exist before the next `docker compose up`.
 - **T38 Caddy route:** `/api/runs/{id}/events` now bypasses compression and flushes at once. Validated with `caddy validate`. Manual check through a running stack is still needed (deferred: E2E).
 - **T33 (commit a4a6e3e):** `startRunAction` is a new helper in `web/src/lib/runs/api.ts`. Components that start runs should call it once per click. It has not been wired into any screen (screens belong to the ide-workspace spec).
+
+## T29 (SUPERVISED, SSE core): items for Brighton
+
+- Code: `crates/server/src/runs/sse.rs` (`parse_cursor`, `REPLAY_SQL`, `run_position`, `stream_run`, `next_event`, `wait_for_change`). Route added in `crates/server/src/lib.rs`. Config in `crates/server/src/config.rs` (`SseSettings`).
+- Check the owner predicate on every event query (`REPLAY_SQL` joins `submissions` and filters `s.user_id`), and that the ownership check and cursor parse run before any event read.
+- Choice: when both `Last-Event-ID` and `last_event_id` are given, the header wins. The design does not say which wins.
+- Choice: the stream subscribes to the waker before its first query, as design Path 9 step 5 requires.
+- Not yet covered: the per-user stream limit (T30), heartbeat and headers (T30), the max-age close (T30). End-to-end tests are in T31.

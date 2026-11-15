@@ -159,6 +159,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/runs", post(runs::create::post_run))
         .route("/api/runs/{id}", get(runs::read::get_run))
         .route("/api/runs/{id}/cancel", post(runs::cancel::cancel_run))
+        .route("/api/runs/{id}/events", get(runs::sse::stream_run))
         .route(
             "/api/me/familiar",
             get(familiar::api::get_prefs).patch(familiar::api::patch_prefs),
