@@ -1002,3 +1002,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A `Semaphore` permit is a value. When the function returns early with `?`, the permit drops and the next waiter can run, so a failed attempt never keeps the bench gate.
 - `assert_eq!(events.len(), 0)` is clearer than `assert!(events.is_empty())` when clippy's `-D warnings` is on, because the lint suggests a comparison with an explicit empty array for vectors.
 - Two `RunContext` values with different attempt numbers give two independent event logs, so a retry cannot inherit state from the failed attempt.
+
+
+## judge-sandbox T20 (sbx test): ignored tests and the daemon identity check
+
+- An `#[ignore]` test runs only when asked (`-- --ignored`), so it stays out of the normal suite. The test still fails loudly when `SANDBOX_DOCKER_SOCKET` is missing, because `expect` panics. It never passes by skipping silently.
+- `connect` and `verify` run before any container is created. The check refuses a daemon that is not rootless, so a mistake here stops the test without starting anything on the host.
