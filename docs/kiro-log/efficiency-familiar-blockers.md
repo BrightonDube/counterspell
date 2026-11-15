@@ -183,3 +183,16 @@ Blockers for Brighton:
 - Confirm the `WordFacts.reference` signature change (item 2 above).
 
 Pre-existing: the earlier `cargo build` run printed three unused-import warnings in `crates/server/src/auth/clock.rs` and `crates/server/src/ratelimit.rs`. These files were not touched in this run. Clippy with `-D warnings` on the three changed crates passed.
+
+## Run 7 (resume, 15 Nov 2026 late session)
+
+- **T20 `measure_run`: ticked (commit 3e54f81).** Added `a_fitted_bench_without_a_usable_baseline_is_capped_at_pleased` (matrix row: no baseline gives mood 4, `no_baseline`). That behaviour already existed in `assess` (T17), so the new test passed on its first run. Fmt and Clippy (`-D warnings`) are clean for `counterspell-judge`, and its 56 tests pass. The canary and the full restart test with the real executor stay with T43 and T20's executor wiring (language-drivers), as the earlier run recorded.
+- **T24 grimoire: still open (partial, commit to follow).** Added three sandbox_fake tests: a quadratic series declared `n` warns SBX-05; a linear series declared `n` does not; two points warn SBX-05 (cannot be fitted). Still missing:
+  1. The span warning (sizes under 32×) needs a new warning code, `BEN-02`. Brighton has not approved it (same blocker as before).
+  2. A test for the `Low` path (SBX-05 "not confirmed"). I could not find a deterministic noisy series that the fit reports as `Low` without tuning the test to the code.
+  3. A test for an infeasible `unique` size, giving BEN-01. The shared `values` fixture has no unique constraint, so this needs a new schema fixture.
+- **T22 and T25: blocked** on judge-sandbox and language-drivers T08/T09 (bench handoff). Both are unchecked in their specs.
+- **T37 to T39 (speech): blocked** on the hints spec. `crates/server/src/hints` does not exist and the hints tasks (G1, H01 and so on) are all unchecked. T38 and T39 depend on T37.
+- **T40 and T41: blocked** on the VPS, a real rootless sandbox and language-drivers. These need Brighton's admission run and cannot be done from this machine.
+- **T42: deferred: E2E** (browser pass). **T43** depends on T38 and T39. **T44** depends on T42. **T45** depends on T43 and T44.
+- **T46 to T48: stretch.** Not started, as the brief says.
