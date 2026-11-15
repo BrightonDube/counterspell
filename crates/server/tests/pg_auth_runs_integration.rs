@@ -134,7 +134,10 @@ async fn pg_session_cookie_authenticates_post_runs(pool: PgPool) {
     let reply = post_run(address, &cookie).await;
 
     assert_eq!(reply.status, 202, "a signed-in user can save a run");
-    assert!(uuid::Uuid::parse_str(&run_id_of(&reply)).is_ok(), "the reply carries a run id");
+    assert!(
+        uuid::Uuid::parse_str(&run_id_of(&reply)).is_ok(),
+        "the reply carries a run id"
+    );
 }
 
 #[ignore = "needs DATABASE_URL"]
