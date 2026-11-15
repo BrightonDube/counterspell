@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 # Test stub for docker. Records the call; fails `migrate` runs when FAIL_MIGRATE is set. For backup
-# tests it prints a plaintext marker for pg_dump, and fixed counts for psql.
+# tests it prints a plaintext marker for pg_dump, and fixed counts for psql. For pre-pull tests,
+# `image inspect IMAGE` prints the image's own digest as RepoDigests, unless FAKE_REPO_DIGESTS overrides it.
 echo "docker $*" >> "${STUB_LOG:?}"
 if [[ "$*" == *" run --rm migrate"* && -n "${FAIL_MIGRATE:-}" ]]; then exit 1; fi
 if [[ "$*" == *" pg_dump "* ]]; then printf 'PLAINTEXT-MARKER-DO-NOT-STORE\n'; fi
 if [[ "$*" == *" psql "* ]]; then printf 'users 5\nsubmissions 9\njobs 4\nrun_events 30\nmigration 3\n'; fi
+if [[ "$*" == *" image inspect "* ]]; then
+  if [[ -n "${FAKE_REPO_DIGESTS:-}" ]]; then
+    printf '%s\n' "$FAKE_REPO_DIGESTS"
+  else
+    image="${*: -1}"
+    printf '["%s"]\n' "$image"
+  fi
+fi
 exit 0

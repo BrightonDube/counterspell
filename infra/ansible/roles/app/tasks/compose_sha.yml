@@ -4,7 +4,7 @@
 
 - name: Copy the compose and Caddy files to the app directory
   ansible.builtin.copy:
-    src: "{{ app_src }}/{{ item.src }}"
+    src: "{{ repo_root }}/{{ item.src }}"
     dest: "{{ app_dir }}/{{ item.dest }}"
     owner: root
     group: root

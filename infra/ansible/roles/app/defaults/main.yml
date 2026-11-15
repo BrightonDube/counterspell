@@ -1,6 +1,5 @@
 # Defaults for the app role. Repository files are read from the controller (the laptop that runs
-# Ansible), so app_src points at the repository root.
-app_src: "{{ playbook_dir }}/../.."
+# Ansible); see repo_root in inventory/group_vars/all.yml.
 app_dir: /opt/counterspell
 app_env_dir: /etc/counterspell
 

@@ -124,7 +124,7 @@ Conventions:
   - Depends on: T11.
   - Verify: `ansible-lint`; `--syntax-check`; the checksum task produces the same file format that T04 reads (a bats test in `deploy/vps/tests/compose_sha.bats`).
 
-- [ ] **T13 [S] [SUPERVISED] (30 min) Ansible `sandbox` role and the digest pre-pull**
+- [x] **T13 [S] [SUPERVISED] (30 min) Ansible `sandbox` role and the digest pre-pull**
   - Files: `infra/ansible/roles/sandbox/**`, `deploy/vps/prepull.sh`, `deploy/vps/tests/prepull.bats`.
   - Role: `uidmap`, subuid and subgid ranges, `loginctl enable-linger sandbox`, rootless install (`dockerd-rootless-setuptool.sh install`) as `sandbox`, the `delegate.conf` drop-in (R3.2), the `user@1001.service` and `user-1001.slice` limits (R3.3, Q13), the `docker.service` user drop-in that reapplies the socket ACL for UID 10001 (R3.4), an AppArmor check that stops with a message (R3.8, Q12).
   - `prepull.sh` reads only enabled `image = "...@sha256:..."` lines from `languages/languages.toml`, pulls by digest on the sandbox socket, and compares the local digest (R3.6). Tests use a fake `docker` and a fixture `languages.toml` with a fake digest that is never pulled.

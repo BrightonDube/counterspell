@@ -1,0 +1,6 @@
+# Managed by Ansible (sandbox role). After the rootless daemon starts, grant the judge's UID access to the
+# socket and its directory, and to nothing else (deploy-ops R3.4). The judge runs as this UID on the host
+# kernel because the main daemon does not remap user namespaces. Reapplied on every daemon start.
+[Service]
+ExecStartPost=/usr/bin/setfacl -m u:{{ judge_uid }}:x {{ sandbox_runtime_dir }}
+ExecStartPost=/usr/bin/setfacl -m u:{{ judge_uid }}:rw {{ sandbox_socket }}

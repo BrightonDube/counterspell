@@ -1,0 +1,159 @@
+---
+# Rootless Docker daemon for sandboxes only (deploy-ops R3.1 to R3.8). The main daemon never runs user
+# code and the sandbox daemon never holds application secrets.
+
+- name: Look up the sandbox account
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ sandbox_user }}"
+
+- name: Refuse a sandbox user with an unexpected UID
+  ansible.builtin.assert:
+    that:
+      - getent_passwd[sandbox_user][1] == (sandbox_uid | string)
+    fail_msg: "The {{ sandbox_user }} account must have UID {{ sandbox_uid }} (judge ACL and paths depend on it)."
+    quiet: true
+
+- name: Install the rootless Docker and sandbox prerequisites
+  ansible.builtin.apt:
+    name: "{{ sandbox_packages + ['docker-ce-rootless-extras=' ~ docker_ce_version] }}"
+    state: present
+
+- name: Give the sandbox user subordinate UID and GID ranges (rootless needs them)
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: "^{{ sandbox_user }}:"
+    line: "{{ sandbox_user }}:{{ sandbox_subid_range }}"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+  loop:
+    - /etc/subuid
+    - /etc/subgid
+
+- name: Enable lingering for the sandbox user so its daemon runs without a login (R3.5)
+  ansible.builtin.file:
+    path: "/var/lib/systemd/linger/{{ sandbox_user }}"
+    state: touch
+    owner: root
+    group: root
+    mode: "0644"
+    modification_time: preserve
+    access_time: preserve
+
+- name: Create the drop-in directories for the sandbox user's manager and limits
+  ansible.builtin.file:
+    path: "/etc/systemd/system/user@{{ sandbox_uid }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Delegate the cgroup controllers to the sandbox user (R3.2)
+  ansible.builtin.template:
+    src: delegate.conf.j2
+    dest: "/etc/systemd/system/user@{{ sandbox_uid }}.service.d/delegate.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Cap the sandbox user's aggregate CPU, memory and tasks (R3.3)
+  ansible.builtin.template:
+    src: limits.conf.j2
+    dest: "/etc/systemd/system/user@{{ sandbox_uid }}.service.d/limits.conf"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Reload systemd
+
+- name: Start the sandbox user's manager so its controllers can be checked
+  ansible.builtin.systemd:
+    name: "user@{{ sandbox_uid }}.service"
+    state: started
+    daemon_reload: true
+
+- name: Read the controllers delegated to the sandbox user's manager
+  ansible.builtin.slurp:
+    src: "/sys/fs/cgroup/user.slice/user-{{ sandbox_uid }}.slice/user@{{ sandbox_uid }}.service/cgroup.controllers"
+  register: sandbox_controllers
+
+- name: Stop unless every required controller is delegated before any pull (R3.2)
+  ansible.builtin.assert:
+    that:
+      - item in (sandbox_controllers.content | b64decode).split()
+    fail_msg: "Controller {{ item }} is not delegated to user@{{ sandbox_uid }}. Check delegate.conf and reboot if needed."
+    quiet: true
+  loop: "{{ sandbox_required_controllers }}"
+
+- name: Read the AppArmor setting that blocks unprivileged user namespaces, if present (R3.8, Q12)
+  ansible.builtin.slurp:
+    src: /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+  register: sandbox_apparmor
+  failed_when: false
+
+- name: Stop with a message when AppArmor blocks rootless Docker (R3.8, Q12)
+  ansible.builtin.assert:
+    that:
+      - sandbox_apparmor.failed or (sandbox_apparmor.content | b64decode | trim) != '1'
+    fail_msg: >-
+      AppArmor restricts unprivileged user namespaces, so rootless Docker cannot start. This role does not change
+      a host-wide sysctl (R3.8). Brighton decides the AppArmor change (Q12).
+    quiet: true
+
+- name: Install the rootless Docker daemon for the sandbox user (once)
+  ansible.builtin.command: dockerd-rootless-setuptool.sh install
+  args:
+    creates: "{{ sandbox_home }}/.config/systemd/user/docker.service"
+  become: true
+  become_user: "{{ sandbox_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ sandbox_runtime_dir }}"
+    PATH: "/usr/bin:/bin:/usr/sbin:/sbin"
+
+- name: Create the drop-in directory for the sandbox daemon
+  ansible.builtin.file:
+    path: "{{ sandbox_home }}/.config/systemd/user/docker.service.d"
+    state: directory
+    owner: "{{ sandbox_user }}"
+    group: "{{ sandbox_user }}"
+    mode: "0755"
+
+- name: Reapply the judge's socket ACL after each daemon start (R3.4)
+  ansible.builtin.template:
+    src: acl.conf.j2
+    dest: "{{ sandbox_home }}/.config/systemd/user/docker.service.d/acl.conf"
+    owner: "{{ sandbox_user }}"
+    group: "{{ sandbox_user }}"
+    mode: "0644"
+  notify: Reload the sandbox user's systemd
+
+- name: Start the sandbox daemon as its own user service (R3.1)
+  ansible.builtin.systemd:
+    name: docker
+    scope: user
+    state: started
+    enabled: true
+  become: true
+  become_user: "{{ sandbox_user }}"
+  environment:
+    XDG_RUNTIME_DIR: "{{ sandbox_runtime_dir }}"
+
+- name: Install the pre-pull script and the language catalogue
+  ansible.builtin.copy:
+    src: "{{ repo_root }}/{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "{{ item.mode }}"
+  loop:
+    - { src: deploy/vps/prepull.sh, dest: /usr/local/sbin/counterspell-prepull, mode: "0755" }
+    - { src: languages/languages.toml, dest: /usr/local/share/counterspell/languages.toml, mode: "0644" }
+
+- name: Pull each enabled sandbox image by digest and check it (R3.6, R3.7)
+  ansible.builtin.command: /usr/local/sbin/counterspell-prepull
+  environment:
+    SANDBOX_DOCKER_SOCKET: "{{ sandbox_socket }}"
+    LANGUAGES_TOML: /usr/local/share/counterspell/languages.toml
+  changed_when: false
