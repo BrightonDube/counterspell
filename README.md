@@ -79,6 +79,10 @@ as an internal error after its retries. It never reports a verdict. Settings are
 read from the environment (`JUDGE_CONCURRENCY`, `LEASE_SECS`, `RENEW_SECS`, and
 the others in `crates/judge/src/config.rs`). It stops on `SIGINT` or `SIGTERM`.
 
+## Sign-in and accounts
+
+Users sign in with GitHub, Google, a magic link sent by email, or an email and password. Provider accounts are never matched to an existing account by email address; a signed-in user links a provider from the account settings. The server reads the auth settings (`SESSION_SECRET`, `PUBLIC_BASE_URL`, the OAuth client values, `RESEND_API_KEY` and the demo account variables) from its environment only, and never from `judge`. `deploy/auth-setup.md` lists the OAuth callback URLs and the demo account setup. Local development uses `APP_ENV=development` with the `log` mail transport, so magic links appear in the server log.
+
 ## License
 
 Counterspell is MIT licensed. Dependency and asset notices are tracked in
