@@ -413,6 +413,15 @@ fn pg_model_interleavings() {
             .run(&pool)
             .await
             .map_err(text)?;
+        // test-change: CAT-F1. Submissions must reference a real problem, so the model's slug needs its catalogue row. Setup only; no assertion changed.
+        sqlx::query("INSERT INTO tracks (slug, name) VALUES ('arrays', 'Arrays') ON CONFLICT DO NOTHING")
+            .execute(&pool)
+            .await
+            .map_err(text)?;
+        sqlx::query("INSERT INTO problems (slug, title, track_slug, difficulty) VALUES ('two-sum', 'Two Sum', 'arrays', 'easy') ON CONFLICT DO NOTHING")
+            .execute(&pool)
+            .await
+            .map_err(text)?;
         Ok::<PgPool, String>(pool)
     });
     let pool = pool.expect("the database is reachable and migrates");

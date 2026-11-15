@@ -1048,3 +1048,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A trigger function is written in PL/pgSQL and returns `trigger`. `RAISE EXCEPTION` aborts the statement, so Rust sees a `sqlx::Error` whose message names the rule.
 - The tests check each rule by sending the bad statement and asserting the message text. The rule is proven by the database, not by Rust code.
 - `catalogue_support` is a shared module under `tests/`. Each test file includes it with `mod catalogue_support;`, which keeps the helper out of the list of test crates.
+
+# Rust lesson: problem-catalogue C03
+- `NOT VALID` on a foreign key tells Postgres to check only new and changed rows. It skips the full table scan that adding a key normally does, which keeps a deploy quick on a large submissions table.
+- A `DO $$ ... $$` block with an `IF NOT EXISTS` check on `pg_constraint` makes a migration safe to run twice.
+- A test that calls `sqlx::migrate!` embeds the migration list at compile time. A test binary built before a new migration file exists rejects the shared database with `VersionMissing`. Touching the file rebuilds it.
