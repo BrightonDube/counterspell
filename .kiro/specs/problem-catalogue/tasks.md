@@ -326,7 +326,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_pin` (a run queued before an unpublish still has its version; an unpublished problem returns `404` and creates no submission row; the idempotency key still returns the same run).
   - Rust lesson: one statement either inserts or inserts nothing, so the publication check and the insert cannot be separated by another transaction.
 
-- [ ] **C30 [S] (30 min) `GET /api/problems` list**
+- [x] **C30 [S] (30 min) `GET /api/problems` list**
   - Files: `crates/server/src/catalogue/{read.rs,dto.rs,handlers.rs}`, `crates/server/tests/catalogue_api.rs` (no database), `crates/server/tests/pg_catalogue_api.rs`.
   - Parse `track`, `concept`, `difficulty`. Unknown values give `400 invalid_filter`. Use the list query in `design.md`. `status` from the caller's session (via the existing `UserResolver`); anonymous gives `null`. Cap at 200.
   - Requirements: CAT-A1, CAT-A2, CAT-A3, CAT-P4, PRB-1, PRB-2.
