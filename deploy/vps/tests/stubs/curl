@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Test stub: records its arguments in $STUB_LOG and fails when FAIL_<NAME> is set.
-echo "$(basename "$0") $*" >> "${STUB_LOG:?}"
-var="FAIL_$(basename "$0" | tr '[:lower:]' '[:upper:]')"
-if [[ -n "${!var:-}" ]]; then exit 1; fi
+# Test stub for curl. Records its arguments in $STUB_LOG, fails when FAIL_CURL is set, and prints
+# FAKE_CURL_BODY (default: a healthy health-check body).
+echo "curl $*" >> "${STUB_LOG:?}"
+if [[ -n "${FAIL_CURL:-}" ]]; then exit 1; fi
+printf '%s' "${FAKE_CURL_BODY:-{\"status\":\"ok\"}}"
 exit 0
