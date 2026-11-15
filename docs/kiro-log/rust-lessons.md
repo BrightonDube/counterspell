@@ -1177,3 +1177,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A `OnceLock` holds a value that is set once and then shared. The log capture uses one global subscriber, because Rust allows only one per process, and every test reads the same buffer.
 - A wrapper type can implement a trait by delegating to another value (`RecordingProvider` wraps `FakeProvider`). The wrapper records the verifier without changing the code under test.
 - `&'static` means the reference lives for the whole program. The shared capture can be returned that way without cloning or leaking memory.
+
+# Rust lesson: auth T36
+
+- `DELETE /api/me` runs its checks inside one transaction. The `FOR UPDATE` lock on the user row and the `?` early returns mean a refused request rolls back and changes nothing.
+- `Json<DeleteBody>` reads the body as a typed struct. The handler never takes the user id from the body; only the `AuthUser` extractor supplies it.
+- A `match`-free `let Some(..) = .. else { return Err(..) };` line handles "no row found" in one place, which keeps the happy path flat.

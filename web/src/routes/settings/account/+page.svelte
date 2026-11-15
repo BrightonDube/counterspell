@@ -7,10 +7,12 @@
   import { page } from '$app/state';
   import {
     AuthApiError,
+    deleteAccount,
     logoutEverywhere,
     requestEmailLink,
     startProviderLink
   } from '#lib/auth/client.js';
+  import { confirmationMatches } from '#lib/auth/delete-account.js';
   import {
     errorFromQuery,
     linkedMessage,
@@ -31,6 +33,7 @@
   let problem = $state('');
   let notice = $state('');
   let email = $state('');
+  let confirmText = $state('');
   let busy = $state(false);
 
   /** Sends the visitor to sign in, and brings them back to this page afterwards. */
@@ -106,8 +109,26 @@
     }
   }
 
+  /** Deletes the account once the handle has been typed again, then sends the visitor to the front page. */
+  async function removeAccount() {
+    busy = true;
+    problem = '';
+    try {
+      await deleteAccount(confirmText);
+      session.clear();
+      // eslint-disable-next-line svelte/no-navigation-without-resolve -- a fixed path of this app
+      await goto('/');
+    } catch (failure) {
+      handleFailure(failure);
+    } finally {
+      busy = false;
+    }
+  }
+
   const buttonClass =
     'inline-flex items-center rounded-md border border-border-strong px-4 py-2 text-text hover:bg-raised focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:text-text-subtle disabled:hover:bg-transparent';
+  const dangerButtonClass =
+    'inline-flex items-center rounded-md border border-danger px-4 py-2 text-danger hover:bg-danger-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:border-border disabled:text-text-subtle disabled:hover:bg-transparent';
   const fieldClass =
     'w-full rounded-md border border-border-strong bg-surface px-3 py-2 text-text placeholder:text-text-subtle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus';
 </script>
@@ -262,6 +283,45 @@
             Sign out everywhere
           </button>
           {#if !can.logout_everywhere}
+            <p class="text-text-muted">{reason}</p>
+          {/if}
+        </section>
+
+        <section class="space-y-3" aria-labelledby="delete-heading">
+          <h2
+            id="delete-heading"
+            class="text-sm font-medium uppercase tracking-wide text-text-subtle"
+          >
+            Delete account
+          </h2>
+          <p class="text-text-muted">
+            This removes your account, its sign-in methods, sessions and
+            submissions. It cannot be undone.
+          </p>
+          <div class="space-y-1">
+            <label class="block text-sm text-text-muted" for="delete-confirm"
+              >Type your handle <span class="font-mono">{user.handle}</span> to confirm</label
+            >
+            <input
+              id="delete-confirm"
+              class={fieldClass}
+              type="text"
+              autocomplete="off"
+              disabled={!can.delete_account || busy}
+              bind:value={confirmText}
+            />
+          </div>
+          <button
+            class={dangerButtonClass}
+            type="button"
+            disabled={!can.delete_account ||
+              busy ||
+              !confirmationMatches(confirmText, user.handle)}
+            onclick={removeAccount}
+          >
+            Delete my account
+          </button>
+          {#if !can.delete_account}
             <p class="text-text-muted">{reason}</p>
           {/if}
         </section>
