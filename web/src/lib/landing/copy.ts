@@ -1,7 +1,13 @@
 // Every visible string on the landing page. Review copy here, not in the components.
 // Rule (R9): never say "smallest possible", "proven minimum" or "optimal" about a ghost input.
 
-/** The page's only h1. */
+/** The page's only h1. The wordmark is real text, styled in CSS, never an image (title screen). */
+export const WORDMARK = 'Counterspell';
+
+/** The tagline under the wordmark (title screen). */
+export const TAGLINE = 'Master the algorithms that matter';
+
+/** The page headline, now shown below the title screen as the section heading. */
 export const HEADLINE = 'Learn why your code breaks.';
 
 /** The line under the headline. */

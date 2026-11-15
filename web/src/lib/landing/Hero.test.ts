@@ -35,18 +35,21 @@ async function renderSettled(plan?: LandingPlan) {
 }
 
 describe('Hero', () => {
-	it('renders the approved headline as the page h1', () => {
-		render(Hero);
-		expect(
-			screen.getByRole('heading', { level: 1, name: 'Learn why your code breaks.' })
-		).toBeTruthy();
+	// test-change: R20 (the title-screen wordmark is the h1; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T23)
+	it('renders the Counterspell wordmark as the page h1, as real text and not an image', () => {
+		const { container } = render(Hero);
+		const heading = screen.getByRole('heading', { level: 1, name: 'Counterspell' });
+		expect(heading).toBeTruthy();
+		expect(heading.querySelector('img')).toBeNull();
+		expect(container.querySelectorAll('h1')).toHaveLength(1);
 	});
 
-	it('shows the supporting line and the eyebrow', () => {
+	// test-change: R21 (the tagline replaces the v2 supporting line under the wordmark; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T23)
+	it('shows the tagline as text under the wordmark', () => {
 		const { container } = render(Hero);
-		expect(container.textContent).toContain('Counterspell');
-		expect(container.textContent).toContain('hunts down the input that breaks it');
+		expect(container.textContent).toContain('Master the algorithms that matter');
 	});
+
 
 	// test-change: R23 (the title-screen poster is hero-moon-living-poster.jpg; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T22)
 	it('shows the living poster as a JPEG with explicit dimensions, high priority and no alt text', () => {

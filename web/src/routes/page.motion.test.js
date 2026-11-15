@@ -57,7 +57,8 @@ describe('landing motion wiring (T10)', () => {
 		const { container } = render(Page);
 		await vi.waitFor(() => expect(startScenes).toHaveBeenCalledTimes(1));
 		await new Promise((resolve) => setTimeout(resolve, 0));
-		expect(container.querySelector('h1')?.textContent).toContain('Learn why your code breaks.');
+		// test-change: R20 (the wordmark is the page h1; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T23)
+		expect(container.querySelector('h1')?.textContent).toContain('Counterspell');
 	});
 
 	it('disposes the scenes when the page is left', async () => {
