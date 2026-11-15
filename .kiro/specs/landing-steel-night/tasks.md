@@ -135,6 +135,8 @@ These follow the design amendment "real art". T13 and T14 run after T18, on the 
 
 ## Wave 4: verification
 
+T13 and T14 stay open and must run **after Wave 5** (the title-screen hero), not against the old mid-page banner.
+
 - [x] **T12 [S] (30 min) Run the no-JavaScript and content checks**
   - Files: `web/src/lib/landing/landing.test.ts` (component tests from T05 to T08 if not already written).
   - Confirm the static HTML contains all visible text and the CTA with JavaScript disabled, using the built `index.html`. Confirm no content is inside a GSAP-only hidden state.
@@ -146,16 +148,64 @@ These follow the design amendment "real art". T13 and T14 run after T18, on the 
   - Files: `docs/kiro-log/landing-steel-night-lighthouse.md` (new), and fixes in `web/` only if the score is below 90.
   - Serve the production build through `counterspell-server` on localhost. Run `npx lighthouse http://localhost:8080/ --preset=mobile --only-categories=performance` three times and record each score, the median, LCP, CLS, TBT and the JavaScript transferred before GSAP.
   - If the median is below 90, cut in this order: the far layer, the bats, the smoke, then the parallax. Do not cut the headline, beats or CTA.
-  - Depends on: T10, T11.
+  - Depends on: T10, T11, and Wave 5 (T26). Measure the title-screen hero, not the old banner.
   - Verify: median performance is at least 90 and the log records the numbers, the Lighthouse version and the run date.
   - Requirements: R23, R24, R25. Preserve: the page is judged as finished only with the measured number.
 
 - [ ] **T14 [S] (25 min) Check accessibility, privacy and the full verification list**
   - Files: fixes in `web/` only.
-  - Keyboard path (headline, CTA, beats, log-in link) with visible candle focus. Contrast of every text pair against `docs/palette.md`. No third-party request in the network log. No inline script added to `app.html`. Run the Compose smoke test: `http://localhost/` through Caddy shows the marker.
+  - Keyboard path (ENTER, then the section headline, beats, Start practising / Log in) with visible focus. Include the Enter-key shortcut on the hero. Contrast of every text pair against `docs/palette.md`. No third-party request in the network log. No inline script added to `app.html`. Run the Compose smoke test: `http://localhost/` through Caddy shows the marker.
   - Depends on: T12, T13.
   - Verify: each item in the design's Verification list is checked and recorded in the Lighthouse log file.
   - Requirements: R21, R22, R27, R28, R29, and the smoke marker (R2). Preserve: no change to the server, no new route.
+
+
+## Wave 5: title-screen hero (amendment 15 Nov 2026 19:20 SAST)
+
+Replace the mid-page hero with the approved variant B title screen. Visual reference (not production code): `.kiro/specs/landing-steel-night/reference/` (`v3-b.png`, `v3-b-mobile.png`, `index.html`). Assets are already in the repo; do not recode the mockup HTML into `web/`. Apply `.kiro/skills/impeccable` on every UI task. No hackathon mentions. No server or Rust changes.
+
+- [ ] **T21 [P] (25 min) Self-host Creepster and record the OFL notice**
+  - Files: `web/src/fonts.css` (or the existing font module), landing preload in `app.html` or the landing route, `THIRD-PARTY-NOTICES.md`. Font files are already at `web/static/fonts/Creepster-Regular.woff2` and `web/static/fonts/creepster/` (`OFL.txt`, `README.md`).
+  - Add `@font-face` for Creepster (weight 400, `font-display: swap`, local woff2 only). Preload that woff2 on the landing page. Append the SIL OFL 1.1 notice (Font Diner, reserved name "Creepster") to `THIRD-PARTY-NOTICES.md`. Do not add a package or a CDN link.
+  - Depends on: none (font files are already committed).
+  - Verify: a unit or build test fails first if Creepster is missing from the font CSS, then passes; `npm run check && npm run build`; the built CSS and HTML contain no `fonts.googleapis.com` or `fonts.gstatic.com`; `THIRD-PARTY-NOTICES.md` names Creepster and OFL.
+  - Requirements: R20, R29. Preserve: Geist and JetBrains Mono unchanged; Creepster is only for the title-screen wordmark and ENTER label.
+
+- [ ] **T22 [S] (30 min) Full-viewport living background and pumpkin glow**
+  - Files: `web/src/lib/landing/Hero.svelte`, `hero-media.ts` and its tests, landing CSS. Media already at `web/static/art/landing/hero-moon-living-*` (see that folder's README).
+  - Make the hero `min-height: 100svh` (with a `100vh` fallback). Poster in the prerendered HTML (`fetchpriority="high"`, explicit dimensions). After first paint, motion mode only, mount the living-loop `<video>` (WebM then MP4, 960 at <= 900 px, else 1920, `preload="none"`, muted, loop, playsinline). No video for reduced motion, Save-Data or a hidden tab; pause when off-screen. On narrow viewports, `object-position` keeps the painted pumpkin partly visible (see `reference/v3-b-mobile.png`). Add the CSS pumpkin-glow pulse from the mockup; disable it under reduced motion. No middle familiar. Do not delete the older `moon-graveyard-*` files.
+  - Keep existing GSAP `art/fx/` overlays only if they do not clash with the living loop (which already has flying bats and laptop fog); drop or soften any overlay that fights the painting. The CSS pumpkin glow is required.
+  - Depends on: T15 (existing hero-media helper).
+  - Verify: RED then GREEN vitest for the pure source choice (new `hero-moon-living-*` paths; reduced motion / Save-Data / hidden tab give no video; narrow gives 960). `npm run check && npm run build`. The built `index.html` includes the new poster. A component test asserts no second pumpkin / familiar in the hero.
+  - Requirements: R5, R23, R24, R25. Preserve: no third-party request; no server change.
+
+- [ ] **T23 [S] (30 min) Wordmark and tagline as CSS-styled HTML text**
+  - Files: `Hero.svelte`, `copy.ts` and tests, landing CSS.
+  - The wordmark "COUNTERSPELL" is the page's only `h1` (real text, Creepster, bone with ember `text-shadow` as in `reference/index.html` and `v3-b.png`). The tagline "Master the algorithms that matter" sits under it, brighter and legible (not the muted v2 treatment). Both are HTML text, never baked into the image or video. Use tokens or a single hero custom-property block for the glow. The wordmark scales without clipping on mobile (`clamp` or equivalent; check `v3-b-mobile.png`).
+  - Depends on: T21, T22.
+  - Verify: RED then GREEN tests for the `h1` text (and that it is not an image) and for the tagline string in `copy.ts`. `npm run check && npm run build`. The built `index.html` contains "Counterspell" (case-insensitive) and the tagline as text. Contrast stays within the palette rules for the wordmark and tagline against the scrim.
+  - Requirements: R20, R21, R27. Preserve: no CDN font; no painted wordmark.
+
+- [ ] **T24 [S] (25 min) Glowing ENTER control and keyboard Enter**
+  - Files: `Hero.svelte`, tests, landing CSS, any small helper.
+  - Bottom-centre ENTER is a real `<a href="/login">` with visible "ENTER" (Creepster) and "Press to begin", plus an accessible name. It has a glowing pulse matching the mockup. Reduced motion disables the pulse (static final look). `:focus-visible` uses the existing focus token. When the title-screen hero is on screen and focus is not on another interactive control, the Enter key activates this link; do not steal Enter from another focused control.
+  - Depends on: T21, T22.
+  - Verify: RED then GREEN tests for `href="/login"`, the accessible name, and the Enter-key behaviour (focused foreign control is not overridden). `npm run check && npm run build`. The built `index.html` contains the ENTER link to `/login`. Reduced-motion CSS has no pulse on ENTER.
+  - Requirements: R21, R22, R16. Preserve: primary below-fold CTA "Start practising" and "Log in" still go to `/login`.
+
+- [ ] **T25 [S] (30 min) Fade into the existing section and extend the supporting copy**
+  - Files: `+page.svelte`, `Hero.svelte`, `copy.ts` and tests, `GhostBeats.svelte` if heading levels change, landing CSS.
+  - Move "Learn why your code breaks.", the three beats and the CTA to below the title-screen hero. There is no hard rule-line: a gradient fade from the hero into this section. That headline becomes the section `h2`; the three beat headings become `h3`. Add a little more supporting copy under the headline, written in the existing voice (R9: never "smallest possible", "proven minimum" or "optimal"; no unmeasured claims; **no hackathon mentions**). Update tests for the new outline.
+  - Depends on: T22, T23, T03, T06, T07, T08.
+  - Verify: RED then GREEN tests for heading levels, for the extra copy (and the R9 regex still holds for all of `copy.ts`), and that beats and CTA remain in the static HTML. `npm run check && npm run build`. Visually, the join is a fade, not a hard line.
+  - Requirements: R8, R9, R10, R21, R27. Preserve: Submit / Hunt / Understand wording already approved; CTA labels unchanged.
+
+- [ ] **T26 [S] (25 min) Impeccable audit and prerender check for the title screen**
+  - Files: fixes in `web/` only, `docs/kiro-log/landing-steel-night-title-screen.md` (new).
+  - Run the Impeccable audit and critique playbooks on the new hero and the fade into the section below. Fix Critical and Important findings. Confirm first-load bytes (poster, Creepster, Geist, JS) and that the living-loop video is not requested before first paint and never under reduced motion. Confirm the built `index.html` contains the wordmark, ENTER (`/login`) and "Learn why your code breaks." without JavaScript.
+  - Depends on: T23, T24, T25.
+  - Verify: the log lists findings, fixes and byte counts; `npm run check && npm test -- landing && npm run build`; `index.html` contains those three pieces of text.
+  - Requirements: R3, R4, R21, R23, R29. Preserve: no third-party request; smoke marker still on `<main>`.
 
 ## Dependency summary and parallel waves
 
@@ -164,17 +214,18 @@ These follow the design amendment "real art". T13 and T14 run after T18, on the 
 - **Wave 2:** T05, T06 and T07 can run in parallel after Wave 0 and T03. T08 follows T04, T05, T06 and T07.
 - **Wave 3:** T09 follows T08. T10 follows T09. T11 can run in parallel with T09 and T10.
 - **Wave 3b (amendment 15 Nov 2026):** T15, then T16; T17 can run in parallel; T18 last. Optional T19 and T20 may follow and must not block T13 or T14.
-- **Wave 4:** T12, then T18, then T13, then T14, in order.
+- **Wave 5 (amendment 15 Nov 2026 19:20 SAST):** T21 can start at once. T22 follows T15. T23 follows T21 and T22. T24 follows T21 and T22 and can run in parallel with T23. T25 follows T22, T23, T06, T07 and T08. T26 follows T23, T24 and T25.
+- **Wave 4:** T12 and T18 are done. T13 then T14 run after T26, in that order, against the title-screen hero.
 
 ## Completion checklist
 
 - [ ] `/` is prerendered from `web/` and served by `counterspell-server`; the smoke marker is present.
-- [ ] Headline, three beats and CTA are in the static HTML.
+- [ ] Wordmark, ENTER (link to `/login`) and the headline "Learn why your code breaks." are in the prerendered static HTML, along with the three beats and the CTA.
 - [ ] GSAP is loaded only in motion mode, after first paint, and only on the landing page.
 - [ ] Reduced motion shows the static final frames, with no GSAP request.
 - [ ] Scene SVGs are original, script-free and within the size budget.
-- [ ] Geist and JetBrains Mono are self-hosted; their OFL notices are in `THIRD-PARTY-NOTICES.md`.
+- [ ] Geist, JetBrains Mono and Creepster are self-hosted; their OFL notices are in `THIRD-PARTY-NOTICES.md`. No font CDN.
 - [ ] Lighthouse mobile performance median of three runs is at least 90, recorded in `docs/kiro-log/landing-steel-night-lighthouse.md`.
 - [ ] The Hunt copy never claims a smallest possible or proven minimum input.
 - [ ] No Rust, server or route change was made by this spec (except the approved 200.html fallback).
-- [ ] The hero uses the approved moon/graveyard art: poster first, video only in motion mode after first paint, never under reduced motion or Save-Data.
+- [ ] The hero is the approved variant B title screen: full viewport, Creepster CSS wordmark, ENTER to `/login`, living `hero-moon-living-*` loop (poster first, video only in motion mode after first paint, never under reduced motion or Save-Data), CSS pumpkin glow, no middle familiar, and a gradient fade into the existing section below.
