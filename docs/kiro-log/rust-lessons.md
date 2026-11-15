@@ -1249,3 +1249,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `tokio::time::timeout(limit, future)` returns `Result<T, Elapsed>`, where `T` is the future's own output. So a ping that answers late gives `Err(Elapsed)`, and a ping that fails gives `Ok(Err(...))`. Matching `Ok(Ok(()))` checks both at once.
 - The probe error type is a unit struct (`ProbeFailure`), not a string. A client or a log line can then never receive a connection string, because there is no text to leak. The fixed 503 body follows the same idea.
 - `join_all` runs the probes at the same time. Two sequential 2-second timeouts would take 4 seconds in the worst case, which is over the 3-second budget.
+
+## deploy-ops T07: judge `healthcheck` subcommand
+
+- `fn main() -> ExitCode` lets the program choose its exit code with `ExitCode::SUCCESS` or `ExitCode::FAILURE`, and it returns from `main` normally. Calling `std::process::exit` in the middle of a function skips destructors, so pending writes can be lost. A `Result` returned from `main` always exits with code 1 and prints `Debug` text, which is too coarse for a health check.
+- The worker runs in `run_worker`, a function with `#[tokio::main]`. The `healthcheck` branch returns before any runtime or database work starts, so the check never waits on Postgres.
+- The judge's clippy policy bans `std::process::Command::new` in judge code. The test therefore calls `health::report` in-process instead of running the binary. The policy is kept as written.

@@ -28,3 +28,17 @@ not ok 9 status prints only the SHA and the digests, never host values (R7.14)
 Expected reasons: test 3 fails because a failed `migrate run` still reaches `up -d` (G1). Test 5 fails because there is no `rollback` verb (G3). Test 8 fails because there is no compose checksum check (G6). Test 9 fails because `status` prints the whole file, including host keys (R7.14). Tests 4, 6 and 7 already pass against the current script; they stay as regression guards.
 
 Stub note: `sleep` is also stubbed (not named in the task) so that health retries finish at once.
+
+## T06 (16 Nov 2026)
+
+Red: `cargo test -p counterspell-server --test health_ready` failed to compile (`counterspell_server::health` unresolved).
+Green: 4 readiness tests and the existing health and static tests pass (`cargo test -p counterspell-server`, all green). `cargo fmt --check` and clippy with `-D warnings` pass on the workspace. The 2-second timeout test runs in real time (about 2 s), because `tokio` `test-util` (a paused clock) would add a feature the task does not name.
+
+## T07 (16 Nov 2026)
+
+Q26 check: run-lifecycle T17 renews leases in Postgres and writes no worker heartbeat row, so the Postgres option does not work for an idle worker. Used the Q26 fallback: a heartbeat file, written every 10 s by its own task in `service::serve` (not from the claim loop, which can block on a full slot set during long runs). The path comes from `JUDGE_HEARTBEAT_FILE`, default `/tmp/counterspell-judge.heartbeat` (tmpfs in the judge container).
+
+Red: `cargo test -p counterspell-judge --test healthcheck` failed (no subcommand; the binary tried to start the worker and stopped on the missing `DATABASE_URL`).
+Green: 3 integration tests (`report` in-process) and 3 unit tests in `health.rs`; judge suite 347 passed, 0 failed; clippy and fmt clean.
+Not yet verified: `docker compose config` shows the healthcheck (needs T15). T07 stays unticked until then.
+Decision: tests call `health::report` in-process, not the binary, because `crates/judge/clippy.toml` forbids `Command::new` in judge code.
