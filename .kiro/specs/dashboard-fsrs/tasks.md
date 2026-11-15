@@ -57,7 +57,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 1: core API and privacy proof
 
-- [ ] **T05 [S] (25 min) Wire `GET /api/dashboard`**
+- [x] **T05 [S] (25 min) Wire `GET /api/dashboard`**
   - Files: `crates/server/src/dashboard/handler.rs`, `dashboard/mod.rs`, and the existing API router registration.
   - Add the authenticated GET route with no user selector. Execute the one-query read model, map it to the response, and return stable JSON errors without SQL details.
   - Ensure a failed database read returns `503 dashboard_unavailable` rather than a partial dashboard. Do not add a Valkey cache in this task.

@@ -1133,3 +1133,10 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `serde_json::from_value` turns that JSON into private `Raw*` structs. Each field's type is the contract. A wrong type or an unknown difficulty becomes an `Err` that the handler can map to a safe error, not a guessed value.
 - `build_response` is a pure function that borrows the activity dates and takes `today` as an argument. Tests can pass any date, so no test depends on the clock.
 - Errors are passed up with `?`. The decode error carries the serde message only inside the server, and the public error code is chosen later at the handler boundary.
+
+## dashboard-fsrs T05: the dashboard route
+
+- `DashboardUser` is an extractor. Axum runs it before the handler, so a signed-out request stops with `401` and the handler body never runs. The owner is a function argument that comes from the session, not from the URL or the body.
+- `State(state)` gives the handler a shared `AppState`. The pool inside it is cheap to clone, and the handler only borrows it with `&state.pool`.
+- `.map_err(DashboardError::unavailable)` turns a database error into the safe error type. The function is passed by name, so no `match` is needed, and `?` returns the error from the handler.
+- Routes are matched in order, and the `/api/{*path}` catch-all is registered after the real routes, so `/api/dashboard` is never answered with the JSON `404`.
