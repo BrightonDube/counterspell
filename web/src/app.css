@@ -13,6 +13,16 @@
   font-display: swap;
 }
 
+/* Creepster (OFL-1.1, Font Diner) is self-hosted. It is used only for the title-screen wordmark
+   and the ENTER label (landing-steel-night T21). */
+@font-face {
+  font-family: 'Creepster';
+  src: url('../static/fonts/Creepster-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 @theme {
   --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
