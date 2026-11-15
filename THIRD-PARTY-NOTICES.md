@@ -140,3 +140,8 @@ Added by run-lifecycle T31 (test-only, server dev-dependencies; `cargo deny chec
 - **hyper 1.12.0** — hyper contributors — MIT — <https://crates.io/crates/hyper> (HTTP/1 client that reads the SSE stream in tests)
 - **hyper-util 0.1.21** — hyper contributors — MIT — <https://crates.io/crates/hyper-util> (Tokio I/O adapter for the test client)
 - **http-body-util 0.1.5** — hyper contributors — MIT — <https://crates.io/crates/http-body-util> (body reading in the test client)
+
+Added by the run-lifecycle close-out (T39). Both were direct server dependencies before this entry; the notices check found them missing:
+
+- **axum 0.8.9** — Tokio contributors — MIT — <https://crates.io/crates/axum> (HTTP router, handlers and SSE responses for `counterspell-server`)
+- **tower-http 0.6.11** — Tower contributors — MIT — <https://crates.io/crates/tower-http> (static files, body limit, response headers, compression in `counterspell-server`)

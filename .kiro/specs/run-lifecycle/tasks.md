@@ -383,7 +383,7 @@ Conventions for every Rust task:
   - Preserve: the judge keeps no published ports and no main-daemon socket; the server never gets a sandbox socket; no secrets are committed.
   - Rust lesson: none (no Rust changed).
 
-- [ ] **T39 [S] (25 min) Documentation and recorded results**
+- [x] **T39 [S] (25 min) Documentation and recorded results**
   - Files: `README.md` (run-lifecycle section), `docs/kiro-log/run-lifecycle-dod.md`, `docs/KIRO_USAGE.md` (one line), `THIRD-PARTY-NOTICES.md` (verify completeness).
   - Run T36 once on the dev machine, copy the generated numbers from `dod-report.json` into `docs/kiro-log/run-lifecycle-dod.md` (enqueue and completion latency kept in separate tables, with the machine description and the date), and list any property that was not covered. Add a README section: how to run database tests locally, the `pg_` convention and the lifecycle diagram. Confirm every new crate is in the notices.
   - Requirements: R20.3, R21.
