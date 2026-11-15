@@ -52,7 +52,7 @@ Conventions for every task (same as `run-lifecycle`):
 
 ## Wave 1: schema, triggers and privileges
 
-- [ ] **C01 [S] [SUPERVISED] (30 min) Migration: core catalogue tables**
+- [x] **C01 [S] [SUPERVISED] (30 min) Migration: core catalogue tables**
   - Files: `migrations/20261116100000_catalogue_core.sql` (tables and CHECKs only; triggers in C02). `crates/judge/tests/pg_catalogue_schema.rs`.
   - Create `tracks`, `concepts`, `problems`, `problem_concepts`, `problem_versions`, `problem_examples`, `problem_starters`, `problem_hints`, `hidden_tests`, `hidden_generation`, `hidden_sources`, `reference_solutions`, `known_ghosts`, `catalogue_events` with the columns and CHECKs in `design.md` "Data model". Use `CREATE TABLE IF NOT EXISTS`. `hidden_tests` carries `source` and `ordinal`. `problem_versions` has no `generator_seed` column.
   - Requirements: CAT-S1, CAT-S5, CAT-S7, CAT-S6 (columns), CAT-PT9 (no seed or private hash in `problem_versions`).

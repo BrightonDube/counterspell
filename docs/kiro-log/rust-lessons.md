@@ -1038,3 +1038,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `ServeDir::fallback(ServeFile::new(path))` decides what an unknown path returns. The tests hit `/` and an unknown page, and check each one gets the right file.
 - `expect_err` in a test fails with a clear message when the function unexpectedly returns `Ok`, which is how the start-up check's red run was caught.
 - Clippy's `doc_markdown` lint wants product names such as `SvelteKit` wrapped in backticks in doc comments. `-D warnings` turns that into a build error.
+
+# Rust lesson: problem-catalogue C01
+- `sqlx::test(migrations = ...)` embeds migration files at compile time. After adding a migration, touch the test file so Cargo rebuilds it, or the old schema runs.
+- A rejected CHECK comes back as `sqlx::Error`. The test turns it into a SQLSTATE string with `as_database_error()`, so each assertion names the exact rule (`23514`) that fired.
+- A helper that inserts a row must also have a positive test. Otherwise a broken helper makes every rejection test pass for the wrong reason.
