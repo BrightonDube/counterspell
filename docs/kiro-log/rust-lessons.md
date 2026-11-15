@@ -1020,3 +1020,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `impl From<DashboardError> for ApiError` turns each error into a fixed status and code. The `match` must name every variant, so adding an error fails the build until its code is chosen.
 - The `DashboardUser` extractor calls the shared `CurrentUser` extractor with `?`-style matching and only changes the error. The owner still comes from the session resolver, never from the request.
 - `DashboardError::unavailable(detail)` logs the database detail with `tracing` and returns only a stable code, so SQL text cannot reach a client.
+
+# Rust lesson: dashboard-fsrs T02
+- `include_str!` embeds the migration file in the test binary at compile time, so the test runs the exact SQL that ships, not a copy.
+- `sqlx::raw_sql` runs a multi-statement SQL script as-is. The `pg_` test runs it twice to prove `IF NOT EXISTS` makes a repeat a no-op.
+- A partial index (`WHERE status = 'completed'`) stores only the rows a query needs, so it stays small and cannot be used for rows it excludes.
+- The index does not change the data. PostgreSQL stays the source of truth, and the index only changes how fast a read finds rows.
