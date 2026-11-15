@@ -225,3 +225,8 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-15T08:57:33Z | model: not reported | last commit: 5c00959 landing-steel-night T13/T14: record static checks; browser and Compose steps deferred
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
