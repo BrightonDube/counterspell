@@ -92,3 +92,18 @@ This is the same work as C35. Until one is chosen, C29 and C35 stay unchecked. C
 - C36 and C37 need everything before them.
 - C38, C39 and C40 are HUMAN (operator import, Brighton's approval, rotation). C00a is still waiting on the private repo.
 - Nothing here changes a fixed decision or touches the private repo.
+
+## Run of 15 Nov 2026 (attempt 6)
+
+Done this run (ticked): C31 (commit 209557e). Server unit tests, server `pg_` tests and judge `pg_catalogue_*` tests all pass.
+- Test-change note: the judge test kit's stored signature (`insert_version_row` and `static_import`) now uses grimoire's full shape (`function`, `params`, `returns`), and the constraints expectation in `pg_detail_returns_the_pinned_public_fields` is `[]` to match the fixture. No assertion on the existing behaviour changed.
+- Gap: the no-leak test does not yet plant a canary in a synthetic private fixture, because `crates/judge/tests/fixtures/private/` does not exist (it belongs to C19b). The canaries come from the judge test kit instead.
+
+Still open, with the reason for each:
+- C16 (sandbox checks through `PackRunner`) needs a decision from Brighton. Option (a): judge depends on grimoire for the trait only. Option (b): move `PackRunner` and `Target` into `counterspell-common`. The 15 Nov routine decision keeps the judge free of authoring code, so option (b) fits it better, but it changes grimoire's public API. Until he chooses, C16, C17, C18, C19, C19b, C21, C22 and C23 stay open.
+- C26 is blocked on judge-sandbox T24 (not started).
+- C29 (enqueue pins the version) is blocked on the fixture decision recorded in attempt 5: (a) call the judge fixture from each affected server test file, (b) add a dependency from the server test kit to the judge test kit, or (c) copy the fixture SQL. The implementation itself is not blocked. Option (a) needs no new dependency. Not started this run because it touches about eight test files and is best done with his choice.
+- C32 needs the language accessor X10, which is not specified.
+- C33 needs the `ghosts` table owner decision (D16).
+- C34 to C37 depend on the open chain above.
+- C00a, C38, C39 and C40 are HUMAN. Brighton has not created the private repo, so nothing reads it.
