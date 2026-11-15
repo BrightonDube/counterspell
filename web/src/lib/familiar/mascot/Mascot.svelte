@@ -2,9 +2,10 @@
   // The mascot draws one static face for the measured mood. It never loads GSAP here; effects are
   // added in timelines.ts. Art is fetched from our own origin and drawn only if it meets the contract.
   import type { Mood } from '../types';
-  import type { Effect } from './plan';
+  import { planEffect, type Effect } from './plan';
   import { validate } from './contract';
   import { glowCss, moodStyle } from './mood-style';
+  import { startBurst, startCrossfade } from './timelines';
 
   interface Props {
     mood: Mood;
@@ -20,6 +21,8 @@
     hidden?: boolean;
     reducedMotion?: boolean;
     onToggleHidden?: () => void;
+    /** Seed for the burst particles. The page passes the run id so a replay looks the same. */
+    seed?: number;
   }
 
   let {
@@ -29,7 +32,12 @@
     badge,
     failed = false,
     hidden = false,
-    onToggleHidden
+    effect: burstKind = 'none',
+    live = false,
+    muted = false,
+    reducedMotion = false,
+    onToggleHidden,
+    seed = 1
   }: Props = $props();
 
   const ART_URL = '/familiar/jack-o-lantern.placeholder.svg';
@@ -37,6 +45,8 @@
   let face: HTMLDivElement | undefined = $state();
   let artDrawn = $state(false);
   let drawnInto: HTMLDivElement | null = null;
+  /** When the last burst started, for the planner's 2 s cooldown. Not reactive on purpose. */
+  let lastEffectAt: number | null = null;
 
   const style = $derived(moodStyle(mood));
   const glow = $derived(glowCss(style.glow));
@@ -63,6 +73,7 @@
   });
 
   // Show only the eyes and mouth for the current mood; hide the other four layers of each kind.
+  // A live change of mood fades the new expression in, unless motion is off.
   $effect(() => {
     if (!artDrawn || face === undefined) return;
     const shown = new Set([style.eyesLayer, style.mouthLayer]);
@@ -71,6 +82,31 @@
     )) {
       layer.style.display = shown.has(layer.id) ? '' : 'none';
     }
+    const root = face.querySelector<SVGSVGElement>('svg');
+    if (root === null || !live || reducedMotion || muted) return;
+    const fade = startCrossfade(root, [style.eyesLayer, style.mouthLayer]);
+    return () => fade.dispose();
+  });
+
+  // Plays the burst only for a live result the planner allows. Any change in the inputs, or the
+  // component leaving the page, disposes the burst that is running.
+  $effect(() => {
+    if (!artDrawn || face === undefined || burstKind === 'none') return;
+    const root = face.querySelector<SVGSVGElement>('svg');
+    if (root === null) return;
+    const plan = planEffect({
+      effect: burstKind,
+      live,
+      reducedMotion,
+      muted,
+      hidden,
+      nowMs: performance.now(),
+      lastEffectAtMs: lastEffectAt
+    });
+    if (!plan.play) return;
+    lastEffectAt = performance.now();
+    const burst = startBurst(root, burstKind, seed);
+    return () => burst.dispose();
   });
 </script>
 
