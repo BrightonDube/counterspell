@@ -1171,3 +1171,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - The guard reads the importer's `.rs` files as text and fails on forbidden words such as `Command::` or `TOKEN`. It is a cheap check on an architecture rule.
 - The scanner is a plain function that takes a `&str`. Tests call it on synthetic snippets, so the guard itself is tested, not just the current tree.
 - Text matching cannot see types. A value passed in through a variable would slip past it, so the type system (the importer having no runner handle) stays the real protection.
+
+# Rust lesson: auth T35
+
+- A `OnceLock` holds a value that is set once and then shared. The log capture uses one global subscriber, because Rust allows only one per process, and every test reads the same buffer.
+- A wrapper type can implement a trait by delegating to another value (`RecordingProvider` wraps `FakeProvider`). The wrapper records the verifier without changing the code under test.
+- `&'static` means the reference lives for the whole program. The shared capture can be returned that way without cloning or leaking memory.
