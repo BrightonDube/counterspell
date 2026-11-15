@@ -179,14 +179,14 @@ Replace the mid-page hero with the approved variant B title screen. Visual refer
   - Verify: RED then GREEN vitest for the pure source choice (new `hero-moon-living-*` paths; reduced motion / Save-Data / hidden tab give no video; narrow gives 960). `npm run check && npm run build`. The built `index.html` includes the new poster. A component test asserts no second pumpkin / familiar in the hero.
   - Requirements: R5, R23, R24, R25. Preserve: no third-party request; no server change.
 
-- [ ] **T23 [S] (30 min) Wordmark and tagline as CSS-styled HTML text**
+- [x] **T23 [S] (30 min) Wordmark and tagline as CSS-styled HTML text**
   - Files: `Hero.svelte`, `copy.ts` and tests, landing CSS.
   - The wordmark "COUNTERSPELL" is the page's only `h1` (real text, Creepster, bone with ember `text-shadow` as in `reference/index.html` and `v3-b.png`). The tagline "Master the algorithms that matter" sits under it, brighter and legible (not the muted v2 treatment). Both are HTML text, never baked into the image or video. Use tokens or a single hero custom-property block for the glow. The wordmark scales without clipping on mobile (`clamp` or equivalent; check `v3-b-mobile.png`).
   - Depends on: T21, T22.
   - Verify: RED then GREEN tests for the `h1` text (and that it is not an image) and for the tagline string in `copy.ts`. `npm run check && npm run build`. The built `index.html` contains "Counterspell" (case-insensitive) and the tagline as text. Contrast stays within the palette rules for the wordmark and tagline against the scrim.
   - Requirements: R20, R21, R27. Preserve: no CDN font; no painted wordmark.
 
-- [ ] **T24 [S] (25 min) Glowing ENTER control and keyboard Enter**
+- [x] **T24 [S] (25 min) Glowing ENTER control and keyboard Enter**
   - Files: `Hero.svelte`, tests, landing CSS, any small helper.
   - Bottom-centre ENTER is a real `<a href="/login">` with visible "ENTER" (Creepster) and "Press to begin", plus an accessible name. It has a glowing pulse matching the mockup. Reduced motion disables the pulse (static final look). `:focus-visible` uses the existing focus token. When the title-screen hero is on screen and focus is not on another interactive control, the Enter key activates this link; do not steal Enter from another focused control.
   - Depends on: T21, T22.

@@ -19,6 +19,23 @@
 	// Overlays wait for first paint, so the poster is the only image competing for the first bytes.
 	let overlaysReady = $state(false);
 
+	// The ENTER link. Pressing Enter on the title screen follows it, but only when no other control has focus.
+	let enterLink = $state<HTMLAnchorElement | undefined>(undefined);
+
+	onMount(() => {
+		function onEnterKey(event: KeyboardEvent) {
+			if (event.key !== 'Enter' || event.repeat || event.defaultPrevented) return;
+			const focused = document.activeElement;
+			if (focused && focused !== document.body && focused !== document.documentElement) return;
+			// Only on the title screen: once the visitor has scrolled past it, Enter does nothing special.
+			if (window.scrollY > window.innerHeight * 0.5) return;
+			event.preventDefault();
+			enterLink?.click();
+		}
+		window.addEventListener('keydown', onEnterKey);
+		return () => window.removeEventListener('keydown', onEnterKey);
+	});
+
 	// The video is mounted only after first paint, and only when the visitor's settings allow it.
 	onMount(() => {
 		let active = true;
@@ -59,7 +76,7 @@
 </script>
 
 <section
-	class="hero relative isolate flex items-end overflow-hidden px-6 pt-24 pb-16 sm:px-10"
+	class="hero relative isolate flex flex-col items-center overflow-hidden px-6 pt-[12vh] pb-[20vh] sm:px-10"
 >
 	<div class="hero-media absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
 		<div class="hero-plate">
@@ -180,6 +197,16 @@
 		<h1 class="wordmark">{WORDMARK}</h1>
 		<p class="tagline">{TAGLINE}</p>
 	</div>
+
+	<a
+		bind:this={enterLink}
+		class="enter-link"
+		href="/login"
+		aria-label="Enter, go to sign in"
+	>
+		<span class="enter-label" aria-hidden="true">ENTER</span>
+		<span class="enter-hint" aria-hidden="true">Press to begin</span>
+	</a>
 </section>
 
 <style>
@@ -282,6 +309,65 @@
 		pointer-events: none;
 	}
 
+	/* ENTER: bottom centre, Creepster label, pulsing glow. The pulse changes only shadow and brightness, never
+	   position, so it never shifts the link under the pointer. */
+	.enter-link {
+		position: absolute;
+		bottom: 6vh;
+		left: 50%;
+		z-index: 2;
+		transform: translateX(-50%);
+		display: inline-flex;
+		flex-direction: column;
+		align-items: center;
+		padding: 1.05rem 3.2rem 1.15rem;
+		border-radius: 6px;
+		border: 1px solid rgb(var(--hero-ember) / 0.8);
+		background: color-mix(in oklab, var(--bg) 55%, transparent);
+		box-shadow:
+			0 0 24px rgb(var(--hero-ember) / 0.5),
+			0 0 60px rgb(var(--hero-ember) / 0.28);
+		animation: enter-pulse 2.2s ease-in-out infinite;
+	}
+
+	.enter-link:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 5px;
+	}
+
+	.enter-label {
+		font-family: var(--font-wordmark);
+		font-size: clamp(2rem, 3.6vw, 3rem);
+		line-height: 1;
+		letter-spacing: 0.2em;
+		text-indent: 0.2em;
+		text-transform: uppercase;
+		color: var(--accent-candle-glow);
+		text-shadow:
+			0 0 14px rgb(var(--hero-ember) / 0.95),
+			0 0 32px rgb(var(--hero-ember) / 0.7);
+	}
+
+	.enter-hint {
+		margin-top: 0.48rem;
+		font-weight: 600;
+		font-size: 0.75rem;
+		letter-spacing: 0.32em;
+		text-indent: 0.32em;
+		text-transform: uppercase;
+		color: var(--color-text);
+	}
+
+	@keyframes enter-pulse {
+		0%,
+		100% {
+			filter: brightness(1);
+		}
+		50% {
+			filter: brightness(1.22);
+		}
+	}
+
 	@keyframes ember-pulse {
 		0%,
 		100% {
@@ -295,7 +381,8 @@
 	}
 
 	@media (prefers-reduced-motion: reduce) {
-		.pumpkin-glow {
+		.pumpkin-glow,
+		.enter-link {
 			animation: none;
 		}
 	}

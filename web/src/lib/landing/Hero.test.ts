@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/svelte';
-import { describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, describe, expect, it } from 'vitest';
 import Hero from './Hero.svelte';
 import type { LandingPlan } from './motion-plan';
 
@@ -35,6 +35,8 @@ async function renderSettled(plan?: LandingPlan) {
 }
 
 describe('Hero', () => {
+	// Each test starts from an empty document, so one test's hero cannot leak into the next.
+	afterEach(() => cleanup());
 	// test-change: R20 (the title-screen wordmark is the h1; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T23)
 	it('renders the Counterspell wordmark as the page h1, as real text and not an image', () => {
 		const { container } = render(Hero);
@@ -48,6 +50,54 @@ describe('Hero', () => {
 	it('shows the tagline as text under the wordmark', () => {
 		const { container } = render(Hero);
 		expect(container.textContent).toContain('Master the algorithms that matter');
+	});
+
+	// landing-steel-night T24: the ENTER control and the Enter-key shortcut.
+	describe('ENTER control (T24)', () => {
+		it('is a link to /login with an accessible name', () => {
+			render(Hero);
+			const enter = screen.getByRole('link', { name: /enter/i });
+			expect(enter.getAttribute('href')).toBe('/login');
+		});
+
+		it('shows the ENTER label and the press hint as text', () => {
+			const { container } = render(Hero);
+			expect(container.querySelector('a[href="/login"]')?.textContent).toContain('ENTER');
+			expect(container.querySelector('a[href="/login"]')?.textContent).toContain('Press to begin');
+		});
+
+		it('follows the ENTER link when Enter is pressed and nothing is focused', () => {
+			render(Hero);
+			const enter = screen.getByRole('link', { name: /enter/i });
+			const onClick = (event: Event) => event.preventDefault();
+			enter.addEventListener('click', onClick);
+			let clicks = 0;
+			enter.addEventListener('click', () => clicks++);
+			(document.activeElement as HTMLElement | null)?.blur();
+
+			fireEvent.keyDown(document.body, { key: 'Enter' });
+
+			expect(clicks).toBe(1);
+			enter.removeEventListener('click', onClick);
+		});
+
+		it('leaves Enter alone when another control has focus', () => {
+			render(Hero);
+			const enter = screen.getByRole('link', { name: /enter/i });
+			const onClick = (event: Event) => event.preventDefault();
+			enter.addEventListener('click', onClick);
+			let clicks = 0;
+			enter.addEventListener('click', () => clicks++);
+			const other = document.createElement('button');
+			document.body.appendChild(other);
+			other.focus();
+
+			fireEvent.keyDown(other, { key: 'Enter' });
+
+			expect(clicks).toBe(0);
+			enter.removeEventListener('click', onClick);
+			other.remove();
+		});
 	});
 
 
