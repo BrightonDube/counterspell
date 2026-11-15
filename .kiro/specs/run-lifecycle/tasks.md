@@ -307,7 +307,7 @@ Conventions for every Rust task:
   - Preserve: a dropped connection frees its slot even on abrupt close.
   - Rust lesson: the `Drop` trait as a cleanup guarantee.
 
-- [ ] **T31 [S] (30 min) SSE test client and integration tests**
+- [x] **T31 [S] (30 min) SSE test client and integration tests**
   - Files: `crates/server/tests/support/mod.rs` (loopback server starter, test SSE client, run helpers), `crates/server/tests/sse.rs`.
   - Test client: a hand-written SSE parser on a hyper client (already in the tree through axum; add `hyper-util` / `http-body-util` as dev-dependencies only if licence-clean) that records `id`, `event`, `data`, comment lines and receive times. Tests: `sse_requires_session_and_ownership` (anonymous, other user, missing, malformed; P11); `sse_replay_after_drop_at_every_position` (P9); `sse_poll_only_without_notify` (P9, within 1 s); `sse_last_event_id_forms` (header, query, invalid, beyond-end `204`); `sse_heartbeat_headers_and_close`; `sse_stream_limit_per_user`; `sse_max_age_closes_and_resumes`; `sse_restarted_event_visible_after_retry` (scripted crash then retry shows `restarted`).
   - Requirements: R12, R13, R14.2, R22.3, R22.6, P9, P11.

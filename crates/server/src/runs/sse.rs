@@ -50,7 +50,7 @@ pub const REPLAY_SQL: &str = r"
 
 /// Reads the last sequence number and whether the run has finished, for the caller's own run only.
 const POSITION_SQL: &str = r"
-    SELECT last_event_seq, finished_at IS NOT NULL AS finished
+    SELECT last_event_seq AS last_seq, finished_at IS NOT NULL AS finished
       FROM submissions
      WHERE id = $1 AND user_id = $2
 ";

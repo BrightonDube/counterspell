@@ -85,3 +85,10 @@ Brighton reviews each entry before the next task that depends on it starts.
 - Stream slots are per process (`StreamSlots` in `crates/server/src/runs/streams.rs`), as design open question 13 allows for one server process.
 - The `429 too_many_streams` response carries `retry_after_seconds: 5`. The spec does not give a value; this is an assumed choice.
 - The heartbeat is an SSE comment line (`: heartbeat`), sent every `SSE_HEARTBEAT_SECS`. Heartbeat timing, max-age close and the 429 path are tested end to end in T31.
+
+## T31 (SSE integration tests): notes
+
+- `SSE_MAX_AGE_SECS` now accepts 1 to 86400 seconds (was 60 minimum). The 1 s floor lets `pg_sse_max_age_closes_and_resumes` run in about a second. The default stays 900 s.
+- Test client `crates/server/tests/support/sse_client.rs` uses `hyper` 1.x and `hyper-util`, added as server dev-dependencies (MIT, listed in THIRD-PARTY-NOTICES). The task named `hyper-util` and `http-body-util`; `hyper` itself is the client they need.
+- One real bug was found and fixed by these tests: the stream's position query returned a column name that did not match the struct, so every owner request returned `500`. Foreign and missing runs still returned `404`, which is why the ownership test alone did not catch it.
+- Test names use the `pg_` prefix (for example `pg_sse_replay_after_drop_at_every_position`), following the convention for database-backed tests.
