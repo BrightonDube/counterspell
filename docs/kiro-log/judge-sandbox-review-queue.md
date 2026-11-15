@@ -86,3 +86,8 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
   - `host_resources` includes inspect `Mounts`. That covers volumes an image declares. Brighton should confirm this is wanted.
   - Restart policy: only `no` passes. Any other text maps to an empty name that the checker rejects.
 - **Not verified yet:** the real daemon round trip (`sbx_create_readback_matches`, blocked, see the blockers file). Tmpfs option echo and `pid_mode` `""` are the two daemon behaviours the real test must confirm.
+
+## T21 (SUPERVISED, judge-sandbox) code committed, not ticked
+- Code: `crates/judge/src/sandbox/bollard_backend.rs` (part 2: `BollardBackend`, `BollardSession`, `BollardDriver`, `run_exec`, `kill_container`, `OutputCollector`, `parse_oom_kill`, `map_error`). `remove_forced` now treats a missing container as removed.
+- Tests: `tests/model_bollard_session.rs` (11, pass). `tests/sbx_bollard_session.rs` (4 `sbx_` tests, ignored, compile). Not run on a daemon.
+- Brighton to check: (1) on overflow, `run_exec` kills the whole container, which is the only way to stop an exec from the API. (2) `write_line` ignores a failed write, because the driver's exit is reported by `next_event`. (3) The 64 KiB exec cap is applied to the exec output, not to the writes into stdin.
