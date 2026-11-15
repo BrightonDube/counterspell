@@ -281,3 +281,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 02:52-02:55 SAST: 25-auth-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-auth-a4.md`. Transcript: `docs/kiro-log/2026-11-15T0252-25-auth-implement-a4.log`. Exit 0.
 - Credits used (from /usage): 1.80 (credits used now 3213.54/4000).
+
+### 2026-11-15 02:59-03:09 SAST: 26-ide-workspace-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-ide-workspace-a1.md`. Transcript: `docs/kiro-log/2026-11-15T0259-26-ide-workspace-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 3.95 (credits used now 3217.49/4000).
+
+### 2026-11-15 03:10-03:14 SAST: 26-ide-workspace-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-ide-workspace-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0310-26-ide-workspace-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 2.31 (credits used now 3219.80/4000).
