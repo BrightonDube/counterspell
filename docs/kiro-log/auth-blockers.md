@@ -224,3 +224,28 @@ It needs the T33 manual steps, the VPS checks and PROPTEST_CASES=512. The VPS ch
 - Delete compares the handle exactly (case and spaces matter). The server and the web rule agree.
 - The canary test helper `shared_logs()` installs one global subscriber. Tests share its buffer, so a leak from any flow fails the check.
 - `gitleaks:allow` comments mark two canary literals in `auth_logs.rs`, following the file's existing convention.
+
+## Attempt 11 (15 Nov 2026, resume run): T33, T34 and T37 stay open
+
+Database URLs were present in this shell (`DATABASE_URL`, `VALKEY_URL`). No new task was ticked, because each open task still has an item that needs Brighton or another spec.
+
+### T33 (wire into server, Compose and Caddy): open, needs Brighton
+- Done earlier: `auth/setup.rs`, `auth/cleanup.rs`, `main.rs`, `docker-compose.yml`, `deploy/auth-setup.md`, README paragraph.
+- Open: the Caddy log filter for `/api/auth/oauth/*/callback` (open question 16). This run did not get Brighton's approval for the `Caddyfile` edit, so the file is unchanged.
+- Open: the manual stack run (`GET /api/auth/config`, a magic link in the dev log, a `POST` without `Origin` refused). It needs a running stack, which is deferred.
+- Unblock: Brighton approves the Caddy filter. Then add the filter and run the stack check.
+
+### T34 (run-lifecycle integration): open, blocked by run-lifecycle T29
+- Done earlier: fixtures, REST integration tests, the `submissions` foreign key (T08).
+- Open: the SSE heartbeat must call `SessionService::is_valid` and close when false. `run-lifecycle` T29 (`SSE endpoint core`) is still unchecked in `.kiro/specs/run-lifecycle/tasks.md`, and no `text/event-stream` handler exists in `crates/server/src`.
+- Unblock: implement run-lifecycle T29, then add the heartbeat check and its test.
+
+### T37 (final verification): automated gates run, manual checklist deferred
+Results are in `docs/kiro-log/auth-dod.md` (attempt 11 section). Summary:
+- `cargo fmt --all -- --check`: pass.
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings`: pass.
+- `PROPTEST_CASES=512 cargo test --workspace --no-fail-fast -- --include-ignored`: 1339 passed, 1 failed. The failure is `sbx_create_readback_matches` in `crates/judge/tests/sbx_bollard_create.rs`. It is a judge-sandbox test, not auth. With `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock` it gets past the daemon identity check and then fails on `languages.toml loads: MissingDriver { language: "javascript" }`. This is for judge-sandbox or language-drivers to fix. It is not papered over here.
+- `cargo deny check licenses`: ok.
+- `docker compose config -q`: pass.
+- `web`: `npm run check` (0 errors, 0 warnings), `npm run build` (pass), `npx vitest run` (60 files, 411 tests pass).
+- Still deferred (needs VPS and real provider and Resend accounts, rule 7): the manual checklist in T37. T37 stays unchecked until it is run.

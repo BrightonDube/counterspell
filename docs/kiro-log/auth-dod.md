@@ -51,3 +51,20 @@ Needs a running stack, real provider apps and Resend. Not run in this session. R
 
 - T33 (Caddy log filter, open question 16) and T34 (SSE heartbeat check) are still unchecked. See `auth-blockers.md`.
 - The manual checklist above.
+
+## Attempt 11 (15 Nov 2026): automated gate run on HEAD fb42af7
+
+| Gate | Command | Result |
+|---|---|---|
+| Format | `cargo fmt --all -- --check` | pass |
+| Clippy | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | pass |
+| Rust tests | `PROPTEST_CASES=512 cargo test --workspace --no-fail-fast -- --include-ignored` (dev Postgres 17 and Valkey 8) | 1339 passed, 1 failed |
+| Failing test | `sbx_create_readback_matches` (judge-sandbox, real daemon) | fails on `languages.toml` `MissingDriver { language: "javascript" }`; owned by judge-sandbox or language-drivers |
+| Licences | `cargo deny check licenses` | ok |
+| Compose | `docker compose config -q` | pass |
+| Web check | `cd web && npm run check` | 0 errors, 0 warnings |
+| Web build | `cd web && npm run build` | pass |
+| Web tests | `npx vitest run` | 60 files, 411 tests pass |
+| Manual | VPS checklist in T37 | deferred (needs VPS, provider and Resend accounts; rule 7) |
+
+T37 stays unchecked: the Rust gate has one failure outside auth, and the manual checklist has not run.
