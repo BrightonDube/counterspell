@@ -110,3 +110,13 @@ No [stretch] task (T11 to T18) was started, as the instructions require.
 - Wave 1 (Rust): `DashboardError::Internal` (from T01) is never constructed. A decode failure reaches
   the handler as `sqlx::Error::Decode` with no context string. The design allows 503 for an
   unbuildable response, so that status is correct.
+
+## Attempt 4 (15 Nov 2026, resumed run): no change
+
+- Resumed at the first unchecked non-stretch task. T01 to T09 and T19 are already ticked, and their
+  code is present. The fresh checks in this session passed: `cargo test -p counterspell-server dashboard`
+  (exit 0, 28 tests passing) and `web`: `npm run check` (0 errors, 0 warnings) and `npm run test` (448 passed).
+- T10 stays open as **deferred: E2E** (see attempt 3). Its non-browser parts are covered by the HTTP and
+  `pg_` tests. Brighton's 12 Nov rule excludes the browser sign-in and the rendered-page check.
+- T11 to T18 are [stretch] and were not started, as instructed. Nothing new is blocked.
+- Open Minor findings are unchanged (listed under the final state of attempt 3).
