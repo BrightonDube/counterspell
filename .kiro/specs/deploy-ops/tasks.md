@@ -109,7 +109,7 @@ Conventions:
   - Depends on: T09.
   - Verify: `terraform fmt -check -recursive infra/terraform`; `terraform -chdir=infra/terraform/envs/prod init -backend=false` and `validate`; `tflint --recursive` in `infra/terraform`. No `.tfstate`, `.terraform/` or real `.tfvars` in the tree (`git status`).
 
-- [ ] **T11 [P] (30 min) Ansible skeleton and the `base` role**
+- [x] **T11 [P] (30 min) Ansible skeleton and the `base` role**
   - Files: `infra/ansible/{ansible.cfg,requirements.yml,site.yml,inventory/hosts.example.yml,inventory/group_vars/all.yml}`, `infra/ansible/roles/base/{tasks/main.yml,templates/sshd_hardening.conf.j2,templates/authorized_keys_deploy.j2,templates/sudoers_deploy.j2,handlers/main.yml,defaults/main.yml}`.
   - `base`: users `brighton` (sudo with password), `deploy` (no password, no sudo except the script, not in `docker`), `sandbox` (UID 1001, locked, no keys). `sshd` hardening (R2.3). UFW: `limit` SSH, allow 80 and 443, default deny in (R2.4, Q11). unattended-upgrades without auto-reboot (R2.5). timesyncd (R2.7). Restricted `authorized_keys` for `deploy` from a public key variable, with `command=` pointing at `counterspell-deploy-entry` (R2.9). The sudoers line for `deploy` names only `/usr/local/sbin/counterspell-deploy`, with no wildcard (R7.12).
   - Requirements: R2.1 to R2.5, R2.7 to R2.9, R7.12.

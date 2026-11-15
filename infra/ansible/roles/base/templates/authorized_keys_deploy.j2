@@ -1,0 +1,5 @@
+# Managed by Ansible (base role). Every line forces the deploy entry point and removes shell, port,
+# agent and X11 forwarding, PTY allocation and user-rc execution (deploy-ops R2.9).
+{% for key in deploy_public_keys %}
+restrict,command="{{ base_deploy_entry }}" {{ key }}
+{% endfor %}

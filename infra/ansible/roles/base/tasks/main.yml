@@ -1,0 +1,157 @@
+---
+# Base host configuration (deploy-ops R2.1 to R2.5, R2.7 to R2.9, R7.12).
+# Idempotent: a second run reports no changes.
+
+- name: Refuse hosts that are not Ubuntu LTS
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution == 'Ubuntu'
+    fail_msg: "The base role supports Ubuntu LTS only (deploy-ops Q2)."
+    quiet: true
+
+- name: Refuse to run without an operator key, so Brighton cannot lock himself out
+  ansible.builtin.assert:
+    that:
+      - operator_public_keys | length > 0
+    fail_msg: "Set operator_public_keys in inventory/group_vars/all.yml (public keys only)."
+    quiet: true
+
+- name: Refuse to run without a deploy key
+  ansible.builtin.assert:
+    that:
+      - deploy_public_keys | length > 0
+    fail_msg: "Set deploy_public_keys in inventory/group_vars/all.yml (public keys only)."
+    quiet: true
+
+- name: Create the operator account with sudo (password set by hand)
+  ansible.builtin.user:
+    name: "{{ operator_user }}"
+    shell: /bin/bash
+    groups: sudo
+    append: true
+    create_home: true
+
+- name: Install the operator public keys
+  ansible.posix.authorized_key:
+    user: "{{ operator_user }}"
+    key: "{{ item }}"
+    state: present
+  loop: "{{ operator_public_keys }}"
+
+- name: Create the deploy account with no password and no docker group
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    shell: /bin/bash
+    password: "!"
+    create_home: true
+    groups: []
+    append: false
+
+- name: Create the sandbox account with a fixed UID, locked, no keys
+  ansible.builtin.user:
+    name: "{{ sandbox_user }}"
+    uid: "{{ sandbox_uid }}"
+    shell: /bin/bash
+    password: "!"
+    create_home: true
+
+- name: Make sure the deploy account has an .ssh directory
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0700"
+
+- name: Authorize the CI deploy key with the forced command only (R2.9)
+  ansible.builtin.template:
+    src: authorized_keys_deploy.j2
+    dest: "/home/{{ deploy_user }}/.ssh/authorized_keys"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+
+- name: Allow the deploy user to run only the deploy script as root (R7.12)
+  ansible.builtin.template:
+    src: sudoers_deploy.j2
+    dest: /etc/sudoers.d/counterspell-deploy
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+
+- name: Harden sshd (R2.3)
+  ansible.builtin.template:
+    src: sshd_hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/01-counterspell.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Reload sshd
+
+- name: Allow SSH with rate limiting, then HTTP and HTTPS (R2.4)
+  community.general.ufw:
+    rule: limit
+    port: "{{ base_ssh_port | string }}"
+    proto: tcp
+
+- name: Allow HTTP
+  community.general.ufw:
+    rule: allow
+    port: "80"
+    proto: tcp
+
+- name: Allow HTTPS
+  community.general.ufw:
+    rule: allow
+    port: "443"
+    proto: tcp
+
+- name: Deny all other inbound traffic by default
+  community.general.ufw:
+    direction: incoming
+    policy: deny
+
+- name: Enable the firewall
+  community.general.ufw:
+    state: enabled
+
+- name: Install unattended security upgrades (R2.5)
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Turn on the daily upgrade schedule
+  ansible.builtin.template:
+    src: apt-periodic.j2
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Stop upgrades from rebooting the host (R2.5)
+  ansible.builtin.template:
+    src: no-auto-reboot.j2
+    dest: /etc/apt/apt.conf.d/52counterspell-no-reboot
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Keep the clock synchronised (R2.7)
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    enabled: true
+    state: started
+
+- name: Check whether a reboot is pending (R2.5, reported, never done automatically)
+  ansible.builtin.stat:
+    path: /var/run/reboot-required
+  register: base_reboot_required
+
+- name: Report a pending reboot
+  ansible.builtin.debug:
+    msg: "A reboot is required. Schedule it by hand."
+  when: base_reboot_required.stat.exists

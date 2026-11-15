@@ -1,0 +1,10 @@
+# Copy to inventory/hosts.yml (gitignored) and set ansible_host to the address Brighton records at T23.
+# 203.0.113.0/24 is a documentation range. It is not a real host.
+all:
+  children:
+    counterspell:
+      hosts:
+        counterspell-prod-1:
+          ansible_host: 203.0.113.10
+          ansible_user: brighton
+          ansible_port: 22

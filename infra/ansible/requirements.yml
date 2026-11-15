@@ -1,0 +1,7 @@
+# Ansible collections, pinned. Install with:
+#   ansible-galaxy collection install -r requirements.yml
+collections:
+  - name: community.general
+    version: 12.5.0
+  - name: ansible.posix
+    version: 2.1.0

@@ -1,0 +1,17 @@
+# Non-secret variables only (deploy-ops R2.8). Secrets never go here: Brighton writes them by hand
+# into /etc/counterspell/*.env (T27).
+
+site_name: counterspell
+operator_user: brighton
+deploy_user: deploy
+sandbox_user: sandbox
+sandbox_uid: 1001
+judge_uid: 10001
+ssh_port: 22
+
+# Public keys only. The CI deploy key is restricted to the forced-command entry point (R2.9).
+# Add one entry per key; rotation adds the new key first, then removes the old one (RUNBOOK.md).
+deploy_public_keys: []
+
+# Set by Brighton at T23 or later, per tasks.md. Empty means the role stops with a clear message.
+operator_public_keys: []
