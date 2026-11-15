@@ -1008,3 +1008,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 
 - An `#[ignore]` test runs only when asked (`-- --ignored`), so it stays out of the normal suite. The test still fails loudly when `SANDBOX_DOCKER_SOCKET` is missing, because `expect` panics. It never passes by skipping silently.
 - `connect` and `verify` run before any container is created. The check refuses a daemon that is not rootless, so a mistake here stops the test without starting anything on the host.
+
+## language-drivers T02: shipped catalogue test with stand-in drivers
+
+- `include_str!` embeds the real `languages/languages.toml` into the test at compile time. If the file drifts from the loader's rules, the test fails.
+- The `TempDir` returned by `fixture` owns the stub driver files. Keeping it in a named binding (`let (dir, _path) = ...`) stops the directory being deleted early. Dropping it removes the files, which is Rust's ownership rule at work.
+- `LanguageCatalog::parse` takes the base directory as a plain `&Path`, so the test controls exactly where driver paths resolve.

@@ -6,12 +6,12 @@
 # digest-pinned. JavaScript, Java and C++ remain disabled until their drivers exist.
 # Renovate (renovate.json) proposes weekly digest refreshes; a human merges them.
 #
-# Python is enabled. JavaScript, Java and C++ are present but disabled (language-drivers
-# and the stretch goals). The executor refuses disabled languages.
+# Python and JavaScript are enabled (language-drivers T02). Java and C++ are present but disabled
+# (stretch goals). The executor refuses disabled languages.
 #
 # Driver files are relative to this directory. The loader refuses an enabled language
-# whose driver file is missing, so Python stays unusable until language-drivers adds
-# drivers/python/driver.py.
+# whose driver file is missing. Until language-drivers adds drivers/python/driver.py and
+# drivers/javascript/driver.js, the real file fails the loader. Tests stub both files.
 
 [python]
 enabled = true
@@ -30,7 +30,7 @@ exec_scratch = false
 protocol_version = 1
 
 [javascript]
-enabled = false
+enabled = true
 image = "node:22-slim@sha256:e9f565d32859f0cbfb52125eafe8be39390f24dac302dc3cdf566e8ba3ab21ee"
 file = "solution.js"
 driver = "drivers/javascript/driver.js"
