@@ -402,20 +402,20 @@ Conventions for every Rust task:
 
 ## Completion checklist
 
-- [ ] No new Cargo package was added; `cargo metadata --no-deps` still lists exactly the six canonical packages.
-- [ ] `counterspell-common` has no database, web, Docker or Tokio dependency; the server's normal dependency tree has no `bollard` and no `counterspell-judge`.
-- [ ] Postgres is the only store for submissions, jobs and run events; Valkey holds counters only; nothing uses Valkey Streams or pub/sub.
-- [ ] Submission and job are created in one transaction; `jobs.submission_id` is unique; `Idempotency-Key` replay returns the original run and creates nothing.
-- [ ] Claims use `FOR UPDATE SKIP LOCKED` with renewable leases, and every judge write passes the (job, owner, attempts) fence.
-- [ ] The reaper requeues expired leases with `attempts + 1`, ends exhausted runs as `internal_error`, expires stale queued jobs, and reclaims stuck runs after the maximum claim age.
-- [ ] The terminal write is one fenced transaction protected by three barriers (fence, frozen-row trigger, unique terminal event).
-- [ ] `seq` is gap-free and equals commit order; a retried attempt starts with `restarted`.
-- [ ] SSE checks ownership before any event query, replays `seq > Last-Event-ID` from Postgres, uses `NOTIFY` only as a hint, works with notifications disabled, and closes after the terminal event.
-- [ ] The client reducer de-duplicates by `seq`, detects gaps, and clears per-attempt state on `restarted`.
-- [ ] No hidden input, expected output, or hidden-test program output appears in any public surface (canary test passes).
-- [ ] `GET /api/runs/{id}` returns one stable final result after a reload.
-- [ ] VAL-1 to VAL-3 and the rate limits, active-job cap and queue-depth cap are enforced server-side; rejected requests create nothing.
-- [ ] The server database role cannot forge events, results or verdicts (role test passes).
+- [x] No new Cargo package was added; `cargo metadata --no-deps` still lists exactly the six canonical packages.
+- [x] `counterspell-common` has no database, web, Docker or Tokio dependency; the server's normal dependency tree has no `bollard` and no `counterspell-judge`.
+- [x] Postgres is the only store for submissions, jobs and run events; Valkey holds counters only; nothing uses Valkey Streams or pub/sub.
+- [x] Submission and job are created in one transaction; `jobs.submission_id` is unique; `Idempotency-Key` replay returns the original run and creates nothing.
+- [x] Claims use `FOR UPDATE SKIP LOCKED` with renewable leases, and every judge write passes the (job, owner, attempts) fence.
+- [x] The reaper requeues expired leases with `attempts + 1`, ends exhausted runs as `internal_error`, expires stale queued jobs, and reclaims stuck runs after the maximum claim age.
+- [x] The terminal write is one fenced transaction protected by three barriers (fence, frozen-row trigger, unique terminal event).
+- [x] `seq` is gap-free and equals commit order; a retried attempt starts with `restarted`.
+- [x] SSE checks ownership before any event query, replays `seq > Last-Event-ID` from Postgres, uses `NOTIFY` only as a hint, works with notifications disabled, and closes after the terminal event.
+- [x] The client reducer de-duplicates by `seq`, detects gaps, and clears per-attempt state on `restarted`.
+- [x] No hidden input, expected output, or hidden-test program output appears in any public surface (canary test passes).
+- [x] `GET /api/runs/{id}` returns one stable final result after a reload.
+- [x] VAL-1 to VAL-3 and the rate limits, active-job cap and queue-depth cap are enforced server-side; rejected requests create nothing.
+- [x] The server database role cannot forge events, results or verdicts (role test passes).
 - [ ] The 18 correctness properties P1–P18 each have a passing test, and `pg_model_interleavings` passes with its regression file committed.
-- [ ] `pg_dod_twenty_concurrent_runs` passes; `docs/kiro-log/run-lifecycle-dod.md` records enqueue and completion latencies as separate tables, copied from the generated report.
+- [x] `pg_dod_twenty_concurrent_runs` passes; `docs/kiro-log/run-lifecycle-dod.md` records enqueue and completion latencies as separate tables, copied from the generated report.
 - [ ] fmt, Clippy (`-D warnings`), workspace tests, database tests, web checks and `cargo deny check licenses` are green in CI.

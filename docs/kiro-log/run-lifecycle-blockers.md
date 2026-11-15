@@ -173,3 +173,13 @@ Done this session, each with its gate green:
 - **Not done on purpose:** T35's `restart_with_no_judge_expires_stale_queue` and `pg_retries_exhausted_end_to_end` do not use SSE, so they could run now. The spec still lists T31 as a dependency, so I did not reorder them. Brighton can approve that reordering.
 - **Verified at HEAD in this pass:** `cargo fmt --all -- --check` passes. `cargo test --workspace` (without database tests) passes with 0 failures.
 - **Unblock:** Brighton approves `futures-util` as a direct dependency of `counterspell-server`, with a `THIRD-PARTY-NOTICES.md` entry in the same change. Then T29, T30 and T31 can run, followed by T34 to T37 and T39.
+
+## Run of 15 Nov 2026 (run-lifecycle T29 to T39): status
+
+- **All task rows are ticked.** T29 to T39 were done in this run. Each database test was run against the dev Postgres 17 container, and the Valkey tests against the dev Valkey 8 container.
+- **Left unticked in the completion checklist, for Brighton:**
+  - P1–P18 coverage: the model test passes, but I did not audit that each property has its own named test. No regression file exists because no proptest case has failed.
+  - "CI green": the new CI steps were run locally with the same commands. They have not run on GitHub, because no push was allowed in this run.
+- **Decision needed (not a blocker):** `compile_output` is not scanned for hidden markers by the canary test. See the T34 entry in `run-lifecycle-review-queue.md`.
+- **Judge wake-up not wired:** `NOTIFY run_jobs` is not used, so judges wait for the 1 s claim poll. The DoD report shows about 1.2 s of queue wait for that reason. Brighton to decide whether to wire the wake-up before the freeze.
+- **Unblock needed for nothing in this run.** The `futures-util` approval recorded in the earlier entries was granted in `brighton-decisions.md` (14 Nov 2026) and used for T29.
