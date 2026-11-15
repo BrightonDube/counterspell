@@ -2,7 +2,7 @@
 
 Run: 15 Nov 2026 implement pass (non-interactive, approved by Brighton 12 Nov 2026).
 
-## T08 static `index.html` check: blocked by the SPA fallback (needs Brighton)
+## T08 static `index.html` check: RESOLVED 15 Nov 2026 10:23 (was blocked by the SPA fallback)
 
 - Task: T08 (compose `/`). The code and its unit tests are done. The task's verify step is `npm run build`, then check that `web/build/index.html` contains the h1, the beat headings and the CTA with no JavaScript.
 - Reason: `web/vite.config.js` sets `adapter({ fallback: 'index.html' })`. The build log prints `adapter_fallback_overwrites`: the SPA shell overwrites the prerendered `/`. `web/build/index.html` is the 1.5 KB shell with no page text.
@@ -10,6 +10,7 @@ Run: 15 Nov 2026 implement pass (non-interactive, approved by Brighton 12 Nov 20
 - Unblock (choose one; both touch shared behaviour, so not decided here):
   1. Rename the adapter fallback to `200.html` in `web/vite.config.js` and point the server fallback at `200.html` (a Rust change in `crates/server`, needs approval). The landing page then becomes `index.html`.
   2. Remove the adapter `fallback` option (web-only). Unknown paths then get the landing page from the server, and dynamic routes must all prerender. Check the build fails or not first.
+- **Resolved 15 Nov 2026 10:23 (Brighton): option 1.** See the resolution section at the end of this file.
 - Downstream: T12 (static content check) and T14 (smoke marker through Caddy) depend on this. T09 to T11 do not.
 
 ## T02 font wiring: deviation from the plan (noted, not blocking)
@@ -27,16 +28,16 @@ Run: 15 Nov 2026 implement pass (non-interactive, approved by Brighton 12 Nov 20
 
 - `design.md` sets `layers.smoke: false` in static mode, but `tasks.md` T04 says static mode "shows every layer". The implementation follows `design.md` (the smoke wisps are a motion effect, so the static page hides them). The planner tests assert the design rule.
 
-## T12 no-JavaScript content check: blocked (same cause as T08)
+## T12 no-JavaScript content check: unblocked for implementation (same cause as T08, now resolved)
 
-- It checks the built `index.html` with JavaScript disabled. That file is the SPA shell today, so the check cannot pass until the T08 fallback issue is decided.
+- It checks the built `index.html` with JavaScript disabled. That file is the SPA shell today, so the check cannot pass until the T08 fallback change (option 1, approved 15 Nov 2026 10:23) is implemented.
 - The content itself is covered by component and route tests (`Hero.test.ts`, `GhostBeats.test.ts`, `SignUpCta.test.ts`, `page.landing.test.js`), which passed in this run.
 
 ## T13 Lighthouse mobile median: blocked
 
 - It needs the production build served by `counterspell-server` on localhost, and a headless Chrome for Lighthouse. Both are browser or E2E steps, so they are deferred.
 - It also depends on the static landing HTML (T08). Without it, Lighthouse would measure the empty shell, which gives a false score.
-- Unblock: decide the T08 fallback, then run `npx lighthouse http://localhost:8080/ --preset=mobile --only-categories=performance` three times on a machine with Chrome, and record the results in `docs/kiro-log/landing-steel-night-lighthouse.md`.
+- The T08 fallback is now decided (option 1, 15 Nov 2026 10:23). After that change lands, run `npx lighthouse http://localhost:8080/ --preset=mobile --only-categories=performance` three times on a machine with Chrome, and record the results in `docs/kiro-log/landing-steel-night-lighthouse.md`. The Chrome / E2E part remains deferred.
 
 ## T14 accessibility, privacy and Compose smoke: blocked / deferred E2E
 
@@ -61,5 +62,11 @@ Run: 15 Nov 2026 implement pass (non-interactive, approved by Brighton 12 Nov 20
 
 - Tried a temporary Vite config with the adapter-static `fallback` option removed (the file was deleted afterwards; no tracked file changed).
 - The build exits 1: `@sveltejs/adapter-static: all routes must be fully prerenderable, but found ... src/routes/problems/[slug]`. Option 2 therefore needs either `strict: false` (routes missing from the static output) or `prerender` entries for every problem slug. Both change behaviour, so this stays with Brighton.
-- Option 1 (rename the fallback to `200.html` and change the server fallback) is still the only route that keeps every page. It needs a Rust change in `crates/server`, which this spec does not allow.
-- T08, T12, T13 and T14 stay unchecked. No other unchecked task remains in `tasks.md` that this run can do.
+- Option 1 (rename the fallback to `200.html` and change the server fallback) is still the only route that keeps every page. Brighton approved that Rust change in `crates/server` on 15 Nov 2026 10:23, going beyond this spec's usual scope for this change only.
+- T08, T12, T13 and T14 stay unchecked until the fallback is implemented (and, for T13/T14, until their remaining E2E steps can run).
+
+## T08 fallback: RESOLVED 15 Nov 2026 10:23 (Brighton)
+
+Brighton chose option 1. Rename the SvelteKit static adapter fallback to `200.html` in `web/vite.config.js` and have the Rust server serve `200.html` as the SPA fallback for unknown non-API routes (for example `/problems/[slug]`). Problem pages stay served from the database with no redeploy. He explicitly approves the Rust change in `crates/server`, which goes beyond this spec's usual "no server change" scope, for this change only.
+
+T08 and T12 can proceed once this is implemented. T13 and T14 still have deferred E2E / Compose / Chrome steps, but they are no longer waiting on the fallback decision.
