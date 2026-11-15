@@ -133,7 +133,7 @@ Conventions:
   - Verify: `ansible-lint`; `--syntax-check`; `bats deploy/vps/tests/prepull.bats`; `shellcheck deploy/vps/prepull.sh`.
   - Note: the role never sets a host-wide sysctl (R3.8).
 
-- [ ] **T14 [S] (30 min) Red shape test for the production Compose**
+- [x] **T14 [S] (30 min) Red shape test for the production Compose**
   - Files: `deploy/vps/tests/compose_shape.sh`, `deploy/vps/tests/fixtures/{postgres,migrate,server,judge}.env.example` (placeholder values only, names matching design §Secrets), `deploy/vps/tests/fixtures/host.env.example`.
   - The script runs `docker compose -f docker-compose.yml -f deploy/vps/compose.prod.yml --env-file <fixture deploy.env> --env-file <host.env.example> config --format json`, then asserts with `jq`:
     - P1: only `judge` mounts a sandbox socket; no service mounts `docker.sock`;
