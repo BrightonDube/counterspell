@@ -69,6 +69,7 @@ fn clock() -> Arc<ManualClock> {
 async fn signed_in(pool: &PgPool, clock: &Arc<ManualClock>) -> (UserId, String) {
     let user = UserId::new();
     ensure_user(pool, user).await.expect("user fixture");
+    support::publish_two_sum(pool).await;
     let cookie = SessionService::new(pool.clone(), clock.clone())
         .create(user, AuthMethod::MagicLink)
         .await

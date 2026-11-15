@@ -163,3 +163,19 @@ pub fn state_for(static_dir: &std::path::Path) -> AppState {
     let limiter = Limiter::Memory(Arc::new(MemoryLimiter::default()));
     AppState::new(lazy_pool(), config_for(static_dir), limiter)
 }
+
+/// Publishes `two-sum` version 1 through the judge's fixture, so that a run can be queued for it
+/// (problem-catalogue C29 and C35). Calling it again does nothing once the problem is published.
+pub async fn publish_two_sum(pool: &PgPool) {
+    let published: Option<Option<i32>> =
+        sqlx::query_scalar("SELECT published_version FROM problems WHERE slug = 'two-sum'")
+            .fetch_optional(pool)
+            .await
+            .expect("problem lookup");
+    if matches!(published, Some(Some(_))) {
+        return;
+    }
+    counterspell_judge::catalogue::testkit::insert_published_fixture(pool, "two-sum", 1)
+        .await
+        .expect("published two-sum fixture");
+}

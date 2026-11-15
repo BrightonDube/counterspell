@@ -130,6 +130,11 @@ pub async fn post_run(
         EnqueueOutcome::Created { run_id } => Ok(accepted(run_id, "queued".to_owned(), false)),
         EnqueueOutcome::Replayed { run_id } => replayed(&state.pool, run_id).await,
         EnqueueOutcome::Reuse => Err(reuse_error()),
+        EnqueueOutcome::NotPublished => Err(ApiError::new(
+            StatusCode::NOT_FOUND,
+            "unknown_problem",
+            "No published problem has that name.",
+        )),
         EnqueueOutcome::CapReached => Err(ApiError::throttled(
             "queue_cap",
             "You already have the maximum number of runs waiting or running. Wait for one to finish.",

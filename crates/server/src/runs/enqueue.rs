@@ -80,6 +80,8 @@ pub enum EnqueueOutcome {
     CapReached,
     /// The judge queue is at its global depth limit. Nothing was saved.
     QueueFull,
+    /// The problem is not published, so no version can be pinned. Nothing was saved.
+    NotPublished,
 }
 
 /// A database failure during enqueue. Callers map it to a generic internal error.
@@ -142,7 +144,10 @@ pub async fn enqueue(
         return Ok(EnqueueOutcome::QueueFull);
     }
 
-    insert_run_and_job(&mut tx, run).await?;
+    if !insert_run_and_job(&mut tx, run).await? {
+        tx.rollback().await?;
+        return Ok(EnqueueOutcome::NotPublished);
+    }
     sqlx::query("SELECT pg_notify('run_jobs', '')")
         .execute(&mut *tx)
         .await?;
@@ -216,25 +221,36 @@ async fn count_queued(conn: &mut PgConnection) -> Result<i64, sqlx::Error> {
         .await
 }
 
-async fn insert_run_and_job(conn: &mut PgConnection, run: &NewRun) -> Result<(), sqlx::Error> {
-    sqlx::query(
-        "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256, idempotency_key) \
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+/// Inserts the run and its job. The run takes its version from the published problem in the same
+/// statement, so a missing or unpublished problem inserts nothing (problem-catalogue CAT-L3).
+///
+/// Returns `false` when no published problem matches the slug.
+async fn insert_run_and_job(conn: &mut PgConnection, run: &NewRun) -> Result<bool, sqlx::Error> {
+    let pinned: Option<uuid::Uuid> = sqlx::query_scalar(
+        "INSERT INTO submissions \
+         (id, user_id, problem_slug, problem_version, lang, mode, code, code_sha256, idempotency_key) \
+         SELECT $1, $2, p.slug, p.published_version, $3, $4, $5, $6, $7 \
+         FROM problems p \
+         WHERE p.slug = $8 AND p.publication_state = 'published' \
+         RETURNING id",
     )
     .bind(run.run_id.as_uuid())
     .bind(run.user_id.as_uuid())
-    .bind(&run.problem_slug)
     .bind(&run.lang)
     .bind(run.mode.as_str())
     .bind(&run.code)
     .bind(run.code_sha256.as_slice())
     .bind(run.idempotency_key.as_deref())
-    .execute(&mut *conn)
+    .bind(&run.problem_slug)
+    .fetch_optional(&mut *conn)
     .await?;
+    if pinned.is_none() {
+        return Ok(false);
+    }
 
     sqlx::query("INSERT INTO jobs (submission_id) VALUES ($1)")
         .bind(run.run_id.as_uuid())
         .execute(conn)
         .await?;
-    Ok(())
+    Ok(true)
 }

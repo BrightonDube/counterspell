@@ -5,6 +5,8 @@
 //!
 //! Run with `DATABASE_URL=<throwaway postgres 17> cargo test -p counterspell-server --test enqueue -- --ignored pg_`.
 
+mod support;
+
 use std::time::Duration;
 
 use counterspell_common::{
@@ -46,6 +48,7 @@ fn new_run(user: UserId, key: Option<&str>, code: &str) -> NewRun {
 async fn user_in(pool: &PgPool) -> UserId {
     let user = UserId::new();
     ensure_user(pool, user).await.expect("user fixture");
+    support::publish_two_sum(pool).await;
     user
 }
 

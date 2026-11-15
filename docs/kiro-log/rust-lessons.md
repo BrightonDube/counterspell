@@ -1159,3 +1159,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `.take(WEAK_CONCEPT_LIMIT)` is a lazy iterator adapter. It stops after ten items and never copies the rest, so the cap costs nothing.
 - The ranking still receives every weak concept, because the cap applies only when the response is built. A cap placed earlier would change which problems are suggested.
 - The test builds eleven rows and checks both ends of the kept range, so an off-by-one cap is caught.
+
+## problem-catalogue C29: pin the version in one statement
+
+- `INSERT ... SELECT ... FROM problems WHERE publication_state = 'published' RETURNING id` either inserts a row or inserts nothing. The publish check and the insert cannot be split by another transaction.
+- `fetch_optional` turns "no row returned" into `None`. The caller then rolls back and reports `NotPublished`, so the code never has to guess from a missing id.
+- Adding an enum variant makes every `match` that lacks it a compile error. The handler's `match` lists the new variant, so the 404 mapping cannot be forgotten.
