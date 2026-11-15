@@ -79,3 +79,9 @@ Brighton reviews each entry before the next task that depends on it starts.
 - Choice: when both `Last-Event-ID` and `last_event_id` are given, the header wins. The design does not say which wins.
 - Choice: the stream subscribes to the waker before its first query, as design Path 9 step 5 requires.
 - Not yet covered: the per-user stream limit (T30), heartbeat and headers (T30), the max-age close (T30). End-to-end tests are in T31.
+
+## T30 (SSE hardening): notes
+
+- Stream slots are per process (`StreamSlots` in `crates/server/src/runs/streams.rs`), as design open question 13 allows for one server process.
+- The `429 too_many_streams` response carries `retry_after_seconds: 5`. The spec does not give a value; this is an assumed choice.
+- The heartbeat is an SSE comment line (`: heartbeat`), sent every `SSE_HEARTBEAT_SECS`. Heartbeat timing, max-age close and the 429 path are tested end to end in T31.

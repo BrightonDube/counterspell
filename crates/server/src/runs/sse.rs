@@ -4,23 +4,35 @@
 //! client's cursor from Postgres, and only then waits for a wake-up hint or the poll timer. Every event
 //! query contains the owner predicate, so no code path can return another user's events.
 
-use std::{collections::VecDeque, convert::Infallible, str::FromStr, time::Duration};
+use std::{
+    collections::VecDeque,
+    convert::Infallible,
+    str::FromStr,
+    time::{Duration, Instant},
+};
 
 use axum::{
     extract::{Path, Query, State},
-    http::{HeaderMap, StatusCode},
+    http::{header, HeaderMap, HeaderName, HeaderValue, StatusCode},
     response::{
-        sse::{Event, Sse},
+        sse::{Event, KeepAlive, Sse},
         IntoResponse, Response,
     },
 };
 use counterspell_common::ids::{RunId, UserId};
-use futures_util::stream;
+use futures_util::{stream, Stream};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tokio::sync::broadcast::{self, error::RecvError};
 
-use crate::{error::ApiError, runs::wake::Wake, AppState};
+use crate::{
+    error::ApiError,
+    runs::{streams::StreamGuard, wake::Wake},
+    AppState,
+};
+
+/// The wait a client is told to observe when it already has too many open streams, in seconds.
+const STREAM_RETRY_AFTER_SECS: u64 = 5;
 
 /// How many events one replay query reads. Must match the `LIMIT` in [`REPLAY_SQL`].
 pub const REPLAY_BATCH: usize = 200;
@@ -174,6 +186,13 @@ pub async fn stream_run(
     if position.finished && cursor >= position.last_seq {
         return Ok(StatusCode::NO_CONTENT.into_response());
     }
+    let slot = state.stream_slots.try_acquire(user).ok_or_else(|| {
+        ApiError::throttled(
+            "too_many_streams",
+            "You have too many open run streams. Close one and try again.",
+            STREAM_RETRY_AFTER_SECS,
+        )
+    })?;
 
     // Subscribe before the first query, so no wake-up sent during the replay is lost.
     let replay = Replay {
@@ -186,8 +205,32 @@ pub async fn stream_run(
         caught_up: false,
         finished: false,
         poll: Duration::from_millis(state.config.sse.poll_ms),
+        deadline: Instant::now() + Duration::from_secs(state.config.sse.max_age_secs),
+        _slot: slot,
     };
-    Ok(Sse::new(stream::unfold(replay, next_event)).into_response())
+    let heartbeat = Duration::from_secs(state.config.sse.heartbeat_secs);
+    Ok(sse_response(stream::unfold(replay, next_event), heartbeat))
+}
+
+/// Wraps a stream of events in the SSE response: a comment heartbeat, and headers that stop proxies and
+/// browsers from buffering or caching the stream.
+pub fn sse_response(
+    events: impl Stream<Item = Result<Event, Infallible>> + Send + 'static,
+    heartbeat: Duration,
+) -> Response {
+    let keep_alive = KeepAlive::new().interval(heartbeat).text("heartbeat");
+    let mut response = Sse::new(events).keep_alive(keep_alive).into_response();
+    let headers = response.headers_mut();
+    headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+    headers.insert(
+        HeaderName::from_static("x-accel-buffering"),
+        HeaderValue::from_static("no"),
+    );
+    headers.insert(
+        header::X_CONTENT_TYPE_OPTIONS,
+        HeaderValue::from_static("nosniff"),
+    );
+    response
 }
 
 /// The state carried between stream items.
@@ -205,12 +248,19 @@ struct Replay {
     /// True once the terminal event has been sent.
     finished: bool,
     poll: Duration,
+    /// When the stream must close. The client reconnects with its cursor and loses nothing.
+    deadline: Instant,
+    /// Holds this user's stream slot until the stream is dropped.
+    _slot: StreamGuard,
 }
 
 /// Produces the next SSE event, or ends the stream. The stream ends after a terminal event, or when a
 /// database read fails. The client then reconnects with its cursor and loses nothing.
 async fn next_event(mut replay: Replay) -> Option<(Result<Event, Infallible>, Replay)> {
     loop {
+        if Instant::now() >= replay.deadline {
+            return None;
+        }
         if let Some(row) = replay.pending.pop_front() {
             replay.cursor = row.seq;
             replay.finished = is_terminal(&row.kind);
@@ -226,7 +276,8 @@ async fn next_event(mut replay: Replay) -> Option<(Result<Event, Infallible>, Re
             return None;
         }
         if replay.caught_up {
-            wait_for_change(&mut replay.waker, replay.run, replay.poll).await;
+            let remaining = replay.deadline.saturating_duration_since(Instant::now());
+            wait_for_change(&mut replay.waker, replay.run, replay.poll.min(remaining)).await;
         }
         match replay_events_from(&replay.pool, replay.owner, replay.run, replay.cursor).await {
             Ok(rows) => {
@@ -284,7 +335,26 @@ fn is_terminal(kind: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::{parse_cursor, REPLAY_SQL};
+    use std::{convert::Infallible, time::Duration};
+
+    use axum::response::sse::Event;
+
+    use super::{parse_cursor, sse_response, REPLAY_SQL};
+
+    // The keep-alive timer needs a running Tokio runtime, so this test is async.
+    #[tokio::test]
+    async fn stream_responses_carry_the_no_buffering_headers() {
+        let response = sse_response(
+            futures_util::stream::empty::<Result<Event, Infallible>>(),
+            Duration::from_secs(15),
+        );
+        let headers = response.headers();
+
+        assert_eq!(headers["content-type"], "text/event-stream");
+        assert_eq!(headers["cache-control"], "no-store");
+        assert_eq!(headers["x-accel-buffering"], "no");
+        assert_eq!(headers["x-content-type-options"], "nosniff");
+    }
 
     #[test]
     fn cursor_comes_from_the_header_first() {

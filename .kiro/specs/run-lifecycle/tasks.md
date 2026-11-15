@@ -298,7 +298,7 @@ Conventions for every Rust task:
   - Preserve: the ownership check precedes every event read; event queries always include the user.
   - Rust lesson: streams, `async` loops and `select!`.
 
-- [ ] **T30 [S] (25 min) SSE hardening: heartbeat, headers, `204`, limits, max age**
+- [x] **T30 [S] (25 min) SSE hardening: heartbeat, headers, `204`, limits, max age**
   - Files: `crates/server/src/runs/sse.rs`, `crates/server/src/runs/streams.rs`.
   - Add the 15 s comment heartbeat, the headers (`Cache-Control: no-store`, `X-Accel-Buffering: no`, `X-Content-Type-Options: nosniff`), `204 No Content` when the cursor is at or beyond the terminal `seq`, the per-user stream limit with a drop guard (`429 too_many_streams`), and the maximum stream age.
   - Requirements: R12.6, R12.7, R13.6, R13.7, R13.8.
