@@ -1069,3 +1069,10 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A `BTreeMap` keeps keys sorted, so the canonical hash input is always in the same order no matter how the files arrived.
 - `Tree` is an enum, so `match` on it must list every case. Adding a third tree later would stop the build at each place that needs a decision.
 - `toml::from_str` with `#[serde(deny_unknown_fields)]` turns a typo into an error. A clippy lint (`assert_is_empty`) also pushed the test toward `assert_eq!` with an explicit value, which reads more clearly.
+
+# Rust lesson: problem-catalogue C08a, C11, C11a, C12
+- `let ... else` (used in `plan`) takes the `Some` case or returns early. It keeps the happy path flat and needs no nested `match`.
+- A `match` over `RootState` or `Plan` must name every case. That makes a new refusal a compile error at each decision point.
+- `Option<&Approval>` lets the caller say "no record" with `None`, and the checker turns that into a named refusal rather than a panic.
+- A property test with a `Vec` as the model store is the simplest reference: it does the obvious thing, so the real planner can be compared against it.
+- Clippy `manual_contains` prefers `slice.contains(&value)` over `iter().any(|x| *x == value)`. The test helper must use `write!` for hex, because clippy rejects `format!` inside a collect.

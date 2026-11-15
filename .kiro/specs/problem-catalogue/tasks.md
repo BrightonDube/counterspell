@@ -120,7 +120,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests for `_test`, `_dogfood`, a draft pack, a published pack, a file named `README.md`, and an explicit `--slug _x`.
   - Rust lesson: the filter returns an enum per entry (`Import`, `Skip(reason)`), so every skipped entry carries the reason the report needs.
 
-- [ ] **C08a [P] [SUPERVISED] (30 min) Private-tree join and preflight (pure over listings)**
+- [x] **C08a [P] [SUPERVISED] (30 min) Private-tree join and preflight (pure over listings)**
   - Files: `crates/judge/src/catalogue/private_tree.rs`, `crates/judge/tests/catalogue_private_preflight.rs`. No database and no network.
   - `preflight(root: RootState) -> Result<(), PreflightError>`, where `RootState` is `Missing`, `Unreadable` or `Readable { inside_public: bool }`. The caller resolves symlinks before it sets `inside_public`. `join(public_slugs, private_slugs) -> Vec<JoinOutcome>` returns `Paired(slug)`, `PrivatePartMissing(slug)` or `OrphanPrivatePack(slug)`. The stable codes are `private_tree_missing`, `private_tree_unreadable`, `private_root_inside_public`, `private_part_missing` and `orphan_private_pack`.
   - Requirements: CAT-PT1, CAT-PT2, CAT-PT3, CAT-X4.
@@ -144,7 +144,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests with two bullets, no bullets, and bullets followed by a `## Examples` heading.
   - Rust lesson: `lines()` yields `&str` slices that borrow from the statement, so the extraction allocates only for the strings it keeps.
 
-- [ ] **C11 [S] [SUPERVISED] (30 min) Import planner**
+- [x] **C11 [S] [SUPERVISED] (30 min) Import planner**
   - Files: `crates/judge/src/catalogue/plan.rs`.
   - Pure function `plan(latest: Option<&StoredVersion>, incoming: &Incoming) -> Plan` with `Create`, `Unchanged`, `Refuse(VersionNotBumped { changed })`, `Refuse(VersionRegressed)`. `StoredVersion` holds version and hash. `Incoming` holds `pack_version`, hash and the file list.
   - Requirements: CAT-I7, CAT-I8, CAT-I9.
@@ -152,7 +152,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: table-driven unit tests: no latest → `Create`; same hash → `Unchanged`; bigger version with new hash → `Create`; same version with new hash → `Refuse(VersionNotBumped)` listing the changed files; lower version → `Refuse(VersionRegressed)`.
   - Rust lesson: the planner returns an enum instead of a bool, so the caller cannot forget a refusal. Explain why `match` must list every variant.
 
-- [ ] **C11a [P] [SUPERVISED] (30 min) Approval record and retired-value check (pure)**
+- [x] **C11a [P] [SUPERVISED] (30 min) Approval record and retired-value check (pure)**
   - Files: `crates/judge/src/catalogue/approval.rs`, `crates/judge/src/catalogue/retired.rs`, `crates/judge/tests/catalogue_props.rs` (approval and retired properties).
   - `approval.toml` parser with `deny_unknown_fields`: `slug`, `pack_version`, `content_sha256` (64 lower-case hex), `public_commit` (40 hex, recorded but not verified), `approved_by`, `approved_at`. `check_approval(approval, slug, pack_version, combined_hash) -> Result<(), ApprovalRefusal>` returns `ApprovalMissing` or `ApprovalMismatch`.
   - `retired-values.toml` parser: `[[retired]]` with `slug` and `sha256`, and `[[rotated]]` with `slug`, `pack_version` and `rotated_on`. `canonical_hash(input, expected)` is the SHA-256 of canonical JSON, with object keys sorted explicitly and no insignificant whitespace. `check_retired(file, slug, pack_version, case_hashes)` returns a match with a 12-character prefix only, or the rotation refusal of CAT-PT13.
@@ -161,7 +161,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: hand-derived literal hashes. The expected digest for one fixed canonical string is written as a literal, computed once with `sha256sum` on that exact string, not by the code under test. Proptest: reordering JSON object keys leaves `canonical_hash` unchanged. Refusals for a wrong slug, a wrong `pack_version`, a retired match, and a retired slug with no `[[rotated]]` record. An error's text shows at most the 12-character prefix.
   - Rust lesson: `serde_json::Value` objects do not promise a key order. Explain why the canonical form sorts the keys itself before hashing.
 
-- [ ] **C12 [S] (30 min) Property tests for idempotence and versioning**
+- [x] **C12 [S] (30 min) Property tests for idempotence and versioning**
   - Files: `crates/judge/tests/catalogue_props.rs` (P1, P2, P4-pure).
   - Model store: a `Vec<StoredVersion>`. Apply random sequences of incoming packs (random content, random bumps). P1: planning the same pack twice gives `Create` then `Unchanged`, and the model has one entry. P2: after any accepted sequence, the model length equals the number of distinct accepted hashes, and earlier entries are unchanged (compare clones).
   - Requirements: CAT-Q1, CAT-I7, CAT-I8, CAT-I10.
