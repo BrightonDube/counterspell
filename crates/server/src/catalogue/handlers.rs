@@ -1,17 +1,33 @@
 //! HTTP handlers for the public catalogue (problem-catalogue C30 and C31).
 
 use axum::{
-    extract::{Query, State},
+    extract::{Path, Query, State},
     http::HeaderMap,
     Json,
 };
 use serde::Deserialize;
 
 use super::{
-    dto::ProblemListResponse,
+    dto::{ProblemDetail, ProblemListResponse},
     read::{self, ProblemFilter},
 };
 use crate::{error::ApiError, AppState};
+
+/// `GET /api/problems/{slug}`. Unknown and unpublished slugs get the same `404` body (CAT-A6).
+///
+/// # Errors
+///
+/// Returns `404 not_found` for an unknown or unpublished slug, and `500` when a query fails.
+pub async fn get_problem(
+    State(state): State<AppState>,
+    Path(slug): Path<String>,
+) -> Result<Json<ProblemDetail>, ApiError> {
+    read::published_detail(&state.pool, &slug, &state.languages)
+        .await
+        .map_err(ApiError::internal)?
+        .map(Json)
+        .ok_or_else(|| ApiError::not_found("The problem was not found."))
+}
 
 /// The query string of `GET /api/problems`. Unknown keys are ignored.
 #[derive(Debug, Default, Deserialize)]

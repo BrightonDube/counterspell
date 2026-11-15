@@ -151,6 +151,10 @@ pub fn build_router(state: AppState) -> Router {
     let api = Router::new()
         .route("/api/health", get(health))
         .route("/api/problems", get(catalogue::handlers::list_problems))
+        .route(
+            "/api/problems/{slug}",
+            get(catalogue::handlers::get_problem),
+        )
         .route("/api/runs", post(runs::create::post_run))
         .route("/api/runs/{id}", get(runs::read::get_run))
         .route("/api/runs/{id}/cancel", post(runs::cancel::cancel_run))

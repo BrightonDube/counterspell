@@ -1120,3 +1120,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Query<ListQuery>` gives each filter as an `Option<String>`. The parser turns those strings into a `ProblemFilter` before any SQL runs, so a bad value stops the request with a `400` and never reaches the database.
 - `serde` derives on the response structs decide what JSON can contain. A database row never goes into the response directly, so an extra column cannot leak.
 - `Option<SolveStatus>` serialises `None` as `null`. That gives anonymous callers `status: null` without a second response type.
+
+## problem-catalogue C31: public problem detail
+
+- `Path<String>` takes the slug from the URL. The handler passes it to a query with a bound parameter, so the slug is never pasted into the SQL text.
+- `Option<T>` from `fetch_optional` becomes a 404 with `ok_or_else`. Unknown and unpublished slugs both take that one path, so their bodies are byte-identical.
+- A `query_as` tuple maps columns by position. Its types must match the SQL order exactly, and a wrong order shows up at runtime as a decode error. The test that reads the detail caught one such mismatch.

@@ -183,7 +183,14 @@ async fn insert_version_row(pool: &PgPool, slug: &str, version: i32) -> Result<(
     .bind(json!({}))
     .bind(TRACK)
     .bind(json!([]))
-    .bind(json!({"name": "two_sum"}))
+    .bind(json!({
+        "function": "two_sum",
+        "params": [
+            {"name": "values", "type": "list[int]"},
+            {"name": "target", "type": "int"}
+        ],
+        "returns": "list[int]"
+    }))
     .bind(json!({"kind": "int"}))
     .bind(json!({"time_ms": 2000, "mem_mb": 256}))
     .bind(HIDDEN_COUNT)
@@ -213,7 +220,14 @@ pub fn static_import(version: i32, body_hash: u8, statement: &str) -> StaticImpo
         difficulty: "easy".to_string(),
         statement_markdown: statement.to_string(),
         constraints: vec!["The list has at most 10 items.".to_string()],
-        signature: json!({"function": "two_sum"}),
+        signature: json!({
+            "function": "two_sum",
+            "params": [
+                {"name": "values", "type": "list[int]"},
+                {"name": "target", "type": "int"}
+            ],
+            "returns": "list[int]"
+        }),
         input_schema: json!({"kind": "int"}),
         comparator: "exact".to_string(),
         limits: json!({"time_ms": 2000, "mem_mb": 256}),
