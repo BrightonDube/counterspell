@@ -955,3 +955,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A global `tracing` subscriber must be set once per test binary. The test binary holds a single test for this reason, so no other test can install a second subscriber.
 - A `Write` implementation whose clones share an `Arc<Mutex<Vec<u8>>>` lets a `MakeWriter` closure hand the same buffer to every event, including events from blocking threads.
 - A sentinel event in the test proves the capture works, so a check that finds no secret cannot pass by seeing nothing.
+
+# Rust lesson: efficiency-familiar T16
+- `#[sqlx::test(migrations = ...)]` gives each test its own fresh database with every migration applied, so tests cannot leak rows into each other.
+- Each test seeds data as the owner, then switches to a role with `SET LOCAL ROLE` inside a transaction to prove what that role may do.
+- A denied statement is wrapped in a `SAVEPOINT` and rolled back, so one expected error does not abort the rest of the test.
+- Error codes come from the database (`23514` for a CHECK violation, `42501` for missing privilege), and matching on them keeps the test honest about why a write failed.

@@ -172,7 +172,7 @@ Conventions for every web task:
   - Verify: `sqlx migrate run` twice on a clean database succeeds; `docker compose config` still valid.
   - Preserve: the bootstrap migration and run-lifecycle migrations are untouched; the freeze function of run-lifecycle is not replaced.
 
-- [ ] **T16 [S] (30 min) Database tests for constraints, freeze and roles (P16)**
+- [x] **T16 [S] (30 min) Database tests for constraints, freeze and roles (P16)**
   - Files: `crates/judge/tests/familiar_pg.rs`.
   - `pg_familiar_constraints`: a non-accepted verdict with mood above 1 is rejected; a class with `low` confidence is rejected; a mood on a non-completed run is rejected; mood without reason is rejected; an oversize `fit` is rejected; a valid row is accepted.
   - `pg_familiar_frozen`: after `finished_at` is set, changing any of the five columns fails, and the terminal `UPDATE` that sets them together with `finished_at` succeeds.
