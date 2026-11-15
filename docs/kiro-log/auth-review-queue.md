@@ -63,3 +63,20 @@ Attempt 4 supervised items (T14 is not supervised, but it has a deliberate excep
 - No production change was needed. T22 to T25 already call `Capabilities::require` in each mutating handler. This task adds the matrix tests in `tests/pg_auth_demo_matrix.rs`.
 - Check `MUTATING_ROUTES` in `auth/mod.rs`: a route added to the router must also be added there. The test catches a listed route that the router does not serve, but it cannot find a served route that is not listed.
 - The DELETE account route (T36) does not exist yet. When T36 lands, add its capability check and add `/api/me` (DELETE) to the matrix.
+
+## T33 (partial, commit 1303437): wiring into the server
+- Check `auth/setup.rs` `build_state`: mail is guarded by the daily cap and the demo address, and the demo-reset task and cleanup task start from `start_background`.
+- Check `lib.rs` `build_router`: the CSRF guard covers every `/api` route only when auth is configured. Without auth no auth route exists and the guard is not mounted. Production always has auth.
+- Check `docker-compose.yml`: auth variables go to `server` only. `judge` gets none.
+- Open for Brighton: the Caddy log filter (needs approval), the manual stack run, and the README paragraph. T33 stays unchecked until these are done.
+
+## T08 (commit 00bc3bf): privileges, submissions foreign key, cascade
+- New migration `migrations/20261115120000_auth_submissions_fk.sql` adds `submissions_user_fk` (ON DELETE CASCADE). It is guarded and a second run does nothing.
+- Risk for Brighton: if a database already holds a submission whose `user_id` is not in `users`, this migration fails and changes nothing. Pre-launch databases are expected to be empty of such rows.
+- Test fixtures now insert real user rows (`ensure_user` in `counterspell_server::testkit`, plus inline inserts in the judge tests). Handles use the full 32-character UUID, because a shortened prefix collided.
+- Check `pg_submissions_user_fk_refuses_unknown_users_and_cascades` in `tests/pg_auth_privileges.rs`.
+- The test named `pg_all_fks_to_users_and_submissions_cascade` in the spec is not a separate function yet. `pg_every_foreign_key_to_users_cascades_on_delete` covers users, and the new test covers submissions. Rename or merge them if the spec name matters.
+
+## T34 (partial, commits 4e0d6b6 and 7ead0bc): session integration for run endpoints
+- `tests/pg_auth_runs_integration.rs` covers a session cookie authenticating `POST /api/runs`, ownership `404` for another user, `logout-all` refusing the next request while other users are unaffected, and the production resolver reading the session cookie.
+- Not done: the heartbeat check in the SSE loop. The SSE endpoint is run-lifecycle T29, which is not implemented. Leave T34 unticked until it exists.
