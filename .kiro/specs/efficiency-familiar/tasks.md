@@ -213,7 +213,7 @@ Conventions for every web task:
   - Preserve: the three barriers (fence, frozen row, one terminal event) remain intact.
   - Rust lesson: `Option` fields in a struct, and why a database transaction keeps related writes together.
 
-- [ ] **T20 [S] (30 min) `measure_run`: collector trait, events and the failure matrix**
+- [x] **T20 [S] (30 min) `measure_run`: collector trait, events and the failure matrix**
   - Files: `crates/judge/src/familiar/mod.rs`, `crates/judge/src/executor.rs` or the existing call site (one small call).
   - Define `BenchPlan`, `BenchPoint`, `BenchOutcome` and `BenchCollector` as in the design. Implement `measure_run(ctx, run, collector, baselines, problem)`: failure path emits `familiar` right after the last test and before `ghost_hunting`; pass path acquires the gate, reads load, calls the collector, reads load, assesses, then emits `complexity` (only when fitted) and `familiar`. Maps `Failed` and `Incomplete` and `host_busy` to missing measurements, not errors; maps `ExecError` through unchanged. Provide a scripted collector in `testkit`.
   - Tests with the fake executor: every row of the failure matrix; event order (`bench_start`… `complexity`, `familiar`, then `done`); a `restarted` attempt produces a fresh result; infrastructure error is retried and never yields a mood; hidden-data canary absent from every payload.
