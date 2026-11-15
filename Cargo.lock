@@ -419,6 +419,7 @@ dependencies = [
  "counterspell-common",
  "counterspell-judge",
  "counterspell-server",
+ "futures-util",
  "hex",
  "hmac",
  "oauth2",

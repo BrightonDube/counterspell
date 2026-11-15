@@ -1183,3 +1183,10 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `DELETE /api/me` runs its checks inside one transaction. The `FOR UPDATE` lock on the user row and the `?` early returns mean a refused request rolls back and changes nothing.
 - `Json<DeleteBody>` reads the body as a typed struct. The handler never takes the user id from the body; only the `AuthUser` extractor supplies it.
 - A `match`-free `let Some(..) = .. else { return Err(..) };` line handles "no row found" in one place, which keeps the happy path flat.
+
+# Rust lesson: run-lifecycle T29
+
+- `futures_util::stream::unfold` turns a state value and an async step into a stream. The state (pool, cursor, pending rows) is passed in and returned on each step, so no shared mutable state is needed.
+- `Option` and `Result` from a database call become an early `return None` or a logged close. A read error ends the stream instead of panicking, and the client reconnects with its cursor.
+- `tokio::select!` waits on two futures at once (the wake-up channel and the poll timer). Only the first one to finish runs its branch, and the other is dropped.
+- `match headers.get(..)` keeps a missing header as `None` and a bad header as an error. Using `?` inside the `Some` arm turns the bad header into a `400` without any `unwrap`.

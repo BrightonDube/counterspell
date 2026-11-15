@@ -114,3 +114,28 @@ fn bind_address_combines_host_and_port() {
         "127.0.0.1:9000"
     );
 }
+
+#[test]
+fn sse_settings_have_the_design_defaults() {
+    let config = ServerConfig::from_lookup(lookup(&REQUIRED)).expect("config loads");
+
+    assert_eq!(config.sse.poll_ms, 250);
+    assert_eq!(config.sse.heartbeat_secs, 15);
+    assert_eq!(config.sse.max_age_secs, 900);
+    assert_eq!(config.sse.max_streams_per_user, 5);
+}
+
+#[test]
+fn sse_poll_interval_below_the_minimum_is_rejected() {
+    let mut pairs = REQUIRED.to_vec();
+    pairs.push(("SSE_POLL_MS", "10"));
+    let error = ServerConfig::from_lookup(lookup(&pairs)).expect_err("10 ms is too fast");
+
+    assert!(matches!(
+        error,
+        ConfigError::Invalid {
+            name: "SSE_POLL_MS",
+            ..
+        }
+    ));
+}

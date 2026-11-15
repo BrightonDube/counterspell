@@ -289,7 +289,7 @@ Conventions for every Rust task:
   - Preserve: wake-ups are hints only; nothing in this module is read as an event.
   - Rust lesson: `broadcast` channels and what happens to slow receivers.
 
-- [ ] **T29 [S] [SUPERVISED] (30 min) SSE endpoint core: authorize, replay, wait, close**
+- [x] **T29 [S] [SUPERVISED] (30 min) SSE endpoint core: authorize, replay, wait, close**
   - Files: `crates/server/src/runs/sse.rs`.
   - Implement Path 9 steps 1–3 and 5–6: session, cursor parsing (header or `last_event_id` query; `400` on invalid), the single owner-checked read of `last_event_seq` and `finished_at` before any event query, subscribe before the first query, replay in batches of 200 with the owner join in every query, wait loop on wake-up or `SSE_POLL_MS`, send `id`, `event` and the JSON envelope, close after the terminal event. Hold no connection while waiting.
   - Requirements: R12.1–R12.5, R13.1–R13.5, R13.6 (close part), R13.9, P9, P11.
