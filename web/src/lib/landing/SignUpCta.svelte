@@ -2,6 +2,7 @@
 	import { CTA } from './copy';
 
 	// Both links go to /login. Sign-up happens there through GitHub, Google or email (auth spec).
+	// The candle is decorative: it is hidden from assistive technology and sized so the layout does not shift.
 </script>
 
 <div class="flex flex-wrap items-center gap-6">
@@ -17,4 +18,14 @@
 	>
 		{CTA.secondary}
 	</a>
+	<img
+		class="h-24 w-24 object-contain"
+		src="/art/objects/candle-flame.webp"
+		width="96"
+		height="96"
+		alt=""
+		aria-hidden="true"
+		loading="lazy"
+		decoding="async"
+	/>
 </div>
