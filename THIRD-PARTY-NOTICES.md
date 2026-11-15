@@ -132,6 +132,7 @@ Approved by Brighton in the standing decisions (14 Nov 2026). Fonts are self-hos
 
 - **geist 1.9.2** — Vercel — OFL-1.1 (Geist sans, `Geist-Variable.woff2`, loaded in `web/src/app.css`) — <https://github.com/vercel/geist-font/blob/main/LICENSE.txt>
 - **@fontsource/jetbrains-mono 5.3.0** — JetBrains, packaged by Fontsource — OFL-1.1 (weights 400, 500, 600, 700, imported in `web/src/app.css`) — <https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt>
+- **Creepster (Regular, Latin woff2)** — Font Diner, Inc (copyright 2011), SIL Open Font License 1.1, Reserved Font Name "Creepster" — self-hosted as `web/static/fonts/Creepster-Regular.woff2`, declared in `web/src/app.css`, used only for the landing title-screen wordmark and ENTER label (landing-steel-night T21). Full licence text: `web/static/fonts/creepster/OFL.txt`. <https://github.com/google/fonts/tree/main/ofl/creepster>
 
 Added by run-lifecycle T29 (approved by Brighton in the standing decisions, 14 Nov 2026): `futures-util` is now a direct dependency of `counterspell-server`, used only to build the SSE event stream (`unfold`). The crate is already listed above.
 

@@ -5,6 +5,8 @@
 	import GhostBeats from '../lib/landing/GhostBeats.svelte';
 	import Hero from '../lib/landing/Hero.svelte';
 	import SignUpCta from '../lib/landing/SignUpCta.svelte';
+	// Vite fingerprints the font, so this URL matches the one the @font-face rule in app.css uses.
+	import creepsterUrl from '../../static/fonts/Creepster-Regular.woff2?url';
 
 	// The static HTML already shows every word. The plan only decides what motion to add.
 	let plan = $state.raw<LandingPlan>(
@@ -41,6 +43,8 @@
 
 <svelte:head>
 	<title>Counterspell</title>
+	<link rel="preload" href={creepsterUrl} as="font" type="font/woff2" crossorigin="anonymous" />
+
 	<meta
 		name="description"
 		content="Learn why your code breaks. Counterspell hunts the input that breaks your solution."

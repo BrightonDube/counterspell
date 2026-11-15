@@ -26,6 +26,16 @@ describe('landing route composition (T08)', () => {
 		);
 	});
 
+	it('preloads the self-hosted Creepster woff2 in the document head (T21)', () => {
+		render(Page);
+		const preload = document.head.querySelector('link[rel="preload"][as="font"]');
+		expect(preload, 'font preload link').not.toBeNull();
+		expect(preload?.getAttribute('type')).toBe('font/woff2');
+		expect(preload?.getAttribute('crossorigin')).not.toBeNull();
+		expect(preload?.getAttribute('href')).toMatch(/Creepster.*\.woff2/);
+		expect(preload?.getAttribute('href')).not.toMatch(/^https?:/);
+	});
+
 	it('no longer shows the skeleton milestone message', () => {
 		const { container } = render(Page);
 		expect(container.textContent).not.toContain('Skeleton milestone');
