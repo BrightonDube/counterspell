@@ -16,6 +16,7 @@ pub mod daemon;
 pub mod driver_protocol;
 pub mod policy;
 pub mod precheck;
+pub mod preflight;
 pub mod records;
 pub mod run;
 pub mod sanitize;

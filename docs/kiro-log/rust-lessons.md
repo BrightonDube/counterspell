@@ -1238,3 +1238,8 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `OutputCollector` keeps one shared byte budget for stdout and stderr. Each write is cut to the space left, so memory never grows past the cap, even for one huge write.
 - `Pin<Box<dyn Stream + Send>>` is how bollard hands back an exec's output. `Pin` keeps the stream in place while it is polled, and `Box<dyn ...>` hides the concrete type behind a trait object.
 - `map_error` is a `match` on the bollard error enum. Each daemon failure becomes one `InfraError` variant, so a daemon fault can never turn into a user's wrong answer.
+
+## judge-sandbox T22 (preflight evaluation, pure part)
+- `evaluate` builds one `PreflightCheck` per control. A check reads its value with `Option` and `unwrap_or("missing")`, so a control that cannot be read always fails.
+- `match` on a tuple of `(Option<_>, Option<_>)` keeps "not a mount" and "no policy size" as separate cases, so neither can pass by accident.
+- `parse_size` uses `checked_mul`, so an oversized value returns `None` instead of wrapping.
