@@ -59,9 +59,10 @@
 </script>
 
 <section
-	class="relative isolate flex min-h-[32rem] items-end overflow-hidden px-6 pt-24 pb-16 sm:px-10"
+	class="hero relative isolate flex items-end overflow-hidden px-6 pt-24 pb-16 sm:px-10"
 >
-	<div class="absolute inset-0 -z-10" aria-hidden="true">
+	<div class="hero-media absolute inset-0 -z-10 overflow-hidden" aria-hidden="true">
+		<div class="hero-plate">
 		{#if posterFailed}
 			<div class="layer-moon absolute inset-0">
 				<img
@@ -90,24 +91,17 @@
 				/>
 			</div>
 		{:else}
-			<picture class="layer-moon absolute inset-0 block h-full w-full">
-				<source
-					type="image/webp"
-					srcset="/art/landing/moon-graveyard-poster-960.webp 960w, /art/landing/moon-graveyard-poster-1920.webp 1920w"
-					sizes="(max-width: 900px) 100vw, 1920px"
-				/>
-				<img
-					class="h-full w-full object-cover"
-					src="/art/landing/moon-graveyard-poster-1920.jpg"
-					width="1920"
-					height="1080"
-					alt=""
-					aria-hidden="true"
-					fetchpriority="high"
-					decoding="async"
-					onerror={() => (posterFailed = true)}
-				/>
-			</picture>
+			<img
+				class="hero-poster absolute inset-0 h-full w-full object-cover"
+				src="/art/landing/hero-moon-living-poster.jpg"
+				width="1920"
+				height="1080"
+				alt=""
+				aria-hidden="true"
+				fetchpriority="high"
+				decoding="async"
+				onerror={() => (posterFailed = true)}
+			/>
 		{/if}
 
 		{#if video}
@@ -177,6 +171,8 @@
 			/>
 		{/if}
 
+		<div class="pumpkin-glow" aria-hidden="true"></div>
+		</div>
 		<div class="hero-scrim absolute inset-0"></div>
 	</div>
 
@@ -188,3 +184,73 @@
 		<p class="max-w-xl text-lg leading-8 text-text-muted">{SUPPORT_LINE}</p>
 	</div>
 </section>
+
+<style>
+	/* Full viewport, with a fallback for browsers without the small-viewport unit. */
+	.hero {
+		min-height: 100vh;
+		min-height: 100svh;
+	}
+
+	.hero-media {
+		container-type: size;
+	}
+
+	/* The painting is a 16:9 plate that covers the hero, so the pumpkin glow lines up with the
+	   painted pumpkin at every size (the same geometry as the approved mockup). */
+	.hero-plate {
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		width: max(100%, calc(100cqh * 16 / 9));
+		height: max(100%, calc(100cqw * 9 / 16));
+		transform: translate(-50%, -50%);
+	}
+
+	/* On phones the plate is shifted so the painted pumpkin stays on screen at about a fifth of the width. */
+	@media (max-width: 700px) {
+		.hero-plate {
+			left: 0;
+			transform: translate(calc(-14.1% + 20vw), -50%);
+		}
+	}
+
+	.pumpkin-glow {
+		position: absolute;
+		left: 14.1%;
+		top: 67.2%;
+		width: 26%;
+		height: 40%;
+		z-index: 2;
+		pointer-events: none;
+		transform: translate(-50%, -50%);
+		background: radial-gradient(
+			ellipse at 52% 48%,
+			rgb(var(--hero-ember) / 0.4) 0%,
+			rgb(var(--hero-ember) / 0.18) 30%,
+			rgb(var(--hero-ember) / 0.07) 52%,
+			transparent 70%
+		);
+		mix-blend-mode: screen;
+		filter: blur(1.5px);
+		animation: ember-pulse 2.8s ease-in-out infinite;
+	}
+
+	@keyframes ember-pulse {
+		0%,
+		100% {
+			opacity: 0.72;
+			transform: translate(-50%, -50%) scale(1);
+		}
+		50% {
+			opacity: 1;
+			transform: translate(-50%, -50%) scale(1.07);
+		}
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		.pumpkin-glow {
+			animation: none;
+		}
+	}
+</style>
