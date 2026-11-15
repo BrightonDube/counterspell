@@ -96,7 +96,7 @@ Conventions for every task (same as `run-lifecycle`):
 
 ## Wave 2: pure model (no database; property-tested)
 
-- [ ] **C06 [P] [SUPERVISED] (30 min) Canonical manifest and content hash**
+- [x] **C06 [P] [SUPERVISED] (30 min) Canonical manifest and content hash**
   - Files: `crates/judge/src/catalogue/manifest.rs`, `crates/judge/tests/catalogue_props.rs` (P3).
   - Input: `(tree, relative_path, bytes)` triples, where `tree` is `public` or `private`. Each path is prefixed with its tree (`public/…` or `private/…`), and `approval.toml` is excluded before hashing. Sort by the prefixed path, hash each file with SHA-256, build the canonical bytes `path NUL hex LF`, hash those. Return the entries and the 32-byte hash. Return the public entries separately, so `problem_versions.manifest` never holds a private path (CAT-PT6, CAT-PT9).
   - Requirements: CAT-I6, CAT-PT6, CAT-PT9.
@@ -104,7 +104,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests with hand-computed hashes for a two-file manifest; proptest: any permutation of input order gives the same hash; a one-byte change or a renamed file changes it. Moving a file from `public` to `private` changes it. Changing only `approval.toml` does not.
   - Rust lesson: `Vec<(String, Vec<u8>)>` owns its data, and `sort_by` borrows each pair to compare it. Explain why the hash function takes `&[u8]` (borrowed bytes) instead of taking ownership.
 
-- [ ] **C07 [P] (25 min) Taxonomy parser**
+- [x] **C07 [P] (25 min) Taxonomy parser**
   - Files: `crates/judge/src/catalogue/taxonomy.rs`.
   - Parse `packs/catalogue.toml` with `serde` and `deny_unknown_fields`: `[[tracks]] slug, name` and `[[concepts]] slug, name`. Reject duplicate slugs and slugs that break the kebab rule.
   - Requirements: CAT-T1, CAT-T2 (parse part).
@@ -112,7 +112,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests for a valid file, a duplicate slug, an unknown key, and a bad slug.
   - Rust lesson: `deny_unknown_fields` turns a typo in a reviewed file into an error at parse time instead of a silently ignored field.
 
-- [ ] **C08 [P] [SUPERVISED] (25 min) Discovery and draft and underscore filter**
+- [x] **C08 [P] [SUPERVISED] (25 min) Discovery and draft and underscore filter**
   - Files: `crates/judge/src/catalogue/discover.rs`.
   - A pure function takes directory entries `(name, is_dir, has_meta)` and the `status` read from each `meta.toml`, and returns the importable slugs. Names starting with `_` are excluded. A status other than `published` is `DraftPack`. Explicit `--slug` for an `_` name is refused.
   - Requirements: CAT-I2, CAT-I3.
@@ -128,7 +128,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests for `Missing`, `Unreadable` and `inside_public` (each exit 2), a public slug with no private part, a private directory with no public pack, and a fully paired list (passes). A test asserts each code string exactly.
   - Rust lesson: a function that takes a plain enum and returns `Result` can be tested without a filesystem. Explain why the caller, not this function, touches the disk.
 
-- [ ] **C09 [P] (30 min) Starter code generator**
+- [x] **C09 [P] (30 min) Starter code generator**
   - Files: `crates/judge/src/catalogue/starter.rs`.
   - Build `starter(lang, signature) -> String` for `python` and `javascript`. One template per language: a function header from `function_name` and parameter names, and a body that raises or throws "not implemented". Keep the output under 8 KB.
   - Requirements: CAT-I17.
@@ -136,7 +136,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: golden tests with hand-written expected strings for `count_pairs(values, target)` in both languages; a test that a parameter name with a space is refused.
   - Rust lesson: `format!` borrows its arguments and returns a new `String`. Note why the generator takes `&str` names instead of owned strings.
 
-- [ ] **C10 [P] (25 min) Constraints extraction**
+- [x] **C10 [P] (25 min) Constraints extraction**
   - Files: `crates/judge/src/catalogue/statement.rs` (or in `starter.rs`'s sibling).
   - Return the bullet items under `## Constraints` in `problem.md`, in order, trimmed. Stop at the next `##` heading. Return an empty list when the section is missing (the grimoire validator already requires it).
   - Requirements: CAT-I18.
