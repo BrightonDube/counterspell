@@ -30,6 +30,7 @@ async fn seed_users(pool: &PgPool) {
             .await
             .expect("user fixture");
     }
+    support::publish_two_sum(pool).await;
 }
 
 /// Builds settings from the defaults plus `overrides`, with no real services behind them.

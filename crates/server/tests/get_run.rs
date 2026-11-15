@@ -53,6 +53,7 @@ async fn queued_run(pool: &PgPool, user: UserId) -> RunId {
     counterspell_server::testkit::ensure_user(pool, user)
         .await
         .expect("user fixture");
+    support::publish_two_sum(pool).await;
     let run = NewRun::new(
         RunId::new(),
         user,

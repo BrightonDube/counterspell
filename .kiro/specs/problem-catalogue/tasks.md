@@ -318,7 +318,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_lookup` (published returns the version; unpublished returns `None`; the server role cannot select from `hidden_tests`, checked with `has_table_privilege`).
   - Rust lesson: a `WHERE publication_state = 'published'` clause is part of the query, not a check after it, so a missed check cannot return an unpublished row.
 
-- [ ] **C29 [S] [SUPERVISED] (30 min) Enqueue pins the version in one statement**
+- [x] **C29 [S] [SUPERVISED] (30 min) Enqueue pins the version in one statement**
   - Files: `crates/server/src/runs/` (enqueue function from run-lifecycle T24), `crates/server/tests/pg_catalogue_pin.rs`.
   - Replace the separate publication check with the `INSERT … SELECT … WHERE publication_state = 'published'` shape from `design.md`. No row returned means `404 not_found` and nothing queued.
   - Requirements: CAT-L3, CAT-L5, P9. Cross-spec: X3 (run-lifecycle T24).
@@ -370,7 +370,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: the document names every command in `design.md` and no secret or URL; a reviewer can run a dry run from the document alone.
   - Rust lesson: not applicable (documentation only).
 
-- [ ] **C35 [S] [SUPERVISED] (30 min) Test-helper changes in other specs (X2, X13)**
+- [x] **C35 [S] [SUPERVISED] (30 min) Test-helper changes in other specs (X2, X13)**
   - Files: run-lifecycle and judge-sandbox test helpers that insert submissions (name them in the reply), using `catalogue::testkit` (C05).
   - Insert a fixture problem before each submission the tests create. Keep every assertion unchanged.
   - Requirements: CAT-L7.
