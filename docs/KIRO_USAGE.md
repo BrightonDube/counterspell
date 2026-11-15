@@ -422,3 +422,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 23:52-23:56 SAST: 29-dashboard-fsrs-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-dashboard-fsrs-a1.md`. Transcript: `docs/kiro-log/2026-11-15T2352-29-dashboard-fsrs-implement-a1.log`. Exit 0.
 - Credits used (from /usage): 1.47 (credits used now 3533.52/4000).
+
+### 2026-11-16 00:02-00:27 SAST: 23-judge-sandbox-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a1.md`. Transcript: `docs/kiro-log/2026-11-16T0002-23-judge-sandbox-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 9.79 (credits used now 3543.31/4000).
