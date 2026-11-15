@@ -6,8 +6,27 @@ use counterspell_common::ids::UserId;
 use uuid::Uuid;
 
 use async_trait::async_trait;
+use sqlx::PgPool;
 
 use crate::seams::{ProblemLookup, ProblemRef, UserResolver};
+
+/// Makes sure a `users` row exists for `user`, so that tests can save runs for it. The row has no
+/// email and no password. Calling it again for the same id does nothing.
+///
+/// # Errors
+/// Returns the database error if the insert fails for a reason other than the row already existing.
+pub async fn ensure_user(pool: &PgPool, user: UserId) -> Result<(), sqlx::Error> {
+    let simple = user.as_uuid().simple().to_string();
+    sqlx::query(
+        "INSERT INTO users (id, handle, display_name) VALUES ($1, $2, 'Test user')
+         ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(user.as_uuid())
+    .bind(simple)
+    .execute(pool)
+    .await
+    .map(|_| ())
+}
 
 /// Accepts `Authorization: Bearer test-user-<n>` and maps `<n>` to a fixed user id.
 #[derive(Debug, Clone, Copy, Default)]

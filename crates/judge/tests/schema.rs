@@ -24,11 +24,24 @@ fn rejected_with<T>(result: Result<T, sqlx::Error>) -> String {
 }
 
 /// Inserts one queued submission for `user` and returns its id.
+/// Inserts a `users` row for `user` if it does not exist, so the submissions foreign key accepts it.
+async fn ensure_user(pool: &PgPool, user: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO users (id, handle, display_name) VALUES ($1, $2, 'Test user') ON CONFLICT (id) DO NOTHING",
+    )
+    .bind(user)
+    .bind(user.simple().to_string())
+    .execute(pool)
+    .await
+    .map(|_| ())
+}
+
 async fn insert_submission(
     pool: &PgPool,
     user: Uuid,
     key: Option<&str>,
 ) -> Result<Uuid, sqlx::Error> {
+    ensure_user(pool, user).await?;
     let id = Uuid::new_v4();
     sqlx::query(
         "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256, idempotency_key) \
@@ -155,6 +168,7 @@ async fn pg_one_terminal_event_per_run(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_terminal_row_is_frozen(pool: PgPool) {
     let user = Uuid::new_v4();
+    ensure_user(&pool, user).await.unwrap();
     let run = Uuid::new_v4();
     sqlx::query(
         "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256, status, verdict, passed, total, last_event_seq, finished_at) \

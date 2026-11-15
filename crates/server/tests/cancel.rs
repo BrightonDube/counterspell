@@ -56,6 +56,9 @@ fn auth(number: u128) -> String {
 }
 
 async fn queued_run(pool: &PgPool, user: UserId) -> RunId {
+    counterspell_server::testkit::ensure_user(pool, user)
+        .await
+        .expect("user fixture");
     let run = NewRun::new(
         RunId::new(),
         user,

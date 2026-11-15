@@ -92,7 +92,7 @@ Conventions for every Rust task:
   - Preserve: no secret and no seed in the migration.
   - Rust lesson: none (SQL only); note what a `CHECK` constraint buys over application code.
 
-- [ ] **T08 [S] (30 min) Migration: privileges, `submissions` foreign key, cascade rule (property P20)** [SUPERVISED]
+- [x] **T08 [S] (30 min) Migration: privileges, `submissions` foreign key, cascade rule (property P20)** [SUPERVISED]
   - Files: `migrations/<timestamp>_auth_privileges.sql`, `migrations/<timestamp>_auth_submissions_fk.sql`, `crates/server/tests/pg_auth_privileges.rs`.
   - Idempotently ensure the `NOLOGIN` roles `counterspell_server` and `counterspell_judge` exist (same `DO` block pattern as `run-lifecycle`). `REVOKE ALL … FROM PUBLIC` on the five tables, then the grants in the privilege matrix of `design.md`. Guarded `ALTER TABLE submissions ADD CONSTRAINT submissions_user_fk … ON DELETE CASCADE` (skip when `submissions` does not exist).
   - Tests (`pg_`): `has_table_privilege` is false for `counterspell_judge` and `PUBLIC` on all five tables for every privilege; the server role has no `TRUNCATE` and no `UPDATE` on `handle`, `is_demo`, `demo_reset_at`; `pg_all_fks_to_users_and_submissions_cascade` asserts `confdeltype = 'c'` for every foreign key whose target is `users` or `submissions`; when `submissions` exists, inserting a submission for an unknown user fails.

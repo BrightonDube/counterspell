@@ -14,6 +14,7 @@ use counterspell_common::{
 use counterspell_server::{
     config::RunLimits,
     runs::enqueue::{enqueue, EnqueueOutcome, NewRun},
+    testkit::ensure_user,
 };
 use sqlx::{postgres::PgListener, PgPool};
 use tokio::task::JoinSet;
@@ -41,6 +42,13 @@ fn new_run(user: UserId, key: Option<&str>, code: &str) -> NewRun {
     )
 }
 
+/// A new user with a real `users` row, so that the submissions foreign key accepts it.
+async fn user_in(pool: &PgPool) -> UserId {
+    let user = UserId::new();
+    ensure_user(pool, user).await.expect("user fixture");
+    user
+}
+
 async fn submissions_for(pool: &PgPool, user: UserId) -> i64 {
     sqlx::query_scalar("SELECT count(*) FROM submissions WHERE user_id = $1")
         .bind(user.as_uuid())
@@ -52,7 +60,7 @@ async fn submissions_for(pool: &PgPool, user: UserId) -> i64 {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_enqueue_creates_the_run_and_its_job_together(pool: PgPool) {
-    let user = UserId::new();
+    let user = user_in(&pool).await;
     let run = new_run(user, Some("first"), "print(1)\n");
 
     let outcome = enqueue(&pool, &run, &limits(3, 200)).await.unwrap();
@@ -71,7 +79,7 @@ async fn pg_enqueue_creates_the_run_and_its_job_together(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_enqueue_replays_the_same_key_and_content(pool: PgPool) {
-    let user = UserId::new();
+    let user = user_in(&pool).await;
     let first = new_run(user, Some("same-key"), "print(1)\n");
     enqueue(&pool, &first, &limits(3, 200)).await.unwrap();
 
@@ -95,7 +103,7 @@ async fn pg_enqueue_replays_the_same_key_and_content(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_enqueue_refuses_a_reused_key_with_different_code(pool: PgPool) {
-    let user = UserId::new();
+    let user = user_in(&pool).await;
     enqueue(
         &pool,
         &new_run(user, Some("reused"), "print(1)\n"),
@@ -119,7 +127,7 @@ async fn pg_enqueue_refuses_a_reused_key_with_different_code(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_enqueue_refuses_past_the_active_cap(pool: PgPool) {
-    let user = UserId::new();
+    let user = user_in(&pool).await;
     let caps = limits(2, 200);
 
     let a = enqueue(&pool, &new_run(user, Some("a"), "x = 1\n"), &caps)
@@ -141,7 +149,7 @@ async fn pg_enqueue_refuses_past_the_active_cap(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_finished_runs_do_not_count_toward_the_cap(pool: PgPool) {
-    let user = UserId::new();
+    let user = user_in(&pool).await;
     let caps = limits(1, 200);
     let first = new_run(user, Some("old"), "x = 1\n");
     enqueue(&pool, &first, &caps).await.unwrap();
@@ -172,12 +180,12 @@ async fn pg_finished_runs_do_not_count_toward_the_cap(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_enqueue_refuses_when_the_whole_queue_is_full(pool: PgPool) {
     let caps = limits(3, 1);
-    let first_user = UserId::new();
+    let first_user = user_in(&pool).await;
     enqueue(&pool, &new_run(first_user, Some("one"), "x = 1\n"), &caps)
         .await
         .unwrap();
 
-    let second_user = UserId::new();
+    let second_user = user_in(&pool).await;
     let outcome = enqueue(&pool, &new_run(second_user, Some("two"), "x = 1\n"), &caps)
         .await
         .unwrap();
@@ -194,7 +202,7 @@ async fn pg_enqueue_notifies_the_judge(pool: PgPool) {
 
     enqueue(
         &pool,
-        &new_run(UserId::new(), None, "x = 1\n"),
+        &new_run(user_in(&pool).await, None, "x = 1\n"),
         &limits(3, 200),
     )
     .await
@@ -210,7 +218,7 @@ async fn pg_enqueue_notifies_the_judge(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_parallel_enqueues_by_one_user_respect_the_cap(pool: PgPool) {
-    let user = UserId::new();
+    let user = user_in(&pool).await;
     let caps = limits(3, 200);
     let mut tasks = JoinSet::new();
     for index in 0..8 {
