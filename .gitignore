@@ -9,3 +9,17 @@ web/.svelte-kit/
 *.pem
 secrets/
 .DS_Store
+
+# Infrastructure state, variable files, inventories and keys (deploy-ops R1.5, R5.5)
+infra/**/*.tfstate
+infra/**/*.tfstate.*
+infra/**/.terraform/
+infra/**/*.tfvars
+!infra/**/*.tfvars.example
+infra/ansible/inventory/hosts.yml
+infra/ansible/inventory/group_vars/*secret*
+*.agekey
+*identity*.txt
+rclone.conf
+deploy/**/*.env
+!deploy/**/*.env.example
