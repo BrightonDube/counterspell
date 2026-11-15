@@ -137,3 +137,49 @@ Manual check for T30 (`npm run dev` with the placeholder art): deferred. It is a
 - Added `a_restarted_attempt_gets_a_fresh_result_and_the_gate_is_released` to `crates/judge/tests/familiar_measure.rs`. Attempt 1 fails with an infrastructure error and emits nothing. Attempt 2 emits exactly one `familiar` event. The test passed when first written, because the behaviour already existed in `measure_run`. It therefore did not go red first (a deviation to note).
 - T20 stays unchecked. Still open: the canary test (moved to T43, see above), the executor wiring (needs language-drivers T08 and T09), and the `pg_` cases (need T23).
 - `cargo clippy -p counterspell-judge --all-targets -- -D warnings` and `cargo test --test familiar_measure` pass (9 tests).
+
+## Run 6 (15 Nov 2026, continuation): what changed and what is still open
+
+Ticked this run, each with verification passing in this session:
+
+| Task | Commit | Verification |
+|---|---|---|
+| T49 real contract SVG and loader | 3715afa | vitest familiar (84 then 88), `npm run check`, `npm run build` |
+| T50 cross-fade the five mood images | 3715afa | mascot tests incl. live cross-fade of only the new image |
+| T51 Impeccable polish of the dock | 3715afa | log in `docs/kiro-log/efficiency-familiar-art.md`; visual review deferred (E2E) |
+| T23 read-model sections and parity (P17) | a5e5dcc | `cargo test -p counterspell-server --test familiar_read -- --ignored pg_` (3 pass); clippy and fmt clean for common, judge, server |
+| T34 explainer view-model | a9d7e74 | `vitest explain` (9 pass), `npm run check` |
+
+Changes beyond the single tasks, for review:
+1. `MoodReason::from_code` (common) reads a stored reason back. Needed by the read model. Tests added.
+2. `WordFacts.reference` is now `Option<ClassId>` (common, judge assess). The read model can have no fit (for example a failed run), and the wording never needs a reference there. Measured reasons still always carry one, and `measured_wording` falls back to the low-confidence text without it. This changes the signature, so the review should confirm it.
+3. The mascot contract now needs five mood images, not carved eye and mouth layers. This follows the 15 Nov amendment in design.md. Tests that checked eye and mouth layers were rewritten to check the image layers. No test was removed without a replacement.
+4. The P17 parity test writes its `familiar` event as a fixture built from the same stored facts. The judge's own event writer is covered by the judge's tests. The test checks the wording path, not the whole judge-to-stream pipeline. A full pipeline test needs the judge executor (T20, language-drivers).
+5. The `pg_` read-model tests were written after the read-model wiring, not before. Red was seen only for the pure builder and `from_code`.
+6. The dock (`Familiar.svelte`) renders the mascot for a measured mood. It passes `reason="measured"` and `seed=1` because the state does not keep the reason code or run id. Effect is derived in the dock: a live failed mood 1 plays the crack burst, and a live mood 5 plays the laugh burst.
+
+Still open (not ticked), with the reason and what would unblock it:
+
+| Task | Reason | Unblock |
+|---|---|---|
+| T20 measure_run | Canary and restart tests done or moved to T43. Executor wiring needs language-drivers `bench.rs` (T08, T09). The `pg_` cases were unblocked by T23 but need the executor. | language-drivers T08/T09. |
+| T22 `baseline` subcommand | Needs judge-sandbox runner and language-drivers T08. | Same. |
+| T24 grimoire | The bench-size warning (R13.4) needs a new warning code `BEN-02` and a change to the codes test. | Brighton approves `BEN-02`. |
+| T25 `PackRunner::bench` | Needs language-drivers bench and the judge runner. | Same as T22. |
+| T37 speech orchestration | `crates/server/src/hints` is absent. Needs `hints::ai::generate(Kind::Familiar)`, the `hints` table and the Valkey marker. | The hints spec implementation. |
+| T38 `familiar-hint` route | Depends on T37. | T37. |
+| T39 speech bubble component | Depends on T38 and T33. | T38. |
+| T40 enable bench on launch problems | Needs the VPS, the sandbox, language-drivers and Brighton's admission run. | Brighton's VPS run. Brighton must decide. |
+| T41 real-stack proof (30 runs each) | Needs the real sandbox, the VPS and T40. | T40. |
+| T42 end-to-end IDE pass | Browser E2E, deferred under the standing rule. | Deferred: E2E. |
+| T43 privacy tests | Depends on T20 (canary), T38 and T39. | T20, T38, T39. |
+| T44 docs | Depends on T42. | T42. |
+| T45 full gate | Depends on T43 and T44. | T43, T44. |
+| T46 to T48 | Stretch. Not started, as the brief says. | Stretch. |
+
+Blockers for Brighton:
+- Approve `BEN-02` for T24 (the bench-size warning).
+- The VPS admission run for T40 and T41 (which problems to enable bench for, and the baselines).
+- Confirm the `WordFacts.reference` signature change (item 2 above).
+
+Pre-existing: the earlier `cargo build` run printed three unused-import warnings in `crates/server/src/auth/clock.rs` and `crates/server/src/ratelimit.rs`. These files were not touched in this run. Clippy with `-D warnings` on the three changed crates passed.
