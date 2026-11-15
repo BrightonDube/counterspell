@@ -68,7 +68,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_immutability` (update of a title raises; delete of a version raises; sandbox fill without hidden tests raises; sandbox fill with hidden tests passes); `pg_catalogue_publish_gate` (P7: unvalidated, three hints, six examples, and an unknown track each refuse).
   - Rust lesson: tests check a database rule by sending the bad statement and asserting the error text, so the rule is proven by the database rather than by Rust code.
 
-- [ ] **C03 [S] [SUPERVISED] (25 min) Migration: foreign keys and submissions column**
+- [x] **C03 [S] [SUPERVISED] (25 min) Migration: foreign keys and submissions column**
   - Files: `migrations/20261116100100_catalogue_foreign_keys.sql`, `crates/judge/tests/pg_catalogue_fks.rs`.
   - Add `submissions.problem_version` (nullable). Add `submissions_problem_fk` and `submissions_problem_version_fk` as `NOT VALID`, `ON DELETE RESTRICT`. Add the composite `problems(slug, published_version)` FK. Add the guarded FKs for `problem_baselines.problem_slug` and `concept_cards.concept_id` only when those tables exist (`to_regclass`).
   - Requirements: CAT-F1, CAT-F2, CAT-F3, CAT-S8, CAT-S9.
