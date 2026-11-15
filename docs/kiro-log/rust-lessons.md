@@ -1140,3 +1140,10 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `State(state)` gives the handler a shared `AppState`. The pool inside it is cheap to clone, and the handler only borrows it with `&state.pool`.
 - `.map_err(DashboardError::unavailable)` turns a database error into the safe error type. The function is passed by name, so no `match` is needed, and `?` returns the error from the handler.
 - Routes are matched in order, and the `/api/{*path}` catch-all is registered after the real routes, so `/api/dashboard` is never answered with the JSON `404`.
+
+## dashboard-fsrs T06: isolation and aggregate tests
+
+- Each test builds its own `UserId` with `from_uuid`, so the learners are separate values. The owner passed to `read_dashboard` is copied in, and the test checks the result, not the input.
+- `Option<DateTime>` in the test helper uses `bool::then_some`. A finished status gets a finish time and an unfinished one gets `None`, so the NULL matches what the database stores.
+- The privacy checks search the serialised private sections for another learner's ids. They fail on the exact string, so a leak cannot hide behind an equal count.
+- Removing the owner filter from the SQL made the isolation test fail, which shows that the assertion catches the leak.

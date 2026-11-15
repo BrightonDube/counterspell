@@ -66,7 +66,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T01, T03, T04 and existing auth/router seams.
   - Rust lesson: explain Axum extractors, async `Result` handling, and why the handler must not trust browser-supplied ownership data.
 
-- [ ] **T06 [P] (30 min) Add dashboard database isolation and aggregate tests** [SUPERVISED]
+- [x] **T06 [P] (30 min) Add dashboard database isolation and aggregate tests** [SUPERVISED]
   - Files: `crates/server/tests/dashboard.rs` or the existing server integration-test location.
   - Add ignored `pg_` tests with two users and distinct canary slugs/concepts. Prove user A cannot see user B's solved counts, weak concepts, recent submissions, or suggested challenges.
   - Cover duplicate accepted submissions counting once, unfinished/expired/internal-error rows not counting as solved or activity, ten recent rows, and three suggestions excluding solved/unpublished problems.
