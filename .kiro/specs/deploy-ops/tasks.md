@@ -61,7 +61,7 @@ Conventions:
   - Verify: `bats deploy/vps/tests/` all green; `shellcheck` clean on both scripts; `bash -n` on each; the regex in the entry point accepts exactly the grammar in R7.2 and R7.9.
   - Note: the `sudoers` line is written by T11, not here.
 
-- [ ] **T05 [P] (25 min) Correct the deploy notes**
+- [x] **T05 [P] (25 min) Correct the deploy notes**
   - Files: `deploy/vps/README.md`.
   - Replace step 1 (`docker` group) with the sudo rule (Q10, D5). Change the environment branches to `main` and `v*` (Q8, D6). Replace "Ansible will own this later" with a pointer to the `infra/ansible` roles. Point the key step at `counterspell-deploy-entry`. Keep the GitHub steps, the forced-command explanation and the host-key rule.
   - Requirements: R7.12, R7.15.
