@@ -42,3 +42,11 @@ Red: `cargo test -p counterspell-judge --test healthcheck` failed (no subcommand
 Green: 3 integration tests (`report` in-process) and 3 unit tests in `health.rs`; judge suite 347 passed, 0 failed; clippy and fmt clean.
 Not yet verified: `docker compose config` shows the healthcheck (needs T15). T07 stays unticked until then.
 Decision: tests call `health::report` in-process, not the binary, because `crates/judge/clippy.toml` forbids `Command::new` in judge code.
+
+## T08 (16 Nov 2026), partly done, not ticked
+
+Red: `bash deploy/vps/tests/caddy_shape.sh` failed 10 checks (site address, readiness 404, headers, `-Server`).
+Green: all 13 shape checks pass; `caddy validate` passes for `CADDY_SITE_ADDRESS=:80` and `counterspell.example` with the local `caddy:2.10.2-alpine` image (`--pull=never`, no registry call).
+Still open:
+- R6.5 access-log query-string filter for the OAuth callback and verify routes depends on auth T33 (open). The Caddyfile is shared with auth T33, so merge after it.
+- Q17: the Content-Security-Policy is report-only. The SvelteKit build inlines a bootstrap script (`web/build/200.html`), so an enforced `script-src 'self'` would break the app. Enforcing needs a hash or nonce decision from Brighton. See `deploy-ops-blockers.md`.
