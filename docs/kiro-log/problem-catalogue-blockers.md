@@ -14,3 +14,22 @@ Everything else listed under C00 that Brighton did not name keeps the assumed ch
 ## C00a — still waiting on Brighton
 
 C00a stays unchecked. Brighton has not yet created `BrightonDube/counterspell-packs-private` or its read-only credential. No agent may create the repo, a key or a token. Tasks that need that repo should be left unchecked, recorded here, and skipped until he has done C00a.
+
+## Run of 16 Nov 2026 (implementation pass)
+
+Done this pass (ticked in tasks.md): C01, C02, C03, C04, C05, C06, C07, C08, C08a, C09, C10, C11, C11a, C12, C13.
+C03 repair: C03's submission foreign key broke 75 existing database tests. The repair is in `be2ca27`.
+
+Not started (remaining work, in tasks.md order):
+- C14 to C23: the importer writes, dry run, sandbox fill, validate-sandbox, CLI, taxonomy sync, purity guard. C16 depends on `PackRunner` (exists in `counterspell-grimoire`, `runner.rs`). The pure parts can start now. Sandbox runs need the rootless daemon and must stay open until T37.
+- C19b to C22: the CLI and seeding tasks. C19b needs the approval-gate fixtures from C11a and C19.
+- C24 to C32: the runtime read path and API. They depend on judge-sandbox T24 (`ProblemTests` seam), which is open.
+- C26: BLOCKED on judge-sandbox T24 (open).
+- C33: BLOCKED on D16 (the owner of the `ghosts` table DDL is unresolved).
+- C34 to C37: runbook, cross-spec test helpers (X2, X13), full pass and repo-wide gates. Depends on the tasks above.
+- C38, C39, C40: HUMAN. The sandbox import of the approved starter packs, the approval gate before publication, and rotation of hidden values in public git history. Left for Brighton.
+- C00a: HUMAN, still unchecked. Brighton has not created `BrightonDube/counterspell-packs-private`. Nothing in this pass reads that repo.
+
+Design gap noticed in C02: the publish gate cannot see an unknown track, because `problems.track_slug` is a foreign key. An unknown track is refused by the key (23503), not by the gate. The test `pg_catalogue_publish_gate_unknown_track_refused_by_key` records that. Brighton may want the gate's wording changed in the spec.
+
+Left untracked on purpose: `crates/server/tests/pg_auth_tokens.proptest-regressions`, a seed file written by a proptest run that failed on the stale migration embed (`VersionMissing`). It is not part of this work.
