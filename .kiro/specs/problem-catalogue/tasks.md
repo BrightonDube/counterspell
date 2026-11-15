@@ -76,7 +76,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_fks` (a submission for an unknown slug is rejected after the migration; an existing row with an unknown slug survives because of `NOT VALID`; `confdeltype = 'r'` for every new FK). Run the migration twice to prove it is idempotent.
   - Rust lesson: `NOT VALID` is a Postgres choice that tells the database to check new rows only. Explain in the reply why this avoids a long table scan at deploy time.
 
-- [ ] **C04 [S] [SUPERVISED] (30 min) Migration: privilege matrix**
+- [x] **C04 [S] [SUPERVISED] (30 min) Migration: privilege matrix**
   - Files: `migrations/20261116100200_catalogue_privileges.sql`, `crates/judge/tests/pg_catalogue_privileges.rs`.
   - Use the same `DO` pattern as run-lifecycle to make sure the two existing roles exist (no new role). `REVOKE ALL` from `PUBLIC`. Grant exactly the matrix in `design.md`: server `SELECT` on public tables only; judge `SELECT` on `problems`, `problem_versions`, `problem_examples`, `problem_starters`, `hidden_tests`, `hidden_generation`, `hidden_sources`, `reference_solutions`, `known_ghosts`; no write for either role; no privilege on `catalogue_events` for either role.
   - Requirements: CAT-R1 to CAT-R6.

@@ -1053,3 +1053,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `NOT VALID` on a foreign key tells Postgres to check only new and changed rows. It skips the full table scan that adding a key normally does, which keeps a deploy quick on a large submissions table.
 - A `DO $$ ... $$` block with an `IF NOT EXISTS` check on `pg_constraint` makes a migration safe to run twice.
 - A test that calls `sqlx::migrate!` embeds the migration list at compile time. A test binary built before a new migration file exists rejects the shared database with `VersionMissing`. Touching the file rebuilds it.
+
+# Rust lesson: problem-catalogue C04
+- `has_table_privilege(role, table, privilege)` asks Postgres to answer from its own grant catalogue. The test checks the real rule, not a sample query that might pass by accident.
+- `aclexplode` turns a table's access list into rows. Grantee `0` means PUBLIC, so one query proves PUBLIC holds nothing.
+- The test filters roles by the prefix `counterspell_` with an escaped underscore (`\_`). Without the escape, `_` matches any character, and the cluster's own login user would be counted.
