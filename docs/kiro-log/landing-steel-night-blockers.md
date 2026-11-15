@@ -70,3 +70,11 @@ Run: 15 Nov 2026 implement pass (non-interactive, approved by Brighton 12 Nov 20
 Brighton chose option 1. Rename the SvelteKit static adapter fallback to `200.html` in `web/vite.config.js` and have the Rust server serve `200.html` as the SPA fallback for unknown non-API routes (for example `/problems/[slug]`). Problem pages stay served from the database with no redeploy. He explicitly approves the Rust change in `crates/server`, which goes beyond this spec's usual "no server change" scope, for this change only.
 
 T08 and T12 can proceed once this is implemented. T13 and T14 still have deferred E2E / Compose / Chrome steps, but they are no longer waiting on the fallback decision.
+
+## Run note (15 Nov 2026, implement pass 2): T08 and T12 done, T13 and T14 deferred E2E
+
+- T08 done (commit 32863da). The Rust server now serves `200.html` as the SPA fallback and checks for it at start-up (`crates/server`, approved 15 Nov 2026 10:23). The web adapter writes `200.html` and prerenders `/` into `index.html`. Verified: `cargo fmt`, `cargo clippy --workspace --all-targets -D warnings`, `cargo test --workspace`, `npm run check`, `npm run build`, and the built `index.html` holds the h1, the three beats, the CTA and the smoke marker.
+- Deploy note: a server build that still expects `index.html` as its fallback, or a `web/build` made before this change, fails the start-up check. Rebuild the web app and the server together.
+- T12 done (commit 7924b0d). The built `index.html` contains every visible string with no JavaScript. No inline hiding is in the markup. The `data-reveal` content is hidden only by GSAP `from` tweens with `immediateRender: false`, so no stylesheet hides it. `npm run check` and `npm test -- landing` (8 files, 39 tests) pass.
+- T13 (Lighthouse mobile median) stays unchecked. It needs headless Chrome and a running server: a browser or E2E step, deferred.
+- T14 (keyboard, focus, contrast, network log, Compose smoke through Caddy) stays unchecked: deferred E2E and Compose stack.
