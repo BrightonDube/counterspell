@@ -13,6 +13,7 @@ pub mod config;
 pub mod dashboard;
 pub mod error;
 pub mod familiar;
+pub mod health;
 pub mod ratelimit;
 pub mod runs;
 pub mod seams;
@@ -71,6 +72,8 @@ pub struct AppState {
     pub auth: Option<AuthState>,
     /// The site's own origin for the CSRF guard. Set together with `auth`.
     pub origin: Option<Arc<WebOrigin>>,
+    /// The dependencies that `GET /api/ready` pings (Postgres and Valkey in production).
+    pub readiness: Arc<health::Readiness>,
 }
 
 impl AppState {
@@ -81,6 +84,10 @@ impl AppState {
         let languages = LanguageCatalog::launch(config.limits.max_source_bytes);
         let problems = PgProblemLookup::new(pool.clone());
         let stream_slots = runs::streams::StreamSlots::new(config.sse.max_streams_per_user);
+        let readiness = health::Readiness::new(vec![
+            Arc::new(health::PostgresProbe::new(pool.clone())),
+            Arc::new(health::LimiterProbe::new(limiter.clone())),
+        ]);
         Self {
             pool,
             config: Arc::new(config),
@@ -92,6 +99,7 @@ impl AppState {
             stream_slots,
             auth: None,
             origin: None,
+            readiness: Arc::new(readiness),
         }
     }
 
@@ -136,6 +144,13 @@ impl AppState {
         self.problems = Arc::new(problems);
         self
     }
+
+    /// Replaces the dependencies that readiness pings. Used by tests with fake dependencies.
+    #[must_use]
+    pub fn with_readiness(mut self, probes: Vec<Arc<dyn health::Probe>>) -> Self {
+        self.readiness = Arc::new(health::Readiness::new(probes));
+        self
+    }
 }
 
 /// File name of the single-page fallback. The `SvelteKit` static adapter writes it, so `/` keeps its own prerendered `index.html`.
@@ -154,6 +169,7 @@ pub fn build_router(state: AppState) -> Router {
     let hardening = state.auth.clone().zip(state.origin.clone());
     let api = Router::new()
         .route("/api/health", get(health))
+        .route("/api/ready", get(health::ready))
         .route("/api/problems", get(catalogue::handlers::list_problems))
         .route(
             "/api/problems/{slug}",

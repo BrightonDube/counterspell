@@ -1243,3 +1243,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `evaluate` builds one `PreflightCheck` per control. A check reads its value with `Option` and `unwrap_or("missing")`, so a control that cannot be read always fails.
 - `match` on a tuple of `(Option<_>, Option<_>)` keeps "not a mount" and "no policy size" as separate cases, so neither can pass by accident.
 - `parse_size` uses `checked_mul`, so an oversized value returns `None` instead of wrapping.
+
+## deploy-ops T06: readiness route `GET /api/ready`
+
+- `tokio::time::timeout(limit, future)` returns `Result<T, Elapsed>`, where `T` is the future's own output. So a ping that answers late gives `Err(Elapsed)`, and a ping that fails gives `Ok(Err(...))`. Matching `Ok(Ok(()))` checks both at once.
+- The probe error type is a unit struct (`ProbeFailure`), not a string. A client or a log line can then never receive a connection string, because there is no text to leak. The fixed 503 body follows the same idea.
+- `join_all` runs the probes at the same time. Two sequential 2-second timeouts would take 4 seconds in the worst case, which is over the 3-second budget.
