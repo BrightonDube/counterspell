@@ -59,3 +59,10 @@ Provider: `ovh/ovh` pinned to `= 2.25.0`. `ovh_vps` is created through OVH's ord
 Gap: the `ovh_vps` resource does not export `public_ipv4`. Output is null, and Brighton records the IP at T23.
 Placeholders in `envs/prod/terraform.tfvars.example` are all marked `[U]` and need the OVH catalogue (T23).
 No `.tfstate` or real `.tfvars` exists in the tree.
+
+## T11 (16 Nov 2026)
+
+Tools (user installs, not repo dependencies): ansible-core 2.22.0, ansible-lint 26.11.0 (pip, user). Collections pinned in `infra/ansible/requirements.yml`: community.general 12.5.0 and ansible.posix 2.1.0.
+Environment note: `/mnt/c` is world-writable, so Ansible ignores `ansible.cfg` there. Set `ANSIBLE_CONFIG` and `ANSIBLE_COLLECTIONS_PATH` explicitly.
+Verification: `ansible-playbook -i inventory/hosts.example.yml site.yml --syntax-check` passes; `ansible-lint .` passes (production profile, 0 failures); `infra/ansible/tests/check-base-render.sh` passes (visudo on the rendered sudoers, exact deploy path, no wildcard, forced-command line, sshd drop-in).
+Not run: the role on a real host (T24, Brighton). The hardening values are checked by render, not on sshd.

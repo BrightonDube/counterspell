@@ -1,0 +1,4 @@
+# Defaults for the base role. Group variables override these (inventory/group_vars/all.yml).
+base_deploy_entry: /usr/local/sbin/counterspell-deploy-entry
+base_deploy_script: /usr/local/sbin/counterspell-deploy
+base_ssh_port: 22

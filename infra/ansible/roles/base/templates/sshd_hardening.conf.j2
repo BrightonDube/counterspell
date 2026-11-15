@@ -1,0 +1,10 @@
+# Managed by Ansible (base role). Do not edit on the host.
+# Named 01- so it is read before Ubuntu's cloud-image defaults, because sshd uses the first value
+# it reads for each keyword (deploy-ops R2.3).
+PermitRootLogin no
+PasswordAuthentication no
+KbdInteractiveAuthentication no
+PubkeyAuthentication yes
+MaxAuthTries 3
+X11Forwarding no
+AllowUsers {{ operator_user }} {{ deploy_user }}
