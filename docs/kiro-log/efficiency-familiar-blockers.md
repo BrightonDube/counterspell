@@ -131,3 +131,9 @@ Manual check for T30 (`npm run dev` with the placeholder art): deferred. It is a
 - `prompt.rs`: `neutralise_markers` edits the learner's code text inside the prompt (`<<<` becomes `< < <`). The model sees a slightly different string. Acceptable, but the user never sees this text.
 - `claims.rs`: "linear" in "linear search" counts as a class claim (strict by design, per the design).
 - `api.rs`: the PATCH response reads the merged row back, so a row changed by another request is shown with its latest values.
+
+## Run 5 (15 Nov 2026): T20 restart test added
+
+- Added `a_restarted_attempt_gets_a_fresh_result_and_the_gate_is_released` to `crates/judge/tests/familiar_measure.rs`. Attempt 1 fails with an infrastructure error and emits nothing. Attempt 2 emits exactly one `familiar` event. The test passed when first written, because the behaviour already existed in `measure_run`. It therefore did not go red first (a deviation to note).
+- T20 stays unchecked. Still open: the canary test (moved to T43, see above), the executor wiring (needs language-drivers T08 and T09), and the `pg_` cases (need T23).
+- `cargo clippy -p counterspell-judge --all-targets -- -D warnings` and `cargo test --test familiar_measure` pass (9 tests).
