@@ -58,3 +58,13 @@ Items that need Brighton, another spec, or a decision Kiro may not take alone. E
 3. **Fifth and sixth env files.** `/etc/counterspell/ops.env` (cs_ops_ro login, see T17) and `/etc/counterspell/drill.env` (`DRILL_IDENTITY_FILE` and the bucket) are new. The app role's env check covers only the four service files. Brighton confirms both files and their modes (0600 for ops.env, 0600 for drill.env).
 4. **Judge sandbox socket mount.** `compose.prod.yml` does not yet mount the sandbox socket into judge (the P1 red check). The T15 overlay adds it, as the design's judge block shows.
 5. **Deploy-side `preflight`.** The deploy script refuses at the preflight step until `counterspell-judge preflight` exists (judge-sandbox T22 is in progress). This is deliberate.
+
+## Status check, attempt 2 (16 Nov 2026)
+
+- Every unchecked task that needs no host and no other open spec is done in code. T14 is ticked (red output re-run: 14 FAIL lines, exit 1, ShellCheck clean).
+- T07: code and tests committed (5be8069). `cargo test -p counterspell-judge --test healthcheck` passes (3 tests); clippy is clean. The tick still waits for the `docker compose config` check in T15.
+- T08: partial Caddy edge committed (2bfb6fe). The access-log query-string filter waits on auth T33, which is unchecked.
+- T15 and T19 wait on auth T33 and judge-sandbox T38. Both are unchecked, so T15 was not started. T20 waits on judge-sandbox T38 (`renovate.json` exists, but T38 is not ticked).
+- T01, T23 to T32 and T34 are `[HUMAN]` and stay unchecked.
+- T33 (verification report) depends on T31 and T32, which are host work, so it stays unchecked.
+- Unblock path: tick auth T33 and judge-sandbox T38, then run T08 (access log), T15 (Compose green), T07 tick, T19 and T20.
