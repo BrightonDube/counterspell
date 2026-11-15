@@ -195,3 +195,8 @@
  docs/KIRO_USAGE.md        | 12 ++++++++++++
  docs/kiro-log/sessions.md | 13 +++++++++++++
  2 files changed, 25 insertions(+)
+- 2026-11-15T01:14:04Z | model: not reported | last commit: 83768aa ide-workspace: record attempt 8 blockers (T02, T13, T18, T20 blocked; E2E tasks deferred)
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
