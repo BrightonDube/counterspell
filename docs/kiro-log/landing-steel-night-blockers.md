@@ -56,3 +56,10 @@ Run: 15 Nov 2026 implement pass (non-interactive, approved by Brighton 12 Nov 20
 - Minor: the landing `.cta` transition rule duplicates the global reduced-motion rule in `app.css`. Harmless; kept because the spec names the CTA rule.
 - Minor: the hero scene wrapper and each scene `img` both carry `aria-hidden="true"`. Redundant but correct.
 - Fixed in this wave: an unhandled rejection when the GSAP chunk fails to load (page now keeps the static content; test added).
+
+## T08 follow-up (attempt 2, 15 Nov 2026): option 2 tested, fails
+
+- Tried a temporary Vite config with the adapter-static `fallback` option removed (the file was deleted afterwards; no tracked file changed).
+- The build exits 1: `@sveltejs/adapter-static: all routes must be fully prerenderable, but found ... src/routes/problems/[slug]`. Option 2 therefore needs either `strict: false` (routes missing from the static output) or `prerender` entries for every problem slug. Both change behaviour, so this stays with Brighton.
+- Option 1 (rename the fallback to `200.html` and change the server fallback) is still the only route that keeps every page. It needs a Rust change in `crates/server`, which this spec does not allow.
+- T08, T12, T13 and T14 stay unchecked. No other unchecked task remains in `tasks.md` that this run can do.
