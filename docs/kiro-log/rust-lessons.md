@@ -1214,3 +1214,10 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `JoinHandle::abort` stops a task at its next `.await`. The restart tests use it to model a crashed judge or server, and the work that task held (its lease, its connections) is then recovered from the database.
 - A `const` with a comment is the simplest home for a value that is not in configuration (the database default `max_attempts`). It is clearer than a hidden literal in a loop.
 - `Value` from `serde_json` compares directly with plain numbers and strings (`envelope()["attempt"] == 2`), which keeps test assertions short.
+
+# Rust lesson: run-lifecycle T36
+
+- `tokio::sync::Barrier` makes many tasks wait until all have arrived, then releases them together. That is how the test fires twenty submissions at the same instant.
+- `JoinSet` runs many tasks and returns each result as it finishes. The test collects results in arrival order, then sorts by user when the order matters.
+- Nearest-rank percentiles are simple: sort the values, then take the value at position `ceil(p * n)`. Every number in the report comes from that one function.
+- Casting `usize` to `i64` can wrap in theory, so the code uses `i64::try_from(...).expect(...)` at the one place a count crosses over.

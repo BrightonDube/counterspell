@@ -356,7 +356,7 @@ Conventions for every Rust task:
   - Preserve: ages leases with SQL wherever a real wait is not the point.
   - Rust lesson: stopping and restarting tasks cleanly in tests.
 
-- [ ] **T36 [S] [SUPERVISED] (30 min) Definition-of-done test: twenty concurrent runs and the latency report**
+- [x] **T36 [S] [SUPERVISED] (30 min) Definition-of-done test: twenty concurrent runs and the latency report**
   - Files: `crates/server/tests/dod_twenty_runs.rs`, `crates/server/tests/support/report.rs`.
   - `pg_dod_twenty_concurrent_runs` exactly as in `design.md` "Definition of done": 20 users post at once behind a barrier, three judge workers with concurrency 2 and the scripted lightweight executor, five clients drop and resume, five other users plus an anonymous client probe every run's events, `GET` and cancel. Assert no lost jobs, no duplicate terminal results, no unauthorized access, no canary, ordered de-duplicated streams, enqueue p95 ≤ 300 ms, all terminal within 60 s. Measure `enqueue_ms`, `first_event_ms`, `completion_ms`, `queue_wait_ms`, `execution_ms`, `delivery_ms` separately (count, mean, p50, p95, max). Write `target/run-lifecycle/dod-report.json` and print a Markdown table.
   - Requirements: R20, R21, R22, P1–P13.

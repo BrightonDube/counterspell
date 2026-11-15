@@ -3,6 +3,7 @@
 
 #![allow(dead_code)]
 
+pub mod report;
 pub mod sse_client;
 
 use std::{

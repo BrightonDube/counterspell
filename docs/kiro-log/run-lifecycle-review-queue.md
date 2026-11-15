@@ -112,3 +112,11 @@ Brighton reviews each entry before the next task that depends on it starts.
 - "Server restart" is modelled by aborting the accept loop, dropping the open stream and starting a new router with new state (new waker, new stream slots) on the same database. Connections already handed to hyper are not aborted by the test, so this is a close model rather than a process restart.
 - Judge crash is modelled by aborting a worker task that holds a claim (executor `Hang`), ageing the lease with SQL and running `reap_once`. The design calls this "kill all workers"; the real process kill is covered by T36's fleet test and the deploy checks.
 - `pg_retries_exhausted_end_to_end` uses three hung attempts, matching the database default of `max_attempts = 3`. The test constant is named `MAX_ATTEMPTS`.
+
+## T36 (SUPERVISED, definition of done): what Brighton should check
+
+- Code: `crates/server/tests/dod_twenty_runs.rs` and `crates/server/tests/support/report.rs`. The test passed on the dev machine (WSL, Docker Desktop and rootless Docker both running, Postgres 17 in a throwaway container). Run it with `cargo test -p counterspell-server --test dod_twenty_runs -- --ignored pg_ --nocapture`.
+- Report: `target/run-lifecycle/dod-report.json`. Its six metrics are `enqueue_ms`, `first_event_ms`, `completion_ms`, `queue_wait_ms`, `execution_ms` and `delivery_ms`, each with count, mean, p50, p95 and max. The numbers in the last run are the first-run numbers that T39 will record.
+- Observed: enqueue p95 around 160 ms, under the 300 ms target. Queue wait is about 1.2 s on average, because twenty runs share six judge slots (three judges, concurrency two) and each scripted run takes about 160 ms of executor time. Brighton should check that the claim poll interval (`CLAIM_POLL`) is not a larger part of that wait than intended.
+- Gap to check: the canary markers in this test are a constant that the scripted judges never hold, so the scan proves only that no public surface carries that string. The real hidden-data canary check is T34. Brighton to decide whether that is enough for the definition of done.
+- Only one run was measured. T39 should record the numbers from a single named run, as the design says, not an average over runs.
