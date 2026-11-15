@@ -78,3 +78,11 @@ export function textTokenFor(failed: boolean): TokenName {
 
 /** Every layer id a mood can draw, so the view never binds to an id the artwork lacks. */
 export const LAYER_IDS: readonly string[] = REQUIRED_IDS;
+
+/** The CSS colour for a glow recipe. It names palette tokens only, so no hex value is written. */
+export function glowCss(recipe: GlowRecipe): string {
+	if (recipe.mixWith === undefined || recipe.mixPercent === undefined) {
+		return `var(${recipe.base})`;
+	}
+	return `color-mix(in srgb, var(${recipe.base}) ${recipe.mixPercent}%, var(${recipe.mixWith}))`;
+}
