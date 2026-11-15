@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
-# Test stub for docker. Records the call; fails `migrate` runs when FAIL_MIGRATE is set.
+# Test stub for docker. Records the call; fails `migrate` runs when FAIL_MIGRATE is set. For backup
+# tests it prints a plaintext marker for pg_dump, and fixed counts for psql.
 echo "docker $*" >> "${STUB_LOG:?}"
 if [[ "$*" == *" run --rm migrate"* && -n "${FAIL_MIGRATE:-}" ]]; then exit 1; fi
+if [[ "$*" == *" pg_dump "* ]]; then printf 'PLAINTEXT-MARKER-DO-NOT-STORE\n'; fi
+if [[ "$*" == *" psql "* ]]; then printf 'users 5\nsubmissions 9\njobs 4\nrun_events 30\nmigration 3\n'; fi
 exit 0

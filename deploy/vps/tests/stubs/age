@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Test stub for age. Records its arguments, fails when FAIL_AGE is set, and otherwise "encrypts" by
+# base64, so a test can check that the plaintext marker never appears on disk.
+echo "age $*" >> "${STUB_LOG:?}"
+if [[ -n "${FAIL_AGE:-}" ]]; then exit 1; fi
+base64
+exit 0

@@ -74,3 +74,9 @@ Role variables use the `app_` prefix (`app_src`, `app_dir`, `app_env_dir`) to pa
 Env-file checks are tagged `env-check`. Before T27, run the app role with `--skip-tags env-check`, as site.yml's comment says.
 [U] Docker versions in `roles/docker/defaults/main.yml` (`docker-ce 5:28.0.0`, `docker-compose-plugin 2.24.0`) are placeholders. Brighton confirms them at T24 with `apt-cache madison`. A wrong pin stops the run at install time, and nothing else changes.
 `host.env` needs `caddy_site_address` in group_vars (a public hostname, set at T26 with Q1). The role asserts it is set.
+
+## T16 (16 Nov 2026)
+
+Verification: `bats deploy/vps/tests/backup.bats` 6 of 6 pass (success with manifest and counts and success ping; plaintext marker never on disk; prune keeps exactly 7; failed `age` keeps old dumps and writes no partial; failed upload keeps the local dump and pings fail; missing recipient stops before any database call). `shellcheck` clean on the script and stubs.
+`systemd-analyze verify` on the two units: the only message is that `/usr/local/sbin/counterspell-backup` is not installed on this machine. That path exists after the app role installs the script (T28), so the units verify on the host.
+Deviation: the test uses a fixture recipient string and an `age` stub, not a real age key generated in the test directory. No `age-keygen` is installed here. The real round trip is done on Brighton's laptop at T28 (decrypt and checksum), which is the check that matters.

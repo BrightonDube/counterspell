@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# Test stub for rclone. Records its arguments and fails when FAIL_RCLONE is set.
+echo "rclone $*" >> "${STUB_LOG:?}"
+if [[ -n "${FAIL_RCLONE:-}" ]]; then exit 1; fi
+exit 0
