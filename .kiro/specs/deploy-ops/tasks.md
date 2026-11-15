@@ -68,7 +68,7 @@ Conventions:
   - Depends on: T00.
   - Verify: `grep -n "kiro-setup\|docker\" group"` returns nothing in `deploy/vps/README.md`; the README's commands match the scripts' verbs.
 
-- [ ] **T06 [P] [S] (30 min) Readiness route `GET /api/ready` in the server**
+- [x] **T06 [P] [S] (30 min) Readiness route `GET /api/ready` in the server**
   - Files: `crates/server/src/health.rs` (new, or the module that holds `/api/health`), `crates/server/src/lib.rs` (route only), `crates/server/tests/health_ready.rs`.
   - Add `/api/ready`. Ping Postgres and Valkey with `tokio::time::timeout` of 2 seconds each. Return `200 {"status":"ok"}` when both answer, or `503 {"status":"unavailable"}` otherwise. Log the failing dependency name at `warn`, never the URL. Keep `/api/health` unchanged (R10.1).
   - Tests: both up returns 200; Postgres down returns 503 and the body contains no connection string; Valkey down returns 503; a dependency that hangs past 2 seconds returns 503 in under 3 seconds (use a fake dependency with a paused clock).

@@ -66,6 +66,18 @@ impl ValkeyLimiter {
         })
     }
 
+    /// Answers whether Valkey replies to `PING`. Used by the readiness check. The error is logged
+    /// without the URL.
+    pub async fn is_reachable(&self) -> bool {
+        let Ok(mut connection) = self.client.get_multiplexed_async_connection().await else {
+            tracing::warn!("readiness: Valkey connection failed");
+            return false;
+        };
+        let reply: Result<String, redis::RedisError> =
+            redis::cmd("PING").query_async(&mut connection).await;
+        reply.is_ok()
+    }
+
     /// Reads a counter without changing it. Missing keys read as zero. `None` means Valkey could
     /// not be reached.
     pub async fn current(&self, key: &str) -> Option<u64> {
@@ -158,6 +170,15 @@ pub enum Limiter {
 }
 
 impl Limiter {
+    /// Answers whether the counter store is reachable. Memory counters are always reachable.
+    pub async fn is_reachable(&self) -> bool {
+        match self {
+            Limiter::Valkey(valkey) => valkey.is_reachable().await,
+            #[cfg(feature = "testkit")]
+            Limiter::Memory(_) => true,
+        }
+    }
+
     /// Reads a counter without counting a hit. `None` means the counter store is down.
     pub async fn current(&self, key: &str) -> Option<u64> {
         match self {
