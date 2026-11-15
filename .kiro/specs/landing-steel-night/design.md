@@ -219,7 +219,7 @@ Copy lives in `copy.ts` so it is easy to review. Two rules apply to all of it:
 
 ## Open questions
 
-1. **Art source.** `docs/system-design.md` and `efficiency-familiar` mention realistic painted art in `assets/pack-realistic/`, but that folder is not in the repository and no moon or graveyard art exists. **Assumed choice:** hand-authored flat vector silhouettes in `web/static/landing/`, original work under the project's MIT licence. Replace them later if realistic art arrives.
+1. **Art source.** `docs/system-design.md` and `efficiency-familiar` mention realistic painted art in `assets/pack-realistic/`, but that folder is not in the repository and no moon or graveyard art exists. **Assumed choice:** hand-authored flat vector silhouettes in `web/static/landing/`, original work under the project's MIT licence. Replace them later if realistic art arrives. **Answered 15 Nov 2026 (Brighton): the approved realistic art in `web/static/art/` replaces this; the flat SVGs are fallbacks only. See the amendment below.**
 2. **Sign-up route.** The auth spec has no sign-up route; sign-up happens on `/login`. **Assumed choice:** the primary CTA "Start practising" links to `/login`. If Brighton wants a `/signup` alias, it is a one-line redirect, decided in the `auth` spec.
 3. **Hero copy and the three beats.** The wording is my draft. **Assumed choice:** use it as written in `copy.ts` and change it only with Brighton's approval.
 4. **Wordmark.** The palette lists Pirata One as optional. **Assumed choice:** the eyebrow uses JetBrains Mono text, and no Pirata One font is shipped.
@@ -228,3 +228,14 @@ Copy lives in `copy.ts` so it is easy to review. Two rules apply to all of it:
 7. **Dark only.** **Assumed choice:** the page ignores the operating system light setting and always renders the dark tokens, as `docs/palette.md` says.
 8. **GSAP licence.** GSAP is under Webflow's Standard No Charge licence, which `docs/licence-rules.md` accepts as an exception. **Assumed choice:** use it as an npm dependency only, keep its notice in `THIRD-PARTY-NOTICES.md`, and exclude it from the licence checker as `.kiro` hook `licence-check-on-deps` already does.
 9. **Font files.** The palette names the packages but not the exact Latin subset files. **Assumed choice:** the Latin subset woff2 from the named packages, verified against the OFL text in `THIRD-PARTY-NOTICES.md` before commit.
+
+## Amendment (15 Nov 2026, Brighton): real art
+
+Open question 1 is answered: the approved realistic art is in `web/static/art/` (see `web/static/art/README.md` and `.kiro/steering/brighton-decisions.md`, 15 Nov 2026 14:00). The flat SVGs in `web/static/landing/` remain as fallbacks only.
+
+- **Hero background.** Brighton's moon/graveyard painting as a 12 s seamless loop: `art/landing/moon-graveyard-loop-{960,1920}.{webm,mp4}`. The poster (`moon-graveyard-poster-960.webp`, about 34 KB, and `-1920.webp`, about 78 KB, JPEG fallback) is the LCP image and the reduced-motion still. It is in the static HTML with explicit dimensions and `fetchpriority="high"`.
+- **Video loading.** Motion mode only, mounted after first paint (idle callback), `preload="none"`, `muted loop playsinline`, WebM first then MP4. The 960 source is used at viewport width 900 px or less, otherwise 1920. No video under `prefers-reduced-motion: reduce`, with `navigator.connection.saveData`, or while the tab is hidden; it pauses when off-screen. The video is never on the critical path, so the Lighthouse target (R23) still applies unchanged.
+- **Layers.** The real art replaces the flat moon and graveyard as the primary scene. GSAP motion becomes subtle overlays from `art/fx/` (fog, embers, bat swarm) driven by the existing motion planner; the planner's property tests stay green. A steel-night gradient scrim from palette tokens keeps every text pair at its required contrast.
+- **Accents.** The three beats and the CTA may use lazy-loaded WebP props or creatures from `art/objects/` and `art/creatures/` as decorative images (`alt=""`, explicit size, no layout shift).
+- **Budget update.** "Scene SVGs <= 100 KB, no embedded rasters" now covers only the fallback SVGs. The hero adds the poster (<= 100 KB WebP on phones) to the first load; video bytes load after first paint and are recorded in the Lighthouse log.
+- **Quality bar.** Every task here applies `.kiro/skills/impeccable` (craft-floor, layout, typeset, polish, audit, critique) within this spec, the palette and the fonts.

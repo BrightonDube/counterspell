@@ -346,6 +346,23 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- familiar-state`.
   - Preserve: do not duplicate `ide-workspace`'s reducer; extend it.
 
+## Mascot real art (amendment 15 Nov 2026)
+
+- [ ] **T49 [S] (30 min) Real jack-o'-lantern contract SVG and loader**
+  - Files: `web/static/familiar/jack-o-lantern.svg` (new), `web/src/lib/familiar/mascot/contract.test.ts`, the mascot loader.
+  - Build the contract SVG around `/art/familiar/jack-o-lantern-orange.webp` and `-poison.webp` as in the design amendment. Make it the default; fall back to the placeholder only if the real file fails to load or validate.
+  - Verify: `validate()` passes on the new file with every id; SVG <= 120 KB (raster bytes recorded separately in `docs/kiro-log/efficiency-familiar-art.md`); `cd web && npm test && npm run check && npm run build`.
+  - Requirements: R9.1, R9.11, R9.12. Preserve: no generated replacement art; the placeholder file is kept.
+- [ ] **T50 [S] (30 min) Map the five moods onto the real art**
+  - Files: `mood-style.ts`, `Mascot.svelte`, the GSAP timelines, their tests.
+  - Glow overlays per mood as in the design amendment, palette tokens only; laughing cross-fades to the poison variant; furious draws `fam-cracks`. Reduced motion and mute give static frames.
+  - Verify: pure mapping tests for all five moods; component tests for reduced motion; existing P22 to P24 tests green.
+  - Requirements: R9 (mascot). Preserve: the mood still comes only from `decide`.
+- [ ] **T51 [P] (20 min) Impeccable polish of the Familiar dock**
+  - Files: the dock or `Familiar.svelte` styles, `docs/kiro-log/efficiency-familiar-art.md`.
+  - Apply the Impeccable craft-floor and polish playbooks to the editor-corner Familiar: size, crop, token halo, spacing, no ambient loop in the IDE. Record findings and fixes.
+  - Verify: `npm run check && npm run build`; the log lists the findings and fixes.
+
 - [ ] **T34 [P] (25 min) Explainer view-model for "How does it judge me?"**
   - Files: `web/src/lib/familiar/explain.ts`, tests.
   - Pure function from the read-model `complexity` section to what the popover shows: points on log-log axes, the slope with its error, the plausible classes, the per-model residuals sorted, the reference, the ratio vs baseline, and fixed sentences for the honest limits. No new data is invented; missing sections give an explicit "not measured" state.
