@@ -100,3 +100,18 @@ Docs written: `deploy/vps/RELEASE.md`, `deploy/vps/RUNBOOK.md`, `deploy/vps/OPER
 Checks: each command in these files is a script verb or a standard host command, and matches the scripts and design. The files hold no secret value (a scan for password, token and secret words found only instructions). No Markdown links to check.
 T22 caveat: the scripts ping Healthchecks by URL, so the check names live only in `MONITORING.md`. Name-to-script matching is by URL, which is recorded in the file.
 Gaps stated in MONITORING.md: the certificate check and the drill ping do not exist in code yet.
+
+## T14 (16 Nov 2026): red shape test, as the task requires
+
+`bash deploy/vps/tests/compose_shape.sh` exits 1 with 14 failed checks (the rest pass). Expected reasons:
+- P1: judge has no sandbox socket mount in `compose.prod.yml` yet (the socket belongs to the judge override, T15).
+- P2: the network is still named `internal`, not `data` with `internal: true` (G10).
+- P8: judge has no `env_file` (G14).
+- R4.6: `POSTGRES_HOST_AUTH_METHOD: trust` is still in the base file (G9).
+- R4.4: no `read_only`, `cap_drop`, `security_opt` or `pids_limit`/`mem_limit` on server, judge or migrate (G13).
+- R4.1: the `caddy` image is still a tag, not a digest.
+- R4.7: server does not depend on migrate completing (G15).
+- R4.8: no log caps on any service (G13).
+- R4.10: judge still gets `DATABASE_URL` from the base file's host interpolation (G14).
+The checks that already pass are the P2 published-port rule and the judge allow-list check; both stay as guards.
+ShellCheck clean. The fixtures contain placeholder values only.
