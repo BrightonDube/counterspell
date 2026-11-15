@@ -1026,3 +1026,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `sqlx::raw_sql` runs a multi-statement SQL script as-is. The `pg_` test runs it twice to prove `IF NOT EXISTS` makes a repeat a no-op.
 - A partial index (`WHERE status = 'completed'`) stores only the rows a query needs, so it stays small and cannot be used for rows it excludes.
 - The index does not change the data. PostgreSQL stays the source of truth, and the index only changes how fast a read finds rows.
+
+# Rust lesson: dashboard-fsrs T04
+- `BTreeSet<Date>` collects the dates once. It removes duplicate days and keeps them ordered, so `last()` gives the newest day without a manual sort.
+- `Option` marks "no activity" and "no anchor day" explicitly. `let ... else` returns early when a value is missing, so no `unwrap` is needed.
+- `sort_by` with `then` and `then_with` compares fields in order, and `then_with` only builds the slug comparison when it is needed.
+- Borrowed `&Candidate` values live inside a `Scored<'a>` struct only while sorting. Cloning happens once, at the end, when the owned response is built.

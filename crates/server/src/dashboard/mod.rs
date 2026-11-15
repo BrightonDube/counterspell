@@ -5,6 +5,8 @@
 //! names the owner. The handler and the query arrive in later tasks.
 
 pub mod errors;
+pub mod recommendations;
+pub mod streak;
 pub mod types;
 
 use axum::{extract::FromRequestParts, http::request::Parts};

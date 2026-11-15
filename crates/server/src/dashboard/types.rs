@@ -41,7 +41,7 @@ pub struct DifficultyCounts {
 }
 
 /// A catalogue difficulty level. The JSON value is the lowercase name.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Difficulty {
     /// The easiest level.
