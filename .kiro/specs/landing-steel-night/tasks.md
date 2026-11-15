@@ -193,7 +193,7 @@ Replace the mid-page hero with the approved variant B title screen. Visual refer
   - Verify: RED then GREEN tests for `href="/login"`, the accessible name, and the Enter-key behaviour (focused foreign control is not overridden). `npm run check && npm run build`. The built `index.html` contains the ENTER link to `/login`. Reduced-motion CSS has no pulse on ENTER.
   - Requirements: R21, R22, R16. Preserve: primary below-fold CTA "Start practising" and "Log in" still go to `/login`.
 
-- [ ] **T25 [S] (30 min) Fade into the existing section and extend the supporting copy**
+- [x] **T25 [S] (30 min) Fade into the existing section and extend the supporting copy**
   - Files: `+page.svelte`, `Hero.svelte`, `copy.ts` and tests, `GhostBeats.svelte` if heading levels change, landing CSS.
   - Move "Learn why your code breaks.", the three beats and the CTA to below the title-screen hero. There is no hard rule-line: a gradient fade from the hero into this section. That headline becomes the section `h2`; the three beat headings become `h3`. Add a little more supporting copy under the headline, written in the existing voice (R9: never "smallest possible", "proven minimum" or "optimal"; no unmeasured claims; **no hackathon mentions**). Update tests for the new outline.
   - Depends on: T22, T23, T03, T06, T07, T08.

@@ -25,7 +25,7 @@
 					loading="lazy"
 					decoding="async"
 				/>
-				<h2 class="text-2xl font-semibold tracking-[-0.01em] text-text">{beat.heading}</h2>
+				<h3 class="text-xl font-semibold tracking-[-0.01em] text-text">{beat.heading}</h3>
 			</div>
 			<p class="max-w-xl text-base leading-7 text-text-muted">{beat.body}</p>
 			{#if beat.heading === 'Hunt'}

@@ -10,6 +10,10 @@ export const TAGLINE = 'Master the algorithms that matter';
 /** The page headline, now shown below the title screen as the section heading. */
 export const HEADLINE = 'Learn why your code breaks.';
 
+/** A short paragraph under the headline that says what the page does. */
+export const INTRO_BODY =
+	'Most practice sites only tell you that a test failed. Counterspell shows you the input that makes your code fail, so you can see the mistake and fix the idea behind it.';
+
 /** The line under the headline. */
 export const SUPPORT_LINE =
 	'Your solution fails. Counterspell hunts down the input that breaks it, shrinks it to the smallest failing input it can find, and explains the mistake.';

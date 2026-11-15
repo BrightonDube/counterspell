@@ -5,9 +5,10 @@ import GhostBeats from './GhostBeats.svelte';
 import GhostExample from './GhostExample.svelte';
 
 describe('GhostBeats', () => {
-	it('renders three sections with h2 headings Submit, Hunt and Understand in order', () => {
+	// test-change: R21 (the beat headings are h3 under the new h2 section heading; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T25)
+	it('renders three sections with h3 headings Submit, Hunt and Understand in order', () => {
 		const { container } = render(GhostBeats);
-		const headings = Array.from(container.querySelectorAll('section h2')).map((h) =>
+		const headings = Array.from(container.querySelectorAll('section h3')).map((h) =>
 			h.textContent?.trim()
 		);
 		expect(headings).toEqual(['Submit', 'Hunt', 'Understand']);
@@ -35,7 +36,7 @@ describe('GhostBeats', () => {
 	it('places the labelled example inside the Hunt beat', () => {
 		const { container } = render(GhostBeats);
 		const hunt = Array.from(container.querySelectorAll('section')).find((s) =>
-			s.querySelector('h2')?.textContent?.includes('Hunt')
+			s.querySelector('h3')?.textContent?.includes('Hunt')
 		);
 		expect(hunt?.textContent).toContain('Illustration, not a real run.');
 	});

@@ -5,6 +5,7 @@
 	import GhostBeats from '../lib/landing/GhostBeats.svelte';
 	import Hero from '../lib/landing/Hero.svelte';
 	import SignUpCta from '../lib/landing/SignUpCta.svelte';
+	import { HEADLINE, INTRO_BODY, SUPPORT_LINE } from '../lib/landing/copy';
 	// Vite fingerprints the font, so this URL matches the one the @font-face rule in app.css uses.
 	import creepsterUrl from '../../static/fonts/Creepster-Regular.woff2?url';
 
@@ -59,6 +60,13 @@
 >
 	<Hero {plan} />
 	<div class="mx-auto flex max-w-3xl flex-col gap-16 px-6 py-16 sm:px-10">
+		<div class="flex flex-col gap-4">
+			<h2 class="text-3xl leading-tight font-semibold tracking-[-0.01em] text-text sm:text-4xl">
+				{HEADLINE}
+			</h2>
+			<p class="max-w-xl text-lg leading-8 text-text-muted">{SUPPORT_LINE}</p>
+			<p class="max-w-xl text-base leading-7 text-text-muted">{INTRO_BODY}</p>
+		</div>
 		<div data-reveal>
 			<GhostBeats />
 		</div>

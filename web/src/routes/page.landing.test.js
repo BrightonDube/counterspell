@@ -16,7 +16,11 @@ describe('landing route composition (T08)', () => {
 		const { container } = render(Page);
 		// test-change: R20 (the title-screen wordmark is the page h1; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T23)
 		expect(screen.getByRole('heading', { level: 1 }).textContent?.trim()).toBe('Counterspell');
-		const beats = Array.from(container.querySelectorAll('section h2')).map((h) =>
+		// test-change: R21 (the headline is the section h2 and the beats are h3; landing-steel-night T25)
+		expect(
+			screen.getByRole('heading', { level: 2, name: 'Learn why your code breaks.' })
+		).toBeTruthy();
+		const beats = Array.from(container.querySelectorAll('section h3')).map((h) =>
 			h.textContent?.trim()
 		);
 		expect(beats).toEqual(['Submit', 'Hunt', 'Understand']);
