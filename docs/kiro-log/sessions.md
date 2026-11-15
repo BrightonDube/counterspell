@@ -270,3 +270,13 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-15T20:04:19Z | model: not reported | last commit: 3031ace landing-steel-night: record blockers for T13/T14 and clarify audit log
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-15T20:08:48Z | model: not reported | last commit: 3031ace landing-steel-night: record blockers for T13/T14 and clarify audit log
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 15 insertions(+)
