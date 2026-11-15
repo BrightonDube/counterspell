@@ -65,6 +65,8 @@ pub struct AppState {
     pub limiter: Limiter,
     /// Tells open event streams when a run has new events. Idle until `main` starts the listener.
     pub run_waker: runs::wake::RunWaker,
+    /// Limits how many event streams one user may hold open.
+    pub stream_slots: runs::streams::StreamSlots,
     /// The auth state. `None` mounts no auth routes and leaves the user resolver as it was.
     pub auth: Option<AuthState>,
     /// The site's own origin for the CSRF guard. Set together with `auth`.
@@ -78,6 +80,7 @@ impl AppState {
     pub fn new(pool: PgPool, config: ServerConfig, limiter: Limiter) -> Self {
         let languages = LanguageCatalog::launch(config.limits.max_source_bytes);
         let problems = PgProblemLookup::new(pool.clone());
+        let stream_slots = runs::streams::StreamSlots::new(config.sse.max_streams_per_user);
         Self {
             pool,
             config: Arc::new(config),
@@ -86,6 +89,7 @@ impl AppState {
             languages: Arc::new(languages),
             limiter,
             run_waker: runs::wake::RunWaker::idle(),
+            stream_slots,
             auth: None,
             origin: None,
         }

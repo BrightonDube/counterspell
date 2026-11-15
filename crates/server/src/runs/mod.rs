@@ -5,4 +5,5 @@ pub mod create;
 pub mod enqueue;
 pub mod read;
 pub mod sse;
+pub mod streams;
 pub mod wake;

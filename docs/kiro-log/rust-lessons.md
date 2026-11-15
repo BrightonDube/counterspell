@@ -1190,3 +1190,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option` and `Result` from a database call become an early `return None` or a logged close. A read error ends the stream instead of panicking, and the client reconnects with its cursor.
 - `tokio::select!` waits on two futures at once (the wake-up channel and the poll timer). Only the first one to finish runs its branch, and the other is dropped.
 - `match headers.get(..)` keeps a missing header as `None` and a bad header as an error. Using `?` inside the `Some` arm turns the bad header into a `400` without any `unwrap`.
+
+# Rust lesson: run-lifecycle T30
+
+- `Drop` runs when a value goes out of scope, including when a client disconnects and the response body is dropped. `StreamGuard` gives its slot back in `drop`, so no cleanup call can be forgotten.
+- `Arc<Mutex<..>>` lets clones of one table share the counts. `unwrap_or_else(PoisonError::into_inner)` reads the value even if another thread panicked while holding the lock, so one bad request cannot lock every user out.
+- Some framework features need a running runtime when they are created (axum's keep-alive timer). A test that builds such a value needs `#[tokio::test]`.
