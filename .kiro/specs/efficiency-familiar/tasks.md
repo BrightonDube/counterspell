@@ -318,7 +318,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- timelines`; manual check in `npm run dev` with the placeholder art recorded in the log (screen recording optional).
   - Preserve: no looping animation; effects play once.
 
-- [ ] **T31 [S] (30 min) Mute and hide behaviour and the component contract**
+- [x] **T31 [S] (30 min) Mute and hide behaviour and the component contract**
   - Files: `web/src/lib/familiar/mascot/Mascot.svelte`, `web/src/lib/familiar/mascot/CONTRACT.md` (short), tests.
   - Muted: static face, no timelines, headline visible. Hidden: 16 px dot in the status bar, text equivalent still announced. Document the props that `ide-workspace`'s `Familiar.svelte` passes, and the events it must pass back (toggle mute, toggle hide).
   - Tests: muted never loads GSAP; hidden removes the face from the tab order but keeps the dot focusable and the live text; reduced motion plus a `crack_burst` shows the badge text "Wrong answer" or "Timeout" and no particles.
