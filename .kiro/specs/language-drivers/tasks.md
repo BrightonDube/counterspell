@@ -11,7 +11,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: the examples parse; the document explicitly states that drivers never emit verdicts, expected values, timings, or Familiar moods.
   - Preserve: the trusted worker owns comparison, deadlines, timing, and verdicts; no code execution on the host.
 
-- [ ] **T02 [P] (25 min) Add and validate the language registry schema**
+- [x] **T02 [P] (25 min) Add and validate the language registry schema**
   - Files: `languages/languages.toml`; registry validation in the existing `crates/judge/` modules.
   - Add Python and enabled JavaScript entries with driver path, run command, bench arguments, limits, protocol version, and byte limit. Add disabled Java and C++ entries with their stretch images and commands.
   - Depends on: T01.
