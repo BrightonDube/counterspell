@@ -1014,3 +1014,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `include_str!` embeds the real `languages/languages.toml` into the test at compile time. If the file drifts from the loader's rules, the test fails.
 - The `TempDir` returned by `fixture` owns the stub driver files. Keeping it in a named binding (`let (dir, _path) = ...`) stops the directory being deleted early. Dropping it removes the files, which is Rust's ownership rule at work.
 - `LanguageCatalog::parse` takes the base directory as a plain `&Path`, so the test controls exactly where driver paths resolve.
+
+# Rust lesson: dashboard-fsrs T01
+- A `#[derive(Serialize, Default)]` struct is the JSON contract. `DashboardResponse::default()` is the empty shape, so a learner with no activity gets zeros and empty lists, not invented rows.
+- `impl From<DashboardError> for ApiError` turns each error into a fixed status and code. The `match` must name every variant, so adding an error fails the build until its code is chosen.
+- The `DashboardUser` extractor calls the shared `CurrentUser` extractor with `?`-style matching and only changes the error. The owner still comes from the session resolver, never from the request.
+- `DashboardError::unavailable(detail)` logs the database detail with `tracing` and returns only a stable code, so SQL text cannot reach a client.

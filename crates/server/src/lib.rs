@@ -9,6 +9,7 @@
 pub mod auth;
 pub mod client_ip;
 pub mod config;
+pub mod dashboard;
 pub mod error;
 pub mod familiar;
 pub mod ratelimit;

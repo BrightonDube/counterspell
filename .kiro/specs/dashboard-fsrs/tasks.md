@@ -18,7 +18,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 0: core contracts and query foundations
 
-- [ ] **T01 [S] (25 min) Confirm feature seams and dashboard response types**
+- [x] **T01 [S] (25 min) Confirm feature seams and dashboard response types**
   - Files: `crates/server/src/dashboard/{mod.rs,types.rs,errors.rs}`, and the existing server router/seam files only where route registration requires it.
   - Add the dashboard module boundary, authenticated handler input, response structs, stable empty response shape, and error mapping for `unauthenticated`, `dashboard_unavailable`, and safe internal failures.
   - Reuse the existing `CurrentUser`/`UserResolver` seam and the run-lifecycle lifecycle/verdict split. Do not introduce a second auth extractor or a user-id request field.
