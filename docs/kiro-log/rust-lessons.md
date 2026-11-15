@@ -985,3 +985,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Bytes` as the last handler argument reads the raw body, so the 1 KiB limit is checked before any parsing.
 - Writing `familiar_prefs || $2::jsonb` in SQL merges on the database side, so two patches cannot overwrite each other's fields.
 - Deriving `Copy` on a small error enum that holds only `&'static str` fields satisfies clippy's `needless_pass_by_value` lint without a reference.
+
+# Rust lesson: efficiency-familiar T36
+- `str::match_indices` finds every place a phrase appears, so a whole-word check looks at the letters just before and after each match.
+- `char::is_alphanumeric` treats superscript digits such as `²` as alphanumeric, so `n²` is a word edge like any digit.
+- `Option::is_none_or` reads "no character, or a character that passes" in one step, which keeps the boundary check short.
+- A strict check is a choice: `linear search` is rejected for a quadratic-only allowed set, because the guard counts any `linear` as a class claim.
