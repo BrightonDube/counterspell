@@ -289,3 +289,15 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 03:10-03:14 SAST: 26-ide-workspace-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-ide-workspace-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0310-26-ide-workspace-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 2.31 (credits used now 3219.80/4000).
+
+### 2026-11-15 03:18-03:44 SAST: 27-efficiency-familiar-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-efficiency-familiar-a1.md`. Transcript: `docs/kiro-log/2026-11-15T0318-27-efficiency-familiar-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 13.81 (credits used now 3233.61/4000).
+
+### 2026-11-15 03:44-04:45 SAST: 27-efficiency-familiar-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-efficiency-familiar-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0344-27-efficiency-familiar-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 22.08 (credits used now 3255.69/4000).
+
+### 2026-11-15 04:45-04:48 SAST: 27-efficiency-familiar-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-efficiency-familiar-a3.md`. Transcript: `docs/kiro-log/2026-11-15T0445-27-efficiency-familiar-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 2.48 (credits used now 3258.17/4000).
