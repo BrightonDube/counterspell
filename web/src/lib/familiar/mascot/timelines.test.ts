@@ -30,7 +30,7 @@ const SVG = 'http://www.w3.org/2000/svg';
 /** A small stand-in for the artwork: the groups the timelines bind to. */
 function makeArt(): SVGSVGElement {
 	const svg = document.createElementNS(SVG, 'svg') as SVGSVGElement;
-	for (const id of ['fam-cracks', 'fam-fx', 'fam-eyes-4', 'fam-mouth-4']) {
+	for (const id of ['fam-fx', 'fam-mood-4']) {
 		const group = document.createElementNS(SVG, 'g');
 		group.setAttribute('id', id);
 		svg.appendChild(group);
@@ -108,19 +108,19 @@ describe('startBurst', () => {
 describe('startCrossfade', () => {
 	// Breaks if the mood change is not faded in, so the expression snaps instead of fading over 300 ms.
 	it('fades each shown layer in with an opacity tween', async () => {
-		const playback = startCrossfade(art, ['fam-eyes-4', 'fam-mouth-4']);
+		const playback = startCrossfade(art, ['fam-mood-4']);
 		await playback.ready;
-		expect(gsap.fromTo).toHaveBeenCalledTimes(2);
+		expect(gsap.fromTo).toHaveBeenCalledTimes(1);
 	});
 
 	// Breaks if a stopped fade leaves a layer half transparent, which would hide the expression.
 	it('clears the opacity it set on dispose', async () => {
-		const playback = startCrossfade(art, ['fam-eyes-4']);
+		const playback = startCrossfade(art, ['fam-mood-4']);
 		await playback.ready;
-		const eyes = art.querySelector('#fam-eyes-4') as SVGElement;
-		eyes.style.opacity = '0.4';
+		const layer = art.querySelector('#fam-mood-4') as SVGElement;
+		layer.style.opacity = '0.4';
 		playback.dispose();
-		expect(eyes.style.opacity).toBe('');
+		expect(layer.style.opacity).toBe('');
 		expect(gsap.killTweensOf).toHaveBeenCalled();
 	});
 });

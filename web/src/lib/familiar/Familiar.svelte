@@ -1,5 +1,6 @@
 <script lang="ts">
   import { familiarView, type FamiliarState } from './familiar-state';
+  import Mascot from './mascot/Mascot.svelte';
 
   let {
     measured,
@@ -12,14 +13,28 @@
   const view = $derived(
     familiarView(measured, { muted, hidden }, reducedMotion)
   );
+
+  // A failed run uses the danger text colour. A live result plays its burst only once.
+  const failed = $derived(
+    measured.terminal !== null && measured.terminal.verdict !== 'accepted'
+  );
+  const effect = $derived(
+    !measured.live
+      ? 'none'
+      : failed && measured.mood === 1
+        ? 'crack_burst'
+        : measured.mood === 5
+          ? 'laugh_burst'
+          : 'none'
+  );
 </script>
 
 <!-- Only measured facts reach this component. The text below is the full equivalent of the figure. -->
 <section
   aria-labelledby="familiar-heading"
-  class="flex flex-col gap-3 rounded border border-border bg-surface p-4"
+  class="flex flex-col items-center gap-3 rounded-lg border border-border bg-surface p-4"
 >
-  <div class="flex items-center justify-between gap-2">
+  <div class="flex w-full items-center justify-between gap-2">
     <h2 id="familiar-heading" class="text-base font-semibold text-text">
       Efficiency Familiar
     </h2>
@@ -43,20 +58,25 @@
     </div>
   </div>
 
-  {#if view.visible}
-    <div class="flex flex-wrap items-center gap-2">
-      <p class="font-semibold text-accent-candle">{view.moodLabel}</p>
-      {#if view.badge !== ''}
-        <span class="rounded bg-raised px-2 py-1 text-sm text-text-muted"
-          >{view.badge}</span
-        >
-      {/if}
-    </div>
+  {#if view.mood !== null}
+    <Mascot
+      mood={view.mood}
+      reason="measured"
+      headline={view.headline}
+      badge={view.badge}
+      {failed}
+      {effect}
+      live={measured.live}
+      {muted}
+      {hidden}
+      {reducedMotion}
+      onToggleHidden={() => (hidden = false)}
+    />
+  {:else}
+    <p aria-live="polite" class="text-sm text-text-muted">{view.liveText}</p>
   {/if}
 
-  <p aria-live="polite" class="text-sm text-text-muted">{view.liveText}</p>
-
-  <details class="text-sm text-text-muted">
+  <details class="w-full text-sm text-text-muted">
     <summary class="cursor-pointer text-text">How does it judge me?</summary>
     <ul class="mt-2 list-disc space-y-1 pl-5">
       <li>Times use medians of repeated runs, not single measurements.</li>

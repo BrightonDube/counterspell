@@ -33,9 +33,12 @@ The mascot renders an `aria-live="polite"` line in the form
 
 ## Artwork
 
-The mascot fetches `/familiar/jack-o-lantern.placeholder.svg` (a placeholder until the real art
-exists) and draws it only when every id in `contract.ts` (`REQUIRED_IDS`) is present. A missing or
-invalid file leaves the badge and headline text only.
+The mascot fetches `/familiar/jack-o-lantern.svg` (the approved realistic art, 15 Nov 2026) and draws
+it only when every id in `contract.ts` (`REQUIRED_IDS`) is present. That file holds five `<image>`
+layers (`fam-mood-1` to `fam-mood-5`), one painted mood each, which load the WebP stills from
+`/art/familiar/moods/`. If it is missing or invalid, the mascot falls back to
+`/familiar/jack-o-lantern.placeholder.svg`, which is labelled as a placeholder. If both fail, the
+badge and headline text remain.
 
 ## Motion
 

@@ -77,6 +77,20 @@ describe('observational text', () => {
     );
   });
 
+  // Breaks if the mascot gets the live text with its prefix attached, so the words appear twice on screen.
+  it('gives the result sentence on its own, without the mood prefix', () => {
+    let state = applyMeasuredFamiliar(initialFamiliarState(), mood(2));
+    state = applyComplexity(state, fact());
+    expect(familiarView(state, noPrefs, false).headline).toBe(
+      'Looks n^2 (medium confidence). Reference n.'
+    );
+  });
+
+  // Breaks if a failed or unmeasured run shows a stale sentence from an earlier result.
+  it('has no result sentence before a measured mood exists', () => {
+    expect(familiarView(initialFamiliarState(), noPrefs, false).headline).toBe('');
+  });
+
   // Breaks if a low-confidence reading is worded as a firm verdict.
   it('calls a low-confidence reading rough', () => {
     let state = applyMeasuredFamiliar(initialFamiliarState(), mood(4));

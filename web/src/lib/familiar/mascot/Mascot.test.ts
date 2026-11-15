@@ -17,6 +17,10 @@ const gsap = vi.hoisted(() => {
 vi.mock('gsap', () => ({ default: gsap }));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const ART = readFileSync(
+	join(HERE, '..', '..', '..', '..', 'static', 'familiar', 'jack-o-lantern.svg'),
+	'utf8'
+);
 const PLACEHOLDER = readFileSync(
 	join(HERE, '..', '..', '..', '..', 'static', 'familiar', 'jack-o-lantern.placeholder.svg'),
 	'utf8'
@@ -49,7 +53,7 @@ beforeEach(() => {
 	vi.clearAllMocks();
 	vi.stubGlobal(
 		'fetch',
-		vi.fn(async () => ({ ok: true, text: async () => PLACEHOLDER }))
+		vi.fn(async () => ({ ok: true, text: async () => ART }))
 	);
 });
 
@@ -59,20 +63,40 @@ afterEach(() => {
 });
 
 describe('Mascot static rendering', () => {
-	// Breaks if a mood shows the wrong expression, so the learner sees a face that does not match the measured result.
-	it('shows only the eyes and mouth for the current mood', async () => {
+	// Breaks if a mood shows the wrong painting, so the learner sees a face that does not match the measured result.
+	it('shows only the painted image for the current mood', async () => {
 		for (const mood of [1, 2, 3, 4, 5] as Mood[]) {
 			const view = render(Mascot, { props: props(mood) });
 			await artDrawn();
 			for (const other of [1, 2, 3, 4, 5]) {
-				const eyes = layer(`fam-eyes-${other}`);
-				const mouth = layer(`fam-mouth-${other}`);
-				const shown = other === mood;
-				expect(eyes.style.display === 'none').toBe(!shown);
-				expect(mouth.style.display === 'none').toBe(!shown);
+				const painting = layer(`fam-mood-${other}`);
+				expect(painting.style.opacity).toBe(other === mood ? '1' : '0');
 			}
 			view.unmount();
 		}
+	});
+
+	// Breaks if the realistic art is ignored and the placeholder is drawn while the real file is present.
+	it('draws the approved art when it loads, and the placeholder only when it does not', async () => {
+		render(Mascot, { props: props(2) });
+		await artDrawn();
+		expect(fetch).toHaveBeenCalledWith('/familiar/jack-o-lantern.svg');
+		expect(fetch).not.toHaveBeenCalledWith('/familiar/jack-o-lantern.placeholder.svg');
+	});
+
+	// Breaks if a missing real file leaves no art at all, so the fallback never appears.
+	it('falls back to the placeholder when the approved art cannot be loaded', async () => {
+		vi.stubGlobal(
+			'fetch',
+			vi.fn(async (url: string) =>
+				url.endsWith('placeholder.svg')
+					? { ok: true, text: async () => PLACEHOLDER }
+					: { ok: false, text: async () => '' }
+			)
+		);
+		render(Mascot, { props: props(3) });
+		await artDrawn();
+		expect(fetch).toHaveBeenCalledWith('/familiar/jack-o-lantern.placeholder.svg');
 	});
 
 	// Breaks if the headline or badge is dropped, so the result is only visible as a face.
@@ -131,7 +155,7 @@ describe('Mascot static rendering', () => {
 		render(Mascot, { props: props(5) });
 		await waitFor(() => expect(fetch).toHaveBeenCalled());
 		await new Promise((resolve) => setTimeout(resolve, 0));
-		expect(document.getElementById('fam-eyes-5')).toBeNull();
+		expect(document.getElementById('fam-mood-5')).toBeNull();
 	});
 
 	// Breaks if the component writes HTML from strings or handles image errors inline, both common routes for injection.
@@ -172,6 +196,18 @@ describe('Mascot effects', () => {
 		expect(gsap.fromTo).not.toHaveBeenCalled();
 		expect(fxChildren()).toBe(0);
 		expect(screen.getByText('Matches reference!')).toBeTruthy();
+	});
+
+	// Breaks if a live mood change snaps instead of cross-fading, or fades the wrong painting.
+	it('cross-fades only the new mood image on a live change', async () => {
+		const view = render(Mascot, { props: props(2, { live: true }) });
+		await artDrawn();
+		await view.rerender(props(3, { live: true }));
+		await waitFor(() => expect(gsap.fromTo).toHaveBeenCalled());
+		const targets = gsap.fromTo.mock.calls.map((call) => (call[0] as Element).id);
+		expect(targets.every((id) => id === 'fam-mood-3')).toBe(true);
+		// The fade tween is mocked, so the new image stays at its starting opacity of 0 here.
+		expect(layer('fam-mood-3').style.opacity).toBe('0');
 	});
 
 	// Breaks if muting still animates, so a muted learner gets motion they asked to stop.
@@ -219,7 +255,7 @@ describe('Mascot mute, hide and reduced motion (T31)', () => {
 		render(Mascot, { props: props(4, { muted: true }) });
 		await artDrawn();
 		expect(screen.getByText('Looks linear, medium confidence. Reference linear.')).toBeTruthy();
-		expect(document.getElementById('fam-eyes-4')).not.toBeNull();
+		expect(document.getElementById('fam-mood-4')).not.toBeNull();
 	});
 
 	// Breaks if the show button does nothing, so a hidden learner cannot bring the figure back.

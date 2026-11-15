@@ -1,22 +1,18 @@
 /**
- * The SVG ids the mascot binds to. Any artwork that carries these ids works, so the drawing can
- * change without changing the code. See the design's "Asset contract" section.
+ * The SVG ids the mascot binds to. The realistic art (approved 15 Nov 2026) shows one of five
+ * painted mood images at a time, so the contract asks for five image layers and no carved eye or
+ * mouth paths. The drawing can change without changing the code. See the design's "Asset contract"
+ * and its 15 Nov 2026 amendment.
  */
 export const REQUIRED_IDS = [
 	'fam-body',
 	'fam-glow-stop-inner',
 	'fam-glow-stop-outer',
-	'fam-eyes-1',
-	'fam-eyes-2',
-	'fam-eyes-3',
-	'fam-eyes-4',
-	'fam-eyes-5',
-	'fam-mouth-1',
-	'fam-mouth-2',
-	'fam-mouth-3',
-	'fam-mouth-4',
-	'fam-mouth-5',
-	'fam-cracks',
+	'fam-mood-1',
+	'fam-mood-2',
+	'fam-mood-3',
+	'fam-mood-4',
+	'fam-mood-5',
 	'fam-fx'
 ] as const;
 
