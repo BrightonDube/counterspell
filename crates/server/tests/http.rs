@@ -61,6 +61,17 @@ async fn unknown_page_falls_back_to_the_spa_entry() {
 }
 
 #[tokio::test]
+async fn root_serves_the_prerendered_landing_page_not_the_fallback() {
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    assert_eq!(reply.body, "<main>landing</main>");
+}
+
+#[tokio::test]
 async fn every_reply_says_nosniff() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
@@ -75,4 +86,15 @@ async fn every_reply_says_nosniff() {
         "{}",
         reply.headers
     );
+}
+
+#[test]
+fn startup_check_requires_the_spa_fallback_file() {
+    let fixture = Fixture::new();
+    std::fs::remove_file(fixture.dir.join("200.html")).expect("remove fallback");
+
+    let error = counterspell_server::ensure_static_files(&fixture.dir)
+        .expect_err("a directory without 200.html must fail the start-up check");
+
+    assert!(error.to_string().contains("200.html"), "{error}");
 }
