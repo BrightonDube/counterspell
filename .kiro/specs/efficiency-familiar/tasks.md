@@ -367,7 +367,7 @@ Conventions for every web task:
   - Preserve: pure function; no I/O.
   - Rust lesson: borrowing strings into a larger value, and `Cow` or `&str` versus `String`.
 
-- [ ] **T36 [P] (30 min) Claim guard (P18)**
+- [x] **T36 [P] (30 min) Claim guard (P18)**
   - Files: `crates/server/src/familiar/claims.rs`.
   - Implement `check_claims(text, allowed: &[ClassId]) -> Verdict { Ok, UnmeasuredClass(id|any), Forbidden }` with the fixed pattern lists from the design, case-insensitive, word-bounded, including `O(…)` forms and the superscript forms.
   - Tests: P18 with generated sentences; allowed classes pass; any other class is rejected; each forbidden phrase is rejected; "linear search" with `n` not allowed is rejected (strict by design).
