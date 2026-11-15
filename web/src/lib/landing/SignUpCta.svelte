@@ -28,4 +28,14 @@
 		loading="lazy"
 		decoding="async"
 	/>
+	<img
+		class="h-24 w-24 object-contain"
+		src="/art/familiar/jack-o-lantern-orange.webp"
+		width="96"
+		height="96"
+		alt=""
+		aria-hidden="true"
+		loading="lazy"
+		decoding="async"
+	/>
 </div>
