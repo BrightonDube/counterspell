@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Test stub for psql. Records its arguments, fails when FAIL_PSQL is set, and otherwise prints the
+# JSON in FIXTURE_REPORT (the counts the ops query would return).
+echo "psql $*" >> "${STUB_LOG:?}"
+if [[ -n "${FAIL_PSQL:-}" ]]; then exit 1; fi
+printf '%s\n' "${FIXTURE_REPORT:?}"
+exit 0

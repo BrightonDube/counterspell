@@ -1,4 +1,17 @@
 #!/usr/bin/env bash
-# Test stub for logger. Records to LOGGER_LOG, not STUB_LOG, so "no stub called" checks ignore it.
-echo "$*" >> "${LOGGER_LOG:?}"
+# Test stub for logger. Records only the message (the words after `--`) to LOGGER_LOG, as the real
+# logger would send it to journald, so "no stub called" checks ignore it.
+message=()
+seen_separator=0
+for arg in "$@"; do
+  if [[ "$seen_separator" -eq 1 ]]; then
+    message+=("$arg")
+  elif [[ "$arg" == "--" ]]; then
+    seen_separator=1
+  fi
+done
+if [[ "$seen_separator" -eq 0 ]]; then
+  message=("$@")
+fi
+printf '%s\n' "${message[*]}" >> "${LOGGER_LOG:?}"
 exit 0
