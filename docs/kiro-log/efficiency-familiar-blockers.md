@@ -58,3 +58,10 @@ Tasks left unchecked, with the reason and what would unblock each.
 - Test changes made in this run (please review):
   1. `crates/grimoire/tests/mutations.rs`: the static-mutation coverage filter now also skips `BEN-` codes, because BEN-01 is raised only by the sandbox stage, the same as `SBX-`. This is the narrowest fix, but it is a change to an assertion's scope.
   2. `crates/grimoire/tests/sandbox_fake.rs`: `declared_bench_warns_sbx_08_without_calling_the_bench_runner` is replaced by `declared_bench_calls_the_runner_and_a_fault_is_infrastructure`, marked `test-change: PCK-1`. The old test expected SBX-08 and no bench call, which R13.1 removes. PCK-1.3 in `docs/requirements.md` is the cited requirement.
+
+## Run 3 (15 Nov 2026): T20 partly done
+
+- T20 `measure_run` is implemented and tested with the scripted collector (`crates/judge/tests/familiar_measure.rs`, 8 tests: the failure matrix, event order, collector and stop errors). Not ticked, because three parts of T20 are still open:
+  1. The canary test (hidden data absent from every payload) and the restart test are not written. The canary check belongs with the privacy tests (T43).
+  2. The call from the real executor is not wired. It needs the language-drivers `bench.rs` collector (language-drivers T08 and T09).
+  3. The `pg_` cases for T20 are not written, because they depend on T23 and the real collector.

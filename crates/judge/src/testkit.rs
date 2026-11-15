@@ -6,6 +6,7 @@
 //! in-memory stand-ins for the sandbox runner.
 
 use crate::executor::{ExecError, RunContext, RunExecutor, RunInput, RunOutcome};
+use crate::familiar::{BenchCollector, BenchOutcome, BenchPlan};
 use crate::queue::finish::{FinalResult, TestRecord};
 use crate::queue::ClaimToken;
 use counterspell_common::events::{PublicEvent, PublicTest};
@@ -365,4 +366,35 @@ fn hidden_test(ordinal: u32, verdict: TestVerdict) -> PublicEvent {
         verdict,
         time_ms: 1,
     })
+}
+
+/// A bench collector that always returns the same answer and counts its calls. For tests only.
+pub struct ScriptedCollector {
+    answer: Result<BenchOutcome, ExecError>,
+    calls: usize,
+}
+
+impl ScriptedCollector {
+    /// Creates a collector that answers every request with `answer`.
+    #[must_use]
+    pub const fn new(answer: Result<BenchOutcome, ExecError>) -> Self {
+        Self { answer, calls: 0 }
+    }
+
+    /// How many times the collector was asked to time a run.
+    #[must_use]
+    pub const fn calls(&self) -> usize {
+        self.calls
+    }
+}
+
+impl BenchCollector for ScriptedCollector {
+    fn collect(
+        &mut self,
+        _plan: &BenchPlan,
+    ) -> impl std::future::Future<Output = Result<BenchOutcome, ExecError>> + Send {
+        self.calls += 1;
+        let answer = self.answer.clone();
+        async move { answer }
+    }
 }
