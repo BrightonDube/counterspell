@@ -28,6 +28,22 @@ services:
       DATABASE_URL: ${SERVER_DATABASE_URL:-}
       # Valkey has no auth and sits only on the internal network, so the in-network address is the default.
       VALKEY_URL: ${VALKEY_URL:-redis://valkey:6379}
+      # Auth settings (R2). Each value comes from the host environment and is passed through here.
+      # Empty values count as not set. Only the server receives them; the judge never does.
+      APP_ENV: ${APP_ENV:-production}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-}
+      SESSION_SECRET: ${SESSION_SECRET:-}
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_TRANSPORT: ${MAIL_TRANSPORT:-}
+      EMAIL_DAILY_CAP: ${EMAIL_DAILY_CAP:-}
+      DEMO_ACCOUNT_EMAIL: ${DEMO_ACCOUNT_EMAIL:-}
+      DEMO_ACCOUNT_PASSWORD: ${DEMO_ACCOUNT_PASSWORD:-}
+      DEMO_RESET_HOUR_UTC: ${DEMO_RESET_HOUR_UTC:-}
     depends_on:
       postgres:
         condition: service_healthy

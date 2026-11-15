@@ -5,6 +5,7 @@
 
 pub mod accounts;
 pub mod capabilities;
+pub mod cleanup;
 pub mod clock;
 pub mod config;
 pub mod cookies;
@@ -21,6 +22,7 @@ pub mod password;
 pub mod resolver;
 pub mod return_to;
 pub mod session;
+pub mod setup;
 pub mod tokens;
 
 use std::{collections::HashMap, sync::Arc};
@@ -38,6 +40,7 @@ use self::{
     clock::Clock,
     cookies::CookieSettings,
     email::{EmailAddress, EmailSender},
+    handlers::config::{config_router, PublicSettings},
     limits::AuthLimiter,
     oauth::{flow::FlowStore, OAuthProvider, ProviderId},
     password::HashGate,
@@ -91,6 +94,8 @@ pub struct AuthState {
     pub flows: FlowStore,
     /// The enabled OAuth providers. `None` means no provider is enabled.
     pub oauth: Option<OAuthPort>,
+    /// The public settings that `GET /api/auth/config` shows: which sign-in methods are on.
+    pub settings: PublicSettings,
 }
 
 impl AuthState {
@@ -119,7 +124,15 @@ impl AuthState {
             mail: None,
             flows,
             oauth: None,
+            settings: PublicSettings::new(false, false, false),
         }
+    }
+
+    /// Sets the public settings that the config route shows.
+    #[must_use]
+    pub fn with_settings(mut self, settings: PublicSettings) -> Self {
+        self.settings = settings;
+        self
     }
 
     /// Adds the mail settings. Without them, the mail routes refuse to send.
@@ -180,6 +193,7 @@ pub const MUTATING_ROUTES: &[&str] = &[
 ///
 /// The cookie middleware sits on this router, so each handler can fill the cookie slot.
 pub fn router(state: AuthState) -> Router {
+    let settings = state.settings;
     let routes = Router::new()
         .route("/api/auth/logout", post(handlers::session::logout))
         .route("/api/auth/logout-all", post(handlers::session::logout_all))
@@ -214,5 +228,6 @@ pub fn router(state: AuthState) -> Router {
         .route("/api/me", get(handlers::me::me))
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);
+    let routes = routes.merge(config_router(settings));
     csrf::json_body_guard_layer(routes)
 }

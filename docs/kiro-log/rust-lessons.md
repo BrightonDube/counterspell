@@ -936,3 +936,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A `pub const` list of route paths next to the router gives one place to check. A test sends a request to each path and fails with a clear message if a route is missing, so a route added in one place and not the other is caught.
 - A `snapshot` function returns a tuple of counts. Comparing two tuples with `assert_eq!` checks that a restricted request changed nothing, and a failure prints both values.
 - A database trigger guards the demo row even when a test uses the superuser pool. The test confirms that the trigger, not the application, refuses the change.
+
+# Rust lesson: auth T33
+- `Option<(A, B)>` from `zip` pulls two optional values together, so the router either gets both the auth state and its origin, or neither. A half-configured CSRF guard cannot exist.
+- `main` builds everything that can fail (config, state, listener) before the server starts, and each error is turned into an `io::Error` with a message that names the setting and never its value.
+- Taking `AppState` by value and moving it into `with_state` at the end avoids cloning it for each route group. Clippy's `needless_pass_by_value` lint flagged the copy I first wrote.

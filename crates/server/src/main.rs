@@ -3,8 +3,16 @@
 use std::{io, net::SocketAddr};
 
 use counterspell_server::{
-    build_router, config::ServerConfig, ensure_static_files, ratelimit::Limiter,
-    ratelimit::ValkeyLimiter, AppState,
+    auth::{
+        config::AuthConfig,
+        setup::{build_state, start_background},
+    },
+    build_router,
+    config::ServerConfig,
+    ensure_static_files,
+    ratelimit::Limiter,
+    ratelimit::ValkeyLimiter,
+    AppState,
 };
 use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
@@ -15,6 +23,9 @@ async fn main() -> Result<(), io::Error> {
     let _ = tracing_subscriber::fmt().with_writer(io::stderr).try_init();
 
     let config = ServerConfig::from_env()
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
+    // Auth settings are checked before anything listens, so a bad deploy refuses to start.
+    let auth_config = AuthConfig::from_env()
         .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
     ensure_static_files(&config.static_dir)?;
     let address = config
@@ -39,17 +50,34 @@ async fn main() -> Result<(), io::Error> {
         )
     })?;
 
-    let limiter = ValkeyLimiter::open(&config.valkey_url).map_err(|_| {
+    let limiter = Limiter::Valkey(ValkeyLimiter::open(&config.valkey_url).map_err(|_| {
         io::Error::new(
             io::ErrorKind::InvalidInput,
             "VALKEY_URL is not a valid Valkey URL",
         )
-    })?;
+    })?);
+
+    let auth = build_state(
+        pool.clone(),
+        &auth_config,
+        limiter.clone(),
+        config.trusted_proxies.clone(),
+    )
+    .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
+    // The cleanup and demo-reset tasks run for the life of the process.
+    let _background_tasks = start_background(&auth, &auth_config).await;
+    let state = AppState::new(pool, config, limiter)
+        .with_auth(auth, &auth_config.public_base_url)
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "PUBLIC_BASE_URL is not an origin",
+            )
+        })?;
 
     axum::serve(
         listener,
-        build_router(AppState::new(pool, config, Limiter::Valkey(limiter)))
-            .into_make_service_with_connect_info::<SocketAddr>(),
+        build_router(state).into_make_service_with_connect_info::<SocketAddr>(),
     )
     .await
     .map_err(|error| io::Error::other(format!("server stopped unexpectedly: {error}")))
