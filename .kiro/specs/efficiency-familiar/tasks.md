@@ -309,7 +309,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- Mascot && npm run check`.
   - Preserve: the mascot never covers editor text and fetches only its own static assets.
 
-- [ ] **T30 [S] (30 min) GSAP timelines: crossfade, laugh burst, crack-and-burst, dispose**
+- [x] **T30 [S] (30 min) GSAP timelines: crossfade, laugh burst, crack-and-burst, dispose**
   - Files: `web/src/lib/familiar/mascot/timelines.ts`, `Mascot.svelte` (wiring only), tests.
   - Dynamic `import('gsap')` only when `planEffect` returns `play` and motion is allowed. Implement the 300 ms crossfade, the crack draw-on followed by the particle burst, and the laugh shake with embers and sparks, using only transform and opacity and the plans from T28. Register every timeline with a disposer and call it on unmount, route change and change of `reducedMotion`, `muted` or `hidden`.
   - Tests: with GSAP mocked, `import('gsap')` is never called under reduced motion or muted; a played effect creates the expected number of `fam-fx` children and removes them on dispose; a second effect inside 2 s applies the mood without playing; disposing twice is safe.

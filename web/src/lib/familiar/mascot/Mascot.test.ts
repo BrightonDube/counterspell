@@ -7,6 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Mood } from '../types';
 import Mascot from './Mascot.svelte';
 
+// GSAP is replaced so the tests can see whether any animation was started.
+const gsap = vi.hoisted(() => {
+	const timeline = { to: vi.fn(), fromTo: vi.fn(), kill: vi.fn() };
+	timeline.to.mockReturnValue(timeline);
+	timeline.fromTo.mockReturnValue(timeline);
+	return { timeline: vi.fn(() => timeline), fromTo: vi.fn(), killTweensOf: vi.fn() };
+});
+vi.mock('gsap', () => ({ default: gsap }));
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PLACEHOLDER = readFileSync(
 	join(HERE, '..', '..', '..', '..', 'static', 'familiar', 'jack-o-lantern.placeholder.svg'),
@@ -37,6 +46,7 @@ async function artDrawn(): Promise<void> {
 }
 
 beforeEach(() => {
+	vi.clearAllMocks();
 	vi.stubGlobal(
 		'fetch',
 		vi.fn(async () => ({ ok: true, text: async () => PLACEHOLDER }))
@@ -134,5 +144,71 @@ describe('Mascot static rendering', () => {
 	// Breaks if GSAP loads with the static view, which the design forbids: GSAP loads only for planned effects.
 	it('does not import GSAP in the component', () => {
 		expect(SOURCE).not.toMatch(/gsap/);
+	});
+});
+
+/** Lets any pending dynamic import settle before the test checks what was created. */
+async function settle(): Promise<void> {
+	await new Promise((resolve) => setTimeout(resolve, 20));
+}
+
+function fxChildren(): number {
+	return document.getElementById('fam-fx')?.children.length ?? 0;
+}
+
+describe('Mascot effects', () => {
+	// Breaks if a live burst never plays, so a failed submission shows no crack-and-burst.
+	it('plays the crack burst for a live result', async () => {
+		render(Mascot, { props: props(1, { effect: 'crack_burst', live: true }) });
+		await waitFor(() => expect(fxChildren()).toBe(40));
+	});
+
+	// Breaks if reduced motion still starts GSAP, which the learner turned off for comfort.
+	it('never starts GSAP under reduced motion, and shows the badge text instead', async () => {
+		render(Mascot, { props: props(1, { effect: 'crack_burst', live: true, reducedMotion: true }) });
+		await artDrawn();
+		await settle();
+		expect(gsap.timeline).not.toHaveBeenCalled();
+		expect(gsap.fromTo).not.toHaveBeenCalled();
+		expect(fxChildren()).toBe(0);
+		expect(screen.getByText('Matches reference!')).toBeTruthy();
+	});
+
+	// Breaks if muting still animates, so a muted learner gets motion they asked to stop.
+	it('never starts GSAP when muted', async () => {
+		render(Mascot, { props: props(5, { effect: 'laugh_burst', live: true, muted: true }) });
+		await artDrawn();
+		await settle();
+		expect(gsap.timeline).not.toHaveBeenCalled();
+		expect(gsap.fromTo).not.toHaveBeenCalled();
+	});
+
+	// Breaks if a loaded result replays its burst, so every page reload would look like a new result.
+	it('does not play a burst for a result loaded from history', async () => {
+		render(Mascot, { props: props(1, { effect: 'crack_burst', live: false }) });
+		await artDrawn();
+		await settle();
+		expect(fxChildren()).toBe(0);
+	});
+
+	// Breaks if turning reduced motion on does not stop a burst already running, so motion continues after the setting changes.
+	it('removes a running burst when reduced motion is switched on', async () => {
+		const view = render(Mascot, { props: props(1, { effect: 'crack_burst', live: true }) });
+		await waitFor(() => expect(fxChildren()).toBe(40));
+		await view.rerender(props(1, { effect: 'crack_burst', live: true, reducedMotion: true }));
+		expect(fxChildren()).toBe(0);
+	});
+
+	// Breaks if two bursts run within 2 s, which would flash the figure on every quick result.
+	it('skips a second burst that starts within 2 seconds of the first', async () => {
+		const clock = vi.spyOn(performance, 'now').mockReturnValue(0);
+		const view = render(Mascot, { props: props(1, { effect: 'crack_burst', live: true }) });
+		await waitFor(() => expect(fxChildren()).toBe(40));
+		clock.mockReturnValue(1000);
+		await view.rerender(props(5, { effect: 'laugh_burst', live: true }));
+		await settle();
+		expect(fxChildren()).toBe(0);
+		expect(screen.getByText('Matches reference!')).toBeTruthy();
+		clock.mockRestore();
 	});
 });
