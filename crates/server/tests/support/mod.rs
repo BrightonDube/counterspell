@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 
 pub mod report;
+pub mod run_writes;
 pub mod sse_client;
 
 use std::{

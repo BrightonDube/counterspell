@@ -31,6 +31,7 @@ use counterspell_server::{
 use sqlx::PgPool;
 use support::{
     config_for, publish_two_sum,
+    run_writes::{finish_run, write_events, write_events_from},
     sse_client::{Frame, SseResponse},
     Fixture,
 };
@@ -147,16 +148,8 @@ async fn end_backoff(pool: &PgPool, run: RunId) {
 async fn pg_restart_server_mid_stream_resumes_without_loss(pool: PgPool) {
     let fixture = Fixture::new();
     let run = queued_run(&pool).await;
-    let finisher = Worker::new(
-        pool.clone(),
-        judge_config(),
-        ScriptedExecutor::new(Script::Pass {
-            tests: 3,
-            delay: Duration::ZERO,
-        }),
-        "finishing-judge".to_owned(),
-    );
-    assert!(finisher.process_next().await.expect("claim"));
+    // Two events exist before the first stream opens. The rest arrive while the server is down or live.
+    write_events(&pool, run, 2).await;
 
     let (first_address, first_server) = serve_with_handle(pool.clone(), &fixture.dir).await;
     let mut before = SseResponse::open(
@@ -174,9 +167,11 @@ async fn pg_restart_server_mid_stream_resumes_without_loss(pool: PgPool) {
         seen.push(frame.seq().expect("numbered"));
     }
 
-    // The server stops. Its connections go with it, and only the database survives.
+    // The server stops while the stream is open and the run is still going.
     first_server.abort();
     drop(before);
+    // The judge keeps writing while the server is down.
+    write_events_from(&pool, run, 3, 2).await;
 
     let (second_address, _second_server) = serve_with_handle(pool.clone(), &fixture.dir).await;
     let resume_from = seen.last().copied().unwrap_or(0).to_string();
@@ -189,6 +184,8 @@ async fn pg_restart_server_mid_stream_resumes_without_loss(pool: PgPool) {
         ],
     )
     .await;
+    // The run finishes while the resumed stream is open, so the last event arrives live.
+    finish_run(&pool, run, 5).await;
     while let Some(frame) = after.next_frame_within(Duration::from_secs(3)).await {
         if frame.kind().is_none() {
             continue;
@@ -200,6 +197,10 @@ async fn pg_restart_server_mid_stream_resumes_without_loss(pool: PgPool) {
         }
     }
 
+    assert!(
+        !after.transport_failed(),
+        "the resumed stream ended normally"
+    );
     assert_eq!(
         seen,
         vec![1, 2, 3, 4, 5],

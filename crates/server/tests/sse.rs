@@ -33,7 +33,9 @@ use counterspell_server::{
 };
 use sqlx::PgPool;
 use support::{
-    publish_two_sum, serve,
+    publish_two_sum,
+    run_writes::{finish_run, write_events},
+    serve,
     sse_client::{Frame, SseResponse},
     Fixture,
 };
@@ -110,51 +112,6 @@ async fn queued_run(pool: &PgPool, user: UserId) -> RunId {
     run.run_id
 }
 
-/// Adds `count` non-terminal events, numbered from 1, the way the judge writes them.
-async fn add_events(pool: &PgPool, run: RunId, count: i32) {
-    sqlx::query(
-        "INSERT INTO run_events (submission_id, seq, attempt, type, payload) \
-         SELECT $1, g, 1, 'test', '{}'::jsonb FROM generate_series(1, $2) AS g",
-    )
-    .bind(run.as_uuid())
-    .bind(count)
-    .execute(pool)
-    .await
-    .expect("insert events");
-}
-
-/// Writes the terminal `done` event at `last_seq` and moves the run to `completed`, as the judge does.
-async fn finish_run(pool: &PgPool, run: RunId, last_seq: i32) {
-    let id = run.as_uuid();
-    sqlx::query(
-        "INSERT INTO run_events (submission_id, seq, attempt, type, payload) \
-         VALUES ($1, $2, 1, 'done', '{\"passed\":1,\"total\":2}'::jsonb)",
-    )
-    .bind(id)
-    .bind(last_seq)
-    .execute(pool)
-    .await
-    .expect("done event");
-    for status in ["claimed", "compiling", "running"] {
-        sqlx::query("UPDATE submissions SET status = $2 WHERE id = $1")
-            .bind(id)
-            .bind(status)
-            .execute(pool)
-            .await
-            .expect("move status");
-    }
-    sqlx::query(
-        "UPDATE submissions SET status = 'completed', verdict = 'wrong_answer', passed = 1, total = 2, \
-         score = 50, runtime_ms = 41, memory_kb = 9210, started_at = now(), finished_at = now(), \
-         last_event_seq = $2 WHERE id = $1",
-    )
-    .bind(id)
-    .bind(last_seq)
-    .execute(pool)
-    .await
-    .expect("complete run");
-}
-
 /// Reads frames until the terminal `done` event, and returns the event frames in order.
 async fn read_until_done(stream: &mut SseResponse) -> Vec<Frame> {
     let mut events = Vec::new();
@@ -175,7 +132,7 @@ async fn read_until_done(stream: &mut SseResponse) -> Vec<Frame> {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_replay_is_owner_scoped(pool: PgPool) {
     let run = queued_run(&pool, owner(1)).await;
-    add_events(&pool, run, 3).await;
+    write_events(&pool, run, 3).await;
 
     let as_owner = replay_events_from(&pool, owner(1), run, 0)
         .await
@@ -198,7 +155,7 @@ async fn pg_replay_is_owner_scoped(pool: PgPool) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_replay_pages_in_order_from_the_cursor(pool: PgPool) {
     let run = queued_run(&pool, owner(1)).await;
-    add_events(&pool, run, 450).await;
+    write_events(&pool, run, 450).await;
 
     let first = replay_events_from(&pool, owner(1), run, 0)
         .await
@@ -275,7 +232,7 @@ async fn pg_sse_requires_session_and_ownership(pool: PgPool) {
 async fn pg_sse_replay_after_drop_at_every_position(pool: PgPool) {
     let fixture = Fixture::new();
     let run = queued_run(&pool, owner(1)).await;
-    add_events(&pool, run, 4).await;
+    write_events(&pool, run, 4).await;
     finish_run(&pool, run, 5).await;
     let address = serve(build_router(state_with(pool.clone(), &fixture.dir, &[]))).await;
     let token = auth(1);
@@ -335,7 +292,7 @@ async fn pg_sse_poll_only_without_notify(pool: PgPool) {
         &[("Authorization", token.as_str())],
     )
     .await;
-    add_events(&pool, run, 1).await;
+    write_events(&pool, run, 1).await;
 
     let frame = stream
         .next_frame_within(Duration::from_secs(1))
@@ -349,7 +306,7 @@ async fn pg_sse_poll_only_without_notify(pool: PgPool) {
 async fn pg_sse_last_event_id_forms(pool: PgPool) {
     let fixture = Fixture::new();
     let run = queued_run(&pool, owner(1)).await;
-    add_events(&pool, run, 4).await;
+    write_events(&pool, run, 4).await;
     finish_run(&pool, run, 5).await;
     let address = serve(build_router(state_with(pool.clone(), &fixture.dir, &[]))).await;
     let token = auth(1);
@@ -431,7 +388,7 @@ async fn pg_sse_heartbeat_headers_and_close(pool: PgPool) {
         .expect("a heartbeat while the run is idle");
     assert!(matches!(heartbeat, Frame::Comment(_)), "{heartbeat:?}");
 
-    add_events(&pool, run, 4).await;
+    write_events(&pool, run, 4).await;
     finish_run(&pool, run, 5).await;
     let events = read_until_done(&mut stream).await;
     assert_eq!(
@@ -529,7 +486,7 @@ async fn pg_sse_stream_limit_per_user(pool: PgPool) {
 async fn pg_sse_max_age_closes_and_resumes(pool: PgPool) {
     let fixture = Fixture::new();
     let run = queued_run(&pool, owner(1)).await;
-    add_events(&pool, run, 1).await;
+    write_events(&pool, run, 1).await;
     let overrides = [("SSE_MAX_AGE_SECS", "1")];
     let address = serve(build_router(state_with(
         pool.clone(),
@@ -633,7 +590,7 @@ async fn pg_sse_sends_nothing_after_the_terminal_event(pool: PgPool) {
     // A row written after `done` is not a normal state, but the stream must still stop at `done`.
     let fixture = Fixture::new();
     let run = queued_run(&pool, owner(1)).await;
-    add_events(&pool, run, 1).await;
+    write_events(&pool, run, 1).await;
     finish_run(&pool, run, 2).await;
     sqlx::query(
         "INSERT INTO run_events (submission_id, seq, attempt, type, payload) \
