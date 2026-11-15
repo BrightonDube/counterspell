@@ -106,3 +106,9 @@ Brighton reviews each entry before the next task that depends on it starts.
 
 - The canary test scans `run_events`, `test_results`, `GET /api/runs/{id}` and the raw SSE bytes for three hidden markers. It passes. A deliberate leak through `compile_output` makes it fail (checked, then reverted).
 - Gap: `compile_output` is the one free-text field that reaches public events, and the design has no redaction for it. The test therefore does not put markers there. By construction the compiler runs before the tests and never sees hidden data, so a leak needs a bug in the executor. A redaction pass in the worker would need the hidden values, which the worker does not hold in this spec. Brighton to decide whether to accept this or add a redaction rule when the sandbox runner lands.
+
+## T35 (restart and recovery): notes
+
+- "Server restart" is modelled by aborting the accept loop, dropping the open stream and starting a new router with new state (new waker, new stream slots) on the same database. Connections already handed to hyper are not aborted by the test, so this is a close model rather than a process restart.
+- Judge crash is modelled by aborting a worker task that holds a claim (executor `Hang`), ageing the lease with SQL and running `reap_once`. The design calls this "kill all workers"; the real process kill is covered by T36's fleet test and the deploy checks.
+- `pg_retries_exhausted_end_to_end` uses three hung attempts, matching the database default of `max_attempts = 3`. The test constant is named `MAX_ATTEMPTS`.
