@@ -98,7 +98,7 @@ Conventions for every task:
 
 ## Wave 4: verification
 
-- [ ] **T12 [S] (30 min) Run the no-JavaScript and content checks**
+- [x] **T12 [S] (30 min) Run the no-JavaScript and content checks**
   - Files: `web/src/lib/landing/landing.test.ts` (component tests from T05 to T08 if not already written).
   - Confirm the static HTML contains all visible text and the CTA with JavaScript disabled, using the built `index.html`. Confirm no content is inside a GSAP-only hidden state.
   - Depends on: T08, T10.
