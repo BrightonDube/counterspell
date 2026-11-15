@@ -321,3 +321,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 06:12-06:14 SAST: 29-dashboard-fsrs-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-dashboard-fsrs-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0612-29-dashboard-fsrs-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.03 (credits used now 3273.28/4000).
+
+### 2026-11-15 06:52-07:59 SAST: 31-landing-steel-night-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-landing-steel-night-a1.md`. Transcript: `docs/kiro-log/2026-11-15T0652-31-landing-steel-night-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 11.19 (credits used now 3284.78/4000).
+
+### 2026-11-15 07:59-08:04 SAST: 31-landing-steel-night-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-landing-steel-night-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0759-31-landing-steel-night-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.25 (credits used now 3286.03/4000).

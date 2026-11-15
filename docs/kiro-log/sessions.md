@@ -220,3 +220,8 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-15T06:04:49Z | model: not reported | last commit: cdf51ab landing-steel-night T08: record no-fallback build test result in blockers
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)

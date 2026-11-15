@@ -1,0 +1,62 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7
+I'll start by reading the spec's task list to find the first open task.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=68
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Check repo state and recent commits
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Tasks T01 to T07, T09 to T11 are marked done, and T08 is open. The last commits mention T08 and blockers, so I'll check the blockers log and the T08 code before touching anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=112
+
+[tool] Read blockers, review queue and current route
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T08's code is done, but its verify step is blocked by the adapter fallback that overwrites the prerendered `/`. The blockers file says that decision needs Brighton. Before I decide whether it is really blocked, I'll check the adapter config and whether the build still passes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=157
+
+[tool] Inspect adapter config and run web checks and tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The web checks pass: svelte-check reports 0 errors and vitest reports 356 passing. The T08 blocker asks Brighton to choose between two fallback options. Option 2 is web-only, so I can test it without changing anything tracked. I'll use a temporary config that drops the fallback, build, and delete the config afterwards.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=238
+
+[tool] Test a temporary build without the adapter fallback
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Test a temporary build without the adapter fallback
+Option 2 fails too. `/problems/[slug]` is a dynamic route, so the build exits with "Encountered dynamic routes". Both fallback options change shared behaviour, so T08 stays open. I'll record this result in the blockers file and check that my temporary build left no tracked changes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=285
+
+[tool] Record build test result and commit the blocker note
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The landing spec is not finished. Every task is ticked except T08, T12, T13 and T14, and each of those is blocked or deferred for the reasons below. I made no code changes this pass. I only added a note to the blockers file.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T08 Compose landing route | Left open. Code was already done in an earlier commit. The `npm run build` check for static `index.html` fails because the adapter fallback overwrites `/`. | None this pass | `npm run check`: 0 errors. Vitest: 356 passing. Static HTML check: not met. | cdf51ab (blocker note only) |
+| T12 No-JavaScript content check | Blocked by the same T08 cause | None | Not run | None |
+| T13 Lighthouse mobile median | Deferred. It needs Chrome and a served production build, and it depends on T08. | None | Not run | None |
+| T14 Accessibility, privacy and Compose smoke | Deferred. Keyboard, contrast and network checks need a browser, and the Compose smoke test needs the stack. | None | Not run | None |
+
+**Blocker, T08.** The adapter fallback in `web/vite.config.js` overwrites the prerendered `/`. I tested the web-only fix from the blockers file, which removes the fallback option. The build still fails with `all routes must be fully prerenderable`, because `src/routes/problems/[slug]` is dynamic. The remaining options need Brighton:
+1. Rename the fallback to `200.html` and point the server fallback at it. This is a Rust change in `crates/server`, which this spec does not allow.
+2. Set `strict: false` in the adapter config, so routes missing from the static output are ignored. This drops the problem pages from the static build.
+3. Add prerender entries for every problem slug.
+
+I made the temporary config and deleted it afterwards.
+
+**Review queue.** `docs/kiro-log/landing-steel-night-review-queue.md` is empty. No `[SUPERVISED]` tasks exist in this spec.
+
+**Open Minor review findings** (from the wave review in the blockers file):
+- Geist is a single variable woff2 of 69.5 KB, above the design's 60 KB per-weight guideline. Lighthouse (T13) should decide whether it matters.
+- `motion-plan` keeps `layers.smoke` false in static mode. `design.md` says so, but T04 says static mode shows every layer. The code follows `design.md`.
+- The landing `.cta` transition rule duplicates the global reduced-motion rule in `app.css`. This is harmless.
+- The hero scene wrapper and each scene `img` both carry `aria-hidden="true"`. This is redundant but correct.
+
+**Other notes.**
+- The T02 font preload for Geist 600 in `app.html` was not added, because Vite hashes the font file names.
+- `docs/KIRO_USAGE.md` was already modified before this run. I left it alone.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=198
+
