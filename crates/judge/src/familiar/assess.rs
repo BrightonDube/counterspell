@@ -131,7 +131,7 @@ pub fn assess(input: &AssessInput<'_>) -> Assessment {
         observed: bench_facts_observed(&bench_facts),
         confidence: bench_facts_confidence(&bench_facts),
         plausible: &plausible,
-        reference: input.reference,
+        reference: Some(input.reference),
         ratio: bench_facts_ratio(&bench_facts),
     });
     let familiar = FamiliarPayload {

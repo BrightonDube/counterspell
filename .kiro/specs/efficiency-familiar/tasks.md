@@ -243,7 +243,7 @@ Conventions for every web task:
   - Preserve: all execution goes through the sandbox runner; nothing is executed on the host.
   - Rust lesson: command-line subcommands, exit codes and `Result` at a program's edge.
 
-- [ ] **T23 [S] (30 min) Read model sections and stream parity test (P17)**
+- [x] **T23 [S] (30 min) Read model sections and stream parity test (P17)**
   - Files: `crates/server/src/runs/read.rs`, `crates/server/tests/familiar_read.rs`.
   - Build the `complexity` and `familiar` sections of `GET /api/runs/{id}` from stored columns only; absent when null; no `effect`. Add the `pg_` integration test: run the scripted executor and collector, collect the SSE `complexity`/`familiar` payloads, fetch the read model after, and assert equality (minus `effect`) and that a reload from a fresh client shows the same.
   - Requirements: R7.4, R7.8, R7.9.
