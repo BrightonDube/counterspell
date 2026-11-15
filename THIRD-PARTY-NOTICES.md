@@ -134,3 +134,9 @@ Approved by Brighton in the standing decisions (14 Nov 2026). Fonts are self-hos
 - **@fontsource/jetbrains-mono 5.3.0** — JetBrains, packaged by Fontsource — OFL-1.1 (weights 400, 500, 600, 700, imported in `web/src/app.css`) — <https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt>
 
 Added by run-lifecycle T29 (approved by Brighton in the standing decisions, 14 Nov 2026): `futures-util` is now a direct dependency of `counterspell-server`, used only to build the SSE event stream (`unfold`). The crate is already listed above.
+
+Added by run-lifecycle T31 (test-only, server dev-dependencies; `cargo deny check licenses` passed):
+
+- **hyper 1.12.0** — hyper contributors — MIT — <https://crates.io/crates/hyper> (HTTP/1 client that reads the SSE stream in tests)
+- **hyper-util 0.1.21** — hyper contributors — MIT — <https://crates.io/crates/hyper-util> (Tokio I/O adapter for the test client)
+- **http-body-util 0.1.5** — hyper contributors — MIT — <https://crates.io/crates/http-body-util> (body reading in the test client)

@@ -3,6 +3,8 @@
 
 #![allow(dead_code)]
 
+pub mod sse_client;
+
 use std::{
     net::SocketAddr,
     path::PathBuf,

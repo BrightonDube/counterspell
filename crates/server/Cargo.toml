@@ -49,6 +49,10 @@ counterspell-judge = { path = "../judge", default-features = false, features = [
 # The server's own tests always see its test seams. Release builds leave the feature off.
 counterspell-server = { path = ".", features = ["testkit"] }
 wiremock = "0.6.5"
+# Test-only HTTP/1 client that reads the SSE stream from a real socket (run-lifecycle T31).
+hyper = { version = "1", features = ["client", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio"] }
+http-body-util = "0.1"
 tower = { version = "0.5.3", features = ["util"] }
 
 [lints]

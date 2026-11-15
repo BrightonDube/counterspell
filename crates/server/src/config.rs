@@ -146,7 +146,8 @@ impl ServerConfig {
         let sse = SseSettings {
             poll_ms: ranged(&lookup, "SSE_POLL_MS", 250, 50, 10_000)?,
             heartbeat_secs: ranged(&lookup, "SSE_HEARTBEAT_SECS", 15, 1, 300)?,
-            max_age_secs: ranged(&lookup, "SSE_MAX_AGE_SECS", 900, 60, 86_400)?,
+            // The 1 s floor lets the integration tests exercise the close-and-resume path quickly.
+            max_age_secs: ranged(&lookup, "SSE_MAX_AGE_SECS", 900, 1, 86_400)?,
             max_streams_per_user: ranged(&lookup, "SSE_MAX_STREAMS_PER_USER", 5, 1, 100)?,
         };
 

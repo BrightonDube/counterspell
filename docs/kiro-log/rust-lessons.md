@@ -1196,3 +1196,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Drop` runs when a value goes out of scope, including when a client disconnects and the response body is dropped. `StreamGuard` gives its slot back in `drop`, so no cleanup call can be forgotten.
 - `Arc<Mutex<..>>` lets clones of one table share the counts. `unwrap_or_else(PoisonError::into_inner)` reads the value even if another thread panicked while holding the lock, so one bad request cannot lock every user out.
 - Some framework features need a running runtime when they are created (axum's keep-alive timer). A test that builds such a value needs `#[tokio::test]`.
+
+# Rust lesson: run-lifecycle T31
+
+- A test can open a real HTTP connection with `hyper`'s HTTP/1 client and read the body frame by frame. That tests the bytes a browser would see, not the handler's return value.
+- `let ... else` replaces a `match` that has only one interesting arm. Clippy asks for it, and the early `return` keeps the normal path unindented.
+- `drop(value)` ends a connection on purpose. The test uses it to simulate a network drop, and the server must then resume from the cursor the client last saw.
