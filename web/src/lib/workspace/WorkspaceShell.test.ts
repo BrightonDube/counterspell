@@ -8,6 +8,19 @@ vi.mock('../editor/monaco-loader', () => ({
   loadMonaco: () => new Promise(() => {})
 }));
 
+// The run API is replaced so no test calls the network. The real module is kept for its other exports.
+vi.mock('../runs/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../runs/api')>();
+  return {
+    ...actual,
+    startRunAction: vi.fn(() => ({
+      key: 'key-1',
+      send: () => new Promise<string>(() => {})
+    }))
+  };
+});
+
+import { startRunAction } from '../runs/api';
 import WorkspaceShell from './WorkspaceShell.svelte';
 
 afterEach(() => {
@@ -64,5 +77,20 @@ describe('WorkspaceShell', () => {
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(aside.hidden).toBe(true);
     expect(screen.getByRole('button', { name: 'Show problem' })).toBeTruthy();
+  });
+
+  // Breaks if a double click on Run queues two runs for one learner action.
+  it('sends one run when Run is clicked twice', async () => {
+    render(WorkspaceShell, { props: { problem, languages } });
+    const run = screen.getByRole('button', { name: 'Run samples' });
+    await fireEvent.click(run);
+    await fireEvent.click(run);
+    expect(startRunAction).toHaveBeenCalledTimes(1);
+    expect(startRunAction).toHaveBeenCalledWith({
+      problem: 'two-sum',
+      lang: 'python',
+      code: '',
+      mode: 'run'
+    });
   });
 });

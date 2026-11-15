@@ -194,6 +194,28 @@ export function parsePublicTest(raw: unknown, path = 'test'): PublicTest {
   return { sample: false, ...common };
 }
 
+/**
+ * Parses one test row from the run read model (`GET /api/runs/{id}`). The read model nests a sample's
+ * values under `detail`, so they are lifted to the flat shape the SSE rows use before the same checks run.
+ */
+export function parseReadTest(raw: unknown, path = 'test'): PublicTest {
+  const record = asRecord(raw, path);
+  if (record.sample !== true) return parsePublicTest(record, path);
+  const detail = asRecord(record.detail, `${path}.detail`);
+  return parsePublicTest(
+    {
+      ordinal: record.ordinal,
+      verdict: record.verdict,
+      time_ms: record.time_ms,
+      sample: true,
+      input: detail.input,
+      expected: detail.expected,
+      got: detail.got
+    },
+    path
+  );
+}
+
 function optionalEnum<T extends string>(
   source: RawRecord,
   key: string,
@@ -219,7 +241,7 @@ export function parseRunView(raw: unknown): RunView {
     createdAt: readString(record, 'created_at', path, 64),
     lastSeq: readInt(record, 'last_seq', path, 0, MAX_SEQ),
     tests: readArray(record, 'tests', path, MAX_TESTS, (value, itemPath) =>
-      parsePublicTest(value, itemPath)
+      parseReadTest(value, itemPath)
     )
   };
   const verdict = optionalEnum(record, 'verdict', path, RUN_VERDICTS);
