@@ -280,3 +280,13 @@
  docs/KIRO_USAGE.md        | 8 ++++++++
  docs/kiro-log/sessions.md | 7 +++++++
  2 files changed, 15 insertions(+)
+- 2026-11-15T21:42:53Z | model: not reported | last commit: 8cf9fc8 efficiency-familiar T24 (partial): SBX-05 bench fit tests; span warning and BEN-01 unique case still open
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-15T21:46:17Z | model: not reported | last commit: 4454f96 efficiency-familiar: record run 8 status and open blockers
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 15 insertions(+)
