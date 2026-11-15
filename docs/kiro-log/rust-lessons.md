@@ -1081,3 +1081,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - The renderers take `&PackReport`. Printing borrows the report, so the caller can print it and still use it afterwards.
 - `Outcome` is an enum with data in two variants. `label()` and `kind()` each `match` on it, so a new outcome is a compile error until every renderer handles it.
 - `chars().take(12).collect()` makes the hash prefix by character, not by byte, so the cut is always on a character boundary.
+
+# Rust lesson: problem-catalogue C14
+- `sqlx::Transaction` rolls back when it is dropped without `commit`. An early `?` inside `write_static` therefore leaves no partial pack behind. The rollback test proves it by counting rows after a failed starter insert.
+- Helpers take `&mut PgConnection` and get it from the transaction with `&mut *tx`. The same helper then works inside or outside a transaction.
+- `write!` into a `String` inside a `fold` replaces `format!` per item. Clippy's `format_collect` lint asks for this form, and the `let _ =` is safe because writing to a `String` cannot fail.

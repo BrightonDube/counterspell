@@ -15,3 +15,4 @@ pub mod statement;
 pub mod taxonomy;
 #[cfg(feature = "testkit")]
 pub mod testkit;
+pub mod write;
