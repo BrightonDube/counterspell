@@ -1,4 +1,4 @@
-DRAFT - awaiting Brighton's approval
+APPROVED by Brighton (15 Nov 2026)
 
 # 33 v2 - Starter packs: hardening, curated hidden tests, pack import, AI authoring
 

@@ -8,7 +8,7 @@ This spec builds on the deploy design that already exists. It keeps `.github/wor
 
 ## Status and scope
 
-- **Spec only.** Per `.kiro/steering/brighton-decisions.md` (14 Nov 2026), `deploy-ops` is spec-only until Brighton approves it. No task in `tasks.md` runs before task T00 is signed off.
+- **Approved for implementation** by Brighton on 15 Nov 2026 10:26, for code, IaC and docs only. No purchases, no provisioning, no real servers, and no spending. See `.kiro/steering/brighton-decisions.md` and the Review decisions section in `design.md`. T01 and other account-creation or paid-service tasks stay blocked.
 - **In scope:** `infra/` (Terraform and Ansible), the production Compose file, the Caddy edge, release and rollback, backups, observability, security operations and verification.
 - **Out of scope:** application features, sandbox code (`judge-sandbox`), authentication logic (`auth`), payments, a second VPS, high availability, Kubernetes, and any paid service unless Brighton approves it.
 - **Constraints:** no secret value enters the repository, a log, a spec or a chat message. No file named `.env` is read or written. The main Docker daemon and the sandbox daemon stay separate. Code, config, docs and specs use neutral wording for dates and deadlines.

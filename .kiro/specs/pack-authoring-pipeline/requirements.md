@@ -1,6 +1,6 @@
 # Requirements: pack-authoring-pipeline
 
-Status: **spec only.** No task in `tasks.md` runs until Brighton approves this spec (`.kiro/steering/brighton-decisions.md`, 14 Nov 2026: "new specs … spec-only until Brighton approves them"). Open questions with the assumed choice are in `design.md`.
+Status: **approved for implementation** by Brighton on 15 Nov 2026 10:26. See `.kiro/steering/brighton-decisions.md` and `docs/kiro-log/pack-pipeline-blockers.md`. Paid services and spending stay held. Open questions keep their assumed choices except where those files record a decision.
 
 ## Introduction
 

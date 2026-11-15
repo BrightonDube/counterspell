@@ -573,4 +573,15 @@ Each question lists the choice this design assumed, so work can proceed. Brighto
 
 ## Review decisions
 
-*(Empty until Brighton signs off T00. He appends each answer to the Open questions above, and marks any answer that changes a control.)*
+**Date:** 15 Nov 2026 10:26 SAST. **Signed off by:** Brighton, for implementation of code, IaC and docs only.
+
+**Result:** T00 is signed off with the limits below. Implementation may start. Assumed choices in Q1–Q27 stand, except where a question requires a purchase, a provisioned server, a real account, or any other spending.
+
+**Brighton's limits:**
+
+- Implement code, IaC and docs only.
+- No purchases, no provisioning, no real servers, and no spending. Spending stays held.
+- `[HUMAN]` account-creation tasks (including T01) stay blocked until Brighton lifts the spending hold.
+- Host-only verification that needs the VPS is deferred. Write the code and tests that can run locally; leave host evidence tasks unchecked.
+
+**Open questions:** assumed choices accepted for this code-only pass, unless they require spending or a real server. If an assumed choice would change a security control and is not already settled in `.kiro/steering/brighton-decisions.md`, stop and record it rather than changing the control.
