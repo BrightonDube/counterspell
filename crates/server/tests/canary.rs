@@ -187,6 +187,10 @@ async fn public_surfaces(
     let reply = get(address, &path, &[("Authorization", token)]).await;
     assert_eq!(reply.status, 200, "the owner reads the run");
 
+    // The dashboard lists the user's recent runs, so it is a public surface too.
+    let dashboard = get(address, "/api/dashboard", &[("Authorization", token)]).await;
+    assert_eq!(dashboard.status, 200, "the owner reads the dashboard");
+
     let mut stream = SseResponse::open(
         address,
         &format!("/api/runs/{}/events", run.as_uuid()),
@@ -203,6 +207,7 @@ async fn public_surfaces(
         ("run_events", events),
         ("test_results", results),
         ("GET /api/runs/{id}", reply.body),
+        ("GET /api/dashboard", dashboard.body),
         ("raw SSE bytes", stream.transcript().to_owned()),
     ]
 }

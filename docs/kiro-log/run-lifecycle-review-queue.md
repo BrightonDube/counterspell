@@ -127,3 +127,18 @@ Brighton reviews each entry before the next task that depends on it starts.
 - The `web` job already ran `npm run test` (Vitest) before this task, so no change was needed there.
 - Local check: the same ignored-test command passed against the dev containers (322 tests across the workspace). The release flag check passed (0 `testkit` flags). A debug positive control showed the grep does match when the feature is on (2 matches).
 - Not verified: a real GitHub run. No push was allowed in this pass, so Brighton should confirm the job is green after the next push.
+
+## Wave 4 end-of-wave review (T34–T39): dispositions
+
+- **Fixed:** the DoD stream check passed for an empty stream. Each stream now must hold exactly five events (compile, three tests, done).
+- **Fixed:** a body error looked like a normal end of stream. The SSE test client now records a transport failure, and the DoD and restart tests assert there was none.
+- **Fixed:** the restart test finished the run before the stream opened, so it did not interrupt a live stream. It now writes two events, stops the server, writes two more, restarts, and finishes the run while the resumed stream is open.
+- **Fixed:** first-event time was measured from the start of the streams, not from each client's own `202`. It now starts at the client's own `202`.
+- **Fixed:** the CI database step had no guard against zero tests. It now fails when no `pg_` or `valkey_` test ran (checked locally: 322).
+- **Fixed:** the canary scan now includes `GET /api/dashboard`, which lists the user's recent runs.
+- **Fixed:** delivery time is no longer clamped at zero. A negative value would show clock skew.
+- **Fixed:** the report's concurrency and judge count come from the same constants the test uses.
+- **Fixed:** the results document no longer says a script copied the numbers. It says a check confirmed the values appear in the file.
+- **Declined:** the canary test does not put markers in `compile_output`. The design has no redaction rule for it. A deliberate leak through that field does fail the scan (checked by mutation in T34). Brighton to decide on a redaction rule.
+- **Declined:** the `GET /api/me/familiar` and cancel responses are not scanned. They carry no run data.
+- **Kept:** the DoD `CANARY` constant is smoke-only, and the code comment says so. The real hidden-data check is T34.

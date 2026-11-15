@@ -68,6 +68,8 @@ pub struct SseResponse {
     text: String,
     /// Every body byte read so far, exactly as the server sent it.
     transcript: String,
+    /// True when the body ended with a transport error rather than a normal end of stream.
+    failed: bool,
 }
 
 impl SseResponse {
@@ -102,6 +104,7 @@ impl SseResponse {
             body: Some(response.into_body()),
             text: String::new(),
             transcript: String::new(),
+            failed: false,
         }
     }
 
@@ -117,9 +120,17 @@ impl SseResponse {
             }
             let body = self.body.as_mut()?;
             let next = body.frame().await;
-            let Some(Ok(frame)) = next else {
-                self.body = None;
-                return None;
+            let frame = match next {
+                Some(Ok(frame)) => frame,
+                Some(Err(_)) => {
+                    self.failed = true;
+                    self.body = None;
+                    return None;
+                }
+                None => {
+                    self.body = None;
+                    return None;
+                }
             };
             if let Ok(data) = frame.into_data() {
                 let chunk = String::from_utf8_lossy(&data);
@@ -127,6 +138,12 @@ impl SseResponse {
                 self.transcript.push_str(&chunk);
             }
         }
+    }
+
+    /// True when the connection failed mid-body. A normal end of stream is not a failure.
+    #[must_use]
+    pub fn transport_failed(&self) -> bool {
+        self.failed
     }
 
     /// Every byte of the body read so far, as the server wrote it. Used to scan the raw stream.

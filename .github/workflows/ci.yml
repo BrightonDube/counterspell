@@ -122,7 +122,11 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$passed" -eq 0 ]; then echo "::error::No Rust tests ran. TDD: every change ships with tests."; exit 1; fi
       - name: Database and Valkey tests (ignored pg_ and valkey_)
-        run: cargo test --workspace --all-features --locked -- --ignored pg_ valkey_
+        run: |
+          set -o pipefail
+          cargo test --workspace --all-features --locked -- --ignored pg_ valkey_ 2>&1 | tee "$RUNNER_TEMP/db-test.log"
+          passed=$(grep -oE 'test result: ok\. [0-9]+ passed' "$RUNNER_TEMP/db-test.log" | awk '{s+=$4} END{print s+0}')
+          if [ "$passed" -eq 0 ]; then echo "::error::No database or Valkey tests ran. Check the pg_ and valkey_ test prefixes."; exit 1; fi
       - name: Release builds carry no test kit
         run: |
           set -o pipefail

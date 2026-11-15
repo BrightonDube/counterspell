@@ -44,6 +44,10 @@ const OTHER_USERS: usize = 5;
 const RESUMERS: usize = 5;
 const WORKERS: usize = 3;
 const TESTS_PER_RUN: u32 = 3;
+/// Events in each run's log: `compiling`, one `test` per test, then `done`.
+const EVENTS_PER_RUN: usize = 5;
+/// Claims each judge may run at once. Written into the judge config and the report from this one constant.
+const JUDGE_CONCURRENCY: usize = 2;
 const TEST_DELAY: Duration = Duration::from_millis(40);
 /// A marker that stands for hidden data. The scripted judges never hold it, so the scan proves only that no
 /// public surface carries it. The canary test (T34) covers a judge that does hold hidden data.
@@ -67,6 +71,8 @@ struct Submitted {
     user: usize,
     run: RunId,
     sent: Instant,
+    /// When the client received its `202`. The first-event time is measured from here.
+    acked: Instant,
     enqueue_ms: f64,
 }
 
@@ -119,9 +125,10 @@ async fn start_judge(pool: &PgPool, name: &str, stop: watch::Receiver<bool>) -> 
         .connect_with((*pool.connect_options()).clone())
         .await
         .expect("judge pool");
-    let config =
-        JudgeConfig::from_lookup(|key: &str| (key == "JUDGE_CONCURRENCY").then(|| "2".to_owned()))
-            .expect("judge config");
+    let config = JudgeConfig::from_lookup(|key: &str| {
+        (key == "JUDGE_CONCURRENCY").then(|| JUDGE_CONCURRENCY.to_string())
+    })
+    .expect("judge config");
     let executor = ScriptedExecutor::new(Script::Pass {
         tests: TESTS_PER_RUN,
         delay: TEST_DELAY,
@@ -150,6 +157,7 @@ async fn submit(address: std::net::SocketAddr, user: usize) -> Submitted {
     )
     .await;
     let enqueue_ms = elapsed_ms(sent);
+    let acked = Instant::now();
     assert_eq!(reply.status, 202, "submit for user {user}: {}", reply.body);
     let parsed: Value = serde_json::from_str(&reply.body).expect("JSON reply");
     let run = RunId::from_str(parsed["run_id"].as_str().expect("run_id")).expect("valid run id");
@@ -157,6 +165,7 @@ async fn submit(address: std::net::SocketAddr, user: usize) -> Submitted {
         user,
         run,
         sent,
+        acked,
         enqueue_ms,
     }
 }
@@ -168,10 +177,10 @@ async fn stream_to_done(
     run: RunId,
     user: usize,
     resume: bool,
+    acked: Instant,
 ) -> (Vec<i64>, f64, f64) {
     let path = format!("/api/runs/{}/events", run.as_uuid());
     let token = bearer(user);
-    let opened = Instant::now();
     let mut first = SseResponse::open(address, &path, &[("Authorization", token.as_str())]).await;
     let mut seen: Vec<i64> = Vec::new();
     let mut first_event_ms = None;
@@ -183,12 +192,16 @@ async fn stream_to_done(
         if frame.kind().is_none() {
             continue;
         }
-        first_event_ms.get_or_insert_with(|| elapsed_ms(opened));
+        first_event_ms.get_or_insert_with(|| elapsed_ms(acked));
         seen.push(frame.seq().expect("numbered event"));
         if frame.kind() == Some("done") {
             return (seen, first_event_ms.unwrap_or(0.0), epoch_ms());
         }
     }
+    assert!(
+        !first.transport_failed(),
+        "run {run}: the first stream ended with a transport error"
+    );
     if !resume {
         return (seen, first_event_ms.unwrap_or(0.0), epoch_ms());
     }
@@ -215,6 +228,10 @@ async fn stream_to_done(
             break;
         }
     }
+    assert!(
+        !second.transport_failed(),
+        "run {run}: the resumed stream ended with a transport error"
+    );
     (seen, first_event_ms.unwrap_or(0.0), epoch_ms())
 }
 
@@ -366,7 +383,7 @@ async fn pg_dod_twenty_concurrent_runs(pool: PgPool) {
     for (index, sub) in submitted.iter().copied().enumerate() {
         streams.spawn(async move {
             let (seen, first_event_ms, done_received_ms) =
-                stream_to_done(address, sub.run, sub.user, index < RESUMERS).await;
+                stream_to_done(address, sub.run, sub.user, index < RESUMERS, sub.acked).await;
             Observed {
                 run: sub.run,
                 enqueue_ms: sub.enqueue_ms,
@@ -472,6 +489,12 @@ async fn pg_dod_twenty_concurrent_runs(pool: PgPool) {
             "run {} stream is gap-free and unduplicated",
             stream.run
         );
+        assert_eq!(
+            stream.seen.len(),
+            EVENTS_PER_RUN,
+            "run {} delivered its whole log",
+            stream.run
+        );
     }
 
     // No canary on any public surface, and the scan had real text to check.
@@ -501,7 +524,8 @@ async fn pg_dod_twenty_concurrent_runs(pool: PgPool) {
         completion.push(stream.completion_ms);
         queue_wait.push(db.queue);
         execution.push(db.execution);
-        delivery.push((stream.done_received_ms - db.done_created).max(0.0));
+        // Kept signed: a negative value would show clock skew between the client and the database.
+        delivery.push(stream.done_received_ms - db.done_created);
     }
     let enqueue_p95 = report::stats(&enqueue).expect("enqueue samples").p95;
     assert!(
@@ -525,7 +549,7 @@ async fn pg_dod_twenty_concurrent_runs(pool: PgPool) {
     let body = json!({
         "runs": RUNS,
         "judges": WORKERS,
-        "judge_concurrency": 2,
+        "judge_concurrency": JUDGE_CONCURRENCY,
         "metrics": report::to_json(&rows),
     });
     std::fs::write(&path, serde_json::to_string_pretty(&body).expect("JSON"))
