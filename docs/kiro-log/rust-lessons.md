@@ -991,3 +991,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `char::is_alphanumeric` treats superscript digits such as `²` as alphanumeric, so `n²` is a word edge like any digit.
 - `Option::is_none_or` reads "no character, or a character that passes" in one step, which keeps the boundary check short.
 - A strict check is a choice: `linear search` is rejected for a quadratic-only allowed set, because the guard counts any `linear` as a class claim.
+
+# Rust lesson: efficiency-familiar T35
+- A `PromptInput` struct only has fields for the allowed facts, so data that is not listed cannot reach the prompt. The type is the guarantee, not a runtime filter.
+- `&'a str` fields borrow the caller's strings, so building a prompt copies text only once, into the `String` that is returned.
+- `str::replace` returns a new `String` and leaves the input alone, which is how the code's marker text is neutralised without changing the caller's copy.
+- `writeln!` into a `String` returns a `Result`; the error can never happen for a `String`, so `let _ =` is a deliberate, commented choice.

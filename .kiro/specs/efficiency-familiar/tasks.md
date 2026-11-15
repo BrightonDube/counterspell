@@ -357,7 +357,7 @@ Conventions for every web task:
 
 ## Wave 4: the speech bubble
 
-- [ ] **T35 [P] (30 min) Familiar prompt builder (P19)**
+- [x] **T35 [P] (30 min) Familiar prompt builder (P19)**
   - Files: `crates/server/src/familiar/prompt.rs`.
   - Build the `Prompt` for `Kind::Familiar` from: the code (≤ 8 KB), the stored measured block, the reference class, the verdict summary and the public ghost fields. Use the hints data markers and instruction skeleton; add the "never name an unmeasured complexity", "unsure when low", "never optimal" lines. Return a `NotApplicable`/`CodeTooLarge` variant instead of a prompt when needed.
   - Tests: P19 (canary in a hidden expected output or in the statement never appears; size bound under 16 KiB for any code up to the limit); the prompt includes no identity fields; an injection string in the code stays inside the data markers.
