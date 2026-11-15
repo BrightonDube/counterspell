@@ -225,7 +225,10 @@ pub fn router(state: AuthState) -> Router {
             post(handlers::link::start),
         )
         .route("/api/auth/link/email", post(handlers::link::email))
-        .route("/api/me", get(handlers::me::me))
+        .route(
+            "/api/me",
+            get(handlers::me::me).delete(handlers::delete::delete_account),
+        )
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);
     let routes = routes.merge(config_router(settings));

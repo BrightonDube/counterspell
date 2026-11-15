@@ -374,7 +374,7 @@ Conventions for every Rust task:
   - Verify: `cargo test -p counterspell-server auth_logs -- --include-ignored`.
   - Preserve: the test fails loudly if a new log line leaks a canary.
 
-- [ ] **T36 [S] (30 min) Delete account (Could)**
+- [x] **T36 [S] (30 min) Delete account (Could)**
   - Files: `crates/server/src/auth/handlers/delete.rs`, `crates/server/tests/pg_auth_delete.rs`; the settings page button (small edit to T32's file).
   - `DELETE /api/me {confirm_handle}`: capability, handle must match, `409 runs_active` when a non-terminal job exists, delete the user (cascade), delete unused email tokens for the address, clear the cookie, `204`.
   - Tests: everything of the user is gone (identities, sessions, tokens, flows, submissions and dependent rows); another user is untouched; wrong handle changes nothing; an active run blocks; the demo account is refused and the trigger would refuse it anyway.
