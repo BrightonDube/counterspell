@@ -164,7 +164,7 @@ Conventions for every web task:
 
 ## Wave 2: persistence, judge wiring and read model
 
-- [ ] **T15 [S] [SUPERVISED] (30 min) Migration: columns, constraints, freeze trigger, tables and grants**
+- [x] **T15 [S] [SUPERVISED] (30 min) Migration: columns, constraints, freeze trigger, tables and grants**
   - Files: `migrations/<timestamp>_efficiency_familiar.sql` (timestamp later than every existing migration).
   - Add the five `submissions` columns and the `submissions_familiar_ck` constraint from the design; the separate `cs_familiar_frozen` trigger; `run_timings` and `problem_baselines` (`IF NOT EXISTS`); the grants in the design's privilege table (column-level `UPDATE` for the judge role, none for the server role). No `DELETE` or `TRUNCATE` grants. No passwords or secrets.
   - Requirements: R7.1 to R7.5, R12.2.

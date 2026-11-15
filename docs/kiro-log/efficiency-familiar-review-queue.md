@@ -8,3 +8,11 @@
   2. The calibration record (`docs/kiro-log/efficiency-familiar-calibration.md`), including the attempts that were rejected.
   3. Whether the sampled guarantee (zero Medium two classes off in 1M cases per class) is enough, or whether the algorithm should require five points for `Medium` (see blockers, decision 1).
   4. The regression test `the_spiked_linear_counterexample_is_never_a_wrong_medium_class` and the committed `properties_complexity.proptest-regressions`.
+
+## T15: migration `20261115130000_efficiency_familiar.sql` (pending commit hash)
+
+- Verified on a scratch database in the local Postgres 17 container: the full migration chain applied in order, then this file a second time with no error. The scratch database was dropped.
+- Privilege check: the server role cannot write `familiar_mood`; the judge role can; the judge role cannot `DELETE` from `submissions`; the judge role can `INSERT` into `run_timings`.
+- What to check:
+  1. The server role's table-level `INSERT` on `submissions` was replaced by a column list that leaves out the five familiar columns (`REVOKE INSERT` then `GRANT INSERT (...)`). Confirm the server's insert statement uses only the listed columns.
+  2. The `submissions_familiar_ck` constraint and the `cs_familiar_frozen` trigger.
