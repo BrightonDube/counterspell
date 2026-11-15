@@ -1233,3 +1233,8 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A `match` on a `(bool, Option<_>)` pair covers each combination once. The compiler errors if a branch is missing.
 - A test double (`ScriptedCollector`) replaces the sandbox at the trait edge, so the failure matrix runs with no Docker and no database.
 - `?` on `collector.collect(plan).await` passes `ExecError` up unchanged, so the worker can tell a retryable infrastructure error from a finished run.
+
+## judge-sandbox T21 (bollard start, exec, files, facts, kill, remove)
+- `OutputCollector` keeps one shared byte budget for stdout and stderr. Each write is cut to the space left, so memory never grows past the cap, even for one huge write.
+- `Pin<Box<dyn Stream + Send>>` is how bollard hands back an exec's output. `Pin` keeps the stream in place while it is polled, and `Box<dyn ...>` hides the concrete type behind a trait object.
+- `map_error` is a `match` on the bollard error enum. Each daemon failure becomes one `InfraError` variant, so a daemon fault can never turn into a user's wrong answer.
