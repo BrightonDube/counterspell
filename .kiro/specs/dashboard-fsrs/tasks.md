@@ -83,7 +83,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T05 and the existing server testkit.
   - Rust lesson: explain borrowing a test response body, `serde_json` value ownership, and how stable error codes decouple clients from SQL details.
 
-- [ ] **T08 [S] (30 min) Core freeze-safe checkpoint** [SUPERVISED]
+- [x] **T08 [S] (30 min) Core freeze-safe checkpoint** [SUPERVISED]
   - Files: only implementation fixes required by this checkpoint; no planned feature expansion.
   - Run the dashboard core unit, database, and HTTP tests, plus `cargo fmt --all -- --check`, Clippy with warnings denied, workspace tests, frontend check/build, `cargo deny check licenses`, and `docker compose config` as available in the current repository.
   - Confirm the core API is authenticated, one-query, privacy-tested, deterministic, and free of fabricated data. Confirm the server has no Docker dependency/socket and Valkey remains unused for truth.
