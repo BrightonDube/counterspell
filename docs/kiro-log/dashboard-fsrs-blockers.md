@@ -93,3 +93,20 @@ No [stretch] task (T11 to T18) was started, as the instructions require.
   `SKILL.md` and `reference/craft-floor.md` directly, then built the screen to those rules: no eyebrow,
   no nested cards, no coloured side borders, no decorative motion, text labels beside colour.
 - **[stretch] T11 to T18 not started**, as instructed.
+
+## Final state of this run
+
+- Ticked: T01 to T09 and T19 (optional). T06 and T08 are SUPERVISED and logged in the review queue.
+- Open: T10 (deferred: E2E). T11 to T18 are [stretch] and were not started, as instructed.
+- Review fixes made: weak-concept list capped at ten (server and parser), parser checks for timestamps,
+  dates, UUIDs, unique keys, known status and verdict values and streak consistency, a 320-byte text cap.
+
+## Minor review findings left open
+
+- Wave 2 (frontend): the fetch runs in `$effect` and a retry does not cancel the load still in flight.
+  `onMount` with an `AbortController` would fix it. The components sit in one file instead of the
+  `components/` folder that T09 names. Recent runs show raw `mode` values (`run`, `submit`) and
+  lowercase difficulty words. The dashboard has no keyboard-focus test.
+- Wave 1 (Rust): `DashboardError::Internal` (from T01) is never constructed. A decode failure reaches
+  the handler as `sqlx::Error::Decode` with no context string. The design allows 503 for an
+  unbuildable response, so that status is correct.
