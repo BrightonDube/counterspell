@@ -130,3 +130,10 @@ Done in this pass (all in `web/` and this log): T15 (`09f1721`), T16 (`8a36675`)
 - Minor: `::selection` in `app.css` is CSS styling with no test (an exception under the test-first rule, as configuration).
 - Test-change markers used: `R5` (`Hero.test.ts`, `hero-media.test.ts`: the approved art replaces the flat layers, per the 15 Nov amendment) and `R6` (`GhostBeats.test.ts`: decorative beat icons are now approved art, still hidden from assistive technology). Each replaced an assertion, and no test was removed.
 - No Rust changed, so no Rust lesson was added.
+
+## Run note (15 Nov 2026, resume pass): no open implementation task; T13 and T14 still deferred E2E
+
+- Every non-stretch task T01 to T12 and T15 to T20 is already ticked in `tasks.md`, so this pass changed no task.
+- Rechecked on this machine: no Chromium or Chrome binary is installed, so T13 (Lighthouse) and the browser part of T14 cannot run. Both stay unchecked. Unblock: install Chrome, then follow the T13 steps above.
+- Rechecked the landing code: `npm run check` reports 0 errors and 0 warnings. `vitest --run src/lib/landing src/routes` passes 13 files and 66 tests.
+- Still open for Brighton: the Compose smoke test (`http://localhost/` through Caddy), the rendered look (phone, tablet, desktop), and the decision on the eyebrow and the 42.6 KB gzip JavaScript (see the Minor findings above).
