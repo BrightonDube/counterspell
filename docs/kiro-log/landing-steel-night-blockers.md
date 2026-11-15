@@ -89,3 +89,44 @@ T08 and T12 can proceed once this is implemented. T13 and T14 still have deferre
   - `web/src/app.html` has no `<script>`. The built `index.html` has one inline `<script>`, which is SvelteKit's own hydration bootstrap, not app code.
   - Built CSS has one `tailwindcss.com` string, inside the licence banner comment. No external fetch was found in the built HTML, CSS or JS.
 - T14 still open, deferred E2E / Compose: the keyboard path and visible focus in a browser, the network log in devtools, and the Compose smoke test for `http://localhost/` through Caddy. Unblock: a browser pass and the Compose stack, both outside this run's scope.
+
+## Run note (15 Nov 2026, real-art pass): T15 to T20 done; T13 and T14 still deferred E2E
+
+Done in this pass (all in `web/` and this log): T15 (`09f1721`), T16 (`8a36675`), T17 (`ee2f743`), T18 (`c76bcfe`), optional T19 (`bb14295`), optional T20 (also `bb14295`, see the commit note below), and a review fix (`2654d1b`). Tests: `npm run check` and `npm run build` pass, and `vitest` is green for `src/lib` and `src/routes` (406 tests).
+
+### Conflict: R25 (LCP) against the real-art amendment (for Brighton)
+
+- R25 says the largest contentful paint element must be the headline, and no raster image may be the largest element.
+- The 15 Nov amendment in `design.md` makes the poster the LCP image, as a full-bleed `<picture>` at `fetchpriority="high"`.
+- Decision: the amendment wins, because it is later and was approved by Brighton. R25 is superseded for the poster. The headline and beats remain in the static HTML.
+- Unblock or decide: if Brighton wants the headline to stay the LCP, the poster needs to become smaller than the headline, or move out of the first viewport. Lighthouse (T13) will show which element LCP reports.
+
+### Commit note (T19 and T20)
+
+- The T19 and T20 changes were run as parallel tool calls. The T20 files were staged before the T19 commit ran, so commit `bb14295` contains the T19 and T20 changes together, plus both ticks in `tasks.md`. The content is correct and its tests passed. The commit message names only T19. History was not rewritten.
+
+### T13 Lighthouse mobile median: deferred E2E (still open)
+
+- No Chrome or Chromium is installed on this machine (`which chromium chromium-browser google-chrome` returns nothing), so Lighthouse cannot run.
+- Unblock: install Chrome, serve the production build through `counterspell-server` on localhost, then run `npx lighthouse http://localhost:8080/ --preset=mobile --only-categories=performance` three times. Record the scores, median, LCP, CLS, TBT, the Lighthouse version and the run date in `docs/kiro-log/landing-steel-night-lighthouse.md`.
+- Byte figures already measured for this check are in `docs/kiro-log/landing-steel-night-art.md`. The route JavaScript is about 42.6 KB gzip against a 35 KB design budget, so T13 is the place to decide on it.
+
+### T14 accessibility, privacy and Compose smoke: deferred E2E (still open)
+
+- Static checks repeated for the new code in this pass: no raw colour values, no external URL, and `app.html` has no `<script>`. The contrast figures in the earlier T14 note still hold, because no text colour changed.
+- Still needed: the keyboard path and focus in a browser, the devtools network log, and the Compose smoke test (`http://localhost/` through Caddy).
+
+### Review findings (self-review against `requesting-code-review`; no subagent was started)
+
+- Fixed (Important): the 168 KB fog overlay loaded with the first render. Overlays now load after first paint (T18). Commit `c76bcfe`.
+- Fixed (Important): the hero video had `autoplay`, so it started loading even off screen. Removed. Commit `2654d1b`.
+- Minor: the video mount and the IntersectionObserver play/pause logic have no unit test (happy-dom has no real media). Only the pure source choice is tested. Verify in a browser.
+- Minor: the poster `onerror` fallback only catches failures after hydration. A poster that fails before the script loads keeps the broken image.
+- Minor: the route JavaScript is about 42.6 KB gzip against the 35 KB design budget (framework runtime is most of it). Decide after the T13 run.
+- Minor: Geist is one 69.5 KB variable file (from the earlier T02 note).
+- Minor: the eyebrow "Counterspell" above the headline conflicts with the craft floor's eyebrow ban. Kept, because the design requires it. Brighton can drop it.
+- Minor: TDD order slipped in three places. The `after-paint` tests were written with their module, not red first. The `ErrorView` component was written before its test was run. And the `drops the far fog layer` test was first vacuous and was strengthened. No behaviour is affected, but these were not captured as red runs.
+- Minor: `$lib` does not resolve under `jsconfig.json` in `svelte-check`, so `+error.svelte` uses a relative import, as `+page.svelte` does.
+- Minor: `::selection` in `app.css` is CSS styling with no test (an exception under the test-first rule, as configuration).
+- Test-change markers used: `R5` (`Hero.test.ts`, `hero-media.test.ts`: the approved art replaces the flat layers, per the 15 Nov amendment) and `R6` (`GhostBeats.test.ts`: decorative beat icons are now approved art, still hidden from assistive technology). Each replaced an assertion, and no test was removed.
+- No Rust changed, so no Rust lesson was added.
