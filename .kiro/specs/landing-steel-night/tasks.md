@@ -200,7 +200,7 @@ Replace the mid-page hero with the approved variant B title screen. Visual refer
   - Verify: RED then GREEN tests for heading levels, for the extra copy (and the R9 regex still holds for all of `copy.ts`), and that beats and CTA remain in the static HTML. `npm run check && npm run build`. Visually, the join is a fade, not a hard line.
   - Requirements: R8, R9, R10, R21, R27. Preserve: Submit / Hunt / Understand wording already approved; CTA labels unchanged.
 
-- [ ] **T26 [S] (25 min) Impeccable audit and prerender check for the title screen**
+- [x] **T26 [S] (25 min) Impeccable audit and prerender check for the title screen**
   - Files: fixes in `web/` only, `docs/kiro-log/landing-steel-night-title-screen.md` (new).
   - Run the Impeccable audit and critique playbooks on the new hero and the fade into the section below. Fix Critical and Important findings. Confirm first-load bytes (poster, Creepster, Geist, JS) and that the living-loop video is not requested before first paint and never under reduced motion. Confirm the built `index.html` contains the wordmark, ENTER (`/login`) and "Learn why your code breaks." without JavaScript.
   - Depends on: T23, T24, T25.
