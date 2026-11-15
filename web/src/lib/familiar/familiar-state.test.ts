@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyComplexity,
+  applyHydratedFamiliar,
   applyMeasuredFamiliar,
+  applyRestarted,
   applyTerminal,
   familiarView,
   initialFamiliarState,
@@ -133,5 +135,35 @@ describe('preferences and motion', () => {
     const view = familiarView(state, { muted: false, hidden: true }, false);
     expect(view.visible).toBe(false);
     expect(view.liveText).toBe('Familiar: uneasy.');
+  });
+});
+
+describe('reducer discipline (efficiency-familiar T33)', () => {
+  // Breaks if a restarted attempt keeps the old result, so a retry shows a mood from the attempt it replaced.
+  it('clears the mood and complexity when a restarted event arrives', () => {
+    const measured = applyComplexity(applyMeasuredFamiliar(initialFamiliarState(), mood(2)), fact());
+    const cleared = applyRestarted(measured);
+    expect(cleared.mood).toBeNull();
+    expect(cleared.complexity).toBeNull();
+  });
+
+  // Breaks if a reload that replays history is treated as live, which would replay the burst and the live text.
+  it('hydrates a stored mood without marking it live', () => {
+    const hydrated = applyHydratedFamiliar(initialFamiliarState(), mood(4));
+    expect(hydrated.mood).toBe(4);
+    expect(hydrated.live).toBe(false);
+  });
+
+  // Breaks if a live measured event does not mark the state live, so its burst would be planned as history.
+  it('marks a measured event as live', () => {
+    const measured = applyMeasuredFamiliar(initialFamiliarState(), mood(5));
+    expect(measured.live).toBe(true);
+  });
+
+  // Breaks if an unrelated event (a terminal verdict or a complexity fact) changes the mood on its own.
+  it('leaves the mood unchanged on unrelated events', () => {
+    const measured = applyMeasuredFamiliar(initialFamiliarState(), mood(3));
+    const after = applyComplexity(applyTerminal(measured, { verdict: 'accepted', hasBench: true }), fact());
+    expect(after.mood).toBe(3);
   });
 });

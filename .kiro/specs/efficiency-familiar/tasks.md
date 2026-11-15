@@ -337,7 +337,7 @@ Conventions for every web task:
   - Preserve: the server role writes only `familiar_prefs`.
   - Rust lesson: validating untrusted JSON into a typed struct with `serde`.
 
-- [ ] **T33 [S] (30 min) Browser state rules and preference sync (P23)**
+- [x] **T33 [S] (30 min) Browser state rules and preference sync (P23)**
   - Files: `web/src/lib/familiar/familiar-state.ts`, `web/src/lib/api/familiar.ts` (extend or create), tests.
   - Ensure the reducer changes mood only on a `familiar` event (`live = true`) or on hydration from the read model (`live = false`, effect dropped), clears on `restarted`, and has no input from editor changes or the guess. Preferences: load from `GET /api/me/familiar`, apply locally first, `PATCH` in the background, mark "not synced" on failure.
   - Tests: edits, language switches and unrelated events leave the state unchanged; duplicates by `seq` ignored; reload hydration shows a static face; a failed PATCH keeps the local choice.
