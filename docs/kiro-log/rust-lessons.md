@@ -1208,3 +1208,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A trait method can return an error that carries data. The test executor puts its markers only into an error (the internal `last_error`) and into typed records, so the test shows which channels can carry hidden text.
 - Generated markers (a UUID inside each string) prove that a match came from this run's data and not from an accidental match in other output.
 - A scan that finds nothing proves little. The test asserts that each surface is non-empty first, and a temporary leak made the same test fail, so the scan is known to work.
+
+# Rust lesson: run-lifecycle T35
+
+- `JoinHandle::abort` stops a task at its next `.await`. The restart tests use it to model a crashed judge or server, and the work that task held (its lease, its connections) is then recovered from the database.
+- A `const` with a comment is the simplest home for a value that is not in configuration (the database default `max_attempts`). It is clearer than a hidden literal in a loop.
+- `Value` from `serde_json` compares directly with plain numbers and strings (`envelope()["attempt"] == 2`), which keeps test assertions short.

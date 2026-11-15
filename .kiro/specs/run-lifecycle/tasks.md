@@ -347,7 +347,7 @@ Conventions for every Rust task:
   - Preserve: the canary list is generated per run so no real answer is ever stored in the test.
   - Rust lesson: why tests use generated markers instead of real data.
 
-- [ ] **T35 [S] (30 min) Restart-recovery integration tests**
+- [x] **T35 [S] (30 min) Restart-recovery integration tests**
   - Files: `crates/server/tests/restart.rs`.
   - `restart_server_mid_stream` (drop the server, start a new router on the same database, the client resumes with `Last-Event-ID`, full log delivered, no duplicates after de-duplication); `restart_judge_fleet_mid_run` (kill all workers during a run, start new ones, the reaper recovers the run, `restarted` appears, one terminal result); `restart_with_no_judge_expires_stale_queue` (jobs wait, then expire when a judge starts); `pg_retries_exhausted_end_to_end` (executor `Hang` on every attempt with a short lease → `internal_error`, `error` event, `GET` agrees).
   - Requirements: R9, R13.9, R22.4, R22.7, P5, P15, P17.
