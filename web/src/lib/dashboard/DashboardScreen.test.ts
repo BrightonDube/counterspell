@@ -155,4 +155,24 @@ describe('DashboardScreen', () => {
     expect(screen.getByText('Practise a concept you missed')).toBeTruthy();
     expect(screen.queryByText('Accepted')).toBeNull();
   });
+
+  // Breaks if a response the page cannot read shows an empty dashboard instead of the error state with retry.
+  it('shows the error state, not an empty dashboard, when the response cannot be read', async () => {
+    const malformed = new ApiRequestError(
+      200,
+      'malformed',
+      'The server sent a response this page cannot read.'
+    );
+    render(DashboardScreen, {
+      props: { load: () => Promise.reject(malformed) }
+    });
+
+    expect(
+      await screen.findByText(
+        'The server sent a response this page cannot read.'
+      )
+    ).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
+    expect(screen.queryByText('No practice yet')).toBeNull();
+  });
 });

@@ -22,6 +22,9 @@ use super::types::{
 /// The most suggested problems the dashboard shows.
 const SUGGESTION_LIMIT: usize = 3;
 
+/// The most weak concepts the response lists. The suggestions still rank against every weak concept.
+const WEAK_CONCEPT_LIMIT: usize = 10;
+
 /// One statement for the whole dashboard. It returns one row: the JSON object and the UTC dates of
 /// the owner's completed runs. Only completed runs count as activity, and only accepted ones solve a
 /// problem. Only published problems can be solved, suggested or listed as candidates.
@@ -235,6 +238,7 @@ fn build_response(
         weak_concepts: raw
             .weak_concepts
             .into_iter()
+            .take(WEAK_CONCEPT_LIMIT)
             .map(|concept| WeakConcept {
                 slug: concept.slug,
                 name: concept.name,
@@ -412,6 +416,32 @@ mod tests {
         assert_eq!(recent.verdict, None);
         assert_eq!(recent.finished_at, None);
         assert_eq!(recent.problem.slug, "two-sum");
+    }
+
+    #[test]
+    fn weak_concepts_are_capped_at_the_documented_limit_in_read_order() {
+        let mut read = empty_read();
+        let concepts: Vec<Value> = (0..11)
+            .map(|index| {
+                json!({
+                    "slug": format!("concept-{index:02}"),
+                    "name": format!("Concept {index}"),
+                    "failure_count": 11 - index,
+                    "last_failed_at": "2026-11-14T18:20:00Z"
+                })
+            })
+            .collect();
+        read["weak_concepts"] = Value::Array(concepts);
+
+        let response = build_response(read, &[], date(2026, Month::November, 15)).expect("maps");
+
+        assert_eq!(
+            response.weak_concepts.len(),
+            10,
+            "the response caps the weak list at ten"
+        );
+        assert_eq!(response.weak_concepts[0].slug, "concept-00");
+        assert_eq!(response.weak_concepts[9].slug, "concept-09");
     }
 
     #[test]

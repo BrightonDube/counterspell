@@ -1153,3 +1153,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A test server with a pool that cannot connect (`connect_lazy` plus a short `acquire_timeout`) forces the real failure path. The test then checks the response body, not only the status code.
 - `Value::as_object().keys()` gives the top-level keys. Sorting them and comparing with a literal list catches an extra field, such as a leaked code column, that a "contains" check would miss.
 - `Option` fields serialise as `null`. `is_null()` checks an unfinished run, and `get("code").is_none()` checks that a field is absent, so the two checks are different.
+
+## dashboard-fsrs review fix: cap the weak-concept list
+
+- `.take(WEAK_CONCEPT_LIMIT)` is a lazy iterator adapter. It stops after ten items and never copies the rest, so the cap costs nothing.
+- The ranking still receives every weak concept, because the cap applies only when the response is built. A cap placed earlier would change which problems are suggested.
+- The test builds eleven rows and checks both ends of the kept range, so an off-by-one cap is caught.
