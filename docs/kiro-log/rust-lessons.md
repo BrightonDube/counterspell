@@ -973,3 +973,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `&mut C` in a generic argument lets a test count how many times the collector ran, because the test keeps ownership of the double.
 - Borrowed data in a `match` (`BenchState::Points(&points)`) lives as long as the outcome it borrows, so no clone is needed.
 - A pure builder function (`assess_input`) keeps the struct update in one place, and `..` copies the fields that do not change.
+
+# Rust lesson: efficiency-familiar T21
+- `sqlx::query(...).bind(...)` takes the values separately from the SQL text, so user-supplied strings never become SQL.
+- `rows_affected()` tells you how many rows an `INSERT ... ON CONFLICT DO NOTHING` really added, which is how the store reports "already there".
+- `try_from` turns a Rust `u64` into a database `int` with an error, and `?` returns that error, so an oversized value cannot be stored silently.
+- A `thiserror` enum with `#[from] sqlx::Error` lets `?` convert database errors into the module's own error type.
