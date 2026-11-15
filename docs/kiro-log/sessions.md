@@ -260,3 +260,8 @@
  docs/KIRO_USAGE.md        | 8 ++++++++
  docs/kiro-log/sessions.md | 7 +++++++
  2 files changed, 15 insertions(+)
+- 2026-11-15T16:00:46Z | model: not reported | last commit: 66a5b20 landing-steel-night: record resume pass; T13 and T14 still deferred E2E
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
