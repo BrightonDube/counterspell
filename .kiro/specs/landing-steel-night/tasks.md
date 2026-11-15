@@ -66,7 +66,7 @@ Conventions for every task:
   - Verify: component test checks the `href` values and the presence of the focus-visible class; manual keyboard check.
   - Requirements: R17, R18, R19. Preserve: no payment text, no paid tier.
 
-- [ ] **T08 [S] (30 min) Compose the landing route and keep the smoke marker**
+- [x] **T08 [S] (30 min) Compose the landing route and keep the smoke marker**
   - Files: `web/src/routes/+page.svelte`.
   - Replace the hello page body with `<main data-smoke-marker="counterspell-svelte-static" lang="en">` containing `Hero`, `GhostBeats`, `SignUpCta`. Keep `<svelte:head>` with the title and description. Call `planLanding` in `onMount`; in static mode do nothing more.
   - Depends on: T04, T05, T06, T07.

@@ -130,12 +130,15 @@ impl AppState {
     }
 }
 
+/// File name of the single-page fallback. The `SvelteKit` static adapter writes it, so `/` keeps its own prerendered `index.html`.
+pub const SPA_FALLBACK_FILE: &str = "200.html";
+
 /// Builds the router: `/api/*` routes, then the static web app with its single-page fallback.
 ///
 /// Unknown `/api/*` paths return a JSON `404`, never the HTML fallback.
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
-    let index_file = static_dir.join("index.html");
+    let index_file = static_dir.join(SPA_FALLBACK_FILE);
     let static_files = ServeDir::new(static_dir).fallback(ServeFile::new(index_file));
     let body_limit =
         usize::try_from(state.config.limits.request_body_limit_bytes).unwrap_or(usize::MAX);
@@ -174,7 +177,7 @@ async fn api_not_found() -> ApiError {
     ApiError::not_found("API route not found")
 }
 
-/// Checks that the static directory and its `index.html` exist, so a bad deploy fails at start-up.
+/// Checks that the static directory and its SPA fallback file (`200.html`) exist, so a bad deploy fails at start-up.
 ///
 /// # Errors
 ///
@@ -196,12 +199,12 @@ pub fn ensure_static_files(static_dir: &Path) -> Result<(), io::Error> {
         ));
     }
 
-    let index_file = static_dir.join("index.html");
+    let index_file = static_dir.join(SPA_FALLBACK_FILE);
     let index_metadata = std::fs::metadata(&index_file).map_err(|error| {
         io::Error::new(
             error.kind(),
             format!(
-                "SPA entry point {} is unavailable: {error}",
+                "SPA fallback {} is unavailable: {error}",
                 index_file.display()
             ),
         )
@@ -209,7 +212,7 @@ pub fn ensure_static_files(static_dir: &Path) -> Result<(), io::Error> {
     if !index_metadata.is_file() {
         return Err(io::Error::new(
             io::ErrorKind::InvalidInput,
-            format!("SPA entry point {} is not a file", index_file.display()),
+            format!("SPA fallback {} is not a file", index_file.display()),
         ));
     }
 

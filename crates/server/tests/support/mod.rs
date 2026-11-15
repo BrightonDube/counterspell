@@ -37,7 +37,8 @@ impl Fixture {
             std::process::id()
         ));
         std::fs::create_dir_all(&dir).expect("fixture dir");
-        std::fs::write(dir.join("index.html"), "<main>spa-entry</main>").expect("index");
+        std::fs::write(dir.join("index.html"), "<main>landing</main>").expect("index");
+        std::fs::write(dir.join("200.html"), "<main>spa-entry</main>").expect("fallback");
         std::fs::write(dir.join("asset.txt"), "plain-asset").expect("asset");
         Self { dir }
     }
