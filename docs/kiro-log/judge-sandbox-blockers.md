@@ -103,3 +103,13 @@ Still blocked for ticking `sbx_` tests (T20, T25–T33):
 - No `sbx_*` test files exist yet. They can be written (the hook now allows `#[ignore]` on `sbx_*`), but they cannot be ticked until they pass after the delegation drop-in.
 
 T02 and T37 stay open for the real VPS. The 15 Nov 00:55 signature-type decision is already recorded. Pack review and the Renovate GitHub app still need Brighton.
+
+
+## Run note (15 Nov 2026, continuation): T20 stays `[ ]`; T21 to T39 are blocked behind it
+
+- **Done this run:** `crates/judge/tests/sbx_bollard_create.rs` (`sbx_create_readback_matches`, `#[ignore]`). It compiles. `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` pass (model_bollard: 10 passed).
+- **Real-daemon run:** `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo test -p counterspell-judge --features sandbox --test sbx_bollard_create -- --ignored` fails at the identity check: `Check(LimitSupport("WARNING: No cpuset support"))`. The guard refused the daemon before any container was created. The daemon still lacks cpuset and io delegation.
+- **Why T20 is not ticked:** the 15 Nov 00:52 decision says `sbx_` tests are not a reason to tick a task until they pass on a rootless sandbox daemon (T37). The T20 `sbx_` test has not passed.
+- **Unblock:** Brighton applies the `Delegate=cpu cpuset io memory pids` drop-in (commands in `brighton-decisions.md`, 15 Nov 01:03). Then rerun the command above. If it passes, tick T20 and the same test becomes the T20 evidence.
+- **Downstream:** T21 to T24 and T31 to T33 each contain `sbx_` tests and depend on T20 or on each other. T25 to T30, T34 to T36 depend on T24. T37 (VPS run) and T39 depend on everything. Nothing after T20 can be ticked honestly until the delegation drop-in is applied.
+- **Also not done:** T23's fake-backend sweeper needs a list-containers method that the `Backend` trait does not have (`backend.rs` has only create and session methods). Adding it is a trait change to T14, so I did not make it without a decision.
