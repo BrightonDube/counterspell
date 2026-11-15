@@ -62,3 +62,10 @@ No [stretch] task (T11 to T18) was started, as the instructions require.
 - Unblock: Brighton approves `problem-catalogue` (or confirms that a minimal `problems` and
   `problem_concepts` read contract may ship inside this spec). Then T03 can start on the real schema.
 - Tasks T01, T02 and T04 remain ticked from attempt 1 and are unchanged.
+
+## Attempt 3 (15 Nov 2026, later run): T03 unblocked
+
+- The catalogue tables now exist (`problems`, `concepts`, `problem_concepts`, `tracks`), with the
+  publication gate and the server role's SELECT grants (migrations `20261116100000` to `20261116100200`).
+  The T03 block above is therefore resolved, and T03 was implemented in `crates/server/src/dashboard/query.rs`.
+- T03 uses the difficulty values `easy`, `medium` and `hard` from the catalogue's CHECK constraint.

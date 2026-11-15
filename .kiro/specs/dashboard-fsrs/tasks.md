@@ -36,7 +36,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: run-lifecycle and catalogue migrations being known.
   - Rust lesson: none for SQL-only work; in the task reply explain how an index narrows reads without becoming a second source of truth.
 
-- [ ] **T03 [S] (30 min) Implement the one-query dashboard read model**
+- [x] **T03 [S] (30 min) Implement the one-query dashboard read model**
   - Files: `crates/server/src/dashboard/query.rs`, plus a small test fixture module if needed.
   - Implement one parameterised PostgreSQL query/function with ownership-filtered CTEs for accepted problems, solved counts, UTC activity dates/streak inputs, weak concepts, ten recent submissions, and up to three suggestions.
   - Start each user-scoped path with the authenticated `UserId` or derive it from an already constrained CTE. Use the catalogue's published problem/concept seam and the run-lifecycle `status = completed` plus `verdict` fields.
