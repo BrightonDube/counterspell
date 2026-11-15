@@ -626,3 +626,44 @@ async fn pg_sse_restarted_event_visible_after_retry(pool: PgPool) {
         .collect();
     assert_eq!(attempts, vec![1, 2, 2, 2, 2], "restarted opens attempt 2");
 }
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_sse_sends_nothing_after_the_terminal_event(pool: PgPool) {
+    // A row written after `done` is not a normal state, but the stream must still stop at `done`.
+    let fixture = Fixture::new();
+    let run = queued_run(&pool, owner(1)).await;
+    add_events(&pool, run, 1).await;
+    finish_run(&pool, run, 2).await;
+    sqlx::query(
+        "INSERT INTO run_events (submission_id, seq, attempt, type, payload) \
+         VALUES ($1, 3, 1, 'test', '{}'::jsonb)",
+    )
+    .bind(run.as_uuid())
+    .execute(&pool)
+    .await
+    .expect("row after done");
+    let address = serve(build_router(state_with(pool.clone(), &fixture.dir, &[]))).await;
+    let token = auth(1);
+
+    let mut stream = SseResponse::open(
+        address,
+        &events_path(run),
+        &[("Authorization", token.as_str())],
+    )
+    .await;
+    let seqs: Vec<i64> = read_until_done(&mut stream)
+        .await
+        .iter()
+        .filter_map(Frame::seq)
+        .collect();
+
+    assert_eq!(seqs, vec![1, 2], "nothing may follow the terminal event");
+    assert!(
+        stream
+            .next_frame_within(Duration::from_secs(2))
+            .await
+            .is_none(),
+        "the stream closes at the terminal event"
+    );
+}
