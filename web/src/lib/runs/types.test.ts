@@ -153,3 +153,71 @@ describe('parseRunView', () => {
     ).toThrow(ContractError);
   });
 });
+
+describe('parseRunView', () => {
+  const readModel = (tests: unknown[]) => ({
+    run_id: '6f1d2c1e-0000-4000-8000-000000000001',
+    problem: 'two-sum',
+    lang: 'python',
+    mode: 'submit',
+    status: 'completed',
+    terminal: true,
+    verdict: 'wrong_answer',
+    attempt: 1,
+    created_at: '2026-11-15T10:00:00Z',
+    last_seq: 4,
+    tests
+  });
+
+  // Breaks if the read model's nested sample detail is refused, so a finished sample run never loads after reload.
+  it('reads a sample row whose input, expected and got sit under detail', () => {
+    const view = parseRunView(
+      readModel([
+        {
+          ordinal: 1,
+          sample: true,
+          verdict: 'pass',
+          time_ms: 4,
+          detail: { input: '[2, 7]', expected: '[0, 1]', got: '[0, 1]' }
+        }
+      ])
+    );
+    expect(view.tests).toEqual([
+      {
+        sample: true,
+        ordinal: 1,
+        verdict: 'pass',
+        timeMs: 4,
+        input: '[2, 7]',
+        expected: '[0, 1]',
+        got: '[0, 1]'
+      }
+    ]);
+  });
+
+  // Breaks if a sample row with no detail is shown as if its values were known.
+  it('rejects a sample row in the read model that has no detail', () => {
+    expect(() =>
+      parseRunView(
+        readModel([{ ordinal: 1, sample: true, verdict: 'pass', time_ms: 4 }])
+      )
+    ).toThrow(ContractError);
+  });
+
+  // Breaks if a hidden row in the read model gains detail fields and the parser accepts them.
+  it('rejects a hidden row in the read model that carries detail', () => {
+    expect(() =>
+      parseRunView(
+        readModel([
+          {
+            ordinal: 2,
+            sample: false,
+            verdict: 'wrong_answer',
+            time_ms: 9,
+            detail: { input: '[1]', expected: '2', got: '3' }
+          }
+        ])
+      )
+    ).toThrow(ContractError);
+  });
+});

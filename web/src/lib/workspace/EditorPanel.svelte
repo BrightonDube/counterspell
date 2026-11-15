@@ -2,18 +2,30 @@
   // Editor region: a language picker limited to the languages the server enables, the lazy Monaco editor,
   // and a calm draft status line. Drafts live in the editor session, not in the component.
   import { SvelteMap } from 'svelte/reactivity';
+  import { byteLength } from '../contract';
   import MonacoEditor from '../editor/MonacoEditor.svelte';
+  import type { RunMode } from '../runs/api';
+  import type { RunRequest } from './run-session';
   import type { LanguageSummary, ProblemDetail } from '../api/types';
   import {
     createEditorSession,
     type EditorSession,
     type SessionStatus
   } from './editor-session';
+  import RunControls from './RunControls.svelte';
 
   let {
     problem,
-    languages
-  }: { problem: ProblemDetail; languages: LanguageSummary[] } = $props();
+    languages,
+    busy = false,
+    onRequest
+  }: {
+    problem: ProblemDetail;
+    languages: LanguageSummary[];
+    /** True while a run is in progress. It disables Run and Submit. */
+    busy?: boolean;
+    onRequest?: (request: RunRequest) => void;
+  } = $props();
 
   const offered = $derived(languages.filter((language) => language.enabled));
   let chosen = $state('');
@@ -25,6 +37,18 @@
   const currentName = $derived(
     offered.find((language) => language.id === current)?.displayName ?? ''
   );
+  const limitBytes = $derived(
+    offered.find((language) => language.id === current)?.maxSourceBytes ?? 0
+  );
+
+  // The session is not reactive, so the byte count follows a copy of the text kept here.
+  let liveSource = $state('');
+  const sourceBytes = $derived(byteLength(liveSource));
+
+  function request(mode: RunMode): void {
+    if (!session || !current || !onRequest) return;
+    onRequest({ lang: current, code: session.source(current), mode });
+  }
 
   const statuses = new SvelteMap<string, SessionStatus>();
   // A raw state so the session object is not wrapped in a proxy.
@@ -51,6 +75,10 @@
   });
 
   const source = $derived(session && current ? session.source(current) : '');
+
+  $effect(() => {
+    liveSource = session && current ? session.source(current) : '';
+  });
 
   const statusText = $derived.by(() => {
     switch (statuses.get(current)) {
@@ -97,7 +125,17 @@
       value={source}
       language={current}
       label={`${currentName} solution editor`}
-      onChange={(next) => session?.setSource(current, next)}
+      onChange={(next) => {
+        session?.setSource(current, next);
+        liveSource = next;
+      }}
+    />
+    <RunControls
+      {busy}
+      {sourceBytes}
+      {limitBytes}
+      onRun={() => request('run')}
+      onSubmit={() => request('submit')}
     />
   {:else}
     <p class="text-sm text-text-muted">
