@@ -48,3 +48,11 @@ Run: 15 Nov 2026 implement pass (non-interactive, approved by Brighton 12 Nov 20
 
 - T09 tests were written before `scenes.ts` existed, but I did not capture a red run before writing the module. The 7 tests were green on the first full run.
 - T10 red was captured: the page did not call `startScenes` before the change.
+
+## Wave review findings (self-review against the requesting-code-review checklist)
+
+- Minor: Geist is one variable woff2 of 69.5 KB (`Geist-Variable.woff2`). It covers weights 400 and 600 and is above the design's 60 KB per-weight guideline. Lighthouse (T13) decides whether it matters. A static Latin subset could cut it.
+- Minor: `motion-plan` keeps `layers.smoke` false in static mode (see the design conflict above).
+- Minor: the landing `.cta` transition rule duplicates the global reduced-motion rule in `app.css`. Harmless; kept because the spec names the CTA rule.
+- Minor: the hero scene wrapper and each scene `img` both carry `aria-hidden="true"`. Redundant but correct.
+- Fixed in this wave: an unhandled rejection when the GSAP chunk fails to load (page now keeps the static content; test added).
