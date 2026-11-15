@@ -1,0 +1,118 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by checking the spec's T00 gate: design.md must contain Brighton's "Review decisions" note before any code changes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+T00 is signed off, so the run can proceed. T01 to T19 are ticked, T02 is blocked, and T20 is the next open non-stretch task. I'll read the rest of tasks.md and the steering files the spec requires.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=161
+
+[tool] Read File
+[tool] status: InProgress
+[tool] List Directory
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The blocker log says `sbx_` tests were blocked by a hook, and that the hook has since been relaxed. Next I'll read the steering files and the current bollard backend code before touching T20.
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=187
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T20 bollard code is already committed in `d74705c`, but its `sbx_` test was blocked. Brighton's standing decision now allows `#[ignore]` on `sbx_*` tests, so I can finish T20. First I'll check the daemon connector the real test needs and confirm the current model tests pass.
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=199
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The model tests pass (10/10). The local rootless daemon still warns about missing cpuset and io support, so the identity check will refuse it, and the `sbx_` test must fail or refuse rather than skip. I need the policy constructor, the language loader and the config API before I write that test.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=125
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=75
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need. I'll write the ignored `sbx_` test for T20 in its own file. It calls the real identity check first, so on this machine it should refuse the daemon before any container is created.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=543
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=38
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The socket variable is not set in this shell. I'll pass the rootless socket path explicitly for this one run, without reading the dev env file, since it also holds database credentials.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The identity guard refused the local daemon before any container was created, as designed. The daemon still lacks cpuset and io delegation, so the real-daemon run has to wait for Brighton's sudo step. I'll run the Rust gate on the new file, then record the blocker. The 15 Nov decision says `sbx_` tests are not a reason to tick a task, so T20 stays open.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=269
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Format, Clippy and the full workspace test run all pass. I'll record the T20 state in the blockers file, add the Rust lesson for the new test, and commit the test file without ticking T20.
+[tool] Append to File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=391
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=60
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The run is stopped at T20. Every remaining judge-sandbox task depends on it, and T20 can't be ticked until Brighton applies the cgroup delegation drop-in. Nothing was ticked this run.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T00 | [x], already signed off | none | n/a | n/a |
+| T01–T19 | [x], already done | none | n/a | n/a |
+| T02 | [ ] blocked (VPS re-verify) | none | n/a | n/a |
+| T20 | [ ] open. Code was already in `d74705c`. Added the ignored `sbx_create_readback_matches` test. | 1 `sbx_` (ignored) | fmt ok, clippy `-D warnings` ok, `cargo test --workspace` ok (model_bollard 10/10). Real-daemon run refused by the identity guard: `LimitSupport("WARNING: No cpuset support")`. No container was created. | `149a08f` |
+| T21–T39 | [ ] not started | none | n/a | n/a |
+
+**Why T20 stays open:** the 15 Nov decision says `sbx_` tests are not a reason to tick a task until they pass on the rootless sandbox daemon (T37). The local daemon still lacks cpuset and io delegation.
+
+**To unblock:** Brighton runs the `Delegate=cpu cpuset io memory pids` drop-in (commands in `brighton-decisions.md`, 15 Nov 01:03). Then rerun:
+`SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo test -p counterspell-judge --features sandbox --test sbx_bollard_create -- --ignored`
+
+**Blockers** (also in `docs/kiro-log/judge-sandbox-blockers.md`):
+- T21 to T24 and T31 to T33 each contain `sbx_` tests and depend on T20 or on each other.
+- T25 to T30 and T34 to T36 depend on T24.
+- T23's fake-backend sweeper needs a list-containers method on the `Backend` trait. That is a change to T14, so I did not make it without a decision.
+- T02, T37 and T38 need the VPS. T38 also needs T02.
+
+**Review queue:** nothing added. T20 is [SUPERVISED], but it is not ticked, so its entry belongs in the queue once it passes.
+
+**Open Minor review findings:** none. I did not run a separate review pass because no wave completed.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=167
+
