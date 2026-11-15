@@ -40,4 +40,4 @@ Run: 15 Nov 2026, Kiro implementation run (attempt 1). Scope: `web/` only. Audit
 
 - Lighthouse mobile median (T13) and the keyboard, contrast and Compose smoke checks (T14) need a browser or a running stack. They are left open for Brighton (see the blockers file).
 - The bat-swarm and fog overlays (finding 8) need a visual review on the page.
-- The poster has no WebP at 960 for very large phones, which is acceptable at the 960 breakpoint, but the living loop MP4/WebM is not re-encoded (the approved assets are used as delivered).
+- The poster is served as WebP at 960 px for widths up to 900 CSS px and at 1920 px above that. The living loop WebM and MP4 files are used as delivered; they were not re-encoded.
