@@ -87,3 +87,15 @@ No new task was completed in this pass. Checked tasks in `tasks.md`: T01, T03, T
 - **Still blocked, unchanged:** T02 (needs the problems and ghosts tables), T13, T18 and T20 (run-lifecycle T29 to T31 are unchecked, and `GET /api/problems/{slug}`, `GET /api/languages` and the Familiar routes are not in `crates/server/src/lib.rs`), and T28 (judge-sandbox, language-drivers and hints are not done).
 - **Partial, left unchecked:** T09, T15, T17, T21, T22, T23. Their remaining checks are browser or visual checks, which rule 7 defers as E2E.
 - **Deferred: E2E:** T24, T25, T26, T27.
+
+## Attempt 8 update (15 Nov 2026, non-interactive resume)
+
+No new task was ticked in this pass. Checked by a fresh run: T01, T03 to T08, T10 to T12, T14, T16, T17, T19. `npm run check` reports 0 errors, and the hint tests pass (16 tests in 3 files).
+
+- **T02 still blocked, and the blocker is now wider.** `migrations/` has no `problems` or `ghosts` table. The `problems` table belongs to the `problem-catalogue` spec, which Brighton's standing decision (14 Nov) keeps spec-only, so it must not be implemented. `crates/server/src/seams.rs` still uses `EmptyCatalogue`. Judge-sandbox has 38 of 58 tasks open, so no ghost persistence exists. Unblock: Brighton's approval for the catalogue tables (or an equivalent grimoire-packs migration), plus judge-side ghost persistence.
+- **T13 still blocked.** `crates/server/src/lib.rs` routes only `POST /api/runs`, `GET /api/runs/{id}`, cancel and health. Run-lifecycle T29 to T31 (SSE endpoint) are open (25 of 56 open). `GET /api/problems/{slug}` and `GET /api/languages` are not routed.
+- **T18 and T20 still blocked.** T18 needs T02 and T13. T20 needs T13 and the Familiar routes (`PATCH /api/me/familiar`, `POST /api/runs/{id}/familiar-hint`). Efficiency-familiar has 46 of 64 tasks open, and the routes are not in the server.
+- **T09 and T15 unchecked: browser checks (deferred: E2E).** T09 needs desktop, tablet and portrait layout checks, 200% zoom, the 44px target check and route-change abort in a real browser. T15 needs the prototype-banner visual test, and its route wiring waits on T13.
+- **T21, T22, T23: browser verification (deferred: E2E).** T21 needs a keyboard-only path through the whole page. T22 needs media-query checks on the animation boundary, and GSAP is not in the project (it was not added, per the attempt 2 decision). T23 needs browser contrast and accessibility checks. T21 also depends on T09 and T15 being done.
+- **T24 to T27: deferred: E2E.** T28 needs judge-sandbox, language-drivers (1 of 27 done) and hints (0 of 29), plus `cargo deny`, `docker compose config` and the real acceptance suite.
+- **Brighton questions unchanged:** Ctrl/Cmd+Enter in Monaco, `adapter({ fallback: 'index.html' })` in `web/vite.config.js`, and the Ctrl/Cmd+Enter assumed choice in T10.
