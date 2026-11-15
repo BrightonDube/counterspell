@@ -18,3 +18,9 @@ Brighton reviews each diff before the task is treated as approved. Each entry li
 
 ## C03 repair (found after the C03 commit)
 C03's `submissions_problem_fk` broke about 75 existing database tests, because they inserted `two-sum` submissions with no catalogue problem row. The repair seeds the `two-sum` problem in the shared helpers (`crates/judge/src/testkit.rs`, `crates/server/src/testkit.rs`) and in the few tests that insert directly. Each edit is marked `test-change: CAT-F1`, and no assertion changed. Result: 257 ignored database tests and 1,009 unit tests pass. Brighton should check that the seeding is acceptable.
+
+## C14 (static import transaction)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C14 | f23934f (problem-catalogue C14) | `write_static` in `crates/judge/src/catalogue/write.rs`. It locks the problem row, re-plans under the lock, and writes one transaction. Check: (1) the `problems` display copy is refreshed on every write, including the Unchanged path, which is then rolled back; (2) `write_static` takes the operator's own connection pool, so the operator role must be the importer role the approval names; (3) the concept set is replaced with DELETE then INSERT, which is allowed because `problem_concepts` has no trigger. The `VersionNotBumped` list only covers public files, because `manifest` holds public entries only (CAT-PT9). A private-only change still refuses, but its path is not listed. |
