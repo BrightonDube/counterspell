@@ -189,7 +189,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_import_idempotent` (P1 against the database: second run is `Unchanged` and row counts are equal); `pg_catalogue_versions_history` (P2: bump creates one version, old row bytes equal); `pg_catalogue_refusals_write_nothing` (P4); `pg_catalogue_rollback_on_failure` (P6: inject a CHECK violation after the first insert).
   - Rust lesson: `sqlx::Transaction` rolls back when it is dropped without `commit`. Explain why an early `?` in the middle of the function is safe.
 
-- [ ] **C15 [S] [SUPERVISED] (25 min) Dry run and diff output**
+- [x] **C15 [S] [SUPERVISED] (25 min) Dry run and diff output**
   - Files: `crates/judge/src/catalogue/write.rs` (dry-run branch), `crates/judge/src/catalogue/report.rs`, `crates/judge/tests/pg_catalogue_dry_run.rs`.
   - `--dry-run` uses a read-only transaction or none, and never writes. Print the planned action, the static report, and the manifest diff (added, removed, changed files by name). Also print the approval state (`ok` or the refusal code), the private commit identifier if recorded, and a count of retired-value matches (no values). Warn when the engine's generator version differs from the stored one (CAT-I19).
   - Requirements: CAT-I13, CAT-I19, CAT-P5 (none on dry run).

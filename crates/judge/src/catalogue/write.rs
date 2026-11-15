@@ -135,16 +135,7 @@ pub async fn write_static(
     let mut tx = pool.begin().await?;
     lock_problem(&mut tx, import).await?;
     let latest = latest_version(&mut tx, &import.slug).await?;
-    let incoming = Incoming {
-        pack_version: import.version,
-        hash: import.content_sha256,
-        files: import
-            .manifest_public
-            .iter()
-            .map(|(path, hash)| (path.clone(), hash.clone()))
-            .collect(),
-    };
-    match plan::plan(latest.as_ref(), &incoming) {
+    match plan::plan(latest.as_ref(), &incoming_of(import)) {
         Plan::Unchanged => {
             let version = latest.map_or(import.version, |stored| stored.version);
             tx.rollback().await?;
@@ -162,6 +153,112 @@ pub async fn write_static(
             })
         }
     }
+}
+
+/// Builds the planner's view of `import`.
+fn incoming_of(import: &StaticImport) -> Incoming {
+    Incoming {
+        pack_version: import.version,
+        hash: import.content_sha256,
+        files: import
+            .manifest_public
+            .iter()
+            .map(|(path, hash)| (path.clone(), hash.clone()))
+            .collect(),
+    }
+}
+
+/// Which public files were added, removed or changed between two stored and incoming manifests.
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub struct ManifestDiff {
+    /// Paths present only in the incoming pack.
+    pub added: Vec<String>,
+    /// Paths present only in the stored version.
+    pub removed: Vec<String>,
+    /// Paths present in both with different hashes.
+    pub changed: Vec<String>,
+}
+
+/// What a dry run found. Nothing was written.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct DryRunReport {
+    /// What a real import would do.
+    pub plan: Plan,
+    /// The manifest difference against the latest stored version.
+    pub diff: ManifestDiff,
+    /// `(stored, current)` when the engine's generator version changed (CAT-I19).
+    pub generator_change: Option<(String, String)>,
+}
+
+/// Plans `import` without writing. The transaction is read only, so the database itself refuses
+/// any write made by mistake (CAT-I13).
+///
+/// # Errors
+///
+/// Returns [`WriteError`] when the stored version cannot be read.
+pub async fn dry_run_static(
+    pool: &PgPool,
+    import: &StaticImport,
+) -> Result<DryRunReport, WriteError> {
+    let mut tx = pool.begin().await?;
+    sqlx::query("SET TRANSACTION READ ONLY")
+        .execute(&mut *tx)
+        .await?;
+    let latest = latest_version(&mut tx, &import.slug).await?;
+    let stored_generator = stored_generator_version(&mut tx, &import.slug).await?;
+    tx.rollback().await?;
+
+    let incoming = incoming_of(import);
+    let stored_files: &[(String, String)] = latest.as_ref().map_or(&[], |stored| &stored.files);
+    Ok(DryRunReport {
+        plan: plan::plan(latest.as_ref(), &incoming),
+        diff: diff_files(stored_files, &incoming.files),
+        generator_change: stored_generator
+            .filter(|stored| *stored != import.generator_version)
+            .map(|stored| (stored, import.generator_version.clone())),
+    })
+}
+
+/// Compares two `(path, hash)` lists. Both are sorted by path in the result.
+#[must_use]
+pub fn diff_files(stored: &[(String, String)], incoming: &[(String, String)]) -> ManifestDiff {
+    let stored_map: BTreeMap<&str, &str> = stored
+        .iter()
+        .map(|(path, hash)| (path.as_str(), hash.as_str()))
+        .collect();
+    let incoming_map: BTreeMap<&str, &str> = incoming
+        .iter()
+        .map(|(path, hash)| (path.as_str(), hash.as_str()))
+        .collect();
+    let mut diff = ManifestDiff::default();
+    for (path, hash) in &incoming_map {
+        match stored_map.get(path) {
+            None => diff.added.push((*path).to_string()),
+            Some(old) if old != hash => diff.changed.push((*path).to_string()),
+            Some(_) => {}
+        }
+    }
+    for path in stored_map.keys() {
+        if !incoming_map.contains_key(path) {
+            diff.removed.push((*path).to_string());
+        }
+    }
+    diff
+}
+
+/// Reads the generator version of the newest stored version, if there is one.
+async fn stored_generator_version(
+    conn: &mut PgConnection,
+    slug: &str,
+) -> Result<Option<String>, WriteError> {
+    let version: Option<String> = sqlx::query_scalar(
+        "SELECT generator_version FROM problem_versions WHERE problem_slug = $1 \
+         ORDER BY version DESC LIMIT 1",
+    )
+    .bind(slug)
+    .fetch_optional(&mut *conn)
+    .await?;
+    Ok(version)
 }
 
 /// Inserts the problem row if it is new, locks it, and refreshes its display copy.
@@ -403,4 +500,32 @@ async fn insert_event(
 /// Converts a zero-based index into a 1-based ordinal. Saturates instead of panicking.
 fn ordinal(index: usize) -> i32 {
     i32::try_from(index.saturating_add(1)).unwrap_or(i32::MAX)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn pairs(items: &[(&str, &str)]) -> Vec<(String, String)> {
+        items
+            .iter()
+            .map(|(path, hash)| ((*path).to_string(), (*hash).to_string()))
+            .collect()
+    }
+
+    #[test]
+    fn diff_lists_added_removed_and_changed_paths_sorted() {
+        let stored = pairs(&[("public/a", "h1"), ("public/b", "h2")]);
+        let incoming = pairs(&[("public/b", "h2x"), ("public/c", "h3")]);
+        let diff = diff_files(&stored, &incoming);
+        assert_eq!(diff.added, vec!["public/c".to_string()]);
+        assert_eq!(diff.removed, vec!["public/a".to_string()]);
+        assert_eq!(diff.changed, vec!["public/b".to_string()]);
+    }
+
+    #[test]
+    fn diff_of_identical_lists_is_empty() {
+        let stored = pairs(&[("public/a", "h1")]);
+        assert_eq!(diff_files(&stored, &stored), ManifestDiff::default());
+    }
 }
