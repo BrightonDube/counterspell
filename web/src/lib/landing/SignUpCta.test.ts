@@ -28,6 +28,17 @@ describe('SignUpCta', () => {
 		expect(primary.className).toContain('focus-visible:ring-focus');
 	});
 
+	it('places a decorative candle beside the call to action, hidden from assistive technology (T17)', () => {
+		const { container } = render(SignUpCta);
+		const art = container.querySelector('img');
+		expect(art?.getAttribute('src')).toBe('/art/objects/candle-flame.webp');
+		expect(art?.getAttribute('alt')).toBe('');
+		expect(art?.getAttribute('aria-hidden')).toBe('true');
+		expect(art?.getAttribute('width')).toBe('96');
+		expect(art?.getAttribute('height')).toBe('96');
+		expect(art?.getAttribute('loading')).toBe('lazy');
+	});
+
 	it('offers no payment or paid tier wording', () => {
 		const { container } = render(SignUpCta);
 		expect(container.textContent?.toLowerCase()).not.toMatch(/price|pricing|paid|payment|subscri/);

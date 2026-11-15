@@ -13,14 +13,22 @@ describe('GhostBeats', () => {
 		expect(headings).toEqual(['Submit', 'Hunt', 'Understand']);
 	});
 
-	it('gives each beat an aria-hidden icon so beats are not identified by colour alone', () => {
+	// test-change: R6 (beat icons are now approved art from web/static/art/objects, still hidden from assistive technology)
+	it('gives each beat a decorative image from the approved art, hidden from assistive technology', () => {
 		const { container } = render(GhostBeats);
 		const sections = Array.from(container.querySelectorAll('section'));
-		expect(sections).toHaveLength(3);
+		expect(sections.map((s) => s.querySelector('img')?.getAttribute('src'))).toEqual([
+			'/art/objects/crypt-key.webp',
+			'/art/objects/crystal-ball.webp',
+			'/art/objects/brain-jar.webp'
+		]);
 		for (const section of sections) {
-			const icon = section.querySelector('svg');
-			expect(icon, 'icon in beat').not.toBeNull();
-			expect(icon?.getAttribute('aria-hidden')).toBe('true');
+			const art = section.querySelector('img');
+			expect(art?.getAttribute('alt')).toBe('');
+			expect(art?.getAttribute('aria-hidden')).toBe('true');
+			expect(art?.getAttribute('width')).toBe('64');
+			expect(art?.getAttribute('height')).toBe('64');
+			expect(art?.getAttribute('loading')).toBe('lazy');
 		}
 	});
 

@@ -110,7 +110,7 @@ These follow the design amendment "real art". T13 and T14 run after T18, on the 
   - The flat moon and graveyard SVGs become the fallback only (used if the poster fails). Use `art/fx/` overlays (fog, embers, bat swarm) for subtle parallax driven by the existing planner. Add a token-based scrim so all text pairs keep their contrast.
   - Verify: planner property tests and `scenes.test.ts` green; reduced motion shows the poster still with no GSAP request.
   - Requirements: R5, R21, R24. Preserve: GSAP only on the landing page, loaded after first paint.
-- [ ] **T17 [P] (25 min) Art accents for the three beats and the CTA**
+- [x] **T17 [P] (25 min) Art accents for the three beats and the CTA**
   - Files: `GhostBeats.svelte`, `SignUpCta.svelte`, their tests, CSS.
   - Add tasteful decorative art from `art/objects/` and `art/creatures/` (WebP, `loading="lazy"`, `decoding="async"`, explicit size, `alt=""`) following Impeccable layout and polish. No layout shift, no colour-only meaning.
   - Verify: tests green; `npm run check && npm run build`.
