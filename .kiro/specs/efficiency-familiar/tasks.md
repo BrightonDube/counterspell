@@ -291,7 +291,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- mascot`.
   - Preserve: both modules are pure and import nothing from GSAP.
 
-- [ ] **T28 [P] (25 min) Seeded particle and ember plans (P24)**
+- [x] **T28 [P] (25 min) Seeded particle and ember plans (P24)**
   - Files: `web/src/lib/familiar/mascot/particles.ts`, tests.
   - Pure functions that build the 40-particle crack plan (position, velocity, size, colour token name) and the 12-ember + 3-spark ring from a seed, with target durations (about 900 ms and 700 ms).
   - Tests: counts exact; values finite and bounded; same seed gives the same plan; durations within 5% of target.
