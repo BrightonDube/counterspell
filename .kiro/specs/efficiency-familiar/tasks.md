@@ -300,7 +300,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- particles`.
   - Preserve: no GSAP, no DOM.
 
-- [ ] **T29 [S] (30 min) `Mascot.svelte`: static rendering of five moods**
+- [x] **T29 [S] (30 min) `Mascot.svelte`: static rendering of five moods**
   - Files: `web/src/lib/familiar/mascot/Mascot.svelte`, tests.
   - Load the SVG lazily, show the layers for the current mood, set the glow from the resolved palette tokens, expose the `aria-live="polite"` text and the badge, support the hidden-dot form, and render everything without GSAP. Props: `mood`, `reason`, `headline`, `badge`, `effect`, `live`, `muted`, `hidden`, `reducedMotion`. Missing art shows the badge text only.
   - Tests (component): each mood shows the right layer; headline and badge appear as text; an HTML-looking headline renders as text (P25); the aria-live text matches the required form; hidden state is a keyboard-operable button with a 44 px target; no `onerror` or `innerHTML` in the component.
