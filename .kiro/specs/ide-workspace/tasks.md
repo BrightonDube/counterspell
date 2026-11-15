@@ -48,7 +48,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 1: UI foundation and entry
 
-- [ ] **T05 [UI] [P] (25 min) Establish the workspace Steel Night shell and semantic tokens**
+- [x] **T05 [UI] [P] (25 min) Establish the workspace Steel Night shell and semantic tokens**
   - Files: `web/src/app.css`, shared UI primitives, route skeleton, font loading configuration.
   - Apply `docs/palette.md` semantic variables, Geist/JetBrains Mono, dark launch theme, focus token, status tokens, and calm panel surfaces. Do not put raw hex values in components; keep documented Monaco values in the theme boundary.
   - Depends on: T04 and the existing frontend scaffold.
