@@ -120,3 +120,10 @@ Brighton reviews each entry before the next task that depends on it starts.
 - Observed: enqueue p95 around 160 ms, under the 300 ms target. Queue wait is about 1.2 s on average, because twenty runs share six judge slots (three judges, concurrency two) and each scripted run takes about 160 ms of executor time. Brighton should check that the claim poll interval (`CLAIM_POLL`) is not a larger part of that wait than intended.
 - Gap to check: the canary markers in this test are a constant that the scripted judges never hold, so the scan proves only that no public surface carries that string. The real hidden-data canary check is T34. Brighton to decide whether that is enough for the definition of done.
 - Only one run was measured. T39 should record the numbers from a single named run, as the design says, not an average over runs.
+
+## T37 (CI): what Brighton should check
+
+- Added to the `rust` job of `.github/workflows/ci.yml`, after the existing test step: (1) `cargo test --workspace --all-features --locked -- --ignored pg_ valkey_` against the job's Postgres 17 and Valkey 8 services; (2) a release build of `counterspell-server` and `counterspell-judge` that fails if `feature="testkit"` appears in the compiler flags; (3) an upload of `target/run-lifecycle/dod-report.json` as `run-lifecycle-dod-report`.
+- The `web` job already ran `npm run test` (Vitest) before this task, so no change was needed there.
+- Local check: the same ignored-test command passed against the dev containers (322 tests across the workspace). The release flag check passed (0 `testkit` flags). A debug positive control showed the grep does match when the feature is on (2 matches).
+- Not verified: a real GitHub run. No push was allowed in this pass, so Brighton should confirm the job is green after the next push.
