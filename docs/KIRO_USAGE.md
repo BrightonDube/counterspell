@@ -369,3 +369,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 16:34-16:36 SAST: 34-problem-catalogue-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-problem-catalogue-a2.md`. Transcript: `docs/kiro-log/2026-11-15T1634-34-problem-catalogue-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.34 (credits used now 3405.09/4000).
+
+### 2026-11-15 16:42-17:56 SAST: 31-landing-steel-night-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-landing-steel-night-a1.md`. Transcript: `docs/kiro-log/2026-11-15T1642-31-landing-steel-night-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 16.12 (credits used now 3421.34/4000).
+
+### 2026-11-15 17:56-18:00 SAST: 31-landing-steel-night-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-landing-steel-night-a2.md`. Transcript: `docs/kiro-log/2026-11-15T1756-31-landing-steel-night-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.95 (credits used now 3423.29/4000).
