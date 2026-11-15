@@ -181,7 +181,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `cargo test -p counterspell-judge --test catalogue_logs`.
   - Rust lesson: the renderer takes the report by reference, so printing cannot move data out of it. Explain `&Report` in one sentence.
 
-- [ ] **C14 [S] [SUPERVISED] (30 min) Static import, one transaction per pack**
+- [x] **C14 [S] [SUPERVISED] (30 min) Static import, one transaction per pack**
   - Files: `crates/judge/src/catalogue/write.rs`, `crates/judge/tests/pg_catalogue_import.rs`.
   - For a valid static pack: lock the `problems` row (`FOR UPDATE`), re-plan, insert the version, examples, starters, hints, reference, known ghosts and the concept set, insert one `catalogue_events` row, commit. Any error rolls back.
   - Requirements: CAT-I10, CAT-I11, CAT-I12, CAT-I15, CAT-P5 (import event).
