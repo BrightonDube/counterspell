@@ -115,7 +115,7 @@ These follow the design amendment "real art". T13 and T14 run after T18, on the 
   - Add tasteful decorative art from `art/objects/` and `art/creatures/` (WebP, `loading="lazy"`, `decoding="async"`, explicit size, `alt=""`) following Impeccable layout and polish. No layout shift, no colour-only meaning.
   - Verify: tests green; `npm run check && npm run build`.
   - Requirements: R21, R22, R29.
-- [ ] **T18 [S] (20 min) Impeccable audit and first-load art check**
+- [x] **T18 [S] (20 min) Impeccable audit and first-load art check**
   - Files: fixes in `web/` only, `docs/kiro-log/landing-steel-night-art.md` (new).
   - Run the Impeccable audit and critique playbooks on the landing page and fix Critical and Important findings. Record the first-load bytes (poster, fonts, JS) and confirm the video is not requested before first paint and never under reduced motion.
   - Verify: the log file lists the findings, the fixes and the byte counts.
