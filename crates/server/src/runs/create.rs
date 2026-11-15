@@ -197,7 +197,7 @@ fn valid_key(text: &str) -> bool {
             .all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-'))
 }
 
-fn enforce(decision: &Decision) -> Result<(), ApiError> {
+pub(crate) fn enforce(decision: &Decision) -> Result<(), ApiError> {
     match decision {
         Decision::Limited {
             retry_after_seconds,

@@ -10,6 +10,7 @@ pub mod auth;
 pub mod client_ip;
 pub mod config;
 pub mod error;
+pub mod familiar;
 pub mod ratelimit;
 pub mod runs;
 pub mod seams;
@@ -144,6 +145,10 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/runs", post(runs::create::post_run))
         .route("/api/runs/{id}", get(runs::read::get_run))
         .route("/api/runs/{id}/cancel", post(runs::cancel::cancel_run))
+        .route(
+            "/api/me/familiar",
+            get(familiar::api::get_prefs).patch(familiar::api::patch_prefs),
+        )
         .route("/api", any(api_not_found))
         .route("/api/{*path}", any(api_not_found))
         .with_state(state);

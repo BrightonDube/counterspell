@@ -327,7 +327,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- Mascot && npm run check`.
   - Preserve: the menu UI belongs to `ide-workspace`; do not duplicate it.
 
-- [ ] **T32 [P] (30 min) Preferences endpoints**
+- [x] **T32 [P] (30 min) Preferences endpoints**
   - Files: `crates/server/src/familiar/{mod.rs,prefs.rs}`, `crates/server/tests/familiar_prefs.rs`.
   - `prefs.rs` (pure): `validate_patch`, `merge`, defaults. `GET` and `PATCH /api/me/familiar` use `AuthUser`, the origin guard, a 1 KiB body limit, JSON-only, the window limiter, and only touch the session user's `users.familiar_prefs`.
   - Tests: unknown field, wrong type, bad enum, oversized body and wrong content type are rejected; defaults are filled; a valid patch merges and persists; user A cannot change user B; the demo user can change prefs; unauthenticated gets 401.
