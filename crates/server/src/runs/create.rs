@@ -81,7 +81,7 @@ pub async fn post_run(
         .ok_or_else(|| ApiError::bad_request("invalid_request", "lang is not supported."))?;
     validate_source(&language.name, &request.code, language.max_source_bytes)?;
 
-    if state.problems.published(&request.problem).is_none() {
+    if state.problems.published(&request.problem).await.is_none() {
         return Err(ApiError::new(
             StatusCode::NOT_FOUND,
             "unknown_problem",

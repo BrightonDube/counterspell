@@ -28,9 +28,9 @@ async fn production_resolver_never_identifies_anyone() {
         .is_none());
 }
 
-#[test]
-fn production_catalogue_publishes_no_problems() {
-    assert!(EmptyCatalogue.published("two-sum").is_none());
+#[tokio::test]
+async fn production_catalogue_publishes_no_problems() {
+    assert!(EmptyCatalogue.published("two-sum").await.is_none());
 }
 
 #[test]

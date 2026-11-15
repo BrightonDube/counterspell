@@ -302,7 +302,7 @@ Conventions for every task (same as `run-lifecycle`):
 
 ## Wave 5: server read path and seams
 
-- [ ] **C27 [S] (30 min) `ProblemLookup` async and the version field (seam replacement)**
+- [x] **C27 [S] (30 min) `ProblemLookup` async and the version field (seam replacement)**
   - Files: `crates/server/src/seams.rs`, `crates/server/src/lib.rs` (`AppState::with_problems`), test kit implementations in `crates/server/src/testkit.rs`.
   - Change to `#[async_trait]` returning `Option<ProblemRef>`, with `ProblemRef { slug, version }`. Update the in-memory lookup and `EmptyCatalogue`. Existing run tests keep their assertions. Compile errors from struct literals get the `version` field; no assertion changes.
   - Requirements: CAT-L1, CAT-L7. Cross-spec: X4 (run-lifecycle T21).
