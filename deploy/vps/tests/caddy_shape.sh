@@ -17,6 +17,7 @@ expect() {
 }
 
 # Compression stays on the normal routes.
+# shellcheck disable=SC2016 # the braces are Caddy's placeholder syntax, not a shell expansion
 expect '{$CADDY_SITE_ADDRESS::80}' "site address comes from CADDY_SITE_ADDRESS with a :80 default"
 
 # R6.6: readiness is internal only. Caddy answers 404 before any proxy rule.
