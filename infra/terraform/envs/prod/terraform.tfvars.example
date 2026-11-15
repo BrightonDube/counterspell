@@ -1,0 +1,13 @@
+# Copy to terraform.tfvars (gitignored) and fill in. Every [U] value comes from the OVH order
+# catalogue, read at T23. These placeholders are not real values, and no secret belongs in this file.
+
+name       = "counterspell-prod-1"
+datacentre = "GRA" # [U] EU datacentre code
+plan       = "REPLACE-WITH-VPS-2-PLAN-CODE" # [U]
+image      = "REPLACE-WITH-OS-CONFIGURATION-VALUE" # [U]
+
+# Public key only, for example the contents of brighton's id_ed25519.pub.
+ssh_public_keys = ["ssh-ed25519 AAAA...REPLACE... brighton@laptop"]
+
+ovh_subsidiary = "REPLACE-WITH-SUBSIDIARY" # [U]
+vps_image_id   = "REPLACE-WITH-IMAGE-UUID" # [U]

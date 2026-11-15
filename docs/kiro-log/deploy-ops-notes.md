@@ -50,3 +50,12 @@ Green: all 13 shape checks pass; `caddy validate` passes for `CADDY_SITE_ADDRESS
 Still open:
 - R6.5 access-log query-string filter for the OAuth callback and verify routes depends on auth T33 (open). The Caddyfile is shared with auth T33, so merge after it.
 - Q17: the Content-Security-Policy is report-only. The SvelteKit build inlines a bootstrap script (`web/build/200.html`), so an enforced `script-src 'self'` would break the app. Enforcing needs a hash or nonce decision from Brighton. See `deploy-ops-blockers.md`.
+
+## T09 and T10 (16 Nov 2026)
+
+Tools (user installs, checksums checked, not repo dependencies): terraform 1.17.2 and tflint 0.66.0 from HashiCorp and the TFLint GitHub release.
+Verification: `terraform fmt -check -recursive infra/terraform` passes; `init -backend=false` and `validate` pass for `modules/host`, `providers/ovh` and `envs/prod`; `tflint --recursive` passes (the contract's variables carry `tflint-ignore` comments because a contract has no consumer on its own).
+Provider: `ovh/ovh` pinned to `= 2.25.0`. `ovh_vps` is created through OVH's order workflow, so `apply` places a billable order. Nothing here applies it (T23, Brighton only). `prevent_destroy` is set on the VPS.
+Gap: the `ovh_vps` resource does not export `public_ipv4`. Output is null, and Brighton records the IP at T23.
+Placeholders in `envs/prod/terraform.tfvars.example` are all marked `[U]` and need the OVH catalogue (T23).
+No `.tfstate` or real `.tfvars` exists in the tree.

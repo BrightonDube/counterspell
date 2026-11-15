@@ -95,14 +95,14 @@ Conventions:
 
 ## Wave 2: infrastructure code, not applied
 
-- [ ] **T09 [S] (30 min) Provider-neutral host module contract**
+- [x] **T09 [S] (30 min) Provider-neutral host module contract**
   - Files: `infra/terraform/modules/host/{versions.tf,variables.tf,outputs.tf,main.tf}`.
   - Write the contract from `design.md` (variables `name`, `datacentre`, `plan`, `image`, `ssh_public_keys`; outputs `public_ipv4`, `ssh_port`). `main.tf` only calls the provider module through a variable-free placeholder; the OVH resource lives in T10.
   - Requirements: R1.1, R1.3.
   - Depends on: T00, T02.
   - Verify: `terraform -chdir=infra/terraform/modules/host fmt -check`; `terraform -chdir=infra/terraform/modules/host init -backend=false`; `validate` (the module alone may need the placeholder).
 
-- [ ] **T10 [S] (30 min) OVH provider implementation and the prod environment**
+- [x] **T10 [S] (30 min) OVH provider implementation and the prod environment**
   - Files: `infra/terraform/providers/ovh/{versions.tf,main.tf,outputs.tf}`, `infra/terraform/envs/prod/{versions.tf,main.tf,outputs.tf}`, `infra/terraform/envs/prod/terraform.tfvars.example`, `infra/terraform/.tflint.hcl`.
   - Implement the contract with the OVH provider's VPS resource (`ovh_vps`), pinned. Plan code and OS configuration keys are read from the OVH catalogue at T23 and written into the `.tfvars.example` as placeholders, marked `[U]`. The environment calls the module with `source = "../../providers/ovh"`.
   - Requirements: R1.1, R1.2, R1.3, R1.4, R1.5, R1.6.
