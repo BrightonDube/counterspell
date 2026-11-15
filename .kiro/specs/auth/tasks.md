@@ -366,7 +366,7 @@ Conventions for every Rust task:
   - Verify: `cargo test --workspace -- --include-ignored` passes including the `run-lifecycle` suite.
   - Preserve: ownership checks stay inside the `run-lifecycle` queries; auth only supplies `UserId`.
 
-- [ ] **T35 [S] (25 min) Log-capture test (property P21)**
+- [x] **T35 [S] (25 min) Log-capture test (property P21)**
   - Files: `crates/server/tests/auth_logs.rs`.
   - Run every flow (magic link, OAuth sign-in and link, password login, register, reset, logout-all) with a capturing `tracing` subscriber and canary values for the token, session value, password, `code`, `state`, verifier, access token, client secret, Resend key and email. Assert none appears in any captured line, including the HTTP trace lines for the callback and verify routes (path only).
   - Requirements: R19.1–R19.4, R21.3.
