@@ -5,3 +5,4 @@ Brighton reviews each diff before the task is treated as approved. Each entry li
 | Task | Commit | What to check |
 |---|---|---|
 | C01 | (see git log "problem-catalogue C01") | Table columns and CHECKs match design.md "Data model". `hidden_tests` has `source` and `ordinal`. `problem_versions` has no `generator_seed`. |
+| C02 | (see git log "problem-catalogue C02") | Trigger rules match design.md: version update/delete refused except the one-time sandbox stamp; child insert refused after the stamp; publish gate checks 2–5 examples, four hints, a concept tag. The "unknown track" case is refused by the foreign key, not by the publish gate. |

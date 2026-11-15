@@ -154,3 +154,183 @@ CREATE TABLE IF NOT EXISTS catalogue_events (
     detail       jsonb NOT NULL DEFAULT '{}'::jsonb,
     created_at   timestamptz NOT NULL DEFAULT now()
 );
+
+-- ---------------------------------------------------------------------------
+-- Triggers (problem-catalogue C02, design "Immutability trigger" and "Publish gate").
+-- ---------------------------------------------------------------------------
+
+-- Append-only rows: any update or delete raises. Used by child tables and events.
+CREATE OR REPLACE FUNCTION catalogue_append_only() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'append-only catalogue row: % cannot be % (CAT-S2)', TG_TABLE_NAME, lower(TG_OP);
+END;
+$$;
+
+-- Child rows are insert-only, and only while their version has no sandbox stamp (CAT-S3).
+CREATE OR REPLACE FUNCTION catalogue_child_insert_gate() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM problem_versions v
+        WHERE v.problem_slug = NEW.problem_slug
+          AND v.version = NEW.version
+          AND v.sandbox_validated_at IS NOT NULL
+    ) THEN
+        RAISE EXCEPTION 'version is sandbox-validated and frozen: % refused (CAT-S3)', TG_TABLE_NAME;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+-- A version is immutable. The one exception is the one-time sandbox stamp (CAT-S2): the stamp
+-- columns go from NULL to a value, every other column is unchanged, and hidden tests exist.
+CREATE OR REPLACE FUNCTION catalogue_version_guard() RETURNS trigger
+LANGUAGE plpgsql AS $$
+BEGIN
+    IF TG_OP = 'DELETE' THEN
+        RAISE EXCEPTION 'problem version is immutable and cannot be deleted (CAT-S2)';
+    END IF;
+    IF OLD.sandbox_validated_at IS NOT NULL OR OLD.sandbox_image_digest IS NOT NULL THEN
+        RAISE EXCEPTION 'problem version is immutable once sandbox-validated (CAT-S2)';
+    END IF;
+    IF (to_jsonb(NEW) - 'sandbox_validated_at' - 'sandbox_image_digest')
+       IS DISTINCT FROM (to_jsonb(OLD) - 'sandbox_validated_at' - 'sandbox_image_digest') THEN
+        RAISE EXCEPTION 'problem version is immutable; only the sandbox stamp may change (CAT-S2)';
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1 FROM hidden_tests h
+        WHERE h.problem_slug = NEW.problem_slug AND h.version = NEW.version
+    ) THEN
+        RAISE EXCEPTION 'sandbox fill needs hidden tests before the version is stamped (CAT-S2)';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+-- Publish gate (CAT-S4, D9): a version must be sandbox-validated, have 2 to 5 examples,
+-- exactly 4 hints and at least one concept tag, before a problem can point at it.
+CREATE OR REPLACE FUNCTION catalogue_publish_gate() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+    v_validated timestamptz;
+    v_examples  int;
+    v_hints     int;
+    v_concepts  int;
+BEGIN
+    IF NEW.publication_state <> 'published' THEN
+        RETURN NEW;
+    END IF;
+    SELECT sandbox_validated_at INTO v_validated
+    FROM problem_versions
+    WHERE problem_slug = NEW.slug AND version = NEW.published_version;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'publish refused: version % does not exist', NEW.published_version;
+    END IF;
+    IF v_validated IS NULL THEN
+        RAISE EXCEPTION 'publish refused: version is not sandbox-validated';
+    END IF;
+    SELECT count(*) INTO v_examples FROM problem_examples
+    WHERE problem_slug = NEW.slug AND version = NEW.published_version;
+    IF v_examples NOT BETWEEN 2 AND 5 THEN
+        RAISE EXCEPTION 'publish refused: needs 2 to 5 examples, found %', v_examples;
+    END IF;
+    SELECT count(*) INTO v_hints FROM problem_hints
+    WHERE problem_slug = NEW.slug AND version = NEW.published_version;
+    IF v_hints <> 4 THEN
+        RAISE EXCEPTION 'publish refused: needs exactly four hints, found %', v_hints;
+    END IF;
+    SELECT count(*) INTO v_concepts FROM problem_concepts WHERE problem_slug = NEW.slug;
+    IF v_concepts < 1 THEN
+        RAISE EXCEPTION 'publish refused: needs at least one concept tag';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS problem_versions_guard ON problem_versions;
+CREATE TRIGGER problem_versions_guard
+    BEFORE UPDATE OR DELETE ON problem_versions
+    FOR EACH ROW EXECUTE FUNCTION catalogue_version_guard();
+
+DROP TRIGGER IF EXISTS problem_examples_append_only ON problem_examples;
+CREATE TRIGGER problem_examples_append_only
+    BEFORE UPDATE OR DELETE ON problem_examples
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS problem_examples_insert_gate ON problem_examples;
+CREATE TRIGGER problem_examples_insert_gate
+    BEFORE INSERT ON problem_examples
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS problem_starters_append_only ON problem_starters;
+CREATE TRIGGER problem_starters_append_only
+    BEFORE UPDATE OR DELETE ON problem_starters
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS problem_starters_insert_gate ON problem_starters;
+CREATE TRIGGER problem_starters_insert_gate
+    BEFORE INSERT ON problem_starters
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS problem_hints_append_only ON problem_hints;
+CREATE TRIGGER problem_hints_append_only
+    BEFORE UPDATE OR DELETE ON problem_hints
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS problem_hints_insert_gate ON problem_hints;
+CREATE TRIGGER problem_hints_insert_gate
+    BEFORE INSERT ON problem_hints
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS hidden_tests_append_only ON hidden_tests;
+CREATE TRIGGER hidden_tests_append_only
+    BEFORE UPDATE OR DELETE ON hidden_tests
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS hidden_tests_insert_gate ON hidden_tests;
+CREATE TRIGGER hidden_tests_insert_gate
+    BEFORE INSERT ON hidden_tests
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS hidden_generation_append_only ON hidden_generation;
+CREATE TRIGGER hidden_generation_append_only
+    BEFORE UPDATE OR DELETE ON hidden_generation
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS hidden_generation_insert_gate ON hidden_generation;
+CREATE TRIGGER hidden_generation_insert_gate
+    BEFORE INSERT ON hidden_generation
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS hidden_sources_append_only ON hidden_sources;
+CREATE TRIGGER hidden_sources_append_only
+    BEFORE UPDATE OR DELETE ON hidden_sources
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS hidden_sources_insert_gate ON hidden_sources;
+CREATE TRIGGER hidden_sources_insert_gate
+    BEFORE INSERT ON hidden_sources
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS reference_solutions_append_only ON reference_solutions;
+CREATE TRIGGER reference_solutions_append_only
+    BEFORE UPDATE OR DELETE ON reference_solutions
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS reference_solutions_insert_gate ON reference_solutions;
+CREATE TRIGGER reference_solutions_insert_gate
+    BEFORE INSERT ON reference_solutions
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS known_ghosts_append_only ON known_ghosts;
+CREATE TRIGGER known_ghosts_append_only
+    BEFORE UPDATE OR DELETE ON known_ghosts
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+DROP TRIGGER IF EXISTS known_ghosts_insert_gate ON known_ghosts;
+CREATE TRIGGER known_ghosts_insert_gate
+    BEFORE INSERT ON known_ghosts
+    FOR EACH ROW EXECUTE FUNCTION catalogue_child_insert_gate();
+
+DROP TRIGGER IF EXISTS catalogue_events_append_only ON catalogue_events;
+CREATE TRIGGER catalogue_events_append_only
+    BEFORE UPDATE OR DELETE ON catalogue_events
+    FOR EACH ROW EXECUTE FUNCTION catalogue_append_only();
+
+DROP TRIGGER IF EXISTS problems_publish_gate ON problems;
+CREATE TRIGGER problems_publish_gate
+    BEFORE UPDATE OF publication_state, published_version ON problems
+    FOR EACH ROW EXECUTE FUNCTION catalogue_publish_gate();

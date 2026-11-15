@@ -60,7 +60,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `cargo test -p counterspell-judge -- --ignored pg_catalogue_schema` (tests first: each table exists; each slug CHECK rejects `Bad_Slug`; `difficulty = 'intro'` is rejected; `content_sha256` of 31 bytes is rejected; `version = 0` is rejected; `problem_versions` has no `generator_seed` column).
   - Rust lesson: the test runner uses `sqlx::test`, which creates a fresh database per test. A failing CHECK comes back as a `Result::Err`, which the test asserts on.
 
-- [ ] **C02 [S] [SUPERVISED] (30 min) Triggers: immutability, insert gate, publish gate, append-only events**
+- [x] **C02 [S] [SUPERVISED] (30 min) Triggers: immutability, insert gate, publish gate, append-only events**
   - Files: `migrations/20261116100000_catalogue_core.sql` (add the trigger functions and triggers). `crates/judge/tests/pg_catalogue_immutability.rs`.
   - Implement `design.md` "Immutability trigger" and "Publish gate": `problem_versions` raises on delete and on any update except the one-time sandbox fill that needs at least one `hidden_tests` row; child tables raise on update and delete and accept inserts only while `sandbox_validated_at IS NULL`; `problems` publish gate (sandbox validated, 4 hints, 2–5 examples, taxonomy present); `catalogue_events` raises on update and delete.
   - Requirements: CAT-S2, CAT-S3, CAT-S4, CAT-S6, CAT-P5 (append-only part).

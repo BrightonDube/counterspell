@@ -1043,3 +1043,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `sqlx::test(migrations = ...)` embeds migration files at compile time. After adding a migration, touch the test file so Cargo rebuilds it, or the old schema runs.
 - A rejected CHECK comes back as `sqlx::Error`. The test turns it into a SQLSTATE string with `as_database_error()`, so each assertion names the exact rule (`23514`) that fired.
 - A helper that inserts a row must also have a positive test. Otherwise a broken helper makes every rejection test pass for the wrong reason.
+
+# Rust lesson: problem-catalogue C02
+- A trigger function is written in PL/pgSQL and returns `trigger`. `RAISE EXCEPTION` aborts the statement, so Rust sees a `sqlx::Error` whose message names the rule.
+- The tests check each rule by sending the bad statement and asserting the message text. The rule is proven by the database, not by Rust code.
+- `catalogue_support` is a shared module under `tests/`. Each test file includes it with `mod catalogue_support;`, which keeps the helper out of the list of test crates.
