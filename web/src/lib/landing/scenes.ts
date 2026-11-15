@@ -2,6 +2,7 @@
 // It loads after first paint and only when the motion plan asks for it.
 // Every animation plays once, uses transform and opacity only, and is reverted on dispose.
 
+import { afterPaint } from './after-paint';
 import type { LandingPlan } from './motion-plan';
 
 /** The parts of GSAP this module uses. Typed narrowly so tests can pass a stand-in. */
@@ -20,15 +21,6 @@ export interface SceneDeps {
 	load: () => Promise<{ gsap: GsapLike; ScrollTrigger: unknown }>;
 }
 
-/** Wait for idle time after first paint. Fall back to a 1.5 s timer where idle callbacks are missing. */
-const defaultSchedule: SceneDeps['schedule'] = (callback) => {
-	if (typeof requestIdleCallback === 'function') {
-		requestIdleCallback(() => callback(), { timeout: 1500 });
-	} else {
-		setTimeout(callback, 1500);
-	}
-};
-
 const defaultLoad: SceneDeps['load'] = async () => {
 	const [{ gsap }, { ScrollTrigger }] = await Promise.all([
 		import('gsap'),
@@ -37,7 +29,7 @@ const defaultLoad: SceneDeps['load'] = async () => {
 	return { gsap: gsap as unknown as GsapLike, ScrollTrigger };
 };
 
-const DEFAULT_DEPS: SceneDeps = { schedule: defaultSchedule, load: defaultLoad };
+const DEFAULT_DEPS: SceneDeps = { schedule: afterPaint, load: defaultLoad };
 
 /**
  * Starts the landing scenes for a motion plan and returns a function that reverts them.

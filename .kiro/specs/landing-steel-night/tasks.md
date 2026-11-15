@@ -100,7 +100,7 @@ Conventions for every task:
 
 These follow the design amendment "real art". T13 and T14 run after T18, on the page with the real art.
 
-- [ ] **T15 [S] (30 min) Hero background: moon/graveyard poster and video loop**
+- [x] **T15 [S] (30 min) Hero background: moon/graveyard poster and video loop**
   - Files: `web/src/lib/landing/Hero.svelte`, a small pure helper (for example `hero-media.ts`) and its test, landing CSS; assets in `web/static/art/landing/`.
   - Poster as a `<picture>` (960 and 1920 WebP, JPEG fallback) in the static HTML with width, height and `fetchpriority="high"`. In motion mode only, after first paint, mount the `<video>` (WebM then MP4, 960 at <= 900 px wide, else 1920, `preload="none"`, muted, loop, playsinline). No video for reduced motion, Save-Data or a hidden tab; pause when off-screen.
   - Verify: vitest for the pure source choice (reduced motion gives no video, narrow gives 960, Save-Data gives none); `cd web && npm run check && npm run build`; no third-party request.
