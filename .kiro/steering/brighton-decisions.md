@@ -40,3 +40,5 @@ sudo systemctl restart user@1000.service
 
   Restarting `user@1000` briefly restarts this user's systemd services, including the rootless daemon (it is enabled and should come back). Docker Desktop and `cs-dev-pg`/`cs-dev-valkey` are not affected. Afterwards, `cgroup.controllers` for `user@1000.service` should include `cpu cpuset io memory pids`, and `docker --context rootless info` should have no "No ... support" warnings.
 - `sbx_*` tests have not been written yet, so they were not run or ticked. T25–T33 stay open until those tests exist and pass after the delegation drop-in. T02 and T37 stay open for the real VPS.
+
+- 15 Nov 2026 10:23 (Brighton): landing-steel-night T08. Rename the SvelteKit static adapter fallback to `200.html` and have the Rust server serve `200.html` as the SPA fallback for unknown non-API routes (for example `/problems/[slug]`). Problem pages stay served from the database with no redeploy. Brighton explicitly approves this going beyond the spec's allowed scope (a Rust change in `crates/server`) for this change.
