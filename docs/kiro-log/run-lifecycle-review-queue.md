@@ -101,3 +101,8 @@ Brighton reviews each entry before the next task that depends on it starts.
 - **Not changed:** the cursor is checked before ownership. Design Path 9 orders step 2 (parse) before step 3 (ownership) on purpose. A malformed cursor reveals nothing about the run.
 - **Not changed:** the stream closes silently on a database error, so `EventSource` reconnects. A `retry:` hint could slow that loop during an outage. Left for the deployment pass.
 - **Not changed:** after the waker reports `Closed`, the stream sleeps one poll interval and checks again. That is the intended fallback, not a double wait.
+
+## T34 (canary privacy): decision for Brighton
+
+- The canary test scans `run_events`, `test_results`, `GET /api/runs/{id}` and the raw SSE bytes for three hidden markers. It passes. A deliberate leak through `compile_output` makes it fail (checked, then reverted).
+- Gap: `compile_output` is the one free-text field that reaches public events, and the design has no redaction for it. The test therefore does not put markers there. By construction the compiler runs before the tests and never sees hidden data, so a leak needs a bug in the executor. A redaction pass in the worker would need the hidden values, which the worker does not hold in this spec. Brighton to decide whether to accept this or add a redaction rule when the sandbox runner lands.

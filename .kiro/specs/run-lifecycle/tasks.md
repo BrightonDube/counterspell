@@ -338,7 +338,7 @@ Conventions for every Rust task:
 
 ## Wave 4: end-to-end proof, CI, deployment and records
 
-- [ ] **T34 [S] (25 min) Canary privacy test**
+- [x] **T34 [S] (25 min) Canary privacy test**
   - Files: `crates/server/tests/canary.rs`.
   - `pg_canary_not_in_any_public_surface` (P12): hidden tests carry canary strings in input and expected output; a scripted hostile executor tries to leak them through every free-text field and through sample tests that are flagged hidden. Run `run` and `submit` flows including a retry. Scan every `run_events` payload, `test_results` row, `GET /api/runs/{id}` response and the raw SSE bytes. Also assert that hidden `test` payload keys are exactly `ordinal`, `verdict`, `time_ms`, `sample`.
   - Requirements: R15, P12, R22.10.

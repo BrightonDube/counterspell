@@ -66,6 +66,8 @@ pub struct SseResponse {
     pub headers: hyper::HeaderMap,
     body: Option<Incoming>,
     text: String,
+    /// Every body byte read so far, exactly as the server sent it.
+    transcript: String,
 }
 
 impl SseResponse {
@@ -99,6 +101,7 @@ impl SseResponse {
             headers: response.headers().clone(),
             body: Some(response.into_body()),
             text: String::new(),
+            transcript: String::new(),
         }
     }
 
@@ -119,9 +122,17 @@ impl SseResponse {
                 return None;
             };
             if let Ok(data) = frame.into_data() {
-                self.text.push_str(&String::from_utf8_lossy(&data));
+                let chunk = String::from_utf8_lossy(&data);
+                self.text.push_str(&chunk);
+                self.transcript.push_str(&chunk);
             }
         }
+    }
+
+    /// Every byte of the body read so far, as the server wrote it. Used to scan the raw stream.
+    #[must_use]
+    pub fn transcript(&self) -> &str {
+        &self.transcript
     }
 
     /// Reads the next frame within `limit`.

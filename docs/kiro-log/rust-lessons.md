@@ -1202,3 +1202,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A test can open a real HTTP connection with `hyper`'s HTTP/1 client and read the body frame by frame. That tests the bytes a browser would see, not the handler's return value.
 - `let ... else` replaces a `match` that has only one interesting arm. Clippy asks for it, and the early `return` keeps the normal path unindented.
 - `drop(value)` ends a connection on purpose. The test uses it to simulate a network drop, and the server must then resume from the cursor the client last saw.
+
+# Rust lesson: run-lifecycle T34
+
+- A trait method can return an error that carries data. The test executor puts its markers only into an error (the internal `last_error`) and into typed records, so the test shows which channels can carry hidden text.
+- Generated markers (a UUID inside each string) prove that a match came from this run's data and not from an accidental match in other output.
+- A scan that finds nothing proves little. The test asserts that each surface is non-empty first, and a temporary leak made the same test fail, so the scan is known to work.
