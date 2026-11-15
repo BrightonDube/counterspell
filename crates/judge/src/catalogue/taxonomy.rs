@@ -4,6 +4,7 @@
 //! fails at parse time instead of being ignored.
 
 use serde::Deserialize;
+use sqlx::PgPool;
 
 /// One track or concept: a slug and a display name.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
@@ -83,4 +84,44 @@ fn check_entries(kind: &'static str, entries: &[Entry]) -> Result<(), TaxonomyEr
         seen.push(&entry.slug);
     }
     Ok(())
+}
+
+/// Upserts every track and concept from `taxonomy` (CAT-T3).
+///
+/// Each row is one `INSERT … ON CONFLICT DO UPDATE` statement, so two syncs running at the same
+/// time cannot both insert the same slug. Rows missing from the file are kept, never deleted.
+///
+/// # Errors
+///
+/// Returns the database error when a statement fails. Earlier statements in the same call are
+/// not rolled back, so the caller can run the sync again safely.
+pub async fn sync_taxonomy(pool: &PgPool, taxonomy: &Taxonomy) -> Result<(), sqlx::Error> {
+    for (index, entry) in taxonomy.tracks.iter().enumerate() {
+        sqlx::query(
+            "INSERT INTO tracks (slug, name, sort_order) VALUES ($1, $2, $3) \
+             ON CONFLICT (slug) DO UPDATE SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order",
+        )
+        .bind(&entry.slug)
+        .bind(&entry.name)
+        .bind(sort_order(index))
+        .execute(pool)
+        .await?;
+    }
+    for (index, entry) in taxonomy.concepts.iter().enumerate() {
+        sqlx::query(
+            "INSERT INTO concepts (id, name, sort_order) VALUES ($1, $2, $3) \
+             ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order",
+        )
+        .bind(&entry.slug)
+        .bind(&entry.name)
+        .bind(sort_order(index))
+        .execute(pool)
+        .await?;
+    }
+    Ok(())
+}
+
+/// Converts a zero-based file position into a sort order. Saturates instead of panicking.
+fn sort_order(index: usize) -> i32 {
+    i32::try_from(index).unwrap_or(i32::MAX)
 }

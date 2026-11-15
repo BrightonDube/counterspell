@@ -1091,3 +1091,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `SET TRANSACTION READ ONLY` makes Postgres refuse every write in that transaction, even one written by mistake later. An `if dry_run` check would only cover the code paths someone remembered to guard.
 - `Option::map_or(&[], ...)` gives an empty slice when there is no stored version. Writing the type as `&[(String, String)]` lets the compiler infer the empty case.
 - Putting `#[cfg(test)] mod tests` after the last item keeps clippy's `items_after_test_module` lint quiet.
+
+## problem-catalogue C20: taxonomy sync
+
+- `INSERT ... ON CONFLICT (slug) DO UPDATE` is one SQL statement. Two syncs running at the same time cannot both insert the same slug, because the database resolves the conflict on the row itself.
+- The function takes `&PgPool` and returns `Result<(), sqlx::Error>`. The `?` operator returns the first database error to the caller, and the caller decides whether to retry.
+- `enumerate()` gives each file entry its position, and `sort_order` converts that position with `i32::try_from(...).unwrap_or(i32::MAX)`. This avoids `unwrap()` in production code.

@@ -238,7 +238,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: both tests pass with `--ignored`. The fake runner's call count is zero in every refusal case.
   - Rust lesson: counting calls on a fake object proves that a code path did not run. Explain why that is stronger than checking only the printed output.
 
-- [ ] **C20 [S] [SUPERVISED] (25 min) Taxonomy sync**
+- [x] **C20 [S] [SUPERVISED] (25 min) Taxonomy sync**
   - Files: `crates/judge/src/catalogue/taxonomy.rs` (database part), `crates/judge/tests/pg_catalogue_taxonomy.rs`.
   - Upsert `tracks` and `concepts` from `packs/catalogue.toml` by slug, updating names and sort order. Never delete. Run once at the start of each import command.
   - Requirements: CAT-T3, CAT-T2 (database check).
