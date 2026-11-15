@@ -48,23 +48,25 @@ describe('Hero', () => {
 		expect(container.textContent).toContain('hunts down the input that breaks it');
 	});
 
-	// test-change: R5 (the hero now uses the approved moon and graveyard art; design.md amendment 15 Nov 2026)
-	it('shows the poster as a WebP picture with both sizes, explicit dimensions and no alt text', () => {
+	// test-change: R23 (the title-screen poster is hero-moon-living-poster.jpg; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T22)
+	it('shows the living poster as a JPEG with explicit dimensions, high priority and no alt text', () => {
 		const { container } = render(Hero);
-		const source = container.querySelector('picture source');
-		expect(source?.getAttribute('type')).toBe('image/webp');
-		expect(source?.getAttribute('srcset')).toBe(
-			'/art/landing/moon-graveyard-poster-960.webp 960w, /art/landing/moon-graveyard-poster-1920.webp 1920w'
-		);
-
-		const poster = container.querySelector('picture img');
-		expect(poster?.getAttribute('src')).toBe('/art/landing/moon-graveyard-poster-1920.jpg');
+		const poster = container.querySelector('img.hero-poster');
+		expect(poster?.getAttribute('src')).toBe('/art/landing/hero-moon-living-poster.jpg');
 		expect(poster?.getAttribute('width')).toBe('1920');
 		expect(poster?.getAttribute('height')).toBe('1080');
 		expect(poster?.getAttribute('alt')).toBe('');
 		expect(poster?.getAttribute('aria-hidden')).toBe('true');
 		expect(poster?.getAttribute('fetchpriority')).toBe('high');
 	});
+
+	it('adds one CSS pumpkin glow over the painted pumpkin and no second familiar image (T22)', () => {
+		const { container } = render(Hero);
+		expect(container.querySelectorAll('.pumpkin-glow')).toHaveLength(1);
+		expect(container.querySelector('.pumpkin-glow')?.getAttribute('aria-hidden')).toBe('true');
+		expect(sourcesOf(container).some((src) => src?.includes('familiar'))).toBe(false);
+	});
+
 
 	it('does not mount the video before first paint', () => {
 		const { container } = render(Hero);
@@ -112,7 +114,7 @@ describe('Hero', () => {
 
 	it('shows the flat moon and graveyard SVGs when the poster fails to load (T16 fallback)', async () => {
 		const { container } = render(Hero, { props: { plan: STATIC } });
-		const poster = container.querySelector('picture img') as HTMLImageElement;
+		const poster = container.querySelector('img.hero-poster') as HTMLImageElement;
 		await fireEvent.error(poster);
 		const sources = sourcesOf(container);
 		expect(sources).toContain('/landing/moon.svg');

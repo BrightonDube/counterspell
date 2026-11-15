@@ -32,7 +32,7 @@ export function chooseHeroVideo(facts: HeroVideoFacts): HeroVideo | null {
 	}
 	const width = facts.viewportWidth <= NARROW_MAX_WIDTH ? 960 : 1920;
 	return {
-		webm: `/art/landing/moon-graveyard-loop-${width}.webm`,
-		mp4: `/art/landing/moon-graveyard-loop-${width}.mp4`
+		webm: `/art/landing/hero-moon-living-${width}.webm`,
+		mp4: `/art/landing/hero-moon-living-${width}.mp4`
 	};
 }

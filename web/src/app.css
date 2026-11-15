@@ -129,3 +129,8 @@ body {
     var(--bg) 88%
   );
 }
+
+/* Title-screen hero: one ember colour (red, green, blue channels) that the pumpkin glow reads. */
+:root {
+  --hero-ember: 255 170 60;
+}

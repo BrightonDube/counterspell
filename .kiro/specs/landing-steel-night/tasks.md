@@ -164,14 +164,14 @@ T13 and T14 stay open and must run **after Wave 5** (the title-screen hero), not
 
 Replace the mid-page hero with the approved variant B title screen. Visual reference (not production code): `.kiro/specs/landing-steel-night/reference/` (`v3-b.png`, `v3-b-mobile.png`, `index.html`). Assets are already in the repo; do not recode the mockup HTML into `web/`. Apply `.kiro/skills/impeccable` on every UI task. No hackathon mentions. No server or Rust changes.
 
-- [ ] **T21 [P] (25 min) Self-host Creepster and record the OFL notice**
+- [x] **T21 [P] (25 min) Self-host Creepster and record the OFL notice**
   - Files: `web/src/fonts.css` (or the existing font module), landing preload in `app.html` or the landing route, `THIRD-PARTY-NOTICES.md`. Font files are already at `web/static/fonts/Creepster-Regular.woff2` and `web/static/fonts/creepster/` (`OFL.txt`, `README.md`).
   - Add `@font-face` for Creepster (weight 400, `font-display: swap`, local woff2 only). Preload that woff2 on the landing page. Append the SIL OFL 1.1 notice (Font Diner, reserved name "Creepster") to `THIRD-PARTY-NOTICES.md`. Do not add a package or a CDN link.
   - Depends on: none (font files are already committed).
   - Verify: a unit or build test fails first if Creepster is missing from the font CSS, then passes; `npm run check && npm run build`; the built CSS and HTML contain no `fonts.googleapis.com` or `fonts.gstatic.com`; `THIRD-PARTY-NOTICES.md` names Creepster and OFL.
   - Requirements: R20, R29. Preserve: Geist and JetBrains Mono unchanged; Creepster is only for the title-screen wordmark and ENTER label.
 
-- [ ] **T22 [S] (30 min) Full-viewport living background and pumpkin glow**
+- [x] **T22 [S] (30 min) Full-viewport living background and pumpkin glow**
   - Files: `web/src/lib/landing/Hero.svelte`, `hero-media.ts` and its tests, landing CSS. Media already at `web/static/art/landing/hero-moon-living-*` (see that folder's README).
   - Make the hero `min-height: 100svh` (with a `100vh` fallback). Poster in the prerendered HTML (`fetchpriority="high"`, explicit dimensions). After first paint, motion mode only, mount the living-loop `<video>` (WebM then MP4, 960 at <= 900 px, else 1920, `preload="none"`, muted, loop, playsinline). No video for reduced motion, Save-Data or a hidden tab; pause when off-screen. On narrow viewports, `object-position` keeps the painted pumpkin partly visible (see `reference/v3-b-mobile.png`). Add the CSS pumpkin-glow pulse from the mockup; disable it under reduced motion. No middle familiar. Do not delete the older `moon-graveyard-*` files.
   - Keep existing GSAP `art/fx/` overlays only if they do not clash with the living loop (which already has flying bats and laptop fog); drop or soften any overlay that fights the painting. The CSS pumpkin glow is required.
