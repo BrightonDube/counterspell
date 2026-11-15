@@ -967,3 +967,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option::as_deref()` turns `Option<Box<T>>` into `Option<&T>` without moving or cloning the value.
 - `Option::and_then` and `map` chain optional values with no `if let` nesting, and `map(ClassId::id)` is preferred over a closure that only calls the method.
 - `?` on a `Result` returns the error to the caller, so a serialisation failure becomes one mapped error with no `unwrap`.
+
+# Rust lesson: efficiency-familiar T20
+- A trait method that returns `impl Future + Send` lets a generic function await the collector without boxing the future, so the bench path has no `dyn` cost.
+- `&mut C` in a generic argument lets a test count how many times the collector ran, because the test keeps ownership of the double.
+- Borrowed data in a `match` (`BenchState::Points(&points)`) lives as long as the outcome it borrows, so no clone is needed.
+- A pure builder function (`assess_input`) keeps the struct update in one place, and `..` copies the fields that do not change.
