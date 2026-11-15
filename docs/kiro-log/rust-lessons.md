@@ -1108,3 +1108,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 
 - `#[async_trait]` boxes the future so that a trait object (`Arc<dyn ProblemLookup>`) can hold an async method. A plain `async fn` in a trait cannot be called through `dyn` in this version of the language.
 - Adding a field (`version`) to a struct breaks every struct literal. The compiler lists each one, so the change is complete when it compiles.
+
+## problem-catalogue C28: Postgres problem lookup
+
+- `Option` in the seam means "not found", but a database error is not "not found". The lookup logs the error and answers `None`, so a broken database refuses the run instead of queuing one against an unknown version. This is fail-closed.
+- `query_as` with a tuple `(String, i32)` maps each row by position. A wrong column type shows up as a runtime decode error, which the test suite exercises through the real `published_version` column.
+- The publication check is in the SQL `WHERE` clause. A Rust-side `if` after the query would be easy to forget, and the test for an unpublished row proves the clause works.

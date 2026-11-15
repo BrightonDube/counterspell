@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 pub mod auth;
+pub mod catalogue;
 pub mod client_ip;
 pub mod config;
 pub mod dashboard;
@@ -40,10 +41,11 @@ use crate::{
         resolver::SessionUserResolver,
         AuthState,
     },
+    catalogue::lookup::PgProblemLookup,
     config::ServerConfig,
     error::ApiError,
     ratelimit::Limiter,
-    seams::{EmptyCatalogue, LanguageCatalog, ProblemLookup, Unauthenticated, UserResolver},
+    seams::{LanguageCatalog, ProblemLookup, Unauthenticated, UserResolver},
 };
 
 /// Shared state for every request handler. Cloning is cheap: the pool and the seams are shared.
@@ -70,15 +72,17 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Bundles a pool, the settings and the rate limiter, with the production seams.
+    /// Bundles a pool, the settings and the rate limiter, with the production seams. Problems are
+    /// read from the catalogue through the server role (CAT-L2).
     #[must_use]
     pub fn new(pool: PgPool, config: ServerConfig, limiter: Limiter) -> Self {
         let languages = LanguageCatalog::launch(config.limits.max_source_bytes);
+        let problems = PgProblemLookup::new(pool.clone());
         Self {
             pool,
             config: Arc::new(config),
             user_resolver: Arc::new(Unauthenticated),
-            problems: Arc::new(EmptyCatalogue),
+            problems: Arc::new(problems),
             languages: Arc::new(languages),
             limiter,
             run_waker: runs::wake::RunWaker::idle(),

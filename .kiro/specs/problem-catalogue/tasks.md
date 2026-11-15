@@ -310,7 +310,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `cargo test -p counterspell-server` passes, and the number of tests is the same as before the change (record both numbers in the reply).
   - Rust lesson: `#[async_trait]` boxes the future so a trait object can hold an async method. Explain why the repo already uses it for `UserResolver`.
 
-- [ ] **C28 [S] [SUPERVISED] (30 min) `PgProblemLookup` and production wiring**
+- [x] **C28 [S] [SUPERVISED] (30 min) `PgProblemLookup` and production wiring**
   - Files: `crates/server/src/catalogue/mod.rs`, `crates/server/src/catalogue/lookup.rs`, `crates/server/src/lib.rs`, `crates/server/tests/pg_catalogue_lookup.rs`.
   - Query `problems` for published rows and return the `published_version`. Production `AppState` uses it. `EmptyCatalogue` stays for the database-free constructor.
   - Requirements: CAT-L2, CAT-A9.
