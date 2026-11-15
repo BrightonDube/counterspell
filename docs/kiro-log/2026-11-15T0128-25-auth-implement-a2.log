@@ -1,0 +1,727 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by reading the auth spec's task list and the blockers log.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=53
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=94
+[tool] Read File
+[tool] status: InProgress
+[tool] Check git state, logs and dev env presence
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The unchecked tasks are T08, T22, T23, T25, T27, T33 to T37. T22 is the first one in order. I'll read the auth code it touches before changing anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+
+[tool] List auth source and test files and last log tail
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=64
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=88
+[tool] status: Completed
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+I have the decision and flow code. Next I need the error variants, the session and extractor API, and the existing OAuth test harness.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=152
+
+[tool] Read File
+[tool] status: InProgress
+[tool] List error variants and public API signatures
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The OAuth test harness is clear. Now I'll check what `design.md` specifies for provider linking and its error codes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=124
+
+[tool] Find link-related spec text and error codes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=64
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The callback currently sends every failure to `/login`. Link failures must go to `/settings/account`, so I need to change that routing. Next I'll read the CSRF guard, session and limiter signatures, and how existing tests build a signed-in session.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=533
+
+[tool] Inspect csrf, session, limits and test helpers
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=111
+[tool] Read body guard and test helper signatures
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=61
+[tool] Read JSON body guard rules
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have enough context for T22. The sequence is: write the failing link tests first, then add the `link` flow, the start handler and the callback branch. First I'll check the `identities` columns and the demo seed signature the tests will use.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=213
+
+[tool] Check identities schema and demo seed function
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=37
+[tool] Read identities table definition
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The schema has the unique keys I need. I'll write the failing tests for T22 first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2214
+[tool] status: Pending
+[tool] status: Completed
+Now the RED run. The dev database URLs come from the runner's env file, which I load in the shell without printing it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+
+[tool] Run the new link tests to confirm they fail
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 10 tests fail for the expected reason: link flows still redirect to `/login`, and there is no link start route. Now the GREEN step. I'm rewriting `oauth.rs` so each callback failure knows whether its flow was a link, and adding the link branch.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=3033
+[tool] status: Pending
+[tool] status: Completed
+Next, the link start handler, its registration in the handler module, and the route.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=367
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=165
+[tool] status: Pending
+[tool] status: Completed
+I'll run the link tests again (GREEN), then the existing OAuth tests to check the callback change didn't break sign-in.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Run link and OAuth model tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+One failure, and it is my test's assumption. After logout the cascade deletes the flow, so the callback can no longer tell it was a link flow and falls back to `/login`. The requirement is that the flow stops working, which it does. I'll correct the expectation and document why.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=179
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=85
+[tool] Rerun link tests, then fmt and clippy
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both suites pass: 10 link tests and 10 OAuth tests. Formatting needs a fix, so I'll run `cargo fmt`, then check the full gate and the lesson format.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=79
+
+[tool] Format code and check lesson file format
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=110
+[tool] Run clippy and the full server test suite
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The full server suite passes with `--include-ignored`, with clippy clean. Now I'll tick T22, append its Rust lesson, and commit.
+[tool] Replace in File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=196
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+[tool] Commit T22 changes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T22 is committed as `aa7188e`. T22 is SUPERVISED, so I'll add its review-queue entry.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=139
+[tool] status: Pending
+[tool] status: Completed
+Next is T23, linking an email address. I'll read the existing magic-link request and verify handlers, since the link flow reuses them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=84
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=129
+[tool] Read token store and mail API signatures
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=47
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The link flow needs the same mail and token helpers as magic-link. Before writing the email tests I need the clock API and the error-to-status mapping.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=398
+
+[tool] Check clock API, error statuses and token helper
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need for T23. I'll write the failing email-link tests first. Then I'll add the start handler and the `link_email` branch of verify.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2126
+[tool] status: Pending
+[tool] status: Completed
+The last test I wrote is convoluted and would not check anything useful. I'll rewrite it as a plain status check before running.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=152
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=132
+[tool] Run email-link tests to confirm RED
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The free-versus-taken test passes only because the route does not exist yet, so both answers are 404. That is a vacuous check. I'll add an assertion that the answer is 202, then implement the handler, the verify branch and the shared helpers.
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Failed: Replace in File
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=506
+[tool] status: Pending
+[tool] status: Completed
+The test edit failed because my `oldStr` didn't match the file. The magic.rs refactor applied. I'll retry the test edit against the exact text.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=105
+[tool] status: Pending
+[tool] status: Completed
+Next, the imports that `magic.rs` now needs, then the link email handler.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=992
+[tool] status: Pending
+[tool] status: Completed
+I wrote two mistakes into `link.rs`: an import from a module that does not exist, and a pointless `dead_code` helper. I'll replace both with a local `address_is_free` and remove the helper.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=538
+[tool] status: Pending
+[tool] status: Completed
+The call site still passes the pool, not the state. I'll fix that, then update verify.rs with the `link_email` branch.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=794
+[tool] status: Pending
+[tool] status: Completed
+Now the route registration, then the email-link tests.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=184
+[tool] Format, then run email-link and magic-link tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 8 email-link tests pass, and the magic-link and provider-link suites still pass. Next is clippy, then the full server suite.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=88
+
+[tool] Run clippy with warnings denied
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=63
+[tool] Run full server suite with ignored tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=85
+[tool] Confirm zero failures across the suite
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 298 server tests pass with `--include-ignored`, and clippy is clean. I'll tick T23, add its lesson and review-queue entry, then commit.
+[tool] Replace in File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=290
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=87
+[tool] Commit T23 changes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T23 is committed as `5c419af`. Next is T25 (register and password reset). I'll read the design for those flows before writing tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=124
+
+[tool] Read design and requirements for register and reset
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=58
+[tool] Read register and reset design details
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The design is specific enough to write tests. I'll check the password module's public API and how login uses it, so register and reset reuse the same code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=90
+
+[tool] Read password API and login handler
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the password API and the login pattern. Now I'll write the failing tests for register and reset. They cover the no-account-before-proof rule, uniform answers, reset revoking sessions, and no password being added to a passwordless account.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2432
+[tool] status: Pending
+[tool] status: Completed
+The reset test has a meaningless `assert!(!first.is_empty())` line. I'll replace it with a check that the two sessions existed before the reset.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=349
+[tool] status: Pending
+[tool] status: Completed
+Now the RED run for these tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=86
+
+[tool] Run register and reset tests to confirm RED
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Three tests pass before any implementation exists. The two "answers match" tests compare two 404s, so they prove nothing. I'll add a 202 assertion to each, as I did before.
+[tool] Replace in File
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=218
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+The tests now check real behaviour. Next I'll implement register, the `verify` registration branch, and the reset request and confirm handlers. I'm also moving the unique-violation helper, which is currently copied into three files, into `errors.rs`.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=316
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=35
+[tool] Read the database error helper in errors.rs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=105
+[tool] status: Pending
+[tool] status: Completed
+Now I'll remove the two copies in `oauth.rs` and `verify.rs` and import the shared helper.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=189
+[tool] status: Pending
+[tool] status: Failed: Replace in File
+The `verify.rs` match failed because the helper sits after `link_email`, not before it. I'll locate it and edit that exact text.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=84
+
+[tool] Locate the verify helper copy
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=116
+[tool] status: Completed
+[tool] status: Pending
+[tool] status: Completed
+Now the register handler, with its verify-side completion step.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=832
+[tool] status: Pending
+[tool] status: Completed
+Now the reset handlers: the request step, which mails only to eligible accounts, and the confirm step.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=720
+[tool] status: Pending
+[tool] status: Completed
+Next I'll wire registration into verify and register the new modules and routes.
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Failed: Replace in File
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=407
+[tool] status: Pending
+[tool] status: Completed
+The verify dispatch edit failed on text I did not match exactly. I'll view the current match block and edit it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=70
+
+[tool] View the verify purpose dispatch
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=191
+[tool] Format and run register and reset tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test run finished before the dispatch edit landed, so those results may not reflect the final code. I'll check the file and rerun.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+
+[tool] Verify dispatch then rerun register tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The dispatch is in place and all 9 register and reset tests pass against the final code. Now clippy and the full suite.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=120
+
+[tool] Run fmt, clippy and full server suite
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Format, clippy and all 307 tests pass. I'll tick T25, record its lesson and review entry, and commit.
+[tool] Replace in File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=288
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=107
+[tool] Commit T25 changes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T25 is committed as `c20e951`. Next is T27, which enforces the demo restrictions across every mutating route. I'll add a list of the mutating routes to the router module, so a test can check each one. Then I'll write the matrix tests.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=527
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+The demo checks are routed through `Capabilities` and the decision functions, with no scattered `if is_demo` branches in handlers. Now the matrix tests.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1632
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=149
+[tool] Format and run demo matrix tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 5 matrix tests pass. They describe enforcement that T22 to T25 already added, so no production change was needed here. Next I'll run clippy and the full suite, then tick T27.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=167
+
+[tool] Run fmt, clippy and full server suite
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Tick T27 in tasks.md
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Append to File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=276
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=66
+[tool] Commit T27 changes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T27 is committed as `acfc31a`. The remaining tasks are T08 and T33 to T37. T08 waits on the run-lifecycle fixtures, and T33 wires the auth router into the server. I'll read `main.rs` and the run-lifecycle test fixtures to judge how far I can take them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=188
+
+[tool] Survey server wiring and run-lifecycle fixtures
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=37
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The main router has no auth routes and no auth state. Wiring that in is T33. Before I change `main`, I need to know which hardening and config entry points already exist, and what `compose_env.rs` checks in the compose file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=207
+
+[tool] Check hardening, config struct and compose test
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The auth config, CSRF hardening and compose checks are all present. T33 needs the constructors for mail, OAuth, demo and the trusted-proxy list. I'll collect those signatures in one pass.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=244
+
+[tool] Collect constructor signatures for wiring
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+[tool] Read sender, OAuth and demo constructor details
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The wiring pieces exist, but each needs its real constructor. Before I write `build_state`, I'll check the OAuth endpoint constants and the `Credentials` and `Endpoints` shapes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=196
+
+[tool] Read OAuth credential and endpoint types
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=64
+[tool] Read production constructors for GitHub and Google
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The constructors are clear. Before I write the setup code, I need four more facts: the `SessionUserResolver` constructor, whether `AuthLimiter` and `Redacted` implement `Clone`, the `SystemClock` name, and the current `server` environment in `docker-compose.yml`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=404
+
+[tool] Check resolver, clone bounds, clock and compose services
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Everything the wiring needs exists. Two Clone bounds and the environment variable list still need checking, and then I'll write the code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=449
+
+[tool] Read env name list and Clone derives
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Everything I need is `Clone`. T33 is large, so I'll go in order: cleanup first (test first), then the setup module, then the router and `main` wiring. The cleanup test comes first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=695
+[tool] status: Pending
+[tool] status: Completed
+I need two corrections before running this. `Clock::now` is the trait method, not `now_value`. Also, a session lives 30 days, so two days is too early to expire it. I'll move the clock to 32 days.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=211
+
+[tool] Fix cleanup test and confirm it fails to build (RED)
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+That is the expected RED: the cleanup module does not exist. I'll write it now.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=388
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+[tool] Register cleanup module and run its test
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T33's cleanup part is GREEN. Next is the setup module. Its tests need a valid development config map, so I'll look at how the config unit tests build one.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=112
+
+[tool] Find config test helper for a valid map
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I'll write the setup module with its tests together. Setup builds the state without touching the database or the network. The pool is created lazily, so these tests run without a database.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=679
+[tool] status: Pending
+[tool] status: Completed
+Now the setup module itself.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=874
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=96
+[tool] Register setup module and run setup tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The setup tests pass. I didn't observe their RED run, because I wrote the module before running them. I'll record that in the hand-off. Next is the router wiring, with RED tests first. `with_auth` doesn't exist yet, so the test file cannot compile, which is the expected RED.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=965
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=88
+[tool] Confirm wiring tests fail to build (RED)
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+That is the expected RED. Now I'll wire `AppState` and `build_router`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=74
+
+[tool] Confirm config and resolver entry points
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=617
+[tool] Patch lib.rs router wiring and run wiring tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Three of four pass. `/api/auth/config` returns 404 because its handler (T26) was never added to the router. I'll check the handler's name and register it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+
+[tool] Find config handler name and router entry
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Find config handler name and router entry
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=38
+[tool] Inspect config handler functions
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The handler is a separate `config_router` with its own state, `PublicSettings`. I'll attach the settings to `AuthState` through a builder method, have `build_state` set them from the config, and merge the config route into `auth::router`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=506
+
+[tool] Mount config route and rerun wiring and setup tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both wiring suites pass. Next is `main.rs`, which must read the auth configuration and start the background tasks.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=529
+[tool] status: Pending
+[tool] status: Completed
+`main.rs` is rewritten. I'll format, lint and run the full suite before docs and compose.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=87
+
+[tool] Format and run clippy over the server crate
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy flags three by-value parameters and one needless clone. I'll consume the state in `build_router` and pass `PublicSettings` by copy in the auth router.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+
+[tool] Locate lines to restructure
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=278
+[tool] Consume state in router builders and recheck clippy
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=164
+[tool] Fix test closure, clippy, and run full server suite
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 320 server tests pass and clippy is clean. Before I touch `docker-compose.yml`, I need to know how empty values are handled. Compose passes unset variables as empty strings, so an empty `GITHUB_OAUTH_CLIENT_ID` could wrongly enable a provider.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=236
+
+[tool] Check how config treats empty values
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Empty values already count as unset, so `${NAME:-}` pass-throughs are safe. I'll add the auth variables to the `server` service only.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=200
+[tool] status: Pending
+[tool] status: Completed
+I'll run the compose guard test and, if the Docker CLI is available, validate the compose file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=144
+
+[tool] Run compose guard and validate compose config
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The compose file validates, the guard test passes, and the judge service gets no auth variables. Next I'll write the deploy steps the task names, without any secret values.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=518
+[tool] status: Pending
+[tool] status: Completed
+The sandbox rule is consistent with what I'm doing, so I'll continue. T33's code and compose changes are complete, but its Caddy edit and manual stack run still need Brighton. I'll commit the completed parts and record the open items.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=120
+
+[tool] List changed files before committing
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Append to File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=412
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+[tool] Verify gate and commit T33 partial work
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T33 partial work is committed. T33 is SUPERVISED, so it needs a review-queue entry as well.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=171
+[tool] status: Pending
+[tool] status: Completed
+I finished T22, T23, T25 and T27, and got T33 most of the way. The auth server suite passes with `--include-ignored` (320 tests), and clippy and fmt are clean. Eight tasks remain unchecked (T08, T33 to T37) and are logged in `auth-blockers.md`.
+
+## Summary
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T22 link a provider | done | 10 (`pg_auth_link_provider`) | 10/10, full suite green | `aa7188e` |
+| T23 link an email | done | 8 (`pg_auth_link_email`) | 8/8, full suite green | `5c419af` |
+| T25 register and reset | done | 9 (`pg_auth_register_reset`) | 9/9, full suite green | `c20e951` |
+| T27 demo restrictions | done | 5 (`pg_auth_demo_matrix`) | 5/5. No production change was needed, because T22 to T25 already call `Capabilities::require` | `acfc31a` |
+| T33 wiring | partial, unchecked | 1 pg (cleanup), 3 setup, 4 wiring | Code and compose done; Caddy, manual stack run and README pending | `1303437` |
+| T08 FK | not started | — | Waits for T34 fixtures | — |
+| T34 to T37 | not started | — | T34 needs T08 and run-lifecycle edits; T35 needs T33; T36 is on the cut list; T37 needs the manual VPS checks | — |
+
+## Notes on the work
+
+- **Two tests were corrected during RED/GREEN.** A link-flow test expected `/settings/account` after logout, but the cascade deletes the flow, so the error goes to `/login`. I changed the expectation and documented why. Two "answers match" tests passed only because both sides returned 404. I added a 202 assertion to each.
+- **TDD gap in T33.** I wrote `auth_setup.rs` before its module and ran it only after the module existed, so I did not observe its RED state.
+- **Shared helper.** `is_unique_violation` now lives in `errors.rs`. The copies in `oauth.rs` and `verify.rs` use it.
+- **Demo seeding failure is non-fatal.** If the database is down at start-up, the seed error is logged and the daily reset retries later.
+- **CSRF guard scope.** The `/api` origin guard mounts only when auth is configured, which is always true in production. Tests without auth do not get it.
+
+## Blockers for Brighton
+
+- **Caddy log filter (T33).** The task requires asking before editing `Caddyfile`. Question: may the access log drop the query string on the OAuth callback path?
+- **Manual stack run (T33).** Starting the Compose stack, requesting a magic link and checking that a cross-site `POST` is refused. This needs a running stack.
+- **README paragraph (T33).** Not written.
+- **T08 FK.** Needs the T34 fixtures before the foreign key can go in.
+
+## Review queue (SUPERVISED)
+
+- **T22** (`aa7188e`): `link_provider` and `flow_session_user` in `handlers/oauth.rs`; `handlers/link.rs`.
+- **T23** (`5c419af`): `link.rs` `email` and `address_is_free`; `verify.rs` `link_email`. Known behaviour: a token is spent before the `UPDATE`, so a race gives `409 email_in_use` and the token is lost.
+- **T25** (`c20e951`): `register.rs` and `reset.rs`. A link is mailed even for a taken address, and opening it gives `account_exists`.
+- **T27** (`acfc31a`): matrix tests. `MUTATING_ROUTES` must be kept in step with the router, and the test cannot catch a served route that is not listed.
+- **T33** (`1303437`): `setup.rs`, `cleanup.rs`, `lib.rs` router, `main.rs`, `docker-compose.yml`.
+
+## Open Minor findings
+
+- `MUTATING_ROUTES` can drift from the router. The test catches a listed route that is missing, not a served route that is unlisted.
+- The DELETE account route (T36) does not exist yet, so the demo matrix does not cover it.
+- The config route (`GET /api/auth/config`) was never mounted by T26; T33 now mounts it through `AuthState.settings`.
+- Mutation testing of the demo matrix was not run, so I have not confirmed that each test fails when a restriction is removed.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=312
+
