@@ -363,7 +363,7 @@ Conventions for every web task:
   - Apply the Impeccable craft-floor and polish playbooks to the editor-corner Familiar, now using the five mood stills: size, crop, token halo, spacing, no ambient loop in the IDE. Record findings and fixes.
   - Verify: `npm run check && npm run build`; the log lists the findings and fixes.
 
-- [ ] **T34 [P] (25 min) Explainer view-model for "How does it judge me?"**
+- [x] **T34 [P] (25 min) Explainer view-model for "How does it judge me?"**
   - Files: `web/src/lib/familiar/explain.ts`, tests.
   - Pure function from the read-model `complexity` section to what the popover shows: points on log-log axes, the slope with its error, the plausible classes, the per-model residuals sorted, the reference, the ratio vs baseline, and fixed sentences for the honest limits. No new data is invented; missing sections give an explicit "not measured" state.
   - Tests: sample sections give stable view-models; `Low` confidence shows "unsure" and the plausible list; text contains no forbidden word.
