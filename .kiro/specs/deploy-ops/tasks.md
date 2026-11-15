@@ -174,7 +174,7 @@ Conventions:
   - Depends on: T00, run-lifecycle migrations (done). T17 confirms the column names from the real migration when it runs.
   - Verify: `bats deploy/vps/tests/ops.bats`; `shellcheck`; the SQL parses (`psql` syntax check on a throwaway database).
 
-- [ ] **T18 [P] (25 min) Monthly restore drill and its result template**
+- [x] **T18 [P] (25 min) Monthly restore drill and its result template**
   - Files: `deploy/vps/restore-drill/counterspell-restore-drill`, `deploy/vps/restore-drill/counterspell-restore-drill.service`, `deploy/vps/restore-drills/TEMPLATE.md`, `deploy/vps/tests/drill.bats`.
   - The drill downloads the newest off-box file, checks SHA-256 against the manifest, decrypts it with the identity file on `/dev/shm` (removed afterwards, Q23), restores into a throwaway `postgres:17-alpine` container on the `data` network, compares counts of `users`, `submissions`, `jobs`, `run_events` and the migration version with the manifest, and writes `deploy/vps/restore-drills/<YYYY-MM>.md` from the template (R8.8 to R8.10). The template has fields for date, file name, SHA-256, restore time, counts, migration version, result and reviewer. No user data.
   - Tests with fakes: a checksum mismatch fails the drill; the identity file is removed on exit (trap); the result file has counts only.

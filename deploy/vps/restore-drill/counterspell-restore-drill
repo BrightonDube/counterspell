@@ -1,0 +1,124 @@
+#!/usr/bin/env bash
+# Monthly restore drill (deploy-ops T18, R8.8 to R8.10). Downloads the newest encrypted dump, checks it
+# against its manifest, decrypts it, restores it into a throwaway Postgres 17 container on the data
+# network, and compares row counts with the manifest. The result file holds counts and checksums only.
+#
+# The age identity (private key) is read from DRILL_IDENTITY_FILE, which must be under /dev/shm. A trap
+# removes that file, the working directory and the throwaway container on every exit path (Q23).
+set -euo pipefail
+umask 077
+
+BACKUP_BUCKET="${BACKUP_BUCKET:?BACKUP_BUCKET is not set}"
+RCLONE_CONFIG="${RCLONE_CONFIG:-/etc/counterspell/rclone.conf}"
+DRILL_IDENTITY_FILE="${DRILL_IDENTITY_FILE:?DRILL_IDENTITY_FILE is not set (a file under /dev/shm)}"
+DRILL_RESULT_DIR="${DRILL_RESULT_DIR:-/var/backups/counterspell/drills}"
+DRILL_TEMPLATE="${DRILL_TEMPLATE:-/usr/local/share/counterspell/restore-drill-template.md}"
+DRILL_NET="${DRILL_NET:-counterspell_data}"
+DRILL_IMAGE="${DRILL_IMAGE:-postgres:17-alpine}"
+
+container="cs-drill-$$"
+work=""
+
+cleanup() {
+  # Only a file on tmpfs is removed. A misconfigured path is never deleted.
+  case "$DRILL_IDENTITY_FILE" in
+    /dev/shm/*) rm -f -- "$DRILL_IDENTITY_FILE" ;;
+  esac
+  docker rm -f "$container" > /dev/null 2>&1 || true
+  if [[ -n "$work" ]]; then
+    rm -rf -- "$work"
+  fi
+}
+trap cleanup EXIT
+
+# Lists the counts of the database in the container, as "<table> <count>" lines.
+db_counts() {
+  docker exec "$container" psql -U postgres -d counterspell -At -F ' ' -c \
+    "SELECT 'users', count(*) FROM users
+     UNION ALL SELECT 'submissions', count(*) FROM submissions
+     UNION ALL SELECT 'jobs', count(*) FROM jobs
+     UNION ALL SELECT 'run_events', count(*) FROM run_events
+     UNION ALL SELECT 'migration', coalesce(max(version), 0) FROM _sqlx_migrations"
+}
+
+# Replaces each {{KEY}} in the template with the value given as "KEY=value" arguments.
+fill_template() {
+  local text
+  text="$(cat "$DRILL_TEMPLATE")"
+  local pair key value
+  for pair in "$@"; do
+    key="${pair%%=*}"
+    value="${pair#*=}"
+    text="${text//\{\{$key\}\}/$value}"
+  done
+  printf '%s\n' "$text"
+}
+
+main() {
+  case "$DRILL_IDENTITY_FILE" in
+    /dev/shm/*) ;;
+    *) echo "refused: DRILL_IDENTITY_FILE must be under /dev/shm" >&2; exit 2 ;;
+  esac
+  [[ -f "$DRILL_IDENTITY_FILE" ]] || { echo "refused: identity file is missing" >&2; exit 2; }
+
+  work="$(mktemp -d /dev/shm/cs-drill.XXXXXX)"
+
+  local name manifest dump expected_sha actual_sha
+  name="$(rclone lsf --config "$RCLONE_CONFIG" "$BACKUP_BUCKET/dumps" | grep '\.dump\.age$' | sort | tail -1)"
+  [[ -n "$name" ]] || { echo "no encrypted dump found in the bucket" >&2; exit 1; }
+  dump="$work/$name"
+  manifest="$work/${name%.dump.age}.manifest"
+  rclone copyto --config "$RCLONE_CONFIG" "$BACKUP_BUCKET/dumps/$name" "$dump"
+  rclone copyto --config "$RCLONE_CONFIG" "$BACKUP_BUCKET/manifests/${name%.dump.age}.manifest" "$manifest"
+
+  expected_sha="$(head -1 "$manifest" | cut -d' ' -f1)"
+  actual_sha="$(sha256sum "$dump" | cut -d' ' -f1)"
+  if [[ "$expected_sha" != "$actual_sha" ]]; then
+    echo "checksum mismatch for $name: the manifest does not match the downloaded file" >&2
+    exit 1
+  fi
+
+  local password_file="$work/postgres.env"
+  printf 'POSTGRES_PASSWORD=%s\n' "$(head -c 24 /dev/urandom | base64 | tr -d '/+=\n')" > "$password_file"
+
+  local started finished seconds
+  started="$(date -u +%s)"
+  docker run -d --rm --name "$container" --network "$DRILL_NET" --env-file "$password_file" "$DRILL_IMAGE" > /dev/null
+  docker exec "$container" psql -U postgres -c 'CREATE DATABASE counterspell' > /dev/null
+  age -d -i "$DRILL_IDENTITY_FILE" < "$dump" \
+    | docker exec -i "$container" pg_restore --username=postgres --dbname=counterspell --no-owner --no-privileges
+  finished="$(date -u +%s)"
+  seconds=$((finished - started))
+
+  local restored manifest_counts result
+  restored="$(db_counts)"
+  manifest_counts="$(tail -n +2 "$manifest")"
+  if [[ "$restored" == "$manifest_counts" ]]; then
+    result="PASS"
+  else
+    result="FAIL"
+  fi
+
+  local migration counts_text
+  migration="$(printf '%s\n' "$restored" | awk '$1 == "migration" {print $2}')"
+  counts_text="$(printf '%s\n' "$restored" | awk '$1 != "migration" {printf "%s=%s; ", $1, $2}')"
+
+  mkdir -p "$DRILL_RESULT_DIR"
+  local month result_file
+  month="$(date -u +%Y-%m)"
+  result_file="$DRILL_RESULT_DIR/$month.md"
+  fill_template \
+    "DATE=$(date -u +%Y-%m-%d)" \
+    "FILE=$name" \
+    "SHA256=$actual_sha" \
+    "RESTORE_SECONDS=$seconds" \
+    "COUNTS=$counts_text" \
+    "MIGRATION=$migration" \
+    "RESULT=$result" \
+    "REVIEWER=(to be filled by the reviewer)" > "$result_file"
+
+  echo "restore drill $result for $name; record written to $result_file"
+  [[ "$result" == "PASS" ]]
+}
+
+main "$@"
