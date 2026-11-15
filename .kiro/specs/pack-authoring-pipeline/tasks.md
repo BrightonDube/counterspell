@@ -1,6 +1,6 @@
 # Tasks: pack-authoring-pipeline
 
-Status: spec only. Nothing here runs until Brighton approves this spec (`brighton-decisions`, 14 Nov 2026). Each task is sized for 30 minutes or less.
+Status: approved for implementation by Brighton on 15 Nov 2026 10:26 (`brighton-decisions`, and `docs/kiro-log/pack-pipeline-blockers.md`). Each task is sized for 30 minutes or less. Skip tasks that need a purchase, a paid service, or the private repo Brighton has not created yet.
 
 Markers:
 - `[P]` can run in parallel with other tasks in its wave once dependencies are done.
@@ -40,7 +40,7 @@ Conventions for every task:
 
 ## Wave 0: approval
 
-- [ ] **PA00 [GATE] [HUMAN] (15 min) Approve this spec and its open questions**
+- [x] **PA00 [GATE] [HUMAN] (15 min) Approve this spec and its open questions**
   - Brighton reviews `requirements.md` and `design.md`. He answers design open questions 1 to 16. Priority: 1 (paid services), 3 (private repo and access), 4 and 5 (who sets `published`, where `approval.toml` lives), 6 and 7 (originality list and third-party reading), 9 and 10 (reviewer access and batch approvals), 12 (retired values).
   - Depends on: none.
   - Verify: `docs/kiro-log/pack-pipeline-blockers.md` records each answer or change. No later wave starts before it.

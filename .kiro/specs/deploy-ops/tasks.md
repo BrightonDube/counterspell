@@ -1,6 +1,6 @@
 # Tasks: deploy-ops
 
-No task in this document has been executed. This spec-generation run wrote `requirements.md`, `design.md` and `tasks.md` only. Nothing here may be implemented until T00 is signed off (`.kiro/steering/brighton-decisions.md`, 14 Nov 2026: deploy-ops is spec-only until Brighton approves it).
+Approved for implementation by Brighton on 15 Nov 2026 10:26, for code, IaC and docs only (`.kiro/steering/brighton-decisions.md`, and Review decisions in `design.md`). No purchases, no provisioning, no real servers, and no spending. T01 and other `[HUMAN]` account-creation tasks stay blocked.
 
 Conventions:
 
@@ -15,7 +15,7 @@ Conventions:
 
 ## Wave 0: gate and decisions
 
-- [ ] **T00 [S] [GATE] Spec approval (Brighton)**
+- [x] **T00 [S] [GATE] Spec approval (Brighton)**
   - Read `requirements.md` and `design.md`. Check the gap analysis (G1 to G22) and the deviations (D1 to D10). Answer Q1 to Q27 (each lists the assumed choice).
   - Output: a "Review decisions" section at the end of `design.md` with one line per answer. Any answer that changes a control (sudo rule, socket ACL, network split, env file scope, egress) updates `requirements.md` first.
   - Depends on: none.

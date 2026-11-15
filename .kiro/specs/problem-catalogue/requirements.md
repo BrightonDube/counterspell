@@ -1,6 +1,6 @@
 # Requirements: problem-catalogue
 
-Status: **spec only.** No task in `tasks.md` runs until Brighton approves this spec (`.kiro/steering/brighton-decisions.md`, 14 Nov 2026). Open questions with the assumed choice are in `design.md`.
+Status: **approved for implementation** by Brighton on 15 Nov 2026 10:26. See `.kiro/steering/brighton-decisions.md` and `docs/kiro-log/problem-catalogue-blockers.md`. Open questions keep their assumed choices except where that file records a decision (including the limited importer database role).
 
 Amended 14 Nov 2026 23:06 (amendment 38, `docs/kiro-prompts/38-private-pack-split.md`): hidden parts live in a private repo, not the public one. Section L (CAT-PT1 to CAT-PT15) holds the new rules. The earlier assumption that the repo stays public is withdrawn.
 

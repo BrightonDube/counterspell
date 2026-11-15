@@ -1,6 +1,6 @@
 # Tasks: problem-catalogue
 
-Status: spec only. Nothing here runs until Brighton approves the spec (`brighton-decisions`, 14 Nov 2026). Each task is sized for 30 minutes or less.
+Status: approved for implementation by Brighton on 15 Nov 2026 10:26 (`brighton-decisions`, and `docs/kiro-log/problem-catalogue-blockers.md`). Each task is sized for 30 minutes or less. Leave C00a unchecked until Brighton creates the private repo.
 
 Markers:
 - `[P]` can run in parallel with other tasks in its wave once dependencies are done.
@@ -38,7 +38,7 @@ Conventions for every task (same as `run-lifecycle`):
 
 ## Wave 0: approval
 
-- [ ] **C00 [GATE] [HUMAN] (15 min) Approve this spec and its open decisions**
+- [x] **C00 [GATE] [HUMAN] (15 min) Approve this spec and its open decisions**
   - Decisions needing approval: D2 (second binary in the judge package), D4 (operator uses the database owner login), D5 (difficulty enum), open questions 1, 4 and 5, D17 to D20 (amendment 38) and open questions 18 to 24.
   - Depends on: none.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records each approval or change. Until then, no wave below starts.
