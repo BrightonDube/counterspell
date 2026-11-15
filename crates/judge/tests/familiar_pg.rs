@@ -4,6 +4,7 @@
 //!
 //! Run with `cargo test -p counterspell-judge --test familiar_pg -- --ignored pg_`.
 
+use counterspell_judge::familiar::store::{find_baseline, insert_baselines, BaselineRow};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
@@ -378,4 +379,92 @@ async fn pg_familiar_roles(pool: PgPool) {
     denied_unbound(&mut tx, "DELETE FROM problem_baselines").await;
     denied_unbound(&mut tx, "UPDATE problem_baselines SET median_ns = 1").await;
     tx.rollback().await.unwrap();
+}
+
+/// A baseline row for the two-sum problem in Python, at the given size and digest.
+fn baseline(version: u32, n: u64, median_ns: u64, digest: &str) -> BaselineRow {
+    BaselineRow {
+        problem_slug: "two-sum".to_owned(),
+        problem_version: version,
+        lang: "python".to_owned(),
+        n,
+        median_ns,
+        image_digest: digest.to_owned(),
+        engine_version: "engine-1".to_owned(),
+        fit_version: "fit-1".to_owned(),
+    }
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_baseline_insert_then_find_returns_sorted_points(pool: PgPool) {
+    let rows = [
+        baseline(1, 1024, 300, "sha256:a"),
+        baseline(1, 256, 100, "sha256:a"),
+        baseline(1, 512, 200, "sha256:a"),
+    ];
+
+    assert_eq!(insert_baselines(&pool, &rows).await.unwrap(), 3);
+
+    let found = find_baseline(&pool, "two-sum", 1, "python", "sha256:a")
+        .await
+        .unwrap();
+    assert_eq!(found, vec![(256, 100), (512, 200), (1024, 300)]);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_baseline_reinsert_keeps_the_first_measurement(pool: PgPool) {
+    insert_baselines(&pool, &[baseline(1, 256, 100, "sha256:a")])
+        .await
+        .unwrap();
+
+    let inserted = insert_baselines(&pool, &[baseline(1, 256, 999, "sha256:a")])
+        .await
+        .unwrap();
+
+    assert_eq!(inserted, 0, "an existing measurement is not overwritten");
+    let found = find_baseline(&pool, "two-sum", 1, "python", "sha256:a")
+        .await
+        .unwrap();
+    assert_eq!(found, vec![(256, 100)]);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_baseline_new_version_is_a_separate_set(pool: PgPool) {
+    insert_baselines(
+        &pool,
+        &[
+            baseline(1, 256, 100, "sha256:a"),
+            baseline(2, 256, 150, "sha256:a"),
+        ],
+    )
+    .await
+    .unwrap();
+
+    let old = find_baseline(&pool, "two-sum", 1, "python", "sha256:a")
+        .await
+        .unwrap();
+    let new = find_baseline(&pool, "two-sum", 2, "python", "sha256:a")
+        .await
+        .unwrap();
+    assert_eq!(old, vec![(256, 100)]);
+    assert_eq!(new, vec![(256, 150)]);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_baseline_digest_mismatch_finds_nothing(pool: PgPool) {
+    insert_baselines(&pool, &[baseline(1, 256, 100, "sha256:a")])
+        .await
+        .unwrap();
+
+    let found = find_baseline(&pool, "two-sum", 1, "python", "sha256:b")
+        .await
+        .unwrap();
+    assert!(
+        found.is_empty(),
+        "a baseline from another image is not usable"
+    );
 }

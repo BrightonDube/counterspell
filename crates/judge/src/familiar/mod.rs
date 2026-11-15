@@ -8,6 +8,7 @@ pub mod assess;
 pub mod gate;
 pub mod load;
 pub mod ratio;
+pub mod store;
 
 use std::future::Future;
 use std::time::Duration;

@@ -223,7 +223,7 @@ Conventions for every web task:
   - Preserve: the executor still cannot write a verdict or status; `language-drivers` bench code is not rewritten here, only called through the trait.
   - Rust lesson: async traits with `impl Future`, generics instead of `dyn`, and passing a context object.
 
-- [ ] **T21 [S] (30 min) Baseline store**
+- [x] **T21 [S] (30 min) Baseline store**
   - Files: `crates/judge/src/familiar/store.rs`.
   - `insert_baseline(rows)` (insert-only, `ON CONFLICT DO NOTHING`, returns how many were new) and `find_baseline(slug, version, lang, digest)` returning sorted `(n, median_ns)`; all SQL for this module lives here. The reader returns nothing for a stale version or a different digest.
   - Tests (`pg_`): insert, re-insert (no overwrite), a new version creates a second set, a digest mismatch finds nothing, the judge role cannot update or delete.
