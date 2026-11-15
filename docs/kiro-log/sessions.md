@@ -250,3 +250,13 @@
  docs/KIRO_USAGE.md        | 16 ++++++++++++++++
  docs/kiro-log/sessions.md | 17 +++++++++++++++++
  2 files changed, 33 insertions(+)
+- 2026-11-15T14:34:27Z | model: not reported | last commit: c27e9b7 problem-catalogue: blockers and review queue for attempt 7
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-15T14:35:56Z | model: not reported | last commit: d0bc503 problem-catalogue: attempt 8 blocker status (no task ticked)
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 15 insertions(+)
