@@ -113,7 +113,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T06, T07, T08, and T09.
   - Rust lesson: explain any Rust fixes made; if no Rust file changes are needed, say so rather than adding an artificial lesson.
 
-- [ ] **T19 [optional] [P] (25 min) Orange and poison pumpkins on empty, loading and celebration states**
+- [x] **T19 [optional] [P] (25 min) Orange and poison pumpkins on empty, loading and celebration states**
   - Files: dashboard empty / loading / streak components under `web/src/lib/dashboard/`, tests, CSS.
   - Use `art/familiar/jack-o-lantern-orange` on the no-activity empty state, the loading state, and as a small streak or badge accent. Use `art/familiar/jack-o-lantern-poison` only for success or celebration moments (for example a streak milestone or a just-solved prompt), not for errors. WebP stills, explicit size, `loading="lazy"` below the fold, `alt=""`. No ambient looping motion (dashboard rule: no GSAP/ambient motion); reduced motion stays still. Palette tokens only; do not move or delete the files.
   - Verify: `npm run check && npm run build`; empty, loading and celebration states render without layout shift or raw hex.
