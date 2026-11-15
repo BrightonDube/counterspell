@@ -6,67 +6,9 @@
 //! Run with `cargo test -p counterspell-judge --test pg_catalogue_import -- --ignored`.
 
 use counterspell_judge::catalogue::plan::Refusal;
-use counterspell_judge::catalogue::write::{write_static, KnownGhost, StaticImport, WriteOutcome};
-use serde_json::json;
+use counterspell_judge::catalogue::testkit::static_import as import;
+use counterspell_judge::catalogue::write::{write_static, WriteOutcome};
 use sqlx::PgPool;
-use std::collections::BTreeMap;
-
-/// Builds a static import for `two-sum`. `body_hash` sets every hash byte, so two calls with
-/// different bytes describe two different contents.
-fn import(version: i32, body_hash: u8, statement: &str) -> StaticImport {
-    let mut manifest_public = BTreeMap::new();
-    manifest_public.insert(
-        "public/problem.md".to_string(),
-        format!("{body_hash:02x}").repeat(32),
-    );
-    StaticImport {
-        slug: "two-sum".to_string(),
-        version,
-        content_sha256: [body_hash; 32],
-        manifest_public,
-        title: "Two Sum".to_string(),
-        track: "arrays".to_string(),
-        difficulty: "easy".to_string(),
-        statement_markdown: statement.to_string(),
-        constraints: vec!["The list has at most 10 items.".to_string()],
-        signature: json!({"function": "two_sum"}),
-        input_schema: json!({"kind": "int"}),
-        comparator: "exact".to_string(),
-        limits: json!({"time_ms": 2000, "mem_mb": 256}),
-        reference_complexity: None,
-        bench: None,
-        complexity_note: None,
-        engine_version: "engine-1".to_string(),
-        generator_version: "gen-1".to_string(),
-        hidden_count: 5,
-        concepts: vec!["hash-maps".to_string()],
-        examples: vec![(json!([1]), json!(1)), (json!([2]), json!(2))],
-        starters: vec![
-            (
-                "python".to_string(),
-                "def two_sum(values, target):\n    raise NotImplementedError\n".to_string(),
-            ),
-            (
-                "javascript".to_string(),
-                "function twoSum(values, target) {\n  throw new Error('not implemented');\n}\n"
-                    .to_string(),
-            ),
-        ],
-        hints: (1..=4)
-            .map(|rung| (rung, format!("Hint {rung}.")))
-            .collect(),
-        reference_code: "def two_sum(values, target):\n    return 0\n".to_string(),
-        known_ghosts: vec![KnownGhost {
-            ghost_id: "always-zero".to_string(),
-            kind: "wrong".to_string(),
-            input: json!([1]),
-            got: Some(json!(0)),
-            exception_class: None,
-            explanation: "Returned 0 for a list with one item.".to_string(),
-            concepts: vec!["hash-maps".to_string()],
-        }],
-    }
-}
 
 /// Inserts the track and concept that the test packs refer to.
 async fn seed_taxonomy(pool: &PgPool) {

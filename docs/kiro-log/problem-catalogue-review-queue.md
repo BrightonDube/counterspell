@@ -24,3 +24,9 @@ C03's `submissions_problem_fk` broke about 75 existing database tests, because t
 | Task | Commit | What Brighton should check |
 |---|---|---|
 | C14 | f23934f (problem-catalogue C14) | `write_static` in `crates/judge/src/catalogue/write.rs`. It locks the problem row, re-plans under the lock, and writes one transaction. Check: (1) the `problems` display copy is refreshed on every write, including the Unchanged path, which is then rolled back; (2) `write_static` takes the operator's own connection pool, so the operator role must be the importer role the approval names; (3) the concept set is replaced with DELETE then INSERT, which is allowed because `problem_concepts` has no trigger. The `VersionNotBumped` list only covers public files, because `manifest` holds public entries only (CAT-PT9). A private-only change still refuses, but its path is not listed. |
+
+## C15 (dry run)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C15 | (see git log "problem-catalogue C15") | `dry_run_static` in `write.rs` runs in a read-only transaction and returns the plan, a public-file diff and the generator-version change. Check: the diff lists public files only, as with C14. The approval state, the retired-value count and the private commit id are not in this function yet; they belong to the CLI task C19, which must print them. |

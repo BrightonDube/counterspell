@@ -1086,3 +1086,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `sqlx::Transaction` rolls back when it is dropped without `commit`. An early `?` inside `write_static` therefore leaves no partial pack behind. The rollback test proves it by counting rows after a failed starter insert.
 - Helpers take `&mut PgConnection` and get it from the transaction with `&mut *tx`. The same helper then works inside or outside a transaction.
 - `write!` into a `String` inside a `fold` replaces `format!` per item. Clippy's `format_collect` lint asks for this form, and the `let _ =` is safe because writing to a `String` cannot fail.
+
+# Rust lesson: problem-catalogue C15
+- `SET TRANSACTION READ ONLY` makes Postgres refuse every write in that transaction, even one written by mistake later. An `if dry_run` check would only cover the code paths someone remembered to guard.
+- `Option::map_or(&[], ...)` gives an empty slice when there is no stored version. Writing the type as `&[(String, String)]` lets the compiler infer the empty case.
+- Putting `#[cfg(test)] mod tests` after the last item keeps clippy's `items_after_test_module` lint quiet.
