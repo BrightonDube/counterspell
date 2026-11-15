@@ -946,3 +946,12 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - A foreign key is a rule the database checks on every write, so it holds even when a test or a second service writes the table. Adding it exposed every test that invented a random user id, which is the kind of gap a lint cannot find.
 - Test fixtures build a handle from the full 32-character UUID. A shortened prefix made different ids collide, and the unique index refused the second row.
 - `ON CONFLICT (id) DO NOTHING` makes a fixture safe to call twice for the same id, so tests can share one helper.
+
+# Rust lesson: auth T34
+- `AppState::with_auth` swaps the user resolver for the session one. A test that asks the resolver directly, with a valid cookie, a forged one and no cookie, shows the production path is not the fixed test identity.
+- A helper that reads a cookie from a `Set-Cookie` header uses `strip_prefix` and `find_map`. These return `Option` and avoid index arithmetic on strings.
+
+# Rust lesson: auth T35
+- A global `tracing` subscriber must be set once per test binary. The test binary holds a single test for this reason, so no other test can install a second subscriber.
+- A `Write` implementation whose clones share an `Arc<Mutex<Vec<u8>>>` lets a `MakeWriter` closure hand the same buffer to every event, including events from blocking threads.
+- A sentinel event in the test proves the capture works, so a check that finds no secret cannot pass by seeing nothing.

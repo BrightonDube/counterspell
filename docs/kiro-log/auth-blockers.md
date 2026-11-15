@@ -158,3 +158,29 @@ It needs the T33 manual steps, the VPS checks and PROPTEST_CASES=512. The VPS ch
 
 ### Test status at the last full run
 `cargo test -p counterspell-server -- --include-ignored`: 320 passed, 0 failed. `cargo clippy -p counterspell-server --all-targets -- -D warnings` is clean. `docker compose config -q` passes.
+
+## Attempt 8 (15 Nov 2026): resume at T08, T33 to T37
+
+### Done this attempt
+- **T08** ticked (commit `00bc3bf`). Foreign key, fixtures, and the judge test fixtures. The FK test was written first and failed for the expected reason.
+- **T34** partial (commits `4e0d6b6`, `7ead0bc`). REST integration tests pass. Not ticked: the SSE heartbeat revalidation needs run-lifecycle T29, which is not implemented.
+- **T35** partial (commit `5542a64`). Log-capture test over magic link, password register and login, password reset, and logout-all, with a sentinel line. Not ticked: the OAuth `code`, `state`, verifier and access-token canaries, and the Resend key canary. Those need the provider and mail stubs. The HTTP trace check does not apply: the auth router has no trace layer.
+- **T33** README paragraph added (commit `53cd24f`). `docker compose config` validates, and the auth variables appear under `server` only.
+
+### Still open
+- **T33 (Caddy log filter):** needs Brighton's approval for `Caddyfile` (open question 16). Also open: the manual stack run (`GET /api/auth/config`, a magic link in the dev log, a `curl -X POST` refused without `Origin`). It needs a running stack, so it is deferred.
+- **T34 (SSE heartbeat):** waits for run-lifecycle T29. This is a run-lifecycle task, and `futures-util` is already approved for it.
+- **T35 (canary coverage):** add the OAuth flows with `FakeProvider` and the Resend key canary, then tick.
+- **T36 (delete account, Could):** on the cut list and not started. Left open.
+- **T37 (final verification):** not ticked. Gates run this attempt:
+  - `cargo fmt --all -- --check`: pass.
+  - `cargo clippy --workspace --all-targets --all-features -- -D warnings`: pass.
+  - `cargo test --workspace -- --include-ignored` (dev Postgres 17): 1100 passed, 0 failed.
+  - `cargo deny check licenses`: pass (one unmatched-allowance warning).
+  - `docker compose config -q`: pass.
+  - Not run: `PROPTEST_CASES=512`, `cd web && npm run check && npm run build` this attempt, and the VPS checklist (deferred, needs real services).
+
+### Decisions taken without asking (to review)
+- Test canary in `auth_logs.rs` is marked `// gitleaks:allow` on its line. The generic key rule flagged a fake password. The shared scanner config is unchanged.
+- The submissions FK migration fails loudly on orphan rows instead of deleting them.
+- Dev Postgres URLs come from `~/.config/counterspell/dev-test.env`, sourced in the shell. Values were not printed or written to any file.
