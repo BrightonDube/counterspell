@@ -69,3 +69,27 @@ No [stretch] task (T11 to T18) was started, as the instructions require.
   publication gate and the server role's SELECT grants (migrations `20261116100000` to `20261116100200`).
   The T03 block above is therefore resolved, and T03 was implemented in `crates/server/src/dashboard/query.rs`.
 - T03 uses the difficulty values `easy`, `medium` and `hard` from the catalogue's CHECK constraint.
+
+## Attempt 3, later in the run: T09 done, T10 deferred
+
+- **T10 core smoke path: deferred: E2E.** The task signs in through the browser, creates owned runs and
+  checks the rendered page. Brighton's 12 Nov rule allows unit and integration tests only. The routes
+  and the static build are covered by the Rust HTTP tests and by `npm run build`, which emits
+  `web/build/dashboard.html`. T10 stays unchecked.
+- **Session-store failure returns 401, not 503 (review finding, Important).** `auth/resolver.rs` turns a
+  database error during session lookup into "not signed in", so the dashboard answers
+  `401 unauthenticated` instead of `503 dashboard_unavailable`. Fixing it changes the shared
+  `UserResolver` seam, which other routes use and the auth spec owns. Unblock: Brighton (or the auth
+  spec owner) decides whether the resolver should return a result that separates "no session" from
+  "lookup failed". Then the dashboard extractor maps the second case to `DashboardError::unavailable`,
+  and a test with a failing resolver is added.
+- **No catalogue list page in the web app.** There is no `/problems` route, only `/problems/[slug]`.
+  The empty state therefore has no "browse" link. Unblock: the catalogue list UI, then a link to it.
+- **Existing difficulty mismatch in `web/src/lib/api/types.ts`.** Its `DIFFICULTIES` are
+  `intro`, `standard`, `hard`, but the database and server use `easy`, `medium`, `hard`. The problem
+  page would reject real catalogue data. This is outside dashboard-fsrs and was not changed. The
+  dashboard uses `easy`, `medium`, `hard`. Unblock: the problem-catalogue owner reconciles the set.
+- **Impeccable launcher not run.** Brighton's rule forbids downloading the Impeccable engine. I read
+  `SKILL.md` and `reference/craft-floor.md` directly, then built the screen to those rules: no eyebrow,
+  no nested cards, no coloured side borders, no decorative motion, text labels beside colour.
+- **[stretch] T11 to T18 not started**, as instructed.
