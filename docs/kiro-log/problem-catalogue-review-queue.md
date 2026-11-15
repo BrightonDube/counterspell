@@ -50,3 +50,15 @@ C03's `submissions_problem_fk` broke about 75 existing database tests, because t
 | Task | Commit | What Brighton should check |
 |---|---|---|
 | C31 | (see git log "problem-catalogue C31") | `read::published_detail` and `GET /api/problems/{slug}` in `crates/server/src/catalogue/`. Check: (1) the detail fields come from the pinned `published_version` only; (2) unknown and unpublished slugs return one identical 404 body; (3) the judge test-kit signature and constraints were changed to the full stored shape (`params`, `returns`), with no assertion weakened; (4) the no-leak test plants no canary in a synthetic private fixture yet, because `crates/judge/tests/fixtures/private/` does not exist. Canaries come from the judge test kit's hidden tests, reference and known ghosts. |
+
+## C29 and C35 (attempt 7)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C29 and C35 | 925ac4a | `enqueue::insert_run_and_job` is one `INSERT … SELECT … WHERE publication_state = 'published' RETURNING id`. A missing or unpublished problem returns `EnqueueOutcome::NotPublished`, which `create.rs` maps to 404 `unknown_problem`. That is the same body the lookup gives, not the `not_found` code the spec names. Decide which code the API should use. Check also that the server tests now publish `two-sum` through the judge fixture (`support::publish_two_sum`, which is idempotent). No assertion changed. Server suite: 435 passed with `--include-ignored`, 0 failed. Judge `pg_` suite: 110 passed. |
+
+## C23 (attempt 7)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C23 | ebb3738 | `crates/judge/tests/catalogue_purity.rs`. The scanner and its synthetic cases were written in the same change as the scanner, so the red step was not seen separately. The check is a text match, so it cannot see a value passed in through a variable. Its `PackRunner` rule is a no-op until C16 adds `sandbox_fill.rs`. C23 lists C16 as a dependency, and that dependency is only partly met. |

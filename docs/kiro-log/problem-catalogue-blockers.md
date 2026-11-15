@@ -107,3 +107,22 @@ Still open, with the reason for each:
 - C33 needs the `ghosts` table owner decision (D16).
 - C34 to C37 depend on the open chain above.
 - C00a, C38, C39 and C40 are HUMAN. Brighton has not created the private repo, so nothing reads it.
+
+## Run of 15 Nov 2026 (attempt 7)
+
+Done this run (ticked): C29 and C35 (commit 925ac4a), C23 (commit ebb3738). C29's option (a) needed no new dependency: the server already dev-depends on the judge test kit.
+
+Counts: server suite 435 passed, 0 failed with `--include-ignored` (3 new `pg_catalogue_pin` tests). Judge `pg_` suite 110 passed, 0 failed.
+
+Still open, with the reason for each:
+- **C16 (sandbox checks through `PackRunner`) still needs Brighton's decision. This is a conflict between two approved documents, so I did not choose.**
+  - C19 and the spec's X9 say the judge crate depends on `counterspell-grimoire`.
+  - The 15 Nov 00:55 routine decision in `brighton-decisions.md` says the judge must not depend on grimoire.
+  - The trait `PackRunner` is in grimoire and uses grimoire's `Target`. Its SBX checks (`grimoire/src/sandbox.rs`) reuse grimoire types, so option (b) would move more than the trait.
+  - Options: (a) judge depends on grimoire, which matches the spec and breaks the 15 Nov decision. (b) move the trait, `Target` and `RunnerError` into `counterspell-common`, with `common` depending on `engine`, and grimoire re-exports them. The SBX check logic would still need to move, or be duplicated, for the judge to run them.
+  - Recommendation: (a) for the trait and SBX logic together, with the 15 Nov decision amended, because option (b) duplicates or moves a large amount of logic. Brighton decides.
+- C17, C18, C19, C19b, C21, C22 depend on C16, so they stay open. C34, C36 and C37 depend on those.
+- C26 is BLOCKED on judge-sandbox T24 (not in the code).
+- C32 needs the language accessor X10, which is still not specified. The `LanguageCatalog` has the byte limits and enabled flags, but no display name, and the spec does not say where display names come from.
+- C33 is BLOCKED on D16 (the owner of the `ghosts` table).
+- C00a, C38, C39 and C40 stay HUMAN and unchecked. Nothing read the private repo.
