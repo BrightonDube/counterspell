@@ -108,17 +108,24 @@
 				/>
 			</div>
 		{:else}
-			<img
-				class="hero-poster absolute inset-0 h-full w-full object-cover"
-				src="/art/landing/hero-moon-living-poster.jpg"
-				width="1920"
-				height="1080"
-				alt=""
-				aria-hidden="true"
-				fetchpriority="high"
-				decoding="async"
-				onerror={() => (posterFailed = true)}
-			/>
+			<picture class="absolute inset-0 block h-full w-full">
+				<source
+					type="image/webp"
+					srcset="/art/landing/hero-moon-living-poster-960.webp 960w, /art/landing/hero-moon-living-poster-1920.webp 1920w"
+					sizes="(max-width: 900px) 100vw, 1920px"
+				/>
+				<img
+					class="hero-poster h-full w-full object-cover"
+					src="/art/landing/hero-moon-living-poster.jpg"
+					width="1920"
+					height="1080"
+					alt=""
+					aria-hidden="true"
+					fetchpriority="high"
+					decoding="async"
+					onerror={() => (posterFailed = true)}
+				/>
+			</picture>
 		{/if}
 
 		{#if video}
