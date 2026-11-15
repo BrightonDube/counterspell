@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Test stub for logger. Records to LOGGER_LOG, not STUB_LOG, so "no stub called" checks ignore it.
+echo "$*" >> "${LOGGER_LOG:?}"
+exit 0

@@ -30,14 +30,14 @@ Conventions:
 
 ## Wave 1: fixes and checks that need no server
 
-- [ ] **T02 [P] (20 min) Ignore rules for infra secrets and state**
+- [x] **T02 [P] (20 min) Ignore rules for infra secrets and state**
   - Files: `.gitignore`.
   - Add: `infra/**/*.tfstate`, `infra/**/*.tfstate.*`, `infra/**/.terraform/`, `infra/**/*.tfvars` (with `!infra/**/*.tfvars.example`), `infra/ansible/inventory/hosts.yml`, `infra/ansible/inventory/group_vars/*secret*`, `*.age` identity files named `*.agekey` and `*identity*.txt`, `rclone.conf`, `*.env` under `deploy/` (but keep `*.env.example`). `.env`, `.env.*` and `secrets/` already exist and stay.
   - Requirements: R1.5, R5.5.
   - Depends on: T00.
   - Verify: `git check-ignore -v` on a fixture for each pattern; `git check-ignore` returns no match for `.kiro/`; `git status` shows no new ignored file that should be tracked.
 
-- [ ] **T03 [S] (30 min) Red tests for the deploy script**
+- [x] **T03 [S] (30 min) Red tests for the deploy script**
   - Files: `deploy/vps/tests/counterspell-deploy.bats`, `deploy/vps/tests/stubs/{docker,curl,cosign,flock,logger,sudo}`.
   - Write bats tests with stub binaries that record their arguments. Cover:
     - a bad request (not `deploy`, `rollback` or `status`, or a bad digest format) is refused and no stub is called except `logger`;
