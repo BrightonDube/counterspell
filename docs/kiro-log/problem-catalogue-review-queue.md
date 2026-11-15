@@ -38,3 +38,9 @@ C03's `submissions_problem_fk` broke about 75 existing database tests, because t
 | C20 | 9d232b5 | `sync_taxonomy` in `taxonomy.rs` upserts with `ON CONFLICT DO UPDATE` and never deletes. Check the rename and keep-on-removal behaviour in `pg_catalogue_taxonomy`. |
 | C24 | ffa2596 | `problem_store::load` is a free function, not the `ProblemTests` trait, because judge-sandbox T24 is not in the code yet. Check that `Run` never loads hidden rows and that a missing version gives `None`. C26 must wire the trait later. |
 | C25 | 824fe60 | `reference_for` and `known_ghosts_for` read through the judge role. The server role is denied, as tested in `pg_catalogue_judge_ghosts`. Check that the testkit change (version-dependent content hash, idempotent concept link) only changes fixture bytes. |
+
+## C28 (attempt 5)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C28 | 455e8db | `PgProblemLookup` in `crates/server/src/catalogue/lookup.rs`. Check: (1) `AppState::new` now uses the database lookup, so every server test that builds state reads `problems`; the `pg_` suite passed; (2) a database error is logged and answered as "not found" (fail closed), not as a 500; (3) the publication check is in the SQL `WHERE`. |

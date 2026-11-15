@@ -63,3 +63,32 @@ Test-integrity notes for review:
 - C27: the seam test changed from sync `#[test]` to `#[tokio::test]` because `published` is now async. Its assertions are unchanged. One test was added (`in_memory_catalogue_reports_the_pinned_version`). Server test count: 392 before, 393 after.
 
 Open design note: C30's `status` field and C31's no-leak tests depend on the auth resolver; not checked.
+
+## Run of 15 Nov 2026 (attempt 5)
+
+Done this run: C28 (commit 455e8db; review-queue entry added).
+
+**C16 is still blocked (design decision, not reached).** C16 needs `PackRunner` from `counterspell-grimoire` in the judge crate. The 15 Nov routine decision in `brighton-decisions.md` keeps the judge free of authoring code, and the security note says do not invent a second crate layout. Brighton should choose (a) a judge dependency on grimoire for the trait only, or (b) move `PackRunner` and `Target` into `counterspell-common`. C17, C18, C19, C19b, C21, C22 and C23 depend on C16, so they stay unchecked.
+
+**C29 is blocked on a server test fixture decision (not started, no code changed).** C29 makes `enqueue` insert the submission with `INSERT … SELECT … WHERE publication_state = 'published'`. Then every server test that queues a run for `two-sum` needs a real published problem. The server's lib-level test kit (`crates/server/src/testkit.rs`, `ensure_problem`) only inserts an unpublished row, because publishing needs the full child set (versions, two examples, four hints, sandbox stamp, hidden test). The only complete fixture is `counterspell_judge::catalogue::testkit::insert_published_fixture`, which the server can call only from test files (its dev-dependency). Options for Brighton:
+- (a) call the judge fixture from each affected server test file (about 8 files; no dependency change);
+- (b) make the server test kit depend on the judge test kit (adds an optional dependency edge, which the rules say to avoid without approval);
+- (c) copy the fixture SQL into the server test kit (about 200 lines of duplicated test SQL).
+This is the same work as C35. Until one is chosen, C29 and C35 stay unchecked. C30 and C31 go ahead because their tests can call the judge fixture directly from test files.
+
+**Review queue:** C28 entry added to `problem-catalogue-review-queue.md`.
+
+**C30 done (commit 7823ab3).** Two points differ from the design text, for Brighton to confirm:
+- `attempted` counts any run the caller has (queued or running included), following CAT-A2's words "a submission exists". The design SQL joined only completed runs. `solved` still needs `status = 'completed' AND verdict = 'accepted'`.
+- A well-formed track or concept slug that matches nothing returns an empty list, not `400`. Only malformed slugs and unknown difficulty values give `400 invalid_filter`.
+- The 200-item cap is in the SQL but has no test (it would need 201 published fixtures). The track sort order is also untested. Both are noted for the review.
+
+**Remaining tasks after C30 (not started):**
+- C31 (`GET /api/problems/{slug}`) lists C17 as a dependency. C17 waits on C16, so it stays unchecked.
+- C32 needs the language accessor X10, which is not specified yet.
+- C33 waits on D16 (the `ghosts` table owner).
+- C34 needs C21 and C22, which wait on C18 and C19 (C16 chain).
+- C35 needs C29, which waits on the fixture decision above.
+- C36 and C37 need everything before them.
+- C38, C39 and C40 are HUMAN (operator import, Brighton's approval, rotation). C00a is still waiting on the private repo.
+- Nothing here changes a fixed decision or touches the private repo.
