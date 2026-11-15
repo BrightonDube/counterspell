@@ -2,7 +2,7 @@
 //!
 //! The field names are the public JSON contract. Renaming a field is a breaking change for the web app.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 /// The whole dashboard. `Default` is the stable empty shape for a learner with no activity.
@@ -41,7 +41,7 @@ pub struct DifficultyCounts {
 }
 
 /// A catalogue difficulty level. The JSON value is the lowercase name.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Difficulty {
     /// The easiest level.
@@ -115,7 +115,7 @@ pub struct RecentSubmission {
 }
 
 /// A concept shown next to a problem.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ConceptRef {
     /// The concept's stable slug.
     pub slug: String,

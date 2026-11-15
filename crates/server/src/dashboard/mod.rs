@@ -5,6 +5,7 @@
 //! names the owner. The handler and the query arrive in later tasks.
 
 pub mod errors;
+pub mod query;
 pub mod recommendations;
 pub mod streak;
 pub mod types;

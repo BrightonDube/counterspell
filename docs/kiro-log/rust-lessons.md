@@ -1126,3 +1126,10 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Path<String>` takes the slug from the URL. The handler passes it to a query with a bound parameter, so the slug is never pasted into the SQL text.
 - `Option<T>` from `fetch_optional` becomes a 404 with `ok_or_else`. Unknown and unpublished slugs both take that one path, so their bodies are byte-identical.
 - A `query_as` tuple maps columns by position. Its types must match the SQL order exactly, and a wrong order shows up at runtime as a decode error. The test that reads the detail caught one such mismatch.
+
+## dashboard-fsrs T03: one-query read model
+
+- The dashboard runs one `query_as` that returns a single row: a JSON object plus an array of activity dates. Each user-scoped step starts from `$1`, the owner's id, so no aggregate is built over other learners' rows.
+- `serde_json::from_value` turns that JSON into private `Raw*` structs. Each field's type is the contract. A wrong type or an unknown difficulty becomes an `Err` that the handler can map to a safe error, not a guessed value.
+- `build_response` is a pure function that borrows the activity dates and takes `today` as an argument. Tests can pass any date, so no test depends on the clock.
+- Errors are passed up with `?`. The decode error carries the serde message only inside the server, and the public error code is chosen later at the handler boundary.
