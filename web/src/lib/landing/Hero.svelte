@@ -114,7 +114,6 @@
 			<video
 				bind:this={videoEl}
 				class="absolute inset-0 h-full w-full object-cover"
-				autoplay
 				muted
 				loop
 				playsinline
