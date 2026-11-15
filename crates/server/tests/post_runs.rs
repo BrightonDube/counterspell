@@ -9,16 +9,28 @@ mod support;
 
 use std::{path::Path, sync::Arc};
 
+use counterspell_common::ids::UserId;
 use counterspell_server::{
     build_router,
     config::ServerConfig,
     ratelimit::{Limiter, MemoryLimiter},
-    testkit::{BearerTestResolver, InMemoryProblems},
+    testkit::{ensure_user, BearerTestResolver, InMemoryProblems},
     AppState,
 };
 use serde_json::{json, Value};
 use sqlx::PgPool;
 use support::{lazy_pool, post, serve, Fixture, Reply};
+use uuid::Uuid;
+
+/// Creates the `users` rows for the bearer test identities these tests use, so that the
+/// submissions foreign key accepts their runs.
+async fn seed_users(pool: &PgPool) {
+    for number in [1_u128, 11, 12, 13, 21, 22] {
+        ensure_user(pool, UserId::from_uuid(Uuid::from_u128(number)))
+            .await
+            .expect("user fixture");
+    }
+}
 
 /// Builds settings from the defaults plus `overrides`, with no real services behind them.
 fn config_with(static_dir: &Path, overrides: &[(&str, &str)]) -> ServerConfig {
@@ -241,6 +253,7 @@ async fn validation_errors_use_the_documented_status() {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_requires_session(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
     let address = serve(build_router(app_state(
         pool.clone(),
@@ -264,6 +277,7 @@ async fn pg_post_requires_session(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_unknown_problem_404(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
     let address = serve(build_router(app_state(
         pool.clone(),
@@ -288,6 +302,7 @@ async fn pg_post_unknown_problem_404(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_creates_a_queued_run_and_returns_202(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
     let address = serve(build_router(app_state(
         pool.clone(),
@@ -324,6 +339,7 @@ async fn pg_post_creates_a_queued_run_and_returns_202(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_rate_limited_has_retry_after(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
     let config = config_with(&fixture.dir, &[("RUN_RATE_USER", "1")]);
     let address = serve(build_router(app_state(pool.clone(), config))).await;
@@ -349,6 +365,7 @@ async fn pg_post_rate_limited_has_retry_after(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_replay_header_and_no_quota_used(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
     let config = config_with(&fixture.dir, &[("RUN_RATE_USER", "1")]);
     let address = serve(build_router(app_state(pool.clone(), config))).await;
@@ -371,6 +388,7 @@ async fn pg_post_replay_header_and_no_quota_used(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_same_key_different_code_is_422(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
     let address = serve(build_router(app_state(
         pool.clone(),
@@ -402,6 +420,7 @@ async fn pg_post_same_key_different_code_is_422(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_active_cap_maps_to_429_queue_cap(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
     let config = config_with(&fixture.dir, &[("RUN_ACTIVE_CAP_PER_USER", "1")]);
     let address = serve(build_router(app_state(pool.clone(), config))).await;
@@ -430,6 +449,7 @@ async fn pg_post_active_cap_maps_to_429_queue_cap(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_trusted_proxy_ip(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
 
     // The test client connects from 127.0.0.1, which is a trusted proxy by default. Its
@@ -469,6 +489,7 @@ async fn pg_post_trusted_proxy_ip(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_post_ignores_forwarded_header_from_untrusted_peer(pool: PgPool) {
+    seed_users(&pool).await;
     let fixture = Fixture::new();
 
     // Trust only 10.0.0.0/8. The test client's 127.0.0.1 is then untrusted, so the header is ignored

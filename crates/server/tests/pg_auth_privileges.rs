@@ -7,6 +7,7 @@
 //! Run with `DATABASE_URL=<throwaway postgres 17> cargo test -p counterspell-server --test pg_auth_privileges -- --ignored pg_`.
 
 use sqlx::PgPool;
+use uuid::Uuid;
 
 const AUTH_TABLES: [&str; 5] = [
     "users",
@@ -101,6 +102,59 @@ async fn pg_server_role_has_the_matrix_privileges_and_no_more(pool: PgPool) {
     assert!(!column_can(&pool, "counterspell_server", "sessions", "user_id").await);
     assert!(role_can(&pool, "counterspell_server", "oauth_flows", "DELETE").await);
     assert!(!role_can(&pool, "counterspell_server", "oauth_flows", "UPDATE").await);
+}
+
+async fn insert_user(pool: &PgPool, id: Uuid) {
+    let handle = id.simple().to_string();
+    sqlx::query("INSERT INTO users (id, handle, display_name) VALUES ($1, $2, 'Test user')")
+        .bind(id)
+        .bind(handle)
+        .execute(pool)
+        .await
+        .expect("user insert");
+}
+
+async fn insert_submission(pool: &PgPool, run: Uuid, user: Uuid) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256)
+         VALUES ($1, $2, 'two-sum', 'python', 'submit', 'print(1)', decode('00', 'hex'))",
+    )
+    .bind(run)
+    .bind(user)
+    .execute(pool)
+    .await
+    .map(|_| ())
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_submissions_user_fk_refuses_unknown_users_and_cascades(pool: PgPool) {
+    let unknown_user = Uuid::new_v4();
+    assert!(
+        insert_submission(&pool, Uuid::new_v4(), unknown_user)
+            .await
+            .is_err(),
+        "a submission for an unknown user must be refused"
+    );
+
+    let user = Uuid::new_v4();
+    insert_user(&pool, user).await;
+    let run = Uuid::new_v4();
+    insert_submission(&pool, run, user)
+        .await
+        .expect("a submission for a real user is accepted");
+
+    sqlx::query("DELETE FROM users WHERE id = $1")
+        .bind(user)
+        .execute(&pool)
+        .await
+        .expect("delete user");
+    let (left,): (i64,) = sqlx::query_as("SELECT count(*) FROM submissions WHERE id = $1")
+        .bind(run)
+        .fetch_one(&pool)
+        .await
+        .expect("count");
+    assert_eq!(left, 0, "deleting a user removes their submissions");
 }
 
 #[ignore = "needs DATABASE_URL"]

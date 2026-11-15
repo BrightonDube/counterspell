@@ -50,6 +50,9 @@ fn auth(number: u128) -> String {
 
 /// Saves a queued run for `user`, the same way `POST /api/runs` does, and returns its id.
 async fn queued_run(pool: &PgPool, user: UserId) -> RunId {
+    counterspell_server::testkit::ensure_user(pool, user)
+        .await
+        .expect("user fixture");
     let run = NewRun::new(
         RunId::new(),
         user,

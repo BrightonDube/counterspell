@@ -941,3 +941,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option<(A, B)>` from `zip` pulls two optional values together, so the router either gets both the auth state and its origin, or neither. A half-configured CSRF guard cannot exist.
 - `main` builds everything that can fail (config, state, listener) before the server starts, and each error is turned into an `io::Error` with a message that names the setting and never its value.
 - Taking `AppState` by value and moving it into `with_state` at the end avoids cloning it for each route group. Clippy's `needless_pass_by_value` lint flagged the copy I first wrote.
+
+# Rust lesson: auth T08
+- A foreign key is a rule the database checks on every write, so it holds even when a test or a second service writes the table. Adding it exposed every test that invented a random user id, which is the kind of gap a lint cannot find.
+- Test fixtures build a handle from the full 32-character UUID. A shortened prefix made different ids collide, and the unique index refused the second row.
+- `ON CONFLICT (id) DO NOTHING` makes a fixture safe to call twice for the same id, so tests can share one helper.

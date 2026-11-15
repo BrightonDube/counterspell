@@ -67,6 +67,11 @@ pub async fn seed_run(pool: &PgPool) -> Result<RunId, sqlx::Error> {
     let run = RunId::new();
     let user = UserId::new();
     let mut tx = pool.begin().await?;
+    sqlx::query("INSERT INTO users (id, handle, display_name) VALUES ($1, $2, 'Test user')")
+        .bind(user.as_uuid())
+        .bind(user.as_uuid().simple().to_string())
+        .execute(&mut *tx)
+        .await?;
     sqlx::query(
         "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256) \
          VALUES ($1, $2, 'two-sum', 'python', 'submit', 'print(1)', $3)",

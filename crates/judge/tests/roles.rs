@@ -9,15 +9,28 @@ use uuid::Uuid;
 
 const INSUFFICIENT_PRIVILEGE: &str = "42501";
 
+/// Inserts a `users` row as the database owner and returns its id, so the submissions foreign key accepts it.
+async fn insert_user(pool: &PgPool) -> Uuid {
+    let id = Uuid::new_v4();
+    sqlx::query("INSERT INTO users (id, handle, display_name) VALUES ($1, $2, 'Test user')")
+        .bind(id)
+        .bind(id.simple().to_string())
+        .execute(pool)
+        .await
+        .unwrap();
+    id
+}
+
 /// Inserts one queued run and its job as the database owner. Returns the run id.
 async fn seed_run(pool: &PgPool) -> Uuid {
     let run = Uuid::new_v4();
+    let owner = insert_user(pool).await;
     sqlx::query(
         "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256) \
          VALUES ($1, $2, 'two-sum', 'python', 'submit', 'print(1)', decode('00', 'hex'))",
     )
     .bind(run)
-    .bind(Uuid::new_v4())
+    .bind(owner)
     .execute(pool)
     .await
     .unwrap();
@@ -63,6 +76,7 @@ async fn denied(tx: &mut Transaction<'_, Postgres>, sql: &str, run: Uuid) {
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_role_privileges_server(pool: PgPool) {
     let run = seed_run(&pool).await;
+    let owner = insert_user(&pool).await;
     let mut tx = pool.begin().await.unwrap();
     sqlx::query("SET LOCAL ROLE counterspell_server")
         .execute(&mut *tx)
@@ -73,8 +87,8 @@ async fn pg_role_privileges_server(pool: PgPool) {
     allowed(
         &mut tx,
         "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256) \
-         VALUES ($1, gen_random_uuid(), 'two-sum', 'python', 'run', 'x', decode('00', 'hex'))",
-        Uuid::new_v4(),
+         VALUES (gen_random_uuid(), $1, 'two-sum', 'python', 'run', 'x', decode('00', 'hex'))",
+        owner,
     )
     .await;
     allowed(
