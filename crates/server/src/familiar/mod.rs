@@ -5,3 +5,4 @@ pub mod api;
 pub mod claims;
 pub mod prefs;
 pub mod prompt;
+pub mod sections;

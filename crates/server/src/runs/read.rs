@@ -11,11 +11,19 @@ use axum::{
     http::HeaderMap,
     Json,
 };
-use counterspell_common::{ids::RunId, status::RunStatus};
+use counterspell_common::{
+    familiar::payload::{ComplexitySection, FamiliarSection},
+    ids::RunId,
+    status::{RunMode, RunStatus},
+};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 
-use crate::{error::ApiError, AppState};
+use crate::{
+    error::ApiError,
+    familiar::sections::{sections, StoredMeasure},
+    AppState,
+};
 
 /// The run read model. Absent sections are left out, never invented.
 #[derive(Debug, Serialize)]
@@ -58,6 +66,12 @@ pub struct RunView {
     pub last_seq: i32,
     /// One entry per test that has a result, in order.
     pub tests: Vec<TestView>,
+    /// The fitted complexity. Present only when the run was measured with a confidence.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub complexity: Option<ComplexitySection>,
+    /// The mood, reason and wording. Present only when the run has a measured mood.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub familiar: Option<FamiliarSection>,
 }
 
 /// One test's public result. Hidden tests have no `detail`.
@@ -106,6 +120,9 @@ struct RunRow {
     started_at: Option<String>,
     finished_at: Option<String>,
     last_seq: i32,
+    fit: Option<serde_json::Value>,
+    familiar_mood: Option<i16>,
+    familiar_reason: Option<String>,
 }
 
 #[derive(Debug, sqlx::FromRow)]
@@ -125,7 +142,8 @@ const RUN_SQL: &str = r#"
            to_char(s.created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS created_at,
            to_char(s.started_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS started_at,
            to_char(s.finished_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS finished_at,
-           s.last_event_seq AS last_seq
+           s.last_event_seq AS last_seq,
+           s.fit, s.familiar_mood, s.familiar_reason
       FROM submissions s
       LEFT JOIN jobs j ON j.submission_id = s.id
      WHERE s.id = $1 AND s.user_id = $2
@@ -158,6 +176,15 @@ pub async fn get_run(
         .map_err(ApiError::internal)?
         .ok_or_else(not_found)?;
     let tests = load_tests(&state.pool, row.id).await?;
+    let mode =
+        RunMode::parse(&row.mode).ok_or_else(|| ApiError::internal("stored mode is unknown"))?;
+    let measured = sections(&StoredMeasure {
+        mode,
+        mood: row.familiar_mood,
+        reason: row.familiar_reason.clone(),
+        fit: row.fit.clone(),
+    })
+    .map_err(ApiError::internal)?;
 
     let terminal = RunStatus::parse(&row.status).is_some_and(RunStatus::is_terminal);
     Ok(Json(RunView {
@@ -180,6 +207,8 @@ pub async fn get_run(
         finished_at: row.finished_at,
         last_seq: row.last_seq,
         tests,
+        complexity: measured.complexity,
+        familiar: measured.familiar,
     }))
 }
 

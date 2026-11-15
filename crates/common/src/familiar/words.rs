@@ -30,8 +30,8 @@ pub struct WordFacts<'a> {
     pub confidence: Option<Confidence>,
     /// The classes the fit could not rule out.
     pub plausible: &'a [ClassId],
-    /// The declared reference class.
-    pub reference: ClassId,
+    /// The declared reference class. `None` when the run was not measured, so no reference is known.
+    pub reference: Option<ClassId>,
     /// Observed time over the baseline, when it exists.
     pub ratio: Option<f64>,
 }
@@ -121,7 +121,9 @@ fn failure_wording(verdict: Verdict) -> (String, String) {
 
 /// The text for a pass where the fit could not say which class fits.
 fn low_wording(facts: &WordFacts<'_>) -> (String, String) {
-    let reference = facts.reference.display_name();
+    let reference_clause = facts.reference.map_or_else(String::new, |class| {
+        format!(" The reference is {}.", class.display_name())
+    });
     let names: Vec<&str> = facts.plausible.iter().map(|c| c.display_name()).collect();
     let clause = if names.is_empty() {
         String::new()
@@ -131,9 +133,7 @@ fn low_wording(facts: &WordFacts<'_>) -> (String, String) {
         "; it could be several classes".to_owned()
     };
     (
-        format!(
-            "Passed. Unsure how this scales (low confidence){clause}. The reference is {reference}."
-        ),
+        format!("Passed. Unsure how this scales (low confidence){clause}.{reference_clause}"),
         "Unsure how it scales".to_owned(),
     )
 }
@@ -145,9 +145,13 @@ fn measured_wording(facts: &WordFacts<'_>) -> (String, String) {
         return low_wording(facts);
     };
     let confidence = facts.confidence.unwrap_or(Confidence::Low).as_str();
+    let Some(reference_class) = facts.reference else {
+        // A measured class always comes with its reference, so this only guards corrupt input.
+        return low_wording(facts);
+    };
     let looks = observed.display_name();
-    let reference = facts.reference.display_name();
-    let same_growth = observed == facts.reference;
+    let reference = reference_class.display_name();
+    let same_growth = observed == reference_class;
     match facts.reason {
         MoodReason::WorstTier => (
             format!("Looks {looks}, {confidence} confidence. The reference is {reference}."),
@@ -220,7 +224,7 @@ mod tests {
             observed: Some(ClassId::Quadratic),
             confidence: Some(Confidence::Medium),
             plausible: &[ClassId::Quadratic],
-            reference: ClassId::Linear,
+            reference: Some(ClassId::Linear),
             ratio: Some(3.1),
         }
     }
@@ -263,7 +267,7 @@ mod tests {
             observed: None,
             confidence: Some(Confidence::Low),
             plausible: &[ClassId::Linear, ClassId::Linearithmic],
-            reference: ClassId::Linear,
+            reference: Some(ClassId::Linear),
             ratio: None,
         };
         let w = wording(&f);
@@ -282,7 +286,7 @@ mod tests {
             observed: None,
             confidence: Some(Confidence::Low),
             plausible: &ClassId::ALL,
-            reference: ClassId::Linear,
+            reference: Some(ClassId::Linear),
             ratio: None,
         };
         assert!(wording(&f).headline.contains("it could be several classes"));
@@ -296,7 +300,7 @@ mod tests {
             observed: Some(ClassId::Linearithmic),
             confidence: Some(Confidence::Medium),
             plausible: &[ClassId::Linearithmic],
-            reference: ClassId::Linear,
+            reference: Some(ClassId::Linear),
             ratio: Some(1.0),
         };
         let w = wording(&f);
@@ -325,7 +329,7 @@ mod tests {
             observed: Some(ClassId::Linear),
             confidence: Some(Confidence::High),
             plausible: &[ClassId::Linear],
-            reference: ClassId::Linear,
+            reference: Some(ClassId::Linear),
             ratio: Some(1.0),
         };
         let w = wording(&f);
@@ -344,7 +348,7 @@ mod tests {
             observed: Some(ClassId::Linear),
             confidence: Some(Confidence::Medium),
             plausible: &[ClassId::Linear],
-            reference: ClassId::Linearithmic,
+            reference: Some(ClassId::Linearithmic),
             ratio: Some(1.0),
         };
         let w = wording(&f);
@@ -363,7 +367,7 @@ mod tests {
             observed: Some(ClassId::Linear),
             confidence: Some(Confidence::Medium),
             plausible: &[ClassId::Linear],
-            reference: ClassId::Linear,
+            reference: Some(ClassId::Linear),
             ratio: Some(3.1),
         };
         let w = wording(&f);
@@ -460,7 +464,7 @@ mod tests {
                                         observed,
                                         confidence,
                                         plausible,
-                                        reference,
+                                        reference: Some(reference),
                                         ratio,
                                     });
                                 }

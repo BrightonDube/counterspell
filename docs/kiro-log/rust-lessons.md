@@ -1221,3 +1221,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `JoinSet` runs many tasks and returns each result as it finishes. The test collects results in arrival order, then sorts by user when the order matters.
 - Nearest-rank percentiles are simple: sort the values, then take the value at position `ceil(p * n)`. Every number in the report comes from that one function.
 - Casting `usize` to `i64` can wrap in theory, so the code uses `i64::try_from(...).expect(...)` at the one place a count crosses over.
+
+# Rust lesson: efficiency-familiar T23
+
+A `None` in a struct field means "this value is not known", and the code has to say what to do with it. Making `WordFacts.reference` an `Option` moved that decision to the one place that reads it, rather than inventing a placeholder class.
+`serde_json::from_value` turns a stored JSON value into a typed struct, and a failure is returned as `Result`. The read model maps that failure to an internal error, so a damaged row never shows a guessed result.
+The builder is a plain function from stored values to sections, so its tests need no database. Only the SQL that loads those values needs a `pg_` test.

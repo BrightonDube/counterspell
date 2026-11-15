@@ -40,6 +40,34 @@ pub enum MoodReason {
 }
 
 impl MoodReason {
+    /// Every reason except the verdict-based ones, which are read from the verdict text.
+    pub const ALL_REASONS: [Self; 12] = [
+        Self::NoBenchSpec,
+        Self::HostBusy,
+        Self::BenchFailed,
+        Self::BenchIncomplete,
+        Self::LowConfidence,
+        Self::WorstTier,
+        Self::TwoClassesWorse,
+        Self::OneClassWorse,
+        Self::NoBaseline,
+        Self::SlowerConstantFactor,
+        Self::MatchesReference,
+        Self::BetterThanReference,
+    ];
+
+    /// Reads a stored reason code back into a reason. Returns `None` for an unknown code, and for
+    /// `accepted`, which is never a failure reason.
+    #[must_use]
+    pub fn from_code(text: &str) -> Option<Self> {
+        if let Some(verdict) = Verdict::parse(text) {
+            return (verdict != Verdict::Accepted).then_some(Self::Verdict(verdict));
+        }
+        Self::ALL_REASONS
+            .into_iter()
+            .find(|reason| reason.code() == text)
+    }
+
     /// The stored and wire code. Verdict reasons use the verdict's own text.
     #[must_use]
     pub const fn code(self) -> &'static str {
@@ -159,6 +187,22 @@ mod tests {
     use super::*;
     use crate::familiar::facts::{BenchFacts, MeasuredFacts, NoMeasurement};
     use crate::status::{RunMode, Verdict};
+
+    // Breaks if a stored reason cannot be read back, so the read model cannot rebuild its wording.
+    #[test]
+    fn every_reason_code_reads_back_to_the_same_reason() {
+        for reason in MoodReason::ALL_REASONS {
+            assert_eq!(MoodReason::from_code(reason.code()), Some(reason));
+        }
+    }
+
+    // Breaks if an unknown code or `accepted` is read as a failure reason, which would give a false wording.
+    #[test]
+    fn unknown_codes_and_accepted_are_not_reasons() {
+        assert_eq!(MoodReason::from_code("optimal"), None);
+        assert_eq!(MoodReason::from_code(""), None);
+        assert_eq!(MoodReason::from_code("accepted"), None);
+    }
 
     fn measured(
         observed: Option<ClassId>,
