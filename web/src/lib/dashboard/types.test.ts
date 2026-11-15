@@ -137,4 +137,52 @@ describe('parseDashboard', () => {
     const { streak: _streak, ...withoutStreak } = populatedDashboard;
     expect(() => parseDashboard(withoutStreak)).toThrow(ContractError);
   });
+
+  // Breaks if the server's weak list is not capped at the documented ten, so the page could render any length.
+  it('rejects more than ten weak concepts', () => {
+    const concept = populatedDashboard.weak_concepts[0];
+    const broken: Record<string, unknown> = {
+      ...structuredClone(populatedDashboard),
+      weak_concepts: Array.from({ length: 11 }, (_, index) => ({
+        ...concept,
+        slug: `concept-${index}`
+      }))
+    };
+    expect(() => parseDashboard(broken)).toThrow(ContractError);
+  });
+
+  // Breaks if two rows share a key. Svelte cannot render duplicate keys, so the page would go blank.
+  it('rejects a weak concept list with a repeated slug', () => {
+    const concept = populatedDashboard.weak_concepts[0];
+    const broken: Record<string, unknown> = {
+      ...structuredClone(populatedDashboard),
+      weak_concepts: [concept, { ...concept }]
+    };
+    expect(() => parseDashboard(broken)).toThrow(ContractError);
+  });
+
+  // Breaks if a timestamp in another format is shown as if it were a date the server wrote.
+  it('rejects a timestamp that is not UTC RFC 3339 text', () => {
+    const broken = structuredClone(populatedDashboard);
+    broken.recent_submissions[0].created_at = 'yesterday at 8am';
+    expect(() => parseDashboard(broken)).toThrow(ContractError);
+  });
+
+  // Breaks if an unknown lifecycle status is shown as a valid state instead of revealing contract drift.
+  it('rejects a run status the lifecycle does not define', () => {
+    const broken = structuredClone(populatedDashboard);
+    broken.recent_submissions[0].status = 'half_done';
+    expect(() => parseDashboard(broken)).toThrow(ContractError);
+  });
+
+  // Breaks if an active learner with no streak days is shown "no streak", which contradicts DASH-3.4.
+  it('rejects a streak that says the learner is active today but has no streak days', () => {
+    const broken = structuredClone(populatedDashboard);
+    broken.streak = {
+      current_days: 0,
+      active_today: true,
+      last_activity_date: '2026-11-15'
+    };
+    expect(() => parseDashboard(broken)).toThrow(ContractError);
+  });
 });
