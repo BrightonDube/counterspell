@@ -365,7 +365,7 @@ Conventions for every Rust task:
   - Preserve: the report is produced by the test; nothing in it is typed by hand.
   - Rust lesson: running many tasks concurrently and collecting results (`JoinSet`).
 
-- [ ] **T37 [P] (25 min) CI: services, database tests, release guard, web tests, report artifact**
+- [x] **T37 [P] (25 min) CI: services, database tests, release guard, web tests, report artifact**
   - Files: `.github/workflows/ci.yml`.
   - In the `rust` job add Postgres 17 and Valkey 8 service containers with health checks, `DATABASE_URL` and `VALKEY_URL` for the new steps, a step `cargo test --workspace -- --ignored pg_ valkey_`, a step that builds the release server and judge and fails if `cargo tree -e features` shows `testkit` for either, and an `actions/upload-artifact` step for `target/run-lifecycle/dod-report.json`. In the `web` job add `npm test`. Keep the existing steps unchanged. Use the CI-only throwaway database credentials in the workflow file; they are not production secrets.
   - Requirements: R22, R21, scope constraints.
