@@ -116,7 +116,7 @@ Conventions:
   - Depends on: T00.
   - Verify: `ansible-lint infra/ansible`; `ansible-playbook -i infra/ansible/inventory/hosts.example.yml infra/ansible/site.yml --syntax-check`; `visudo -cf` on the rendered sudoers in a throwaway file (in a temporary directory, by a test script).
 
-- [ ] **T12 [P] (30 min) Ansible `docker` and `app` roles**
+- [x] **T12 [P] (30 min) Ansible `docker` and `app` roles**
   - Files: `infra/ansible/roles/docker/**`, `infra/ansible/roles/app/{tasks/main.yml,templates/host.env.j2,defaults/main.yml}`, `infra/ansible/roles/app/tasks/compose_sha.yml`.
   - `docker`: Docker Engine and Compose plugin from Docker's apt repository, pinned versions, `daemon.json` with json-file limits (R4.8), `brighton` in `docker`. Compose version at least 2.24 (for `!reset`).
   - `app`: `/opt/counterspell` (0750), `/etc/counterspell` (0700), `host.env` (0644, non-secret keys of design §Host layout), copies the three compose and Caddy files from `counterspell_src`, writes `compose.sha256` (Q19). Asserts that `postgres.env`, `migrate.env`, `server.env` and `judge.env` exist with mode 0600 and fails if one is missing. Installs the `counterspell-*` scripts with mode 0755.

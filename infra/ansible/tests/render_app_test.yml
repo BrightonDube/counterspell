@@ -1,0 +1,12 @@
+# Renders the app role's compose.sha256 template from fixture stat results (extra var app_compose_stat),
+# for deploy/vps/tests/compose_sha.bats. Fixture values only.
+- name: Render compose.sha256 from fixture stat results
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  tasks:
+    - name: Render the checksum record
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/app/templates/compose.sha256.j2"
+        dest: "{{ render_dir }}/compose.sha256"
+        mode: "0644"
