@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { BEATS, CAPTION, CTA, EXAMPLE, HEADLINE, SUPPORT_LINE } from './copy';
+import { BEATS, CAPTION, CTA, EXAMPLE, HEADLINE, INTRO_BODY, SUPPORT_LINE } from './copy';
 
 
 describe('landing copy', () => {
@@ -35,10 +35,15 @@ describe('landing copy', () => {
 		expect(SUPPORT_LINE.length).toBeGreaterThan(0);
 	});
 
+	it('has an intro paragraph under the headline that is not empty (T25)', () => {
+		expect(INTRO_BODY.trim().length).toBeGreaterThan(0);
+	});
+
 	it('never claims a smallest possible input, a proven minimum or an optimal result (R9)', () => {
 		const visible = [
 			HEADLINE,
 			SUPPORT_LINE,
+			INTRO_BODY,
 			CAPTION,
 			...Object.values(EXAMPLE),
 			...Object.values(CTA),
