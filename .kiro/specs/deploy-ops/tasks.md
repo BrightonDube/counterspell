@@ -199,7 +199,7 @@ Conventions:
   - Depends on: judge-sandbox T38.
   - Verify: `npx --yes --package renovate -- renovate-config-validator renovate.json` if Brighton allows the tool; otherwise a JSON parse and `[HUMAN]` check after the Renovate app is installed.
 
-- [ ] **T21 [P] (30 min) Release checklist, rollback steps and the incident runbook**
+- [x] **T21 [P] (30 min) Release checklist, rollback steps and the incident runbook**
   - Files: `deploy/vps/RELEASE.md`, `deploy/vps/RUNBOOK.md`, `deploy/vps/OPERATIONS-LOG.md` (template with a dated first line).
   - `RELEASE.md`: the pre-release, deploy and post-release items; the expand-only migration rule (R7.10) with a review checklist; the rollback command and when to use it; the link to `.kiro/steering/release-checklist.md` items it covers (R7.16).
   - `RUNBOOK.md`: deploy key rotation (R11.1), patch cadence (R11.2), the sandbox-escape flow (R11.3, design diagram) with exact commands, the availability and freeze rules (R11.5, R11.6).
@@ -207,7 +207,7 @@ Conventions:
   - Depends on: T04.
   - Verify: every command in both files appears in a script or in the design; a markdown link check passes; no secret value appears.
 
-- [ ] **T22 [P] (25 min) Monitoring and alert setup notes**
+- [x] **T22 [P] (25 min) Monitoring and alert setup notes**
   - Files: `deploy/vps/MONITORING.md`.
   - Exact settings for the UptimeRobot keyword monitor (URL, keyword `"ok"`, 5-minute interval, alert contact) and the four Healthchecks checks (backup, ops report, certificate, restore drill, with periods and grace from design §External monitors), and the test for each alert. Records the plan terms check for Q6.
   - Requirements: R9.7 to R9.10.

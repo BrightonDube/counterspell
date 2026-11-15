@@ -93,3 +93,10 @@ Verification: `bats deploy/vps/tests/drill.bats` 4 of 4 pass; `shellcheck` clean
 Safety fix found while testing: the cleanup trap removed `DRILL_IDENTITY_FILE` on every exit, including the refusal path. A wrong path outside `/dev/shm` would have deleted an arbitrary file. The trap now removes only files under `/dev/shm`, and the test `identity path outside /dev/shm is refused and the file is never deleted` checks it.
 Test hygiene: the teardown now uses a separate `TEST_IDENTITY` variable, so no `/dev/shm` identity fixture is left behind.
 Not run: the real Postgres 17 restore (needs the data network and a real dump). The round trip is T28 on the host and on Brighton's laptop.
+
+## T21 and T22 (16 Nov 2026)
+
+Docs written: `deploy/vps/RELEASE.md`, `deploy/vps/RUNBOOK.md`, `deploy/vps/OPERATIONS-LOG.md` (dated template), `deploy/vps/MONITORING.md`.
+Checks: each command in these files is a script verb or a standard host command, and matches the scripts and design. The files hold no secret value (a scan for password, token and secret words found only instructions). No Markdown links to check.
+T22 caveat: the scripts ping Healthchecks by URL, so the check names live only in `MONITORING.md`. Name-to-script matching is by URL, which is recorded in the file.
+Gaps stated in MONITORING.md: the certificate check and the drill ping do not exist in code yet.
