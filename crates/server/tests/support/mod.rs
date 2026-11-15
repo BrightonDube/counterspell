@@ -120,6 +120,23 @@ pub async fn post(address: SocketAddr, path: &str, headers: &[(&str, &str)], bod
     exchange(address, &request).await
 }
 
+/// Sends a `PATCH` with a JSON body and extra headers, and reads the whole reply.
+pub async fn patch(address: SocketAddr, path: &str, headers: &[(&str, &str)], body: &str) -> Reply {
+    let mut request = format!(
+        "PATCH {path} HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\nContent-Length: {}\r\n",
+        body.len()
+    );
+    for (name, value) in headers {
+        request.push_str(name);
+        request.push_str(": ");
+        request.push_str(value);
+        request.push_str("\r\n");
+    }
+    request.push_str("\r\n");
+    request.push_str(body);
+    exchange(address, &request).await
+}
+
 async fn exchange(address: SocketAddr, request: &str) -> Reply {
     let mut stream = TcpStream::connect(address).await.expect("connect");
     stream.write_all(request.as_bytes()).await.expect("write");

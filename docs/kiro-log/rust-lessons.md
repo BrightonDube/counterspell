@@ -979,3 +979,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `rows_affected()` tells you how many rows an `INSERT ... ON CONFLICT DO NOTHING` really added, which is how the store reports "already there".
 - `try_from` turns a Rust `u64` into a database `int` with an error, and `?` returns that error, so an oversized value cannot be stored silently.
 - A `thiserror` enum with `#[from] sqlx::Error` lets `?` convert database errors into the module's own error type.
+
+# Rust lesson: efficiency-familiar T32
+- `serde_json::Value` lets the handler inspect a request key by key, so every key and value is checked before anything is written, and each error names a fixed field, never the input.
+- `Bytes` as the last handler argument reads the raw body, so the 1 KiB limit is checked before any parsing.
+- Writing `familiar_prefs || $2::jsonb` in SQL merges on the database side, so two patches cannot overwrite each other's fields.
+- Deriving `Copy` on a small error enum that holds only `&'static str` fields satisfies clippy's `needless_pass_by_value` lint without a reference.
