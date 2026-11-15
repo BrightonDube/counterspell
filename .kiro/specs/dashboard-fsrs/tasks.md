@@ -27,7 +27,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: auth and run-lifecycle seams being available; no database migration required.
   - Rust lesson: explain how a typed response struct makes the JSON contract explicit and how `Result` carries safe handler failures.
 
-- [ ] **T02 [P] (25 min) Add only the required dashboard indexes**
+- [x] **T02 [P] (25 min) Add only the required dashboard indexes**
   - Files: `migrations/<timestamp>_dashboard_indexes.sql` if an inspection shows the run-lifecycle/catalogue indexes are insufficient.
   - Add user/finished-time, user/problem/verdict, and user/created-time indexes only when absent. Do not create a materialised dashboard table or duplicate existing indexes.
   - Verify: migration applies twice through SQLx; `pg_indexes` shows the expected index coverage; the migration contains no secrets and no user data.
