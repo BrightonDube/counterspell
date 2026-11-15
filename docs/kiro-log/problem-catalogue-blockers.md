@@ -126,3 +126,20 @@ Still open, with the reason for each:
 - C32 needs the language accessor X10, which is still not specified. The `LanguageCatalog` has the byte limits and enabled flags, but no display name, and the spec does not say where display names come from.
 - C33 is BLOCKED on D16 (the owner of the `ghosts` table).
 - C00a, C38, C39 and C40 stay HUMAN and unchecked. Nothing read the private repo.
+
+## Run of 15 Nov 2026 (attempt 8, resumed)
+
+No task was ticked in this run. Every unchecked task is either blocked on a decision only Brighton can make, or depends on one.
+
+Unchecked tasks and the reason for each:
+- **C16 (first unchecked, non-stretch, non-HUMAN task). Waiting on Brighton's grimoire dependency decision.** Same conflict as attempts 3, 5 and 7. Choose one:
+  - (a) `counterspell-judge` depends on `counterspell-grimoire` for `PackRunner`, `Target` and the SBX checks. Matches X9 and the C19 text. Amends the 15 Nov 00:55 routine decision in `brighton-decisions.md`.
+  - (b) move `PackRunner`, `Target` and `RunnerError` into `counterspell-common`, and have grimoire re-export them. Keeps the 15 Nov decision. The SBX check logic would still need to move or be duplicated, which the crate structure steering treats as moving responsibilities.
+  - Unblocks: C16, C17, C18, C19, C19b, C21, C22, C34, C36, C37.
+- **C17, C18, C19, C19b, C21, C22, C34, C36, C37**: depend on C16 directly or through the chain above.
+- **C32 (language display names)**: waits on the language accessor X10, which the spec does not define. `LanguageCatalog` has byte limits and enabled flags but no display name. Brighton or the language-drivers spec needs to name where display names come from.
+- **C26**: BLOCKED on judge-sandbox T24 (not in the code).
+- **C33**: BLOCKED on D16 (owner of the `ghosts` table DDL).
+- **C38, C39, C40, C00a**: HUMAN. The private repo does not exist yet, so nothing reads it.
+
+Working tree at the start of this run: only automation log files and `docs/KIRO_USAGE.md` were modified. None of them belong to this spec, so none were committed.
