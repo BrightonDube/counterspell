@@ -39,6 +39,24 @@ describe('SignUpCta', () => {
 		expect(art?.getAttribute('loading')).toBe('lazy');
 	});
 
+	it('places the orange jack-o-lantern still beside the call to action as a lazy, decorative WebP (T19)', () => {
+		const { container } = render(SignUpCta);
+		const pumpkin = container.querySelector('img[src="/art/familiar/jack-o-lantern-orange.webp"]');
+		expect(pumpkin).not.toBeNull();
+		expect(pumpkin?.getAttribute('alt')).toBe('');
+		expect(pumpkin?.getAttribute('aria-hidden')).toBe('true');
+		expect(pumpkin?.getAttribute('width')).toBe('96');
+		expect(pumpkin?.getAttribute('height')).toBe('96');
+		expect(pumpkin?.getAttribute('loading')).toBe('lazy');
+		expect(pumpkin?.getAttribute('decoding')).toBe('async');
+	});
+
+	it('does not load the animated pumpkin SVG, so reduced motion and Save-Data get the still (T19)', () => {
+		const { container } = render(SignUpCta);
+		const sources = Array.from(container.querySelectorAll('img')).map((img) => img.getAttribute('src'));
+		expect(sources.some((src) => src?.endsWith('.svg'))).toBe(false);
+	});
+
 	it('offers no payment or paid tier wording', () => {
 		const { container } = render(SignUpCta);
 		expect(container.textContent?.toLowerCase()).not.toMatch(/price|pricing|paid|payment|subscri/);
