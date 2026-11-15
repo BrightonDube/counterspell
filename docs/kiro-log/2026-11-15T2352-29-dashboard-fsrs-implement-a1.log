@@ -44,3 +44,30 @@ Cargo exits 0 with 28 dashboard tests passing and no failures. I'll record this 
 [tool] Commit the blockers note and run log
 [tool] status: InProgress
 [tool] status: InProgress
+[tool] status: Completed
+The dashboard-fsrs spec has no open work I can finish this pass. Every non-stretch task is either ticked or deferred, and I changed no code.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T01–T09, T19 | Already [x] from earlier runs; not redone | — | Fresh this session: `cargo test -p counterspell-server dashboard` exit 0, 28 tests passing. `npm run check` 0 errors and 0 warnings. `npm run test` 448 passed. | earlier commits (T08 gate: 7c3210f) |
+| T10 core smoke path | Left open: deferred: E2E | 0 | Its browser sign-in and rendered-page checks are E2E, which Brighton's 12 Nov rule excludes. The HTTP and `pg_` tests cover its server-side parts. | — |
+| T11–T18 | [stretch], not started | 0 | — | — |
+
+This run's commit is `5cc341b`. It appends the attempt-4 status to `docs/kiro-log/dashboard-fsrs-blockers.md` and adds the run log.
+
+**Blockers**
+- T10 is deferred E2E. It needs Brighton to accept a non-browser equivalent, or to allow a browser check later.
+- The session-store failure returns `401 unauthenticated` instead of `503 dashboard_unavailable`. Fixing it changes the shared `UserResolver` seam, which the auth spec owns. Brighton or the auth owner needs to decide.
+- `web/src/lib/api/types.ts` lists difficulties as `intro`, `standard` and `hard`, but the database uses `easy`, `medium` and `hard`. The problem page would reject real catalogue data. The problem-catalogue owner needs to reconcile this.
+
+**Review queue**
+- T06 (`58f7492`): check that removing the owner filter from `owned_completed` in `query.rs` fails `pg_each_learner_sees_only_their_own_progress_and_suggestions`.
+- T08 (`7c3210f`): the freeze-safe gate passed. T10 is still open.
+
+**Open Minor review findings**
+- The frontend fetch runs in `$effect`, and a retry does not cancel the load still in flight. An `AbortController` in `onMount` would fix it.
+- The components sit in one file instead of the `components/` folder that T09 names.
+- Recent runs show raw `mode` values and lowercase difficulty words.
+- The dashboard has no keyboard-focus test.
+- `DashboardError::Internal` is never constructed. A decode failure reaches the handler without a context string.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=166
+

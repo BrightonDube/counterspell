@@ -418,3 +418,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 23:43-23:46 SAST: 27-efficiency-familiar-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-efficiency-familiar-a3.md`. Transcript: `docs/kiro-log/2026-11-15T2343-27-efficiency-familiar-implement-a3.log`. Exit 0.
 - Credits used (from /usage): 2.86 (credits used now 3532.05/4000).
+
+### 2026-11-15 23:52-23:56 SAST: 29-dashboard-fsrs-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-dashboard-fsrs-a1.md`. Transcript: `docs/kiro-log/2026-11-15T2352-29-dashboard-fsrs-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 1.47 (credits used now 3533.52/4000).
