@@ -65,3 +65,26 @@ Tasks left unchecked, with the reason and what would unblock each.
   1. The canary test (hidden data absent from every payload) and the restart test are not written. The canary check belongs with the privacy tests (T43).
   2. The call from the real executor is not wired. It needs the language-drivers `bench.rs` collector (language-drivers T08 and T09).
   3. The `pg_` cases for T20 are not written, because they depend on T23 and the real collector.
+
+## Run 3 (15 Nov 2026): what is left and why
+
+| Task | State | Blocker and unblock |
+|---|---|---|
+| T20 | partial (commit 6c366ab) | canary and restart tests, executor wiring and pg cases. Needs language-drivers T08/T09 and T23. |
+| T22 | not started | judge-sandbox runner and language-drivers T08. |
+| T23 | not started | read-model `complexity` and `familiar` sections need headline and badge text, which the store does not keep, and the stream-parity test needs the SSE endpoint (run-lifecycle T29, not done). |
+| T24 | partly done (earlier run) | warning for bench sizes spanning under 32x (R13.4) needs a new warning code, `BEN-02`, and a change to the codes test. Brighton to approve. |
+| T25 | not started | judge-sandbox runner and language-drivers. |
+| T29 to T31 | not started | Mascot component and GSAP. Real jack-o'-lantern art is still absent (placeholder only). |
+| T32 to T33 | not started | prefs endpoints need Postgres `pg_` cases; browser state rules depend on T23. |
+| T34 to T36 | not started | explainer depends on T23; claim guard and prompt builder are pure but not yet written. |
+| T37 to T39 | not started | blocked by the hints spec (`ai::generate`, `hints` table, Valkey). |
+| T40, T41 | not started | blocked by language-drivers, judge runner, VPS, and Brighton's VPS run. |
+| T42 | deferred: E2E | browser test. |
+| T43 to T45 | not started | depend on the above. |
+| T46 to T48 | stretch | skipped. |
+
+Other notes:
+- T15 migration fix: the NULL-safety fix to `submissions_familiar_ck` was made in place (migration not yet deployed). Recorded in the review queue.
+- T21 `store.rs` was written before its tests, which departs from red-first. The tests were written after and pass.
+- T28 tests pass; `npm run check` is clean.
