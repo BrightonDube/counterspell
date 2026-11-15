@@ -200,3 +200,13 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-15T02:45:19Z | model: not reported | last commit: 4f05bbf efficiency-familiar: record run 4 status, blockers, deviations and minor findings
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
+- 2026-11-15T02:48:50Z | model: not reported | last commit: bd0b523 efficiency-familiar T20 (partial): restart and gate-release test
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 7 +++++++
+ 2 files changed, 15 insertions(+)

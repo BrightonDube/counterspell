@@ -1,0 +1,461 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by reading the efficiency-familiar spec and its task list.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=70
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The task list is long and partly ticked from earlier attempts. I'll pull the checkbox state and the existing blocker notes before touching anything.
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=91
+T01 to T14, T17, T18, T26 and T27 are already ticked. The next unchecked, non-blocked task is T15, the migration. T15 and the database tests depend on whether a Postgres server is reachable, so I'll check that first.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=146
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `cs-dev-pg` Postgres container is up, so T15 can be verified against a real database. I'll read the migration design and the existing run-lifecycle migrations it extends.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=68
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The constraint depends on `status`, `verdict` and `finished_at` columns from run-lifecycle. I'll confirm those column names and the `verdict` values before writing the migration.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=79
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The schema names line up with the constraint I need. Next I'll check which env variable names the test runner uses (names only, not values) and what the database currently has.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=168
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=80
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The dev database already has the run-lifecycle migrations, and both roles exist. I'll check the existing `submissions` grants from the auth migrations, because the server role's table-level `INSERT` would let it write the new mood columns.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=242
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The auth migrations add no conflicting grants. Table-level `INSERT` on `submissions` would let the server role set a mood on a new row, so this migration will replace it with a column-level grant that excludes the five familiar columns. I'll write the migration now.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=747
+[tool] status: Pending
+[tool] status: Completed
+Next I'll verify the migration on a scratch database, apply the whole chain in order, then apply the new file a second time to check it is idempotent. The scratch database is dropped afterwards.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=235
+
+[tool] Apply migrations to a scratch database twice
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Apply migrations to a scratch database twice
+The migration applies on a clean database and a second run succeeds. The last query failed only because of shell quoting. I'll recheck the constraint and column privileges with `has_column_privilege`, then drop the scratch database.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=211
+
+[tool] Check constraint and privileges, then drop scratch database
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Privileges match the design: the server cannot write `familiar_mood`, the judge can update it, and the judge cannot delete submissions. Before committing, I'll check how the existing `pg_` tests get their schema, since T16 depends on that.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=103
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `pg_` tests use `sqlx::test` with the migrations folder, so T16 will get a fresh database per test. T15 passes its verification: the migration applies cleanly, a second run succeeds, and the privileges match the design. I'll tick T15, log the supervised review item, and commit.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=287
+[tool] status: Completed
+T15 is committed as `649d3b4`. Next is T16, the database tests for constraints, freeze and roles. I'll read the existing role tests and helpers so the new file follows the same pattern.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=48
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The sandbox and judge rules restate what the run already follows, so nothing changes. I'll continue T16 by reading the judge-role half of `roles.rs`, then write the constraint, freeze and role tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=66
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+I have the test pattern I need. Next I'll write `familiar_pg.rs` with three `pg_` tests: constraints, freeze and roles. Each test runs on a fresh `sqlx::test` database with the migrations applied.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2456
+[tool] status: Pending
+[tool] status: Completed
+The freeze test ends with a read-back assertion that adds nothing to the requirement. I'll remove it before running.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=142
+[tool] status: Pending
+[tool] status: Completed
+Next I'll run the three database tests against the dev Postgres. The migration already exists, so these tests are verifying behaviour that is already in place. I'll load the test env in the shell without printing it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=118
+
+[tool] Run familiar Postgres constraint, freeze and role tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+One constraint case inserted successfully when it should have been rejected. I'll find which line that is before changing anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=65
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+Line 195 is the case with a class but no confidence. SQL `CHECK` treats a NULL result as a pass, and `NULL IN ('medium','high')` is NULL, so the constraint let it through. This is a real gap in my T15 migration. The migration is not deployed, so I'll fix the expression in place and record the change.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=145
+[tool] status: Pending
+[tool] status: Completed
+The verdict clause has the same NULL problem, so I'll make it NULL-safe as well, then rerun the test.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=104
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=53
+[tool] Rerun familiar Postgres tests after constraint fix
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All three `pg_familiar_*` tests pass. Before ticking T16, I'll run the Rust gate on the judge crate and the existing run-lifecycle role tests, since I changed the migration they depend on.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=109
+
+[tool] Run fmt, clippy and existing role tests for judge crate
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy and the existing role tests pass. The only problem is formatting in my new test file, so I'll format that crate and confirm the check is clean.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] Format judge crate and confirm formatting is clean
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Formatting is clean. I'll add the Rust lesson for T16, tick it, correct the T15 review-queue entry to show the real commit hash and the NULL fix, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=356
+
+[tool] Record T16 lesson, tick task and commit
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T16 is committed as `6a5d075`. Next is T19, which writes the measured columns in the terminal write. I'll read the existing `FinalResult` and the finish path it extends.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=104
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=22
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The `finish` transaction is where the five columns belong. Before editing, I need the `MeasuredColumns` type from T04, every place that builds `FinalResult`, and the existing finish tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=136
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`FinalResult` is constructed in several test files, so adding a field means updating those literals to `measured: None`. Before writing the SQL bindings I need the exact accessor names on `ClassId`, `Confidence`, `Mood` and `FitSummary`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=235
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `json` sqlx feature is already enabled, so the fit can be bound directly. Next I'll read the existing finish tests so the new cases use the same setup and helpers.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=58
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+I have the setup. Before writing the lost-lease test I need to see how the existing test builds a stranger token.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=208
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`RunMode` is in `counterspell_common::status`, and `FitSummary::not_fitted` gives me a valid stored summary. I'll write the four new tests first, so the red run fails on the missing `measured` field, before I change production code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=913
+
+[tool] Write T19 red tests and run them to see the failure
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The red run fails for the expected reason: `FinalResult` has no `measured` field. The compile error also shows `ClassId::N` is not the variant name, so I'll check the real variant names and then write the production change.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The variant is `ClassId::Linear`, which the design calls class `n`. I'll correct the tests, then add the field and the five `SET` columns to the terminal `UPDATE`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=581
+
+[tool] Add measured columns to terminal write and run finish tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The terminal write compiles. Two `FinalResult` literals in `testkit.rs` need the new field, so I'll look at both before editing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=79
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+[tool] Add measured field to remaining literals and run finish tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 11 finish tests pass, including the four new ones. Next is the full judge gate: formatting, clippy with warnings as errors, and the complete judge test suite, including every ignored `pg_` test.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=146
+
+[tool] Run fmt, clippy and all judge tests including pg_
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The judge tests pass, but clippy fails on two lints in `counterspell-judge`. I'll find the exact locations before deciding whether the code is mine.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Locate the two clippy errors in the judge crate
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both lints come from my change. `MeasuredColumns` is large enough to push `RunOutcome::Completed` past the size threshold, so I'll box the field and use `ClassId::id` directly in the map.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=322
+
+[tool] Box measured columns, fix lint, rerun clippy and pg tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean across the workspace, all `pg_` judge tests pass, and formatting is clean. I'll record the Rust lesson and the supervised review item, tick T19 and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=348
+
+[tool] Commit T19 with lesson and review item
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T19 is committed as `b042a6c`. Next is T20, `measure_run`, which orchestrates the bench through the collector trait. I'll read the design for it and the current executor API it plugs into.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=133
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=76
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`measure_run` has to sit between the existing executor context and the pure assessment. I'll read the assessment input types and the executor's error and emit types so the orchestration matches them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=100
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The pieces fit: `measure_run` acquires the gate, samples load, calls the collector, assesses, then emits events. I still need the `PublicEvent` variants for `complexity` and `familiar`, the gate's error type, and the `emit` signature.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=204
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `complexity` and `familiar` events carry `BoundedJson`, so the payloads convert through `to_bounded_json`. Before writing the tests I need the failure matrix moods from the design, so each expectation comes from the spec and not from the code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=284
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=46
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The matrix gives exact expectations for each failure: no bench, host busy, failed bench and incomplete bench all end at mood 4 with a named reason. I'll check the field names of `FamiliarPayload` and the `LoadSource` and `EventLog` signatures before writing the tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=334
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the signatures. I'll write the RED tests first: the failure-matrix moods, collector call counts, event order, and error propagation. The tests use the existing recording context and a scripted collector that I'll add to `testkit`.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1084
+[tool] status: Pending
+[tool] status: Completed
+The last test I wrote only asserts that a fixed array has length 4. That is a mundane test, which the test rules prohibit, so I'll remove it and its unused import.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=132
+
+[tool] Remove mundane test and check red compile errors
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both imports are unresolved, which is the expected red state. Now I'll add the orchestration to `familiar/mod.rs`: the plan, the outcome, the collector trait, and `measure_run`. Then the scripted collector in `testkit`.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1014
+[tool] status: Pending
+[tool] status: Completed
+That draft has a bogus `with_points` call and a tuple return that carries nothing. `BenchState::Points` can borrow the outcome directly, so I'll simplify both functions.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=478
+
+[tool] Simplify measure_run borrowing and state mapping
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next, the scripted collector in `testkit`. It returns a fixed answer and counts how often it was called.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=297
+
+[tool] Add scripted collector and run measure_run tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All eight `measure_run` tests pass. One test name promises that `complexity` comes first, but its assertion is conditional. I'll rename it to what it actually checks, then run clippy and the full judge suite.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=229
+
+[tool] Rename test, then run fmt, clippy and judge tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy flags two small issues in the test helper. `measure_run` already returns `Result<(), ExecError>`, so the `map` is redundant, and the emptiness assertion should be written as a length check.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=184
+
+[tool] Fix clippy issues and rerun judge tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean, the judge suite passes, and the eight `measure_run` tests pass. T20 is only partly complete. The canary and restart tests are not written, and the call site in the real executor waits on the language-drivers collector. I'll leave it unticked and log that gap. Then I'll add the Rust lesson and commit the work.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=362
+
+[tool] Record T20 partial status and commit
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next is T21, the baseline store. I'll create `store.rs` as the only module with SQL for baselines, then write the `pg_` tests for insert-only behaviour, sorted reads, version separation and digest mismatch. The judge role's denial of `UPDATE` and `DELETE` on this table is already covered by the roles test from T16.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=878
+
+[tool] Write baseline store module and check it builds
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The store compiles. I wrote it before its tests, which departs from the red-first order, so I'll say so in the summary. Now I'll add the `pg_baseline_*` tests and run them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=577
+
+[tool] Add baseline store database tests and run them
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All seven database tests pass and clippy is clean. The judge-role denial for `UPDATE` and `DELETE` is covered by `pg_familiar_roles`, so I'll tick T21 and commit it with its Rust lesson.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=210
+
+[tool] Commit T21 baseline store and tick task
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T21 is committed as `7b43c29`. Next is T23, the read-model sections. It depends on the server's run read model from run-lifecycle, so I'll check whether that exists before writing anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=128
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The run-lifecycle read model (T26) exists, but the SSE endpoint (T29) is still open. The stream-parity test in T23 needs SSE, so I'll check how `read.rs` builds its response before deciding how much of T23 I can do.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=76
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=25
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+T23 needs more than the read model. The stored columns don't hold the headline and badge text, and the stream-parity test needs the SSE endpoint, which is T29 and still open. I'll leave T23 unchecked and log it. Next I'll look at the remaining pure web tasks (T28 and the speech-prompt and claim-guard modules), since they don't depend on blocked work.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=202
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T28 is a pure module: a seeded crack plan and a seeded ember ring. I'll match the token naming and export style used in the existing `plan.ts` and `mood-style.ts`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=122
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The module needs colour token names. I'll check which success and danger token names the existing styles use, so the particle colours match them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=97
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=53
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `--success` token exists, so I'll use it for the laugh sparks. Now I'll write the particle test first, then the module.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=331
+[tool] status: Pending
+[tool] status: Completed
+The palette and frontend rules match what the Familiar work already follows, so nothing changes. Next I'll run the particle test to confirm it fails before the module exists.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=73
+
+[tool] Run particle test to confirm it fails before implementation
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test fails because `particles.ts` does not exist yet. I'll write the module with a seeded PRNG, so the same seed always gives the same plan.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=502
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=48
+[tool] Run particle tests and svelte-check
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The four particle tests pass and `svelte-check` reports no errors. I'll tick T28 and commit it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=111
+
+[tool] Commit T28 seeded particle plans
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I'll record the open tasks and their blockers in the blockers log, then commit that note.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=345
+
+[tool] Record remaining tasks and blockers, then commit
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+This run ticked five tasks and partly finished a sixth. The rest are blocked or still open, listed below. The full judge crate, the `pg_` judge tests and the web checks passed on the commits I made. I did not run a separate code review at the wave end.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T15 migration | ticked | none (SQL) | clean scratch DB applied twice; privileges checked with `has_column_privilege` | `649d3b4`, fixed in `6a5d075` |
+| T16 DB constraint, freeze and role tests | ticked | 3 `pg_familiar_*` | pass; this found a NULL bug in the CHECK, now fixed | `6a5d075` |
+| T19 measured columns in the terminal write | ticked | 4 `pg_familiar_*` in `finish.rs` | 11 finish tests pass; judge `pg_` suite passes | `b042a6c` |
+| T20 `measure_run` | partial, not ticked | 8 in `familiar_measure.rs` | judge suite passes; clippy clean | `6c366ab` |
+| T21 baseline store | ticked | 4 `pg_baseline_*` | 7 `familiar_pg` tests pass | `7b43c29` |
+| T28 seeded particle plans | ticked | 4 vitest | `npm run check` clean | `bc76127` |
+
+The T21 store was written before its tests, which breaks the red-first order. The tests were then written and pass. The blockers note is committed as `e078e34`.
+
+**Blockers and unfinished tasks** (full detail in `docs/kiro-log/efficiency-familiar-blockers.md`):
+- **T20:** the canary and restart tests, the call from the real executor, and the database cases are still open. The real collector comes from language-drivers.
+- **T22, T25, T40, T41:** need the judge-sandbox runner, language-drivers, and the VPS.
+- **T23:** the read-model sections need headline and badge text that the store does not keep. The stream-parity test needs the SSE endpoint (run-lifecycle T29), which is not done.
+- **T24:** the under-32× bench warning needs a new code (`BEN-02`), which needs Brighton's approval.
+- **T37 to T39:** blocked by the hints spec.
+- **T42:** E2E, deferred.
+- **T29 to T36, T43 to T45:** not started. T34 to T36 depend on T23 or are pure modules I did not reach. T43 to T45 depend on the above.
+- **T46 to T48:** stretch, skipped.
+- **Art:** the jack-o'-lantern art is still missing, so only the placeholder exists.
+
+**Review-queue items for Brighton:**
+- **T15:** the server role's table-level `INSERT` on `submissions` was replaced by a column list that excludes the five familiar columns. Check that the server's insert statement uses only the listed columns.
+- **T15 fix:** `submissions_familiar_ck` treated a NULL result as a pass. The migration is not deployed, so I edited it in place.
+- **T19:** `FinalResult.measured` is boxed because clippy's `large_enum_variant` fired.
+
+**Open Minor review findings:** none recorded, because I did not run the review pass. The wave-end `requesting-code-review` step is still open.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=254
+

@@ -1,0 +1,121 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=8
+I'll start by reading the spec's task list to find the first unchecked, non-stretch, non-blocked task.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The prior runs left progress notes. I'll list every unchecked task so I know where to resume.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=66
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+Tasks T01–T19 are ticked. T20 is the first unchecked task, and a previous run left it partly done. I'll check the git history and the current T20 code before continuing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=188
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T20 is partly done in commit 6c366ab. I'll read its implementation and tests to see what's still missing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=100
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+I'm continuing T20. The canary and restart tests are still missing, and I can write them against the existing scripted collector and recording context. I'll check the testkit API first.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=67
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=40
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+The grep found no `ScriptedCollector` definition in `src`, and the existing test file imports it. I'll confirm whether the test file even compiles.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=65
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=39
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The eight existing tests pass. I'll add the restart test: an infrastructure error on attempt 1 must leave no mood, and attempt 2 must then produce a fresh result and release the bench gate.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=346
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=41
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The restart test passes. It covers behaviour the existing code already had, so I'll note that it did not go red first. Next I'll run clippy on the judge crate.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=82
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean and all nine tests pass. I'll log the Rust lesson and the T20 status, then commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=329
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+This run advanced one task, T20, and left it unchecked. The remaining open tasks are blocked on other specs or on decisions only Brighton can make.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T20 `measure_run` | Partial, still `[ ]` | 1 (restart and gate release) | `cargo clippy -p counterspell-judge --all-targets -- -D warnings` clean; `cargo test --test familiar_measure`: 9 passed | bd0b523 |
+
+Notes on T20:
+- The restart test passed on its first run, because `measure_run` already had that behaviour. It did not go red first, so this is a test-first deviation.
+- Still open: the canary test (moved to T43 in the blockers file), the executor wiring (needs language-drivers T08 and T09), and the `pg_` cases (need T23).
+
+**Why the run stopped here:** the next unchecked tasks cannot be done without a decision or another spec:
+- T22 and T25 are marked BLOCKED (judge-sandbox runner, language-drivers bench).
+- T23 needs a decision on storing the reason code and headline, plus the SSE endpoint from run-lifecycle T29.
+- T24's bench-span warning needs approval of a new warning code, `BEN-02`.
+- T37 to T41 need the hints spec, Valkey, the VPS and Brighton's admission run.
+- T42 is E2E, deferred. T46 to T48 are stretch.
+
+I did not start any of these, to avoid guessing at decisions.
+
+**Blockers:** `docs/kiro-log/efficiency-familiar-blockers.md` (Run 5 section added).
+
+**Review-queue items:** none added this run. The earlier items from runs 3 and 4 remain in `docs/kiro-log/efficiency-familiar-review-queue.md`.
+
+**Open Minor review findings (from run 4, unchanged):**
+- `applyRestarted(_state)` ignores its argument, which is intentional for a uniform reducer signature.
+- `Mascot.svelte`: `drawArt` swallows errors on purpose. A debug log would help.
+- `prompt.rs`: `neutralise_markers` changes `<<<` to `< < <` in the learner's code inside the prompt.
+- `claims.rs`: "linear search" counts as a class claim, which is strict by design.
+- `api.rs`: the PATCH response reads the merged row back, so concurrent changes show their latest values.
+
+**Decisions for Brighton** (from the blockers file):
+1. Approve warning code `BEN-02` and the matching change to the codes test (T24).
+2. Decide whether the read model stores the reason code so it can rebuild the headline (T23).
+3. Approve the placeholder art until the real jack-o'-lantern art exists.
+4. Review the medium-confidence soundness trade-off in T12 (`se_k` frozen at 1.0).[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=234
+
