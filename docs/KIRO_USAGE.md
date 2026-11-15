@@ -402,3 +402,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 22:04-22:08 SAST: 31-landing-steel-night-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-landing-steel-night-a2.md`. Transcript: `docs/kiro-log/2026-11-15T2204-31-landing-steel-night-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 0.91 (credits used now 3498.13/4000).
+
+### 2026-11-15 22:14-22:36 SAST: 26-ide-workspace-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-ide-workspace-a1.md`. Transcript: `docs/kiro-log/2026-11-15T2214-26-ide-workspace-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 7.43 (credits used now 3505.56/4000).
