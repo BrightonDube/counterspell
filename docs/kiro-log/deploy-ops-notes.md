@@ -80,3 +80,16 @@ Env-file checks are tagged `env-check`. Before T27, run the app role with `--ski
 Verification: `bats deploy/vps/tests/backup.bats` 6 of 6 pass (success with manifest and counts and success ping; plaintext marker never on disk; prune keeps exactly 7; failed `age` keeps old dumps and writes no partial; failed upload keeps the local dump and pings fail; missing recipient stops before any database call). `shellcheck` clean on the script and stubs.
 `systemd-analyze verify` on the two units: the only message is that `/usr/local/sbin/counterspell-backup` is not installed on this machine. That path exists after the app role installs the script (T28), so the units verify on the host.
 Deviation: the test uses a fixture recipient string and an `age` stub, not a real age key generated in the test directory. No `age-keygen` is installed here. The real round trip is done on Brighton's laptop at T28 (decrypt and checksum), which is the check that matters.
+
+## T17 (16 Nov 2026)
+
+Verification: `bats deploy/vps/tests/ops.bats` 9 of 9 pass; `shellcheck` clean on the report script and stubs.
+Stub fix: the `logger` stub now records only the message after `--`, as real `logger` takes it. The earlier version recorded the `-t` option text too, and that broke the counts-only check.
+SQL not run on a server (P11, MODEL ONLY). See `deploy-ops-blockers.md` for the kill-verdict grant decision.
+
+## T18 (16 Nov 2026)
+
+Verification: `bats deploy/vps/tests/drill.bats` 4 of 4 pass; `shellcheck` clean.
+Safety fix found while testing: the cleanup trap removed `DRILL_IDENTITY_FILE` on every exit, including the refusal path. A wrong path outside `/dev/shm` would have deleted an arbitrary file. The trap now removes only files under `/dev/shm`, and the test `identity path outside /dev/shm is refused and the file is never deleted` checks it.
+Test hygiene: the teardown now uses a separate `TEST_IDENTITY` variable, so no `/dev/shm` identity fixture is left behind.
+Not run: the real Postgres 17 restore (needs the data network and a real dump). The round trip is T28 on the host and on Brighton's laptop.
