@@ -1,3 +1,4 @@
+// test-change: CAT-F1. Setup only: runs now need a catalogue problem row (submissions_problem_fk). No assertion changed.
 //! Privilege tests for the server and judge database roles (R19). Each role may do
 //! exactly what the privilege matrix in `design.md` allows. Every denied statement
 //! runs inside its own savepoint, so one denial does not abort the test transaction.
@@ -23,6 +24,9 @@ async fn insert_user(pool: &PgPool) -> Uuid {
 
 /// Inserts one queued run and its job as the database owner. Returns the run id.
 async fn seed_run(pool: &PgPool) -> Uuid {
+    counterspell_judge::testkit::ensure_problem(pool)
+        .await
+        .expect("the test problem must exist");
     let run = Uuid::new_v4();
     let owner = insert_user(pool).await;
     sqlx::query(

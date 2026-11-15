@@ -1,3 +1,4 @@
+// test-change: CAT-F1. Setup only: runs now need a catalogue problem row (submissions_problem_fk). No assertion changed.
 //! Database tests for the demo daily reset (auth T28, requirements R16.7 and R16.8).
 //!
 //! The reset runs at most once per scheduled window. The schedule is computed from the injected
@@ -33,6 +34,7 @@ async fn verified_user(pool: &PgPool, handle: &str) -> sqlx::Result<Uuid> {
 
 /// Adds one submission for `user`. It is finished when `finished` is true, otherwise it is still running.
 async fn add_submission(pool: &PgPool, user: Uuid, finished: bool) -> sqlx::Result<()> {
+    counterspell_server::testkit::ensure_problem(pool).await?;
     let (status, verdict) = if finished {
         ("completed", Some("accepted"))
     } else {

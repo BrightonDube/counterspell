@@ -1,3 +1,4 @@
+// test-change: CAT-F1. Setup only: runs now need a catalogue problem row (submissions_problem_fk). No assertion changed.
 //! Database tests for the efficiency-familiar columns (efficiency-familiar T16, P16).
 //! They check the CHECK constraint, the freeze trigger and the role grants from
 //! migration `20261115130000_efficiency_familiar.sql`.
@@ -79,6 +80,9 @@ async fn insert_row(pool: &PgPool, row: &Row) -> Result<Uuid, sqlx::Error> {
 
 /// Inserts a submission that is still running, as the database owner.
 async fn seed_running(pool: &PgPool) -> Uuid {
+    counterspell_judge::testkit::ensure_problem(pool)
+        .await
+        .expect("the test problem must exist");
     let owner = insert_user(pool).await;
     let run = Uuid::new_v4();
     sqlx::query(
@@ -157,6 +161,9 @@ async fn denied_unbound(tx: &mut Transaction<'_, Postgres>, sql: &str) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_familiar_constraints(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     // A valid row is accepted, and so is a furious run that failed.
     insert_row(&pool, &Row::valid()).await.unwrap();
     let furious = Row {
@@ -247,6 +254,9 @@ async fn pg_familiar_constraints(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_familiar_frozen(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     let run = seed_running(&pool).await;
 
     // The terminal write sets the verdict, the familiar columns and finished_at together.
@@ -284,6 +294,9 @@ async fn pg_familiar_frozen(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_familiar_roles(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     let run = seed_running(&pool).await;
 
     // The server may read everything and create runs, but it cannot write any familiar
@@ -398,6 +411,9 @@ fn baseline(version: u32, n: u64, median_ns: u64, digest: &str) -> BaselineRow {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_baseline_insert_then_find_returns_sorted_points(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     let rows = [
         baseline(1, 1024, 300, "sha256:a"),
         baseline(1, 256, 100, "sha256:a"),
@@ -415,6 +431,9 @@ async fn pg_baseline_insert_then_find_returns_sorted_points(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_baseline_reinsert_keeps_the_first_measurement(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     insert_baselines(&pool, &[baseline(1, 256, 100, "sha256:a")])
         .await
         .unwrap();
@@ -433,6 +452,9 @@ async fn pg_baseline_reinsert_keeps_the_first_measurement(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_baseline_new_version_is_a_separate_set(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     insert_baselines(
         &pool,
         &[
@@ -456,6 +478,9 @@ async fn pg_baseline_new_version_is_a_separate_set(pool: PgPool) {
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_baseline_digest_mismatch_finds_nothing(pool: PgPool) {
+    counterspell_judge::testkit::ensure_problem(&pool)
+        .await
+        .expect("the test problem must exist");
     insert_baselines(&pool, &[baseline(1, 256, 100, "sha256:a")])
         .await
         .unwrap();
