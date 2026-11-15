@@ -58,3 +58,8 @@ Attempt 4 supervised items (T14 is not supervised, but it has a deliberate excep
 - Check `handlers/reset.rs` `confirm_reset`: the policy runs before the token is used, every session is revoked, and nobody is signed in.
 - Known behaviour: a link for an address that already has an account is still mailed, and opening it gives `account_exists` and spends the link. This matches R15.7 and keeps the request answer uniform.
 - `is_unique_violation` moved to `errors.rs`, and the copies in `oauth.rs` and `verify.rs` now use it.
+
+## T27: capabilities everywhere (commit: see git log "auth T27")
+- No production change was needed. T22 to T25 already call `Capabilities::require` in each mutating handler. This task adds the matrix tests in `tests/pg_auth_demo_matrix.rs`.
+- Check `MUTATING_ROUTES` in `auth/mod.rs`: a route added to the router must also be added there. The test catches a listed route that the router does not serve, but it cannot find a served route that is not listed.
+- The DELETE account route (T36) does not exist yet. When T36 lands, add its capability check and add `/api/me` (DELETE) to the matrix.
