@@ -1,29 +1,65 @@
+<script lang="ts">
+	import { onMount } from 'svelte';
+	import { startScenes } from '../lib/landing/scenes';
+	import { planLanding, type LandingPlan } from '../lib/landing/motion-plan';
+	import GhostBeats from '../lib/landing/GhostBeats.svelte';
+	import Hero from '../lib/landing/Hero.svelte';
+	import SignUpCta from '../lib/landing/SignUpCta.svelte';
+
+	// The static HTML already shows every word. The plan only decides what motion to add.
+	let plan = $state.raw<LandingPlan>(
+		planLanding({ reducedMotion: false, viewportWidth: 1280, scriptsRunning: false })
+	);
+
+	onMount(() => {
+		const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+		const next = planLanding({
+			reducedMotion,
+			viewportWidth: window.innerWidth,
+			scriptsRunning: true
+		});
+		plan = next;
+		if (!next.loadGsap) return;
+
+		// GSAP loads after a delay, so the page may be left first. Dispose whichever comes last.
+		let active = true;
+		let dispose: (() => void) | undefined;
+		startScenes(next)
+			.then((revert) => {
+				if (active) dispose = revert;
+				else revert();
+			})
+			.catch(() => {
+				// Motion is optional. The static page already shows every word and beat.
+			});
+		return () => {
+			active = false;
+			dispose?.();
+		};
+	});
+</script>
+
 <svelte:head>
-  <title>Counterspell</title>
-  <meta name="description" content="Practice code with a ghost at your side." />
+	<title>Counterspell</title>
+	<meta
+		name="description"
+		content="Learn why your code breaks. Counterspell hunts the input that breaks your solution."
+	/>
 </svelte:head>
 
 <main
-  class="min-h-screen bg-bg px-6 py-16 text-text sm:px-10"
-  data-smoke-marker="counterspell-svelte-static"
+	class="min-h-screen bg-bg text-text"
+	lang="en"
+	data-smoke-marker="counterspell-svelte-static"
+	data-motion={plan.mode}
 >
-  <div class="mx-auto flex max-w-3xl flex-col gap-8">
-    <p class="font-mono text-sm uppercase tracking-[0.2em] text-accent-candle">
-      Counterspell static build
-    </p>
-    <div class="max-w-2xl space-y-5">
-      <h1 class="text-4xl font-semibold tracking-tight text-text sm:text-6xl">
-        Learn why your code breaks.
-      </h1>
-      <p class="max-w-xl text-lg leading-8 text-text-muted">
-        The ghost engine and trusted judge are coming soon. This calm page
-        proves the SvelteKit build can be served by the Rust process.
-      </p>
-    </div>
-    <div
-      class="w-fit rounded border border-border bg-surface px-4 py-3 text-sm text-text-subtle"
-    >
-      Skeleton milestone · judging is not implemented yet
-    </div>
-  </div>
+	<Hero />
+	<div class="mx-auto flex max-w-3xl flex-col gap-16 px-6 py-16 sm:px-10">
+		<div data-reveal>
+			<GhostBeats />
+		</div>
+		<div data-reveal>
+			<SignUpCta />
+		</div>
+	</div>
 </main>

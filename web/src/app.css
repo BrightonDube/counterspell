@@ -94,3 +94,14 @@ body {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* landing: begin */
+.cta {
+  transition-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    transition-duration: 0ms;
+  }
+}
