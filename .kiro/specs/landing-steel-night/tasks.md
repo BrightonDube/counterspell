@@ -96,6 +96,31 @@ Conventions for every task:
   - Verify: with reduced motion on in devtools, the CTA hover has no transition and all layers show their final frames.
   - Requirements: R15, R26. Preserve: no new colour values; tokens only.
 
+## Wave 3b: real art (amendment 15 Nov 2026)
+
+These follow the design amendment "real art". T13 and T14 run after T18, on the page with the real art.
+
+- [ ] **T15 [S] (30 min) Hero background: moon/graveyard poster and video loop**
+  - Files: `web/src/lib/landing/Hero.svelte`, a small pure helper (for example `hero-media.ts`) and its test, landing CSS; assets in `web/static/art/landing/`.
+  - Poster as a `<picture>` (960 and 1920 WebP, JPEG fallback) in the static HTML with width, height and `fetchpriority="high"`. In motion mode only, after first paint, mount the `<video>` (WebM then MP4, 960 at <= 900 px wide, else 1920, `preload="none"`, muted, loop, playsinline). No video for reduced motion, Save-Data or a hidden tab; pause when off-screen.
+  - Verify: vitest for the pure source choice (reduced motion gives no video, narrow gives 960, Save-Data gives none); `cd web && npm run check && npm run build`; no third-party request.
+  - Requirements: R5, R23, R24, R25. Preserve: headline, beats and CTA stay in the static HTML; no server or Rust change.
+- [ ] **T16 [S] (30 min) Recompose the motion layers over the real art**
+  - Files: `web/src/lib/landing/scenes.ts`, `motion-plan.ts`, their tests, landing CSS.
+  - The flat moon and graveyard SVGs become the fallback only (used if the poster fails). Use `art/fx/` overlays (fog, embers, bat swarm) for subtle parallax driven by the existing planner. Add a token-based scrim so all text pairs keep their contrast.
+  - Verify: planner property tests and `scenes.test.ts` green; reduced motion shows the poster still with no GSAP request.
+  - Requirements: R5, R21, R24. Preserve: GSAP only on the landing page, loaded after first paint.
+- [ ] **T17 [P] (25 min) Art accents for the three beats and the CTA**
+  - Files: `GhostBeats.svelte`, `SignUpCta.svelte`, their tests, CSS.
+  - Add tasteful decorative art from `art/objects/` and `art/creatures/` (WebP, `loading="lazy"`, `decoding="async"`, explicit size, `alt=""`) following Impeccable layout and polish. No layout shift, no colour-only meaning.
+  - Verify: tests green; `npm run check && npm run build`.
+  - Requirements: R21, R22, R29.
+- [ ] **T18 [S] (20 min) Impeccable audit and first-load art check**
+  - Files: fixes in `web/` only, `docs/kiro-log/landing-steel-night-art.md` (new).
+  - Run the Impeccable audit and critique playbooks on the landing page and fix Critical and Important findings. Record the first-load bytes (poster, fonts, JS) and confirm the video is not requested before first paint and never under reduced motion.
+  - Verify: the log file lists the findings, the fixes and the byte counts.
+  - Requirements: R21, R23.
+
 ## Wave 4: verification
 
 - [x] **T12 [S] (30 min) Run the no-JavaScript and content checks**
@@ -126,7 +151,8 @@ Conventions for every task:
 - **Wave 1:** T03 and T04 can run in parallel.
 - **Wave 2:** T05, T06 and T07 can run in parallel after Wave 0 and T03. T08 follows T04, T05, T06 and T07.
 - **Wave 3:** T09 follows T08. T10 follows T09. T11 can run in parallel with T09 and T10.
-- **Wave 4:** T12, then T13, then T14, in order.
+- **Wave 3b (amendment 15 Nov 2026):** T15, then T16; T17 can run in parallel; T18 last.
+- **Wave 4:** T12, then T18, then T13, then T14, in order.
 
 ## Completion checklist
 
@@ -138,4 +164,5 @@ Conventions for every task:
 - [ ] Geist and JetBrains Mono are self-hosted; their OFL notices are in `THIRD-PARTY-NOTICES.md`.
 - [ ] Lighthouse mobile performance median of three runs is at least 90, recorded in `docs/kiro-log/landing-steel-night-lighthouse.md`.
 - [ ] The Hunt copy never claims a smallest possible or proven minimum input.
-- [ ] No Rust, server or route change was made by this spec.
+- [ ] No Rust, server or route change was made by this spec (except the approved 200.html fallback).
+- [ ] The hero uses the approved moon/graveyard art: poster first, video only in motion mode after first paint, never under reduced motion or Save-Data.
