@@ -262,7 +262,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_seed` (with the three starter packs in draft, both seeds import nothing and exit 0). `seed-demo` is not run in CI (it needs the sandbox).
   - Rust lesson: `seed-demo` and `seed-dev` share one function with a flag, so the two paths cannot drift apart.
 
-- [ ] **C23 [P] [SUPERVISED] (20 min) Purity guard for the importer**
+- [x] **C23 [P] [SUPERVISED] (20 min) Purity guard for the importer**
   - Files: `crates/judge/tests/catalogue_purity.rs`.
   - Scan `src/catalogue/` for `std::process`, `Command::`, `std::net`, `TcpStream`. Only `sandbox_fill.rs` may name `PackRunner`. The static path must not reference it. Also fail on any `git` invocation and on credential names (`TOKEN`, `DEPLOY_KEY`, `SSH_AUTH_SOCK`, `GIT_SSH`), per CAT-PT4.
   - Requirements: CAT-Q4, CAT-PT4.

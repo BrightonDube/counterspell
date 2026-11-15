@@ -1165,3 +1165,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `INSERT ... SELECT ... FROM problems WHERE publication_state = 'published' RETURNING id` either inserts a row or inserts nothing. The publish check and the insert cannot be split by another transaction.
 - `fetch_optional` turns "no row returned" into `None`. The caller then rolls back and reports `NotPublished`, so the code never has to guess from a missing id.
 - Adding an enum variant makes every `match` that lacks it a compile error. The handler's `match` lists the new variant, so the 404 mapping cannot be forgotten.
+
+## problem-catalogue C23: a source-text purity guard
+
+- The guard reads the importer's `.rs` files as text and fails on forbidden words such as `Command::` or `TOKEN`. It is a cheap check on an architecture rule.
+- The scanner is a plain function that takes a `&str`. Tests call it on synthetic snippets, so the guard itself is tested, not just the current tree.
+- Text matching cannot see types. A value passed in through a variable would slip past it, so the type system (the importer having no runner handle) stays the real protection.
