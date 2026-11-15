@@ -16,7 +16,8 @@ placeholders in `web/static/landing/` and `web/static/familiar/`, which stay as 
 | Folder | Contents | Notes |
 |---|---|---|
 | `landing/` | `moon-graveyard-loop-1920.{webm,mp4}` (12 s seamless loop, ~2.3-2.6 MB), `-960.{webm,mp4}` (phone, ~0.5-0.7 MB), posters `moon-graveyard-poster-{1920.jpg,1920.webp,960.webp}` | Use the poster as LCP image and reduced-motion still; load video after first paint, 960 on narrow screens. |
-| `familiar/` | `jack-o-lantern-orange` and `jack-o-lantern-poison`: `.svg` (self-contained animated, embedded WebP), `.png`/`.webp` 512 px transparent, `.webm` (VP9 alpha loop) | The Familiar's art. Orange = normal moods, poison = pass/laughing glow variant. |
+| `familiar/` | `jack-o-lantern-orange` and `jack-o-lantern-poison`: `.svg` (self-contained animated, embedded WebP), `.png`/`.webp` 512 px transparent, `.webm` (VP9 alpha loop) | Kept for other surfaces (landing CTA accent, dashboard empty/streak/loading, 404/error, celebration). Not the IDE mascot body. Do not delete. |
+| `familiar/moods/` | `familiar-1-furious` … `familiar-5-laughing`: 1024 px transparent `.png`/`.webp`, self-contained animated `.svg` | Approved 15 Nov 2026 15:21 SAST. The IDE mascot: one image per mood, same framing, opacity cross-fade. |
 | `creatures/` | wraiths (green, pale, lunge), skulls (green/blood eyes), raven, black cat, spider drop, bat, grave hand, reaper tarot | `.svg` animated, `.png`/`.webp` stills. Empty, error and failure states. |
 | `objects/` | cauldron, candles, lanterns, potion, poison vial, grimoires, coffin, tombstone, eyeball, crystal ball, crypt key, chain, hourglass, cursed CRT, bug (beetle/glitch), skeleton keyboard, brain jar | 512 px icon-style props for dashboard cards, empty states, IDE accents. |
 | `fx/` | fog layers (ash/cold/poison), smoke plumes, lightning, crow flock, bat swarm, embers, poison spores | Transparent overlays; `fog-layer-cold`, `embers`, `poison-spores` also as `.webm`. |

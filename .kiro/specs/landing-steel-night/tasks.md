@@ -121,6 +121,18 @@ These follow the design amendment "real art". T13 and T14 run after T18, on the 
   - Verify: the log file lists the findings, the fixes and the byte counts.
   - Requirements: R21, R23.
 
+- [ ] **T19 [optional] [P] (20 min) Orange jack-o'-lantern accent near the CTA**
+  - Files: `SignUpCta.svelte` or the CTA section, tests, CSS.
+  - Place `art/familiar/jack-o-lantern-orange` as a decorative accent near the sign-up CTA (WebP still preferred, `loading="lazy"`, `decoding="async"`, explicit size, `alt=""`). The animated SVG may be used only in motion mode; reduced motion and Save-Data show the still. Do not delete or relocate the file. Keep the Steel Night palette and do not regress the Lighthouse mobile median target of 90.
+  - Verify: `npm run check && npm run build`; no layout shift; CTA text and link remain in the static HTML.
+  - Requirements: R21, R22, R23, R29.
+
+- [ ] **T20 [optional] [P] (25 min) 404 and error page with the orange pumpkin**
+  - Files: `web/src/routes/+error.svelte` (or equivalent), tests, CSS.
+  - A branded not-found / error page using `art/familiar/jack-o-lantern-orange` (static WebP, explicit size, `alt=""`), a plain-language message, and a link home. Impeccable layout; tokens only; reduced motion uses the still; no ambient loop. Do not invent a mood or a verdict on this page.
+  - Verify: `npm run check && npm run build`; visiting an unknown path shows the page and the home link works.
+  - Requirements: R21, R22.
+
 ## Wave 4: verification
 
 - [x] **T12 [S] (30 min) Run the no-JavaScript and content checks**
@@ -151,7 +163,7 @@ These follow the design amendment "real art". T13 and T14 run after T18, on the 
 - **Wave 1:** T03 and T04 can run in parallel.
 - **Wave 2:** T05, T06 and T07 can run in parallel after Wave 0 and T03. T08 follows T04, T05, T06 and T07.
 - **Wave 3:** T09 follows T08. T10 follows T09. T11 can run in parallel with T09 and T10.
-- **Wave 3b (amendment 15 Nov 2026):** T15, then T16; T17 can run in parallel; T18 last.
+- **Wave 3b (amendment 15 Nov 2026):** T15, then T16; T17 can run in parallel; T18 last. Optional T19 and T20 may follow and must not block T13 or T14.
 - **Wave 4:** T12, then T18, then T13, then T14, in order.
 
 ## Completion checklist

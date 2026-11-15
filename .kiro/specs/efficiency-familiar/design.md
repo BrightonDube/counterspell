@@ -745,9 +745,19 @@ Each states the choice assumed so the spec stays implementable. Brighton can ove
 
 ## Amendment (15 Nov 2026, Brighton): real jack-o'-lantern art
 
-Open question 1 is answered: the approved realistic art is in `web/static/art/familiar/` (`jack-o-lantern-orange` and `jack-o-lantern-poison`, each as a 512 px transparent `.webp`/`.png`, a self-contained animated `.svg` and a VP9-alpha `.webm`). See `.kiro/steering/brighton-decisions.md`, 15 Nov 2026 14:00. The placeholder stays as a fallback only and never ships as the default.
+Open question 1 is answered. Brighton approved five realistic mood paintings at 15:21 SAST on 15 Nov 2026. They live in `web/static/art/familiar/moods/`:
 
-- **Contract file.** A new `web/static/familiar/jack-o-lantern.svg` follows the id contract above. `fam-body` holds the real art as an `<image href="/art/familiar/jack-o-lantern-orange.webp">` (the raster is loaded separately, not embedded, so the SVG stays within the 120 KB budget). A second `<image>` for the poison variant sits in `fam-body`, hidden by default.
-- **Moods on fixed art.** The carving is part of the painting, so `fam-eyes-N` and `fam-mouth-N` are glow and shadow overlay shapes aligned to the carved eyes and mouth (opacity cross-fade, colour from `--fam-glow`), not new drawings of the face. Furious: blood-red glow, `fam-cracks` drawn, a short shake on live events. Angry: ember. Uneasy: dim, low flicker. Pleased: candle amber. Laughing: cross-fade to the poison variant with the success spark. Effect overlays (glows, cracks, embers) are allowed; replacement art is not.
-- **Motion.** The `.webm` and animated `.svg` loops are not used in the IDE idle state (calm IDE). Only live events animate, and reduced motion or mute shows static frames with the text intact.
+- `familiar-1-furious`
+- `familiar-2-angry`
+- `familiar-3-uneasy`
+- `familiar-4-pleased`
+- `familiar-5-laughing`
+
+Each has a 1024 px transparent `.webp`/`.png` and a self-contained animated `.svg`. All five share one framing, so they swap in place. See `.kiro/steering/brighton-decisions.md`, 15 Nov 2026 15:21. The placeholder stays as a fallback only and never ships as the default.
+
+The earlier `web/static/art/familiar/jack-o-lantern-orange` and `jack-o-lantern-poison` files stay in the repo for other surfaces. They are not the mascot body and must not be deleted. The 14:00 plan that mapped all five moods onto those two pumpkins with drawn-over face paths is superseded for the mascot.
+
+- **Contract file.** A new `web/static/familiar/jack-o-lantern.svg` follows an updated id contract for the realistic art. Keep `fam-body`, the glow stops (`fam-glow-stop-inner`, `fam-glow-stop-outer`) and `fam-fx`. Inside `fam-body`, put five `<image>` layers (`fam-mood-1` … `fam-mood-5`) whose `href` values point at `/art/familiar/moods/familiar-N-mood.webp` (the raster is loaded separately, not embedded, so the SVG stays within the 120 KB budget). `validate()` is updated for these ids. Do not require `fam-eyes-N`, `fam-mouth-N` or `fam-cracks` path groups on the realistic file.
+- **Moods are five images.** On a mood change, opacity-cross-fade between those five images (300 ms, or instant under reduced motion). There are no drawn-over face paths: do not invent overlay eyes, mouths or cracks to fake a carving on a single pumpkin. Live-event particle bursts may still spawn in `fam-fx` (transform and opacity only).
+- **Existing rules, unchanged.** Mood comes only from `decide`, from measured facts. The mascot stays calm while the student is typing (no mood change on keystrokes). At most one mood or effect change per 2 s. Animated `.svg` loops are not used in the IDE idle state (calm IDE). Only live events may play a short motion. Reduced motion or mute shows the static WebP frame for the current mood, with the text intact.
 - **Quality bar.** Apply `.kiro/skills/impeccable` to the dock: size, crop, halo from palette tokens, no clutter around the editor.
