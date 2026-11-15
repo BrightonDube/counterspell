@@ -258,6 +258,10 @@ struct Replay {
 /// database read fails. The client then reconnects with its cursor and loses nothing.
 async fn next_event(mut replay: Replay) -> Option<(Result<Event, Infallible>, Replay)> {
     loop {
+        // Checked before the queue: nothing read after the terminal event may be sent.
+        if replay.finished {
+            return None;
+        }
         if Instant::now() >= replay.deadline {
             return None;
         }
@@ -271,9 +275,6 @@ async fn next_event(mut replay: Replay) -> Option<(Result<Event, Infallible>, Re
                     None
                 }
             };
-        }
-        if replay.finished {
-            return None;
         }
         if replay.caught_up {
             let remaining = replay.deadline.saturating_duration_since(Instant::now());
@@ -339,7 +340,7 @@ mod tests {
 
     use axum::response::sse::Event;
 
-    use super::{parse_cursor, sse_response, REPLAY_SQL};
+    use super::{parse_cursor, sse_response, REPLAY_BATCH, REPLAY_SQL};
 
     // The keep-alive timer needs a running Tokio runtime, so this test is async.
     #[tokio::test]
@@ -385,6 +386,6 @@ mod tests {
         assert!(REPLAY_SQL.contains("s.user_id = $2"));
         assert!(REPLAY_SQL.contains("e.seq > $3"));
         assert!(REPLAY_SQL.contains("ORDER BY e.seq"));
-        assert!(REPLAY_SQL.contains("LIMIT 200"));
+        assert!(REPLAY_SQL.contains(&format!("LIMIT {REPLAY_BATCH}")));
     }
 }

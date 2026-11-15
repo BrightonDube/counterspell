@@ -92,3 +92,12 @@ Brighton reviews each entry before the next task that depends on it starts.
 - Test client `crates/server/tests/support/sse_client.rs` uses `hyper` 1.x and `hyper-util`, added as server dev-dependencies (MIT, listed in THIRD-PARTY-NOTICES). The task named `hyper-util` and `http-body-util`; `hyper` itself is the client they need.
 - One real bug was found and fixed by these tests: the stream's position query returned a column name that did not match the struct, so every owner request returned `500`. Foreign and missing runs still returned `404`, which is why the ownership test alone did not catch it.
 - Test names use the `pg_` prefix (for example `pg_sse_replay_after_drop_at_every_position`), following the convention for database-backed tests.
+
+## Wave 2 end-of-wave review (T20–T31): dispositions
+
+- **Fixed (Critical):** rows read after the terminal event were sent. `next_event` now checks `finished` before it drains the queue. Test: `pg_sse_sends_nothing_after_the_terminal_event`.
+- **Fixed (Minor):** the replay batch size is tied to the SQL. A unit test checks that `LIMIT` equals `REPLAY_BATCH`.
+- **Not changed:** leading zeros in the cursor (`007`) are accepted. R13.2 asks for a non-negative integer, and `007` is one. Brighton may want strict canonical form.
+- **Not changed:** the cursor is checked before ownership. Design Path 9 orders step 2 (parse) before step 3 (ownership) on purpose. A malformed cursor reveals nothing about the run.
+- **Not changed:** the stream closes silently on a database error, so `EventSource` reconnects. A `retry:` hint could slow that loop during an outage. Left for the deployment pass.
+- **Not changed:** after the waker reports `Closed`, the stream sleeps one poll interval and checks again. That is the intended fallback, not a double wait.
