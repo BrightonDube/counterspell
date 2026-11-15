@@ -1058,3 +1058,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `has_table_privilege(role, table, privilege)` asks Postgres to answer from its own grant catalogue. The test checks the real rule, not a sample query that might pass by accident.
 - `aclexplode` turns a table's access list into rows. Grantee `0` means PUBLIC, so one query proves PUBLIC holds nothing.
 - The test filters roles by the prefix `counterspell_` with an escaped underscore (`\_`). Without the escape, `_` matches any character, and the cluster's own login user would be counted.
+
+# Rust lesson: problem-catalogue C05
+- `SET LOCAL ROLE` inside a transaction changes who the statements run as, and `rollback` undoes it. A test can prove a privilege from the role's own view without a second connection.
+- A fixture that returns `Result<(), sqlx::Error>` lets `?` stop at the first refused row, so the test fails with the trigger's message.
+- `#[cfg(feature = "testkit")]` keeps the fixture out of release builds. The dev-dependency turns the feature on for tests only.
