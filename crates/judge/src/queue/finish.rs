@@ -11,6 +11,8 @@ use super::{ClaimToken, QueueError};
 use counterspell_common::events::{
     DonePayload, ErrorPayload, PublicEvent, PublicTest, SampleDetail,
 };
+use counterspell_common::familiar::payload::MeasuredColumns;
+use counterspell_common::familiar::{ClassId, Confidence};
 use counterspell_common::ids::RunId;
 use counterspell_common::run_state::status_after_event;
 use counterspell_common::status::{FailureReason, TestVerdict, Verdict};
@@ -59,6 +61,9 @@ pub struct FinalResult {
     pub runtime_ms: u32,
     /// Compiler output, cut to a fixed size when the `done` payload is built.
     pub compile_output: Option<String>,
+    /// The familiar's measured columns. `None` when nothing was measured, for example
+    /// when the run failed or the problem has no bench.
+    pub measured: Option<Box<MeasuredColumns>>,
     /// One record per test.
     pub tests: Vec<TestRecord>,
 }
@@ -89,6 +94,20 @@ pub async fn finish(
     let runtime_ms = to_i32(result.runtime_ms)?;
     let run = token.run_id();
     let attempt = token.attempts().saturating_add(1);
+    let columns = result.measured.as_deref();
+    let measured_complexity = columns.and_then(|m| m.measured_complexity).map(ClassId::id);
+    let confidence = columns
+        .and_then(|m| m.complexity_confidence)
+        .map(Confidence::as_str);
+    let fit = columns
+        .and_then(|m| m.fit.as_ref())
+        .map(serde_json::to_value)
+        .transpose()
+        .map_err(|_| QueueError::InvalidResult)?;
+    let mood = columns
+        .and_then(|m| m.familiar_mood)
+        .map(|m| i16::from(m.value()));
+    let reason = columns.and_then(|m| m.familiar_reason.as_deref());
 
     let mut tx = pool.begin().await?;
     lock_claim(&mut tx, token).await?;
@@ -98,7 +117,9 @@ pub async fn finish(
     let seq: Option<i32> = sqlx::query_scalar(
         "UPDATE submissions \
          SET last_event_seq = last_event_seq + 1, status = 'completed', verdict = $2, \
-             passed = $3, total = $4, score = $5, runtime_ms = $6, finished_at = now() \
+             passed = $3, total = $4, score = $5, runtime_ms = $6, finished_at = now(), \
+             measured_complexity = $7, complexity_confidence = $8, fit = $9, \
+             familiar_mood = $10, familiar_reason = $11 \
          WHERE id = $1 AND finished_at IS NULL \
          RETURNING last_event_seq",
     )
@@ -108,6 +129,11 @@ pub async fn finish(
     .bind(total)
     .bind(score)
     .bind(runtime_ms)
+    .bind(measured_complexity)
+    .bind(confidence)
+    .bind(fit)
+    .bind(mood)
+    .bind(reason)
     .fetch_optional(&mut *tx)
     .await?;
     let seq = seq.ok_or(QueueError::EventRejected)?;

@@ -301,6 +301,7 @@ impl RunExecutor for ScriptedExecutor {
                     score: 0,
                     runtime_ms: 0,
                     compile_output: None,
+                    measured: None,
                     tests: vec![TestRecord::Hidden {
                         ordinal: 1,
                         verdict: TestVerdict::WrongAnswer,
@@ -352,6 +353,7 @@ async fn pass(ctx: &RunContext, tests: u32, delay: Duration) -> Result<RunOutcom
         score: 100,
         runtime_ms: 0,
         compile_output: None,
+        measured: None,
         tests: records,
     }))
 }

@@ -7,7 +7,9 @@
 //! Run with `cargo test -p counterspell-judge --test finish -- --ignored pg_`.
 
 use counterspell_common::events::{PublicEvent, PublicTest, SampleDetail};
-use counterspell_common::status::{FailureReason, TestVerdict, Verdict};
+use counterspell_common::familiar::payload::{BenchStatus, FitSummary, MeasuredColumns};
+use counterspell_common::familiar::{ClassId, Confidence, Mood};
+use counterspell_common::status::{FailureReason, RunMode, TestVerdict, Verdict};
 use counterspell_judge::queue::emit::emit;
 use counterspell_judge::queue::finish::{finish, finish_failed, FinalResult, TestRecord};
 use counterspell_judge::queue::QueueError;
@@ -26,6 +28,7 @@ fn passing_result() -> FinalResult {
         score: 100,
         runtime_ms: 12,
         compile_output: None,
+        measured: None,
         tests: vec![
             TestRecord::Sample {
                 ordinal: 1,
@@ -92,6 +95,7 @@ async fn pg_finish_writes_done_event_matching_columns(pool: PgPool) {
         score: 33,
         runtime_ms: 9,
         compile_output: None,
+        measured: None,
         tests: passing_result().tests,
     };
 
@@ -318,4 +322,124 @@ async fn pg_finish_is_atomic(pool: PgPool) {
     .unwrap();
     assert_eq!(done, 0);
     assert_invariants(&pool).await.unwrap();
+}
+
+/// The five familiar columns of a run, as stored.
+type FamiliarColumns = (
+    Option<String>,
+    Option<String>,
+    Option<serde_json::Value>,
+    Option<i16>,
+    Option<String>,
+);
+
+/// Reads the five familiar columns of one run.
+async fn familiar_columns(pool: &PgPool, run: Uuid) -> FamiliarColumns {
+    sqlx::query_as(
+        "SELECT measured_complexity, complexity_confidence, fit, familiar_mood, familiar_reason \
+         FROM submissions WHERE id = $1",
+    )
+    .bind(run)
+    .fetch_one(pool)
+    .await
+    .unwrap()
+}
+
+/// Measured columns for a fitted `n` class at medium confidence, with a laughing mood.
+fn measured() -> MeasuredColumns {
+    MeasuredColumns {
+        measured_complexity: Some(ClassId::Linear),
+        complexity_confidence: Some(Confidence::Medium),
+        fit: Some(FitSummary::not_fitted(
+            RunMode::Submit,
+            BenchStatus::Measured,
+            ClassId::Linear,
+        )),
+        familiar_mood: Some(Mood::try_from(5).unwrap()),
+        familiar_reason: Some("matches_reference".to_owned()),
+    }
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_familiar_finish_stores_exactly_the_measured_columns(pool: PgPool) {
+    let run = seed_run(&pool).await.unwrap();
+    let token = start_running(&pool, run).await;
+    let expected = measured();
+    let result = FinalResult {
+        measured: Some(Box::new(expected.clone())),
+        ..passing_result()
+    };
+
+    finish(&pool, &token, &result).await.unwrap();
+
+    let fit_json = serde_json::to_value(expected.fit.as_ref().unwrap()).unwrap();
+    assert_eq!(
+        familiar_columns(&pool, run.as_uuid()).await,
+        (
+            Some("n".to_owned()),
+            Some("medium".to_owned()),
+            Some(fit_json),
+            Some(5),
+            Some("matches_reference".to_owned()),
+        )
+    );
+    assert_invariants(&pool).await.unwrap();
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_familiar_finish_without_measurement_stores_no_columns(pool: PgPool) {
+    let run = seed_run(&pool).await.unwrap();
+    let token = start_running(&pool, run).await;
+
+    finish(&pool, &token, &passing_result()).await.unwrap();
+
+    assert_eq!(
+        familiar_columns(&pool, run.as_uuid()).await,
+        (None, None, None, None, None)
+    );
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_familiar_finish_violating_mood_rolls_back(pool: PgPool) {
+    let run = seed_run(&pool).await.unwrap();
+    let token = start_running(&pool, run).await;
+    // A laughing mood on a wrong answer breaks the database rule, so the whole write fails.
+    let result = FinalResult {
+        verdict: Verdict::WrongAnswer,
+        measured: Some(Box::new(measured())),
+        ..passing_result()
+    };
+
+    let outcome = finish(&pool, &token, &result).await;
+
+    assert!(outcome.is_err(), "{outcome:?}");
+    assert_eq!(states(&pool, run.as_uuid()).await.0, "running");
+    assert_eq!(
+        familiar_columns(&pool, run.as_uuid()).await,
+        (None, None, None, None, None)
+    );
+    assert_invariants(&pool).await.unwrap();
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_familiar_stale_owner_writes_no_columns(pool: PgPool) {
+    let run = seed_run(&pool).await.unwrap();
+    let token = start_running(&pool, run).await;
+    let stranger = token_with(&token, "worker-b", token.attempts());
+    let result = FinalResult {
+        measured: Some(Box::new(measured())),
+        ..passing_result()
+    };
+
+    let outcome = finish(&pool, &stranger, &result).await;
+
+    assert!(matches!(outcome, Err(QueueError::LeaseLost)), "{outcome:?}");
+    assert_eq!(
+        familiar_columns(&pool, run.as_uuid()).await,
+        (None, None, None, None, None)
+    );
 }

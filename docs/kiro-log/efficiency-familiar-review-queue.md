@@ -17,3 +17,11 @@
   1. The server role's table-level `INSERT` on `submissions` was replaced by a column list that leaves out the five familiar columns (`REVOKE INSERT` then `GRANT INSERT (...)`). Confirm the server's insert statement uses only the listed columns.
   2. The `submissions_familiar_ck` constraint and the `cs_familiar_frozen` trigger.
   3. Found by T16 after the commit: `submissions_familiar_ck` let a class with NULL confidence through, because SQL treats a NULL CHECK result as a pass. The `measured_complexity` clause and the mood-verdict clause are now NULL-safe. The migration is not yet deployed, so it was edited in place.
+
+## T19: measured columns in the terminal write (commit pending, see git log)
+
+- `finish` now sets the five familiar columns in the same `UPDATE` that sets `finished_at`. A completed run with no measurement stores none. A stale owner writes none. A mood on a wrong answer fails the database rule, and the whole transaction rolls back.
+- Tests: `crates/judge/tests/finish.rs`, four new `pg_familiar_*` cases. All 11 finish tests pass.
+- What to check:
+  1. `FinalResult.measured` is `Option<Box<MeasuredColumns>>`. The box was added because clippy's `large_enum_variant` fired on `RunOutcome::Completed`.
+  2. `finish_failed` does not touch the five columns, so failed, cancelled and expired runs store none.

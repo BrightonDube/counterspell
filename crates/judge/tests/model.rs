@@ -127,6 +127,7 @@ fn accepted() -> FinalResult {
         score: 100,
         runtime_ms: 1,
         compile_output: None,
+        measured: None,
         tests: vec![TestRecord::Hidden {
             ordinal: 1,
             verdict: TestVerdict::Pass,

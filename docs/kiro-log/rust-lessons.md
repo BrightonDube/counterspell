@@ -961,3 +961,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - Each test seeds data as the owner, then switches to a role with `SET LOCAL ROLE` inside a transaction to prove what that role may do.
 - A denied statement is wrapped in a `SAVEPOINT` and rolled back, so one expected error does not abort the rest of the test.
 - Error codes come from the database (`23514` for a CHECK violation, `42501` for missing privilege), and matching on them keeps the test honest about why a write failed.
+
+# Rust lesson: efficiency-familiar T19
+- An `Option<Box<T>>` field keeps a large optional struct from making every enum variant that holds it large. Clippy's `large_enum_variant` lint is the signal to box it.
+- `Option::as_deref()` turns `Option<Box<T>>` into `Option<&T>` without moving or cloning the value.
+- `Option::and_then` and `map` chain optional values with no `if let` nesting, and `map(ClassId::id)` is preferred over a closure that only calls the method.
+- `?` on a `Result` returns the error to the caller, so a serialisation failure becomes one mapped error with no `unwrap`.

@@ -203,7 +203,7 @@ Conventions for every web task:
   - Preserve: reading `/proc/loadavg` is the only file access.
   - Rust lesson: traits as seams for testing, and `Semaphore` permits dropping automatically.
 
-- [ ] **T19 [S] [SUPERVISED] (30 min) Store the measured columns in the terminal write**
+- [x] **T19 [S] [SUPERVISED] (30 min) Store the measured columns in the terminal write**
   - Files: wherever run-lifecycle T14 defined `FinalResult` and `finish` (`crates/judge/src/queue/finish.rs` expected).
   - Add `measured: Option<MeasuredColumns>` to `FinalResult`. In the existing fenced transaction, set the five columns in the same `UPDATE` that sets `finished_at`. Failed, expired and internal-error paths store none.
   - Tests: a completed run stores exactly the columns `assess` produced; a worker that lost its lease writes nothing; a violating value (mood 5 with a wrong verdict) fails the transaction and is reported as an infrastructure error; the existing terminal-write tests still pass.
