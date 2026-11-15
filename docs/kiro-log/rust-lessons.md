@@ -1227,3 +1227,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 A `None` in a struct field means "this value is not known", and the code has to say what to do with it. Making `WordFacts.reference` an `Option` moved that decision to the one place that reads it, rather than inventing a placeholder class.
 `serde_json::from_value` turns a stored JSON value into a typed struct, and a failure is returned as `Result`. The read model maps that failure to an internal error, so a damaged row never shows a guessed result.
 The builder is a plain function from stored values to sections, so its tests need no database. Only the SQL that loads those values needs a `pg_` test.
+
+# Rust lesson: efficiency-familiar T20
+- `measure_run` takes the bench collector as a generic type parameter (`C: BenchCollector`), not a `dyn` object. The compiler makes one specialised copy per collector, so there is no boxed future.
+- A `match` on a `(bool, Option<_>)` pair covers each combination once. The compiler errors if a branch is missing.
+- A test double (`ScriptedCollector`) replaces the sandbox at the trait edge, so the failure matrix runs with no Docker and no database.
+- `?` on `collector.collect(plan).await` passes `ExecError` up unchanged, so the worker can tell a retryable infrastructure error from a finished run.

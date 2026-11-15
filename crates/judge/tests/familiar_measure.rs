@@ -240,6 +240,31 @@ async fn a_restarted_attempt_gets_a_fresh_result_and_the_gate_is_released() {
 }
 
 #[tokio::test]
+async fn a_fitted_bench_without_a_usable_baseline_is_capped_at_pleased() {
+    // The failure matrix: a baseline that is missing or stale caps the mood at 4 (`no_baseline`),
+    // even when the measured class matches the reference.
+    let (ctx, log) = RecordingContext::without_stop(1);
+    let gate = BenchGate::new(true);
+    let mut collector = ScriptedCollector::new(Ok(BenchOutcome::Complete(linear_points())));
+    let plan = plan();
+    let input = MeasureInput {
+        verdict: Some(Verdict::Accepted),
+        mode: RunMode::Submit,
+        reference: ClassId::Linear,
+        baseline: None,
+        plan: Some(&plan),
+        max_load: 3.0,
+    };
+
+    let outcome = measure_run(&ctx, &gate, &FixedLoad(0.5), &mut collector, &input).await;
+
+    assert!(outcome.is_ok());
+    let payload = familiar_payload(&log.events());
+    assert_eq!(payload["mood"], 4);
+    assert_eq!(payload["reason"], "no_baseline");
+}
+
+#[tokio::test]
 async fn a_stop_signal_from_the_collector_is_returned_unchanged() {
     let (outcome, log, _calls) = measure(
         Some(Verdict::Accepted),
