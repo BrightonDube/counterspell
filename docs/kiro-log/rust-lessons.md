@@ -1114,3 +1114,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `Option` in the seam means "not found", but a database error is not "not found". The lookup logs the error and answers `None`, so a broken database refuses the run instead of queuing one against an unknown version. This is fail-closed.
 - `query_as` with a tuple `(String, i32)` maps each row by position. A wrong column type shows up as a runtime decode error, which the test suite exercises through the real `published_version` column.
 - The publication check is in the SQL `WHERE` clause. A Rust-side `if` after the query would be easy to forget, and the test for an unpublished row proves the clause works.
+
+## problem-catalogue C30: public problem list
+
+- `Query<ListQuery>` gives each filter as an `Option<String>`. The parser turns those strings into a `ProblemFilter` before any SQL runs, so a bad value stops the request with a `400` and never reaches the database.
+- `serde` derives on the response structs decide what JSON can contain. A database row never goes into the response directly, so an extra column cannot leak.
+- `Option<SolveStatus>` serialises `None` as `null`. That gives anonymous callers `status: null` without a second response type.
