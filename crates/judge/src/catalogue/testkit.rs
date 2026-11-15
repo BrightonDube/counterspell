@@ -82,7 +82,7 @@ pub async fn insert_static_fixture(
         .execute(pool)
         .await?;
     }
-    sqlx::query("INSERT INTO problem_concepts (problem_slug, concept_id) VALUES ($1, $2)")
+    sqlx::query("INSERT INTO problem_concepts (problem_slug, concept_id) VALUES ($1, $2) ON CONFLICT DO NOTHING")
         .bind(slug)
         .bind(CONCEPT)
         .execute(pool)
@@ -179,7 +179,7 @@ async fn insert_version_row(pool: &PgPool, slug: &str, version: i32) -> Result<(
     )
     .bind(slug)
     .bind(version)
-    .bind(vec![5u8; 32])
+    .bind(version_hash(version).to_vec())
     .bind(json!({}))
     .bind(TRACK)
     .bind(json!([]))
@@ -250,4 +250,12 @@ pub fn static_import(version: i32, body_hash: u8, statement: &str) -> StaticImpo
             concepts: vec!["hash-maps".to_string()],
         }],
     }
+}
+
+/// A 32-byte content hash that differs between versions, so one problem can hold several
+/// fixture versions. The unique key on `(problem_slug, content_sha256)` needs distinct values.
+fn version_hash(version: i32) -> [u8; 32] {
+    let mut hash = [5u8; 32];
+    hash[31] = u8::try_from(version).unwrap_or(u8::MAX);
+    hash
 }
