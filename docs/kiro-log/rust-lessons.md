@@ -1063,3 +1063,9 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `SET LOCAL ROLE` inside a transaction changes who the statements run as, and `rollback` undoes it. A test can prove a privilege from the role's own view without a second connection.
 - A fixture that returns `Result<(), sqlx::Error>` lets `?` stop at the first refused row, so the test fails with the trigger's message.
 - `#[cfg(feature = "testkit")]` keeps the fixture out of release builds. The dev-dependency turns the feature on for tests only.
+
+# Rust lesson: problem-catalogue C06 to C10
+- `build_manifest` takes `&[(Tree, &str, &[u8])]`. The caller keeps ownership of its bytes, and the function only borrows them to hash. No copy is made just to read.
+- A `BTreeMap` keeps keys sorted, so the canonical hash input is always in the same order no matter how the files arrived.
+- `Tree` is an enum, so `match` on it must list every case. Adding a third tree later would stop the build at each place that needs a decision.
+- `toml::from_str` with `#[serde(deny_unknown_fields)]` turns a typo into an error. A clippy lint (`assert_is_empty`) also pushed the test toward `assert_eq!` with an explicit value, which reads more clearly.
