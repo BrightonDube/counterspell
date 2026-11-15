@@ -1,0 +1,62 @@
+---
+# App directories, host values, deploy scripts and the compose checksum record (deploy-ops R5.1,
+# R5.4, R7.13). Secrets are never written here: Brighton writes the env files by hand (T27).
+
+- name: Refuse to run without the public site address
+  ansible.builtin.assert:
+    that:
+      - caddy_site_address | length > 0
+    fail_msg: "Set caddy_site_address in inventory/group_vars/all.yml (the public hostname, no secrets)."
+    quiet: true
+
+- name: Create the app directory (root only)
+  ansible.builtin.file:
+    path: "{{ app_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0750"
+
+- name: Create the env directory (root only)
+  ansible.builtin.file:
+    path: "{{ app_env_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+- name: Write the non-secret host values (R5.4)
+  ansible.builtin.template:
+    src: host.env.j2
+    dest: "{{ app_env_dir }}/host.env"
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Check that Brighton has written each service env file with mode 0600 (R5.1)
+  ansible.builtin.stat:
+    path: "{{ app_env_dir }}/{{ item }}.env"
+  loop: "{{ app_env_services }}"
+  register: app_env_stat
+  tags: [env-check]
+
+- name: Stop until every service env file exists, is root-owned and is mode 0600
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists and item.stat.mode == '0600' and item.stat.pw_name == 'root'
+    fail_msg: "Missing or wrongly permissioned {{ item.stat.path }}. Write it by hand as root with mode 0600 (T27)."
+    quiet: true
+  loop: "{{ app_env_stat.results }}"
+  tags: [env-check]
+
+- name: Copy the compose files and write the checksum record
+  ansible.builtin.include_tasks: compose_sha.yml
+
+- name: Install the root-only deploy scripts (mode 0755)
+  ansible.builtin.copy:
+    src: "{{ app_src }}/{{ item.src }}"
+    dest: "/usr/local/sbin/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: "0755"
+  loop: "{{ app_scripts }}"

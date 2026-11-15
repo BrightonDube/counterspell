@@ -13,5 +13,7 @@ ssh_port: 22
 # Add one entry per key; rotation adds the new key first, then removes the old one (RUNBOOK.md).
 deploy_public_keys: []
 
-# Set by Brighton at T23 or later, per tasks.md. Empty means the role stops with a clear message.
-operator_public_keys: []
+# Non-secret host values, the operator's site address and the trusted proxy subnet (R5.4, R4.9).
+caddy_site_address: ""
+trusted_proxies: 172.30.10.0/24
+ghcr_owner: brightondube

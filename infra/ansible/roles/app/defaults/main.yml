@@ -1,0 +1,28 @@
+# Defaults for the app role. Repository files are read from the controller (the laptop that runs
+# Ansible), so app_src points at the repository root.
+app_src: "{{ playbook_dir }}/../.."
+app_dir: /opt/counterspell
+app_env_dir: /etc/counterspell
+
+# Service env files Brighton writes by hand (T27). The role only checks them (R5.1).
+app_env_services:
+  - postgres
+  - migrate
+  - server
+  - judge
+
+# Compose and Caddy files copied to app_dir. The checksum file covers exactly these (R7.13).
+app_compose_files:
+  - src: docker-compose.yml
+    dest: docker-compose.yml
+  - src: deploy/vps/compose.prod.yml
+    dest: compose.prod.yml
+  - src: Caddyfile
+    dest: Caddyfile
+
+# Deploy scripts installed into /usr/local/sbin (root-owned, 0755).
+app_scripts:
+  - src: deploy/vps/counterspell-deploy
+    dest: counterspell-deploy
+  - src: deploy/vps/counterspell-deploy-entry
+    dest: counterspell-deploy-entry

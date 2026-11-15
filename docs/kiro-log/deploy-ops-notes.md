@@ -66,3 +66,11 @@ Tools (user installs, not repo dependencies): ansible-core 2.22.0, ansible-lint 
 Environment note: `/mnt/c` is world-writable, so Ansible ignores `ansible.cfg` there. Set `ANSIBLE_CONFIG` and `ANSIBLE_COLLECTIONS_PATH` explicitly.
 Verification: `ansible-playbook -i inventory/hosts.example.yml site.yml --syntax-check` passes; `ansible-lint .` passes (production profile, 0 failures); `infra/ansible/tests/check-base-render.sh` passes (visudo on the rendered sudoers, exact deploy path, no wildcard, forced-command line, sshd drop-in).
 Not run: the role on a real host (T24, Brighton). The hardening values are checked by render, not on sshd.
+
+## T12 (16 Nov 2026)
+
+Verification: `ansible-lint infra/ansible` passes (production profile); `--syntax-check` passes; `bats deploy/vps/tests/compose_sha.bats` 3 of 3 (the rendered record passes the same `sha256sum --check` that counterspell-deploy uses, and a changed file fails it).
+Role variables use the `app_` prefix (`app_src`, `app_dir`, `app_env_dir`) to pass ansible-lint.
+Env-file checks are tagged `env-check`. Before T27, run the app role with `--skip-tags env-check`, as site.yml's comment says.
+[U] Docker versions in `roles/docker/defaults/main.yml` (`docker-ce 5:28.0.0`, `docker-compose-plugin 2.24.0`) are placeholders. Brighton confirms them at T24 with `apt-cache madison`. A wrong pin stops the run at install time, and nothing else changes.
+`host.env` needs `caddy_site_address` in group_vars (a public hostname, set at T26 with Q1). The role asserts it is set.

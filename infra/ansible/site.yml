@@ -1,8 +1,14 @@
 # Entry point for the host configuration. Run with a tag to apply one role, for example:
 #   ansible-playbook -i inventory/hosts.yml site.yml --tags base --ask-become-pass
+# Before Brighton writes the service env files (T27), skip their check:
+#   ansible-playbook -i inventory/hosts.yml site.yml --tags docker,app,sandbox --skip-tags env-check
 - name: Configure the Counterspell host
   hosts: counterspell
   become: true
   roles:
     - role: base
       tags: [base]
+    - role: docker
+      tags: [docker]
+    - role: app
+      tags: [app]
