@@ -1,6 +1,6 @@
 // Familiar requests: saving mute and hide, and asking for one speech bubble per finished run.
 // Speech is words only. Nothing here can set a verdict or a mood.
-import { asRecord, readEnum, readString } from '../contract';
+import { asRecord, ContractError, readEnum, readString } from '../contract';
 import { requestJson, type RequestOptions } from './client';
 
 /** The learner's Familiar choices. They are kept locally even when saving them fails. */
@@ -83,5 +83,27 @@ export async function savePreferences(
     return { synced: true };
   } catch {
     return { synced: false };
+  }
+}
+
+/** Reads the saved mute and hide choices. Returns null when the request fails, so the page keeps its defaults. */
+export async function loadPreferences(
+  options: RequestOptions = {}
+): Promise<FamiliarPrefs | null> {
+  try {
+    return await requestJson(
+      'GET',
+      '/api/me/familiar',
+      (raw) => {
+        const record = asRecord(raw, 'prefs');
+        if (typeof record.muted !== 'boolean' || typeof record.hidden !== 'boolean') {
+          throw new ContractError('prefs', 'expected muted and hidden to be booleans');
+        }
+        return { muted: record.muted, hidden: record.hidden };
+      },
+      options
+    );
+  } catch {
+    return null;
   }
 }

@@ -1,7 +1,7 @@
 // Tests for the Familiar API adapters and the one-speech-request guard (ide-workspace T20).
 // Each test names the break it catches. `fetch` is injected, so no test touches the network.
 import { describe, expect, it } from 'vitest';
-import { createSpeechGuard, requestSpeech, savePreferences } from './familiar';
+import { createSpeechGuard, loadPreferences, requestSpeech, savePreferences } from './familiar';
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -88,5 +88,28 @@ describe('savePreferences', () => {
       { fetchImpl }
     );
     expect(result).toEqual({ synced: false });
+  });
+});
+
+describe('loadPreferences', () => {
+  // Breaks if the stored choices are not read back on load, so mute and hide reset on every page view.
+  it('reads the saved mute and hide choices', async () => {
+    let seen: { url?: string; method?: string } = {};
+    const fetchImpl = async (url: string, init?: RequestInit) => {
+      seen = { url, method: init?.method };
+      return jsonResponse(200, { muted: true, hidden: true, skin: 'jack-o-lantern', speech: 'off' });
+    };
+    const prefs = await loadPreferences({ fetchImpl });
+    expect(seen.url).toBe('/api/me/familiar');
+    expect(seen.method ?? 'GET').toBe('GET');
+    expect(prefs).toEqual({ muted: true, hidden: true });
+  });
+
+  // Breaks if a failed load throws into the page, so the figure never appears at all when the network is down.
+  it('returns null when the request fails', async () => {
+    const fetchImpl = async () => {
+      throw new TypeError('network down');
+    };
+    expect(await loadPreferences({ fetchImpl })).toBeNull();
   });
 });

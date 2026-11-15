@@ -11,6 +11,8 @@ export interface FamiliarState {
   mood: Mood | null;
   complexity: ComplexityFact | null;
   terminal: { verdict: string; hasBench: boolean } | null;
+  /** True only for a mood that arrived on this page as a live event. History never sets it. */
+  live: boolean;
 }
 
 export interface FamiliarPrefs {
@@ -60,7 +62,7 @@ const CONFIDENCE_TEXT: Record<Confidence, string> = {
 };
 
 export function initialFamiliarState(): FamiliarState {
-  return { mood: null, complexity: null, terminal: null };
+  return { mood: null, complexity: null, terminal: null, live: false };
 }
 
 /** Records a measured mood sent by the server. The layer check happens in the contract parser. */
@@ -68,7 +70,20 @@ export function applyMeasuredFamiliar(
   state: FamiliarState,
   familiar: MeasuredFamiliar
 ): FamiliarState {
-  return { ...state, mood: familiar.mood };
+  return { ...state, mood: familiar.mood, live: true };
+}
+
+/** Records a mood loaded from the stored read model. It is not live, so no burst plays for it. */
+export function applyHydratedFamiliar(
+  state: FamiliarState,
+  familiar: MeasuredFamiliar
+): FamiliarState {
+  return { ...state, mood: familiar.mood, live: false };
+}
+
+/** A restarted attempt replaces the earlier result, so everything measured so far is cleared. */
+export function applyRestarted(_state: FamiliarState): FamiliarState {
+  return initialFamiliarState();
 }
 
 /** Records the measured complexity fact. On its own it never sets the mood. */
