@@ -109,3 +109,18 @@ A local rootless Docker daemon is now running (see `deploy/sandbox-verification.
 1. Apply the cgroup `cpuset`/`io` delegation drop-in (Brighton, sudo) so `docker --context rootless info` has no "No ... support" warnings.
 2. Judge-sandbox: write the `sbx_` tests and a production `RunExecutor` that uses `sandbox::run::execute_run` with the rootless socket. Until then no driver can be run in a container.
 3. Then T03 starts as RED: a Python protocol fixture (scalar, list, nested list, bool, string, null, exception, invalid output, repeated calls) run through that executor.
+
+## Run note (attempt 1 resumed, 16 Nov 2026): T03 stays `[ ]`, nothing else can start
+
+- **Checked the state before writing code.**
+  - `languages/` has `languages.toml` and `protocol.md` only. `drivers/` does not exist.
+  - `docker --context rootless info` shows no cpuset or io warnings, so the cgroup delegation drop-in appears applied.
+  - `docker --context rootless images` lists no images. The pinned `python:3.13-slim` digest and `node:22-slim` digest are not on the sandbox daemon.
+  - `crates/judge/src/executor.rs` still defines only `NoExecutor`, and `main.rs` still serves with it. `SandboxExecutor` is judge-sandbox T24, which is open.
+- **T03 not started.** Its red step is a Python protocol fixture run through a container. Running `driver.py` on the host is forbidden. Writing `driver.py` without a failing test breaks the TDD rule. No driver file was written.
+- **T04 to T12 not started.** Each depends on T03, on a container run, or on the executor. T07 and T08 need a real JavaScript run to verify. T09 depends on T08. T10 needs sandbox runs and published-pack fixtures. T11 and T12 need the sandbox. T13 to T16 are `[stretch]` and wait for T12.
+- **Unblock, in order:**
+  1. Judge-sandbox T21 and T24: a production `RunExecutor` on the rootless socket, plus the pinned image on that daemon. Brighton pulls the digests (`docker -H unix:///run/user/1000/docker.sock pull python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90` and the Node digest in `languages/languages.toml`). Kiro did not pull them, because the earlier decision treats image setup as Brighton's step.
+  2. Then T03 starts as RED: a Python protocol fixture (scalar, list, nested list, bool, string, null, exception, invalid output, repeated calls) run through that executor.
+  3. T04 follows the same pattern for `driver.js`, which also unblocks T05 and the enabled JavaScript entry in `languages/languages.toml` (the loader currently fails on the missing drivers).
+- **Still needs Brighton:** starter pack review before T10 fixtures for published packs (grimoire-packs T28).
