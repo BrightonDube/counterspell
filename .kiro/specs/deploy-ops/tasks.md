@@ -52,7 +52,7 @@ Conventions:
   - Depends on: T00.
   - Verify: `bats deploy/vps/tests/` runs and fails in the expected places; ShellCheck runs on the test helpers.
 
-- [ ] **T04 [S] [SUPERVISED] (30 min) Make the deploy script green**
+- [x] **T04 [S] [SUPERVISED] (30 min) Make the deploy script green**
   - Files: `deploy/vps/counterspell-deploy` (edit), `deploy/vps/counterspell-deploy-entry` (new, forced-command entry point).
   - Fix G1 (explicit error returns in `up`), G2 (readiness through `docker compose exec -T caddy`, then public health over HTTPS), G3 (`rollback` verb), G5 (`judge preflight` before judge starts), G6 (compose checksum check), and G7 (the entry point validates the verb and digests, then calls `sudo -n /usr/local/sbin/counterspell-deploy` with fixed arguments; the root script re-validates).
   - Merge `host.env` into the candidate `deploy.env` (R5.4). Keep the lock and the release records (R7.8, R7.11).
