@@ -129,3 +129,88 @@ pub async fn load(
         hidden,
     }))
 }
+
+/// A known ghost for one pinned version. Judge only, used to match an autopsy (CAT-L4).
+#[derive(Debug, Clone, PartialEq)]
+pub struct KnownGhostRow {
+    /// Stable id within the pack.
+    pub ghost_id: String,
+    /// `wrong`, `crash` or `timeout`.
+    pub kind: String,
+    /// The failing input.
+    pub input: Value,
+    /// What the program returned, when there is a value.
+    pub got: Option<Value>,
+    /// The exception class for a crash.
+    pub exception_class: Option<String>,
+    /// The authored explanation, one line.
+    pub explanation: String,
+    /// Concept ids the ghost teaches.
+    pub concepts: Vec<String>,
+}
+
+/// Returns the Python reference solution for `slug` at `version`, or `None` if there is none.
+///
+/// # Errors
+///
+/// Returns [`StoreError::Database`] when the read fails, for example without the judge grant.
+pub async fn reference_for(
+    conn: &mut PgConnection,
+    slug: &str,
+    version: i32,
+) -> Result<Option<String>, StoreError> {
+    let code: Option<String> = sqlx::query_scalar(
+        "SELECT code FROM reference_solutions \
+         WHERE problem_slug = $1 AND version = $2 AND lang = 'python'",
+    )
+    .bind(slug)
+    .bind(version)
+    .fetch_optional(&mut *conn)
+    .await?;
+    Ok(code)
+}
+
+/// One row of `known_ghosts` as the judge reads it, in column order.
+type GhostRecord = (
+    String,
+    String,
+    Value,
+    Option<Value>,
+    Option<String>,
+    String,
+    Vec<String>,
+);
+
+/// Returns the known ghosts recorded for `slug` at `version`, in insertion order of their ids.
+///
+/// # Errors
+///
+/// Returns [`StoreError::Database`] when the read fails, for example without the judge grant.
+pub async fn known_ghosts_for(
+    conn: &mut PgConnection,
+    slug: &str,
+    version: i32,
+) -> Result<Vec<KnownGhostRow>, StoreError> {
+    let rows: Vec<GhostRecord> = sqlx::query_as(
+        "SELECT ghost_id, kind, input, got, exception_class, explanation, concepts \
+             FROM known_ghosts WHERE problem_slug = $1 AND version = $2 ORDER BY ghost_id",
+    )
+    .bind(slug)
+    .bind(version)
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .map(
+            |(ghost_id, kind, input, got, exception_class, explanation, concepts)| KnownGhostRow {
+                ghost_id,
+                kind,
+                input,
+                got,
+                exception_class,
+                explanation,
+                concepts,
+            },
+        )
+        .collect())
+}

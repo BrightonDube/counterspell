@@ -282,7 +282,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_judge_reads` (connects as the judge role: reads succeed; a `Run` load never includes hidden rows; an unpublished problem still loads its pinned version (P9); a missing version returns `None`); a write attempt as the judge role fails.
   - Rust lesson: the function returns `Result<Option<T>, E>`. The outer `Result` is infrastructure, and the inner `Option` is "not found". Explain why the judge treats them differently.
 
-- [ ] **C25 [S] [SUPERVISED] (25 min) Reference and known-ghost loaders for the judge**
+- [x] **C25 [S] [SUPERVISED] (25 min) Reference and known-ghost loaders for the judge**
   - Files: `crates/judge/src/problem_store.rs`.
   - Functions `reference_for(slug, version)` and `known_ghosts_for(slug, version)` for ghost-engine and autopsy matching. Known-ghost data is loaded only by the judge; the autopsy copies the explanation into the ghost row at run time.
   - Requirements: CAT-L4, CAT-X1.
