@@ -88,3 +88,11 @@ Still needs Brighton or the VPS:
 ## Assistant update (15 Nov 2026, 01:03 SAST)
 
 A local rootless Docker daemon is now running (see `deploy/sandbox-verification.md` run 3 and `brighton-decisions.md`). Driver work that starts a container on that daemon still cannot be ticked until Brighton applies the cgroup `cpuset`/`io` delegation drop-in (the judge will refuse the daemon while those warnings remain) and the relevant `sbx_` tests exist and pass. T02 and T37 stay open for the VPS. Do not run driver or pack code on the host.
+
+## Run note (attempt 1 continued, 15 Nov 2026 05:09 SAST)
+
+- **T02 ticked** (`0d94d99`). `languages/languages.toml` now enables JavaScript (`node:22-slim`, digest already pinned). The shipped-catalogue test now expects Python and JavaScript enabled and Java and C++ disabled. It stubs both driver files. The assertion change is marked `test-change: IDE-1`, because launch languages are Python and JavaScript (IDE-1 in `docs/requirements.md`). Verified: `cargo fmt --check`, `cargo clippy --workspace --all-targets -D warnings` and `cargo test --workspace` all pass.
+- **Open risk:** the real `languages/languages.toml` still fails `LanguageCatalog::load` until `drivers/python/driver.py` and `drivers/javascript/driver.js` exist. Nothing in production loads that file yet (only tests do). This is the same interim state the file header documents for Python. T03 and T04 remove it.
+- **T03 to T12 still blocked.** `crates/judge/src/main.rs` still runs `NoExecutor`. There is no sandbox executor, so no driver can be started and no red-green cycle can run against a container. Running driver code on the host is forbidden by the spec.
+- **Brighton decisions still open:** the T07 signature-type crate choice (grimoire dependency or `counterspell-common`), and the judge-sandbox `sbx_` ignore decision and cgroup delegation drop-in.
+- **Stretch T13 to T16:** not started. T12 has not passed.
