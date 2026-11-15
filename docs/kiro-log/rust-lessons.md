@@ -997,3 +997,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - `&'a str` fields borrow the caller's strings, so building a prompt copies text only once, into the `String` that is returned.
 - `str::replace` returns a new `String` and leaves the input alone, which is how the code's marker text is neutralised without changing the caller's copy.
 - `writeln!` into a `String` returns a `Result`; the error can never happen for a `String`, so `let _ =` is a deliberate, commented choice.
+
+# Rust lesson: efficiency-familiar T20
+- A `Semaphore` permit is a value. When the function returns early with `?`, the permit drops and the next waiter can run, so a failed attempt never keeps the bench gate.
+- `assert_eq!(events.len(), 0)` is clearer than `assert!(events.is_empty())` when clippy's `-D warnings` is on, because the lint suggests a comparison with an explicit empty array for vectors.
+- Two `RunContext` values with different attempt numbers give two independent event logs, so a retry cannot inherit state from the failed attempt.

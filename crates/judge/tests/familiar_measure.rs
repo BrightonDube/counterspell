@@ -208,6 +208,38 @@ async fn a_collector_infrastructure_error_is_returned_and_no_mood_is_emitted() {
 }
 
 #[tokio::test]
+async fn a_restarted_attempt_gets_a_fresh_result_and_the_gate_is_released() {
+    let gate = BenchGate::new(true);
+    let input = MeasureInput {
+        verdict: Some(Verdict::Accepted),
+        mode: RunMode::Submit,
+        reference: ClassId::Linear,
+        baseline: None,
+        plan: Some(&plan()),
+        max_load: 3.0,
+    };
+
+    // Attempt 1 fails inside the sandbox. It must show no mood and must not keep the gate.
+    let (first_ctx, first_log) = RecordingContext::without_stop(1);
+    let mut failing = ScriptedCollector::new(Err(ExecError::Infrastructure("daemon".to_owned())));
+    let first = measure_run(&first_ctx, &gate, &FixedLoad(0.5), &mut failing, &input).await;
+    assert!(first.is_err());
+    assert_eq!(first_log.events().len(), 0);
+
+    // Attempt 2 is a new run context. It must emit exactly one fresh familiar event.
+    let (second_ctx, second_log) = RecordingContext::without_stop(2);
+    let mut working = ScriptedCollector::new(Ok(BenchOutcome::Complete(linear_points())));
+    let second = measure_run(&second_ctx, &gate, &FixedLoad(0.5), &mut working, &input).await;
+    assert!(second.is_ok());
+    let events = second_log.events();
+    let familiar_count = events
+        .iter()
+        .filter(|event| event.event_type() == "familiar")
+        .count();
+    assert_eq!(familiar_count, 1);
+}
+
+#[tokio::test]
 async fn a_stop_signal_from_the_collector_is_returned_unchanged() {
     let (outcome, log, _calls) = measure(
         Some(Verdict::Accepted),
