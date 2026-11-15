@@ -159,6 +159,22 @@ impl AuthState {
     }
 }
 
+/// Every auth route that changes data, as one concrete path each. The demo matrix test sends a
+/// request to each path, so a route missing from the router fails the test. Add a new mutating
+/// route here as well.
+pub const MUTATING_ROUTES: &[&str] = &[
+    "/api/auth/logout",
+    "/api/auth/logout-all",
+    "/api/auth/login",
+    "/api/auth/register",
+    "/api/auth/email/magic",
+    "/api/auth/email/verify",
+    "/api/auth/password/reset",
+    "/api/auth/password/reset/confirm",
+    "/api/auth/link/github/start",
+    "/api/auth/link/email",
+];
+
 /// The auth routes that exist so far: password and email-link sign-in, logout, logout everywhere
 /// and `GET /api/me`.
 ///

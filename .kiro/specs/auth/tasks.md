@@ -293,7 +293,7 @@ Conventions for every Rust task:
   - Preserve: the password comes only from the environment through `AuthConfig`; no file is read.
   - Rust lesson: `Option<Config>` as "feature on or off".
 
-- [ ] **T27 [S] (30 min) Enforce capabilities everywhere (property P17)** [SUPERVISED]
+- [x] **T27 [S] (30 min) Enforce capabilities everywhere (property P17)** [SUPERVISED]
   - Files: `crates/server/src/auth/handlers/*.rs` (call sites only), `crates/server/tests/pg_auth_demo_matrix.rs`.
   - Make every mutating handler call `Capabilities::require` first (link provider start, link email, register-verify and reset paths for the demo address, `logout-all`, delete when it exists). Add a test that enumerates the auth router's mutating routes and fails when one does not appear in the matrix.
   - Tests: a demo session against every mutating endpoint gives `403 demo_account_restricted` (or the documented refusal) and the database snapshot is unchanged; `logout` works; magic link, tokens and OAuth never reach the demo user; the database triggers still refuse direct changes.

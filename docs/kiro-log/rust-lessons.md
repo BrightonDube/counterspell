@@ -931,3 +931,8 @@ A `BTreeMap` keyed by size matches the two series by size regardless of input or
 - Keeping a password hash inside a token's JSON payload means nothing is stored until the mailbox is proven. The payload is read only after the token is consumed.
 - `if let Some((id, false)) = account` matches a tuple and a literal in one pattern. Only an ordinary account gets mail, and the same `202` is returned either way.
 - The unique email constraint is the final guard. A racing registration gets a database error, and `is_unique_violation` maps it to `account_exists`, so no check-then-insert race exists.
+
+# Rust lesson: auth T27
+- A `pub const` list of route paths next to the router gives one place to check. A test sends a request to each path and fails with a clear message if a route is missing, so a route added in one place and not the other is caught.
+- A `snapshot` function returns a tuple of counts. Comparing two tuples with `assert_eq!` checks that a restricted request changed nothing, and a failure prints both values.
+- A database trigger guards the demo row even when a test uses the superuser pool. The test confirms that the trigger, not the application, refuses the change.
