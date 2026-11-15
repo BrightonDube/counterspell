@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+# Nightly encrypted backup of the counterspell database (deploy-ops T16, R8.1 to R8.7).
+#
+# pg_dump writes to a pipe, age encrypts it, and only the encrypted file reaches disk. The server
+# never holds the age identity (the private key); only the public recipient is configured here.
+# Keeps the 7 newest local dumps, uploads to object storage with a bucket-scoped key, and pings
+# Healthchecks with success or failure. A failed step keeps the older dumps.
+#
+# Configuration comes from /etc/counterspell/backup.env (root, 0644): AGE_RECIPIENT, BACKUP_BUCKET,
+# RCLONE_CONFIG, HC_SUCCESS_URL, HC_FAIL_URL. None of these is a secret; the rclone config is.
+set -euo pipefail
+umask 077
+
+APP_DIR="${COUNTERSPELL_DIR:-/opt/counterspell}"
+BACKUP_DIR="${BACKUP_DIR:-/var/backups/counterspell}"
+KEEP="${BACKUP_KEEP:-7}"
+RCLONE_CONFIG="${RCLONE_CONFIG:-/etc/counterspell/rclone.conf}"
+DUMPS="$BACKUP_DIR/dumps"
+MANIFESTS="$BACKUP_DIR/manifests"
+COMPOSE=(docker compose --project-directory "$APP_DIR" -f "$APP_DIR/docker-compose.yml" -f "$APP_DIR/compose.prod.yml" --env-file "$APP_DIR/deploy.env")
+
+finished=0
+
+log() { logger -t counterspell-backup -- "$*" 2>/dev/null || true; echo "$*"; }
+
+# Pings a Healthchecks URL. An empty URL is skipped, so local tests can run without one.
+ping_hc() {
+  if [[ -n "${1:-}" ]]; then
+    curl -fsS -m 10 --retry 3 -o /dev/null "$1" || true
+  fi
+}
+
+# On any failure, ping the failure URL once. A successful run pings success before it exits.
+on_exit() {
+  local status=$?
+  rm -f -- "$DUMPS"/*.partial 2>/dev/null || true
+  if ((status != 0 || finished == 0)); then
+    ping_hc "${HC_FAIL_URL:-}"
+  fi
+}
+trap on_exit EXIT
+
+# Streams pg_dump through age into the file given as $1. The plaintext never touches the disk.
+dump_encrypted() {
+  "${COMPOSE[@]}" exec -T postgres \
+    pg_dump --format=custom --no-owner --no-privileges --username=counterspell counterspell \
+    | age -r "$AGE_RECIPIENT" > "$1"
+}
+
+# Prints "<table> <count>" lines and the latest migration version, for the monthly drill (R8.9).
+counts() {
+  "${COMPOSE[@]}" exec -T postgres psql --username=counterspell --dbname=counterspell -At -F ' ' -c \
+    "SELECT 'users', count(*) FROM users
+     UNION ALL SELECT 'submissions', count(*) FROM submissions
+     UNION ALL SELECT 'jobs', count(*) FROM jobs
+     UNION ALL SELECT 'run_events', count(*) FROM run_events
+     UNION ALL SELECT 'migration', coalesce(max(version), 0) FROM _sqlx_migrations"
+}
+
+# Writes the manifest for one dump: its SHA-256 line, then the counts.
+write_manifest() {
+  local name="$1"
+  local manifest="$MANIFESTS/$name.manifest"
+  (cd "$DUMPS" && sha256sum -- "$name.dump.age") > "$manifest"
+  counts >> "$manifest"
+}
+
+# Keeps the KEEP newest dumps. Names carry a UTC timestamp, so a reverse name sort is newest first.
+prune() {
+  local -a dumps
+  mapfile -t dumps < <(find "$DUMPS" -maxdepth 1 -name 'counterspell-*.dump.age' -printf '%f\n' | sort -r)
+  local old
+  for old in "${dumps[@]:KEEP}"; do
+    rm -f -- "$DUMPS/$old" "$MANIFESTS/${old%.dump.age}.manifest"
+    log "pruned $old"
+  done
+}
+
+upload() {
+  rclone copy --config "$RCLONE_CONFIG" "$DUMPS" "$BACKUP_BUCKET/dumps" \
+    && rclone copy --config "$RCLONE_CONFIG" "$MANIFESTS" "$BACKUP_BUCKET/manifests"
+}
+
+main() {
+  : "${AGE_RECIPIENT:?AGE_RECIPIENT is not set (public age recipient, backup.env)}"
+  : "${BACKUP_BUCKET:?BACKUP_BUCKET is not set (rclone remote and bucket path)}"
+  mkdir -p "$DUMPS" "$MANIFESTS"
+
+  local name partial final
+  name="counterspell-$(date -u +%Y%m%dT%H%M%SZ)"
+  partial="$DUMPS/$name.dump.age.partial"
+  final="$DUMPS/$name.dump.age"
+
+  dump_encrypted "$partial"
+  mv -- "$partial" "$final"
+  write_manifest "$name"
+  prune
+
+  if ! upload; then
+    log "upload failed; the local encrypted dump $name is kept"
+    exit 1
+  fi
+  ping_hc "${HC_SUCCESS_URL:-}"
+  finished=1
+  log "backup $name complete"
+}
+
+main "$@"

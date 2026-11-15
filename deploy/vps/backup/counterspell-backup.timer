@@ -1,0 +1,10 @@
+[Unit]
+Description=Nightly Counterspell backup at 01:30 UTC (03:30 SAST)
+
+[Timer]
+OnCalendar=*-*-* 01:30:00 UTC
+Persistent=true
+Unit=counterspell-backup.service
+
+[Install]
+WantedBy=timers.target
