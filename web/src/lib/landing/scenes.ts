@@ -76,11 +76,8 @@ function buildTimelines(gsap: GsapLike, plan: LandingPlan, root: Element): void 
 	}
 
 	if (plan.layers.moon) {
-		gsap.fromTo(
-			'.layer-moon',
-			{ opacity: 0, scale: 1.04 },
-			{ opacity: 1, scale: 1, duration: 1.6, ease: 'sine.inOut' }
-		);
+		// A slow push-in on the poster. No opacity change, so the poster (the LCP image) is never hidden.
+		gsap.to('.layer-moon', { scale: 1.03, duration: 12, ease: 'sine.inOut' });
 	}
 
 	if (plan.layers.far) {
