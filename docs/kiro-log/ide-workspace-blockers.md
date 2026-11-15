@@ -79,3 +79,11 @@ No new task was completed in this pass. Checked tasks in `tasks.md`: T01, T03, T
 - **T24 to T27:** deferred: E2E.
 - **T28:** blocked on judge-sandbox (0 of 56 done), language-drivers (0 of 27) and hints (0 of 29), and it needs services not available here.
 - **Brighton questions unchanged:** the Ctrl/Cmd+Enter override inside Monaco, the `adapter({ fallback: 'index.html' })` change in `web/vite.config.js`, and the font approval.
+
+## Attempt 7 update (15 Nov 2026, non-interactive resume)
+
+- **T05 done (commit 71d8ef1).** The font approval is in Brighton's standing decisions (14 Nov 2026), so the earlier "blocked on Brighton" note is superseded. Geist (npm `geist` 1.9.2, OFL-1.1) and JetBrains Mono (`@fontsource/jetbrains-mono` 5.3.0, OFL-1.1) are pinned with `--save-exact` and self-hosted through `web/src/app.css`. The Geist @font-face points at the package's `Geist-Variable.woff2`. JetBrains Mono weights 400 to 700 are imported. Both are recorded in `THIRD-PARTY-NOTICES.md`. Tests: `web/src/app.fonts.test.js` (3 tests). Gate: `npm run check` (0 errors), `npm test` (40 files pass), `npm run build` (exit 0, woff2 files emitted).
+- **Security note from install.** `npm install` printed a suggestion to run `npm audit fix --force`. I did not run it, because a forced major upgrade is outside this task. Brighton to review `npm audit` separately.
+- **Still blocked, unchanged:** T02 (needs the problems and ghosts tables), T13, T18 and T20 (run-lifecycle T29 to T31 are unchecked, and `GET /api/problems/{slug}`, `GET /api/languages` and the Familiar routes are not in `crates/server/src/lib.rs`), and T28 (judge-sandbox, language-drivers and hints are not done).
+- **Partial, left unchecked:** T09, T15, T17, T21, T22, T23. Their remaining checks are browser or visual checks, which rule 7 defers as E2E.
+- **Deferred: E2E:** T24, T25, T26, T27.
