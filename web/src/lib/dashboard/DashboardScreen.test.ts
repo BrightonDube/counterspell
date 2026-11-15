@@ -14,7 +14,7 @@ const emptyView = parseDashboard({
   suggested_challenges: []
 });
 
-const populatedView = parseDashboard({
+const populatedRaw = {
   solved: { total: 1, by_difficulty: { easy: 1, medium: 0, hard: 0 } },
   streak: {
     current_days: 2,
@@ -70,7 +70,9 @@ const populatedView = parseDashboard({
       reason: 'practice_weak_concept'
     }
   ]
-});
+};
+
+const populatedView = parseDashboard(populatedRaw);
 
 function signedOut(): ApiRequestError {
   return new ApiRequestError(
@@ -174,5 +176,63 @@ describe('DashboardScreen', () => {
     ).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Try again' })).toBeTruthy();
     expect(screen.queryByText('No practice yet')).toBeNull();
+  });
+
+  // Breaks if the loading state has no decorative lantern, or the lantern lacks an explicit size and empty alt text.
+  it('shows the orange lantern as decoration with explicit size while loading', () => {
+    const { container } = render(DashboardScreen, {
+      props: { load: () => new Promise<DashboardView>(() => {}) }
+    });
+    const image = container.querySelector('img');
+    expect(image?.getAttribute('src')).toBe(
+      '/art/familiar/jack-o-lantern-orange.webp'
+    );
+    expect(image?.getAttribute('alt')).toBe('');
+    expect(image?.getAttribute('width')).toBe('96');
+    expect(image?.getAttribute('height')).toBe('96');
+  });
+
+  // Breaks if the no-activity state shows no friendly lantern, or uses the celebration lantern for an empty state.
+  it('uses the orange lantern on the empty state', async () => {
+    const { container } = render(DashboardScreen, {
+      props: { load: async () => emptyView }
+    });
+    await screen.findByText('No practice yet');
+    expect(container.querySelector('img')?.getAttribute('src')).toBe(
+      '/art/familiar/jack-o-lantern-orange.webp'
+    );
+  });
+
+  // Breaks if the poison lantern (reserved for success) appears on a run that was not accepted.
+  it('uses the poison lantern only when the newest run was accepted', async () => {
+    const accepted = parseDashboard({
+      ...structuredClone(populatedRaw),
+      recent_submissions: [
+        {
+          ...structuredClone(populatedRaw.recent_submissions[0]),
+          verdict: 'accepted'
+        }
+      ]
+    });
+    const { container } = render(DashboardScreen, {
+      props: { load: async () => accepted }
+    });
+    await screen.findByText('Recent runs');
+    const sources = Array.from(container.querySelectorAll('img')).map((image) =>
+      image.getAttribute('src')
+    );
+    expect(sources).toContain('/art/familiar/jack-o-lantern-poison.webp');
+  });
+
+  // Breaks if a failed newest run still shows the celebration lantern.
+  it('does not show the poison lantern when the newest run was not accepted', async () => {
+    const { container } = render(DashboardScreen, {
+      props: { load: async () => populatedView }
+    });
+    await screen.findByText('Recent runs');
+    const sources = Array.from(container.querySelectorAll('img')).map((image) =>
+      image.getAttribute('src')
+    );
+    expect(sources).not.toContain('/art/familiar/jack-o-lantern-poison.webp');
   });
 });

@@ -78,7 +78,16 @@
   <h1 id="dashboard-title" class="text-2xl font-semibold">Dashboard</h1>
 
   {#if phase.kind === 'loading'}
-    <p role="status" class="text-text-muted">Loading dashboard</p>
+    <div class="flex items-center gap-4">
+      <img
+        src="/art/familiar/jack-o-lantern-orange.webp"
+        width="96"
+        height="96"
+        alt=""
+        class="h-24 w-24 shrink-0"
+      />
+      <p role="status" class="text-text-muted">Loading dashboard</p>
+    </div>
   {:else if phase.kind === 'signed_out'}
     <div class="space-y-3">
       <p class="text-text-muted">
@@ -104,11 +113,20 @@
     {@const view = phase.view}
 
     {#if hasNoActivity(view)}
-      <div class="space-y-3 border-t border-border pt-6">
-        <h2 class="text-lg font-semibold">No practice yet</h2>
-        <p class="text-text-muted">
-          Run a problem to see your solved count, streak and recent runs here.
-        </p>
+      <div class="flex items-start gap-4 border-t border-border pt-6">
+        <img
+          src="/art/familiar/jack-o-lantern-orange.webp"
+          width="96"
+          height="96"
+          alt=""
+          class="h-24 w-24 shrink-0"
+        />
+        <div class="space-y-3">
+          <h2 class="text-lg font-semibold">No practice yet</h2>
+          <p class="text-text-muted">
+            Run a problem to see your solved count, streak and recent runs here.
+          </p>
+        </div>
       </div>
     {/if}
 
@@ -117,6 +135,18 @@
       aria-labelledby="solved-title"
     >
       <h2 id="solved-title" class="text-lg font-semibold">Solved</h2>
+      {#if view.recentSubmissions[0]?.verdict === 'accepted'}
+        <div class="flex items-center gap-3">
+          <img
+            src="/art/familiar/jack-o-lantern-poison.webp"
+            width="48"
+            height="48"
+            alt=""
+            class="h-12 w-12 shrink-0"
+          />
+          <p class="text-text">Your newest run was accepted.</p>
+        </div>
+      {/if}
       <p class="text-3xl font-semibold tabular-nums">
         {view.solved.total}
         <span class="text-base font-normal text-text-muted">problems</span>
