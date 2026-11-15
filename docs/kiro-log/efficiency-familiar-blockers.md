@@ -88,3 +88,46 @@ Other notes:
 - T15 migration fix: the NULL-safety fix to `submissions_familiar_ck` was made in place (migration not yet deployed). Recorded in the review queue.
 - T21 `store.rs` was written before its tests, which departs from red-first. The tests were written after and pass.
 - T28 tests pass; `npm run check` is clean.
+
+## Run 4 (15 Nov 2026, continuation): what changed and what is still open
+
+Postgres (`cs-dev-pg`) and Valkey are running, so the `pg_` tests ran this time. The earlier "no database" blocker is cleared.
+
+Ticked this run (each with its verification passing in this session): T29, T30, T31, T32, T33, T35, T36.
+
+Still unticked, with the reason:
+
+| Task | Reason | Unblock |
+|---|---|---|
+| T20 | Canary and restart tests not written; executor wiring needs the language-drivers collector (T08/T09); `pg_` cases need T23. The canary cannot be tested at `measure_run` because its inputs carry no hidden data, so the check belongs in T43. | language-drivers T08/T09, T23, T43. |
+| T22, T25 | Need the judge-sandbox runner and language-drivers bench. | language-drivers T08 and judge runner. |
+| T23 | Read-model `complexity` and `familiar` sections need the headline and badge text. The store keeps neither the reason code nor the headline, and the SSE endpoint (run-lifecycle T29) is not routed. | Decide whether to store the reason code and rebuild the headline with `words::headline` (a design decision, so I did not make it), and run-lifecycle T29. |
+| T24 | The bench-size warning (R13.4) needs a new warning code (`BEN-02`) and a change to the codes test. | Brighton approves `BEN-02` and the test change. |
+| T34 | The explainer reads the `complexity` section that T23 defines. | T23. |
+| T37 to T39 | Need `hints::ai::generate(Kind::Familiar)`, the `hints` table and Valkey. The hints module is not in `crates/server` yet. | Hints spec implementation. |
+| T38 | Needs T37. | T37. |
+| T40, T41 | Need language-drivers, the judge runner, the VPS and Brighton's admission run. | VPS run by Brighton. |
+| T42 | E2E in the browser, deferred under the standing rule. | Deferred: E2E. |
+| T43 to T45 | Depend on the items above. T44 and T45 follow them. | As above. |
+| T46 to T48 | Stretch, skipped. | Stretch. |
+
+Manual check for T30 (`npm run dev` with the placeholder art): deferred. It is a browser check, so it is not a unit test.
+
+## Deviations this run (for Brighton to review)
+
+1. **Test-first gap.** `prefs.rs`, `claims.rs` and `prompt.rs` were written with their tests in the same change, so the red step was not seen for those pure modules. The HTTP tests in `familiar_prefs.rs` were seen failing (404) before the handler existed.
+2. **T30 crossfade.** The mood change crossfade also loads GSAP, when the result is live and motion is allowed. The design says GSAP loads only for planned bursts. I kept it because the design lists the crossfade as a timeline. Revert it if you want GSAP for bursts only.
+3. **T29 glow.** The glow uses CSS `color-mix()` on palette variables, not JavaScript mixing. No hex value appears in components.
+4. **T29 `failed` prop.** Added beyond the design's prop list, because the design's text-colour rule needs to know a run failed.
+5. **T36 P18.** Implemented as an exhaustive hand-derived table (one form per class), not as a generated-sentence property test.
+6. **T32 demo test.** The database refuses to make an existing account the demo account, so the test creates the demo row inside the seeding transaction (`counterspell.demo_seed`). This is the sanctioned seeding path, and the guard is unchanged.
+7. **`enforce` made `pub(crate)`** in `runs/create.rs` so the prefs route reuses the rate-limit helper.
+8. **Support helper.** `patch()` added to `crates/server/tests/support/mod.rs` next to `post()`.
+
+## Minor review findings (not fixed; for hand-off)
+
+- `applyRestarted(_state)` ignores its argument, which is intentional for a uniform reducer signature.
+- `Mascot.svelte`: `drawArt` swallows errors on purpose (missing art leaves the badge only). A debug log would help later.
+- `prompt.rs`: `neutralise_markers` edits the learner's code text inside the prompt (`<<<` becomes `< < <`). The model sees a slightly different string. Acceptable, but the user never sees this text.
+- `claims.rs`: "linear" in "linear search" counts as a class claim (strict by design, per the design).
+- `api.rs`: the PATCH response reads the merged row back, so a row changed by another request is shown with its latest values.
