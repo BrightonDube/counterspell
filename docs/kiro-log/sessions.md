@@ -179,3 +179,19 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-15T00:17:47Z | model: not reported | last commit: 1303437 auth T33 (partial): wire auth into the server, cleanup, compose env; Caddy and manual run pending
+ | diff stat:
+ docs/KIRO_USAGE.md                 | 4 ++++
+ docs/kiro-log/auth-review-queue.md | 6 ++++++
+ docs/kiro-log/sessions.md          | 2 ++
+ 3 files changed, 12 insertions(+)
+- 2026-11-15T00:52:11Z | model: not reported | last commit: 2c0ab1d auth: record T08, T34, T35, T33 progress, blockers and review queue
+ | diff stat:
+ docs/KIRO_USAGE.md        | 8 ++++++++
+ docs/kiro-log/sessions.md | 8 ++++++++
+ 2 files changed, 16 insertions(+)
+- 2026-11-15T00:55:02Z | model: not reported | last commit: f46cbc4 auth: record attempt 9 blockers (no database in shell; T33-T37 status)
+ | diff stat:
+ docs/KIRO_USAGE.md        | 12 ++++++++++++
+ docs/kiro-log/sessions.md | 13 +++++++++++++
+ 2 files changed, 25 insertions(+)

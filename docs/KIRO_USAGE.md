@@ -265,3 +265,19 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-15 00:18-00:20 SAST: 24-language-drivers-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-language-drivers-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0018-24-language-drivers-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.53 (credits used now 3153.87/4000).
+
+### 2026-11-15 00:52-01:28 SAST: 25-auth-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a1.md`. Transcript: `docs/kiro-log/2026-11-15T0052-25-auth-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 17.34 (credits used now 3171.21/4000).
+
+### 2026-11-15 01:28-02:17 SAST: 25-auth-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a2.md`. Transcript: `docs/kiro-log/2026-11-15T0128-25-auth-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 25.44 (credits used now 3196.65/4000).
+
+### 2026-11-15 02:18-02:52 SAST: 25-auth-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a3.md`. Transcript: `docs/kiro-log/2026-11-15T0218-25-auth-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 15.09 (credits used now 3211.74/4000).
+
+### 2026-11-15 02:52-02:55 SAST: 25-auth-implement-a4 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-auth-a4.md`. Transcript: `docs/kiro-log/2026-11-15T0252-25-auth-implement-a4.log`. Exit 0.
+- Credits used (from /usage): 1.80 (credits used now 3213.54/4000).
