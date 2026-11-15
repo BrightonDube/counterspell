@@ -125,3 +125,10 @@ The licence decision for `reqwest` and `oauth2` was approved on 14 Nov 2026 (`we
 ## Efficiency Familiar web dependencies (efficiency-familiar T26)
 
 - **gsap 3.15.1** — GreenSock (Webflow) — GSAP "Standard No Charge" licence (proprietary, commercial use allowed; accepted exception in `docs/licence-rules.md`). npm dependency only; the source is not vendored. Used only by the landing page and the Familiar. <https://www.npmjs.com/package/gsap> · <https://gsap.com/standard-license>
+
+## Web font dependencies (ide-workspace T05)
+
+Approved by Brighton in the standing decisions (14 Nov 2026). Fonts are self-hosted from the pinned packages and bundled at build time. No CDN is used.
+
+- **geist 1.9.2** — Vercel — OFL-1.1 (Geist sans, `Geist-Variable.woff2`, loaded in `web/src/app.css`) — <https://github.com/vercel/geist-font/blob/main/LICENSE.txt>
+- **@fontsource/jetbrains-mono 5.3.0** — JetBrains, packaged by Fontsource — OFL-1.1 (weights 400, 500, 600, 700, imported in `web/src/app.css`) — <https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt>
