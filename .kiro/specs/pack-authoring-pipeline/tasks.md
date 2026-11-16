@@ -134,7 +134,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: `pipeline_checklist` passes on the real file. A fixture checklist with a missing category fails the test.
   - Rust lesson: parsing text with `str::lines` and `split_once` is simple and explicit for a file this size. Explain why a full parser library would be more than the task needs.
 
-- [ ] **PA11 [P] (30 min) Author checklist and authoring skill**
+- [x] **PA11 [P] (30 min) Author checklist and authoring skill**
   - Files: `.kiro/pipeline/checklists/author.md`, `.kiro/skills/grimoire-pack-authoring/SKILL.md`. Add a line for the skill in `.kiro/skills/SOURCES.md` marked original, MIT.
   - The skill covers: original wording (PIP-3), supported types (`int`, `str`, `list[int]`, `list[list[int]]`), statement rules (STM-03, "integer"), at least eight curated hidden cases, two or more realistic ghosts with hand-traced `got` values, four general hints (rung 4 is a near-solution step), `complexity_note` with time and space, and the self-review checklist to fill in.
   - Requirements: PIP-9 to PIP-15, PIP-3.

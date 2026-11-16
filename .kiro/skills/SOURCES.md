@@ -12,6 +12,7 @@ Every file below was read before vendoring. None makes network calls or asks for
 | receiving-code-review | https://github.com/obra/superpowers/tree/main/skills/receiving-code-review | 22f0b463e7a5e579904dd6211a520321035526f7 | MIT (c) 2025 Jesse Vincent |
 | svelte-core-bestpractices | https://github.com/sveltejs/ai-tools/tree/main/tools/skills/svelte-core-bestpractices | d3e755be770277d8c75fe61109b103b801b12775 | MIT (c) 2026 Svelte Contributors |
 | impeccable | https://github.com/pbakaus/impeccable/tree/skill-v4.9.1/.kiro/skills/impeccable | acb4cfe14470b1fdf51e855431af618d936b7db8 (tag skill-v4.9.1, vendored 2026-11-15) | Apache 2.0 (c) 2025 Paul Bakaus; NOTICE.md retained (based on Anthropic frontend-design skill) |
+| grimoire-pack-authoring | Original, written for Counterspell (pack-authoring-pipeline PA11) | not vendored | MIT (project original) |
 
 Omitted from impeccable: upstream `scripts/` (launcher, live-browser JS, font index, and a binary the launcher would download on first run), so this install makes no network calls and adds no npm dependencies. Do not run `npx impeccable`.
 
