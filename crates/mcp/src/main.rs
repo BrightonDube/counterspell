@@ -4,7 +4,7 @@
 //! A missing or refused sandbox endpoint leaves the pure tools running and makes the
 //! code-running tools fail closed.
 
-use counterspell_mcp::config::SANDBOX_SOCKET_VAR;
+use counterspell_mcp::config::{workspace_root, SANDBOX_SOCKET_VAR};
 use counterspell_mcp::judge_adapter::python_image_digest;
 use counterspell_mcp::runner::{production_slot, RunnerSlot};
 use counterspell_mcp::server::CounterspellServer;
@@ -30,9 +30,11 @@ async fn main() -> ExitCode {
 
 /// Starts the service and waits until the client closes the connection.
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let root = match std::env::var(WORKSPACE_VAR) {
-        Ok(text) => PathBuf::from(text),
-        Err(_) => std::env::current_dir()?,
+    let root = if let Ok(text) = std::env::var(WORKSPACE_VAR) {
+        PathBuf::from(text)
+    } else {
+        let current = std::env::current_dir()?;
+        workspace_root(&current).unwrap_or(current)
     };
     let socket = std::env::var(SANDBOX_SOCKET_VAR).ok();
     let slot = production_slot(socket.as_deref()).unwrap_or_else(|error| {

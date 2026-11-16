@@ -89,14 +89,14 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T01 and T07.
   - Verify: clean-checkout JSON/schema validation and Kiro custom-Power import test.
 
-- [ ] **T12 [P] (25 min) Write the problem-authoring skill**
+- [x] **T12 [P] (25 min) Write the problem-authoring skill**
   - Files: `kiro-power/skills/author-problem/SKILL.md`.
   - Document original-content rules, Grimoire layout, schema/generator/reference/hints, static-first validation, explicit approval for execution, and sandbox-only code execution.
   - Preserve: no host execution instructions and no copied third-party problem text.
   - Depends on: T04 and T11.
   - Verify: skill references the six canonical tools accurately and is usable from a clean checkout.
 
-- [ ] **T13 [P] (25 min) Write the ghost-hunting skill**
+- [x] **T13 [P] (25 min) Write the ghost-hunting skill**
   - Files: `kiro-power/skills/hunt-ghost/SKILL.md`.
   - Document reproduce → find → inspect → explain → fix → validate → re-hunt, honest minimized-counterexample language, and explicit approval for code-running tools.
   - Preserve: never claim global minimality and never instruct Kiro to run pack code directly.
