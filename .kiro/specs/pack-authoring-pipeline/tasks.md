@@ -158,14 +158,14 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: the same JSON test as PA12, extended to assert the author cannot write `docs/pack-reviews/`.
   - Rust lesson: none.
 
-- [ ] **PA14 [P] (25 min) One-page review summary template and an example**
+- [x] **PA14 [P] (25 min) One-page review summary template and an example**
   - Files: `.kiro/pipeline/templates/review-summary.md`, `docs/pack-reviews/README.md`.
   - Sections: what the problem asks (plain words), why it tests real skill, what the ghost shows, what could still be wrong, the seven scores in words, and the decisions Brighton must make. The template has no field for hidden values. Use `count-pairs` only as the example format, not as a review.
   - Requirements: PIP-27, PIP-42.
   - Depends on: PA00.
   - Verify: PA15's hidden-data scan passes on the template and README.
 
-- [ ] **PA15 [S] [SUPERVISED] (30 min) Review digest and routing script**
+- [x] **PA15 [S] [SUPERVISED] (30 min) Review digest and routing script**
   - Files: `scripts/pack-review-digest.sh`, `scripts/tests/pack-review-digest-test.sh`.
   - Build the reviewer's input for one slug from the assembled tree, the checklist and the S9 to S11 reports. Write the output to a private location (`target/pack-review/<slug>/`, outside the repo) when hidden files are included. Write only the public-safe summary to `docs/pack-reviews/`. Run a scan (`SUM-01`) for any hidden pointer, canary or private file name in the summary.
   - Requirements: PIP-27, PIP-32, P2.
