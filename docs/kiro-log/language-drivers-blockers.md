@@ -124,3 +124,6 @@ A local rootless Docker daemon is now running (see `deploy/sandbox-verification.
   2. Then T03 starts as RED: a Python protocol fixture (scalar, list, nested list, bool, string, null, exception, invalid output, repeated calls) run through that executor.
   3. T04 follows the same pattern for `driver.js`, which also unblocks T05 and the enabled JavaScript entry in `languages/languages.toml` (the loader currently fails on the missing drivers).
 - **Still needs Brighton:** starter pack review before T10 fixtures for published packs (grimoire-packs T28).
+
+## 16 Nov 2026 03:15 SAST: images now on the sandbox daemon
+The pinned Python and Node images are pulled onto the rootless sandbox daemon, and the Node digest is pinned (see brighton-decisions.md, 16 Nov 03:15). The image blockers above are cleared; rerun the sbx_ tests.

@@ -121,3 +121,6 @@ T02 and T37 stay open for the real VPS. The 15 Nov 00:55 signature-type decision
 - T22 onward depend on T21's real-daemon results or on `sbx_` runs. The judge-sandbox work continues with the fake-backend parts.
 
 - **T22 partly done (16 Nov 2026).** `crates/judge/src/sandbox/preflight.rs` holds the pure evaluation: 12 checks, `parse_size`, and `tests/model_preflight.rs` (5 tests, including a mutation test that weakens each control and expects exactly its own check to fail). Still to do before the task can be ticked: the probe runner that starts the probe container and runs the five commands, the `PreflightState` with its 60 s refresh, the `counterspell-judge preflight` subcommand, and the `sbx_preflight_*` tests. Those need a real probe run, so they wait on the pinned image on the sandbox daemon.
+
+## 16 Nov 2026 03:15 SAST: images now on the sandbox daemon
+The pinned Python and Node images are pulled onto the rootless sandbox daemon, and the Node digest is pinned (see brighton-decisions.md, 16 Nov 03:15). The image blockers above are cleared; rerun the sbx_ tests.
