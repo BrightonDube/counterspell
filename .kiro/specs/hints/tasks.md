@@ -118,7 +118,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: counters only. No Valkey stream, list or pub/sub is used.
   - Rust lesson: `async` error handling with `?`; why each Valkey command is atomic and what that means for two clients.
 
-- [ ] **H10 [S] (35 min) Migration `…_hints_core.sql` and privileges**
+- [x] **H10 [S] (35 min) Migration `…_hints_core.sql` and privileges**
   - Files: `migrations/<timestamp>_hints_core.sql`.
   - Create `problem_hints` and `hints` exactly as in the design, using the guarded foreign key pattern for `submissions` and `users`. Grant the server role `SELECT` on `problem_hints`, and `SELECT`, `INSERT` on `hints`. Grant nothing to the judge role.
   - Requirements: R1.1, R7.1, R10.2; privileges from the design.
