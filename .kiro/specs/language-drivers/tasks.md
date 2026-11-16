@@ -64,7 +64,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: a JavaScript bench run records raw samples, computes medians for points, stops within 1.5 seconds/three sizes for Run and 4 seconds/five-to-six sizes for Submit, and cleans up on timeout.
   - Preserve: the driver emits no timing; expected outputs and complexity classification remain outside the driver.
 
-- [x] **T09 [P] (25 min) Persist and publish bench measurements safely**
+- [ ] **T09 [P] (25 min) Persist and publish bench measurements safely**
   - Files: the existing judge run-timing/event integration modules and tests; only the migrations already owned by the run-lifecycle design if required.
   - Persist `run_timings` rows and emit `bench_start`, `bench_point`, `complexity`, and `familiar` through the existing Postgres `run_events` path, with only public fields.
   - Depends on: T08 and run-lifecycle event persistence.

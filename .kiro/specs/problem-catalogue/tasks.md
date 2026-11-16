@@ -221,7 +221,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_validate_sandbox` (static-only version becomes publishable after validation; a second call refuses with no write).
   - Rust lesson: the refusal is a value in the report, not a panic, so the operator sees the reason in the same output format as every other command.
 
-- [x] **C19 [S] (30 min) CLI binary and exit codes**
+- [ ] **C19 [S] (30 min) CLI binary and exit codes**
   - Files: `crates/judge/src/bin/counterspell-catalogue.rs`, `crates/judge/src/catalogue/mod.rs`, `crates/judge/Cargo.toml` (`[[bin]]` entry and the `counterspell-grimoire` dependency, X9).
   - Parse arguments with `std::env::args` only (no clap, as in grimoire). `--private-root <path>` is required for every command that reads packs. Run the preflight (C08a) before any database connection, so a missing or unreadable root exits 2 without connecting. Map outcomes to exit codes: 0 all created or unchanged; 1 any refusal or failure; 2 usage, missing runner (`SBX-07`) or infrastructure. Read `CATALOGUE_DATABASE_URL` only here.
   - Requirements: CAT-I1, CAT-I21, CAT-R5, CAT-PT2, CAT-PT4.
