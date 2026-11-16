@@ -177,7 +177,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
 
 ## Wave 3: guards and credentials
 
-- [ ] **PA16 [S] [SUPERVISED] (30 min) Publish guard script and extended pack-validate hook**
+- [x] **PA16 [S] [SUPERVISED] (30 min) Publish guard script and extended pack-validate hook**
   - Files: `scripts/kiro-hooks/pack-publish-guard.sh`, `scripts/tests/pack-publish-guard-test.sh`, and the extended `scripts/kiro-hooks/pack-validate.sh`.
   - The guard reads the hook's JSON on stdin. It blocks (exit 2 with a reason) a write that sets `status = "published"` in any `packs/*/meta.toml`, or that touches any `approval.toml`. It also extends the dangerous-shell guard so that `python`, `python3` or `node` on a path under `packs/` or `target/pack-assembly/` is refused. Allow ordinary edits.
   - Requirements: PIP-1, PIP-38, PIP-43, P1, P9.
