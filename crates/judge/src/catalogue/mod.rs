@@ -9,6 +9,7 @@ pub mod load;
 pub mod manifest;
 pub mod plan;
 pub mod private_tree;
+pub mod publish;
 pub mod report;
 pub mod retired;
 pub mod sandbox_fill;

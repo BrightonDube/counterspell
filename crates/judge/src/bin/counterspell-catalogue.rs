@@ -24,6 +24,7 @@ use counterspell_judge::catalogue::discover::{
 use counterspell_judge::catalogue::load::{assemble_import, assemble_sandbox, read_pack};
 use counterspell_judge::catalogue::plan::{Plan, Refusal};
 use counterspell_judge::catalogue::private_tree::{preflight, RootState};
+use counterspell_judge::catalogue::publish::{self, PublishOutcome, UnpublishOutcome};
 use counterspell_judge::catalogue::report::{Outcome, PackReport};
 use counterspell_judge::catalogue::retired::{parse_retired, RetiredFile};
 use counterspell_judge::catalogue::sandbox_fill::{validate_sandbox, ValidateOutcome};
@@ -279,14 +280,54 @@ async fn run(options: &Options) -> ExitCode {
     match options.command {
         Command::Import => run_import(options).await,
         Command::ValidateSandbox => run_validate(options).await,
+        Command::Publish => run_publish(options).await,
+        Command::Unpublish => run_unpublish(options).await,
         command => {
             eprintln!(
-                "counterspell-catalogue: `{}` is implemented under C21/C22",
+                "counterspell-catalogue: `{}` is implemented under C22",
                 command.name()
             );
             ExitCode::from(EXIT_USAGE)
         }
     }
+}
+
+/// `publish <slug> [--version <n>]` (C21): a database-only command — it reads
+/// no pack trees, so it takes no `--private-root` (CAT-PT2 scopes the gate to
+/// pack-reading commands).
+async fn run_publish(options: &Options) -> ExitCode {
+    let slug = options.slug.clone().unwrap_or_default();
+    let pool = match connect().await {
+        Ok(pool) => pool,
+        Err(code) => return code,
+    };
+    let report = match publish::publish(&pool, &slug, options.version, &operator()).await {
+        Ok(PublishOutcome::Published { version }) => {
+            report(&slug, Outcome::Created, Some(version), None)
+        }
+        Ok(PublishOutcome::Refused { code }) => refused(&slug, code),
+        Ok(PublishOutcome::GateRefused { check }) => refused(&slug, &check),
+        Err(_) => failed(&slug, "publish_error"),
+    };
+    print_reports(std::slice::from_ref(&report), options.json);
+    exit_code_for(&[report]).into()
+}
+
+/// `unpublish <slug>` (C21): idempotent; a second run reports
+/// `already_unpublished` and writes no event.
+async fn run_unpublish(options: &Options) -> ExitCode {
+    let slug = options.slug.clone().unwrap_or_default();
+    let pool = match connect().await {
+        Ok(pool) => pool,
+        Err(code) => return code,
+    };
+    let report = match publish::unpublish(&pool, &slug, &operator()).await {
+        Ok(UnpublishOutcome::Unpublished) => report(&slug, Outcome::Created, None, None),
+        Ok(UnpublishOutcome::Refused { code }) => refused(&slug, code),
+        Err(_) => failed(&slug, "unpublish_error"),
+    };
+    print_reports(std::slice::from_ref(&report), options.json);
+    exit_code_for(&[report]).into()
 }
 
 /// The pre-database gate for every command that reads packs (CAT-PT2):
