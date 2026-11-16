@@ -1380,3 +1380,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `INSERT ... ON CONFLICT DO NOTHING` followed by a `SELECT` in one transaction gives an "insert once" write. A second request waits for the first commit, then reads the winner's row, so no caller sees a row that was never stored.
 - `sqlx::query_as` with a tuple type maps each column by position. `fetch_optional` returns `Option`, so "no row" is a normal value and the handler can answer `404` for it.
 - Casting a `jsonb` column to `text` in SQL (`input::text`) lets the Rust side hold it as a `String`, so no JSON type is needed in the store.
+
+# Rust lesson: hints H12
+
+- `generate` is the only function that spends money. Every return path goes through it, so the reserve, settle and release steps cannot be skipped by a new caller.
+- `let ... else` takes the success value or returns early in one line, which is clearer than a `match` with a single useful arm.
+- A generic `Deps<'a, T: ChatTransport>` lets production pass the HTTP transport and tests pass the scripted one, with no `dyn` and no runtime cost.

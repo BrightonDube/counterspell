@@ -136,7 +136,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: every query filters by `user_id` or the submission owner; no query returns a hidden expected output.
   - Rust lesson: transactions and `ON CONFLICT` as a race-free "insert once" tool.
 
-- [ ] **H12 [S] (40 min) AI generation pipeline `ai.rs`**
+- [x] **H12 [S] (40 min) AI generation pipeline `ai.rs`**
   - Files: `crates/server/src/hints/ai.rs`.
   - `generate(state, user, submission, kind, prompt)` in the order given in the design: check enabled, reserve, build prompt, run chain with timeouts, guard, cost, settle or release, return `Generated`. `AiError` covers `Disabled`, `CapReached`, `Unavailable`, `QuotaUnavailable`.
   - Requirements: R2.3, R2.6, R4, R5, R6, R7.2, R7.3, R10.1.
