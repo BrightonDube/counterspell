@@ -15,3 +15,4 @@ sandbox_pin_rootless_extras: false
 
 # The existing counterspell_edge network (Caddy is attached to it). Its subnet is the trusted proxy range.
 trusted_proxies: 172.18.0.0/16
+sandbox_shell: /usr/sbin/nologin

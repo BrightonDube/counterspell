@@ -30,3 +30,6 @@ sandbox_pin_rootless_extras: true
 
 # Read by the pre-pull. Lives in the app directory (owned by the deploy user on a shared host), as data only.
 sandbox_languages_toml: /opt/counterspell/languages.toml
+
+# Login shell of the sandbox account. Ansible's become_user works with nologin too.
+sandbox_shell: /bin/bash

@@ -6,7 +6,7 @@
   ansible.builtin.user:
     name: "{{ sandbox_user }}"
     uid: "{{ sandbox_uid }}"
-    shell: /bin/bash
+    shell: "{{ sandbox_shell }}"
     password: "!"
     create_home: true
 
