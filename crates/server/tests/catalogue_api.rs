@@ -185,3 +185,63 @@ fn statuses_serialise_as_the_spec_words() {
         json!("unattempted")
     );
 }
+
+// --- C32: GET /api/languages -----------------------------------------------
+
+#[test]
+fn language_keys_match_the_allow_list_exactly() {
+    let value = serde_json::to_value(counterspell_server::catalogue::dto::LanguageListResponse {
+        languages: vec![counterspell_server::catalogue::dto::LanguageSummary {
+            id: "python".to_owned(),
+            display_name: "Python".to_owned(),
+            max_source_bytes: 65_536,
+        }],
+    })
+    .expect("serialises");
+
+    assert_eq!(keys(&value), set(&["languages"]));
+    assert_eq!(
+        keys(&value["languages"][0]),
+        set(&["id", "display_name", "max_source_bytes"])
+    );
+}
+
+#[test]
+fn launch_catalogue_lists_exactly_python_and_javascript() {
+    let catalogue = counterspell_server::seams::LanguageCatalog::launch(65_536);
+    let ids: Vec<&str> = catalogue
+        .entries()
+        .iter()
+        .map(|language| language.name.as_str())
+        .collect();
+
+    assert_eq!(ids, ["python", "javascript"]);
+    // Disabled stretch languages are never in the catalogue at all (CAT-A7).
+    assert!(catalogue.find("java").is_none());
+    assert!(catalogue.find("cpp").is_none());
+}
+
+#[tokio::test]
+async fn get_languages_returns_the_enabled_languages() {
+    let fixture = Fixture::new();
+    let address = serve(counterspell_server::build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/api/languages", &[]).await;
+    assert_eq!(reply.status, 200);
+    let value: Value = serde_json::from_str(&reply.body).expect("JSON body");
+
+    assert_eq!(keys(&value), set(&["languages"]));
+    let languages = value["languages"].as_array().expect("a languages array");
+    assert_eq!(languages.len(), 2);
+    assert_eq!(languages[0]["id"], json!("python"));
+    assert_eq!(languages[0]["display_name"], json!("Python"));
+    assert_eq!(languages[1]["id"], json!("javascript"));
+    assert_eq!(languages[1]["display_name"], json!("JavaScript"));
+    for language in languages {
+        assert_eq!(
+            keys(language),
+            set(&["id", "display_name", "max_source_bytes"])
+        );
+        assert!(language["max_source_bytes"].as_u64().unwrap() > 0);
+    }
+}
