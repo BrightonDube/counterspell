@@ -28,3 +28,18 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - Commit: `caf986d`.
 - `tests/pg_problem_tests.rs` (3 pg tests, all passing): `Run` returns the two public examples with `is_sample` and no hidden rows plus the joined reference; `Submit` returns 2 samples + 5 hidden; versions 0 (the worker`'s unpinned marker) and 2 return `None`, which the executor reports as `problem_unavailable`. Asserts the stored signature is the driver-protocol descriptor.
 - `testkit` fixtures now insert wire-shape signatures (`protocol_version`/`parameters`/`returns` descriptors) matching what C19 imports actually store; dependent pg suites re-verified (testkit 4/4, judge_reads 5/5, import 4/4, validate_sandbox 3/3, sandbox_import 4/4).
+
+
+## C21 publish and unpublish
+
+- Commit: `ff75429`.
+- `catalogue::publish::{publish, unpublish}`: `publish` resolves `None` to the latest sandbox-validated version; UPDATE + gate trigger + `catalogue_events` row commit in one transaction, so a refusal leaves no partial state; trigger refusals surface as `GateRefused` carrying the check text verbatim. `unpublish` keeps `published_version`, stamps `unpublished_at`, and is idempotent (no row change, no second event).
+- Proving tests: `tests/pg_catalogue_publish.rs` (5 pg tests, all passing): default resolves to the latest validated version, explicit pin agrees with the raw-trigger path in `pg_catalogue_publish_gate`, the failed check text is reported verbatim (`sandbox-validated`), `no_validated_version`/`not_in_catalogue` refusals, unpublish keeps `published_version` + version rows + writes exactly one event, second unpublish is `already_unpublished`.
+- Live CLI smoke 16 Nov 2026 on `counterspell_cat2`: `publish two-sum` -> `two-sum created version=1` exit 0; `unpublish` -> `two-sum created` exit 0; second `unpublish` -> `refused:already_unpublished` exit 1.
+
+## C22 list, seed-dev and seed-demo
+
+- Commit: `0306cf2`.
+- `catalogue::seed::list` reads `problems` (slug, state, pinned version); `publish_validated` is the shared publish step (`publish` with a `None` pin). `run_seed` is one function with a `demo` flag so the two paths cannot drift: eligibility (real pack dir + `published` status + private part) is decided before any DB connect or runner demand; drafts/missing parts are skipped, not refused; `seed-demo` additionally publishes each imported problem.
+- Proving tests: `tests/pg_catalogue_seed.rs` (4 pg tests, all passing): `seed-dev --static-only` and `seed-demo` over the shipped draft packs both print `no eligible packs` and exit 0 with zero problem rows written; `--private-root` is required (exit 2); `list` prints `slug state version` lines including the post-unpublish `unpublished <v>` history shape.
+- Live CLI smoke 16 Nov 2026: `list` -> `two-sum unpublished 1` exit 0; `seed-dev --static-only` -> `no eligible packs` exit 0. The `seed-demo` publish step is covered by `pg_catalogue_publish` (it needs the sandbox runner, so it stays out of CI per spec).
