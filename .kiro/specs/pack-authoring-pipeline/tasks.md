@@ -67,7 +67,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: boundary tests: a category at 2 fails; mean 3.9 fails and mean 4.0 passes; correctness 4 fails; an `ORG-*` finding fails; a `blocker` fails; an empty answer to a finding is rejected.
   - Rust lesson: `Result` and `Option` carry the failure reason in the type, so a fail can't be read as a pass by accident. Explain the difference between `Fail(Vec<...>)` and a boolean.
 
-- [x] **PA03 [P] [S] (25 min) Loop cap and escalation**
+- [x] **PA03 [P] (25 min) Loop cap and escalation**
   - Files: `crates/grimoire/src/pipeline/loop_cap.rs`, `crates/grimoire/tests/pipeline_loop_cap.rs`.
   - Round counter, cap of three, and the transitions `rework`, `escalated` and `stale` from design §7. A new content hash starts a new round; the same hash does not.
   - Requirements: PIP-25, PIP-26, P4.
@@ -75,7 +75,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: rounds 1 and 2 give `rework` on fail; round 3 gives `escalated`; a fourth round is refused with an error; re-running the same hash does not increment the counter.
   - Rust lesson: a counter that only goes up, with the limit checked in one function, is easy to test. Explain why the check lives in one place.
 
-- [ ] **PA04 [P] [SUPERVISED] (30 min) Originality marker guard (ORG-01, ORG-02)**
+- [x] **PA04 [P] [SUPERVISED] (30 min) Originality marker guard (ORG-01, ORG-02)**
   - Files: `crates/grimoire/src/pipeline/originality.rs`, `crates/grimoire/tests/pipeline_originality.rs`, `crates/grimoire/tests/fixtures/pipeline/copied-marker/`, `crates/grimoire/tests/fixtures/pipeline/no-originality-record/`.
   - The marker list is passed in as data from the private repo. It is never embedded in code. Tests use synthetic markers only. Scan the public and private text, return codes and file pointers, never the matched text. Check that `originality.md` has the five sections named in S1 and at least one checklist answer per section.
   - Requirements: PIP-3, PIP-8, PIP-46, P6.

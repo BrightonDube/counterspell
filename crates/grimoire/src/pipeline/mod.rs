@@ -5,5 +5,6 @@
 //! memory and never returned. The scripts under `scripts/` move the files.
 
 pub mod loop_cap;
+pub mod originality;
 pub mod review;
 pub mod state;

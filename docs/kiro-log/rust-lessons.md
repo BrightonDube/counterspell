@@ -1273,3 +1273,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - The cap check sits in one function, `start_round`. Every path to a new round goes through it, so there is no second place that could forget the limit.
 - `u8` is a fixed-size counter. Using `self.round += 1` after the `>= MAX_ROUNDS` check cannot overflow, because the check stops the count at three.
 - `finish_round` returns `Result`. Asking for a result before any round started is an error, not a guessed status.
+
+## pack-authoring-pipeline PA04: originality guard
+
+- `Markers` stores lowercased copies, so the marker list is owned once and each line is compared without copying the file text.
+- `scan_text` borrows `&str` for the input text and returns `Diagnostic` values that own only a code and a pointer. The report cannot hold a borrowed secret, because it never stores the matched text.
+- `Markers::new` returns `Result`, so an empty marker is refused at the boundary, before it can match every line.
