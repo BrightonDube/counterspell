@@ -36,5 +36,11 @@ counterspell-judge = { path = ".", features = ["testkit"] }
 proptest = { version = "1.9", default-features = false, features = ["std"] }
 tempfile = "3"
 
+[[example]]
+# Trusted helper for the S16 scenario: starts a real run on the sandbox daemon
+# and is SIGKILLed mid-run by the test. Needs the daemon types and the test kit.
+name = "sbx_victim"
+required-features = ["sandbox", "testkit"]
+
 [lints]
 workspace = true

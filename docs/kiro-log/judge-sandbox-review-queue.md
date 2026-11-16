@@ -143,3 +143,8 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `tests/sbx_filesystem.rs`, seven hostile corpus files.
 - Brighton to check: (1) `docker diff` is never literally empty — it lists tmpfs *mountpoints* (`/box`, `/tmp`, `/dev/shm`) and docker's `/etc` binds; the assertion is an allow-list of exactly those. (2) `/proc/1/environ` is readable (same UID as PID 1 `sleep`) and contains the image's public env — including a variable literally named `GPG_KEY`, the public python release fingerprint, not a secret; allowed explicitly with the content verified. (3) `syscalls_blocked.py` also tries raw `libc.syscall(SYS_keyctl)` — the symbol-free path seccomp must still refuse; report stays empty. (4) The mounts assertion is the exact observed table — a daemon that adds a mount will fail the test for review, not be silently allowed.
 - Verified: 4/4 pass on the rootless daemon.
+
+## T31 (SUPERVISED, judge-sandbox) cleanup + crash on the daemon
+- Code: `tests/sbx_recovery.rs`, `examples/sbx_victim.rs`.
+- Brighton to check: (1) the test spawns `cargo build` + the example binary via `std::process::Command` — needed for `Child::kill` (spec-literal) and scoped-allowed against the judge's no-host-process lint; `tokio::process` feature was deliberately not added to the lib. (2) The 60 s bound is measured from the daemon's `created_at`, not wall time. (3) The sweeper-alone proof is arithmetic: `sleep 125` > removal at ≤60 s, so self-expiry could not have fired — no inspection needed. (4) `spawn_source` runs preflight inside the spawned task; run-id name filtering keeps probe containers out of the wait.
+- Verified: 3/3 pass on the rootless daemon.

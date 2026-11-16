@@ -40,7 +40,7 @@ pub const API_TIMEOUT: Duration = Duration::from_secs(30);
 pub const RUN_CAP: Duration = Duration::from_secs(20);
 
 /// The repository root, from this crate's manifest directory.
-fn repo_root() -> PathBuf {
+pub fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
@@ -252,6 +252,71 @@ pub async fn run_source(
         events: log.events(),
         run_wall: started.elapsed(),
     }
+}
+
+/// Starts [`run_source`] on a spawned task and returns its stop sender with the
+/// task handle. Firing `stop` mid-call is how S17's cancel path and S24's stop
+/// scenario reach a live call — the daemon's container list is the out-of-band
+/// proof that the run was mid-call when the signal landed.
+pub fn spawn_source(
+    docker: &Docker,
+    cfg: &SandboxConfig,
+    catalog: &LanguageCatalog,
+    lang: &str,
+    slug: &str,
+    source: &str,
+    mode: RunMode,
+) -> (
+    tokio::task::JoinHandle<RunObservation>,
+    tokio::sync::watch::Sender<bool>,
+    String,
+) {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let state = Arc::new(PreflightState::new());
+    let probe = catalog
+        .get(lang)
+        .filter(|lang| lang.is_enabled())
+        .map(|lang_def| {
+            preflight::probe_spec(lang_def, cfg.run_wall_cap, cfg.runtime).expect("probe spec")
+        });
+    let executor = SandboxExecutor::new(
+        catalog.clone(),
+        DirProblemTests::new(fixture_dir()),
+        backend.clone(),
+        cfg.clone(),
+        vec![state.clone()],
+        "sbx-scenario",
+    );
+    let (ctx, log, stop) = RecordingContext::with_stop(1);
+    let run_id = RunId::new();
+    let run_id_text = run_id.to_string();
+    let run = RunInput {
+        run_id,
+        problem_slug: slug.to_owned(),
+        lang: lang.to_owned(),
+        mode,
+        code: source.to_owned(),
+        attempt: 1,
+    };
+    let handle = tokio::spawn(async move {
+        if let Some(spec) = probe {
+            preflight::refresh(&state, &backend, &spec)
+                .await
+                .expect("the preflight probe runs");
+            assert!(
+                state.passed(),
+                "sandbox preflight must pass before a scenario run"
+            );
+        }
+        let started = std::time::Instant::now();
+        let outcome = executor.execute(run, ctx).await;
+        RunObservation {
+            outcome,
+            events: log.events(),
+            run_wall: started.elapsed(),
+        }
+    });
+    (handle, stop, run_id_text)
 }
 
 /// A host-side listener set for the network scenario (S12): one TCP and one UDP socket

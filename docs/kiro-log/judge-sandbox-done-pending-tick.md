@@ -95,3 +95,15 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `sbx_filesystem -- --ignored`: **PASS 4/4** — all five write/fill programs never accepted; `container_changes` shows only docker-owned entries (`/etc/*` binds + tmpfs mountpoints) after all five ran inside one production-policy container; mount table matches the exact expected set; `read_host` finds only `/proc/self/mounts` and `/proc/1/environ` (image's public build metadata); mount/unshare/ptrace/keyctl all refused.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (74 binaries).
 - Dual-use corpus: `read_host.py` and `syscalls_blocked.py` print `REPORT:` lines when exec'd directly as probe scripts and answer wrongly when judged — one file serves both the hostile run and the out-of-band check.
+
+## T31 — cleanup and crash scenarios S16, S17, S24 (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T31: cleanup and crash scenarios`).
+- Files: `tests/sbx_recovery.rs`, `examples/sbx_victim.rs`, `Cargo.toml` ([[example]] required-features), `tests/sbx/mod.rs` (`spawn_source`, pub `repo_root`).
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`, `--test-threads=1`:
+  - `sbx_recovery -- --ignored`: **PASS 3/3 in 122 s** —
+    - `sbx_s16`: victim (trusted `sbx_victim` example running `sleep_forever.py`) SIGKILLed mid-run; no `counterspell.managed` container of the run remained within 60 s of its `created_at`, twice: once with `sleep 25` (self-expiry + sweeper) and once with `sleep 125` (container still running at removal — sweeper alone).
+    - `sbx_s17`: `sleep_forever` run → `TimeLimit`, daemon empty after; second run cancelled mid-call → `ExecError::Stopped`, daemon empty after.
+    - `sbx_s24`: stop fired while the run's container was live on the daemon → `ExecError::Stopped`, container killed+removed inside cleanup budget + 5 s.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (75 binaries, 0 failed).
+- The victim is a real `cargo` example binary built by the test (`required-features = ["sandbox", "testkit"]`), spawned with `std::process::Command` — scoped `#[allow(clippy::disallowed_methods)]` since the repo lint bans host process spawn in judge code (the spec mandates `Child::kill` for S16).

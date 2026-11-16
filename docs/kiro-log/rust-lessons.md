@@ -1512,3 +1512,11 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `/proc/<pid>/environ` is readable when the exec user shares PID 1's UID — the leak surface is the *container's own* env, so image-level env hygiene matters more than the read path.
 - `clippy::items_after_statements` rejects `const` blocks mid-function; hoist them to file scope.
 - `LIBC.keyctl` does not exist in glibc — `AttributeError`, not `OSError`; probe helpers must catch broadly and prefer raw `libc.syscall(n)` for symbols libc may not wrap.
+
+## judge-sandbox T31: spawned helpers and process kills (16 Nov 2026)
+
+- A `cargo run`-spawned child is `cargo`'s, not the binary's — SIGKILL reaches the wrapper. Build with `cargo build --example` and spawn the artifact path directly.
+- `tokio::process` needs a feature the lib shouldn't gain for tests; `std::process` inside `spawn_blocking` works — `Child::kill` is synchronous anyway.
+- `required-features` on `[[example]]` keeps the victim out of default builds but still lets `--all-targets --all-features` gates compile it.
+- The repo clippy bans `std::process` in judge code — test-side helpers that the spec itself mandates get a scoped `#[allow(clippy::disallowed_methods)]`, not a lint waiver.
+- `RunOutcome` is not `PartialEq` (FinalResult isn't) — assert with `matches!`.
