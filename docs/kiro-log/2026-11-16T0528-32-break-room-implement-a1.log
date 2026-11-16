@@ -1,0 +1,59 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start with the break-room task list and its requirements.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=77
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Check repo state and existing kiro logs
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The gate task T00 depends on the status of four other specs. I'll count their open tasks.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+
+[tool] Count open tasks in dependency specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The gate fails. The spec says to stop without changing code when T00 fails, so I'll record the gate note and stop. I'll write the blockers file.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=451
+[tool] status: Pending
+[tool] status: Completed
+I'll commit the gate note on its own, leaving the unrelated untracked log alone.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=66
+
+[tool] Commit the T00 gate note
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The break-room spec did not start. Task T00, the gate, fails, and the spec says not to start T01 or change any code when it fails. I committed the gate note as `22d1164`.
+
+## Summary
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T00 gate | FAIL (stop) | none | gate checks read from the other specs' tasks.md files | 22d1164 |
+| T01–T20 | Not started, blocked by T00 | none | none | none |
+
+## Gate checks
+
+| Check | Result | Evidence |
+|---|---|---|
+| Real fail → ghost flow (local Docker) | FAIL | `ide-workspace` T24–T28 unchecked, including the real-flow proof tasks |
+| Postgres queue and SSE replay | PARTIAL | `run-lifecycle` 54 of 56 ticked; the open items are the P1–P18 sign-off and CI-green |
+| Auth complete | FAIL | 21 unchecked, including T33, T34 and T37 (manual smoke with real providers) |
+| IDE complete | FAIL | 25 unchecked |
+| Dashboard core | FAIL | T10 (core smoke) unchecked |
+| Ghost engine | PASS | 37 ticked, 0 open |
+
+## Blockers
+
+- **T00 gate.** Brighton needs to decide whether to finish the freeze-safe core first or cut break room, which the spec lists as the first cut. Once the core is done, rerun T00. Every break-room task depends on this gate, so nothing else can proceed until then.
+
+## Review queue
+
+None. No `[SUPERVISED]` task was run.
+
+## Open Minor review findings
+
+None. No code was written, so no review ran.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=111
+
