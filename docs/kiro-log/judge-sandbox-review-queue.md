@@ -158,3 +158,8 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `tests/sbx_infra.rs`, generated `probe-report.json`.
 - Brighton to check: (1) S21's two halves are deliberately different layers — `connect` refuses a missing path outright (no backend exists), while an existing-but-silent socket fails the probe closed; both are "Infrastructure, never a verdict". (2) S22's no-pull proof is the image list being identical, plus sub-second refusal. (3) S23 is env-gated: it will print TESTED + the real outcome only when `SANDBOX_RUNTIME=runsc` is set — on this host it records NOT TESTED. (4) `probe-report.json` is generated evidence for T37's verification report; it is committed so the report has material to embed.
 - Verified: 4/4 pass on the rootless daemon.
+
+## T34 (SUPERVISED, judge-sandbox) SandboxOracle
+- Code: `src/sandbox/oracle.rs`, `tests/model_oracle.rs`, `tests/sbx_oracle.rs`.
+- Brighton to check: (1) `exception_class` strings ('driver', 'Exit137', 'OutOfMemory') are synthesized from the `CallFailure` variant, not parsed from user stderr — keeps oracle diagnostics bounded and host-derived; confirm the engine's classifier accepts these classes. (2) The sync`evaluate` deliberately `catch_unwind`s `Handle::block_on`: worker-thread invocation becomes `OracleError` instead of a panic, `spawn_blocking` works — panic-as-control-flow is documented and tested both directions. (3) Two backend instances per oracle keeps fake-backend scripting side-deterministic; on the real daemon each side still gets its own container/session.
+- Verified: 8/8 model + 2/2 real-daemon on the rootless daemon.

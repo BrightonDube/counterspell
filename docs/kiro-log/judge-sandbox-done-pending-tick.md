@@ -130,3 +130,13 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
     - `sbx_s23`: recorded **NOT TESTED** — `SANDBOX_RUNTIME` is not runsc; never assumed.
     - `sbx_s25`: probe JSON with expected/observed per check written to `.kiro/specs/judge-sandbox/probe-report.json`.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok.
+
+## T34 — SandboxOracle (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T34: SandboxOracle`).
+- Files: `src/sandbox/oracle.rs`, `src/sandbox/mod.rs` (export), `tests/model_oracle.rs`, `tests/sbx_oracle.rs`.
+- `SandboxOracle` implements `counterspell_engine::Oracle` over two independent `Backend` instances (user + reference): archives contain driver + one side's source only, hidden inputs never enter the API; both sides evaluate concurrently via `tokio::join!` under `handle.block_on`. Outcome map: valid answer → `Returned`, parse rejection → `Garbled`, nonzero exit/OOM/exception → `Crashed{exception_class,message}`, deadline → `TimedOut`, session/exec failure → `OracleError`; diagnostics bounded by truncate(). Reopened sessions reset driver call ids.
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`:
+  - `model_oracle`: **PASS 8/8** — returned / crashed(exception) / crashed(OOM) / garbled / timed-out-within-limit+slack / infra→OracleError / compile-failure-side-specific / async-context-rejected.
+  - `sbx_oracle -- --ignored`: **PASS 2/2** — good pair `Returned(5)` then `Returned(6)` across reused sessions; hostile users → `TimedOut` (3.53 s), `Crashed` (driver exception), `Crashed` (Exit137), `Garbled` (output limit), `Crashed` (OutOfMemory) — never `OracleError`, all within limit+slack.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (79 binaries).

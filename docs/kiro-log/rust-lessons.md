@@ -1534,3 +1534,7 @@ The builder is a plain function from stored values to sections, so its tests nee
 - Bollard 0.21's `list_images` takes `Option<ListImagesOptions>` — call it with `None::<ListImagesOptions>`, no turbofish on the method.
 - `BollardSession` has no `Debug` — format the error, not the `Result`.
 - "NOT TESTED" is a valid recorded outcome (S23) — a status line that never claims what it didn't measure.
+
+## 2026-11-16 — Handle::try_current() lies on spawn_blocking threads
+
+`Handle::try_current()` returns `Ok` inside `tokio::task::spawn_blocking` closures because blocking threads carry the runtime's thread-local context — but `handle.block_on()` is *legal* there (it is the documented sync→async bridge). It only panics on async worker threads ('can call blocking only when running on the multi-threaded runtime' — actually panics with 'Cannot block_on within a runtime context'). So a sync-trait bridge (like `Oracle::evaluate`) cannot distinguish legal from illegal callers via `try_current`. The correct probe is `catch_unwind(|| handle.block_on(...))`: convert the panic into an error value. Model test must verify both sides: rejected from a worker thread, accepted from `spawn_blocking`.
