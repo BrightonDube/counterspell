@@ -45,3 +45,16 @@ Limits that override assumed choices where they conflict:
 - Shell tests: assemble 17, digest 7, publish guard 10, pre-push publish 4, hook registration 6, secret scan 7. All pass.
 - Test integrity: `git diff f54c631 HEAD` shows 68 `#[test]` lines added and 0 removed in `crates/`.
 - PA29 covers the completed tasks only. PA08, PA20 to PA28 and PA30 are open (see the blocked list above).
+
+## Final gate for this run (after the end-of-wave review fixes)
+
+- `cargo fmt --all -- --check`: exit 0. `cargo clippy --workspace --all-targets -- -D warnings`: exit 0.
+- `cargo test --workspace`: exit 0, 1220 passed, 0 failed, 331 ignored (were 1218 at PA29).
+- Shell tests, all exit 0: hooks-register 6, pack-assemble 18, pack-prompt-secret-scan 7, pack-publish-guard 17, pack-review-digest 9, pre-push-pub 4.
+- Test integrity: 70 `#[test]` lines added in `crates/` and `scripts/` since the run started, and 0 removed.
+
+## Decisions for Brighton (open)
+
+1. **Approval identity (C2).** The "Approved by Brighton" phrase does not prove who approved. Decide whether the publish gate should require a signed commit from Brighton's key, or an allow-listed author.
+2. **Short hidden values.** The summary scan skips values under four characters. Decide whether a reviewer check is enough, or whether the scan should refuse them too.
+3. **Author prompt.** The author may not write `docs/pack-reviews/`, but only the prompt forbids it, because no hook blocks that path yet. Decide whether to add a path guard.
