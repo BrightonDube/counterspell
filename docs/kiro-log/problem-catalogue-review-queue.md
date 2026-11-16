@@ -62,3 +62,9 @@ C03's `submissions_problem_fk` broke about 75 existing database tests, because t
 | Task | Commit | What Brighton should check |
 |---|---|---|
 | C23 | ebb3738 | `crates/judge/tests/catalogue_purity.rs`. The scanner and its synthetic cases were written in the same change as the scanner, so the red step was not seen separately. The check is a text match, so it cannot see a value passed in through a variable. Its `PackRunner` rule is a no-op until C16 adds `sandbox_fill.rs`. C23 lists C16 as a dependency, and that dependency is only partly met. |
+
+## C26 (attempt 1, unblocked by judge-sandbox T24)
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| C26 | 54b1d2b | `ProblemTests::load(slug, version, mode)` in `crates/judge/src/sandbox/problem.rs`. Check: (1) `ClaimedRun.problem_version` is `Option<u32>` and the worker maps a missing pin to `0`, which no loader can satisfy — an unpinned run reports `problem_unavailable` rather than picking a version; (2) `StaticProblemTests`/`DirProblemTests` return `None` on a version mismatch so the doubles behave like a pinned store; (3) `PgProblemTests` in `problem_store.rs` maps the version row + examples + hidden + `reference_for` into `ProblemSpec`, resolves `bench.size_param` (a name in the stored JSON) to a signature index, and turns malformed catalogue data into `ProblemError::Store` — infrastructure, never a verdict; (4) `PinnedProblem` grew the spec columns (`signature`, `input_schema`, `comparator`, `limits`, `reference_complexity`, `bench`) so one SELECT serves both the C24 reader and the trait impl. Test counts — before: 28 on the touched binaries (executor 8, model_bench 6, model_sandbox_executor 14); after: same 28 green plus 3 new `problem_store` unit tests, model_logs 1, familiar_measure 10; daemon regression sbx_functional 7/7 and sbx_bench 3/3. |
