@@ -18,7 +18,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: the loader rejects malformed entries and missing drivers; Python and JavaScript load as enabled; Java and C++ remain unavailable.
   - Preserve: the six-package workspace and the canonical `languages/` location; no runtime image pulls.
 
-- [ ] **T03 [P] (25 min) Establish the Python baseline driver contract**
+- [x] **T03 [P] (25 min) Establish the Python baseline driver contract**
   - Files: `languages/drivers/python/driver.py` and Python driver tests/fixtures.
   - Bring the Python driver into the versioned protocol if needed. Add signature loading, one-call-at-a-time framing, JSON-safe return validation, stdout capture, clean stderr failures, repeated calls, and `--mode bench` parity.
   - Depends on: T01.

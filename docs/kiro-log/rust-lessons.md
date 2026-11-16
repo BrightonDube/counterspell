@@ -1423,3 +1423,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `without_image_env` drops a variable only when its key is not ours and the image declares the same `KEY=VALUE`. Anything injected or changed still fails.
 - `Option` chains such as `image.config.and_then(|c| c.env).unwrap_or_default()` turn a missing field into an empty list without `unwrap`.
 - Tests with literal pairs show each case: tolerated, injected, changed, and a fixed key the image also sets.
+
+## language-drivers T03: the Python driver's stdout is the answer stream (16 Nov 2026)
+
+- `contextlib.redirect_stdin` does not exist. The driver swaps `sys.stdout` and `sys.stdin` in a `@contextmanager` and restores them in `finally`. The Rust side had the same kind of issue: a helper that looks right can still be wrong, so the sandbox test caught it.
+- The Rust test reads stdout as chunks, not lines, so it joins bytes until the first newline before the judge's `parse_answer` runs. A test that trusts one chunk as one line would pass by luck.
+- Clippy's `needless_pass_by_value` pushed `list_of` to take `&Value`. Passing references to `json!` keeps the caller's value intact.
