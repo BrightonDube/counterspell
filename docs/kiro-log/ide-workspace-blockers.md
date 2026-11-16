@@ -112,3 +112,5 @@ Upstream state checked this pass: run-lifecycle 54 of 56 done (the SSE route `GE
 - **T18 still blocked** on T02. **T20 partly blocked:** the Familiar preference route exists, but `POST /api/runs/{id}/familiar-hint` is not routed (efficiency-familiar and hints are not done).
 - **T09, T15, T21, T22, T23 unchanged:** unchecked because their remaining checks are browser or layout checks (deferred: E2E).
 - **T24 to T27 deferred: E2E.** T28 waits on judge-sandbox, language-drivers and hints, and on `cargo deny`, `docker compose config` and the real acceptance suite.
+
+### verify all, 16 Nov 2026: T09, T13, T15, T20 stay open: commits are marked partial or not ticked. Web gate at 36d6064: npm run check 0 errors, build ok, 461 tests pass, but browser checks and the Axum browser harness (T24) are not done. T13/T20 depend on the real run API and Familiar seam; run-lifecycle is now complete.

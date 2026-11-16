@@ -46,3 +46,5 @@
 - **T15 still blocked.** The hook `LAY-05`/`PIP-31` and Brighton's 14 Nov decision still conflict on where the hidden reference and incorrect files go. Nothing new was written under `packs/_demo/`.
 - **T16 to T19 still blocked** by T05, T10, T14, T15 and T17. T18 also waits on T14 and T17.
 - No task was ticked this run, because none had its verification met.
+
+### verify all, 16 Nov 2026: T11 stays open: the Kiro custom-Power import test has not been run.

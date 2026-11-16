@@ -68,3 +68,5 @@ Items that need Brighton, another spec, or a decision Kiro may not take alone. E
 - T01, T23 to T32 and T34 are `[HUMAN]` and stay unchecked.
 - T33 (verification report) depends on T31 and T32, which are host work, so it stays unchecked.
 - Unblock path: tick auth T33 and judge-sandbox T38, then run T08 (access log), T15 (Compose green), T07 tick, T19 and T20.
+
+### verify all, 16 Nov 2026: T07 stays open until T15 (compose healthcheck listing). T08 stays open: the OAuth callback/verify access-log query filter is not in the Caddyfile (waits on auth T33 and Brighton's Caddyfile approval).

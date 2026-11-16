@@ -179,3 +179,39 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - Hostile corpus audit: `import_all.py` is the deliberate S27 positive control (docstring: "Expected: accepted"); every other file dies, hangs, breaks the channel, or poisons the protocol before any answer can land.
 - **No code findings.** Post-review reruns: `boundary` 6/6, `model_logs` 1/1, `model_oracle` 8/8, `model_sandbox_executor` 12/12, `model_run` 10/10.
 - Caveat recorded in the report: this was a fresh-eyes pass by the implementing agent, not an independent reviewer — a separate Kiro session sign-off is still recommended; T37's measured VPS evidence remains the hard deploy gate.
+
+## Verified (spec-driver `verify all`, 16 Nov 2026)
+
+Verified in a clean detached worktree at `36d6064` (the uncommitted work in the main tree was not touched). Rootless daemon `/run/user/1000/docker.sock`, no cgroup warnings.
+
+Fresh gate at `36d6064`:
+- `cargo fmt --all -- --check`: ok.
+- `cargo clippy --workspace --all-targets -- -D warnings` and with `--all-features`: ok.
+- `cargo test --workspace`: 1411 passed, 0 failed, 450 ignored.
+- Every `sbx_` test, `--features sandbox --ignored --test-threads=1`: all pass (bollard_create 1, bollard_session 5, concurrency 2, driver_parity 2, filesystem 4, forgery 5, functional 7, infra 4, javascript_driver 20, javascript_run 5, limits 9, network 1, oracle 2, output 5, preflight 2, python_driver 16, recovery 3, sweeper 1). `sbx_logs` has no `sbx_` name prefix, so a name filter skips it; it was run by file and passes (`user_output_never_reaches_the_logs`).
+- `counterspell-judge preflight` on the rootless daemon: every check `ok`.
+- Model tests: boundary 6, model_bollard 14, model_logs 1, model_oracle 8, model_preflight 15, model_reaper 6, model_sandbox_executor 10.
+
+| Task | Result |
+|---|---|
+| T20 | ticked. `sbx_create_readback_matches` passes (this also clears the failure recorded in `auth-blockers.md` for auth T37). |
+| T22 | ticked. `sbx_preflight` 2/2, `preflight` command exit 0. |
+| T23 | ticked. `model_reaper` 6/6, `sbx_sweeper` 1/1. |
+| T24 | ticked. `model_sandbox_executor` 10/10. |
+| T25 | ticked. `model_corpus` passes; harness used by every `sbx_` file. |
+| T26 | ticked. functional 7/7, forgery 5/5. |
+| T27 | ticked. limits 9/9. |
+| T28 | ticked. output 5/5. |
+| T29 | ticked. network 1/1, control conclusive (per the T29 note). |
+| T30 | ticked. filesystem 4/4. |
+| T31 | ticked. recovery 3/3. |
+| T32 | ticked. concurrency 2/2. |
+| T33 | ticked. infra 4/4. S23 is recorded NOT TESTED (not runsc), as the task allows. |
+| T34 | ticked. `model_oracle` 8/8, `sbx_oracle` 2/2. |
+| T35 | ticked. `model_logs` 1/1, `sbx_logs` 1/1. |
+| T36 | ticked. `boundary` 6/6. |
+| T38 | NOT ticked. Depends on T02, which stays open (VPS re-verify). Files exist and `docker compose config` passes. |
+| T39 | NOT ticked. Depends on T37 (VPS). The T39 record says the review was by the implementing agent, not an independent reviewer, which the task requires. |
+| T37 | NOT ticked. Blocked: VPS. |
+
+Corrections to the T39 record: it says `model_sandbox_executor` 12/12 and `model_run` 10/10. The real counts are 10 and 12. Nothing was removed (`model_sandbox_executor.rs` has one commit and 10 tests).

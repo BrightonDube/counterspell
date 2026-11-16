@@ -24,3 +24,5 @@ Unblock: tick T24–T28 of `ide-workspace` with real evidence, finish `auth` T33
 - All break-room tasks depend on T00, so every task T01–T20 is blocked by this gate. Nothing else in the spec can proceed without a Brighton decision.
 - T02 (Lichess CSV intake) also depends on T00. It is a licence README task, so it can run once the gate passes.
 - Stretch note: the spec marks every task `[stretch]`. The gate note above is the only blocker that applies to this run.
+
+### verify all, 16 Nov 2026: T00 stays open: the gate still fails because ide-workspace (14/28) and other core specs are not complete.
