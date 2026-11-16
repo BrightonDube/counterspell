@@ -20,3 +20,12 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
   - Matching is by whole token, so `41` does not match inside `2041`. Short values such as `3` can still flag an ordinary rung. A reviewer decides whether that flag is a real leak.
   - The fenced-block rule reports `GRM-27` (the existing code), not `HNT-03`.
   - The report names a rung and a value index only.
+
+## PA06: ghost coverage, approval hash and publish checks (GHC-01 to GHC-03, PUB-01, APR-01)
+
+- Commit: see `git log --grep "PA06"`.
+- Files: `crates/grimoire/src/pipeline/ghost_cover.rs`, `crates/grimoire/src/pipeline/approval.rs`, `crates/grimoire/tests/pipeline_ghost_approval.rs`, fixtures under `crates/grimoire/tests/fixtures/pipeline/` (`one-ghost`, `ghost-not-reproducing`, `publish-without-approval`, `approval-hash-mismatch`).
+- Check:
+  - The manifest hash is not computed in Rust. It arrives as text from `sha256sum` in the assembly script (PA07). The one-byte change test is in PA07, as the blockers log records.
+  - Ghost `program` values keep the `incorrect/` prefix used in `known_ghosts.toml`. GHC-02 points at that program path.
+  - `approval.toml` is parsed with `deny_unknown_fields`, so an approval cannot carry a hidden field.

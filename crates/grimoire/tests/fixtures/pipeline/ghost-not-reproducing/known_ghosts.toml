@@ -1,0 +1,9 @@
+# Synthetic fixture: two known ghosts. The second one does not reproduce in the S11 report.
+
+[[ghost]]
+program = "incorrect/off_by_one.py"
+kind = "wrong"
+
+[[ghost]]
+program = "incorrect/wrong_start.py"
+kind = "wrong"

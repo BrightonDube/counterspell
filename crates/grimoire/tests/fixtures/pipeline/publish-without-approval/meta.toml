@@ -1,0 +1,4 @@
+# Synthetic fixture: a published status with no approval.toml beside it.
+
+slug = "count-pairs"
+status = "published"

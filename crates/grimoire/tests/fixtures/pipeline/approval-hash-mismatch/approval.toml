@@ -1,0 +1,8 @@
+# Synthetic approval. The hash is a placeholder that differs from the manifest hash used in the test.
+
+slug = "count-pairs"
+pack_version = 2
+content_sha256 = "bbbb"
+public_commit = "9c2e4f1"
+approved_by = "Brighton"
+approved_at = "2026-11-26"
