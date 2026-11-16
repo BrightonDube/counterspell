@@ -1350,3 +1350,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - tree-sitter returns a tree of nodes. A `Vec` used as a stack walks the tree without recursion, so a deeply nested submission cannot overflow the thread's stack.
 - `Node::kind` returns a `&'static str`, so the kinds can be stored in a `Vec` without copying the text.
 - Length-prefixing each field before hashing it means `("ab", "c")` and `("a", "bc")` can never give the same bytes, even though the joined text is the same.
+
+# Rust lesson: hints H04
+
+- `PromptContext` has no field for hidden test data. The compiler then guarantees that the builder cannot read it, which is stronger than a runtime check.
+- `char_indices().nth(n)` finds a cut point that never splits a UTF-8 character. Cutting a `&str` at a plain byte index can panic, so the code walks back to a boundary with `is_char_boundary`.
+- A `Vec<&str>` built from `lines()` lets the guard look ahead to a closing fence without copying the text. The output is joined back into one `String` at the end.

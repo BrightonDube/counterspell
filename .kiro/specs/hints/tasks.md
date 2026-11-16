@@ -62,7 +62,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: pure function, no database.
   - Rust lesson: `match` on an enum result; `BTreeSet` gives a stable, ordered set for tests.
 
-- [ ] **H04 [P] (35 min) Prompt builder and output guard**
+- [x] **H04 [P] (35 min) Prompt builder and output guard**
   - Files: `crates/server/src/hints/guard.rs`.
   - `build_prompt(kind, ctx) -> Prompt` with delimited data sections and size caps (code 8 KB, ghost fields 1 KB with `[cut]`, statement 1 KB). `sanitise_output(text) -> Sanitised { text, removed_code }` removes fenced and indented blocks longer than 3 lines, appends the notice when it removed anything, and cuts to 1,200 characters on a char boundary.
   - Requirements: R3.1–R3.6, R4.1–R4.5.
