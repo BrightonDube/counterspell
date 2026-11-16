@@ -624,3 +624,33 @@ async fn pg_sse_sends_nothing_after_the_terminal_event(pool: PgPool) {
         "the stream closes at the terminal event"
     );
 }
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_replay_returns_bench_events(pool: PgPool) {
+    // language-drivers T09: the bench events are part of the public stream.
+    // A `bench_start` row must pass the run_events type check and replay to a
+    // reconnecting client exactly as stored.
+    let run = queued_run(&pool, owner(1)).await;
+    sqlx::query(
+        r#"INSERT INTO run_events (submission_id, seq, attempt, type, payload) VALUES
+         ($1, 1, 1, 'bench_start', '{"sizes":[8,16,32]}'::jsonb),
+         ($1, 2, 1, 'bench_point', '{"n":8,"median_ns":41200}'::jsonb),
+         ($1, 3, 1, 'done', '{"passed":2,"total":2}'::jsonb)"#,
+    )
+    .bind(run.as_uuid())
+    .execute(&pool)
+    .await
+    .expect("bench events insert");
+
+    let rows = replay_events_from(&pool, owner(1), run, 0)
+        .await
+        .expect("replay");
+    let kinds: Vec<&str> = rows.iter().map(|row| row.kind.as_str()).collect();
+    assert_eq!(kinds, vec!["bench_start", "bench_point", "done"]);
+    assert_eq!(rows[0].payload, serde_json::json!({"sizes": [8, 16, 32]}));
+    assert_eq!(
+        rows[1].payload,
+        serde_json::json!({"n": 8, "median_ns": 41200})
+    );
+}

@@ -498,6 +498,40 @@ mod tests {
     }
 
     #[test]
+    fn bench_start_event_carries_only_the_public_sizes() {
+        // The bench announces its sizes before it times them. The wire shape
+        // is exactly `{"sizes": [...]}` — no inputs, expected values or seeds
+        // may ever ride along (design section 8b).
+        let payload = BenchStartPayload {
+            sizes: vec![4, 8, 16, 32],
+        };
+        let value = serde_json::to_value(&payload).expect("serialise");
+        assert_eq!(value, json!({"sizes": [4, 8, 16, 32]}));
+        assert_eq!(
+            value.as_object().unwrap().keys().collect::<Vec<_>>(),
+            vec!["sizes"],
+            "the only key is sizes"
+        );
+    }
+
+    #[test]
+    fn bench_point_event_carries_only_n_and_the_median() {
+        // A measured point is `{n, median_ns}` and nothing else — the input
+        // that produced it stays hidden in the judge.
+        let payload = BenchPointPayload {
+            n: 16,
+            median_ns: 41_200,
+        };
+        let value = serde_json::to_value(payload).expect("serialise");
+        assert_eq!(value, json!({"n": 16, "median_ns": 41_200}));
+        assert_eq!(
+            value.as_object().unwrap().keys().collect::<Vec<_>>(),
+            vec!["median_ns", "n"],
+            "the only keys are n and median_ns"
+        );
+    }
+
+    #[test]
     fn bench_status_has_the_five_stored_words() {
         let texts: Vec<&str> = [
             BenchStatus::Measured,
