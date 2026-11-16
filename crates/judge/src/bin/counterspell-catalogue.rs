@@ -3,13 +3,15 @@
 //! The operator runs this binary against the public `packs/` tree and a private
 //! checkout (`--private-root`, CAT-PT2). It never fetches, clones or runs git,
 //! never reads credential environment variables, and never executes pack code
-//! itself — sandbox modes go through a `PackRunner`, and no runner is wired
-//! into this build yet, so those paths report `SBX-07` and exit 2.
+//! itself — sandbox modes build a per-pack `PackRunner` over the rootless
+//! daemon; when the daemon is not configured those paths report `SBX-07` and
+//! exit 2.
 //!
 //! Exit codes: 0 when every pack was created or unchanged, 1 for a refusal or
 //! ordinary failure, 2 for usage errors, a missing runner, infrastructure
 //! failures or a failed private-root preflight.
 
+use std::collections::BTreeMap;
 use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -21,7 +23,9 @@ use counterspell_judge::catalogue::approval::{check_approval, parse_approval};
 use counterspell_judge::catalogue::discover::{
     classify, explicit_slug, Decision, DirEntry, SkipReason,
 };
-use counterspell_judge::catalogue::load::{assemble_import, assemble_sandbox, read_pack};
+use counterspell_judge::catalogue::load::{
+    assemble_import, assemble_sandbox, read_pack, signature_descriptor, PackFiles,
+};
 use counterspell_judge::catalogue::plan::{Plan, Refusal};
 use counterspell_judge::catalogue::private_tree::{preflight, RootState};
 use counterspell_judge::catalogue::publish::{self, PublishOutcome, UnpublishOutcome};
@@ -33,6 +37,7 @@ use counterspell_judge::catalogue::taxonomy::{parse_taxonomy, sync_taxonomy, Tax
 use counterspell_judge::catalogue::write::{
     dry_run_static, write_static, StaticImport, WriteOutcome,
 };
+use counterspell_judge::sandbox::pack_runner::{PackRunnerFactory, REFERENCE_SOURCE};
 use serde::Deserialize;
 use sqlx::PgPool;
 
@@ -360,7 +365,8 @@ async fn run_seed(options: &Options, demo: bool) -> ExitCode {
     let wants_sandbox = demo
         || options.mode == Mode::Sandbox
         || (options.mode == Mode::Default && !options.dry_run);
-    if wants_sandbox && pack_runner().is_none() {
+    let factory = wants_sandbox.then(pack_runner_factory).flatten();
+    if wants_sandbox && factory.is_none() {
         eprintln!(
             "counterspell-catalogue: SBX-07: no sandbox pack runner is wired into this build"
         );
@@ -390,8 +396,9 @@ async fn run_seed(options: &Options, demo: bool) -> ExitCode {
             options,
             slug,
             &public_dir,
-            &private_packs.join(slug),
+            private_root,
             &taxonomy,
+            factory.as_ref(),
         )
         .await;
         reports.push(imported);
@@ -487,11 +494,29 @@ fn root_state(private_root: &Path, packs_root: &Path) -> RootState {
     RootState::Readable { inside_public }
 }
 
-/// Builds the sandbox pack runner. No production `PackRunner` is wired into
-/// this build yet, so this returns `None` and every sandbox path reports
-/// `SBX-07` and exits 2. The runner lands with the sandbox-wiring task.
-fn pack_runner() -> Option<Box<dyn counterspell_grimoire::runner::PackRunner>> {
-    None
+/// Builds the sandbox pack-runner factory. Returns `None` — so every sandbox
+/// path reports `SBX-07` and exits 2 — whenever the daemon is not configured.
+fn pack_runner_factory() -> Option<PackRunnerFactory> {
+    PackRunnerFactory::from_env()
+}
+
+/// Assembles a pack's runner sources from its public tree: `reference/`
+/// becomes [`REFERENCE_SOURCE`] and every `incorrect/` file keeps its path.
+/// Private-tree files never enter a runner archive.
+fn pack_sources(files: &PackFiles) -> Option<BTreeMap<String, String>> {
+    let mut sources = BTreeMap::new();
+    for (path, bytes) in &files.public {
+        let key = if path == "reference/solution.py" {
+            REFERENCE_SOURCE.to_string()
+        } else if path.starts_with("incorrect/") {
+            path.clone()
+        } else {
+            continue;
+        };
+        let text = String::from_utf8(bytes.clone()).ok()?;
+        sources.insert(key, text);
+    }
+    sources.contains_key(REFERENCE_SOURCE).then_some(sources)
 }
 
 /// Reads `CATALOGUE_DATABASE_URL` and connects. The variable name is the only
@@ -522,7 +547,8 @@ async fn run_import(options: &Options) -> ExitCode {
     };
     let wants_sandbox =
         options.mode == Mode::Sandbox || (options.mode == Mode::Default && !options.dry_run);
-    if wants_sandbox && pack_runner().is_none() {
+    let factory = wants_sandbox.then(pack_runner_factory).flatten();
+    if wants_sandbox && factory.is_none() {
         eprintln!(
             "counterspell-catalogue: SBX-07: no sandbox pack runner is wired into this build"
         );
@@ -555,21 +581,28 @@ async fn run_import(options: &Options) -> ExitCode {
             return ExitCode::from(EXIT_USAGE);
         }
     };
-    let reports = import_packs(&pool, options, private_root, &taxonomy, &entries).await;
+    let reports = import_packs(
+        &pool,
+        options,
+        private_root,
+        &taxonomy,
+        &entries,
+        factory.as_ref(),
+    )
+    .await;
     print_reports(&reports, options.json);
     ExitCode::from(exit_code_for(&reports))
 }
 
 /// `validate-sandbox <slug>` — gate, fill and stamp through a `PackRunner` (C18).
 ///
-/// No runner is wired into this build, so the command reports `SBX-07` and
-/// exits 2 after the private-root preflight. The assembled path below is ready
-/// for the runner when one lands.
+/// Reports `SBX-07` and exits 2 after the private-root preflight when the
+/// sandbox daemon is not configured.
 async fn run_validate(options: &Options) -> ExitCode {
     let Ok(private_root) = pack_gate(options) else {
         return ExitCode::from(EXIT_USAGE);
     };
-    let Some(mut runner) = pack_runner() else {
+    let Some(factory) = pack_runner_factory() else {
         eprintln!(
             "counterspell-catalogue: SBX-07: no sandbox pack runner is wired into this build"
         );
@@ -580,7 +613,7 @@ async fn run_validate(options: &Options) -> ExitCode {
         Ok(pool) => pool,
         Err(code) => return code,
     };
-    let report = validate_one(&pool, &slug, options, private_root, "", runner.as_mut()).await;
+    let report = validate_one(&pool, &slug, options, private_root, "", &factory).await;
     print_reports(std::slice::from_ref(&report), options.json);
     match report.outcome {
         Outcome::Created | Outcome::Unchanged => ExitCode::from(EXIT_OK),
@@ -588,16 +621,15 @@ async fn run_validate(options: &Options) -> ExitCode {
     }
 }
 
-/// Runs the assembled `validate-sandbox` path for one slug. Unreachable while
-/// [`pack_runner`] returns `None` — the runner and its pinned image digest land
-/// with the sandbox-wiring task; the signature already takes them.
+/// Runs the assembled `validate-sandbox` path for one slug: gate, fill and
+/// stamp through a per-pack runner built from the pack's public sources.
 async fn validate_one(
     pool: &PgPool,
     slug: &str,
     options: &Options,
     private_root: &Path,
     image_digest: &str,
-    runner: &mut dyn counterspell_grimoire::runner::PackRunner,
+    factory: &PackRunnerFactory,
 ) -> PackReport {
     let public_dir = options.packs_root.join(slug);
     let private_dir = private_root.join(PRIVATE_PACKS_DIR).join(slug);
@@ -626,19 +658,22 @@ async fn validate_one(
     let Ok(retired) = read_retired(private_root) else {
         return failed(slug, "retired_unreadable");
     };
-    let pack = match assemble_sandbox(&record, &meta, &files, &manifest) {
-        Ok(pack) => pack,
-        Err(error) => return refused(slug, error.code()),
-    };
-    match validate_sandbox(
+    match sandbox_stamp(
         pool,
         slug,
-        &pack.sandbox_pack(slug, &retired, image_digest),
-        runner,
-        &operator(),
+        &Assembled {
+            record: &record,
+            meta: &meta,
+            files: &files,
+            manifest: &manifest,
+        },
+        &retired,
+        image_digest,
+        factory,
     )
     .await
     {
+        Err(report) => report,
         Ok(ValidateOutcome::Validated { version }) => {
             report(slug, Outcome::Created, Some(version), None)
         }
@@ -650,8 +685,60 @@ async fn validate_one(
             refused_version(slug, "private_tree_changed", version)
         }
         Ok(ValidateOutcome::Refused(refusal)) => refused(slug, refusal.code()),
-        Err(_) => failed(slug, "validate_error"),
     }
+}
+
+/// The assembled pack pieces the sandbox fill path consumes.
+struct Assembled<'a> {
+    /// The grimoire pack record.
+    record: &'a record::ProblemRecord,
+    /// The parsed `meta.toml`.
+    meta: &'a Meta,
+    /// The combined public + private tree files.
+    files: &'a PackFiles,
+    /// The combined manifest.
+    manifest: &'a counterspell_judge::catalogue::manifest::Manifest,
+}
+
+/// Fills and stamps the stored version through the pack's sandbox runner —
+/// the shared tail of `validate-sandbox` and a sandbox `import`. The `Err`
+/// branch is the report the caller prints unchanged.
+async fn sandbox_stamp(
+    pool: &PgPool,
+    slug: &str,
+    assembled: &Assembled<'_>,
+    retired: &RetiredFile,
+    image_digest: &str,
+    factory: &PackRunnerFactory,
+) -> Result<ValidateOutcome, PackReport> {
+    let pack = match assemble_sandbox(
+        assembled.record,
+        assembled.meta,
+        assembled.files,
+        assembled.manifest,
+    ) {
+        Ok(pack) => pack,
+        Err(error) => return Err(refused(slug, error.code())),
+    };
+    let signature = match signature_descriptor(assembled.record) {
+        Ok(signature) => signature,
+        Err(error) => return Err(refused(slug, error.code())),
+    };
+    let Some(sources) = pack_sources(assembled.files) else {
+        return Err(refused(slug, "source_unreadable"));
+    };
+    let Ok(mut runner) = factory.build(sources, &signature) else {
+        return Err(failed(slug, "sandbox_unavailable"));
+    };
+    validate_sandbox(
+        pool,
+        slug,
+        &pack.sandbox_pack(slug, retired, image_digest),
+        &mut runner,
+        &operator(),
+    )
+    .await
+    .map_err(|_| failed(slug, "validate_error"))
 }
 
 /// Reads and parses `packs/catalogue.toml` (D13). The taxonomy is shared
@@ -719,6 +806,7 @@ async fn import_packs(
     private_root: &Path,
     taxonomy: &Taxonomy,
     entries: &[String],
+    factory: Option<&PackRunnerFactory>,
 ) -> Vec<PackReport> {
     let private_packs = private_root.join(PRIVATE_PACKS_DIR);
     let private_slugs: Vec<String> = fs::read_dir(&private_packs)
@@ -764,8 +852,7 @@ async fn import_packs(
             continue;
         }
         seen.push(slug);
-        let private_dir = private_packs.join(slug);
-        if !private_dir.is_dir() {
+        if !private_packs.join(slug).is_dir() {
             reports.push(refused(slug, "private_part_missing"));
             continue;
         }
@@ -773,7 +860,18 @@ async fn import_packs(
             reports.push(refused(slug, "draft_pack"));
             continue;
         }
-        reports.push(import_one(pool, options, slug, &public_dir, &private_dir, taxonomy).await);
+        reports.push(
+            import_one(
+                pool,
+                options,
+                slug,
+                &public_dir,
+                private_root,
+                taxonomy,
+                factory,
+            )
+            .await,
+        );
     }
     for slug in private_slugs
         .iter()
@@ -785,21 +883,25 @@ async fn import_packs(
 }
 
 /// Runs one paired pack through validation, assembly and the plan or write.
+/// In sandbox mode the stored version is then filled and stamped through the
+/// pack's own runner (`import --sandbox` = static write + `validate-sandbox`).
 async fn import_one(
     pool: &PgPool,
     options: &Options,
     slug: &str,
     public_dir: &Path,
-    private_dir: &Path,
+    private_root: &Path,
     taxonomy: &Taxonomy,
+    factory: Option<&PackRunnerFactory>,
 ) -> PackReport {
-    let Ok(report) = counterspell_grimoire::validate_static(public_dir) else {
+    let private_dir = private_root.join(PRIVATE_PACKS_DIR).join(slug);
+    let Ok(static_report) = counterspell_grimoire::validate_static(public_dir) else {
         return failed(slug, "pack_unreadable");
     };
-    if report.has_errors() {
+    if static_report.has_errors() {
         return refused(slug, "static_errors");
     }
-    if options.deny_warnings && report.warning_count() > 0 {
+    if options.deny_warnings && static_report.warning_count() > 0 {
         return refused(slug, "static_warnings");
     }
 
@@ -820,7 +922,7 @@ async fn import_one(
         return refused(slug, "unknown_taxonomy");
     }
 
-    let Ok(files) = read_pack(public_dir, Some(private_dir)) else {
+    let Ok(files) = read_pack(public_dir, Some(&private_dir)) else {
         return failed(slug, "pack_unreadable");
     };
     let Ok(manifest) = files.manifest() else {
@@ -852,7 +954,64 @@ async fn import_one(
         Ok(import) => import,
         Err(error) => return refused(slug, error.code()),
     };
-    write_or_plan(pool, options, slug, &import).await
+    let written = write_or_plan(pool, options, slug, &import).await;
+    let wants_sandbox =
+        options.mode == Mode::Sandbox || (options.mode == Mode::Default && !options.dry_run);
+    if !wants_sandbox || !matches!(written.outcome, Outcome::Created | Outcome::Unchanged) {
+        return written;
+    }
+    import_sandbox(
+        pool,
+        slug,
+        &Assembled {
+            record: &record,
+            meta: &meta,
+            files: &files,
+            manifest: &manifest,
+        },
+        &import,
+        private_root,
+        factory,
+    )
+    .await
+}
+
+/// The sandbox half of `import`: fills and stamps the version the static
+/// write just stored, mapping the outcome onto the import report vocabulary.
+async fn import_sandbox(
+    pool: &PgPool,
+    slug: &str,
+    assembled: &Assembled<'_>,
+    import: &StaticImport,
+    private_root: &Path,
+    factory: Option<&PackRunnerFactory>,
+) -> PackReport {
+    let Some(factory) = factory else {
+        return failed(slug, "sandbox_unavailable");
+    };
+    let Ok(retired) = read_retired(private_root) else {
+        return failed(slug, "retired_unreadable");
+    };
+    match sandbox_stamp(pool, slug, assembled, &retired, "", factory).await {
+        Err(report) => report,
+        Ok(ValidateOutcome::Validated { version }) => report(
+            slug,
+            Outcome::Created,
+            Some(version),
+            Some(&import.content_sha256),
+        ),
+        Ok(ValidateOutcome::AlreadyValidated { version }) => report(
+            slug,
+            Outcome::Unchanged,
+            Some(version),
+            Some(&import.content_sha256),
+        ),
+        Ok(ValidateOutcome::Missing) => failed(slug, "version_missing"),
+        Ok(ValidateOutcome::PrivateTreeChanged { version }) => {
+            refused_version(slug, "private_tree_changed", version)
+        }
+        Ok(ValidateOutcome::Refused(refusal)) => refused(slug, refusal.code()),
+    }
 }
 
 /// Plans the import read-only under `--dry-run`, or writes it otherwise.
