@@ -13,3 +13,32 @@ Run: 16 Nov 2026 implement run (non-interactive). Each entry names the task, the
 
 - The hints store reads the submission's ghost (R3.1). No migration creates a per-submission `ghosts` table yet. The catalogue spec lists the owner as unresolved (decision D16, `.kiro/specs/problem-catalogue/tasks.md`).
 - Unblock: decide the owner of `ghosts`. Until then the ghost read returns no ghost when the table is missing, so AI hints still work on the verdict and code (R3.5).
+
+## Run 16 Nov 2026 (attempt 2): status of the open items
+
+### G2 still open: length decision (Brighton)
+
+- Unchanged from above. The spec says 1 to 1,200 characters. The database CHECK and the grimoire rule say 1 to 600. The stricter 600 limit is still enforced everywhere, so G2 stays unchecked. The grimoire errors also name the file and the JSON pointer, not the problem slug (G2 asks for the slug).
+- Unblock: Brighton picks 600 or 1,200. Then the CHECK, the grimoire limit and the grimoire tests change together.
+
+### H-ci: CI secret step not added (proof needs a scratch branch)
+
+- `.github/workflows/security.yml` already runs gitleaks over the whole repository on every push and PR (`gitleaks git . --config .gitleaks.toml`). It already catches OpenAI and Groq style keys that a file might contain, so the spec's "one added step" would duplicate it. The P9 log test (`a_failed_call_logs_no_key_and_no_prompt_text`) runs in `cargo test`.
+- The spec's proof (a fake key on a scratch branch, failing then passing) needs a branch, and this run may not change branches. Left unchecked.
+- Unblock: Brighton either accepts the existing gitleaks job as the H-ci check (then H-ci can be ticked as "covered by security.yml"), or allows a scratch-branch proof.
+
+### H-verify: manual smoke test deferred (E2E)
+
+- All automated checks passed in this session: fmt, clippy (workspace, all targets), `cargo test --workspace` (1,307 passed, 0 failed), `cargo deny check licenses` (ok), the ignored `pg_`/`valkey_` hints tests, `npm run test` (64 files), `npm run check`, `npm run build`, and `docker compose config` (pass-throughs present, Valkey append-only on).
+- The manual smoke test (sign in with the demo account, reveal rung 1, one AI hint, check the label, notice, quota and logs) is browser work. It is deferred: E2E. Checklist and status are in `docs/kiro-log/hints-smoke.md`.
+
+### ide-workspace adapter out of contract (not used)
+
+- `web/src/lib/api/hints.ts` (ide-workspace T17) expects `{ rung, text }` from `POST /api/hints`. The server returns `{ rung, source, body, label, ... }`, so that adapter would fail on a real reply. Nothing imports `requestAuthoredHint`, so it is dead code today.
+- H15 added the contract-correct client in `web/src/lib/hints/client.ts`, as the spec asks. The old file is left in place, because it belongs to ide-workspace.
+- Unblock: the ide-workspace owner removes `web/src/lib/api/hints.ts` and its test, or points the panel at `web/src/lib/hints/`.
+
+### HTTP-level fallback and provider tests use the pipeline, not the router
+
+- `HintState` holds a concrete `ReqwestTransport`, so an HTTP test cannot script provider replies. Fallback, success and failure of the AI pipeline are tested with `ScriptedTransport` in `hints::ai` (unit and `valkey_` tests). The HTTP tests cover the cap refusal, the ladder and the cache hit.
+- Decision to make later: making `HintState` generic over the transport would let HTTP tests cover fallback end to end. Not done here, because it changes the router's public type.
