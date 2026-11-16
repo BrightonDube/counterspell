@@ -1459,3 +1459,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A `&'static str` field (`PreflightCheck::name`) serialises through `serde` with no lifetime trouble, so the JSON report uses the same stable names as the tests.
 - `RwLock<Option<PreflightReport>>` behind `Arc` shares one "latest report" between the refresh loop and the reader. `unwrap_or_else(PoisonError::into_inner)` keeps a poisoned lock readable after a test panic instead of panicking again.
 - Exit-code equality is the only honest signal `touch` gives: EACCES and EROFS both exit non-zero, so the write probe had to move to a world-writable directory (`/var/tmp`, mode 1777) before a writable root could be told from a read-only one.
+
+## judge-sandbox T23: listing containers through the trait seam (16 Nov 2026)
+
+- A trait that returns `impl Future` can add methods (`list_managed`, `remove_managed`) without touching the session types. `ManagedContainer` carries only `id`/`name`/`created_at` — everything the sweeper needs and nothing it does not.
+- Bollard's `ListContainersOptionsBuilder::filters` takes `&HashMap<K, Vec<V>>` where `K`/`V` are `impl Into<String> + Clone` — a `HashMap<String, Vec<String>>` with one `label=counterspell.managed=true` entry does daemon-side filtering, so unlabelled containers never reach the sweeper.
+- `tokio::time::interval` ticks once immediately, so `run_sweeper` sweeps at start-up and then every interval with no extra code. `tokio::select!` between `ticks.tick()` and `stop.changed()` ends the loop cleanly on a `watch` signal.
+- `saturating_sub` and `i64::try_from(...).unwrap_or(i64::MAX)` keep timestamp arithmetic panic-free for any daemon clock value.

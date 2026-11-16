@@ -14,7 +14,9 @@ use std::future::{pending, ready, Future};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 use std::time::Duration;
 
-use super::backend::{Backend, BackendSession, DriverChannel, DriverEvent, ExecOutput, InfraError};
+use super::backend::{
+    Backend, BackendSession, DriverChannel, DriverEvent, ExecOutput, InfraError, ManagedContainer,
+};
 use super::config::OciRuntime;
 use super::policy::{ContainerPolicy, SeccompProfile};
 use super::spec::{ExecSpec, SessionSpec};
@@ -112,6 +114,11 @@ struct State {
     block_writes: bool,
     fired_on: Option<&'static str>,
     ledger: Ledger,
+    /// The unix time stamped on created containers, for sweeper tests.
+    clock: i64,
+    /// Live managed containers: name -> creation time. Only containers created with the
+    /// `counterspell.managed=true` label are listed, as the daemon's label filter does.
+    live: std::collections::BTreeMap<String, i64>,
 }
 
 /// A backend that follows a script. Clones share the same state.
@@ -182,6 +189,12 @@ impl FakeBackend {
         self.lock().readback = Some(policy);
     }
 
+    /// Sets the unix time stamped on containers created after this call, so sweeper
+    /// tests control container ages without waiting.
+    pub fn set_clock(&self, unix_seconds: i64) {
+        self.lock().clock = unix_seconds;
+    }
+
     fn lock(&self) -> MutexGuard<'_, State> {
         // A poisoned lock only happens after a test panic. The state is still readable.
         self.state.lock().unwrap_or_else(PoisonError::into_inner)
@@ -212,12 +225,49 @@ impl Backend for FakeBackend {
         spec: &SessionSpec,
     ) -> impl Future<Output = Result<FakeSession, InfraError>> + Send {
         let result = self.tick("create").map(|()| {
-            self.lock().ledger.created.push(spec.name.clone());
+            let mut state = self.lock();
+            state.ledger.created.push(spec.name.clone());
+            if spec
+                .policy
+                .labels
+                .get("counterspell.managed")
+                .map(String::as_str)
+                == Some("true")
+            {
+                let clock = state.clock;
+                state.live.insert(spec.name.clone(), clock);
+            }
             FakeSession {
                 backend: self.clone(),
                 name: spec.name.clone(),
                 policy: spec.policy.clone(),
             }
+        });
+        ready(result)
+    }
+
+    fn list_managed(
+        &self,
+    ) -> impl Future<Output = Result<Vec<ManagedContainer>, InfraError>> + Send {
+        let result = self.tick("list_managed").map(|()| {
+            self.lock()
+                .live
+                .iter()
+                .map(|(name, created_at)| ManagedContainer {
+                    id: name.clone(),
+                    name: name.clone(),
+                    created_at: *created_at,
+                })
+                .collect()
+        });
+        ready(result)
+    }
+
+    fn remove_managed(&self, id: &str) -> impl Future<Output = Result<(), InfraError>> + Send {
+        let result = self.tick("remove_managed").map(|()| {
+            let mut state = self.lock();
+            state.live.remove(id);
+            state.ledger.removed.push(id.to_owned());
         });
         ready(result)
     }
@@ -283,14 +333,18 @@ impl BackendSession for FakeSession {
 
     fn kill(&mut self) -> impl Future<Output = Result<(), InfraError>> + Send {
         let result = self.backend.tick("kill").map(|()| {
-            self.backend.lock().ledger.killed.push(self.name.clone());
+            let mut state = self.backend.lock();
+            state.ledger.killed.push(self.name.clone());
+            state.live.remove(&self.name);
         });
         ready(result)
     }
 
     fn remove(&mut self) -> impl Future<Output = Result<(), InfraError>> + Send {
         let result = self.backend.tick("remove").map(|()| {
-            self.backend.lock().ledger.removed.push(self.name.clone());
+            let mut state = self.backend.lock();
+            state.ledger.removed.push(self.name.clone());
+            state.live.remove(&self.name);
         });
         ready(result)
     }

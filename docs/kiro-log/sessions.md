@@ -359,3 +359,12 @@
  | diff stat:
  docs/kiro-log/sessions.md | 11 +++++++++++
  1 file changed, 11 insertions(+)
+- 2026-11-16T10:59:40Z | model: not reported | last commit: 35021d6 deploy-ops: shared-host playbook (app, sandbox, caddy_site only), caddy_site role with validate-then-reload and rollback, shared_host guard, vault key names
+ | diff stat:
+ .kiro/agents/deployer.json                  | 32 +++++++++++++--
+ crates/judge/src/sandbox/backend.rs         | 27 +++++++++++++
+ crates/judge/src/sandbox/bollard_backend.rs | 38 +++++++++++++++++-
+ crates/judge/src/sandbox/mod.rs             |  1 +
+ crates/judge/src/sandbox/testkit.rs         | 62 +++++++++++++++++++++++++++--
+ docs/kiro-log/sessions.md                   |  2 +
+ 6 files changed, 153 insertions(+), 9 deletions(-)

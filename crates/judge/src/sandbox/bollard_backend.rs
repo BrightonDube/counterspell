@@ -23,7 +23,7 @@ use bollard::models::{
 };
 use bollard::query_parameters::{
     CreateContainerOptionsBuilder, InspectContainerOptions, KillContainerOptionsBuilder,
-    RemoveContainerOptionsBuilder,
+    ListContainersOptionsBuilder, RemoveContainerOptionsBuilder,
 };
 use bollard::Docker;
 use futures_util::{Stream, StreamExt};
@@ -32,7 +32,7 @@ use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 use crate::languages::PinnedImage;
 use crate::sandbox::backend::{
-    Backend, BackendSession, DriverChannel, DriverEvent, ExecOutput, InfraError,
+    Backend, BackendSession, DriverChannel, DriverEvent, ExecOutput, InfraError, ManagedContainer,
 };
 use crate::sandbox::config::OciRuntime;
 use crate::sandbox::policy::{
@@ -751,6 +751,40 @@ impl Backend for BollardBackend {
             api_timeout: self.api_timeout,
             image_env,
         })
+    }
+
+    async fn list_managed(&self) -> Result<Vec<ManagedContainer>, InfraError> {
+        let options = ListContainersOptionsBuilder::new()
+            .all(true)
+            .filters(&HashMap::from([(
+                "label".to_owned(),
+                vec!["counterspell.managed=true".to_owned()],
+            )]))
+            .build();
+        let containers = with_timeout(self.api_timeout, self.docker.list_containers(Some(options)))
+            .await?
+            .map_err(|error| map_error(&error))?;
+        Ok(containers
+            .into_iter()
+            .map(|container| ManagedContainer {
+                id: container.id.unwrap_or_default(),
+                name: container
+                    .names
+                    .and_then(|names| names.into_iter().next())
+                    .map(|name| name.trim_start_matches('/').to_owned())
+                    .unwrap_or_default(),
+                created_at: container.created.unwrap_or(0),
+            })
+            .collect())
+    }
+
+    async fn remove_managed(&self, id: &str) -> Result<(), InfraError> {
+        // A stopped or missing container counts as already killed; only the removal
+        // result decides the outcome.
+        if let Err(error) = kill_container(&self.docker, id, self.api_timeout).await {
+            tracing::warn!(container = %id, %error, "sweeper kill failed; forced removal follows");
+        }
+        remove_forced(&self.docker, id, self.api_timeout).await
     }
 }
 

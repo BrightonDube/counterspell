@@ -19,3 +19,13 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo run -p counterspell-judge -- preflight`: prints the JSON report; 12 checks × {javascript, python} all `ok`, exit 0.
   - `cargo fmt --all -- --check` ok; `cargo clippy -p counterspell-judge --all-targets -- -D warnings` ok; `cargo test -p counterspell-judge` all 64 binaries green.
 - Recorded deviation: the write probe uses `/var/tmp/cs-probe` (mode 1777) instead of the design's `/usr/cs-probe` (mode 755) — for the `nobody` exec user, `touch /usr` exits non-zero on a writable root too (EACCES), so the design path could never discriminate. Queued for Brighton in the review-queue entry.
+
+## T23 sweeper: list, reap, repeat until stopped (SUPERVISED)
+
+- Commit: this commit (`judge-sandbox T23: sweeper + Backend::list_managed`).
+- Proving tests: `tests/model_reaper.rs` (6 tests: old removed, young kept, unlabelled untouched, removal error counted and loop continues, list error returned, `run_sweeper` runs until stopped), `tests/sbx_sweeper.rs` (`sbx_sweeper_removes_orphan_and_ignores_unlabelled`).
+- Verification run 16 Nov 2026:
+  - `cargo test -p counterspell-judge --test model_reaper`: **PASS** (6 passed).
+  - `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo test -p counterspell-judge --features sandbox --test sbx_sweeper -- --ignored`: **PASS** (1 passed, 1.98 s). The managed orphan was force-removed; the same-aged unlabelled container survived.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok; `cargo test --workspace` all binaries green.
+- Recorded deviation: `sweep_once(backend, orphan_age, now)` injects `now` instead of taking `cfg` — model tests script container ages without a full `SandboxConfig`; `run_sweeper` supplies `now_unix()`. See the review-queue entry.
