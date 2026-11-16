@@ -5,7 +5,19 @@
 //! control. Running the probe container and keeping the latest result are separate steps.
 //! A check that cannot be read counts as failed, so missing output never passes.
 
-use super::policy::ContainerPolicy;
+use std::sync::{Arc, PoisonError, RwLock};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use serde::Serialize;
+use tokio::sync::watch;
+use uuid::Uuid;
+
+use super::backend::{Backend, BackendSession, ExecOutput, InfraError};
+use super::config::OciRuntime;
+use super::policy::{fixed_env, ContainerPolicy, SANDBOX_USER, WORKING_DIR};
+use super::session::Session;
+use super::spec::{ExecSpec, SessionSpec, SpecError};
+use crate::languages::LanguageDefinition;
 
 /// The sandbox user's numeric UID, as the policy runs it.
 const SANDBOX_UID: u64 = 65534;
@@ -38,7 +50,7 @@ pub struct ProbeOutputs {
 }
 
 /// One control and its outcome.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PreflightCheck {
     /// A stable name for the control, used in the report and in tests.
     pub name: &'static str,
@@ -51,7 +63,7 @@ pub struct PreflightCheck {
 }
 
 /// All checks from one probe run.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct PreflightReport {
     /// One entry per control, in a fixed order.
     pub checks: Vec<PreflightCheck>,
@@ -268,5 +280,253 @@ fn exact_check(name: &'static str, expected: String, observed: &str) -> Prefligh
         ok: observed == expected,
         expected,
         observed: observed.to_owned(),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// The probe runner, the preflight state and the refresh loop.
+// ---------------------------------------------------------------------------
+
+/// The fixed probe commands, run in this order. The first seven read kernel state into
+/// the matching [`ProbeOutputs`] field; the last proves the root filesystem refuses a
+/// write. Each argv is a list, never a shell string, and there is no skip flag.
+///
+/// The write test targets `/var/tmp` (mode 1777 in the pinned images) and not `/usr`
+/// (mode 755): as the sandbox user, `touch /usr/...` fails with EACCES on a writable
+/// root too, so it can never tell a writable root from a read-only one. On `/var/tmp`
+/// the write succeeds only when the root is writable, which is the check's purpose.
+pub const PROBE_COMMANDS: [&[&str]; 8] = [
+    &["cat", "/proc/self/status"],
+    &["cat", "/proc/self/net/dev"],
+    &["cat", "/sys/fs/cgroup/memory.max"],
+    &["cat", "/sys/fs/cgroup/memory.swap.max"],
+    &["cat", "/sys/fs/cgroup/pids.max"],
+    &["cat", "/sys/fs/cgroup/cpu.max"],
+    &["cat", "/proc/mounts"],
+    &["touch", "/var/tmp/cs-probe"],
+];
+
+/// How often the probe runs again after start-up (design section 13: every 60 s).
+pub const PREFLIGHT_INTERVAL: Duration = Duration::from_secs(60);
+
+/// The exec spec for one probe command: fixed argv, the sandbox user, `/box` as the
+/// working directory and the fixed environment.
+#[must_use]
+pub fn probe_exec(argv: &[&str]) -> ExecSpec {
+    ExecSpec {
+        argv: argv.iter().map(|part| (*part).to_owned()).collect(),
+        user: SANDBOX_USER.to_owned(),
+        working_dir: WORKING_DIR.to_owned(),
+        env: fixed_env(),
+    }
+}
+
+/// The session spec for one probe container. It carries the same labels as a run
+/// container plus `counterspell.worker = "preflight"`, so the sweeper reaps it if the
+/// judge dies mid-probe.
+///
+/// # Errors
+///
+/// Returns [`SpecError`] when the fixed worker id fails validation.
+pub fn probe_spec(
+    lang: &LanguageDefinition,
+    run_cap: Duration,
+    runtime: OciRuntime,
+) -> Result<SessionSpec, SpecError> {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |since| {
+            i64::try_from(since.as_secs()).unwrap_or(i64::MAX)
+        });
+    let expires = now
+        .saturating_add(i64::try_from(run_cap.as_secs()).unwrap_or(i64::MAX))
+        .saturating_add(60);
+    SessionSpec::new(
+        lang,
+        run_cap,
+        runtime,
+        Uuid::new_v4(),
+        "preflight",
+        0,
+        expires,
+    )
+}
+
+/// Folds the results of [`PROBE_COMMANDS`], run in order, into [`ProbeOutputs`]. A read
+/// that fails or overflows leaves its field empty, so the check it feeds fails. The last
+/// command is the write test; its exit code becomes `touch_exit`.
+///
+/// # Errors
+///
+/// Returns [`InfraError::Unexpected`] when `results` does not hold one entry per command.
+pub fn probe_outputs(results: Vec<ExecOutput>) -> Result<ProbeOutputs, InfraError> {
+    let wanted = PROBE_COMMANDS.len();
+    let [status, net_dev, memory, swap, pids, cpu, mounts, touch]: [ExecOutput; 8] =
+        results.try_into().map_err(|results: Vec<ExecOutput>| {
+            InfraError::Unexpected(format!(
+                "the probe returned {} of {wanted} outputs",
+                results.len()
+            ))
+        })?;
+    Ok(ProbeOutputs {
+        proc_status: readable(&status),
+        net_dev: readable(&net_dev),
+        memory_max: readable(&memory),
+        memory_swap_max: readable(&swap),
+        pids_max: readable(&pids),
+        cpu_max: readable(&cpu),
+        mounts: readable(&mounts),
+        touch_exit: touch.exit_code,
+    })
+}
+
+/// The stdout of a command that ran cleanly, or empty text so the check it feeds fails.
+fn readable(output: &ExecOutput) -> String {
+    if output.exit_code == 0 && !output.overflowed {
+        String::from_utf8_lossy(&output.stdout).into_owned()
+    } else {
+        String::new()
+    }
+}
+
+/// Runs the probe commands on a live container, in [`PROBE_COMMANDS`] order.
+///
+/// # Errors
+///
+/// Returns [`InfraError`] when an exec call fails.
+pub async fn collect_probe_outputs<S: BackendSession>(
+    container: &mut S,
+) -> Result<ProbeOutputs, InfraError> {
+    let mut results = Vec::with_capacity(PROBE_COMMANDS.len());
+    for argv in PROBE_COMMANDS {
+        results.push(container.exec(&probe_exec(argv), &[]).await?);
+    }
+    probe_outputs(results)
+}
+
+/// Runs one probe container from `spec` and evaluates what it reports against
+/// `spec.policy`. The container is removed on every path, including early returns.
+///
+/// # Errors
+///
+/// Returns [`InfraError`] when the sandbox fails. That is never a verdict.
+pub async fn run_probe<B: Backend>(
+    backend: &B,
+    spec: &SessionSpec,
+) -> Result<PreflightReport, InfraError> {
+    let mut session = Session::new(backend.create(spec).await?);
+    let result = async {
+        let container = session.container_mut()?;
+        container.start().await?;
+        collect_probe_outputs(container).await
+    }
+    .await;
+    session.close().await?;
+    Ok(evaluate(&result?, &spec.policy))
+}
+
+/// The latest preflight outcome, shared between the refresh loop and the worker gate.
+/// A missing report counts as failing: the sandbox has not proved its controls yet.
+#[derive(Debug, Default)]
+pub struct PreflightState {
+    latest: RwLock<Option<PreflightReport>>,
+}
+
+impl PreflightState {
+    /// A state with no report yet.
+    #[must_use]
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Stores the newest report, replacing any older one.
+    pub fn update(&self, report: PreflightReport) {
+        *self.latest.write().unwrap_or_else(PoisonError::into_inner) = Some(report);
+    }
+
+    /// A copy of the newest report, if any.
+    #[must_use]
+    pub fn latest(&self) -> Option<PreflightReport> {
+        self.latest
+            .read()
+            .unwrap_or_else(PoisonError::into_inner)
+            .clone()
+    }
+
+    /// True only when a report exists and every check in it passed.
+    #[must_use]
+    pub fn passed(&self) -> bool {
+        self.latest().is_some_and(|report| report.passed())
+    }
+}
+
+/// The report stored when the probe itself fails, so `passed` is false and the JSON
+/// still says why.
+#[must_use]
+pub fn probe_failed_report(error: &InfraError) -> PreflightReport {
+    PreflightReport {
+        checks: vec![PreflightCheck {
+            name: "sandbox_probe",
+            expected: "the probe container runs and reports".to_owned(),
+            observed: error.to_string(),
+            ok: false,
+        }],
+    }
+}
+
+/// Probes once and stores the result. A probe error stores a failing report instead of
+/// keeping an older pass, so a broken sandbox fails closed.
+///
+/// # Errors
+///
+/// Returns the probe's error. The state is updated either way.
+pub async fn refresh<B: Backend>(
+    state: &PreflightState,
+    backend: &B,
+    spec: &SessionSpec,
+) -> Result<(), InfraError> {
+    match run_probe(backend, spec).await {
+        Ok(report) => {
+            state.update(report);
+            Ok(())
+        }
+        Err(error) => {
+            state.update(probe_failed_report(&error));
+            Err(error)
+        }
+    }
+}
+
+/// Probes at start-up and every `interval` until `stop` fires. `spec_fn` builds a fresh
+/// spec each round so probe container names stay unique. Runs until stopped; spawn it.
+pub async fn run<B, F>(
+    state: Arc<PreflightState>,
+    backend: B,
+    spec_fn: F,
+    interval: Duration,
+    mut stop: watch::Receiver<bool>,
+) where
+    B: Backend,
+    F: Fn() -> Result<SessionSpec, SpecError>,
+{
+    let mut ticks = tokio::time::interval(interval);
+    loop {
+        tokio::select! {
+            _ = ticks.tick() => {
+                match spec_fn() {
+                    Ok(spec) => {
+                        if let Err(error) = refresh(&state, &backend, &spec).await {
+                            tracing::warn!(%error, "sandbox preflight probe failed");
+                        }
+                    }
+                    Err(error) => {
+                        state.update(probe_failed_report(&InfraError::Unexpected(
+                            error.to_string(),
+                        )));
+                    }
+                }
+            }
+            _ = stop.changed() => break,
+        }
     }
 }
