@@ -251,10 +251,16 @@ fn main() -> ExitCode {
             return ExitCode::from(EXIT_USAGE);
         }
     };
-    let runtime = tokio::runtime::Builder::new_current_thread()
+    let runtime = match tokio::runtime::Builder::new_current_thread()
         .enable_all()
         .build()
-        .expect("tokio runtime");
+    {
+        Ok(runtime) => runtime,
+        Err(error) => {
+            eprintln!("counterspell-catalogue: could not start the runtime: {error}");
+            return ExitCode::from(EXIT_USAGE);
+        }
+    };
     runtime.block_on(run(&options))
 }
 
@@ -321,10 +327,11 @@ fn root_state(private_root: &Path, packs_root: &Path) -> RootState {
     RootState::Readable { inside_public }
 }
 
-/// Whether a sandbox runner is available. No production `PackRunner` is wired
-/// into this build, so every sandbox path reports `SBX-07` and exits 2.
-fn runner_available() -> bool {
-    false
+/// Builds the sandbox pack runner. No production `PackRunner` is wired into
+/// this build yet, so this returns `None` and every sandbox path reports
+/// `SBX-07` and exits 2. The runner lands with the sandbox-wiring task.
+fn pack_runner() -> Option<Box<dyn counterspell_grimoire::runner::PackRunner>> {
+    None
 }
 
 /// Reads `CATALOGUE_DATABASE_URL` and connects. The variable name is the only
@@ -355,7 +362,7 @@ async fn run_import(options: &Options) -> ExitCode {
     };
     let wants_sandbox =
         options.mode == Mode::Sandbox || (options.mode == Mode::Default && !options.dry_run);
-    if wants_sandbox && !runner_available() {
+    if wants_sandbox && pack_runner().is_none() {
         eprintln!(
             "counterspell-catalogue: SBX-07: no sandbox pack runner is wired into this build"
         );
@@ -372,9 +379,13 @@ async fn run_import(options: &Options) -> ExitCode {
             return ExitCode::from(EXIT_USAGE);
         }
     };
-    if let Err(error) = sync_taxonomy(&pool, &taxonomy).await {
-        eprintln!("counterspell-catalogue: taxonomy sync failed: {error}");
-        return ExitCode::from(EXIT_USAGE);
+    // A dry run plans only; the taxonomy sync is a real upsert and belongs to
+    // import commands that write, never to `--dry-run` (CAT-I13).
+    if !options.dry_run {
+        if let Err(error) = sync_taxonomy(&pool, &taxonomy).await {
+            eprintln!("counterspell-catalogue: taxonomy sync failed: {error}");
+            return ExitCode::from(EXIT_USAGE);
+        }
     }
 
     let entries = match list_pack_entries(&options.packs_root) {
@@ -398,18 +409,18 @@ async fn run_validate(options: &Options) -> ExitCode {
     let Ok(private_root) = pack_gate(options) else {
         return ExitCode::from(EXIT_USAGE);
     };
-    if !runner_available() {
+    let Some(mut runner) = pack_runner() else {
         eprintln!(
             "counterspell-catalogue: SBX-07: no sandbox pack runner is wired into this build"
         );
         return ExitCode::from(EXIT_USAGE);
-    }
+    };
     let slug = options.slug.clone().unwrap_or_default();
     let pool = match connect().await {
         Ok(pool) => pool,
         Err(code) => return code,
     };
-    let report = validate_one(&pool, &slug, options, private_root, "").await;
+    let report = validate_one(&pool, &slug, options, private_root, "", runner.as_mut()).await;
     print_reports(std::slice::from_ref(&report), options.json);
     match report.outcome {
         Outcome::Created | Outcome::Unchanged => ExitCode::from(EXIT_OK),
@@ -418,7 +429,7 @@ async fn run_validate(options: &Options) -> ExitCode {
 }
 
 /// Runs the assembled `validate-sandbox` path for one slug. Unreachable while
-/// [`runner_available`] is false — the runner and its pinned image digest land
+/// [`pack_runner`] returns `None` — the runner and its pinned image digest land
 /// with the sandbox-wiring task; the signature already takes them.
 async fn validate_one(
     pool: &PgPool,
@@ -426,6 +437,7 @@ async fn validate_one(
     options: &Options,
     private_root: &Path,
     image_digest: &str,
+    runner: &mut dyn counterspell_grimoire::runner::PackRunner,
 ) -> PackReport {
     let public_dir = options.packs_root.join(slug);
     let private_dir = private_root.join(PRIVATE_PACKS_DIR).join(slug);
@@ -458,12 +470,11 @@ async fn validate_one(
         Ok(pack) => pack,
         Err(error) => return refused(slug, error.code()),
     };
-    let mut runner = unimplemented_runner();
     match validate_sandbox(
         pool,
         slug,
         &pack.sandbox_pack(slug, &retired, image_digest),
-        runner.as_mut(),
+        runner,
         &operator(),
     )
     .await
@@ -481,11 +492,6 @@ async fn validate_one(
         Ok(ValidateOutcome::Refused(refusal)) => refused(slug, refusal.code()),
         Err(_) => failed(slug, "validate_error"),
     }
-}
-
-/// The runner placeholder for the wired-but-unreachable sandbox path.
-fn unimplemented_runner() -> Box<dyn counterspell_grimoire::runner::PackRunner> {
-    unimplemented!("no PackRunner is wired into this build")
 }
 
 /// Reads and parses `packs/catalogue.toml` (D13). The taxonomy is shared
