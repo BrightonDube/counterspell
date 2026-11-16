@@ -187,7 +187,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 5: configuration, logs and CI
 
-- [ ] **H16 [P] (25 min) Compose and deployment settings**
+- [x] **H16 [P] (25 min) Compose and deployment settings**
   - Files: `docker-compose.yml` (pass-through `${NAME}` entries only), `deploy/hints.md`.
   - Pass through the hint variables to `server`. Enable Valkey append-only persistence (open question 6). Document each variable and its default in `deploy/hints.md`.
   - Requirements: R8.1, R6.6 (persistence).
