@@ -119,7 +119,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: a fixture with a `hidden.toml` in the public path fails with `LAY-05`; the same file in the assembled tree passes the layout check.
   - Rust lesson: a file allow-list is a set. Explain why adding a name to a set can widen what the validator accepts, and why each new name needs its own test.
 
-- [ ] **PA09 [P] (30 min) Stage prompt templates S0 to S9**
+- [x] **PA09 [P] (30 min) Stage prompt templates S0 to S9**
   - Files: `.kiro/pipeline/prompts/S0.md` to `S9.md`.
   - Each template states: the stage's inputs, its output paths, its stop condition, its codes, and the checklist IDs it must answer. No template contains a retired value, a hidden value, a token or a path to the private credential. Each template asks for the author's own wording and forbids opening third-party problem text.
   - Requirements: PIP-6, PIP-41, PIP-3.
@@ -200,7 +200,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: the hook JSON parses; its command matches the script path; the matcher covers `packs/` and `fs_write|str_replace`.
   - Rust lesson: none.
 
-- [ ] **PA19 [P] (25 min) Secret and prompt scan**
+- [x] **PA19 [P] (25 min) Secret and prompt scan**
   - Files: `scripts/tests/pack-prompt-secret-scan-test.sh`.
   - Scan `.kiro/pipeline/`, `.kiro/agents/`, `.kiro/skills/grimoire-pack-authoring/`, `.kiro/skills/pack-review/`, `docs/pack-reviews/` and the scripts for token-like strings, `password=`, `PRIVATE_KEY`, `ghp_`, retired-value markers and any path to `.env`. Also check that `pack-batch.sh` and `pack-assemble.sh` never echo the credential variable.
   - Requirements: PIP-33, PIP-41, PIP-32.
