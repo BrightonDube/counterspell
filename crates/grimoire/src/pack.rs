@@ -143,7 +143,10 @@ fn scan_dir(
                 "dot-prefixed files are not allowed",
             ));
         } else if metadata.is_dir() {
-            if !nested && prefix.is_empty() && is_allowed_dir(name) {
+            // `fixtures/` nests one level deeper: `fixtures/<lang>/<file>`.
+            if (!nested && prefix.is_empty() && is_allowed_dir(name))
+                || (nested && prefix == "fixtures")
+            {
                 scan_dir(&entry.path(), &relative, true, report, scan)?;
             } else {
                 report.push(Diagnostic::new(
@@ -225,8 +228,26 @@ fn size_cap(name: &str) -> Option<u64> {
         "hints.toml" => Some(8 * 1024),
         "reference/solution.py" => Some(64 * 1024),
         _ if is_incorrect_program(name) => Some(64 * 1024),
+        _ if is_fixture_program(name) => Some(64 * 1024),
         _ => None,
     }
+}
+
+/// Whether `name` is a `fixtures/<lang>/known_correct.<ext>` test fixture
+/// (language-drivers T10). Fixtures are test-only programs; they never join
+/// the reference or incorrect sets.
+fn is_fixture_program(name: &str) -> bool {
+    let Some(rest) = name.strip_prefix("fixtures/") else {
+        return false;
+    };
+    let Some((lang, file)) = rest.split_once('/') else {
+        return false;
+    };
+    !lang.is_empty()
+        && !file.contains('/')
+        && file
+            .strip_prefix("known_correct.")
+            .is_some_and(|ext| !ext.is_empty() && !ext.contains('.'))
 }
 
 /// Whether `name` is an `incorrect/<file>.py` program directly inside `incorrect/`.
@@ -236,9 +257,10 @@ fn is_incorrect_program(name: &str) -> bool {
     })
 }
 
-/// The two directories that may hold files one level down.
+/// The three directories that may hold files one level down. `fixtures/`
+/// holds one `<lang>` directory per enabled language (language-drivers T10).
 fn is_allowed_dir(name: &str) -> bool {
-    matches!(name, "reference" | "incorrect")
+    matches!(name, "reference" | "incorrect" | "fixtures")
 }
 
 /// Accepts UTF-8 text with no control characters except tab, line feed and carriage return.

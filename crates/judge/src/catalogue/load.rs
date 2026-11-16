@@ -239,7 +239,12 @@ fn type_descriptor(name: &str) -> Result<Value, AssembleError> {
 /// The judge writes `signature` verbatim to `/box/signature.json` when a run
 /// launches, so `parameters` carry `{"kind": …}` descriptors, not meta.toml
 /// type strings.
-fn signature_descriptor(record: &ProblemRecord) -> Result<Value, AssembleError> {
+///
+/// # Errors
+///
+/// Returns [`AssembleError::SignatureTypeInvalid`] when a parameter or the
+/// return type is not a launch type.
+pub fn signature_descriptor(record: &ProblemRecord) -> Result<Value, AssembleError> {
     let parameters = record
         .signature
         .params
