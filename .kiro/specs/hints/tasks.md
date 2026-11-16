@@ -127,7 +127,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: append-only hints; no UPDATE grant.
   - Rust lesson: not a Rust change. Skip the Rust lesson for this SQL-only task and note that in the commit message.
 
-- [ ] **H11 [S] (35 min) Store: ladder reveal and AI rows**
+- [x] **H11 [S] (35 min) Store: ladder reveal and AI rows**
   - Files: `crates/server/src/hints/store.rs`.
   - `load_submission_for_hints(user, id)` (owned and finished, else `NotFound`), `revealed_rungs`, `authored_body`, `reveal_ladder` (insert with `ON CONFLICT DO NOTHING` and read back), `find_ai(submission, rung)`, `insert_ai` (`ON CONFLICT DO NOTHING`, read back), `ghost_for(submission)`.
   - Requirements: R1.4, R1.6, R1.7, R2.4, R7.1, R7.4.

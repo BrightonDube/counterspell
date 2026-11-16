@@ -11,3 +11,4 @@ pub mod guard;
 pub mod ladder;
 pub mod provider;
 pub mod quota;
+pub mod store;

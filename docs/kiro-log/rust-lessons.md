@@ -1368,3 +1368,15 @@ The builder is a plain function from stored values to sections, so its tests nee
 - Valkey runs each `INCRBY` as one atomic step, so two requests that arrive together cannot both read the same old count. The reply tells each caller its own new total.
 - An enum such as `Reserve::Granted(Reservation)` or `CapReached` makes "refused" a normal value, not an error. Only a broken connection becomes an `Err`.
 - Functions that take `&mut` to a small `Taken` record note each count as it succeeds. On failure, `undo` removes exactly those counts, which is the safe way to clean up after an `await` that failed part-way.
+
+# Rust lesson: hints H10
+
+- `include_str!` reads the migration file at build time. If someone edits or deletes the SQL, the test build fails, so the test always checks the file that ships.
+- A `match` on `sqlx::Error::Database` lets the test check PostgreSQL's error code (`42501`, insufficient privilege) instead of matching text, so the test still passes if the message wording changes.
+- `Option` for a column that may be `NULL` (for example `cache_key`) makes the binding type match the database: `None` binds as SQL `NULL`.
+
+# Rust lesson: hints H11
+
+- `INSERT ... ON CONFLICT DO NOTHING` followed by a `SELECT` in one transaction gives an "insert once" write. A second request waits for the first commit, then reads the winner's row, so no caller sees a row that was never stored.
+- `sqlx::query_as` with a tuple type maps each column by position. `fetch_optional` returns `Option`, so "no row" is a normal value and the handler can answer `404` for it.
+- Casting a `jsonb` column to `text` in SQL (`input::text`) lets the Rust side hold it as a `String`, so no JSON type is needed in the store.
