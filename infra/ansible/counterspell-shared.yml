@@ -1,0 +1,35 @@
+---
+# Counterspell on the shared OVH host, where Evorayn is live (deployer agent, deploy-ops).
+# Runs ONLY the app, sandbox and caddy_site roles. It never runs base or docker: those would rewrite
+# sshd, sudoers and /etc/docker/daemon.json for every tenant of the host.
+#
+#   ansible-playbook -i inventory/hosts.yml counterspell-shared.yml --check --diff     # plan
+#   ansible-playbook -i inventory/hosts.yml counterspell-shared.yml                    # deploy (needs Brighton's DEPLOY)
+#
+# Secrets come from the Ansible Vault file inventory/group_vars/counterspell/vault.yml. The vault
+# password file lives outside the repository at ~/.config/counterspell/vault-pass.
+- name: Configure Counterspell on the shared host
+  hosts: counterspell
+  become: true
+  gather_facts: false
+  pre_tasks:
+    - name: Refuse to run anywhere except the shared host
+      ansible.builtin.assert:
+        that:
+          - shared_host | default(false) | bool
+        fail_msg: >-
+          shared_host is not true for this host. counterspell-shared.yml is only for the shared host;
+          use site.yml for a dedicated host.
+        quiet: true
+      become: false
+      tags: [always]
+    - name: Gather facts, only after the guard has passed
+      ansible.builtin.setup:
+      tags: [always]
+  roles:
+    - role: app
+      tags: [app]
+    - role: sandbox
+      tags: [sandbox]
+    - role: caddy_site
+      tags: [caddy_site]

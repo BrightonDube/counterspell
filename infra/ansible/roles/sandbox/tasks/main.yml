@@ -2,6 +2,14 @@
 # Rootless Docker daemon for sandboxes only (deploy-ops R3.1 to R3.8). The main daemon never runs user
 # code and the sandbox daemon never holds application secrets.
 
+- name: Create the sandbox account with a fixed UID, locked, no keys (the base role does this on a dedicated host)
+  ansible.builtin.user:
+    name: "{{ sandbox_user }}"
+    uid: "{{ sandbox_uid }}"
+    shell: /bin/bash
+    password: "!"
+    create_home: true
+
 - name: Look up the sandbox account
   ansible.builtin.getent:
     database: passwd

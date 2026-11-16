@@ -1,0 +1,15 @@
+---
+# Renders the caddy_site role's site template with fixture values, for check-shared-playbook.sh.
+- name: Render the Counterspell Caddy site file
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    caddy_site_address: 15-204-92-66.sslip.io
+    caddy_site_upstream: counterspell-server:8080
+  tasks:
+    - name: Render the site file
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/caddy_site/templates/counterspell.caddy.j2"
+        dest: "{{ render_dir }}/counterspell.caddy"
+        mode: "0644"

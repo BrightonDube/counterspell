@@ -1,0 +1,21 @@
+# Defaults for the caddy_site role: one Counterspell site file in the shared Caddy (the only change
+# allowed there). [U] values are confirmed during `plan`, from a read-only look at /opt/proxy.
+caddy_site_file_name: counterspell.caddy
+caddy_site_upstream: counterspell-server:8080
+
+# Where the shared Caddy lives on the host, and who owns it.
+caddy_site_proxy_dir: "{{ proxy_root | default('/opt/proxy') }}"
+caddy_site_proxy_owner: deploy-proxy
+caddy_site_proxy_group: deploy-proxy
+caddy_site_host_caddyfile: "{{ caddy_site_proxy_dir }}/Caddyfile"        # [U]
+caddy_site_host_sites_dir: "{{ caddy_site_proxy_dir }}/sites"              # [U]
+
+# The same paths as the Caddy container sees them, and the container name. [U]
+caddy_site_container: caddy
+caddy_site_container_caddyfile: /etc/caddy/Caddyfile
+caddy_site_container_sites_dir: /etc/caddy/sites
+
+# The Docker network the Counterspell server shares with the proxy. When true, the role attaches the
+# running Caddy container to it (no restart). It does not survive recreating that container.
+caddy_site_connect_network: false
+caddy_site_network: counterspell_proxy
