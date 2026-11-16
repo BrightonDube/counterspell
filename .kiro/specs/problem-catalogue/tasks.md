@@ -290,7 +290,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_judge_ghosts` (rows load for the pinned version only; the server role cannot run the same SQL: `permission denied`).
   - Rust lesson: the server's denied query is a test, so a future change that gives the server access fails a test instead of shipping.
 
-- [ ] **C26 [BLOCKED on judge-sandbox T24] [S] (20 min) Version parameter in `ProblemTests`**
+- [x] **C26 [S] (20 min) Version parameter in `ProblemTests`**
   - Files: change agreed with judge-sandbox owner (X1). This spec's file: `crates/judge/src/problem_store.rs` (impl only).
   - `ProblemTests::load(slug, version, mode)`. Update `EmptyProblemTests`, `StaticProblemTests` and `DirProblemTests` in judge-sandbox testkit in the same change. Assertions unchanged.
   - Requirements: CAT-L4, CAT-L7.

@@ -21,6 +21,10 @@ pub struct RunInput {
     pub run_id: RunId,
     /// The problem to load.
     pub problem_slug: String,
+    /// The version the submission was pinned to when it was enqueued. `0` names no
+    /// version, so a run that arrives without a pin loads nothing and reports
+    /// `problem_unavailable` instead of guessing a latest version.
+    pub problem_version: u32,
     /// The language of the source.
     pub lang: String,
     /// Sample run or hidden-test submission.

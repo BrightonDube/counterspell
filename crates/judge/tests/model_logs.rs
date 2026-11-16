@@ -118,6 +118,7 @@ async fn the_canary_never_reaches_the_logs() {
     let input = RunInput {
         run_id: RunId::new(),
         problem_slug: "two-sum".to_owned(),
+        problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
         code: "def two_sum(nums, target):\n    return [0, 1]\n".to_owned(),

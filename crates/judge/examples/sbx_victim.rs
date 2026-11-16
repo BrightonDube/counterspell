@@ -87,6 +87,7 @@ async fn main() {
     let run = RunInput {
         run_id: RunId::new(),
         problem_slug: "add".to_owned(),
+        problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
         code: std::fs::read_to_string(manifest.join("tests/hostile/sleep_forever.py"))

@@ -17,6 +17,7 @@ fn input() -> RunInput {
     RunInput {
         run_id: RunId::new(),
         problem_slug: "two-sum".to_owned(),
+        problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
         code: "print(1)".to_owned(),

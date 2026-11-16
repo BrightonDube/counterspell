@@ -26,6 +26,10 @@ pub struct ClaimedRun {
     pub token: ClaimToken,
     /// The problem the run is for.
     pub problem_slug: String,
+    /// The version the submission was pinned to when it was enqueued. `None` means the
+    /// row predates pinning or was seeded by a test without one; the worker turns that
+    /// into version `0`, which no loader can satisfy.
+    pub problem_version: Option<u32>,
     /// The language the source is written in.
     pub lang: String,
     /// Whether this is a sample run or a hidden-test submission.
@@ -87,11 +91,18 @@ pub async fn claim_next(
     .execute(&mut *tx)
     .await?;
 
-    let (problem_slug, lang, mode_text, code): (String, String, String, String) =
-        sqlx::query_as("SELECT problem_slug, lang, mode, code FROM submissions WHERE id = $1")
-            .bind(run_uuid)
-            .fetch_one(&mut *tx)
-            .await?;
+    let (problem_slug, problem_version, lang, mode_text, code): (
+        String,
+        Option<i32>,
+        String,
+        String,
+        String,
+    ) = sqlx::query_as(
+        "SELECT problem_slug, problem_version, lang, mode, code FROM submissions WHERE id = $1",
+    )
+    .bind(run_uuid)
+    .fetch_one(&mut *tx)
+    .await?;
     let mode = RunMode::parse(&mode_text).ok_or_else(|| {
         QueueError::Database(sqlx::Error::ColumnDecode {
             index: "mode".to_owned(),
@@ -113,6 +124,7 @@ pub async fn claim_next(
     Ok(Some(ClaimedRun {
         token: ClaimToken::new(job_id, run, worker.to_owned(), attempts),
         problem_slug,
+        problem_version: problem_version.and_then(|v| u32::try_from(v).ok()),
         lang,
         mode,
         code,

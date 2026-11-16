@@ -51,6 +51,7 @@ async fn execute_with_backend(
     let run = counterspell_judge::executor::RunInput {
         run_id: counterspell_common::ids::RunId::new(),
         problem_slug: "add".to_owned(),
+        problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
         code: source.to_owned(),

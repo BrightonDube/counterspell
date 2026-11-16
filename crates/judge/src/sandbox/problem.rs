@@ -74,10 +74,12 @@ pub enum ProblemError {
 
 /// Loads a problem's tests for one run.
 ///
+/// `version` is the version the submission was pinned to when it was enqueued — a
+/// submission keeps its pinned version even after the problem is unpublished (P9).
 /// `mode` picks the slice: `Run` returns only the sample tests, `Submit` the whole
 /// suite.
 pub trait ProblemTests: Send + Sync + 'static {
-    /// Loads `slug` for `mode`.
+    /// Loads `slug` at `version` for `mode`.
     ///
     /// # Errors
     ///
@@ -86,6 +88,7 @@ pub trait ProblemTests: Send + Sync + 'static {
     fn load(
         &self,
         slug: &str,
+        version: u32,
         mode: RunMode,
     ) -> impl Future<Output = Result<Option<ProblemSpec>, ProblemError>> + Send;
 }
@@ -109,6 +112,7 @@ impl ProblemTests for EmptyProblemTests {
     fn load(
         &self,
         _slug: &str,
+        _version: u32,
         _mode: RunMode,
     ) -> impl Future<Output = Result<Option<ProblemSpec>, ProblemError>> + Send {
         std::future::ready(Ok(None))

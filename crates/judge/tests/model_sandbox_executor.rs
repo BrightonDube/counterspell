@@ -136,6 +136,7 @@ fn input(mode: RunMode) -> RunInput {
     RunInput {
         run_id: RunId::new(),
         problem_slug: "two-sum".to_owned(),
+        problem_version: 1,
         lang: "python".to_owned(),
         mode,
         code: "def two_sum(nums, target):\n    return [0, 1]\n".to_owned(),
@@ -375,7 +376,7 @@ async fn dir_problem_tests_loads_a_fixture_and_filters_by_mode() {
     let problems = DirProblemTests::new(dir);
 
     let run = problems
-        .load("two-sum", RunMode::Run)
+        .load("two-sum", 1, RunMode::Run)
         .await
         .expect("the fixture parses")
         .expect("two-sum exists");
@@ -384,7 +385,7 @@ async fn dir_problem_tests_loads_a_fixture_and_filters_by_mode() {
         "mode Run loads only the sample tests"
     );
     let submit = problems
-        .load("two-sum", RunMode::Submit)
+        .load("two-sum", 1, RunMode::Submit)
         .await
         .expect("the fixture parses")
         .expect("two-sum exists");
@@ -394,11 +395,19 @@ async fn dir_problem_tests_loads_a_fixture_and_filters_by_mode() {
     );
     assert!(
         problems
-            .load("no-such-problem", RunMode::Submit)
+            .load("no-such-problem", 1, RunMode::Submit)
             .await
             .expect("a missing file is not an error")
             .is_none(),
         "an absent fixture is problem_unavailable"
+    );
+    assert!(
+        problems
+            .load("two-sum", 2, RunMode::Submit)
+            .await
+            .expect("an unpinned version is not an error")
+            .is_none(),
+        "a version the store does not hold is problem_unavailable"
     );
 }
 
@@ -408,7 +417,7 @@ async fn dir_problem_tests_loads_the_bench_declaration() {
     let problems = DirProblemTests::new(dir);
 
     let spec = problems
-        .load("two-sum", RunMode::Submit)
+        .load("two-sum", 1, RunMode::Submit)
         .await
         .expect("the fixture parses")
         .expect("two-sum exists");

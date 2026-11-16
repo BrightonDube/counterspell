@@ -466,13 +466,17 @@ impl super::problem::ProblemTests for StaticProblemTests {
     fn load(
         &self,
         slug: &str,
+        version: u32,
         mode: counterspell_common::status::RunMode,
     ) -> impl Future<
         Output = Result<Option<super::problem::ProblemSpec>, super::problem::ProblemError>,
     > + Send {
+        // One spec per slug, so a pinned version that does not match is simply absent,
+        // the same answer a real store gives for a version it does not have.
         let spec = self
             .specs
             .get(slug)
+            .filter(|spec| spec.version == version)
             .map(|spec| super::problem::tests_for_mode(spec, mode));
         ready(Ok(spec))
     }
@@ -539,11 +543,12 @@ impl super::problem::ProblemTests for DirProblemTests {
     fn load(
         &self,
         slug: &str,
+        version: u32,
         mode: counterspell_common::status::RunMode,
     ) -> impl Future<
         Output = Result<Option<super::problem::ProblemSpec>, super::problem::ProblemError>,
     > + Send {
-        ready(self.load_sync(slug, mode))
+        ready(self.load_sync(slug, version, mode))
     }
 }
 
@@ -552,6 +557,7 @@ impl DirProblemTests {
     fn load_sync(
         &self,
         slug: &str,
+        version: u32,
         mode: counterspell_common::status::RunMode,
     ) -> Result<Option<super::problem::ProblemSpec>, super::problem::ProblemError> {
         if !safe_slug(slug) {
@@ -600,6 +606,11 @@ impl DirProblemTests {
             generator_schema: raw.bench.as_ref().map(|bench| bench.schema.clone()),
             reference_complexity: raw.bench.map(|bench| bench.reference),
         };
+        // A fixture pins one version; a run pinned to another version finds nothing,
+        // exactly like a store that only holds the versions it imported.
+        if spec.version != version {
+            return Ok(None);
+        }
         Ok(Some(super::problem::tests_for_mode(&spec, mode)))
     }
 }

@@ -137,6 +137,23 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
         build_tar(&files).map_err(|error| ExecError::Infrastructure(error.to_string()))
     }
 
+    /// Loads the pinned problem spec. `Ok(None)` means no store holds that version —
+    /// the run reports `problem_unavailable`; `Err` is a broken store, which is
+    /// infrastructure and never the user's fault.
+    async fn load_problem(&self, run: &RunInput) -> Result<Option<ProblemSpec>, ExecError> {
+        match self
+            .problems
+            .load(&run.problem_slug, run.problem_version, run.mode)
+            .await
+        {
+            Ok(spec) => Ok(spec),
+            Err(error) => {
+                tracing::warn!(%error, "the problem store failed");
+                Err(ExecError::Infrastructure("problem_store".to_owned()))
+            }
+        }
+    }
+
     /// Emits one public event per executed test and builds the stored result, honouring
     /// the visibility rule: once a hidden test has run, every later record is
     /// verdict-and-time only.
@@ -373,13 +390,8 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
         };
         // 2. The problem must load. An absent problem fails the run; a broken store
         //    is infrastructure.
-        let spec = match self.problems.load(&run.problem_slug, run.mode).await {
-            Ok(Some(spec)) => spec,
-            Ok(None) => return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable)),
-            Err(error) => {
-                tracing::warn!(%error, "the problem store failed");
-                return Err(ExecError::Infrastructure("problem_store".to_owned()));
-            }
+        let Some(spec) = self.load_problem(&run).await? else {
+            return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable));
         };
         // 3. Every probed language's preflight must pass. No report counts as failing.
         if !self.preflights.iter().all(|state| state.passed()) {

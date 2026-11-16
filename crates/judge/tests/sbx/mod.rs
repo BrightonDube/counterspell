@@ -243,6 +243,7 @@ pub async fn run_source(
     let run = RunInput {
         run_id: RunId::new(),
         problem_slug: slug.to_owned(),
+        problem_version: 1,
         lang: lang.to_owned(),
         mode,
         code: source.to_owned(),
@@ -303,6 +304,7 @@ pub async fn execute_on(
     let run = RunInput {
         run_id: RunId::new(),
         problem_slug: slug.to_owned(),
+        problem_version: 1,
         lang: lang.to_owned(),
         mode,
         code: source.to_owned(),
@@ -407,6 +409,7 @@ pub fn spawn_source(
     let run = RunInput {
         run_id,
         problem_slug: slug.to_owned(),
+        problem_version: 1,
         lang: lang.to_owned(),
         mode,
         code: source.to_owned(),
