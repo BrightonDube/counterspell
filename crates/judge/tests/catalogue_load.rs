@@ -258,10 +258,19 @@ fn assemble_import_maps_everything() {
     assert_eq!(import.known_ghosts.len(), 1);
     assert_eq!(import.known_ghosts[0].ghost_id, "adds-pair");
     assert_eq!(import.known_ghosts[0].kind, "wrong");
+    // The stored signature is the driver-protocol descriptor: the judge writes it
+    // verbatim to `/box/signature.json` at run launch.
+    assert_eq!(import.signature["protocol_version"], 1);
     assert_eq!(import.signature["function"], "two_sum");
-    assert_eq!(import.signature["params"][0]["name"], "nums");
-    assert_eq!(import.signature["params"][0]["type"], "list[int]");
-    assert_eq!(import.signature["returns"], "list[int]");
+    assert_eq!(import.signature["parameters"][0]["name"], "nums");
+    assert_eq!(
+        import.signature["parameters"][0]["type"],
+        json!({"kind": "list", "items": {"kind": "int"}})
+    );
+    assert_eq!(
+        import.signature["returns"],
+        json!({"kind": "list", "items": {"kind": "int"}})
+    );
     assert_eq!(import.limits["time_ms"], 2000);
     assert_eq!(*manifest.content_sha256(), import.content_sha256);
     assert!(!import.manifest_public.is_empty());

@@ -17,6 +17,7 @@ use counterspell_grimoire::ghosts::{sandbox_ghosts, SandboxGhost};
 use counterspell_grimoire::hints::AuthoredLadder;
 use counterspell_grimoire::meta::Meta;
 use counterspell_grimoire::record::ProblemRecord;
+use counterspell_grimoire::signature::LaunchType;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -65,6 +66,9 @@ pub enum AssembleError {
     /// The signature could not be rendered as a starter.
     #[error("starter generation failed for {0}")]
     StarterInvalid(&'static str),
+    /// A signature type string is not a launch type.
+    #[error("signature type {0} is not a launch type")]
+    SignatureTypeInvalid(String),
     /// `hidden.toml` does not parse into `[[case]]` entries.
     #[error("hidden.toml does not parse")]
     HiddenInvalid,
@@ -86,6 +90,7 @@ impl AssembleError {
             Self::BadUtf8(_) => "bad_utf8",
             Self::HintsInvalid => "hints_invalid",
             Self::StarterInvalid(_) => "starter_invalid",
+            Self::SignatureTypeInvalid(_) => "signature_type_invalid",
             Self::HiddenInvalid => "hidden_invalid",
             Self::GeneratorInvalid => "generator_invalid",
             Self::JsonFailed => "json_failed",
@@ -215,6 +220,42 @@ impl PackFiles {
     }
 }
 
+/// Maps a meta.toml type string to a driver-protocol `{"kind": …}` descriptor.
+fn type_descriptor(name: &str) -> Result<Value, AssembleError> {
+    match LaunchType::parse(name) {
+        Some(LaunchType::Int) => Ok(json!({"kind": "int"})),
+        Some(LaunchType::Str) => Ok(json!({"kind": "string"})),
+        Some(LaunchType::IntArray) => Ok(json!({"kind": "list", "items": {"kind": "int"}})),
+        Some(LaunchType::Matrix) => Ok(json!({
+            "kind": "list",
+            "items": {"kind": "list", "items": {"kind": "int"}}
+        })),
+        None => Err(AssembleError::SignatureTypeInvalid(name.to_owned())),
+    }
+}
+
+/// Builds the driver-protocol signature descriptor the column stores.
+///
+/// The judge writes `signature` verbatim to `/box/signature.json` when a run
+/// launches, so `parameters` carry `{"kind": …}` descriptors, not meta.toml
+/// type strings.
+fn signature_descriptor(record: &ProblemRecord) -> Result<Value, AssembleError> {
+    let parameters = record
+        .signature
+        .params
+        .iter()
+        .map(|param| {
+            type_descriptor(&param.kind).map(|kind| json!({"name": param.name, "type": kind}))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(json!({
+        "protocol_version": 1,
+        "function": record.signature.function,
+        "parameters": parameters,
+        "returns": type_descriptor(&record.signature.returns)?,
+    }))
+}
+
 /// Assembles the static import model for a pack that passed validation.
 ///
 /// The content hash comes from the manifest; `meta` supplies samples and the
@@ -272,14 +313,7 @@ pub fn assemble_import(
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    let signature = json!({
-        "function": record.signature.function,
-        "params": record.signature.params.iter().map(|param| json!({
-            "name": param.name,
-            "type": param.kind,
-        })).collect::<Vec<Value>>(),
-        "returns": record.signature.returns,
-    });
+    let signature = signature_descriptor(record)?;
     let limits = json!({
         "time_ms": record.limits.time_ms,
         "mem_mb": record.limits.mem_mb,
