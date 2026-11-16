@@ -1393,3 +1393,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `Result<Json<T>, JsonRejection>` as an argument turns a bad body into a value the handler can answer with our own error envelope, instead of Axum's plain-text rejection.
 - Returning `Result<T, ApiError>` from a helper keeps the error type small. Clippy's `result_large_err` lint warns when the `Err` side is a whole `Response`, so the helper returns the small error and the caller converts it.
 - `Arc<HintState>` in `AppState` is cloned cheaply per request, and `with_hints` replaces it in one call. That keeps `main` thin, as the server structure requires.
+
+# Rust lesson: hints H-test
+
+- Files in `tests/` are separate crates, so they can only use the public API of the library. That is why the server has a `lib.rs` and the tests call `counterspell_server::...`.
+- Test helpers that build a `HintState` by hand use `HintConfig::from_map` with fake keys. The key values never leave the test process.
+- `.expect("message")` is allowed here because it is in a test. A failed set-up step then stops the test with its message.
+- A struct literal with `pub` fields (`HintState { ... }`) is the simplest way for a test to inject its own pieces, with no mocking framework.
