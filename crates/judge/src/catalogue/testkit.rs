@@ -184,12 +184,13 @@ async fn insert_version_row(pool: &PgPool, slug: &str, version: i32) -> Result<(
     .bind(TRACK)
     .bind(json!([]))
     .bind(json!({
+        "protocol_version": 1,
         "function": "two_sum",
-        "params": [
-            {"name": "values", "type": "list[int]"},
-            {"name": "target", "type": "int"}
+        "parameters": [
+            {"name": "values", "type": {"kind": "list", "items": {"kind": "int"}}},
+            {"name": "target", "type": {"kind": "int"}}
         ],
-        "returns": "list[int]"
+        "returns": {"kind": "list", "items": {"kind": "int"}}
     }))
     .bind(json!({"kind": "int"}))
     .bind(json!({"time_ms": 2000, "mem_mb": 256}))
@@ -221,12 +222,13 @@ pub fn static_import(version: i32, body_hash: u8, statement: &str) -> StaticImpo
         statement_markdown: statement.to_string(),
         constraints: vec!["The list has at most 10 items.".to_string()],
         signature: json!({
+            "protocol_version": 1,
             "function": "two_sum",
-            "params": [
-                {"name": "values", "type": "list[int]"},
-                {"name": "target", "type": "int"}
+            "parameters": [
+                {"name": "values", "type": {"kind": "list", "items": {"kind": "int"}}},
+                {"name": "target", "type": {"kind": "int"}}
             ],
-            "returns": "list[int]"
+            "returns": {"kind": "list", "items": {"kind": "int"}}
         }),
         input_schema: json!({"kind": "int"}),
         comparator: "exact".to_string(),
