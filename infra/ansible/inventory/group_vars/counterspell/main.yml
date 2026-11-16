@@ -1,4 +1,17 @@
 ---
-# Non-secret values for the shared host. Secrets go in vault.yml (encrypted, see vault.example.yml).
-# Attach the running shared Caddy to counterspell_proxy so it can reach counterspell-server (no restart).
-caddy_site_connect_network: true
+# Non-secret values for the shared host, where Evorayn is also live (verified read-only, 16 Nov 2026).
+# Secrets go in vault.yml (encrypted, see vault.example.yml).
+
+# Layout: everything stays under /opt/counterspell, owned by the deploy user.
+app_owner: deploy-counterspell
+app_env_dir: /opt/counterspell/secrets
+app_bin_dir: /opt/counterspell/bin
+
+# The sandbox account already exists on this host with UID 1002 and subordinate range 231072:65536.
+sandbox_uid: 1002
+sandbox_subid_range: "231072:65536"
+# Leave the installed Docker packages alone (the host runs Docker 29.x; a pin could downgrade it).
+sandbox_pin_rootless_extras: false
+
+# The existing counterspell_edge network (Caddy is attached to it). Its subnet is the trusted proxy range.
+trusted_proxies: 172.18.0.0/16

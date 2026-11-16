@@ -23,3 +23,10 @@ sandbox_packages:
   - dbus-user-session
   - acl
   - slirp4netns
+
+# Pin docker-ce-rootless-extras to docker_ce_version on a dedicated host. On a shared host the installed
+# Docker packages are left alone (a pin could downgrade the main daemon that other tenants run on).
+sandbox_pin_rootless_extras: true
+
+# Read by the pre-pull. Lives in the app directory (owned by the deploy user on a shared host), as data only.
+sandbox_languages_toml: /opt/counterspell/languages.toml

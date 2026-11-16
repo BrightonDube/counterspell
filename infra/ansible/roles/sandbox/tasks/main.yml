@@ -24,7 +24,9 @@
 
 - name: Install the rootless Docker and sandbox prerequisites
   ansible.builtin.apt:
-    name: "{{ sandbox_packages + ['docker-ce-rootless-extras=' ~ docker_ce_version] }}"
+    name: >-
+      {{ sandbox_packages + ['docker-ce-rootless-extras=' ~ docker_ce_version
+         if sandbox_pin_rootless_extras | bool else 'docker-ce-rootless-extras'] }}
     state: present
 
 - name: Give the sandbox user subordinate UID and GID ranges (rootless needs them)
@@ -148,20 +150,18 @@
   environment:
     XDG_RUNTIME_DIR: "{{ sandbox_runtime_dir }}"
 
-- name: Install the pre-pull script and the language catalogue
+- name: Install the language catalogue (the pre-pull reads the pinned digests from it)
   ansible.builtin.copy:
-    src: "{{ repo_root }}/{{ item.src }}"
-    dest: "{{ item.dest }}"
+    src: "{{ repo_root }}/languages/languages.toml"
+    dest: "{{ sandbox_languages_toml }}"
     owner: root
     group: root
-    mode: "{{ item.mode }}"
-  loop:
-    - { src: deploy/vps/prepull.sh, dest: /usr/local/sbin/counterspell-prepull, mode: "0755" }
-    - { src: languages/languages.toml, dest: /usr/local/share/counterspell/languages.toml, mode: "0644" }
+    mode: "0644"
 
 - name: Pull each enabled sandbox image by digest and check it (R3.6, R3.7)
-  ansible.builtin.command: /usr/local/sbin/counterspell-prepull
+  # The script is copied, run and removed by Ansible, so no root-run file is left in a user-writable place.
+  ansible.builtin.script: "{{ repo_root }}/deploy/vps/prepull.sh"
   environment:
     SANDBOX_DOCKER_SOCKET: "{{ sandbox_socket }}"
-    LANGUAGES_TOML: /usr/local/share/counterspell/languages.toml
+    LANGUAGES_TOML: "{{ sandbox_languages_toml }}"
   changed_when: false

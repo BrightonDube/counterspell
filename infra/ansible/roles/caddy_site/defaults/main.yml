@@ -1,21 +1,20 @@
-# Defaults for the caddy_site role: one Counterspell site file in the shared Caddy (the only change
-# allowed there). [U] values are confirmed during `plan`, from a read-only look at /opt/proxy.
-caddy_site_file_name: counterspell.caddy
+# Defaults for the caddy_site role. The shared Caddy bind-mounts ONE file (/opt/proxy/compose/Caddyfile),
+# so the change is a marked block appended to that file, in place. Values confirmed by a read-only look at
+# the host on 16 Nov 2026.
+caddy_site_caddyfile: /opt/proxy/compose/Caddyfile
+caddy_site_container: proxy-caddy-1
+caddy_site_container_caddyfile: /etc/caddy/Caddyfile
+
+# The Counterspell server container, reachable by name over the existing counterspell_edge network,
+# which the shared Caddy is already attached to.
 caddy_site_upstream: counterspell-server:8080
 
-# Where the shared Caddy lives on the host, and who owns it.
-caddy_site_proxy_dir: "{{ proxy_root | default('/opt/proxy') }}"
-caddy_site_proxy_owner: deploy-proxy
-caddy_site_proxy_group: deploy-proxy
-caddy_site_host_caddyfile: "{{ caddy_site_proxy_dir }}/Caddyfile"        # [U]
-caddy_site_host_sites_dir: "{{ caddy_site_proxy_dir }}/sites"              # [U]
+# The other tenant's health URL must answer the same before and after the reload.
+caddy_site_health_url: https://api.evorayn.com/health
 
-# The same paths as the Caddy container sees them, and the container name. [U]
-caddy_site_container: caddy
-caddy_site_container_caddyfile: /etc/caddy/Caddyfile
-caddy_site_container_sites_dir: /etc/caddy/sites
-
-# The Docker network the Counterspell server shares with the proxy. When true, the role attaches the
-# running Caddy container to it (no restart). It does not survive recreating that container.
-caddy_site_connect_network: false
-caddy_site_network: counterspell_proxy
+caddy_site_env:
+  CADDY_FILE: "{{ caddy_site_caddyfile }}"
+  CADDY_CONTAINER: "{{ caddy_site_container }}"
+  CADDY_CONTAINER_FILE: "{{ caddy_site_container_caddyfile }}"
+  HEALTH_URL: "{{ caddy_site_health_url }}"
+  CADDY_BLOCK: "{{ lookup('ansible.builtin.template', 'counterspell.caddy.j2') }}"

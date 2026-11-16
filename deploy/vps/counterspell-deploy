@@ -13,7 +13,7 @@ set -euo pipefail
 umask 027
 
 APP_DIR="${COUNTERSPELL_DIR:-/opt/counterspell}"
-HOST_ENV="${COUNTERSPELL_HOST_ENV:-/etc/counterspell/host.env}"
+HOST_ENV="${COUNTERSPELL_HOST_ENV:-$APP_DIR/host.env}"
 CURRENT="$APP_DIR/deploy.env"
 PREVIOUS="$APP_DIR/deploy.env.previous"
 CANDIDATE="$APP_DIR/deploy.env.new"

@@ -1,6 +1,7 @@
 ---
 # App directories, host values, deploy scripts and the compose checksum record (deploy-ops R5.1,
 # R5.4, R7.13). Secrets are never written here: Brighton writes the env files by hand (T27).
+# Ownership comes from app_owner: root on a dedicated host, the deploy user on the shared host.
 
 - name: Refuse to run without the public site address
   ansible.builtin.assert:
@@ -9,28 +10,37 @@
     fail_msg: "Set caddy_site_address in inventory/group_vars/all.yml (the public hostname, no secrets)."
     quiet: true
 
-- name: Create the app directory (root only)
+- name: Create the app directory
   ansible.builtin.file:
     path: "{{ app_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0750"
 
-- name: Create the env directory (root only)
+- name: Create the env directory (owner only)
   ansible.builtin.file:
     path: "{{ app_env_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0700"
+
+- name: Create the script directory when it lives under the app directory
+  ansible.builtin.file:
+    path: "{{ app_bin_dir }}"
+    state: directory
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
+    mode: "0750"
+  when: app_bin_dir is match(app_dir)
 
 - name: Write the non-secret host values (R5.4)
   ansible.builtin.template:
     src: host.env.j2
-    dest: "{{ app_env_dir }}/host.env"
-    owner: root
-    group: root
+    dest: "{{ app_host_env }}"
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0644"
 
 - name: Check that Brighton has written each service env file with mode 0600 (R5.1)
@@ -40,31 +50,29 @@
   register: app_env_stat
   tags: [env-check]
 
-- name: Stop until every service env file exists, is root-owned and is mode 0600
+- name: Stop until every service env file exists, is owned by the app owner and is mode 0600
   ansible.builtin.assert:
     that:
-      - item.stat.exists and item.stat.mode == '0600' and item.stat.pw_name == 'root'
-    fail_msg: "Missing or wrongly permissioned {{ item.stat.path }}. Write it by hand as root with mode 0600 (T27)."
+      - item.stat.exists
+      - item.stat.mode == '0600'
+      - item.stat.pw_name == app_owner
+    fail_msg: >-
+      Missing or wrongly permissioned {{ app_env_dir }}/{{ item.item }}.env. Write it by hand, owned by
+      {{ app_owner }} with mode 0600 (T27).
     quiet: true
   loop: "{{ app_env_stat.results }}"
+  loop_control:
+    label: "{{ item.item }}"
   tags: [env-check]
-
-- name: Create the Counterspell proxy network if it is missing (shared host only)
-  ansible.builtin.shell: |
-    docker network inspect {{ app_proxy_network }} >/dev/null 2>&1 \
-      || docker network create --driver bridge {{ app_proxy_network }}
-  register: app_proxy_network_result
-  changed_when: app_proxy_network_result.stdout | length > 0
-  when: shared_host | default(false) | bool
 
 - name: Copy the compose files and write the checksum record
   ansible.builtin.include_tasks: compose_sha.yml
 
-- name: Install the root-only deploy scripts (mode 0755)
+- name: Install the deploy scripts (mode 0755)
   ansible.builtin.copy:
     src: "{{ repo_root }}/{{ item.src }}"
-    dest: "/usr/local/sbin/{{ item.dest }}"
-    owner: root
-    group: root
+    dest: "{{ app_bin_dir }}/{{ item.dest }}"
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0755"
   loop: "{{ app_scripts }}"

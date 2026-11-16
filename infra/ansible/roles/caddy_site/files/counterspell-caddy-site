@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Adds, replaces or removes ONE Counterspell block in the shared Caddyfile, then validates and reloads the
+# running Caddy. Run as root by the caddy_site role (ansible.builtin.script; nothing is left on the host).
+#
+# Rules (Brighton, 16 Nov 2026):
+#   - Edit the file IN PLACE so its inode is kept (the container bind-mounts that single file). Writes use
+#     `>>` and `cat > file`, never a rename, `sed -i` or lineinfile. The inode is checked before and after.
+#   - Back the file up to <Caddyfile>.bak-<stamp> first.
+#   - The block sits between `# BEGIN counterspell` and `# END counterspell`, so removal takes out exactly it.
+#   - Run `caddy validate` in the container, then `caddy reload`. Never restart or recreate the container.
+#   - Existing lines are never changed. The health URL of the other tenant must answer the same before and
+#     after. Any failure restores the backup and, if a reload was attempted, reloads the restored file.
+#
+# Verbs: plan (read-only), add (add or replace the block), remove.
+# Environment: CADDY_BLOCK (the site block text, for plan/add), CADDY_FILE, CADDY_CONTAINER,
+#   CADDY_CONTAINER_FILE, HEALTH_URL, HEALTH_SETTLE_SECS, BACKUP_STAMP.
+set -euo pipefail
+
+CADDY_FILE="${CADDY_FILE:-/opt/proxy/compose/Caddyfile}"
+CADDY_CONTAINER="${CADDY_CONTAINER:-proxy-caddy-1}"
+CADDY_CONTAINER_FILE="${CADDY_CONTAINER_FILE:-/etc/caddy/Caddyfile}"
+HEALTH_URL="${HEALTH_URL:-https://api.evorayn.com/health}"
+HEALTH_SETTLE_SECS="${HEALTH_SETTLE_SECS:-2}"
+STAMP="${BACKUP_STAMP:-$(date -u +%Y%m%d-%H%M%S)}"
+BEGIN='# BEGIN counterspell'
+END='# END counterspell'
+BACKUP="$CADDY_FILE.bak-$STAMP"
+
+die() { echo "error: $*" >&2; exit 1; }
+
+health_code() { curl -s -o /dev/null -w '%{http_code}' --max-time 10 "$HEALTH_URL" 2>/dev/null || true; }
+
+# Line numbers of the markers, or empty when the block is absent.
+begin_line() { grep -n -x -F "$BEGIN" "$CADDY_FILE" | head -1 | cut -d: -f1 || true; }
+end_line() { grep -n -x -F "$END" "$CADDY_FILE" | head -1 | cut -d: -f1 || true; }
+
+marked_block() { printf '%s\n%s\n%s' "$BEGIN" "$CADDY_BLOCK" "$END"; }
+
+require_file() { [[ -f "$CADDY_FILE" ]] || die "Caddyfile not found: $CADDY_FILE"; }
+require_block() { [[ -n "${CADDY_BLOCK:-}" ]] || die "CADDY_BLOCK is empty"; }
+
+# Puts the backup back, in place, and checks the inode did not change.
+restore() {
+  cat "$BACKUP" > "$CADDY_FILE"
+  [[ "$(stat -c %i "$CADDY_FILE")" == "$INODE_BEFORE" ]] || echo "warning: inode changed during restore" >&2
+}
+
+reload_best_effort() { docker exec "$CADDY_CONTAINER" caddy reload --config "$CADDY_CONTAINER_FILE" >/dev/null 2>&1 || true; }
+
+# Rewrites the file in place from a temporary copy (truncate and write, same inode).
+write_in_place() {
+  local tmp
+  tmp="$(mktemp)"
+  cat > "$tmp"
+  cat "$tmp" > "$CADDY_FILE"
+  rm -f "$tmp"
+}
+
+backup() {
+  [[ ! -e "$BACKUP" ]] || die "backup already exists: $BACKUP"
+  cp -p "$CADDY_FILE" "$BACKUP"
+  echo "backup: $BACKUP"
+}
+
+# Validates, reloads, then checks inode and the other tenant's health. Restores on any failure.
+apply_and_check() {
+  local health_before="$1" after
+  if ! docker exec "$CADDY_CONTAINER" caddy validate --config "$CADDY_CONTAINER_FILE" >/dev/null 2>&1; then
+    restore
+    die "caddy validate failed; backup restored, Caddy was not reloaded"
+  fi
+  if ! docker exec "$CADDY_CONTAINER" caddy reload --config "$CADDY_CONTAINER_FILE" >/dev/null 2>&1; then
+    restore
+    reload_best_effort
+    die "caddy reload failed; backup restored and reloaded"
+  fi
+  sleep "$HEALTH_SETTLE_SECS"
+  after="$(health_code)"
+  if [[ "$after" != "$health_before" ]]; then
+    restore
+    reload_best_effort
+    die "health of $HEALTH_URL changed from $health_before to $after; backup restored and reloaded"
+  fi
+  [[ "$(stat -c %i "$CADDY_FILE")" == "$INODE_BEFORE" ]] || die "inode of $CADDY_FILE changed (was $INODE_BEFORE)"
+  echo "ok: validated, reloaded, health $after, inode $INODE_BEFORE kept"
+}
+
+verb="${1:-}"
+require_file
+INODE_BEFORE="$(stat -c %i "$CADDY_FILE")"
+b="$(begin_line)"
+e="$(end_line)"
+
+case "$verb" in
+  plan)
+    require_block
+    if [[ -z "$b" ]]; then
+      echo "would append the counterspell block to $CADDY_FILE (inode $INODE_BEFORE kept)"
+    elif [[ -z "$e" ]]; then
+      die "found '$BEGIN' without '$END'; refusing to guess"
+    elif [[ "$(sed -n "${b},${e}p" "$CADDY_FILE")" == "$(marked_block)" ]]; then
+      echo "unchanged: the counterspell block is already present"
+    else
+      echo "would replace the counterspell block in $CADDY_FILE (inode $INODE_BEFORE kept)"
+    fi
+    echo "health now: $(health_code)"
+    ;;
+  add)
+    require_block
+    [[ -z "$b" || -n "$e" ]] || die "found '$BEGIN' without '$END'; refusing to guess"
+    if [[ -n "$b" && "$(sed -n "${b},${e}p" "$CADDY_FILE")" == "$(marked_block)" ]]; then
+      echo "unchanged: the counterspell block is already present"
+      exit 0
+    fi
+    health_before="$(health_code)"
+    backup
+    if [[ -z "$b" ]]; then
+      printf '\n%s\n' "$(marked_block)" >> "$CADDY_FILE"
+    else
+      {
+        head -n "$((b - 1))" "$CADDY_FILE"
+        printf '%s\n' "$(marked_block)"
+        tail -n +"$((e + 1))" "$CADDY_FILE"
+      } | write_in_place
+    fi
+    apply_and_check "$health_before"
+    ;;
+  remove)
+    if [[ -z "$b" ]]; then
+      echo "nothing to remove"
+      exit 0
+    fi
+    [[ -n "$e" ]] || die "found '$BEGIN' without '$END'; refusing to guess"
+    health_before="$(health_code)"
+    backup
+    start="$b"
+    # `add` put one blank line before the block; take that line out too.
+    if ((b > 1)) && [[ -z "$(sed -n "$((b - 1))p" "$CADDY_FILE")" ]]; then start="$((b - 1))"; fi
+    sed "${start},${e}d" "$CADDY_FILE" | write_in_place
+    apply_and_check "$health_before"
+    ;;
+  *)
+    die "usage: counterspell-caddy-site plan|add|remove"
+    ;;
+esac

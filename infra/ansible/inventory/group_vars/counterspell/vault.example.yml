@@ -1,10 +1,10 @@
-# Names only. Copy to vault.yml, fill the values, then encrypt it:
-#   ansible-vault encrypt --vault-password-file ~/.config/counterspell/vault-pass \
+# Names only. vault.yml (encrypted, committed) holds the real values. To change it:
+#   ansible-vault edit --vault-password-file ~/.config/counterspell/vault-pass \
 #     infra/ansible/inventory/group_vars/counterspell/vault.yml
-# The password file lives outside the repository. Only the encrypted vault.yml is committed.
-# Keys match the env names in deploy/vps/tests/fixtures/*.env.example (checked at plan time).
-vault_postgres_password: CHANGE_ME
-vault_session_secret: CHANGE_ME
-vault_github_oauth_client_secret: CHANGE_ME
-vault_google_oauth_client_secret: CHANGE_ME
-vault_resend_api_key: CHANGE_ME
+# The password file lives outside the repository. Pass the same flag to ansible-playbook.
+# Still to be added by Brighton by hand: vault_postgres_password, vault_resend_api_key.
+vault_github_oauth_client_id:
+vault_github_oauth_client_secret:
+vault_google_oauth_client_id:
+vault_google_oauth_client_secret:
+vault_session_secret:

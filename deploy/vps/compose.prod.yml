@@ -4,7 +4,7 @@
 #
 # Rules this file enforces:
 #   - No secret reaches a service through ${...} interpolation. Each service reads only its own env file
-#     under /etc/counterspell/, and `environment: !override` drops the base file's host-variable entries.
+#     under COUNTERSPELL_SECRETS_DIR (host.env), and `environment: !override` drops the base file's host-variable entries.
 #   - Only judge mounts a Docker socket, and only the sandbox daemon's. No port is published here.
 #   - Third-party images are pinned by digest. Digests read from the registry on 2026-11-16.
 #     Renovate refreshes them as reviewed pull requests, never auto-merged (deploy-ops Q20).
@@ -26,13 +26,13 @@ services:
     <<: *hardening
     image: ${COUNTERSPELL_SERVER_IMAGE:?set by counterspell-deploy}
     build: !reset null
-    env_file: !override [/etc/counterspell/server.env]
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/server.env"]
     # Non-secret values only. TRUSTED_PROXIES comes from host.env (R4.9).
     environment: !override
       HOST: 0.0.0.0
       PORT: "8080"
       STATIC_DIR: /app/web/build
-      TRUSTED_PROXIES: ${TRUSTED_PROXIES:?set in /etc/counterspell/host.env}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:?set in host.env}
     depends_on: !override
       migrate:
         condition: service_completed_successfully
@@ -49,14 +49,14 @@ services:
     <<: *hardening
     image: ${COUNTERSPELL_JUDGE_IMAGE:?set by counterspell-deploy}
     build: !reset null
-    env_file: !override [/etc/counterspell/judge.env]
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/judge.env"]
     # DATABASE_URL and the limits come from judge.env only (R5.2, R4.10).
     environment: !override
       SANDBOX_DOCKER_SOCKET: /run/sandbox/docker.sock
     volumes: !override
       # The rootless sandbox daemon's socket only. SANDBOX_SOCKET_HOST_PATH is a non-secret path in host.env.
       - type: bind
-        source: ${SANDBOX_SOCKET_HOST_PATH:?set in /etc/counterspell/host.env}
+        source: ${SANDBOX_SOCKET_HOST_PATH:?set in host.env}
         target: /run/sandbox/docker.sock
     depends_on: !override
       postgres:
@@ -75,7 +75,7 @@ services:
     <<: *hardening
     image: ${COUNTERSPELL_MIGRATE_IMAGE:?set by counterspell-deploy}
     build: !reset null
-    env_file: !override [/etc/counterspell/migrate.env]
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/migrate.env"]
     environment: !override {}
     pids_limit: 64
     mem_limit: 256m
@@ -86,7 +86,7 @@ services:
     image: postgres:17-alpine@sha256:a77aa70e641402a21411b92b721c58d10f23b50ae5fdd2333efd22d166e1e5f7
     # POSTGRES_PASSWORD is read from postgres.env at first initdb. The base file's
     # POSTGRES_HOST_AUTH_METHOD=trust is dropped, so TCP logins use scram-sha-256 only (R4.6).
-    env_file: !override [/etc/counterspell/postgres.env]
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/postgres.env"]
     environment: !override {}
     command: ["postgres", "-c", "shared_buffers=256MB", "-c", "password_encryption=scram-sha-256"]
     mem_limit: 1024m

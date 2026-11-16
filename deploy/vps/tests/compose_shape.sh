@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Shape test for the production Compose stack on the shared host (deploy-ops T14/T15, R4.1 to R4.10,
 # R12.4, P1, P2, P8). The shared host already runs a reverse proxy, so Counterspell runs no Caddy of its
-# own: compose.shared.yml removes it and joins the server to the shared proxy network, which is external.
+# own: compose.shared.yml removes it and joins the server to the existing counterspell_edge network, which is external.
 #
 # It renders the stack with `docker compose config` (no containers start, nothing is pulled), then asserts
-# on the JSON with jq. The overlay's /etc/counterspell/ paths are pointed at placeholder fixtures in a
+# on the JSON with jq. COUNTERSPELL_SECRETS_DIR (host.env) is pointed at placeholder fixtures in a
 # temporary copy, so no host file is read.
 set -euo pipefail
 
@@ -23,7 +23,8 @@ for service in postgres migrate server judge; do
   cp "$FIXTURES/$service.env.example" "$TMP/env/$service.env"
 done
 cp "$FIXTURES/host.env.example" "$TMP/env/host.env"
-sed "s#/etc/counterspell/#$TMP/env/#g" "$ROOT/deploy/vps/compose.prod.yml" > "$TMP/compose.prod.yml"
+sed -i "s#^COUNTERSPELL_SECRETS_DIR=.*#COUNTERSPELL_SECRETS_DIR=$TMP/env#" "$TMP/env/host.env"
+cp "$ROOT/deploy/vps/compose.prod.yml" "$TMP/compose.prod.yml"
 cp "$ROOT/deploy/vps/compose.shared.yml" "$TMP/compose.shared.yml"
 
 cat > "$TMP/deploy.env" <<'EOF'
@@ -59,16 +60,14 @@ check "P2 there is no caddy service" \
   '.services | has("caddy") | not'
 check "P2 no service publishes a port" \
   '[.services[] | (.ports // []) | length] | all(. == 0)'
-check "P2 only server joins the shared proxy network" \
-  '[.services | to_entries[] | select((.value.networks // {}) | has("proxy")) | .key] == ["server"]'
-check "P2 the proxy network is external and has the agreed default name" \
-  '.networks.proxy.external == true and .networks.proxy.name == "counterspell_proxy"'
+check "P2 only server joins the shared edge network" \
+  '[.services | to_entries[] | select((.value.networks // {}) | has("edge")) | .key] == ["server"]'
+check "P2 the edge network is the existing external counterspell_edge" \
+  '.networks.edge.external == true and .networks.edge.name == "counterspell_edge"'
 check "P2 judge, postgres, valkey and migrate are on data only" \
   '[.services.judge, .services.postgres, .services.valkey, .services.migrate] | all((.networks // {}) | keys == ["data"])'
 check "P2 the data network is internal" \
   '.networks.data.internal == true'
-check "P2 the old edge network is gone" \
-  '.networks | has("edge") | not'
 
 # R4.9: the server trusts forwarded addresses only from the proxy subnet in host.env.
 check "R4.9 server takes TRUSTED_PROXIES from host.env" \

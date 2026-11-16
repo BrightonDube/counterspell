@@ -2,6 +2,12 @@
 # Ansible); see repo_root in inventory/group_vars/all.yml.
 app_dir: "{{ app_root | default('/opt/counterspell') }}"
 app_env_dir: /etc/counterspell
+# Owner of the app directory, env files and bin directory. root on a dedicated host; the deploy user on the
+# shared host (group_vars/counterspell), where /opt/counterspell already belongs to deploy-counterspell.
+app_owner: root
+app_group: "{{ app_owner }}"
+# Non-secret host values, read by counterspell-deploy and merged into each release record.
+app_host_env: "{{ app_dir }}/host.env"
 
 # Service env files Brighton writes by hand (T27). The role only checks them (R5.1).
 app_env_services:
@@ -21,12 +27,10 @@ app_compose_files:
   - src: Caddyfile
     dest: Caddyfile
 
-# Deploy scripts installed into /usr/local/sbin (root-owned, 0755).
+# Deploy scripts. /usr/local/sbin (root-owned) on a dedicated host; a bin directory under app_dir on the shared host.
+app_bin_dir: /usr/local/sbin
 app_scripts:
   - src: deploy/vps/counterspell-deploy
     dest: counterspell-deploy
   - src: deploy/vps/counterspell-deploy-entry
     dest: counterspell-deploy-entry
-
-# External Docker network shared with the host's reverse proxy (compose.shared.yml). Created once, empty.
-app_proxy_network: counterspell_proxy
