@@ -21,3 +21,16 @@ Limits that override assumed choices where they conflict:
 - Assumed choice: the scan does not flag the names `retired-values.toml`, `hidden.toml` and similar. Scripts must name them to refuse them, and a file name is not a secret. The scan flags the retired marker pattern (`RETIRED-` followed by a capital or digit) instead.
 - Assumed choice: the scan checks the pack scripts (`scripts/pack-*.sh`, `scripts/kiro-hooks/pack-*.sh`) and not every script in `scripts/`. Older scripts already contain regexes that name key prefixes, which would be false positives.
 - `pack-batch.sh` (PA25) does not exist yet. When it is written, run `scripts/pack-secret-scan.sh scripts/pack-batch.sh` against it.
+
+## Blocked and deferred tasks (this run)
+
+- **PA08** (teach grimoire the assembled layout). Blocked on grimoire-packs amendments X1 and X2. Those are not specified in `grimoire-packs` yet. The current allow-list in `crates/grimoire/src/pack.rs` rejects `hidden.toml`, `generator.toml` and `approval.toml`, and `meta.toml` still needs `[generator]`. Unblock: Brighton approves X1 and X2 and a grimoire-packs task adds the layout.
+- **PA20** (`[HUMAN]`, private repo, originality list, access method). Brighton created the private repo and the read-only deploy key on 15 Nov 2026 10:45 (`brighton-decisions.md`). Still open for Brighton: the originality list, and open questions 3, 6 and 7. PA20 stays unticked until he records those answers.
+- **PA21** (seven backlog ideas). Depends on PA20 (the originality list). Not started. Unblock: PA20.
+- **PA22** is written as a plan, but not ticked, because its check is a reviewer's (see the review queue).
+- **PA23 and PA24** (fake-runner dry run, `lantern-streaks` dry run). The S9 stage needs a layout that accepts the assembled tree, which PA08 provides. Without PA08, S9 cannot pass. Unblock: PA08.
+- **PA25 and PA26** (batch orchestrator and its tests). Depend on PA21 (backlog) and PA24 (dry run). Unblock: PA21 and PA24.
+- **PA27** (`[HUMAN]`, sandbox and ghost checks on the host). Depends on judge-sandbox T20 to T22, T02 and T37 (VPS), and grimoire-packs T20. Not run.
+- **PA28** (`[HUMAN]`, Brighton's approval gate). Not run.
+- **PA30** (operator guide). Depends on PA28. Not written.
+- **Batch mode and the importer.** `problem-catalogue` C14 and C17 (the importer's approval check, amendment X3) are not implemented, so PIP-36 is not enforced by the importer yet.
