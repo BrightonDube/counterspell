@@ -94,7 +94,7 @@ services:
       - internal
 
   valkey:
-    image: valkey/valkey:8-alpine
+    image: valkey/valkey:9-alpine
     # Append-only file on, so a restart keeps the daily hint counters (hints spec open question 6).
     command: ["valkey-server", "--save", "", "--appendonly", "yes"]
     healthcheck:
