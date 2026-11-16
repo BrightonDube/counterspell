@@ -80,6 +80,17 @@ pub enum DriverEvent {
     },
 }
 
+/// One managed container as the sweeper lists it. Only data the sweeper needs.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ManagedContainer {
+    /// The daemon's container id.
+    pub id: String,
+    /// The container name (without the leading `/` the daemon reports).
+    pub name: String,
+    /// When the daemon created it, as unix seconds.
+    pub created_at: i64,
+}
+
 /// Contracts every implementation must keep (checked by the bollard backend's ignored
 /// `sbx_` tests, not by the fake):
 ///
@@ -99,6 +110,22 @@ pub trait Backend {
         &self,
         spec: &SessionSpec,
     ) -> impl Future<Output = Result<Self::Session, InfraError>> + Send;
+
+    /// Lists the containers carrying the `counterspell.managed=true` label, in any
+    /// state. The sweeper is the only caller; containers without the label must never
+    /// appear in the result.
+    fn list_managed(
+        &self,
+    ) -> impl Future<Output = Result<Vec<ManagedContainer>, InfraError>> + Send;
+
+    /// Kills and force-removes one container by id, in any state. Used only by the
+    /// sweeper for orphaned containers.
+    ///
+    /// # Errors
+    ///
+    /// Implementations return [`InfraError::KillFailed`] when the removal cannot be
+    /// confirmed; the sweeper counts it and moves on.
+    fn remove_managed(&self, id: &str) -> impl Future<Output = Result<(), InfraError>> + Send;
 }
 
 /// One live container.
