@@ -5,6 +5,7 @@
 
 pub mod approval;
 pub mod discover;
+pub mod load;
 pub mod manifest;
 pub mod plan;
 pub mod private_tree;

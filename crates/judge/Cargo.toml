@@ -39,6 +39,12 @@ serde_yml = "0.0.12"
 tempfile = "3"
 tracing-subscriber = { version = "0.3", default-features = false, features = ["fmt", "std"] }
 
+[[bin]]
+# The catalogue importer CLI (problem-catalogue C19). Runs on the operator's
+# machine; untrusted pack code only ever runs inside the sandbox daemon.
+name = "counterspell-catalogue"
+path = "src/bin/counterspell-catalogue.rs"
+
 [[example]]
 # Trusted helper for the S16 scenario: starts a real run on the sandbox daemon
 # and is SIGKILLed mid-run by the test. Needs the daemon types and the test kit.
