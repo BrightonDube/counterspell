@@ -1291,3 +1291,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `serde` with `deny_unknown_fields` on `Approval` makes the importer's input contract strict. An extra key such as a hidden expected value is an error, not a silently ignored field.
 - `toml::Table` lets the check read one key (`status`) from a `meta.toml` without a full struct. `Option<String>` returns `None` when the key is missing, instead of an error.
 - `bool::then` and `then_some` turn a condition into `Option`. `check_reference` uses it to return a finding only when the reference found a counterexample.
+
+## pack-authoring-pipeline PA10: reviewer checklist completeness
+
+- The checklist is parsed with `str::lines`, `split_once` and `rsplit_once`. Each item ID is found between backticks, which keeps the parser short and easy to read. A full Markdown parser would be more machinery than this one file needs.
+- `check_checklist` returns `Result<Vec<String>, ChecklistError>`. Each refusal is a named variant (`MissingCategory`, `DuplicateId`, `MalformedId`), so a test can assert the exact reason.
+- `BTreeSet` keeps IDs sorted and unique, so a repeated ID is found by `insert` returning `false`, without a second loop.
