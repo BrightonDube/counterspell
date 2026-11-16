@@ -1,0 +1,87 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7
+I'll start by reading the language-drivers tasks file to find the first open task.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=58
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Check git state and kiro log files
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The first unchecked non-stretch task is T08. Before starting it, I'll read the existing language-drivers blockers, since the last commit recorded T08 to T16 blockers.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The blockers file says T08 is blocked on a missing `DriverChannel` stop primitive and missing `ProblemTests` (judge-sandbox T24). I'll check whether either has landed since, and read the recent run logs.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=124
+
+[tool] Inspect judge sandbox driver channel and related state
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+judge-sandbox T24 is still open. I'll check whether `DriverChannel` gained a stop primitive.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=46
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The injected rules match what I'm already doing: sandbox work stays on the rootless daemon and the judge owns verdicts. The T08 blocker still stands, since `DriverChannel` has no stop primitive and judge-sandbox T24 is open. T10 is the only remaining task that might not depend on T08, so I'll check whether any pack is published.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=172
+
+[tool] Check pack directories and publication status
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Every starter pack is still `draft`, and T28 is waiting on Brighton. I'll record this run's stop point in the blockers file and commit only that note.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=438
+[tool] Commit the language-drivers blocker stop-point note
+[tool] status: Pending
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Failed: Commit the language-drivers blocker stop-point note
+The commit did not go through: git reports nothing staged after the add. I'll check what the pre-commit hook did and whether the note is on disk.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=99
+
+[tool] Inspect blocker note state and git hooks
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The note is on disk and the hook passed. The index is empty, so I'll stage the file again and commit in a separate step to see where it drops.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=105
+
+[tool] Stage and commit the blocker note
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+No language-drivers task could be ticked in this pass, so there are no new tests and no verification runs. The only commit is `cb9e34f`, which adds a stop-point note to `docs/kiro-log/language-drivers-blockers.md`.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T08 bench handoff | Blocked, not started | 0 | n/a | n/a |
+| T09 bench persistence and events | Blocked on T08 | 0 | n/a | n/a |
+| T10 known-correct fixtures for every published problem | Blocked on grimoire-packs T28 | 0 | n/a | n/a |
+| T11 hostile protocol and cleanup | Blocked on T08 and T10 | 0 | n/a | n/a |
+| T12 core freeze-safe gate | Not recorded (depends on T06, T09, T10, T11) | 0 | n/a | n/a |
+| T13 to T16 (Java, C++) | `[stretch]`, skipped | 0 | n/a | n/a |
+| Blocker note | Updated | 0 | Gitleaks pre-commit hook passed | `cb9e34f` |
+
+**Why T08 cannot start.** Two items it needs belong to judge-sandbox, and both are still open:
+- `DriverChannel` (`crates/judge/src/sandbox/backend.rs`) has only `write_line` and `next_event`. It has no primitive to stop the normal driver inside the same container. Adding one changes the sandbox security boundary, so the judge-sandbox owner should decide it. I did not add it.
+- Bench inputs come from `ProblemTests`, which is judge-sandbox T24 and is still `[ ]`.
+
+**Why T10 cannot start.** All three starter packs (`count-pairs`, `diagonal-total`, `longest-run-length`) are still `status = "draft"`. Brighton has to run grimoire-packs T28 before fixtures can target published problems.
+
+**Blockers for Brighton**
+1. Decide the `DriverChannel` stop primitive, or name another route to end the normal driver in the same container.
+2. Land judge-sandbox T24 (`ProblemTests`, `SandboxExecutor`).
+3. Review and publish the starter packs (grimoire-packs T28).
+
+**Review-queue items.** None added this pass. `docs/kiro-log/language-drivers-review-queue.md` was not touched.
+
+**Open Minor and Important findings** (carried over from the attempt-1 notes; these are about the drivers, not new this pass)
+1. Important, for T11: stray stdout written outside a call (timers, callbacks, background threads) reaches the answer stream. Python `os.write(1, …)` and Node `fs.writeSync(1, …)` bypass capture. The judge should treat any non-answer line as a protocol failure, and T11 should test a timer that prints a forged answer.
+2. Minor: the Python driver rejects duplicate keys in a call line, but the Node driver accepts them (`JSON.parse` keeps the last one). The judge writes every call line itself, so this is not exploitable.
+3. Minor: the Node driver swaps `process.exit` only during a call, so a timer can exit with code 0 between calls. No run is Accepted in that case.
+4. Minor: Python hides `sys.stdin` during a call, but Node does not, so user code reading `process.stdin` could consume call lines. The external deadline still ends the run.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=253
+

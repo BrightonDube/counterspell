@@ -341,3 +341,8 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-16T05:39:49Z | model: not reported | last commit: cb9e34f language-drivers: record attempt 2 stop point (T08 blocked on judge-sandbox, T10 on pack publication)
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
