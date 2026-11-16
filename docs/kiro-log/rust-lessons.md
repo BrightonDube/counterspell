@@ -1261,3 +1261,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A `match` on the current status lists every status, so adding a new status forces a decision in `can_move_to`. The compiler, not a reviewer, notices the gap.
 - `move_to` returns `Result<(), TransitionError>` for a refused move instead of panicking. The caller decides what to report, and the status stays unchanged on error.
 - `#[serde(deny_unknown_fields)]` makes the parser reject any extra key in the state file. A hidden value therefore cannot be stored there by accident.
+
+## pack-authoring-pipeline PA02: review scoring and pass rule
+
+- `judge` returns `Result<Verdict, ReviewError>`. A bad hash is an `Err`, so a malformed round can never look like a pass.
+- `Outcome::Fail(Vec<Rule>)` carries every broken rule. A plain `bool` would hide which rule failed, and a reviewer needs that list.
+- `Rule` has a `Display` that names only the rule. The finding text is never copied into it, so a message that points at hidden data cannot leak through a failure.

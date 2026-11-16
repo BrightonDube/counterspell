@@ -4,4 +4,5 @@
 //! never reads files, runs processes or opens sockets. Hidden values are passed in
 //! memory and never returned. The scripts under `scripts/` move the files.
 
+pub mod review;
 pub mod state;
