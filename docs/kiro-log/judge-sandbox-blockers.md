@@ -124,3 +124,11 @@ T02 and T37 stay open for the real VPS. The 15 Nov 00:55 signature-type decision
 
 ## 16 Nov 2026 03:15 SAST: images now on the sandbox daemon
 The pinned Python and Node images are pulled onto the rootless sandbox daemon, and the Node digest is pinned (see brighton-decisions.md, 16 Nov 03:15). The image blockers above are cleared; rerun the sbx_ tests.
+
+## 16 Nov 2026 (judge-sandbox run, attempt 1): T20 stays `[ ]`, T21 ticked
+
+- **Fixed in this run:** the create read-back rejected every real container with `the environment must be the fixed set`. Docker merges the pinned image's own variables (`GPG_KEY`, `PYTHON_VERSION`, `PYTHON_SHA256`) into the container. `bollard_backend::without_image_env` now drops only variables that the image declares with the same value. Tests: four new cases in `tests/model_bollard.rs`. The T21 `sbx_` tests pass on the rootless daemon after this.
+- **T20 not ticked:** `sbx_create_readback_matches` fails at catalogue load with `MissingDriver { language: "javascript" }`. Also `languages/drivers/` does not exist, so the Python driver is missing too.
+  - Commit 0d94d99 (language-drivers T02) set `enabled = true` for JavaScript. The file header and brighton-decisions (15 and 16 Nov) say JavaScript stays disabled until its driver exists. I did not change `languages.toml`, because it belongs to language-drivers.
+  - Unblock: language-drivers T03 and T04 (add `drivers/python/driver.py` and `drivers/javascript/driver.js`), or Brighton's decision to disable JavaScript again.
+- **Not ticked, waiting on real runs:** T22 (probe runner, `PreflightState`, `preflight` command, `sbx_preflight_*`), T23 (sweeper needs a list-containers method on `Backend`; that is a T14 trait change, so it needs a decision), and T24 (needs run-lifecycle wiring and a driver).

@@ -191,7 +191,7 @@ Conventions:
   - Depends on: T05, T14, T19.
   - Rust lesson: conversion traits (`From`/`TryFrom`) and keeping an external crate at the edge.
 
-- [ ] **T21 [S] [SUPERVISED] (30 min) Bollard backend: start, exec, files, facts, kill, remove**
+- [x] **T21 [S] [SUPERVISED] (30 min) Bollard backend: start, exec, files, facts, kill, remove** (16 Nov 2026: `sbx_exec_roundtrip`, `sbx_tar_delivery`, `sbx_kill_remove_confirms_absence`, `sbx_oom_counter_visible` pass on the rootless sandbox daemon; the read-back fix that made them pass is in T20's note)
   - Files: `crates/judge/src/sandbox/bollard_backend.rs` (part 2).
   - Start; exec with attached stdin/stdout/stderr and an explicit user, working dir, fixed env and absolute-PATH command; deliver the tar stream over a `tar` exec (or the archive API, as decided in T02); run a bounded command to completion (compile, probe); read `memory.events` and `pids.events` through a fixed exec; kill; force remove; confirm absence. Map every daemon error to `InfraError`.
   - Tests: `sbx_exec_roundtrip`, `sbx_tar_delivery`, `sbx_kill_remove_confirms_absence`, `sbx_oom_counter_visible` (ignored, real daemon). Unit tests for error mapping.

@@ -232,7 +232,7 @@ pub async fn create_checked(
     if let Some(first) = policy.hardening_violations().into_iter().next() {
         return Err(InfraError::PolicyRejected(first.to_string()));
     }
-    check_image(docker, policy, api_timeout).await?;
+    let image_env = check_image(docker, policy, api_timeout).await?;
 
     let options = CreateContainerOptionsBuilder::new().name(name).build();
     let created = with_timeout(
@@ -243,7 +243,7 @@ pub async fn create_checked(
     .map_err(|error| InfraError::DaemonUnreachable(error.to_string()))?;
     let id = created.id;
 
-    match verify_readback(docker, policy, &id, api_timeout).await {
+    match verify_readback(docker, policy, &id, &image_env, api_timeout).await {
         Ok(()) => Ok(id),
         Err(error) => {
             if let Err(removal) = remove_forced(docker, &id, api_timeout).await {
@@ -278,7 +278,7 @@ async fn check_image(
     docker: &Docker,
     policy: &ContainerPolicy,
     api_timeout: Duration,
-) -> Result<(), InfraError> {
+) -> Result<Vec<String>, InfraError> {
     let reference = policy.image.as_str();
     let inspected = tokio::time::timeout(api_timeout, docker.inspect_image(reference))
         .await
@@ -292,16 +292,42 @@ async fn check_image(
     };
     let digests = image.repo_digests.unwrap_or_default();
     if image_digest_matches(&digests, &policy.image) {
-        Ok(())
+        Ok(image
+            .config
+            .and_then(|config| config.env)
+            .unwrap_or_default())
     } else {
         Err(InfraError::DigestMismatch(reference.to_owned()))
     }
+}
+
+/// Removes variables that the pinned image itself declares, with the same values.
+///
+/// The daemon merges an image's own variables into every container created from it. Those
+/// are not ours to set, and the digest already pins them. A variable is dropped only when
+/// its key is not one of ours and the image declares the same `KEY=VALUE`. Any other
+/// variable stays, so an injected or changed value still fails the read-back.
+#[must_use]
+pub fn without_image_env(
+    read: Vec<(String, String)>,
+    image_env: &[String],
+) -> Vec<(String, String)> {
+    let declared: Vec<(String, String)> = image_env
+        .iter()
+        .filter_map(|entry| entry.split_once('='))
+        .map(|(key, value)| (key.to_owned(), value.to_owned()))
+        .collect();
+    let ours: Vec<String> = fixed_env().into_iter().map(|(key, _)| key).collect();
+    read.into_iter()
+        .filter(|pair| ours.contains(&pair.0) || !declared.contains(pair))
+        .collect()
 }
 
 async fn verify_readback(
     docker: &Docker,
     policy: &ContainerPolicy,
     id: &str,
+    image_env: &[String],
     api_timeout: Duration,
 ) -> Result<(), InfraError> {
     let inspect = with_timeout(
@@ -310,8 +336,9 @@ async fn verify_readback(
     )
     .await?
     .map_err(|error| InfraError::DaemonUnreachable(error.to_string()))?;
-    let read = from_inspect(&inspect)
+    let mut read = from_inspect(&inspect)
         .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))?;
+    read.env = without_image_env(read.env, image_env);
     if let Some(first) = read.hardening_violations().into_iter().next() {
         return Err(InfraError::PolicyReadbackMismatch(first.to_string()));
     }

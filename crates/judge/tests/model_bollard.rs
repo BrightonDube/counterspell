@@ -14,7 +14,7 @@ use bollard::models::{
 };
 use counterspell_judge::languages::PinnedImage;
 use counterspell_judge::sandbox::bollard_backend::{
-    from_inspect, image_digest_matches, to_create_body, ReadbackError,
+    from_inspect, image_digest_matches, to_create_body, without_image_env, ReadbackError,
 };
 use counterspell_judge::sandbox::config::OciRuntime;
 use counterspell_judge::sandbox::policy::{ContainerPolicy, PolicyViolation};
@@ -380,4 +380,75 @@ fn a_tag_only_entry_does_not_match() {
     let digests = vec!["python:3.13-slim".to_owned()];
 
     assert!(!image_digest_matches(&digests, &pinned));
+}
+
+fn env_pairs(entries: &[(&str, &str)]) -> Vec<(String, String)> {
+    entries
+        .iter()
+        .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))
+        .collect()
+}
+
+fn image_env() -> Vec<String> {
+    [
+        "PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/bin",
+        "LANG=C.UTF-8",
+        "GPG_KEY=image-declared-value",
+        "PYTHON_VERSION=3.13.18",
+    ]
+    .iter()
+    .map(|entry| (*entry).to_owned())
+    .collect()
+}
+
+#[test]
+fn variables_the_pinned_image_declares_are_tolerated_on_read_back() {
+    // The daemon merges the image's own variables into the container. Ours are PATH, LANG
+    // and HOME; GPG_KEY and PYTHON_VERSION come from the image with the same values.
+    let read = env_pairs(&[
+        ("PATH", "/usr/local/bin:/usr/bin:/bin"),
+        ("LANG", "C.UTF-8"),
+        ("HOME", "/box"),
+        ("GPG_KEY", "image-declared-value"),
+        ("PYTHON_VERSION", "3.13.18"),
+    ]);
+
+    let kept = without_image_env(read, &image_env());
+
+    assert_eq!(
+        kept,
+        env_pairs(&[
+            ("PATH", "/usr/local/bin:/usr/bin:/bin"),
+            ("LANG", "C.UTF-8"),
+            ("HOME", "/box"),
+        ])
+    );
+}
+
+#[test]
+fn an_injected_variable_the_image_does_not_declare_is_kept_so_the_check_fails() {
+    let read = env_pairs(&[("HTTP_PROXY", "http://example.invalid")]);
+
+    let kept = without_image_env(read.clone(), &image_env());
+
+    assert_eq!(kept, read);
+}
+
+#[test]
+fn an_image_variable_with_a_changed_value_is_kept_so_the_check_fails() {
+    let read = env_pairs(&[("GPG_KEY", "ATTACKER")]);
+
+    let kept = without_image_env(read.clone(), &image_env());
+
+    assert_eq!(kept, read);
+}
+
+#[test]
+fn a_fixed_key_is_never_dropped_even_when_the_image_declares_it() {
+    // PATH is ours. The image's PATH differs, so a daemon that kept the image value must fail.
+    let read = env_pairs(&[("PATH", "/usr/local/bin:/usr/local/sbin:/usr/bin:/bin")]);
+
+    let kept = without_image_env(read.clone(), &image_env());
+
+    assert_eq!(kept, read);
 }
