@@ -16,6 +16,7 @@ pub mod hints;
 pub mod limits;
 pub mod meta;
 pub mod pack;
+pub mod pipeline;
 pub mod record;
 pub mod reference;
 pub mod report;
