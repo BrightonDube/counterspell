@@ -387,6 +387,24 @@ fn ai_failure(hints: &HintState, error: &AiError, revealed: &BTreeSet<u8>) -> Re
     }
 }
 
+/// Builds the hint state from the environment at start-up. A bad hint setting stops the server
+/// before it listens, and the message names the variable without its value.
+///
+/// # Errors
+///
+/// Returns a message that names the setting that is wrong.
+pub fn hint_state_from_env(pool: PgPool, valkey_url: &str) -> Result<HintState, String> {
+    let config = HintConfig::from_env().map_err(|error| error.to_string())?;
+    let quota = QuotaStore::open(valkey_url, config.daily_limit, config.spend_cap_micros)
+        .map_err(|_| "VALKEY_URL is not a valid Valkey URL".to_owned())?;
+    Ok(HintState {
+        pool,
+        config,
+        quota: Some(quota),
+        transport: ReqwestTransport::new(),
+    })
+}
+
 /// The learner's quota for today, or `None` when Valkey cannot say.
 async fn quota_view(hints: &HintState, user: Uuid) -> Option<QuotaView> {
     let counters = hints.quota.as_ref()?;
