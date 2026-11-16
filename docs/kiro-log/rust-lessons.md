@@ -1267,3 +1267,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `judge` returns `Result<Verdict, ReviewError>`. A bad hash is an `Err`, so a malformed round can never look like a pass.
 - `Outcome::Fail(Vec<Rule>)` carries every broken rule. A plain `bool` would hide which rule failed, and a reviewer needs that list.
 - `Rule` has a `Display` that names only the rule. The finding text is never copied into it, so a message that points at hidden data cannot leak through a failure.
+
+## pack-authoring-pipeline PA03: review loop cap
+
+- The cap check sits in one function, `start_round`. Every path to a new round goes through it, so there is no second place that could forget the limit.
+- `u8` is a fixed-size counter. Using `self.round += 1` after the `>= MAX_ROUNDS` check cannot overflow, because the check stops the count at three.
+- `finish_round` returns `Result`. Asking for a result before any round started is an error, not a guessed status.
