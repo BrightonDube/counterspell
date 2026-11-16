@@ -12,10 +12,13 @@
 use std::collections::VecDeque;
 use std::future::{pending, ready, Future};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
+use std::time::Duration;
 
 use super::backend::{Backend, BackendSession, DriverChannel, DriverEvent, ExecOutput, InfraError};
-use super::policy::ContainerPolicy;
+use super::config::OciRuntime;
+use super::policy::{ContainerPolicy, SeccompProfile};
 use super::spec::{ExecSpec, SessionSpec};
+use crate::languages::LanguageDefinition;
 
 /// What the scripted program does on its next read.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -103,6 +106,7 @@ struct State {
     program: VecDeque<Behaviour>,
     exec_exits: VecDeque<i64>,
     exec_exit: i64,
+    exec_stdout: VecDeque<Vec<u8>>,
     exec_overflow: bool,
     readback: Option<ContainerPolicy>,
     block_writes: bool,
@@ -148,6 +152,12 @@ impl FakeBackend {
     /// is empty returns the code set by [`FakeBackend::set_exec_exit`].
     pub fn script_exec_exits(&self, codes: impl IntoIterator<Item = i64>) {
         self.lock().exec_exits.extend(codes);
+    }
+
+    /// Queues stdout payloads for the next `exec` calls, in order. An exec after the
+    /// queue is empty returns no stdout.
+    pub fn script_exec_stdout(&self, payloads: impl IntoIterator<Item = Vec<u8>>) {
+        self.lock().exec_stdout.extend(payloads);
     }
 
     /// The operation an injected fault fired on, or `None` if no fault has fired.
@@ -253,7 +263,7 @@ impl BackendSession for FakeSession {
             let exit_code = state.exec_exits.pop_front().unwrap_or(state.exec_exit);
             ExecOutput {
                 exit_code,
-                stdout: Vec::new(),
+                stdout: state.exec_stdout.pop_front().unwrap_or_default(),
                 stderr: Vec::new(),
                 overflowed: state.exec_overflow,
             }
@@ -325,4 +335,55 @@ impl FakeDriver {
             Behaviour::Panic => panic!("scripted panic in the driver read"),
         }
     }
+}
+
+/// A named control that [`weakened_policy`] removes. Only under `testkit`: no production
+/// path can ask for a weakened policy.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WeakenedControl {
+    /// The container keeps a network interface.
+    Network,
+    /// The root filesystem stays writable.
+    WritableRoot,
+    /// No memory limit is set.
+    MemoryLimit,
+    /// No PID limit is set.
+    PidsLimit,
+    /// No CPU quota is set.
+    CpuQuota,
+    /// No seccomp filter applies.
+    Seccomp,
+    /// Capabilities are not dropped.
+    Capabilities,
+    /// `no-new-privileges` is not set.
+    NoNewPrivileges,
+}
+
+/// A production-shaped policy with the named controls weakened, for tests that must show
+/// the probe and the hardening checks actually fail (for example
+/// `sbx_preflight_fails_when_policy_weakened` and the S12 network control run).
+#[must_use]
+pub fn weakened_policy(
+    lang: &LanguageDefinition,
+    run_cap: Duration,
+    runtime: OciRuntime,
+    controls: &[WeakenedControl],
+) -> ContainerPolicy {
+    let mut policy = ContainerPolicy::for_language(lang, run_cap, runtime);
+    for control in controls {
+        match control {
+            WeakenedControl::Network => "bridge".clone_into(&mut policy.network),
+            WeakenedControl::WritableRoot => policy.read_only_rootfs = false,
+            WeakenedControl::MemoryLimit => {
+                policy.limits.memory_bytes = 0;
+                policy.limits.memory_swap_bytes = 0;
+            }
+            WeakenedControl::PidsLimit => policy.limits.pids_limit = 0,
+            WeakenedControl::CpuQuota => policy.limits.nano_cpus = 0,
+            WeakenedControl::Seccomp => policy.seccomp = SeccompProfile::Unconfined,
+            WeakenedControl::Capabilities => policy.cap_drop = Vec::new(),
+            WeakenedControl::NoNewPrivileges => policy.security_opts = Vec::new(),
+        }
+    }
+    policy
 }

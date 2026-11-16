@@ -6,6 +6,9 @@
 //!
 //! With the argument `healthcheck` it reads the heartbeat file and exits 0 or 1. It never connects
 //! to Postgres and never starts the worker.
+//!
+//! With the argument `preflight` it runs the sandbox probe against every enabled language, prints
+//! the JSON report and exits non-zero when any check fails. There is no skip flag.
 
 use counterspell_judge::config::JudgeConfig;
 use counterspell_judge::executor::NoExecutor;
@@ -20,13 +23,70 @@ use tokio::sync::watch;
 const POOL_SIZE: u32 = 8;
 
 fn main() -> ExitCode {
-    if std::env::args().nth(1).as_deref() == Some("healthcheck") {
-        return healthcheck();
+    match std::env::args().nth(1).as_deref() {
+        Some("healthcheck") => return healthcheck(),
+        #[cfg(feature = "sandbox")]
+        Some("preflight") => return preflight(),
+        _ => {}
     }
     match run_worker() {
         Ok(()) => ExitCode::SUCCESS,
         Err(error) => {
             eprintln!("judge stopped: {error}");
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/// Prints the JSON preflight report for every enabled language and exits non-zero when
+/// any check fails. A probe that cannot run at all counts as a failure, never a pass.
+#[cfg(feature = "sandbox")]
+#[tokio::main]
+async fn preflight() -> ExitCode {
+    use counterspell_judge::languages::LanguageCatalog;
+    use counterspell_judge::sandbox::bollard_backend::BollardBackend;
+    use counterspell_judge::sandbox::config::SandboxConfig;
+    use counterspell_judge::sandbox::daemon::{connect, verify};
+    use counterspell_judge::sandbox::preflight::{
+        probe_failed_report, probe_spec, run_probe, PreflightReport,
+    };
+    use std::collections::BTreeMap;
+
+    let outcome = async {
+        let cfg = SandboxConfig::from_env()?;
+        let docker = connect(&cfg.docker_socket, cfg.api_timeout)?;
+        verify(&docker, cfg.runtime, cfg.api_timeout).await?;
+        let catalog = LanguageCatalog::load(&cfg.languages_file)?;
+        let backend = BollardBackend::new(docker, cfg.api_timeout);
+        let mut reports: BTreeMap<String, PreflightReport> = BTreeMap::new();
+        let mut all_passed = true;
+        for name in catalog.names() {
+            let Some(lang) = catalog.get(name).filter(|lang| lang.is_enabled()) else {
+                continue;
+            };
+            let spec = probe_spec(lang, cfg.run_wall_cap, cfg.runtime)?;
+            let report = match run_probe(&backend, &spec).await {
+                Ok(report) => report,
+                Err(error) => probe_failed_report(&error),
+            };
+            all_passed &= report.passed();
+            reports.insert(name.to_owned(), report);
+        }
+        let json = serde_json::to_string_pretty(&reports)?;
+        Ok::<_, Box<dyn std::error::Error>>((json, all_passed))
+    };
+    match outcome.await {
+        Ok((json, true)) => {
+            println!("{json}");
+            ExitCode::SUCCESS
+        }
+        Ok((json, false)) => {
+            println!("{json}");
+            eprintln!("preflight: one or more sandbox checks failed");
+            ExitCode::FAILURE
+        }
+        Err(error) => {
+            eprintln!("preflight could not run: {error}");
             ExitCode::FAILURE
         }
     }

@@ -1452,3 +1452,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - Two functions checked the same container, but only one knew the image's own environment variables. The create-time check passed and the session check failed. Both now read the same stored list, so the rule lives in one place.
 - Storing a value on the session (`image_env: Vec<String>`) costs one field and avoids a second daemon call on every read. The field is private, so only the backend can set it.
 - The `Instant` in a struct field decides which `Instant` type you need. `RunSettings` uses `tokio::time::Instant`, so `std::time::Instant` fails to compile at the field.
+
+## judge-sandbox T22: parsing probe text into a structured report (16 Nov 2026)
+
+- `Vec::try_into` turns a `Vec<T>` into `[T; N]` and hands the vector back on the error branch, so a wrong probe count is reported without indexing or `unwrap`.
+- A `&'static str` field (`PreflightCheck::name`) serialises through `serde` with no lifetime trouble, so the JSON report uses the same stable names as the tests.
+- `RwLock<Option<PreflightReport>>` behind `Arc` shares one "latest report" between the refresh loop and the reader. `unwrap_or_else(PoisonError::into_inner)` keeps a poisoned lock readable after a test panic instead of panicking again.
+- Exit-code equality is the only honest signal `touch` gives: EACCES and EROFS both exit non-zero, so the write probe had to move to a world-writable directory (`/var/tmp`, mode 1777) before a writable root could be told from a read-only one.

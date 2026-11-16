@@ -50,13 +50,13 @@ pub struct Session<S: BackendSession + 'static> {
 }
 
 impl<S: BackendSession + 'static> Session<S> {
-    fn new(container: S) -> Self {
+    pub(crate) fn new(container: S) -> Self {
         Self {
             container: Some(container),
         }
     }
 
-    fn container_mut(&mut self) -> Result<&mut S, InfraError> {
+    pub(crate) fn container_mut(&mut self) -> Result<&mut S, InfraError> {
         self.container
             .as_mut()
             .ok_or_else(|| InfraError::Unexpected("session already closed".to_owned()))

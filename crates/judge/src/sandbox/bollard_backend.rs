@@ -274,6 +274,33 @@ pub async fn remove_forced(
     }
 }
 
+/// Creates and starts a container without the hardening gate or the read-back check.
+/// Exists only under `testkit`, so tests can build a deliberately weakened container and
+/// prove the probe reports the missing control. No production path may call this.
+///
+/// # Errors
+///
+/// Returns [`InfraError`] when the daemon fails or does not answer in time.
+#[cfg(feature = "testkit")]
+pub async fn create_started_unchecked(
+    docker: &Docker,
+    policy: &ContainerPolicy,
+    name: &str,
+    api_timeout: Duration,
+) -> Result<String, InfraError> {
+    let options = CreateContainerOptionsBuilder::new().name(name).build();
+    let created = with_timeout(
+        api_timeout,
+        docker.create_container(Some(options), to_create_body(policy)),
+    )
+    .await?
+    .map_err(|error| InfraError::DaemonUnreachable(error.to_string()))?;
+    with_timeout(api_timeout, docker.start_container(&created.id, None))
+        .await?
+        .map_err(|error| map_error(&error))?;
+    Ok(created.id)
+}
+
 async fn check_image(
     docker: &Docker,
     policy: &ContainerPolicy,
