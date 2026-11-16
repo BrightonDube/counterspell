@@ -1297,3 +1297,14 @@ The builder is a plain function from stored values to sections, so its tests nee
 - The checklist is parsed with `str::lines`, `split_once` and `rsplit_once`. Each item ID is found between backticks, which keeps the parser short and easy to read. A full Markdown parser would be more machinery than this one file needs.
 - `check_checklist` returns `Result<Vec<String>, ChecklistError>`. Each refusal is a named variant (`MissingCategory`, `DuplicateId`, `MalformedId`), so a test can assert the exact reason.
 - `BTreeSet` keeps IDs sorted and unique, so a repeated ID is found by `insert` returning `false`, without a second loop.
+
+## pack-authoring-pipeline PA11: author checklist and skill code check
+
+- `split` with a closure splits on any character that is not a letter, digit or hyphen. That turns a Markdown file into plain tokens, and each token can then be tested with a `len` check and byte comparisons.
+- `BTreeSet` compares two sets of codes directly: the codes the skill names minus the codes grimoire defines. The result is a list of unknown codes, so a failing test names the exact code.
+- `filter_map(|line| line.split('`').nth(1))` pulls the text between the first pair of backticks. `nth` returns `Option`, so a line without backticks is skipped, not a panic.
+
+## pack-authoring-pipeline PA12: reviewer agent definition test
+
+- `serde_json::Value` reads an arbitrary JSON file without a struct. Indexing with `definition["tools"]` returns a `Value` that is `Null` when the key is missing, and `as_array()` then returns `None`. Using `expect` on that in a test turns a missing key into a clear message.
+- The forbidden tool list is a `const` array. `contains` checks membership, so adding a new forbidden tool is a one-line change.
