@@ -5,7 +5,7 @@
       "name": "pack-validate",
       "description": "Validate only the changed Grimoire problem pack.",
       "trigger": "PostFileSave",
-      "matcher": "packs/.*\\.(toml|json|py|rs)$",
+      "matcher": "(packs|target/pack-assembly)/.*\\.(md|toml|json|py|rs)$",
       "action": {
         "type": "command",
         "command": "bash scripts/kiro-hooks/pack-validate.sh '{{filePath}}'"

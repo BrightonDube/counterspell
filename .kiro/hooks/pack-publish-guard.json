@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "pack-publish-guard",
+      "trigger": "PreToolUse",
+      "description": "Blocks agent writes that set status to published in a pack meta.toml, or that write any approval.toml (PIP-1, PIP-28, PIP-43).",
+      "matcher": "fs_write|str_replace|fs_append",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/kiro-hooks/pack-publish-guard.sh"
+      }
+    }
+  ]
+}
