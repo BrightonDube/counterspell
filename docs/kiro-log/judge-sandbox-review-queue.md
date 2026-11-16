@@ -163,3 +163,12 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `src/sandbox/oracle.rs`, `tests/model_oracle.rs`, `tests/sbx_oracle.rs`.
 - Brighton to check: (1) `exception_class` strings ('driver', 'Exit137', 'OutOfMemory') are synthesized from the `CallFailure` variant, not parsed from user stderr — keeps oracle diagnostics bounded and host-derived; confirm the engine's classifier accepts these classes. (2) The sync`evaluate` deliberately `catch_unwind`s `Handle::block_on`: worker-thread invocation becomes `OracleError` instead of a panic, `spawn_blocking` works — panic-as-control-flow is documented and tested both directions. (3) Two backend instances per oracle keeps fake-backend scripting side-deterministic; on the real daemon each side still gets its own container/session.
 - Verified: 8/8 model + 2/2 real-daemon on the rootless daemon.
+
+## T35 (SUPERVISED, judge-sandbox) log hygiene
+- Code: `tests/model_logs.rs`, `tests/sbx_logs.rs`, `LogCapture` in `tests/support/mod.rs`.
+- Brighton to check: (1) one test per binary because `set_global_default` is process-wide — deliberate. (2) The assert is "canary absent at TRACE", so any future log line carrying user bytes fails immediately. (3) `log_canary_fd.py` writes to fd1 raw, so the run is `WrongAnswer` by design — the canary still transits worker memory.
+
+## T36 (SUPERVISED, judge-sandbox) boundary tests
+- Code: `tests/boundary.rs`.
+- Brighton to check: (1) check 1 asserts the server's *non-dev* dependency closure via `cargo metadata`; the dev-dep on the judge test kit is deliberate per the Cargo.toml comment — if the spec meant "no dep at all" this needs a bigger refactor, flag it. (2) check 3 allows `std::process::ExitCode` in `main.rs` — a return type, not a spawn. (3) check 5 currently finds judge has *no* volumes — correct today; when T38 adds the rootless socket mount the test's "not /var/run/docker.sock" arm starts discriminating.
+- Verified: 6/6 pass.

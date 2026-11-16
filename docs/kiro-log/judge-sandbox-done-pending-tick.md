@@ -140,3 +140,22 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `model_oracle`: **PASS 8/8** — returned / crashed(exception) / crashed(OOM) / garbled / timed-out-within-limit+slack / infra→OracleError / compile-failure-side-specific / async-context-rejected.
   - `sbx_oracle -- --ignored`: **PASS 2/2** — good pair `Returned(5)` then `Returned(6)` across reused sessions; hostile users → `TimedOut` (3.53 s), `Crashed` (driver exception), `Crashed` (Exit137), `Garbled` (output limit), `Crashed` (OutOfMemory) — never `OracleError`, all within limit+slack.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (79 binaries).
+
+## T35 — log hygiene test (done, pending Kiro tick)
+
+- Commit: `judge-sandbox T35: log hygiene canary test`.
+- Files: `tests/model_logs.rs`, `tests/sbx_logs.rs`, `tests/support/mod.rs` (`LogCapture`), `tests/hostile/log_canary_fd.py`, `tests/hostile/log_canary_exc.py`, `Cargo.toml` (`tracing-subscriber` dev-dep).
+- Design note: `sbx/logs.rs` from the task text lands as top-level `tests/sbx_logs.rs` per the T25 convention (all `sbx_` scenario files sit beside `tests/sbx/mod.rs`).
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`:
+  - `model_logs`: **PASS 1/1** — canary through answer-parse, raw protocol violation, stderr and exception paths; sentinel proves the capture works; canary absent from every log line.
+  - `sbx_logs -- --ignored`: **PASS 1/1** (5.3 s) — `log_canary_fd` → `WrongAnswer` (fd1 write is a protocol violation), `log_canary_exc` → crashed, `CANARY-FD-8c3e`/`CANARY-EXC-4d91` never in captured `tracing` output at TRACE.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok.
+
+## T36 — boundary tests (done, pending Kiro tick)
+
+- Commit: `judge-sandbox T36: boundary tests`.
+- Files: `tests/boundary.rs`, `Cargo.toml` (`serde_yml` dev-dep for the compose check).
+- Six static checks, no daemon needed: (1) `cargo metadata` graph — server's *production* closure reaches neither `bollard` nor `counterspell-judge` (`kind: "dev"` edges excluded); (2) `bollard` imports confined to `bollard_backend.rs` + `daemon.rs`; (3) no `process::`/`Command::new`/`tokio::process` in `judge/src` or `mcp/src` (`ExitCode` allowed — a type, not a spawn); (4) `call.rs`/`session.rs`/`spec.rs` never touch `problem`/`TestCase`; (5) compose parse — server has no docker.sock mount, judge has none either (T38 adds the rootless mount), never `/var/run/docker.sock`, no published ports, no `VALKEY_URL`; (6) `mcp` imports only `counterspell_judge::sandbox::` and `::languages::`.
+- Interpretation recorded: check 1 uses `cargo metadata` not `Cargo.lock` because the lock file merges dep kinds; the server's dev-dep on the judge test kit is deliberate (comment in its Cargo.toml) and never ships in the artifact.
+- Verification run 16 Nov 2026: **PASS 6/6**; the first run caught the raw `Cargo.lock` reading (server reaches judge via dev-dep) and prose mentions of `bollard` — both resolved by the narrower, honest checks.
+- `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok.
