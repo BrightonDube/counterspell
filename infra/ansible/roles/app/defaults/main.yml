@@ -1,6 +1,6 @@
 # Defaults for the app role. Repository files are read from the controller (the laptop that runs
 # Ansible); see repo_root in inventory/group_vars/all.yml.
-app_dir: /opt/counterspell
+app_dir: "{{ app_root | default('/opt/counterspell') }}"
 app_env_dir: /etc/counterspell
 
 # Service env files Brighton writes by hand (T27). The role only checks them (R5.1).

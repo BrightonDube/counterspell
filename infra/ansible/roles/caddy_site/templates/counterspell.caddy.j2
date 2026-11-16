@@ -1,0 +1,30 @@
+# Managed by Ansible (caddy_site role). One site block for Counterspell; nothing global.
+{{ caddy_site_address }} {
+    log
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        X-Frame-Options "DENY"
+        Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        -Server
+    }
+
+    # Readiness is for the deploy script only (R6.6).
+    respond /api/ready 404
+
+    # Run event streams must reach the browser as each event is written (R6.4).
+    @run_events path_regexp run_events ^/api/runs/[^/]+/events$
+    handle @run_events {
+        reverse_proxy {{ caddy_site_upstream }} {
+            flush_interval -1
+        }
+    }
+
+    handle {
+        encode zstd gzip
+        reverse_proxy {{ caddy_site_upstream }}
+    }
+}
