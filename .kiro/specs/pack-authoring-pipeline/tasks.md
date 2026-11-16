@@ -51,7 +51,7 @@ Conventions for every task:
 
 These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: no I/O, no process, no network, no sqlx. Hidden values are passed in memory and never returned.
 
-- [ ] **PA01 [S] (30 min) Stage and status model with state file parsing**
+- [x] **PA01 [S] (30 min) Stage and status model with state file parsing**
   - Files: `crates/grimoire/src/pipeline/mod.rs`, `crates/grimoire/src/pipeline/state.rs`, `crates/grimoire/tests/pipeline_state.rs`.
   - Define `Stage` (S0 to S13) and `PackStatus` (`in_progress`, `static_complete`, `sandbox_checked`, `in_review`, `rework`, `stale`, `passed`, `escalated`, `awaiting_approval`, `approved`). Define the allowed transitions from design §7. Parse and write `.kiro/pipeline/state/<slug>.toml` with serde and `deny_unknown_fields`.
   - Requirements: PIP-6, PIP-45, P10.

@@ -1255,3 +1255,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `fn main() -> ExitCode` lets the program choose its exit code with `ExitCode::SUCCESS` or `ExitCode::FAILURE`, and it returns from `main` normally. Calling `std::process::exit` in the middle of a function skips destructors, so pending writes can be lost. A `Result` returned from `main` always exits with code 1 and prints `Debug` text, which is too coarse for a health check.
 - The worker runs in `run_worker`, a function with `#[tokio::main]`. The `healthcheck` branch returns before any runtime or database work starts, so the check never waits on Postgres.
 - The judge's clippy policy bans `std::process::Command::new` in judge code. The test therefore calls `health::report` in-process instead of running the binary. The policy is kept as written.
+
+## pack-authoring-pipeline PA01: stage and status model
+
+- A `match` on the current status lists every status, so adding a new status forces a decision in `can_move_to`. The compiler, not a reviewer, notices the gap.
+- `move_to` returns `Result<(), TransitionError>` for a refused move instead of panicking. The caller decides what to report, and the status stays unchanged on error.
+- `#[serde(deny_unknown_fields)]` makes the parser reject any extra key in the state file. A hidden value therefore cannot be stored there by accident.
