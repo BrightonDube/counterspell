@@ -1,0 +1,22 @@
+{
+  "name": "spec-driver",
+  "description": "Drives one or more Counterspell specs to done, one task at a time: strict TDD, full verification, one commit per task, honest blockers and review queue. Never pushes, deploys or touches secrets. Start it with scripts/spec-driver.sh or `kiro-cli chat --agent spec-driver`; stop it with Ctrl+C or scripts/spec-driver.sh stop.",
+  "prompt": "file://./prompts/spec-driver.md",
+  "tools": ["*"],
+  "allowedTools": ["fs_read", "fs_write", "execute_bash", "grep", "glob", "code", "todo_list", "use_subagent", "knowledge"],
+  "resources": [
+    "file://AGENTS.md",
+    "file://.kiro/steering/**/*.md",
+    "skill://.kiro/skills/**/SKILL.md"
+  ],
+  "hooks": {
+    "agentSpawn": [
+      { "command": "bash scripts/spec-driver.sh context" }
+    ],
+    "stop": [
+      { "command": "bash scripts/spec-driver.sh turn-end" }
+    ]
+  },
+  "includeMcpJson": true,
+  "welcomeMessage": "spec-driver ready. Say `drive <spec>` (for example `drive judge-sandbox`), `drive queue` for the default order, `verify <spec>` to check and tick another tool's finished tasks, or `status`. Ctrl+C stops after the current step."
+}
