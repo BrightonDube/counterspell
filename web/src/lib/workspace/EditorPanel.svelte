@@ -41,10 +41,6 @@
     offered.find((language) => language.id === current)?.maxSourceBytes ?? 0
   );
 
-  // The session is not reactive, so the byte count follows a copy of the text kept here.
-  let liveSource = $state('');
-  const sourceBytes = $derived(byteLength(liveSource));
-
   function request(mode: RunMode): void {
     if (!session || !current || !onRequest) return;
     onRequest({ lang: current, code: session.source(current), mode });
@@ -76,9 +72,9 @@
 
   const source = $derived(session && current ? session.source(current) : '');
 
-  $effect(() => {
-    liveSource = session && current ? session.source(current) : '';
-  });
+  // The session is not reactive, so the byte count follows a copy of the text kept here.
+  let liveSource = $derived(source);
+  const sourceBytes = $derived(byteLength(liveSource));
 
   const statusText = $derived.by(() => {
     switch (statuses.get(current)) {

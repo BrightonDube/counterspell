@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 	import { TAGLINE, WORDMARK } from './copy';
 	import { afterPaint } from './after-paint';
@@ -208,7 +209,7 @@
 	<a
 		bind:this={enterLink}
 		class="enter-link"
-		href="/login"
+		href={resolve('/login')}
 		aria-label="Enter, go to sign in"
 	>
 		<span class="enter-label" aria-hidden="true">ENTER</span>
