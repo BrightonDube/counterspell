@@ -1493,3 +1493,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `docker kill` lands inside the kill slack, but the *removal* is asynchronous — under load a corpse sits `Exited` for tens of seconds. Assert `!running` (containment) promptly and reap corpses (sweeper's role); asserting absence conflates the two bounds.
 - A fork bomb can make a daemon call on that container exceed the API timeout, so the honest outcome is sometimes `ExecError::Infrastructure`, not a verdict. Both satisfy "never accepted, always bounded" — but the test must accept both or flake.
 - `clippy::unnested_or_patterns` wants `A(x) | B(x)` collapsed into `A | B` under one constructor; `clippy::manual_contains` wants `.contains(&v)` over `.iter().any(|v| *v == x)`.
+
+## judge-sandbox T28: drop the attach stream before the kill (16 Nov 2026)
+
+- `docker rm -f` on a detached flooding container takes ~0.5 s, but >10 s while the client's attach stream stays open — the daemon waits on stream teardown. `abnormal()` aborted with the `Driver` still alive, so floods always became `KillFailed` → `Infrastructure` instead of the recorded verdict. `Opened.driver` is `Option` now; both abort paths drop it first.
+- Borrow shape for the fix: keep `&mut Opened` whole and scope driver borrows into tiny `write_call`/`next_event` fns so `abnormal` can take the full struct — destructuring `Opened { session, driver }` once pins the borrow for the whole loop.
+- Flood corpus design: `print`/`sys.stdout` are sunk by the driver's `quiet()`; only `sys.__stdout__` or `os.write(1)` reach the pipe, and floods must carry no newline or the first bad line ends the call as `ExtraOutput`, not `OutputLimit`.

@@ -66,3 +66,14 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `cargo test -p counterspell-judge --features sandbox --test sbx_limits -- --ignored`: **PASS 9/9** — S05/S06 time limits inside bounds; S07 memory contained (`MemoryLimit`/`RuntimeError`, never accepted) + `oom_kill` channel probe; S08 PID-limit containment.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
 - Daemon observations for review: (1) removal of a deadline-killed container is asynchronous and lagged past 15 s under load — corpses are `Exited`, still contained; tests assert "not running within 20 s" then reap like the sweeper. (2) Under a fork bomb a daemon call can exceed the API timeout, so the run may end `ExecError::Infrastructure` instead of a completed non-accepted verdict — both accepted for S08a; never `accepted`, always bounded.
+
+## T28 — output scenarios S09–S11 + attach-stream kill fix (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T28: output scenarios, attach-stream kill fix`).
+- Files: `tests/sbx_output.rs`, `tests/hostile/{stdout_flood,stdout_flood_raw,stderr_flood,long_line}.py`, `src/sandbox/session.rs` (`Opened.driver` → `Option`), `src/sandbox/call.rs` (driver dropped before every abort).
+- Real bug found by the scenarios: `abnormal()` called `session.abort()` while the driver's attach stream was still open; a program flooding stdout/stderr made the daemon's removal wait on stream teardown (>10 s on the dev daemon, 0.5 s detached), so `abort` timed out, `KillFailed` propagated, and the run ended `Infrastructure` instead of the recorded fact. Both abort paths now drop the driver first.
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`, `--test-threads=1`:
+  - `sbx_output -- --ignored`: **PASS 5/5** — stdout floods (text + raw `os.write`) and the giant line are `output_limit`; the stderr flood is `time_limit` (stderr never trips the cap) with worker RSS bounded; flood-then-exception is `runtime_error`.
+  - Regression: `sbx_functional` 7/7, `sbx_forgery` 5/5, `sbx_limits` 9/9 (incl. s08a clean) — 26/26 on the daemon.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
+- Corpus note: `stdout_flood.py` writes `sys.__stdout__` (the real stream — the driver's `quiet()` only replaced `sys.stdout`); floods carry no newline, so the byte cap — not a parse failure — ends the call.
