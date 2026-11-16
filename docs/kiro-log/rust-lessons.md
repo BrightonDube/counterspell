@@ -1474,3 +1474,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `tokio::select!` without `biased` polls its branches randomly when several are ready — a fired stop signal could lose to a free semaphore permit. `biased` with the stop branch first makes the outcome deterministic.
 - `structopt`-style generic bounds: `RunExecutor: Send + Sync + 'static` propagates onto `B`, so the sandbox impl needed `B: Backend + Send + Sync + 'static` — the trait itself stays lighter.
 - clippy `too_many_lines` counts a function's lines, not complexity. Pulling one small `match` destructure into `Step::into_ran` dropped `execute_run` under the limit without changing what it does.
+
+## judge-sandbox T25: a shared harness is a module, not a target (16 Nov 2026)
+
+- Cargo only treats `tests/*.rs` files as test targets; `tests/sbx/mod.rs` compiles only when a sibling target declares `mod sbx;`. Wiring it into a model test keeps it compiling before the scenario files land.
+- A source-scanning test meets its own strings: `Command::new` appears as data in scanner tests, so the corpus guard checks that no *line* holds a spawn token and a corpus marker together, rather than banning the token outright.
+- `clippy::case_sensitive_file_extension_comparisons` (pedantic) wants `Path::extension()` + `eq_ignore_ascii_case`, not `str::ends_with(".py")`.
+- tokio `TcpListener`/`UdpSocket` bound on `127.0.0.1:0` hand out free ports for the S12 listener helper; spawned accept tasks live as long as the test runtime.
