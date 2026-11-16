@@ -28,6 +28,7 @@ use counterspell_judge::catalogue::publish::{self, PublishOutcome, UnpublishOutc
 use counterspell_judge::catalogue::report::{Outcome, PackReport};
 use counterspell_judge::catalogue::retired::{parse_retired, RetiredFile};
 use counterspell_judge::catalogue::sandbox_fill::{validate_sandbox, ValidateOutcome};
+use counterspell_judge::catalogue::seed;
 use counterspell_judge::catalogue::taxonomy::{parse_taxonomy, sync_taxonomy, Taxonomy};
 use counterspell_judge::catalogue::write::{
     dry_run_static, write_static, StaticImport, WriteOutcome,
@@ -282,14 +283,132 @@ async fn run(options: &Options) -> ExitCode {
         Command::ValidateSandbox => run_validate(options).await,
         Command::Publish => run_publish(options).await,
         Command::Unpublish => run_unpublish(options).await,
-        command => {
-            eprintln!(
-                "counterspell-catalogue: `{}` is implemented under C22",
-                command.name()
+        Command::List => run_list(options).await,
+        Command::SeedDev => run_seed(options, false).await,
+        Command::SeedDemo => run_seed(options, true).await,
+    }
+}
+
+/// `list` — every catalogue problem's slug, state and pinned version.
+async fn run_list(options: &Options) -> ExitCode {
+    let pool = match connect().await {
+        Ok(pool) => pool,
+        Err(code) => return code,
+    };
+    let Ok(entries) = seed::list(&pool).await else {
+        eprintln!("counterspell-catalogue: list failed");
+        return ExitCode::from(EXIT_USAGE);
+    };
+    for entry in &entries {
+        if options.json {
+            println!(
+                "{}",
+                serde_json::json!({
+                    "slug": entry.slug,
+                    "state": entry.state,
+                    "version": entry.version,
+                })
             );
-            ExitCode::from(EXIT_USAGE)
+        } else {
+            let version = entry
+                .version
+                .map_or_else(|| "-".to_string(), |version| version.to_string());
+            println!("{} {} {}", entry.slug, entry.state, version);
         }
     }
+    ExitCode::from(EXIT_OK)
+}
+
+/// `seed-dev` and `seed-demo` share one path so they cannot drift apart (C22,
+/// CAT-D1..D3): both walk the pack trees through `pack_gate`, import every
+/// *eligible* pack (published status with its private part), and skip drafts
+/// and incomplete packs silently. `seed-demo` additionally publishes each
+/// imported problem's latest validated version — which is why it needs the
+/// sandbox runner `import --sandbox` needs.
+async fn run_seed(options: &Options, demo: bool) -> ExitCode {
+    let private_root = match pack_gate(options) {
+        Ok(root) => root,
+        Err(code) => return code,
+    };
+    let entries = match list_pack_entries(&options.packs_root) {
+        Ok(entries) => entries,
+        Err(code) => {
+            eprintln!("counterspell-catalogue: {code}");
+            return ExitCode::from(EXIT_USAGE);
+        }
+    };
+    let private_packs = private_root.join(PRIVATE_PACKS_DIR);
+    // Eligibility is decided before any database connection or runner demand:
+    // a real pack dir, a published status and a private part. Drafts,
+    // underscore names, meta-less dirs and missing private parts are skipped,
+    // not refused (CAT-D2).
+    let eligible: Vec<&String> = entries
+        .iter()
+        .filter(|slug| {
+            let public_dir = options.packs_root.join(slug);
+            public_dir.join("meta.toml").is_file()
+                && !slug.starts_with('_')
+                && read_status(&public_dir).as_deref() == Some("published")
+                && private_packs.join(slug).is_dir()
+        })
+        .collect();
+    if eligible.is_empty() {
+        println!("no eligible packs");
+        return ExitCode::from(EXIT_OK);
+    }
+
+    let wants_sandbox = demo
+        || options.mode == Mode::Sandbox
+        || (options.mode == Mode::Default && !options.dry_run);
+    if wants_sandbox && pack_runner().is_none() {
+        eprintln!(
+            "counterspell-catalogue: SBX-07: no sandbox pack runner is wired into this build"
+        );
+        return ExitCode::from(EXIT_USAGE);
+    }
+    let pool = match connect().await {
+        Ok(pool) => pool,
+        Err(code) => return code,
+    };
+    let taxonomy = match read_taxonomy(&options.packs_root) {
+        Ok(taxonomy) => taxonomy,
+        Err(code) => {
+            eprintln!("counterspell-catalogue: {code}");
+            return ExitCode::from(EXIT_USAGE);
+        }
+    };
+    if let Err(error) = sync_taxonomy(&pool, &taxonomy).await {
+        eprintln!("counterspell-catalogue: taxonomy sync failed: {error}");
+        return ExitCode::from(EXIT_USAGE);
+    }
+
+    let mut reports: Vec<PackReport> = Vec::new();
+    for slug in eligible {
+        let public_dir = options.packs_root.join(slug);
+        let imported = import_one(
+            &pool,
+            options,
+            slug,
+            &public_dir,
+            &private_packs.join(slug),
+            &taxonomy,
+        )
+        .await;
+        reports.push(imported);
+        if demo && matches!(reports.last().map(|r| &r.outcome), Some(Outcome::Created)) {
+            let publish_report = match seed::publish_validated(&pool, slug, &operator()).await {
+                Ok(PublishOutcome::Published { version }) => {
+                    report(slug, Outcome::Created, Some(version), None)
+                }
+                Ok(PublishOutcome::Refused { code }) => refused(slug, code),
+                Ok(PublishOutcome::GateRefused { check }) => refused(slug, &check),
+                Err(_) => failed(slug, "publish_error"),
+            };
+            reports.push(publish_report);
+        }
+    }
+    print_reports(&reports, options.json);
+    ExitCode::from(exit_code_for(&reports))
 }
 
 /// `publish <slug> [--version <n>]` (C21): a database-only command — it reads

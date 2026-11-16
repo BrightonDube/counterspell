@@ -13,6 +13,7 @@ pub mod publish;
 pub mod report;
 pub mod retired;
 pub mod sandbox_fill;
+pub mod seed;
 pub mod starter;
 pub mod statement;
 pub mod taxonomy;
