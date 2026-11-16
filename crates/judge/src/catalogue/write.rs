@@ -441,6 +441,79 @@ async fn insert_sandbox(
     Ok(())
 }
 
+/// The gate's verdict for a `validate-sandbox` run (C18, CAT-I16, CAT-PT10).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GateOutcome {
+    /// The latest stored version has no sandbox stamp; carry its number to the
+    /// fill and the write.
+    Ready {
+        /// The latest stored version number.
+        version: i32,
+    },
+    /// The latest stored version is already sandbox-validated; refuse.
+    AlreadyValidated {
+        /// The stamped version number.
+        version: i32,
+    },
+    /// The slug has no stored version at all.
+    Missing,
+    /// The recomputed pack hash does not match the stored `content_sha256`
+    /// (CAT-PT10): the private tree changed since the static import.
+    PrivateTreeChanged {
+        /// The latest stored version number.
+        version: i32,
+    },
+}
+
+/// Checks whether `slug`'s latest version may take a sandbox fill, under the
+/// problem row lock.
+///
+/// `content_sha256` is the hash the caller recomputed from the private tree. The
+/// transaction is read only and rolls back after the verdict; the sandbox run and
+/// the write happen later so the lock is not held across code execution.
+///
+/// # Errors
+///
+/// Returns [`WriteError`] when the latest row cannot be read.
+pub async fn sandbox_gate(
+    pool: &PgPool,
+    slug: &str,
+    content_sha256: &[u8; 32],
+) -> Result<GateOutcome, WriteError> {
+    let mut tx = pool.begin().await?;
+    let locked: Option<(String,)> =
+        sqlx::query_as("SELECT slug FROM problems WHERE slug = $1 FOR UPDATE")
+            .bind(slug)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let latest: Option<(i32, Vec<u8>, bool)> = sqlx::query_as(
+        "SELECT version, content_sha256, sandbox_validated_at IS NOT NULL FROM problem_versions \
+         WHERE problem_slug = $1 ORDER BY version DESC LIMIT 1",
+    )
+    .bind(slug)
+    .fetch_optional(&mut *tx)
+    .await?;
+    tx.rollback().await?;
+    Ok(match (locked, latest) {
+        (None, _) | (_, None) => GateOutcome::Missing,
+        (_, Some((version, _, true))) => GateOutcome::AlreadyValidated { version },
+        (_, Some((version, stored, false))) => {
+            let stored_hash: [u8; 32] =
+                stored
+                    .try_into()
+                    .map_err(|_| WriteError::CorruptStoredVersion {
+                        version,
+                        reason: "content hash is not 32 bytes",
+                    })?;
+            if &stored_hash == content_sha256 {
+                GateOutcome::Ready { version }
+            } else {
+                GateOutcome::PrivateTreeChanged { version }
+            }
+        }
+    })
+}
+
 /// Reads the generator version of the newest stored version, if there is one.
 async fn stored_generator_version(
     conn: &mut PgConnection,

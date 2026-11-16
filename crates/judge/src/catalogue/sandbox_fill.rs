@@ -29,8 +29,13 @@ use counterspell_grimoire::samples::accepts_return;
 use counterspell_grimoire::signature::LaunchType;
 use serde_json::Value;
 
+use sqlx::PgPool;
+
 use crate::catalogue::retired::{
     canonical_hash, canonical_json, check_retired, RetiredFile, RetiredRefusal,
+};
+use crate::catalogue::write::{
+    sandbox_gate, write_sandbox, GateOutcome, SandboxImport, SandboxOutcome, WriteError,
 };
 
 /// Which authored or produced case a refusal names.
@@ -335,6 +340,108 @@ fn fill_generated(
         }));
     }
     Ok(cases)
+}
+
+/// A private-tree snapshot for `validate-sandbox` (C18, CAT-I16, CAT-PT10).
+///
+/// The caller reads the pack files, recomputes the combined hash and assembles
+/// the check; this struct carries only what the sandbox run and the write need.
+pub struct SandboxPack<'a> {
+    /// The recomputed combined hash of every allowed file (public and private).
+    pub content_sha256: [u8; 32],
+    /// The check inputs for the pack version on disk.
+    pub check: SandboxCheck<'a>,
+    /// The generator version recorded into `hidden_generation`.
+    pub generator_version: String,
+    /// Private-tree file hashes `(private/<path>, sha256)` for `hidden_sources`.
+    pub sources: Vec<(String, [u8; 32])>,
+}
+
+/// What a `validate-sandbox` run did.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ValidateOutcome {
+    /// The fill ran clean and the version was stamped.
+    Validated {
+        /// The stamped version number.
+        version: i32,
+    },
+    /// The latest version was already validated; refused, no write (CAT-S2).
+    AlreadyValidated {
+        /// The stamped version number.
+        version: i32,
+    },
+    /// The slug has no stored version.
+    Missing,
+    /// The private tree changed since the static import (CAT-PT10).
+    PrivateTreeChanged {
+        /// The latest stored version number.
+        version: i32,
+    },
+    /// The sandbox checks refused the pack; nothing was written.
+    Refused(FillRefusal),
+}
+
+/// A `validate-sandbox` run that failed at the infrastructure layer. Both
+/// variants map to exit 2; a refused pack is an outcome, never an error.
+#[derive(Debug, thiserror::Error)]
+pub enum ValidateError {
+    /// The gate or the write failed.
+    #[error(transparent)]
+    Write(#[from] WriteError),
+    /// The sandbox runner failed.
+    #[error("sandbox runner failed: {0:?}")]
+    Runner(RunnerError),
+}
+
+/// Runs `validate-sandbox` for `slug` (C18): the gate, the fill, then the write.
+///
+/// The gate holds the problem lock only long enough to read the latest version's
+/// state, so the sandbox run does not execute code under a transaction. The
+/// write re-checks the stamp under the same lock convention, so a runner that
+/// stamped the version between the two calls surfaces as
+/// [`ValidateOutcome::AlreadyValidated`] rather than a second write.
+///
+/// # Errors
+///
+/// Returns [`ValidateError::Runner`] for a runner fault and
+/// [`ValidateError::Write`] for a database fault. Every pack-level refusal is an
+/// outcome, not an error.
+pub async fn validate_sandbox(
+    pool: &PgPool,
+    slug: &str,
+    pack: &SandboxPack<'_>,
+    runner: &mut dyn PackRunner,
+    operator: &str,
+) -> Result<ValidateOutcome, ValidateError> {
+    let version = match sandbox_gate(pool, slug, &pack.content_sha256).await? {
+        GateOutcome::Ready { version } => version,
+        GateOutcome::AlreadyValidated { version } => {
+            return Ok(ValidateOutcome::AlreadyValidated { version });
+        }
+        GateOutcome::Missing => return Ok(ValidateOutcome::Missing),
+        GateOutcome::PrivateTreeChanged { version } => {
+            return Ok(ValidateOutcome::PrivateTreeChanged { version });
+        }
+    };
+    let fill = match sandbox_fill(&pack.check, runner).map_err(ValidateError::Runner)? {
+        FillOutcome::Filled(fill) => fill,
+        FillOutcome::Refused(refusal) => return Ok(ValidateOutcome::Refused(refusal)),
+    };
+    let import = SandboxImport {
+        slug: slug.to_owned(),
+        version,
+        fill,
+        // The seed is a 64-bit pattern, not a magnitude; bit-preserving so the
+        // stored bigint reproduces the stream's seed exactly when read back.
+        generator_seed: i64::from_ne_bytes(pack.check.seed.to_ne_bytes()),
+        generator_version: pack.generator_version.clone(),
+        sources: pack.sources.clone(),
+    };
+    Ok(match write_sandbox(pool, &import, operator).await? {
+        SandboxOutcome::Stamped { version } => ValidateOutcome::Validated { version },
+        SandboxOutcome::Unchanged { version } => ValidateOutcome::AlreadyValidated { version },
+        SandboxOutcome::Missing { .. } => ValidateOutcome::Missing,
+    })
 }
 
 /// Lower-case hex of a 32-byte digest.
