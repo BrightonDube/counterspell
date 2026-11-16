@@ -11,7 +11,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: none.
   - Verify: selected versions and any schema spelling changes are recorded before code is written.
 
-- [ ] **T02 [S] (25 min) Define the shared typed runner contract**
+- [x] **T02 [S] (25 min) Define the shared typed runner contract**
   - Files: existing `crates/judge/` library boundary and any engine/Grimoire interface adjustments required by their approved specs.
   - Define the trusted runner request, target, bounded result, infrastructure failure, and judge-backed Oracle/PackRunner adapter. Keep expected outputs, comparator, deadlines, and cleanup in the judge.
   - Preserve: MCP may depend on the existing judge package library, but no seventh crate or host execution path is introduced.
@@ -20,14 +20,14 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 1: pure engine and Grimoire seams
 
-- [ ] **T03 [P] (30 min) Expose or complete the engine adapter surface**
+- [x] **T03 [P] (30 min) Expose or complete the engine adapter surface**
   - Files: `crates/engine/**` as required by the ghost-engine spec.
   - Ensure MCP can call the public schema, comparator, hunt, shrink, autopsy/difference, provenance, result serialization, and pure complexity-fit APIs without duplicate algorithms.
   - Preserve: engine remains synchronous, pure, and free of process, filesystem, Docker, network, Tokio, and HTTP dependencies.
   - Depends on: T02 and the approved engine implementation tasks.
   - Verify: engine property tests and JSON round-trip tests pass.
 
-- [ ] **T04 [P] (30 min) Expose the Grimoire static validator library contract**
+- [x] **T04 [P] (30 min) Expose the Grimoire static validator library contract**
   - Files: `crates/grimoire/**` as required by the Grimoire spec.
   - Make the MCP call `validate_static`/equivalent typed library APIs and return the existing diagnostic report. Keep static validation execution-free and avoid shelling out to the Grimoire binary.
   - Preserve: hidden data is not printed; sandbox validation remains a separate judge-backed operation.
