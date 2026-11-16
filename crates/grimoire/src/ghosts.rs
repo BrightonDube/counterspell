@@ -55,18 +55,19 @@ pub const FORBIDDEN_PHRASES: [&str; 6] = [
 ];
 
 /// One known ghost as the sandbox needs it: the program that shows it and the engine's record.
-pub(crate) struct SandboxGhost {
+pub struct SandboxGhost {
     /// The `incorrect/` file that the ghost runs.
-    pub(crate) program: String,
+    pub program: String,
     /// The ghost as the engine's classifier and matcher read it.
-    pub(crate) known: KnownGhost,
+    pub known: KnownGhost,
 }
 
 /// Reads the known ghosts a sandbox run can use.
 ///
 /// A ghost with an unknown kind, or a file that does not parse, is left out here.
 /// The static checks already report both, and they run first.
-pub(crate) fn sandbox_ghosts(text: &str) -> Vec<SandboxGhost> {
+#[must_use]
+pub fn sandbox_ghosts(text: &str) -> Vec<SandboxGhost> {
     let Ok(file) = toml::from_str::<GhostFile>(text) else {
         return Vec::new();
     };

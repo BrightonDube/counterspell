@@ -32,3 +32,12 @@ Checked against the normative schemas at agent-plugins.org (version 1.0.0).
 ## Dogfood pack metadata (T15)
 
 - The Grimoire `meta.toml` model uses `deny_unknown_fields`. A `dogfood = true` key would be rejected. Decision: the dogfood pack omits that key. Its private status comes from the underscore-prefixed directory `packs/_demo/`, which the public importer skips.
+
+## Decisions made during T02 to T10 (16 Nov 2026)
+
+- **Crate `sha2` 0.10 added to `counterspell-mcp`.** The hunt identity needs the SHA-256 of the program bytes (`code_sha256`), and the engine has no hash helper. `sha2` is already used by the judge at the same version, so no new licence appears.
+- **Grimoire visibility change.** `ghosts::sandbox_ghosts`, `SandboxGhost` and its fields became `pub` (with `#[must_use]` on the function). The MCP needs a pack's authored known ghosts for `find_ghost_input` and `explain_verdict`. No behaviour changed.
+- **The judge is reused for one function.** `counterspell-judge` is a dependency of the MCP for `sandbox::daemon::validate_socket_path` (main-daemon socket refusal) and `languages::LanguageCatalog::load` (pinned Python image). No judge runner is used yet.
+- **The pinned image is read once at start-up.** `LanguageCatalog::load` currently fails in this repository because `languages/drivers/` does not exist (judge-sandbox and language-drivers blockers). The server therefore starts with no image digest, and `find_ghost_input` returns `sandbox_not_configured` until the catalogue loads. The tests pass a fixed fake digest.
+- **Hunt target is the engine default.** `find_ghost_input` has no target argument, so the engine hunts the first wrong answer or crash. A program that only times out is reported as `NotFound`. The engine documents this (`hunt.rs`, `is_target`).
+- **Code-running tools run on blocking threads.** The `PackRunner` trait is synchronous, so each code-running call runs in `spawn_blocking`. The runner lock is never held across an await.

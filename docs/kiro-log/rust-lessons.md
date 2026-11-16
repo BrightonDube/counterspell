@@ -1407,3 +1407,12 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `Option<Box<dyn Trait>>` in a small slot type makes "no runner" a value. `get()` returns `Err` instead of panicking, so a missing sandbox fails closed.
 - Returning `Result<RunnerSlot, ConfigError>` from the production constructor means a bad socket path stops start-up before any runner exists.
 - `?` on a `Result<_, ConfigError>` converts the error and returns early, so the guard runs in one line.
+
+# Rust lesson: counterspell-mcp-power T06 to T10
+
+- `Path::components()` quietly drops a middle `.`, so `packs/./demo` looked clean. Splitting the raw text on `/` and refusing empty, `.` and `..` parts caught it. Check the raw text when security depends on it.
+- An enum with one variant (`RunnerError::Infrastructure`) makes `let RunnerError::Infrastructure(message) = error;` irrefutable, so a new variant later will fail to compile at that line. That is the behaviour we want.
+- `spawn_blocking` moves owned values into a thread, so the handler closure must own its arguments (`Arc` clones, the parsed request). The tool function itself stays a plain synchronous function that tests call directly.
+- A `#[non_exhaustive]` struct from another crate cannot be built with a struct literal, so the server uses the builder (`ServerCapabilities::builder().enable_tools().build()`).
+- Lock errors are values too. `Mutex::lock()` returns `Err` when another thread panicked, and the tool maps that to an internal error instead of calling `unwrap`.
+- A `[u8]` digest turns into hex with `fold` and `write!` into a `String`. `write!` returns a `Result`, so `let _ =` says the error is ignored on purpose.
