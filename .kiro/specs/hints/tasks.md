@@ -109,7 +109,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: `reqwest` is the only HTTP path; no LLM SDK. Add `reqwest` (rustls, no default TLS feature conflict) to notices.
   - Rust lesson: `async` trait methods returning `impl Future`; why the timeout wraps the whole call.
 
-- [ ] **H09 [S] (35 min) Quota and spend reservations on Valkey**
+- [x] **H09 [S] (35 min) Quota and spend reservations on Valkey**
   - Files: `crates/server/src/hints/quota.rs`.
   - `reserve`, `settle`, `release` with the INCR/DECR logic from the design. UTC day key and expiry.
   - Requirements: R6.1–R6.8.
