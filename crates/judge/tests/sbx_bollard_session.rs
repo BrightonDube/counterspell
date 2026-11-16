@@ -168,3 +168,28 @@ async fn sbx_oom_counter_visible() {
     session.kill().await.expect("kill");
     session.remove().await.expect("remove");
 }
+
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned python image on the rootless daemon"]
+async fn sbx_session_read_policy_tolerates_image_env() {
+    // The image declares its own variables (PYTHON_VERSION and so on). The session read-back
+    // must tolerate them, as the create-time read-back does, so the session path opens.
+    let (backend, _docker) = sandbox_backend().await;
+    let mut session = backend
+        .create(&python_session_spec())
+        .await
+        .expect("create");
+
+    let read = session
+        .read_policy()
+        .await
+        .expect("the session read-back succeeds");
+    assert!(
+        read.hardening_violations().is_empty(),
+        "the read-back has no violations: {:?}",
+        read.hardening_violations()
+    );
+
+    session.kill().await.expect("kill");
+    session.remove().await.expect("remove");
+}
