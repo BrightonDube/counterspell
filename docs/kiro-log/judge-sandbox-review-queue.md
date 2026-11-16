@@ -177,3 +177,8 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `deploy/rootless-sandbox-daemon.md`, `.github/workflows/ci.yml`, `docker-compose.yml`, `renovate.json`.
 - Brighton to check: (1) the compose socket mount defaults to `/run/user/1000/docker.sock` — a WSL-style path; `SANDBOX_DOCKER_SOCKET_HOST` must be set to the sandbox user's socket at real deploys, and `/dev/null` is the documented safe fallback. (2) `sandbox-integration` is advisory (`continue-on-error`, not in `ci-ok`'s needs) per open question 14 — flip to blocking if a rootless-daemon runner ever exists. (3) The Renovate regex anchors on `enabled = true` directly above `image`, so it only refreshes enabled languages; confirm that's the intent vs refreshing disabled pins too. (4) Renovate itself must be installed/enabled for the repo (GitHub App or self-hosted) — confirm current plan terms when installing, as the task notes.
 - Verified: config files parse, `docker compose config` clean, boundary 6/6.
+
+## T39 (SUPERVISED, judge-sandbox) security review pass
+- Code: `.kiro/specs/judge-sandbox/verification-report.md`.
+- Brighton to check: (1) the review was done by the implementing agent in a fresh pass — the task text asks for "a reviewer other than the author"; if an independent review (separate Kiro session or the sandbox-auditor agent) is required for sign-off, this report is the code-state record to review against, not the independent judgment itself. (2) `import_all.py` accepted by design (S27) — confirm that's still the intent. (3) The report honestly scopes all `sbx_*` evidence to the local WSL rootless daemon; T37's VPS rerun is the gate.
+- Verified: checklist table complete, no findings, boundary+model reruns green.

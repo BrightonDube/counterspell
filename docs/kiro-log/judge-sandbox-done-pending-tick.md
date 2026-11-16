@@ -169,3 +169,13 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - Compose: `SANDBOX_DOCKER_SOCKET=/sandbox/docker.sock` env + `${SANDBOX_DOCKER_SOCKET_HOST:-/run/user/1000/docker.sock}` mount on `judge` only; `/dev/null` is documented as the safe no-sandbox escape hatch.
 - Renovate: regex manager matches `enabled = true\nimage = "dep:tag@sha256:…"` so only *enabled* images are refreshed; a package rule disables every update type except `digest` and groups into one weekly PR, no auto-merge.
 - Verification 16 Nov 2026: `renovate.json`/`ci.yml`/`docker-compose.yml` parse; `docker compose config --quiet` ok; `boundary` **6/6** still pass with the new mount; fmt+clippy clean.
+
+## T39 — security review pass (done, pending Kiro tick; T37 VPS evidence still owed)
+
+- Commit: `judge-sandbox T39: security review pass`.
+- Files: `.kiro/specs/judge-sandbox/verification-report.md` (new — review table + pending-T37 section).
+- Walked `design.md` §4's 10-item checklist against the code at `ac30d70`: every item verified by the boundary suite, mint-site greps (`Pass` only in `compare.rs:88` via the private-field `Verified` proof; `Accepted` only in `verdict.rs:127`), the `SandboxFiles` archive shape (source + driver + signature only), and preflight enforcement in `SandboxExecutor::execute`. No skip flag exists anywhere.
+- unwrap/expect audit: all hits are `#[cfg(test)]` or `testkit` — zero in production.
+- Hostile corpus audit: `import_all.py` is the deliberate S27 positive control (docstring: "Expected: accepted"); every other file dies, hangs, breaks the channel, or poisons the protocol before any answer can land.
+- **No code findings.** Post-review reruns: `boundary` 6/6, `model_logs` 1/1, `model_oracle` 8/8, `model_sandbox_executor` 12/12, `model_run` 10/10.
+- Caveat recorded in the report: this was a fresh-eyes pass by the implementing agent, not an independent reviewer — a separate Kiro session sign-off is still recommended; T37's measured VPS evidence remains the hard deploy gate.
