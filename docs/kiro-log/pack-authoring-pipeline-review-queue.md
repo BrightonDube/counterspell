@@ -89,3 +89,11 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
 - Tools: `["read", "write"]`. No shell and no code-running tool. The orchestrator runs S9 to S11 instead, so the author never needs a shell.
 - Limits: "one slug" and the forbidden writes (`status = published`, any `approval.toml`, `docs/pack-reviews/`) are stated in the prompt. The publish guard hook (PA16, PA18) blocks the `published` and `approval.toml` writes at run time. Nothing blocks a write to `docs/pack-reviews/` at run time yet. That relies on the prompt alone, which Brighton should decide on.
 - Test: 5 agent checks in `crates/grimoire/tests/pipeline_agents.rs`.
+
+## PA19: secret and prompt scan (`scripts/pack-secret-scan.sh`)
+
+- Commit: see `git log --grep "PA19"`.
+- Files: `scripts/pack-secret-scan.sh`, `scripts/tests/pack-prompt-secret-scan-test.sh` (7 checks). Fixtures are built at run time so the test file has no token-shaped string.
+- Check: the scan passes on the real pipeline prompts, agents, skills, summaries and pack scripts. It refuses a token, a password, a `.env` path, an echoed credential variable and a retired marker.
+- Assumed choices are in the blockers log (PA19 and PA09 section).
+- PA09 is ticked on this result. Its check is this scan plus the PA10 citation test.
