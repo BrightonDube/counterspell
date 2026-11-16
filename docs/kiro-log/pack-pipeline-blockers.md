@@ -34,3 +34,14 @@ Limits that override assumed choices where they conflict:
 - **PA28** (`[HUMAN]`, Brighton's approval gate). Not run.
 - **PA30** (operator guide). Depends on PA28. Not written.
 - **Batch mode and the importer.** `problem-catalogue` C14 and C17 (the importer's approval check, amendment X3) are not implemented, so PIP-36 is not enforced by the importer yet.
+
+## PA29 gate record (this run)
+
+- `cargo fmt --all -- --check`: exit 0.
+- `cargo clippy --workspace --all-targets -- -D warnings`: exit 0.
+- `cargo test --workspace`: exit 0. 1218 passed, 0 failed, 331 ignored (the existing `pg_`, `valkey_` and `sbx_` ignored tests).
+- `cargo test -p counterspell-grimoire`: exit 0, and the count rises with each task.
+- `bash -n` on every new pack script, the hook scripts and the shell tests: exit 0.
+- Shell tests: assemble 17, digest 7, publish guard 10, pre-push publish 4, hook registration 6, secret scan 7. All pass.
+- Test integrity: `git diff f54c631 HEAD` shows 68 `#[test]` lines added and 0 removed in `crates/`.
+- PA29 covers the completed tasks only. PA08, PA20 to PA28 and PA30 are open (see the blocked list above).

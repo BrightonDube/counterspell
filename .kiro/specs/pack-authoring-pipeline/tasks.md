@@ -284,7 +284,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Depends on: PA27 for the pack.
   - Verify: `PUB-01` passes on the approval commit; the importer (`problem-catalogue`) accepts the hash; the importer refuses a changed file (APR-01). Import itself is run by Brighton, not in this task.
 
-- [ ] **PA29 [S] (25 min) Repo-wide gates for the pipeline**
+- [x] **PA29 [S] (25 min) Repo-wide gates for the pipeline**
   - Run the Rust gate for `counterspell-grimoire` (fmt, clippy with `-D warnings`, tests), `bash -n` on every new script, the shell test scripts, and the workspace `cargo test --workspace`. Record the test count before and after. Check that no test was removed (`tdd-and-quality` test-integrity rules).
   - Requirements: PIP-50, PIP-49.
   - Depends on: PA01 to PA26 (those that apply).
