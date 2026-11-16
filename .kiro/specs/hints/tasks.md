@@ -89,7 +89,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: no timers in this module; the timeout is applied by the caller.
   - Rust lesson: generics with a closure for "call the next one"; returning a plain enum that the compiler checks.
 
-- [ ] **H07 [P] (25 min) Cost arithmetic**
+- [x] **H07 [P] (25 min) Cost arithmetic**
   - Files: `crates/server/src/hints/cost.rs`.
   - `cost_micros`, `worst_case_micros`, `estimate_tokens` using integer micro-dollars. A helper converts micro-dollars to a SQL-ready decimal string for `cost_usd numeric(10,6)`.
   - Requirements: R6.3, R7.2, R7.3.

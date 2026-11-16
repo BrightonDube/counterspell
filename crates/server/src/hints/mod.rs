@@ -5,4 +5,5 @@
 
 pub mod chain;
 pub mod config;
+pub mod cost;
 pub mod ladder;

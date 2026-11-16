@@ -1338,3 +1338,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `run_chain` takes a closure that returns a future. Each call to the closure starts one provider attempt, so the code decides which provider to call next without knowing what the provider is.
 - Matching on a tuple `(step, outcome)` lets one `match` cover the success path and the failure path together. An impossible pair falls into a single `_` arm that stops the loop.
 - `futures_util::FutureExt::now_or_never` runs a ready future to its value in a test, without starting a runtime.
+
+# Rust lesson: hints H07
+
+- Money is kept as whole micro-dollars (`i64`). Integer division is exact, so no value drifts the way `f64` sums can.
+- Rounding up with `(total + divisor - 1) / divisor` makes any fraction of a micro-dollar count as a whole unit.
+- `saturating_mul` and `saturating_add` stop an overflow from wrapping to a negative cost. The cost stays large and positive instead.
