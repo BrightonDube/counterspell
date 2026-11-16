@@ -49,6 +49,14 @@
   loop: "{{ app_env_stat.results }}"
   tags: [env-check]
 
+- name: Create the Counterspell proxy network if it is missing (shared host only)
+  ansible.builtin.shell: |
+    docker network inspect {{ app_proxy_network }} >/dev/null 2>&1 \
+      || docker network create --driver bridge {{ app_proxy_network }}
+  register: app_proxy_network_result
+  changed_when: app_proxy_network_result.stdout | length > 0
+  when: shared_host | default(false) | bool
+
 - name: Copy the compose files and write the checksum record
   ansible.builtin.include_tasks: compose_sha.yml
 

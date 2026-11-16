@@ -18,6 +18,11 @@ CURRENT="$APP_DIR/deploy.env"
 PREVIOUS="$APP_DIR/deploy.env.previous"
 CANDIDATE="$APP_DIR/deploy.env.new"
 COMPOSE=(docker compose --project-directory "$APP_DIR" -f "$APP_DIR/docker-compose.yml" -f "$APP_DIR/compose.prod.yml")
+# On the shared host the app role installs compose.shared.yml (no Caddy of its own, shared proxy network).
+# It is covered by compose.sha256, so a changed or removed file is refused before any pull.
+if [[ -f "$APP_DIR/compose.shared.yml" ]]; then
+  COMPOSE+=(-f "$APP_DIR/compose.shared.yml")
+fi
 
 refuse() { echo "refused: $*" >&2; exit 2; }
 fail() { echo "failed: $*" >&2; exit 1; }

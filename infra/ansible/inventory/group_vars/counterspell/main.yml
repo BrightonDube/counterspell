@@ -1,0 +1,4 @@
+---
+# Non-secret values for the shared host. Secrets go in vault.yml (encrypted, see vault.example.yml).
+# Attach the running shared Caddy to counterspell_proxy so it can reach counterspell-server (no restart).
+caddy_site_connect_network: true

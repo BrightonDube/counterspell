@@ -1,0 +1,22 @@
+# Shared-host overlay (deploy-ops, deployer agent). Evorayn is live on this host and already runs the
+# reverse proxy, so Counterspell runs no Caddy of its own and publishes no port.
+#   - `caddy` is switched off with an inactive profile (it never renders or starts).
+#   - The server joins the `proxy` network, which is external and shared with the host's Caddy. That
+#     network also gives the server its outbound route (OAuth, mail, hints). The `edge` network is gone.
+#   - The server container has a fixed name so the Caddy site file can reach it (`counterspell-server:8080`).
+# Apply after compose.prod.yml: -f docker-compose.yml -f compose.prod.yml -f compose.shared.yml
+services:
+  caddy:
+    profiles: ["unused-on-shared-host"]
+  server:
+    container_name: counterspell-server
+    networks: !override
+      - data
+      - proxy
+
+networks: !override
+  data:
+    internal: true
+  proxy:
+    external: true
+    name: counterspell_proxy

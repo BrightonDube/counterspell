@@ -144,3 +144,17 @@ stub_calls() {
   [[ "$output" != *"CADDY_SITE_ADDRESS"* ]]
   [[ "$output" != *"counterspell.example"* ]]
 }
+
+@test "on the shared host every compose call includes compose.shared.yml, and tampering with it is refused (R7.13)" {
+  printf 'services: {}\n' > "$COUNTERSPELL_DIR/compose.shared.yml"
+  (cd "$COUNTERSPELL_DIR" && sha256sum docker-compose.yml compose.prod.yml compose.shared.yml Caddyfile > compose.sha256)
+  write_current_release
+  run_request "$(deploy_request)"
+  [ "$status" -eq 0 ]
+  grep "^docker compose" "$STUB_LOG" | grep -q "compose.prod.yml -f $COUNTERSPELL_DIR/compose.shared.yml"
+  : > "$STUB_LOG"
+  printf 'services: { caddy: {} }\n' > "$COUNTERSPELL_DIR/compose.shared.yml"
+  run_request "$(deploy_request)"
+  [ "$status" -eq 2 ]
+  ! grep -q " pull" "$STUB_LOG"
+}

@@ -16,6 +16,8 @@ app_compose_files:
     dest: docker-compose.yml
   - src: deploy/vps/compose.prod.yml
     dest: compose.prod.yml
+  - src: deploy/vps/compose.shared.yml
+    dest: compose.shared.yml
   - src: Caddyfile
     dest: Caddyfile
 
@@ -25,3 +27,6 @@ app_scripts:
     dest: counterspell-deploy
   - src: deploy/vps/counterspell-deploy-entry
     dest: counterspell-deploy-entry
+
+# External Docker network shared with the host's reverse proxy (compose.shared.yml). Created once, empty.
+app_proxy_network: counterspell_proxy
