@@ -103,7 +103,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
 
 ## Wave 2: assembly and the S9 gate
 
-- [ ] **PA07 [S] [SUPERVISED] (30 min) Assembly script for the two trees**
+- [x] **PA07 [S] [SUPERVISED] (30 min) Assembly script for the two trees**
   - Files: `scripts/pack-assemble.sh`, `scripts/tests/pack-assemble-test.sh`.
   - Usage: `scripts/pack-assemble.sh <slug> <public-root> <private-root>`. Copy the public files into `target/pack-assembly/<slug>/`, then the private files. Refuse if a private file name appears in the public tree, if the private tree is missing or unreadable (PIP-34), or if the slug directory names differ. Write the manifest (path and SHA-256 per file, sorted). Never print a hidden file's contents.
   - Requirements: PIP-31, PIP-34, PIP-32, D3.
