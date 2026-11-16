@@ -67,7 +67,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: boundary tests: a category at 2 fails; mean 3.9 fails and mean 4.0 passes; correctness 4 fails; an `ORG-*` finding fails; a `blocker` fails; an empty answer to a finding is rejected.
   - Rust lesson: `Result` and `Option` carry the failure reason in the type, so a fail can't be read as a pass by accident. Explain the difference between `Fail(Vec<...>)` and a boolean.
 
-- [ ] **PA03 [P] (25 min) Loop cap and escalation**
+- [x] **PA03 [P] [S] (25 min) Loop cap and escalation**
   - Files: `crates/grimoire/src/pipeline/loop_cap.rs`, `crates/grimoire/tests/pipeline_loop_cap.rs`.
   - Round counter, cap of three, and the transitions `rework`, `escalated` and `stale` from design §7. A new content hash starts a new round; the same hash does not.
   - Requirements: PIP-25, PIP-26, P4.
