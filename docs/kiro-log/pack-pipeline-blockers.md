@@ -58,3 +58,16 @@ Limits that override assumed choices where they conflict:
 1. **Approval identity (C2).** The "Approved by Brighton" phrase does not prove who approved. Decide whether the publish gate should require a signed commit from Brighton's key, or an allow-listed author.
 2. **Short hidden values.** The summary scan skips values under four characters. Decide whether a reviewer check is enough, or whether the scan should refuse them too.
 3. **Author prompt.** The author may not write `docs/pack-reviews/`, but only the prompt forbids it, because no hook blocks that path yet. Decide whether to add a path guard.
+
+## Resume run, 16 Nov 2026 (attempt 2): nothing new to tick
+
+Checked each unticked task against its dependencies and the blockers above. No task could be completed in this run without a decision only Brighton can make.
+
+- **PA08:** still blocked. `.kiro/specs/grimoire-packs/` has no amendment X1 or X2 (checked with grep on 16 Nov 2026). The design's §14 lists them as requested, not approved.
+- **PA23 and PA24:** their own dependencies (PA01, PA06) are done. Their verification still needs an S9 pass on an assembled tree, which needs PA08. There is no stage runner module in `crates/grimoire/src/pipeline/` yet. Left unticked.
+- **PA20 (`[HUMAN]`):** open for Brighton. The private repo and deploy key are in place (15 Nov 10:45). The originality list and open questions 3, 6 and 7 are still his to answer.
+- **PA21 and PA22:** PA21 depends on PA20. PA22 has a plan file (`.kiro/pipeline/rotation.md`, commit 5036f45) and stays unticked, because its check is a reviewer's check against PIP-35.
+- **PA25 and PA26:** depend on PA21 and PA24.
+- **PA27, PA28, PA30:** `[HUMAN]` or dependent on them. Not run.
+
+Unblock order for Brighton: approve grimoire-packs X1 and X2 (then PA08 runs), answer PA20 (then PA21 and PA22 can be checked), and decide the three open items in "Decisions for Brighton" above.
