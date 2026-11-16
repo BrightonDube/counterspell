@@ -125,3 +125,18 @@ Minor, not changed:
 - `pack-publish-check.sh` misses single-quoted TOML (`status = 'published'`) and would match `status = "published"` inside a TOML comment.
 - `pre-push.sh` uses `--not --remotes` for a new branch, so commits already on any remote-tracking branch are skipped.
 - `hint_leak.rs` flags short values such as `3` in ordinary rungs. This is documented as a false-positive cost.
+
+## Index of supervised tasks and commits
+
+| Task | Commit | What Brighton should check |
+|---|---|---|
+| PA04 originality guard | 01d0b9a | Five S1 headings (assumed), synthetic markers only |
+| PA05 hint leak check | 03114bc, fixes in d766dd3 | Token matching and the new case and spacing rules |
+| PA06 ghost, approval and publish checks | 5f32f5b | Hash is computed in the script, not Rust |
+| PA07 assembly script | 7c89aff, fix in d766dd3 | Manifest leaves out approval.toml; roots layout |
+| PA12 reviewer agent | 6aefa0f | `tools` is read only; the agent format is JSON with `prompt` |
+| PA13 author agent | bd33824, fmt in c419493 | No write guard on `docs/pack-reviews/` (prompt only) |
+| PA15 digest and routing | 71b5126 | SUM-01 tokens and the optional hidden values file (d766dd3) |
+| PA16 publish guard | 9273383, fixes in d766dd3 | Real Kiro hook payload key (`path`) |
+| PA17 pre-push PUB-01 | 9165cbb | Commit phrase is not an identity control (decision open) |
+| PA18 hook registration | beb573b | The new hook is active from the next session |
