@@ -104,8 +104,8 @@ pub struct HintView {
     pub model: Option<String>,
     /// `true` when the learner's code and ghost were sent to a provider for this text.
     pub sent_to_provider: bool,
-    /// The learner's quota after this request.
-    pub quota: QuotaView,
+    /// The learner's quota, or `None` when the quota store cannot be read.
+    pub quota: Option<QuotaView>,
     /// The next authored rung the learner may reveal, or `None` after rung 4.
     pub next_rung: Option<u8>,
 }

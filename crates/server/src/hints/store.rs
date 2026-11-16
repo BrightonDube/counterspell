@@ -287,3 +287,105 @@ pub async fn ghost_for(pool: &PgPool, submission: Uuid) -> Result<Option<GhostRo
         kind,
     }))
 }
+
+/// The statement of the newest version of a problem, in Markdown.
+///
+/// # Errors
+///
+/// Returns the database error when the query fails.
+pub async fn statement_markdown(
+    pool: &PgPool,
+    problem_slug: &str,
+) -> Result<Option<String>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT statement_markdown FROM problem_versions WHERE problem_slug = $1
+         ORDER BY version DESC LIMIT 1",
+    )
+    .bind(problem_slug)
+    .fetch_optional(pool)
+    .await
+}
+
+/// The verdict of a submission, or `None` while it has none.
+///
+/// # Errors
+///
+/// Returns the database error when the query fails.
+pub async fn verdict_of(pool: &PgPool, submission: Uuid) -> Result<Option<String>, sqlx::Error> {
+    let verdict: Option<Option<String>> =
+        sqlx::query_scalar("SELECT verdict FROM submissions WHERE id = $1")
+            .bind(submission)
+            .fetch_optional(pool)
+            .await?;
+    Ok(verdict.flatten())
+}
+
+/// The stored ladder text for one rung of a submission.
+///
+/// # Errors
+///
+/// Returns the database error when the query fails.
+pub async fn ladder_body(
+    pool: &PgPool,
+    submission: Uuid,
+    rung: u8,
+) -> Result<Option<String>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT body FROM hints WHERE submission_id = $1 AND rung = $2 AND source = 'ladder'",
+    )
+    .bind(submission)
+    .bind(i16::from(rung))
+    .fetch_optional(pool)
+    .await
+}
+
+/// Every revealed ladder rung of a submission with its text, in rung order.
+///
+/// # Errors
+///
+/// Returns the database error when the query fails.
+pub async fn ladder_rows(
+    pool: &PgPool,
+    submission: Uuid,
+) -> Result<Vec<(u8, String)>, sqlx::Error> {
+    let rows: Vec<(i16, String)> = sqlx::query_as(
+        "SELECT rung, body FROM hints WHERE submission_id = $1 AND source = 'ladder' ORDER BY rung",
+    )
+    .bind(submission)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .filter_map(|(rung, body)| u8::try_from(rung).ok().map(|rung| (rung, body)))
+        .collect())
+}
+
+/// Every stored AI hint of a submission, in rung order.
+///
+/// # Errors
+///
+/// Returns the database error when the query fails.
+pub async fn ai_rows(pool: &PgPool, submission: Uuid) -> Result<Vec<(u8, AiHint)>, sqlx::Error> {
+    let rows: Vec<(i16, String, Option<String>, Option<String>)> = sqlx::query_as(
+        "SELECT rung, body, provider, model FROM hints
+         WHERE submission_id = $1 AND source = 'ai' ORDER BY rung",
+    )
+    .bind(submission)
+    .fetch_all(pool)
+    .await?;
+    Ok(rows
+        .into_iter()
+        .filter_map(|(rung, body, provider, model)| {
+            u8::try_from(rung).ok().map(|rung| {
+                (
+                    rung,
+                    AiHint {
+                        body,
+                        provider,
+                        model,
+                    },
+                )
+            })
+        })
+        .collect())
+}

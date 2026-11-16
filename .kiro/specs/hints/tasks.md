@@ -147,7 +147,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 3: HTTP surface
 
-- [ ] **H13 [S] (40 min) Handlers and router**
+- [x] **H13 [S] (40 min) Handlers and router**
   - Files: `crates/server/src/hints/handlers.rs`, `crates/server/src/hints/mod.rs`.
   - `POST /api/hints` in the order of the design: JSON and content type, `CurrentUser`, UUID and rung checks, window rate limit, ownership and finish check, gate, cache hit, code size (422 for AI), ghost fetch, `ai::generate`, insert, response. `GET /api/hints?submission_id=`. Errors use the envelope and codes from the design. `next_rung` and quota are included.
   - Requirements: R1.2–R1.7, R2.1–R2.5, R6.8, R11.1–R11.4.
@@ -156,7 +156,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: the server returns plain text bodies; no field is HTML.
   - Rust lesson: extractor order in Axum and why the cheap checks run first.
 
-- [ ] **H14 [S] (25 min) Wire the router into the server**
+- [x] **H14 [S] (25 min) Wire the router into the server**
   - Files: `crates/server/src/lib.rs` (add `.nest` or `.merge` for hints), `crates/server/src/hints/mod.rs`.
   - Mount under `/api`, after the health route. Pass `HintState` (config, pool, Valkey, transport) through application state.
   - Requirements: R11.3, R8.4.

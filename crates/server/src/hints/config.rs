@@ -180,6 +180,20 @@ pub enum HintConfigError {
 }
 
 impl HintConfig {
+    /// Settings with AI off: no providers, and the documented defaults for every limit.
+    /// The spend cap default is `5.00` dollars, matching `DEFAULT_SPEND_CAP_DOLLARS`.
+    #[must_use]
+    pub fn disabled() -> Self {
+        Self {
+            providers: Vec::new(),
+            timeout_ms: DEFAULT_TIMEOUT_MS,
+            max_output_tokens: u32::try_from(DEFAULT_MAX_OUTPUT_TOKENS).unwrap_or(u32::MAX),
+            daily_limit: u32::try_from(DEFAULT_DAILY_LIMIT).unwrap_or(u32::MAX),
+            spend_cap_micros: 5_000_000,
+            window_limit: DEFAULT_WINDOW_LIMIT,
+        }
+    }
+
     /// Reads the hint variables from the process environment.
     ///
     /// Only the variables this module uses are collected, so no other secret is copied.
