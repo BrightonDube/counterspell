@@ -66,3 +66,10 @@ sudo systemctl restart user@1000.service
 
 - 16 Nov 2026 (decided by Brighton's assistant under the standing "record a reasonable choice and continue" rule; Brighton may overrule): judge-sandbox T23's sweeper needs a container-listing call the `Backend` trait lacks. Smallest backward-compatible extension: add `Backend::list_managed(&self) -> Result<Vec<ManagedContainer>, InfraError>` that lists containers carrying the `counterspell.managed=true` label in any state, with `ManagedContainer { id, name, created_at }`. Implemented by `FakeBackend` (testkit) and `BollardBackend` (feature `sandbox`). No existing method changes.
 - 16 Nov 2026 (Brighton, per devin-counterspell-prompt): the "no browser or localhost E2E" scope limit is lifted. Playwright E2E is now in scope: `@playwright/test` becomes a `web/` dev dependency, tests live in `web/e2e/`, one file per spec, against the local dev stack. Supersedes the "no browser E2E" line in `tdd-and-quality.md` rule 7.
+
+## 16 Nov 2026 12:45 SAST: production host
+- Counterspell deploys to the shared OVH VPS 15.204.92.66, user `ansible` with sudo. Evorayn is live on the same host and must never be disturbed.
+- Public address `15-204-92-66.sslip.io` until a domain is bought; Caddy issues the certificate.
+- Postgres and Valkey run as Counterspell's own containers. Supabase is Evorayn's, not Counterspell's.
+- Use one shared Caddy: Counterspell adds a single site file, validates, then reloads. No second Caddy.
+- The `base` and `docker` roles are never run on the shared host. Only the `app`, `sandbox` and `caddy_site` roles, via the `deployer` agent, which needs Brighton's typed DEPLOY.
