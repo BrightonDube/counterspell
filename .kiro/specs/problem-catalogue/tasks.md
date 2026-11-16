@@ -197,7 +197,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_dry_run_no_writes` (P5: row counts and `catalogue_events` unchanged); unit tests for the diff output.
   - Rust lesson: a read-only transaction is a database-level promise. Explain why it is stronger than an `if dry_run` check around each insert.
 
-- [ ] **C16 [S] [SUPERVISED] (30 min) Sandbox checks through `PackRunner`**
+- [x] **C16 [S] [SUPERVISED] (30 min) Sandbox checks through `PackRunner`**
   - Files: `crates/judge/src/catalogue/sandbox_fill.rs`, `crates/judge/tests/catalogue_sandbox_fill.rs`.
   - Use `counterspell_grimoire::PackRunner` (trait from grimoire T17). Implement SBX-01 (examples), SBX-02 (hidden inputs from `CandidateStream`, expected from the reference), SBX-03 (known ghosts reproduce). Return `SandboxFill { hidden: Vec<(input, expected)>, digest }` or a refusal. Hidden values stay in memory.
   - Requirements: CAT-I14, CAT-I21 (SBX codes), CAT-X1, CAT-PT8, CAT-PT9.
