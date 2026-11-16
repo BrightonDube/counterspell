@@ -336,3 +336,8 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-16T04:48:47Z | model: not reported | last commit: 3df651c judge-sandbox: record attempt-2 status, T20 blocked on language-drivers drivers
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)

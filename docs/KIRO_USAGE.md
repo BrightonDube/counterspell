@@ -474,3 +474,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-16 06:11-06:12 SAST: 30-counterspell-mcp-power-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-counterspell-mcp-power-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0611-30-counterspell-mcp-power-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.58 (credits used now 3714.60/4000).
+
+### 2026-11-16 06:28-06:46 SAST: 23-judge-sandbox-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a1.md`. Transcript: `docs/kiro-log/2026-11-16T0628-23-judge-sandbox-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 5.68 (credits used now 3720.28/4000).
+
+### 2026-11-16 06:46-06:48 SAST: 23-judge-sandbox-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-judge-sandbox-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0646-23-judge-sandbox-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.27 (credits used now 3721.55/4000).
