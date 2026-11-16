@@ -1285,3 +1285,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `str::match_indices` returns byte positions where a value starts. Slicing with those positions is safe, because the search only returns positions on character boundaries. Checking the neighbouring characters uses `chars().next_back()` and `chars().next()`, which handle multi-byte letters correctly.
 - The shared `Diagnostic` type lives in `pipeline/mod.rs`, so the originality and hint checks return the same shape without copying it.
 - `format!` builds the pointer from a rung number and an index. The value itself is never put into the message, so the report cannot leak it.
+
+## pack-authoring-pipeline PA06: ghost coverage and approval checks
+
+- `serde` with `deny_unknown_fields` on `Approval` makes the importer's input contract strict. An extra key such as a hidden expected value is an error, not a silently ignored field.
+- `toml::Table` lets the check read one key (`status`) from a `meta.toml` without a full struct. `Option<String>` returns `None` when the key is missing, instead of an error.
+- `bool::then` and `then_some` turn a condition into `Option`. `check_reference` uses it to return a finding only when the reference found a counterexample.

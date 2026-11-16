@@ -91,7 +91,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: both fixtures fail with `HNT-03`. A canary test asserts the leaked value is absent from the report text.
   - Rust lesson: borrowing `&[Value]` lets the check read secrets without taking ownership of them. Explain why the report is built from indexes and not from the values.
 
-- [ ] **PA06 [S] [SUPERVISED] (30 min) Ghost coverage, approval hash and publish checks (GHC-01, PUB-01, APR-01)**
+- [x] **PA06 [S] [SUPERVISED] (30 min) Ghost coverage, approval hash and publish checks (GHC-01, PUB-01, APR-01)**
   - Files: `crates/grimoire/src/pipeline/ghost_cover.rs`, `crates/grimoire/src/pipeline/approval.rs`, `crates/grimoire/tests/pipeline_ghost_approval.rs`, fixtures `one-ghost/`, `publish-without-approval/`, `approval-hash-mismatch/`, `ghost-not-reproducing/`.
   - `ghost_cover`: at least two known ghosts (GHC-01), and one verified S11 entry for each incorrect program (GHC-02, GHC-03 for the reference). `approval`: compare the assembled manifest hash with `approval.toml`, and check that a `published` status has an approval (`PUB-01` when missing, `APR-01` on mismatch).
   - Requirements: PIP-13, PIP-18, PIP-28, PIP-29, PIP-36, P1, P5.
