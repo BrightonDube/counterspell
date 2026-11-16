@@ -227,6 +227,22 @@ impl QuotaStore {
             .map_err(|_| QuotaError::Unavailable)
     }
 
+    /// The learner's generations used on the UTC day of `now`. A missing counter reads as zero.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`QuotaError::Unavailable`] when Valkey cannot be reached.
+    pub async fn used_today(&self, user: UserId, now: OffsetDateTime) -> Result<u32, QuotaError> {
+        let keys = Keys::new(user, &day_key(now));
+        let mut connection = self.connection().await?;
+        let value: Option<i64> = redis::cmd("GET")
+            .arg(&keys.quota)
+            .query_async(&mut connection)
+            .await
+            .map_err(|_| QuotaError::Unavailable)?;
+        Ok(clamp_used(value.unwrap_or(0)))
+    }
+
     async fn connection(&self) -> Result<redis::aio::MultiplexedConnection, QuotaError> {
         self.client
             .get_multiplexed_async_connection()

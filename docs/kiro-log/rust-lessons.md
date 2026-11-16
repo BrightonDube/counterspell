@@ -1386,3 +1386,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `generate` is the only function that spends money. Every return path goes through it, so the reserve, settle and release steps cannot be skipped by a new caller.
 - `let ... else` takes the success value or returns early in one line, which is clearer than a `match` with a single useful arm.
 - A generic `Deps<'a, T: ChatTransport>` lets production pass the HTTP transport and tests pass the scripted one, with no `dyn` and no runtime cost.
+
+# Rust lesson: hints H13 and H14
+
+- Axum runs extractors in the order they appear, and the body must come last. Putting `CurrentUser` before the JSON body means a request with no session gets `401` before any body parsing or database work.
+- `Result<Json<T>, JsonRejection>` as an argument turns a bad body into a value the handler can answer with our own error envelope, instead of Axum's plain-text rejection.
+- Returning `Result<T, ApiError>` from a helper keeps the error type small. Clippy's `result_large_err` lint warns when the `Err` side is a whole `Response`, so the helper returns the small error and the caller converts it.
+- `Arc<HintState>` in `AppState` is cloned cheaply per request, and `with_hints` replaces it in one call. That keeps `main` thin, as the server structure requires.

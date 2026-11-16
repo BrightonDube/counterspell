@@ -9,6 +9,7 @@ pub mod chain;
 pub mod config;
 pub mod cost;
 pub mod guard;
+pub mod handlers;
 pub mod ladder;
 pub mod provider;
 pub mod quota;

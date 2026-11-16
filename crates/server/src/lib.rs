@@ -75,6 +75,8 @@ pub struct AppState {
     pub origin: Option<Arc<WebOrigin>>,
     /// The dependencies that `GET /api/ready` pings (Postgres and Valkey in production).
     pub readiness: Arc<health::Readiness>,
+    /// Hint settings, quota counters and the provider transport. AI stays off until `with_hints`.
+    pub hints: Arc<hints::handlers::HintState>,
 }
 
 impl AppState {
@@ -89,6 +91,7 @@ impl AppState {
             Arc::new(health::PostgresProbe::new(pool.clone())),
             Arc::new(health::LimiterProbe::new(limiter.clone())),
         ]);
+        let hints = Arc::new(hints::handlers::HintState::disabled(pool.clone()));
         Self {
             pool,
             config: Arc::new(config),
@@ -101,6 +104,7 @@ impl AppState {
             auth: None,
             origin: None,
             readiness: Arc::new(readiness),
+            hints,
         }
     }
 
@@ -152,6 +156,13 @@ impl AppState {
         self.readiness = Arc::new(health::Readiness::new(probes));
         self
     }
+
+    /// Replaces the hint state (settings, quota store and transport). `main` builds it from the environment.
+    #[must_use]
+    pub fn with_hints(mut self, hints: hints::handlers::HintState) -> Self {
+        self.hints = Arc::new(hints);
+        self
+    }
 }
 
 /// File name of the single-page fallback. The `SvelteKit` static adapter writes it, so `/` keeps its own prerendered `index.html`.
@@ -177,6 +188,10 @@ pub fn build_router(state: AppState) -> Router {
             get(catalogue::handlers::get_problem),
         )
         .route("/api/dashboard", get(dashboard::handler::get_dashboard))
+        .route(
+            "/api/hints",
+            post(hints::handlers::post_hint).get(hints::handlers::get_hints),
+        )
         .route("/api/runs", post(runs::create::post_run))
         .route("/api/runs/{id}", get(runs::read::get_run))
         .route("/api/runs/{id}/cancel", post(runs::cancel::cancel_run))
