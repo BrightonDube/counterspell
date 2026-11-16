@@ -176,3 +176,5 @@ Exit codes: 0 means no errors. 1 means validation errors. 2 means a usage, I/O o
 ## Status and publication
 
 Every starter pack starts as `status = "draft"`. Brighton reviews the statement, hints, ghost explanations and reference, then changes the status to `published`. Agents do not publish packs.
+
+Importing, validating, publishing and seeding the catalogue is an operator task — see `docs/catalogue-operations.md`.
