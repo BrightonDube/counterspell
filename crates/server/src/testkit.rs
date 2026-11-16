@@ -93,3 +93,61 @@ impl ProblemLookup for InMemoryProblems {
             })
     }
 }
+
+/// One scripted answer for [`ScriptedTransport`].
+pub enum Step {
+    /// Answer with this result.
+    Reply(Result<crate::hints::provider::ChatResponse, crate::hints::provider::ProviderError>),
+    /// Never answer. The caller's timeout must end the call.
+    Stall,
+}
+
+/// A chat transport that gives scripted answers in order and counts the calls. It makes no network
+/// call. When the script runs out, it reports a transport failure.
+pub struct ScriptedTransport {
+    steps: std::sync::Mutex<std::collections::VecDeque<Step>>,
+    calls: std::sync::atomic::AtomicUsize,
+}
+
+impl ScriptedTransport {
+    /// Creates a transport that answers with `steps` in order.
+    #[must_use]
+    pub fn new(steps: Vec<Step>) -> Self {
+        Self {
+            steps: std::sync::Mutex::new(steps.into()),
+            calls: std::sync::atomic::AtomicUsize::new(0),
+        }
+    }
+
+    /// How many calls the transport has received.
+    #[must_use]
+    pub fn calls(&self) -> usize {
+        self.calls.load(std::sync::atomic::Ordering::SeqCst)
+    }
+}
+
+impl crate::hints::provider::ChatTransport for ScriptedTransport {
+    fn chat(
+        &self,
+        _request: crate::hints::provider::ChatRequest<'_>,
+    ) -> impl std::future::Future<
+        Output = Result<
+            crate::hints::provider::ChatResponse,
+            crate::hints::provider::ProviderError,
+        >,
+    > + Send {
+        self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        let step = self
+            .steps
+            .lock()
+            .ok()
+            .and_then(|mut steps| steps.pop_front());
+        async move {
+            match step {
+                Some(Step::Reply(result)) => result,
+                Some(Step::Stall) => std::future::pending().await,
+                None => Err(crate::hints::provider::ProviderError::Transport),
+            }
+        }
+    }
+}
