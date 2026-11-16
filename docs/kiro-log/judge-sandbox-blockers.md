@@ -138,3 +138,14 @@ The pinned Python and Node images are pulled onto the rootless sandbox daemon, a
 - Checks 1 to 4 and 6 need no new crate. Check 1 can parse `Cargo.lock` as text. Check 2 must look for `use bollard` and `bollard::` in code, not doc comments (`backend.rs` mentions bollard only in docs; `mod.rs` declares `pub mod bollard_backend`).
 - Check 5 (`docker-compose.yml`) needs a YAML parser. T36 names a "YAML dev-dependency" but no crate, and `Cargo.lock` has no YAML crate. Brighton or the next run must choose one (licence checked with `cargo deny`). `serde_yaml` is archived, so do not use it by default.
 - Unblock: pick the YAML dev-dependency. Then T36 can be written and ticked.
+
+
+## Run note (16 Nov 2026, attempt 2 continuation): no new ticks; T20 blocked on language-drivers
+
+- **T00:** present and signed off in `design.md` ("Review decisions", 14 Nov). T01 onward may run.
+- **Re-run this session:** `sbx_create_readback_matches` against the rootless sandbox daemon (`SANDBOX_DOCKER_SOCKET` from `~/.config/counterspell/dev-test.env`, value not logged). The identity check passes now (cgroup delegation is applied). The test fails at catalogue load: `MissingDriver { language: "javascript" }`.
+- **Root cause, precisely:** `languages/languages.toml` enables Python (line 17) and JavaScript (line 33). `languages/drivers/` does not exist, so the loader refuses the whole shipped catalogue. Disabling JavaScript alone does not unblock T20, because the Python driver is also missing.
+- **What unblocks T20 (in order):** (1) language-drivers T03 (`languages/drivers/python/driver.py` with its tests), then (2) either language-drivers T04 for JavaScript or Brighton's decision to set `enabled = false` for JavaScript again, per the 15 Nov standing rule ("JavaScript stays disabled until its driver exists"). Kiro did not edit `languages.toml`, because it belongs to language-drivers and the standing rule needs Brighton's confirmation.
+- **Not done, because they depend on T20 or on an `sbx_` run:** T22 (probe runner, `PreflightState`, `preflight` command, `sbx_preflight_*`), T23 (sweeper; also needs a list-containers method on `Backend`, a T14 trait change), T24 and everything after. T35 depends on T24. T36 needs the YAML dev-dependency choice (see the T36 entry above). T37 is VPS-only. T39 depends on T37.
+- **Decision still open for Brighton:** the T23 `Backend` list method. The design (section 12, step 4) requires the sweeper to list labelled containers, so the method is in scope, but the trait change to T14 has not been approved. Assumed choice if he agrees: add `list_managed(&self) -> Vec<ManagedContainer>` to `Backend`, with the fake and bollard implementations, and keep the label filter `counterspell.managed=true`.
+- **No code changed this run, no task ticked.**
