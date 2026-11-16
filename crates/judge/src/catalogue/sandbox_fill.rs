@@ -165,12 +165,16 @@ pub struct SandboxCheck<'a> {
 }
 
 /// Whether a reference result is a well-shaped return for the declared launch type.
-fn shaped(return_kind: Option<LaunchType>, result: &ProgramResult) -> bool {
-    matches!(
-        result,
+/// Unwraps a well-shaped `Returned` answer; anything else is `None`.
+fn returned_shaped(return_kind: Option<LaunchType>, result: ProgramResult) -> Option<Value> {
+    match result {
         ProgramResult::Returned(value)
-            if return_kind.is_some_and(|kind| accepts_return(kind, value))
-    )
+            if return_kind.is_some_and(|kind| accepts_return(kind, &value)) =>
+        {
+            Some(value)
+        }
+        _ => None,
+    }
 }
 
 /// Runs the SBX-01..03 checks on `check` and returns the produced hidden cases.
@@ -208,14 +212,11 @@ pub fn sandbox_fill(
     // expected is the reference's own answer, not the authored claim.
     for (index, (input, authored)) in check.curated.iter().enumerate() {
         let result = runner.run(Target::Reference, input, check.limit)?;
-        if !shaped(return_kind, &result) {
+        let Some(expected) = returned_shaped(return_kind, result) else {
             return Ok(FillOutcome::Refused(FillRefusal::ReferenceFailed {
                 source: CaseSource::Curated,
                 index,
             }));
-        }
-        let ProgramResult::Returned(expected) = result else {
-            unreachable!("shaped() guarantees Returned")
         };
         if !check.comparator.equal(authored, &expected) {
             return Ok(FillOutcome::Refused(FillRefusal::AuthoredDisagrees {
@@ -318,14 +319,11 @@ fn fill_generated(
             continue;
         }
         let result = runner.run(Target::Reference, &input, check.limit)?;
-        if !shaped(return_kind, &result) {
+        let Some(expected) = returned_shaped(return_kind, result) else {
             return Err(FillFault::Refuse(FillRefusal::ReferenceFailed {
                 source: CaseSource::Generated,
                 index: cases.len(),
             }));
-        }
-        let ProgramResult::Returned(expected) = result else {
-            unreachable!("shaped() guarantees Returned")
         };
         cases.push(HiddenFill {
             source: CaseSource::Generated,
