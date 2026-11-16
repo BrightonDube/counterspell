@@ -116,6 +116,24 @@ pub async fn managed_containers(backend: &BollardBackend) -> Vec<ManagedContaine
         .expect("the daemon lists containers")
 }
 
+/// Polls `list_managed` until it is empty or `within` passes, then returns the last
+/// list. Abnormal-end containers are killed and removed on the call path, but a removal
+/// can lag the verdict by a moment — the sweep-free bound is seconds, not the orphan age.
+pub async fn cleared_within(
+    docker: &Docker,
+    cfg: &SandboxConfig,
+    within: Duration,
+) -> Vec<ManagedContainer> {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let deadline = tokio::time::Instant::now() + within;
+    let mut last = managed_containers(&backend).await;
+    while !last.is_empty() && tokio::time::Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(400)).await;
+        last = managed_containers(&backend).await;
+    }
+    last
+}
+
 /// What one real run produced: the executor's outcome and every public event it
 /// emitted, in order.
 pub struct RunObservation {

@@ -48,3 +48,12 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock` smoke run of `run_source`: **PASS** — `add_correct.py` accepted, events `[compiling, test×5]`.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok.
 - Files: `tests/sbx/mod.rs` (harness), `tests/fixtures/problems/{add,sort_list}.json`, `tests/fixtures/solutions/{add_correct,add_wrong,sort_correct,sort_wrong}.py`, `tests/hostile/README.md`. Scenario files in T26+ will live at `tests/sbx_*.rs` top level with `mod sbx;`, matching the existing `sbx_support` convention.
+
+## T26 — functional + forgery scenarios (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T26: functional and forgery scenarios`).
+- Files: `tests/sbx_functional.rs` (S01–S04, S27, S28), `tests/sbx_forgery.rs` (S14, S15a–d), `tests/hostile/{fake_verdict,forged_lines,early_exit,self_kill,stdout_close,import_all,remember_replay}.py`, `tests/sbx/mod.rs` (+`cleared_within`).
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`:
+  - `cargo test -p counterspell-judge --features sandbox --test sbx_functional --test sbx_forgery -- --ignored`: **PASS** — 7/7 functional, 5/5 forgery.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
+- Noted deviations: (1) `fake_verdict.py` proves the forged verdict twice — `print` is swallowed by the driver's `sys.stdout` sink, `os.write(1,…)` hits the protocol pipe and violates the one-answer contract; the verdict stays `WrongAnswer` because only `verdict::decide` produces `Pass`. (2) `remember_replay.py` answers ordinals 1–3 correctly so the run genuinely reaches the hidden phase; the no-fail-fast scheduler then fails it on hidden 4–5. (3) `cleared_within` polls for up to 15 s because abnormal-end removal can lag the verdict by a moment.

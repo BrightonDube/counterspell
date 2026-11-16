@@ -1481,3 +1481,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A source-scanning test meets its own strings: `Command::new` appears as data in scanner tests, so the corpus guard checks that no *line* holds a spawn token and a corpus marker together, rather than banning the token outright.
 - `clippy::case_sensitive_file_extension_comparisons` (pedantic) wants `Path::extension()` + `eq_ignore_ascii_case`, not `str::ends_with(".py")`.
 - tokio `TcpListener`/`UdpSocket` bound on `127.0.0.1:0` hand out free ports for the S12 listener helper; spawned accept tasks live as long as the test runtime.
+
+## judge-sandbox T26: the driver's stdout sink decides which forge channel exists (16 Nov 2026)
+
+- `languages/drivers/python/driver.py` replaces `sys.stdout`/`sys.stdin` with a `_Sink` while user code runs, so `print`/`sys.stdout.write` never reach the protocol pipe. Only raw `os.write(1, …)` bypasses the sink — a forgery test must use the raw channel to prove the protocol still rejects it, and keep the `print` copy to document the sink.
+- Killed containers can outlive the verdict by a beat: `session.abort` is best-effort kill-then-remove, so a cleanup assertion should poll `list_managed` (seconds bound, not the orphan age) rather than asserting emptiness immediately.
+- Integration asserts on run.rs semantics: there is no fail-fast break — every scheduled test executes, so sample/hidden event counts are exact only when the corpus program's answer pattern is known.
