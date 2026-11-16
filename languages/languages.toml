@@ -10,8 +10,8 @@
 # (stretch goals). The executor refuses disabled languages.
 #
 # Driver files are relative to this directory. The loader refuses an enabled language
-# whose driver file is missing. Until language-drivers adds drivers/python/driver.py and
-# drivers/javascript/driver.js, the real file fails the loader. Tests stub both files.
+# whose driver file is missing. Both launch drivers now exist (language-drivers T03 and T04).
+# Tests read the real driver files for sandbox runs and stub them only for catalogue parsing.
 
 [python]
 enabled = true
