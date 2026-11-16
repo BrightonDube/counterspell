@@ -126,7 +126,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Depends on: PA00.
   - Verify: PA19 secret scan passes; PA10 checks that every checklist ID cited in these files exists.
 
-- [ ] **PA10 [P] (30 min) Reviewer checklist and completeness test**
+- [x] **PA10 [P] (30 min) Reviewer checklist and completeness test**
   - Files: `.kiro/pipeline/checklists/reviewer.md`, `crates/grimoire/tests/pipeline_checklist.rs`.
   - Write the seven categories and the items from design §6, each with a unique ID `RV-<category>-<n>`. The test parses the file, checks that every category has at least one item, that IDs are unique, and that every `RV-*` ID cited in `.kiro/pipeline/prompts/` exists.
   - Requirements: PIP-21, PIP-47, PIP-46.
