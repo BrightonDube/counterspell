@@ -1416,3 +1416,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A `#[non_exhaustive]` struct from another crate cannot be built with a struct literal, so the server uses the builder (`ServerCapabilities::builder().enable_tools().build()`).
 - Lock errors are values too. `Mutex::lock()` returns `Err` when another thread panicked, and the tool maps that to an internal error instead of calling `unwrap`.
 - A `[u8]` digest turns into hex with `fold` and `write!` into a `String`. `write!` returns a `Result`, so `let _ =` says the error is ignored on purpose.
+
+## judge-sandbox T20/T21: read-back must allow only what the image declares (16 Nov 2026)
+
+- The daemon merges an image's own environment variables into every container. An exact equality check against our fixed list fails on a correct container.
+- `without_image_env` drops a variable only when its key is not ours and the image declares the same `KEY=VALUE`. Anything injected or changed still fails.
+- `Option` chains such as `image.config.and_then(|c| c.env).unwrap_or_default()` turn a missing field into an empty list without `unwrap`.
+- Tests with literal pairs show each case: tolerated, injected, changed, and a fixed key the image also sets.
