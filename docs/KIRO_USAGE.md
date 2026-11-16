@@ -450,3 +450,15 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-16 02:55-02:58 SAST: 33-starter-pack-hardening-v2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-33-starter-pack-hardening-v2.md`. Transcript: `docs/kiro-log/2026-11-16T0255-33-starter-pack-hardening-v2.log`. Exit 0.
 - Credits used (from /usage): 2.54 (credits used now 3639.86/4000).
+
+### 2026-11-16 03:05-04:41 SAST: 28-hints-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-hints-a1.md`. Transcript: `docs/kiro-log/2026-11-16T0305-28-hints-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 37.26 (credits used now 3677.12/4000).
+
+### 2026-11-16 04:41-05:14 SAST: 28-hints-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-hints-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0441-28-hints-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 8.84 (credits used now 3685.96/4000).
+
+### 2026-11-16 05:14-05:22 SAST: 28-hints-implement-a3 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-hints-a3.md`. Transcript: `docs/kiro-log/2026-11-16T0514-28-hints-implement-a3.log`. Exit 0.
+- Credits used (from /usage): 1.98 (credits used now 3687.94/4000).

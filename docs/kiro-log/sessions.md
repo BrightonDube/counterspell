@@ -305,3 +305,29 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-16T02:41:30Z | model: not reported | last commit: a845122 hints H13+H14: POST and GET /api/hints handlers, state wiring and route
+ | diff stat:
+ .kiro/steering/brighton-decisions.md       |  5 +++++
+ crates/server/src/hints/handlers.rs        | 18 ++++++++++++++++++
+ crates/server/src/main.rs                  |  4 ++++
+ docker-compose.yml                         |  9 ++++++++-
+ docs/kiro-log/judge-sandbox-blockers.md    |  3 +++
+ docs/kiro-log/language-drivers-blockers.md |  3 +++
+ docs/kiro-log/sessions.md                  |  2 ++
+ 7 files changed, 43 insertions(+), 1 deletion(-)
+- 2026-11-16T03:14:06Z | model: not reported | last commit: c0f0612 hints H-verify: record checks, deferred E2E smoke and blockers for G2, H-ci
+ | diff stat:
+ .kiro/steering/brighton-decisions.md       |  5 +++++
+ docs/KIRO_USAGE.md                         |  4 ++++
+ docs/kiro-log/judge-sandbox-blockers.md    |  3 +++
+ docs/kiro-log/language-drivers-blockers.md |  3 +++
+ docs/kiro-log/sessions.md                  | 12 ++++++++++++
+ 5 files changed, 27 insertions(+)
+- 2026-11-16T03:22:51Z | model: not reported | last commit: 894221a hints H-verify: rerun automated checks on attempt 3; G2, H-ci and smoke still open
+ | diff stat:
+ .kiro/steering/brighton-decisions.md       |  5 +++++
+ docs/KIRO_USAGE.md                         |  8 ++++++++
+ docs/kiro-log/judge-sandbox-blockers.md    |  3 +++
+ docs/kiro-log/language-drivers-blockers.md |  3 +++
+ docs/kiro-log/sessions.md                  | 20 ++++++++++++++++++++
+ 5 files changed, 39 insertions(+)
