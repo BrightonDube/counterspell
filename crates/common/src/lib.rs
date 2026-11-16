@@ -8,6 +8,7 @@
 
 pub mod events;
 pub mod familiar;
+pub mod hints;
 pub mod ids;
 pub mod limits;
 pub mod run_state;
