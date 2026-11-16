@@ -230,3 +230,38 @@ proptest! {
         prop_assert_eq!(&entries_a[1].1, &entries_b[1].1);
     }
 }
+
+#[test]
+fn the_javascript_bench_exec_appends_the_bench_arguments_and_keeps_the_run_argv() {
+    let (_dir, catalog) = support::shipped_catalogue_all();
+    let javascript = catalog.get("javascript").unwrap();
+    assert_eq!(
+        ExecSpec::driver(javascript).argv,
+        ["node", "--max-old-space-size=192", "driver.js"]
+    );
+    assert_eq!(
+        ExecSpec::bench(javascript).argv,
+        [
+            "node",
+            "--max-old-space-size=192",
+            "driver.js",
+            "--mode",
+            "bench"
+        ],
+        "bench mode runs the same driver with the catalogue's bench arguments"
+    );
+}
+
+#[test]
+fn the_javascript_entry_has_no_compile_step_and_its_launch_files_and_limits() {
+    let (_dir, catalog) = support::shipped_catalogue_all();
+    let javascript = catalog.get("javascript").unwrap();
+    assert!(
+        javascript.compile().is_empty(),
+        "JavaScript has no compile step"
+    );
+    assert_eq!(javascript.file().as_str(), "solution.js");
+    assert_eq!(javascript.driver().as_str(), "drivers/javascript/driver.js");
+    assert_eq!(javascript.mem_mb(), 256);
+    assert_eq!(javascript.max_source_bytes(), 65_536);
+}

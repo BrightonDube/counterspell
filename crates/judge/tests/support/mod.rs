@@ -23,3 +23,19 @@ pub fn shipped_catalogue(python_scratch_exec: bool) -> (TempDir, LanguageCatalog
     let catalog = LanguageCatalog::parse(&text, dir.path()).unwrap();
     (dir, catalog)
 }
+
+/// Loads the whole shipped `languages/languages.toml` (Python and JavaScript enabled, the
+/// stretch languages disabled), with stand-in driver files for the two enabled languages.
+/// The directory must be kept alive by the caller.
+#[allow(dead_code)]
+pub fn shipped_catalogue_all() -> (TempDir, LanguageCatalog) {
+    let text = include_str!("../../../../languages/languages.toml");
+    let dir = TempDir::new().unwrap();
+    for driver in ["drivers/python/driver.py", "drivers/javascript/driver.js"] {
+        let path = dir.path().join(driver);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, "// stand-in\n").unwrap();
+    }
+    let catalog = LanguageCatalog::parse(text, dir.path()).unwrap();
+    (dir, catalog)
+}

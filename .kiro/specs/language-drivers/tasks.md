@@ -34,14 +34,14 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: the driver handles named exports and callable module exports, preserves call IDs, rejects undefined/non-finite/cyclic outputs, flushes each answer, and sends diagnostics only to stderr.
   - Preserve: Node runs only in the sandbox; user output cannot declare a verdict.
 
-- [ ] **T05 [P] (20 min) Add the JavaScript registry entry and driver packaging**
+- [x] **T05 [P] (20 min) Add the JavaScript registry entry and driver packaging**
   - Files: `languages/languages.toml`, language-driver packaging/configuration used by the judge.
   - Add `node:22-slim`, `solution.js`, `drivers/javascript/driver.js`, `node --max-old-space-size=192 driver.js`, `--mode bench`, memory/time/source limits, and protocol version 1.
   - Depends on: T02 and T04.
   - Verify: a sandbox can start the configured command with a known-correct fixture and the judge can append bench arguments without changing the normal command.
   - Preserve: no compile step for JavaScript and no per-language reference solution.
 
-- [ ] **T06 [S] (30 min) Verify Python/JavaScript observable parity**
+- [x] **T06 [S] (30 min) Verify Python/JavaScript observable parity**
   - Files: driver test fixtures only, plus implementation fixes in the two driver templates if required.
   - Run identical protocol cases through Python and Node, including generated JSON-safe values, function errors, user prints, repeated calls, and bench-mode calls.
   - Depends on: T03, T04, and T05.
