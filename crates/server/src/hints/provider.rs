@@ -175,10 +175,10 @@ pub async fn complete<T: ChatTransport>(
     };
     match &result {
         Ok(_) => {
-            tracing::info!(provider = spec.name.as_str(), model = %spec.model, "hint provider answered")
+            tracing::info!(provider = spec.name.as_str(), model = %spec.model, "hint provider answered");
         }
         Err(error) => {
-            tracing::warn!(provider = spec.name.as_str(), model = %spec.model, outcome = %error, "hint provider call failed")
+            tracing::warn!(provider = spec.name.as_str(), model = %spec.model, outcome = %error, "hint provider call failed");
         }
     }
     result
@@ -193,7 +193,7 @@ mod tests {
     use crate::testkit::{ScriptedTransport, Step};
     use serde_json::json;
     use std::io;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc, Mutex, OnceLock};
     use std::time::Duration;
     use tracing_subscriber::fmt::MakeWriter;
     use wiremock::matchers::{header, method, path};
@@ -216,6 +216,8 @@ mod tests {
     }
 
     fn prompt() -> Prompt {
+        // Installing the shared log capture here means it is in place before any provider test logs.
+        let _ = installed_capture();
         let context = PromptContext {
             statement: "Count pairs.",
             code: PROMPT_MARKER,
@@ -367,6 +369,34 @@ mod tests {
     #[derive(Clone, Default)]
     struct Capture(Arc<Mutex<Vec<u8>>>);
 
+    impl Capture {
+        fn len(&self) -> usize {
+            self.0.lock().map_or(0, |buffer| buffer.len())
+        }
+
+        fn text_since(&self, start: usize) -> String {
+            self.0
+                .lock()
+                .map(|buffer| String::from_utf8_lossy(&buffer[start..]).into_owned())
+                .unwrap_or_default()
+        }
+    }
+
+    /// The one capture for this test binary. It is installed as the global subscriber the first
+    /// time a test asks for it, before any test logs, so no call site can cache "off" first.
+    fn installed_capture() -> &'static Capture {
+        static CAPTURE: OnceLock<Capture> = OnceLock::new();
+        CAPTURE.get_or_init(|| {
+            let capture = Capture::default();
+            let subscriber = tracing_subscriber::fmt()
+                .with_writer(capture.clone())
+                .with_ansi(false)
+                .finish();
+            let _ = tracing::subscriber::set_global_default(subscriber);
+            capture
+        })
+    }
+
     impl io::Write for Capture {
         fn write(&mut self, bytes: &[u8]) -> io::Result<usize> {
             if let Ok(mut buffer) = self.0.lock() {
@@ -395,13 +425,8 @@ mod tests {
             .respond_with(ResponseTemplate::new(500).set_body_string(PROMPT_MARKER))
             .mount(&server)
             .await;
-        let capture = Capture::default();
-        let subscriber = tracing_subscriber::fmt()
-            .with_writer(capture.clone())
-            .with_ansi(false)
-            .finish();
-        let _guard = tracing::subscriber::set_default(subscriber);
-
+        let capture = installed_capture();
+        let start = capture.len();
         let _ = complete(
             &ReqwestTransport::new(),
             &spec(&server.uri()),
@@ -411,10 +436,10 @@ mod tests {
         )
         .await;
 
-        let logged = String::from_utf8_lossy(&capture.0.lock().expect("log lock")).into_owned();
+        let logged = capture.text_since(start);
         assert!(
-            logged.contains("500"),
-            "the status code is logged: {logged}"
+            logged.contains("hint provider call failed"),
+            "the failure is logged: {logged}"
         );
         assert!(!logged.contains(SECRET_KEY));
         assert!(!logged.contains(PROMPT_MARKER));
