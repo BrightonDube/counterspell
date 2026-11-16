@@ -95,8 +95,14 @@ fn the_author_can_write_its_pack_but_cannot_run_code() {
         .filter(|tool| WRITE_OR_CODE_TOOLS.contains(&tool.as_str()) && *tool != "write")
         .collect();
 
-    assert!(tools.contains(&"write".to_owned()), "the author must be able to write its pack");
-    assert!(code_tools.is_empty(), "the author must not have {code_tools:?}");
+    assert!(
+        tools.contains(&"write".to_owned()),
+        "the author must be able to write its pack"
+    );
+    assert!(
+        code_tools.is_empty(),
+        "the author must not have {code_tools:?}"
+    );
 }
 
 #[test]
@@ -104,7 +110,16 @@ fn the_author_prompt_forbids_publishing_approval_and_review_writes() {
     let definition = author_definition();
     let prompt = definition["prompt"].as_str().expect("the prompt is text");
 
-    assert!(prompt.contains("published"), "the prompt must forbid setting published");
-    assert!(prompt.contains("approval.toml"), "the prompt must forbid approval.toml");
-    assert!(prompt.contains("docs/pack-reviews"), "the prompt must forbid review writes");
+    assert!(
+        prompt.contains("published"),
+        "the prompt must forbid setting published"
+    );
+    assert!(
+        prompt.contains("approval.toml"),
+        "the prompt must forbid approval.toml"
+    );
+    assert!(
+        prompt.contains("docs/pack-reviews"),
+        "the prompt must forbid review writes"
+    );
 }
