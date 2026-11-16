@@ -172,3 +172,8 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `tests/boundary.rs`.
 - Brighton to check: (1) check 1 asserts the server's *non-dev* dependency closure via `cargo metadata`; the dev-dep on the judge test kit is deliberate per the Cargo.toml comment — if the spec meant "no dep at all" this needs a bigger refactor, flag it. (2) check 3 allows `std::process::ExitCode` in `main.rs` — a return type, not a spawn. (3) check 5 currently finds judge has *no* volumes — correct today; when T38 adds the rootless socket mount the test's "not /var/run/docker.sock" arm starts discriminating.
 - Verified: 6/6 pass.
+
+## T38 (judge-sandbox) deployment notes, CI, compose, renovate
+- Code: `deploy/rootless-sandbox-daemon.md`, `.github/workflows/ci.yml`, `docker-compose.yml`, `renovate.json`.
+- Brighton to check: (1) the compose socket mount defaults to `/run/user/1000/docker.sock` — a WSL-style path; `SANDBOX_DOCKER_SOCKET_HOST` must be set to the sandbox user's socket at real deploys, and `/dev/null` is the documented safe fallback. (2) `sandbox-integration` is advisory (`continue-on-error`, not in `ci-ok`'s needs) per open question 14 — flip to blocking if a rootless-daemon runner ever exists. (3) The Renovate regex anchors on `enabled = true` directly above `image`, so it only refreshes enabled languages; confirm that's the intent vs refreshing disabled pins too. (4) Renovate itself must be installed/enabled for the repo (GitHub App or self-hosted) — confirm current plan terms when installing, as the task notes.
+- Verified: config files parse, `docker compose config` clean, boundary 6/6.

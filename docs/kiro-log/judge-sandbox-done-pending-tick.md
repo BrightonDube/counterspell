@@ -159,3 +159,13 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - Interpretation recorded: check 1 uses `cargo metadata` not `Cargo.lock` because the lock file merges dep kinds; the server's dev-dep on the judge test kit is deliberate (comment in its Cargo.toml) and never ships in the artifact.
 - Verification run 16 Nov 2026: **PASS 6/6**; the first run caught the raw `Cargo.lock` reading (server reaches judge via dev-dep) and prose mentions of `bollard` — both resolved by the narrower, honest checks.
 - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok.
+
+## T38 — deployment notes and CI (done, pending Kiro tick)
+
+- Commit: `judge-sandbox T38: deploy notes, CI job, compose socket, renovate`.
+- Files: `deploy/rootless-sandbox-daemon.md` (rewritten skeleton → full runbook), `.github/workflows/ci.yml` (`sandbox-integration` job), `docker-compose.yml` (judge-only `SANDBOX_DOCKER_SOCKET` + socket mount), `renovate.json` (new).
+- The runbook now covers: `Delegate=cpu cpuset io memory pids` drop-in + verification commands (T02's check), socket group ownership so only the judge reaches it, aggregate `CPUQuota`/`MemoryMax`/`TasksMax` on the sandbox user's slice, pull-by-digest procedure, `preflight` on every deploy, secrets mode `0600` owned by a different user.
+- CI: `sandbox-integration` is `continue-on-error: true` and outside `ci-ok`'s `needs` — advisory per open question 14. It builds with `--features sandbox`, runs the non-ignored suite, and asserts `preflight` refuses the runner's rootful `/var/run/docker.sock`.
+- Compose: `SANDBOX_DOCKER_SOCKET=/sandbox/docker.sock` env + `${SANDBOX_DOCKER_SOCKET_HOST:-/run/user/1000/docker.sock}` mount on `judge` only; `/dev/null` is documented as the safe no-sandbox escape hatch.
+- Renovate: regex manager matches `enabled = true\nimage = "dep:tag@sha256:…"` so only *enabled* images are refreshed; a package rule disables every update type except `digest` and groups into one weekly PR, no auto-merge.
+- Verification 16 Nov 2026: `renovate.json`/`ci.yml`/`docker-compose.yml` parse; `docker compose config --quiet` ok; `boundary` **6/6** still pass with the new mount; fmt+clippy clean.

@@ -256,6 +256,46 @@ jobs:
           push: false
           cache-from: type=gha,scope=counterspell
 
+  sandbox-integration:
+    name: Sandbox integration (non-blocking)
+    # Open question 14: this job is advisory. There is no rootless daemon in CI,
+    # so the ignored sbx_* scenarios stay ignored — it proves the sandbox code
+    # compiles, the model/boundary suites pass with the feature on, and the
+    # daemon identity guard refuses the runner's rootful Docker.
+    continue-on-error: true
+    needs: [changes]
+    if: needs.changes.outputs.rust == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions: {}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Rust
+        uses: ./.github/actions/setup-rust
+        with:
+          components: rustfmt, clippy
+          cache-key: debug
+
+      - name: Build the sandbox feature
+        run: cargo build -p counterspell-judge --features sandbox --locked
+
+      - name: Model and boundary tests with the sandbox feature
+        run: cargo test -p counterspell-judge --features sandbox --locked
+
+      - name: The identity guard refuses the rootful daemon
+        env:
+          SANDBOX_DOCKER_SOCKET: /var/run/docker.sock
+        run: |
+          if ./target/debug/counterspell-judge preflight; then
+            echo "::error::preflight accepted the rootful Docker daemon"
+            exit 1
+          fi
+          echo "preflight refused the rootful daemon as designed"
+
   ci-ok:
     name: CI OK
     if: always()

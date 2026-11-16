@@ -1,33 +1,34 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Only refreshes digest-pinned sandbox images in languages/languages.toml (python, node, eclipse-temurin, gcc; judge-sandbox A3). Digest PRs only, never auto-merged. Dependabot handles cargo, npm, actions and Dockerfiles.",
+  "description": "Weekly digest refresh for the enabled sandbox images in languages/languages.toml (judge-sandbox T38). Digest-only updates, one pull request per refresh, no auto-merge — a human reviews, merges, then `counterspell-judge preflight` runs on the VPS before user runs resume.",
   "extends": ["config:recommended"],
-  "enabledManagers": ["custom.regex"],
-  "timezone": "Africa/Johannesburg",
+  "schedule": ["before 05:00 on Monday"],
+  "automerge": false,
   "customManagers": [
     {
       "customType": "regex",
-      "description": "Sandbox images: image = \"name:tag@sha256:digest\"",
-      "managerFilePatterns": ["/^languages/languages\\.toml$/"],
+      "description": "Pinned digests of enabled sandbox images in languages.toml",
+      "managerFilePatterns": ["/^languages\\/languages\\.toml$/"],
       "matchStrings": [
-        "image = \"(?<depName>[a-z0-9][a-z0-9._/-]*):(?<currentValue>[A-Za-z0-9._-]+)@(?<currentDigest>sha256:[a-f0-9]{64})\""
+        "enabled = true\\nimage = \"(?<depName>[a-z0-9][a-z0-9_.\\-/]*):(?<currentValue>[a-zA-Z0-9_.\\-]+)@(?<currentDigest>sha256:[0-9a-f]{64})\""
       ],
-      "datasourceTemplate": "docker"
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
     }
   ],
   "packageRules": [
     {
-      "matchManagers": ["custom.regex"],
-      "matchUpdateTypes": ["major", "minor", "patch"],
+      "description": "Sandbox images: digest-only updates, never a tag bump, one grouped PR per refresh",
+      "matchDatasources": ["docker"],
+      "matchFileNames": ["languages/**"],
+      "matchUpdateTypes": ["major", "minor", "patch", "pin", "rollback", "replacement"],
       "enabled": false
     },
     {
-      "matchManagers": ["custom.regex"],
-      "matchUpdateTypes": ["digest"],
-      "groupName": "sandbox image digests",
-      "schedule": ["before 6am on monday"],
-      "automerge": false,
-      "labels": ["sandbox", "security"]
+      "description": "One pull request per weekly digest refresh",
+      "matchDatasources": ["docker"],
+      "matchFileNames": ["languages/**"],
+      "groupName": "enabled sandbox image digests"
     }
   ]
 }
