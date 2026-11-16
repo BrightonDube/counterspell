@@ -91,3 +91,7 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `crates/judge/src/sandbox/bollard_backend.rs` (part 2: `BollardBackend`, `BollardSession`, `BollardDriver`, `run_exec`, `kill_container`, `OutputCollector`, `parse_oom_kill`, `map_error`). `remove_forced` now treats a missing container as removed.
 - Tests: `tests/model_bollard_session.rs` (11, pass). `tests/sbx_bollard_session.rs` (4 `sbx_` tests, ignored, compile). Not run on a daemon.
 - Brighton to check: (1) on overflow, `run_exec` kills the whole container, which is the only way to stop an exec from the API. (2) `write_line` ignores a failed write, because the driver's exit is reported by `next_event`. (3) The 64 KiB exec cap is applied to the exec output, not to the writes into stdin.
+
+## T21 (commit a16d2ad, 16 Nov 2026)
+- Brighton should check the read-back change in `crates/judge/src/sandbox/bollard_backend.rs` (`without_image_env`, `verify_readback`, `check_image`). It drops only variables that the pinned image declares with the same value. Injected or changed variables still fail, and fixed keys are never dropped. Confirm you accept this loosening of the exact environment check.
+- The T21 `sbx_` tests (`sbx_exec_roundtrip`, `sbx_tar_delivery`, `sbx_kill_remove_confirms_absence`, `sbx_oom_counter_visible`) passed on the rootless sandbox daemon (`/run/user/1000/docker.sock`) on 16 Nov 2026.
