@@ -65,3 +65,12 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
   - The guard reads the `path` field of the event, so a doc that mentions `approval.toml` is allowed. Confirm the real hook payload uses a `path`, `filePath` or `target` key. The test uses that shape, and the real format was not inspected.
   - The shell rule blocks `python`, `python3` and `node` on `packs/` or `pack-assembly/` paths (PIP-38).
   - The validate hook refuses a private file name under `packs/` with `LAY-05` before any check runs.
+
+## PA17: pre-push check for PUB-01
+
+- Commit: see `git log --grep "PA17"`.
+- Files: `scripts/pack-publish-check.sh` (new, the check), `scripts/pre-push.sh` (extended: it reads the push lines once and runs the check before the cargo and web gates), `scripts/tests/pre-push-pub-test.sh` (4 checks on temporary git repositories).
+- Deviation: the check lives in its own script so that a test can run it without running cargo and the web build. `pre-push.sh` calls it.
+- Check:
+  - A commit that newly sets `status = "published"` in `packs/*/meta.toml` must say "Approved by Brighton" in its own message. A phrase in another commit does not count.
+  - The end-to-end push hook was not run, because it runs the full Rust and web gates and would push if run against a real remote. Only the check is tested.

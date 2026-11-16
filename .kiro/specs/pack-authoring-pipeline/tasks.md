@@ -185,7 +185,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: shell fixtures for a published write (blocked), an `approval.toml` write (blocked), a `python3 packs/x/reference/solution.py` command (blocked), and an ordinary draft edit (allowed).
   - Rust lesson: none.
 
-- [ ] **PA17 [S] [SUPERVISED] (30 min) Pre-push check for `PUB-01`**
+- [x] **PA17 [S] [SUPERVISED] (30 min) Pre-push check for `PUB-01`**
   - Files: `scripts/pre-push.sh` (extend), `scripts/tests/pre-push-pub-test.sh`.
   - For each commit being pushed, if a `packs/*/meta.toml` changes `status` to `published`, the commit message must contain "Approved by Brighton". Otherwise fail with `PUB-01`.
   - Requirements: PIP-28, PIP-44, P1.
