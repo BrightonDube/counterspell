@@ -213,7 +213,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_sandbox_import_writes_hidden` (hidden row count equals `hidden_count`; the sandbox fields are set; a second sandbox import is `Unchanged`); a fake runner that fails SBX-02 leaves zero rows.
   - Rust lesson: the whole fill is one transaction, so either the version has hidden data and the sandbox stamp, or it has neither. Explain why half a state would break the publish gate.
 
-- [ ] **C18 [S] [SUPERVISED] (25 min) `validate-sandbox <slug>`**
+- [x] **C18 [S] [SUPERVISED] (25 min) `validate-sandbox <slug>`**
   - Files: `crates/judge/src/catalogue/write.rs`, `crates/judge/tests/pg_catalogue_validate_sandbox.rs`.
   - Runs C16 and C17 for the latest version only, and only when its sandbox columns are NULL. Before running, it recomputes the combined hash and refuses `private_tree_changed` on a mismatch with the stored `content_sha256` (CAT-PT10). Refuses when already validated. Writes a `sandbox_validate` event.
   - Requirements: CAT-I16, CAT-P5, CAT-PT10.
