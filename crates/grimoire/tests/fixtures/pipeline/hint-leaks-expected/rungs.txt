@@ -1,0 +1,8 @@
+=== rung 1
+Ask what one pass over the readings can remember as you go.
+=== rung 2
+Keep a record of each reading, and look it up when you need a partner.
+=== rung 3
+Work out what the pair must total, then check the case where the answer is 41.
+=== rung 4
+Use a dictionary to store what you have seen, then check each new reading against it.

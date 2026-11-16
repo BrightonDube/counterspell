@@ -1279,3 +1279,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `Markers` stores lowercased copies, so the marker list is owned once and each line is compared without copying the file text.
 - `scan_text` borrows `&str` for the input text and returns `Diagnostic` values that own only a code and a pointer. The report cannot hold a borrowed secret, because it never stores the matched text.
 - `Markers::new` returns `Result`, so an empty marker is refused at the boundary, before it can match every line.
+
+## pack-authoring-pipeline PA05: hint leak check
+
+- `str::match_indices` returns byte positions where a value starts. Slicing with those positions is safe, because the search only returns positions on character boundaries. Checking the neighbouring characters uses `chars().next_back()` and `chars().next()`, which handle multi-byte letters correctly.
+- The shared `Diagnostic` type lives in `pipeline/mod.rs`, so the originality and hint checks return the same shape without copying it.
+- `format!` builds the pointer from a rung number and an index. The value itself is never put into the message, so the report cannot leak it.
