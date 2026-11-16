@@ -205,7 +205,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests with the grimoire model runner (labelled in the file header as not sandbox evidence, the same convention as grimoire T18). Cases: reference matches, reference disagrees (refused), reference times out (refused), ghost not reproduced (refused), `RunnerError` (exit 2, no write), and a retired hidden value (refused, hash prefix only).
   - Rust lesson: `&mut dyn PackRunner` lets the tests pass a fake and the production code pass the judge's real runner, with the same function. Explain why a trait object keeps the importer independent of the sandbox type.
 
-- [ ] **C17 [S] [SUPERVISED] (30 min) Sandbox import writes hidden data in the same transaction**
+- [x] **C17 [S] [SUPERVISED] (30 min) Sandbox import writes hidden data in the same transaction**
   - Files: `crates/judge/src/catalogue/write.rs` (sandbox branch), `crates/judge/tests/pg_catalogue_sandbox_import.rs`.
   - Insert `hidden_tests` (while `sandbox_validated_at` is NULL), then `hidden_generation` (seed and generator version) and `hidden_sources` (private file hashes), then set `sandbox_validated_at` and `sandbox_image_digest` in the same transaction. Log only the counts.
   - Requirements: CAT-I14, CAT-S3, CAT-S2 (one-time fill).
