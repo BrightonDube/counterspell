@@ -18,6 +18,8 @@ pub const REQUIRED_SECTIONS: [&str; 5] = [
     "third-party text avoided",
 ];
 
+use super::Diagnostic;
+
 /// The non-empty, lowercased originality markers.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Markers {
@@ -55,13 +57,6 @@ impl Markers {
         }
         Ok(Self { lowercase })
     }
-}
-
-/// One finding. `pointer` is a file and a line, or a file name. It never holds matched text.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Diagnostic {
-    pub code: &'static str,
-    pub pointer: String,
 }
 
 /// Reports `ORG-01` for each line of `text` that contains a marker.

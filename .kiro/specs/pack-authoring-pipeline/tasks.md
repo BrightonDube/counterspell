@@ -83,7 +83,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: the two fixtures fail with exactly `ORG-01` and `ORG-02`. A canary marker in a test asserts that the matched text is absent from the report.
   - Rust lesson: `&str` borrows text without copying it, which helps when a function must scan secrets but never return them. Explain what the returned report owns.
 
-- [ ] **PA05 [P] [SUPERVISED] (30 min) Hint leak check (HNT-03)**
+- [x] **PA05 [P] [SUPERVISED] (30 min) Hint leak check (HNT-03)**
   - Files: `crates/grimoire/src/pipeline/hint_leak.rs`, `crates/grimoire/tests/pipeline_hint_leak.rs`, fixtures `hint-leaks-expected/` and `hint-leaks-ghost-got/`.
   - Input: the four rungs, the sample expected values, the curated hidden expected values and the ghost `got` values, all in memory. Flag any rung that contains one of those values as a JSON literal or a plain token, and any rung with a fenced block longer than 3 lines. Report the rung number and the value's index, never the value.
   - Requirements: PIP-14, PIP-46, P2.

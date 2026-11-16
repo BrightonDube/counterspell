@@ -11,3 +11,12 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
   - Reports carry a code and a `file line n` pointer only, never the matched text.
   - The five S1 section headings are an assumed choice (see the pipeline blockers log). Confirm or rename them before the first real pack.
   - A blank marker is refused, because it would match every line.
+
+## PA05: hint leak check (HNT-03, GRM-27)
+
+- Commit: see `git log --grep "PA05"`.
+- Files: `crates/grimoire/src/pipeline/hint_leak.rs`, `crates/grimoire/tests/pipeline_hint_leak.rs`, fixtures `hint-leaks-expected/` and `hint-leaks-ghost-got/`. `Diagnostic` moved to `pipeline/mod.rs` and is shared with PA04.
+- Check:
+  - Matching is by whole token, so `41` does not match inside `2041`. Short values such as `3` can still flag an ordinary rung. A reviewer decides whether that flag is a real leak.
+  - The fenced-block rule reports `GRM-27` (the existing code), not `HNT-03`.
+  - The report names a rung and a value index only.
