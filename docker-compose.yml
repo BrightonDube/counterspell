@@ -28,6 +28,12 @@ services:
       DATABASE_URL: ${SERVER_DATABASE_URL:-}
       # Valkey has no auth and sits only on the internal network, so the in-network address is the default.
       VALKEY_URL: ${VALKEY_URL:-redis://valkey:6379}
+      # Hints (hints spec H16). AI stays off unless HINT_PROVIDERS names a provider and its key is set.
+      # Keys come from the host environment at deploy time. Empty values count as not set.
+      HINT_PROVIDERS: ${HINT_PROVIDERS:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      AI_STRICT_CONFIG: ${AI_STRICT_CONFIG:-true}
       # Auth settings (R2). Each value comes from the host environment and is passed through here.
       # Empty values count as not set. Only the server receives them; the judge never does.
       APP_ENV: ${APP_ENV:-production}
@@ -89,7 +95,8 @@ services:
 
   valkey:
     image: valkey/valkey:8-alpine
-    command: ["valkey-server", "--save", "", "--appendonly", "no"]
+    # Append-only file on, so a restart keeps the daily hint counters (hints spec open question 6).
+    command: ["valkey-server", "--save", "", "--appendonly", "yes"]
     healthcheck:
       test: ["CMD", "valkey-cli", "ping"]
       interval: 5s
