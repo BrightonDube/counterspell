@@ -1436,3 +1436,13 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `type Session = <BollardBackend as Backend>::Session;` names a type that the trait chooses. The alias keeps function signatures readable and needs no extra generic parameters.
 - A trait method is only callable when its trait is in scope. `write_line` failed to compile until `DriverChannel` was imported, which the compiler's message pointed to directly.
 - `include_str!` and `CARGO_MANIFEST_DIR` paths are relative to the file or crate. One extra `../` silently points at the wrong directory, so the first test run is the check that the path is right.
+
+## language-drivers T05: a config contract test for the registry entry (16 Nov 2026)
+
+- The JavaScript entry already existed from T02. The new `model_spec` tests read the shipped file and assert the argv and launch facts the drivers depend on. They fail when someone edits the catalogue in a way that breaks the driver contract.
+- `#[allow(dead_code)]` on a shared test helper stops clippy from failing a test crate that does not call it. The helper stays in one place.
+
+## language-drivers T06: one table, two languages (16 Nov 2026)
+
+- The parity test keeps each case as one struct with two solutions and one signature. A loop runs both languages in both modes and compares the replies with `!=`. Adding a case means adding one struct, so the two languages cannot drift apart silently.
+- `Reply` derives `PartialEq`, so `assert` compares whole answer lists and exit codes. An enum with data is compared as a value, not field by field.
