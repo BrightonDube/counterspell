@@ -25,3 +25,23 @@ Automated checks that did pass on 16 Nov 2026 (this session):
 5. Run `docker compose logs server`. Confirm it contains no key, no prompt text and no learner code.
 
 Record the result here, with the date and the commit hash, after the run.
+
+## Rerun on attempt 3 (16 Nov 2026, HEAD c0f0612)
+
+Automated checks rerun in this session, all passing:
+
+| Check | Result |
+|---|---|
+| `cargo fmt --all -- --check` | pass |
+| `cargo clippy --workspace --all-targets -- -D warnings` | pass |
+| `cargo test --workspace` (dev env loaded) | all suites pass, 0 failed |
+| `cargo test -p counterspell-server -- --ignored hints` | 5 `pg_` tests pass |
+| `cargo test -p counterspell-server -- --ignored valkey_` | 10 hints `valkey_` tests pass, plus the auth `valkey_` test |
+| `cargo test -p counterspell-server --test hints_integration -- --ignored` | 2 pass |
+| `cargo deny check licenses` | ok |
+| `cd web && npm run check` | 0 errors, 0 warnings |
+| `cd web && npm run test` | 64 files, 461 tests pass |
+| `cd web && npm run build` | builds |
+| `docker compose config` | exits 0 |
+
+The manual checklist above is still not run. It is browser work and stays deferred: E2E.

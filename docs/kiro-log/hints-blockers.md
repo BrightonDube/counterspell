@@ -42,3 +42,9 @@ Run: 16 Nov 2026 implement run (non-interactive). Each entry names the task, the
 
 - `HintState` holds a concrete `ReqwestTransport`, so an HTTP test cannot script provider replies. Fallback, success and failure of the AI pipeline are tested with `ScriptedTransport` in `hints::ai` (unit and `valkey_` tests). The HTTP tests cover the cap refusal, the ladder and the cache hit.
 - Decision to make later: making `HintState` generic over the transport would let HTTP tests cover fallback end to end. Not done here, because it changes the router's public type.
+
+## Run 16 Nov 2026 (attempt 3): no change in status
+
+- G2: still open. The spec says 1 to 1,200 characters. The migration CHECK and the grimoire rule say 1 to 600. Brighton needs to pick one value (see the G2 entry above). This is a product choice, not a task that code can settle.
+- H-ci: still open. `.github/workflows/security.yml` already runs gitleaks over full history and TruffleHog on every push and PR, so the spec's extra step would duplicate them. The spec's proof (a fake key on a scratch branch) needs a branch, and this run may not change branches. Brighton can accept the existing jobs as the H-ci check, or allow a scratch-branch proof.
+- H-verify: all automated checks pass again on HEAD c0f0612 (see `docs/kiro-log/hints-smoke.md`). The manual smoke test is browser work and stays deferred: E2E.
