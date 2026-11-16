@@ -183,18 +183,14 @@ pub async fn execute_run<B: Backend>(
             ));
         };
 
-        let (verdict, elapsed, container_alive) =
-            match run_test(open, &mut io, &test, &settings, stop).await? {
-                Step::Ran {
-                    verdict,
-                    elapsed,
-                    container_alive,
-                } => (verdict, elapsed, container_alive),
-                Step::Stopped => {
-                    progress.stopped = true;
-                    break;
-                }
-            };
+        let Some((verdict, elapsed, container_alive, answer)) =
+            run_test(open, &mut io, &test, &settings, stop)
+                .await?
+                .into_ran()
+        else {
+            progress.stopped = true;
+            break;
+        };
 
         // Any end other than an answer has already removed the container. Drop the handle and
         // open a fresh one for the next test.
@@ -209,9 +205,10 @@ pub async fn execute_run<B: Backend>(
             sample: test.sample,
             elapsed,
         });
-        progress
-            .executed
-            .push(ExecutedTest::new(test.ordinal, verdict));
+        progress.executed.push(match answer {
+            Some(line) => ExecutedTest::with_answer(test.ordinal, verdict, line),
+            None => ExecutedTest::new(test.ordinal, verdict),
+        });
     }
 
     if let Some(open) = current {
@@ -239,9 +236,27 @@ enum Step {
         verdict: TestVerdict,
         elapsed: Duration,
         container_alive: bool,
+        /// The answer line the program printed, when it answered. Kept for a sample
+        /// test's public record.
+        answer: Option<Vec<u8>>,
     },
     /// The stop signal ended the call. The test has no verdict.
     Stopped,
+}
+
+impl Step {
+    /// The parts of a ran test, or `None` when the run was stopped.
+    fn into_ran(self) -> Option<(TestVerdict, Duration, bool, Option<Vec<u8>>)> {
+        match self {
+            Self::Ran {
+                verdict,
+                elapsed,
+                container_alive,
+                answer,
+            } => Some((verdict, elapsed, container_alive, answer)),
+            Self::Stopped => None,
+        }
+    }
 }
 
 /// Makes one call and turns what it observed into the test's verdict.
@@ -261,26 +276,33 @@ async fn run_test<S: BackendSession + 'static>(
     let facts = run_call(open, io, u64::from(test.ordinal), &test.args, limits, stop).await?;
     let elapsed = started.elapsed();
     let container_alive = matches!(facts, CallFacts::Answer { .. });
-    let verdict = match facts {
-        CallFacts::Answer { line, .. } => judge_answer(
-            &test.expected,
-            u64::from(test.ordinal),
-            &line,
-            test.comparator,
+    let (verdict, answer) = match facts {
+        CallFacts::Answer { line, .. } => (
+            judge_answer(
+                &test.expected,
+                u64::from(test.ordinal),
+                &line,
+                test.comparator,
+            ),
+            Some(line),
         ),
-        CallFacts::Deadline => TestVerdict::TimeLimit,
-        CallFacts::OutputLimit => TestVerdict::OutputLimit,
-        CallFacts::ExtraOutput => {
-            TestVerdict::WrongAnswer(WrongReason::Protocol(ProtocolViolation::ExtraOutput))
+        CallFacts::Deadline => (TestVerdict::TimeLimit, None),
+        CallFacts::OutputLimit => (TestVerdict::OutputLimit, None),
+        CallFacts::ExtraOutput => (
+            TestVerdict::WrongAnswer(WrongReason::Protocol(ProtocolViolation::ExtraOutput)),
+            None,
+        ),
+        CallFacts::DriverExited { oom_kill, .. } if oom_kill > 0 => {
+            (TestVerdict::MemoryLimit, None)
         }
-        CallFacts::DriverExited { oom_kill, .. } if oom_kill > 0 => TestVerdict::MemoryLimit,
-        CallFacts::DriverExited { .. } => TestVerdict::RuntimeError,
+        CallFacts::DriverExited { .. } => (TestVerdict::RuntimeError, None),
         CallFacts::Stopped => return Ok(Step::Stopped),
     };
     Ok(Step::Ran {
         verdict,
         elapsed,
         container_alive,
+        answer,
     })
 }
 
