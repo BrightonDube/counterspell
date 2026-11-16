@@ -44,7 +44,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 1: pure logic (no I/O, no database, no network)
 
-- [ ] **H02 [P] (25 min) Configuration parsing**
+- [x] **H02 [P] (25 min) Configuration parsing**
   - Files: `crates/server/src/hints/config.rs`, `crates/server/src/hints/mod.rs` (declare module).
   - `HintConfig::from_map` parses `HINT_PROVIDERS`, keys, base URLs, timeout, output tokens, limits, spend cap, prices and `AI_STRICT_CONFIG`. `Redacted<String>` prints `[redacted]`.
   - Requirements: R5.1, R5.5, R6.1, R6.2, R8.1, R8.2, R8.4, R11.4.

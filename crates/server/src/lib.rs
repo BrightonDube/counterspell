@@ -14,6 +14,7 @@ pub mod dashboard;
 pub mod error;
 pub mod familiar;
 pub mod health;
+pub mod hints;
 pub mod ratelimit;
 pub mod runs;
 pub mod seams;
