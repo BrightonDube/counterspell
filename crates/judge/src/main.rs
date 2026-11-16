@@ -9,8 +9,13 @@
 //!
 //! With the argument `preflight` it runs the sandbox probe against every enabled language, prints
 //! the JSON report and exits non-zero when any check fails. There is no skip flag.
+//!
+//! With the `sandbox` feature the worker runs submissions inside sandbox containers through
+//! `SandboxExecutor`; without it the `NoExecutor` placeholder fails every run as an internal
+//! error, never as a verdict.
 
 use counterspell_judge::config::JudgeConfig;
+#[cfg(not(feature = "sandbox"))]
 use counterspell_judge::executor::NoExecutor;
 use counterspell_judge::health;
 use counterspell_judge::service::serve;
@@ -106,6 +111,75 @@ fn healthcheck() -> ExitCode {
     }
 }
 
+/// How often each language's sandbox preflight is re-probed while the worker runs.
+#[cfg(feature = "sandbox")]
+const PREFLIGHT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(60);
+
+/// Builds the real executor: the rootless sandbox daemon, the language catalogue, the
+/// sweeper and one preflight loop per enabled language. Returns `Err` when the sandbox
+/// cannot be verified — a judge that cannot sandbox must not start.
+#[cfg(feature = "sandbox")]
+async fn sandbox_executor(
+    stop: &watch::Sender<bool>,
+) -> Result<
+    counterspell_judge::sandbox::sandbox_executor::SandboxExecutor<
+        counterspell_judge::sandbox::problem::EmptyProblemTests,
+        counterspell_judge::sandbox::bollard_backend::BollardBackend,
+    >,
+    Box<dyn std::error::Error>,
+> {
+    use counterspell_judge::languages::LanguageCatalog;
+    use counterspell_judge::sandbox::bollard_backend::BollardBackend;
+    use counterspell_judge::sandbox::config::SandboxConfig;
+    use counterspell_judge::sandbox::daemon::{connect, verify};
+    use counterspell_judge::sandbox::preflight::{self, PreflightState};
+    use counterspell_judge::sandbox::problem::EmptyProblemTests;
+    use counterspell_judge::sandbox::reaper;
+    use counterspell_judge::sandbox::sandbox_executor::SandboxExecutor;
+    use std::sync::Arc;
+
+    let cfg = SandboxConfig::from_env()?;
+    let docker = connect(&cfg.docker_socket, cfg.api_timeout)?;
+    verify(&docker, cfg.runtime, cfg.api_timeout).await?;
+    let catalog = LanguageCatalog::load(&cfg.languages_file)?;
+
+    tokio::spawn(reaper::run_sweeper(
+        BollardBackend::new(docker.clone(), cfg.api_timeout),
+        cfg.reaper_interval,
+        cfg.orphan_age,
+        stop.subscribe(),
+    ));
+
+    // One preflight state per enabled language; the executor refuses every run while any
+    // state reports a failure, and an absent report counts as failing.
+    let mut preflights = Vec::new();
+    for name in catalog.names() {
+        let Some(lang) = catalog.get(name).filter(|lang| lang.is_enabled()) else {
+            continue;
+        };
+        let lang = lang.clone();
+        let state = Arc::new(PreflightState::new());
+        preflights.push(state.clone());
+        let (wall, runtime) = (cfg.run_wall_cap, cfg.runtime);
+        tokio::spawn(preflight::run(
+            state,
+            BollardBackend::new(docker.clone(), cfg.api_timeout),
+            move || preflight::probe_spec(&lang, wall, runtime),
+            PREFLIGHT_INTERVAL,
+            stop.subscribe(),
+        ));
+    }
+
+    Ok(SandboxExecutor::new(
+        catalog,
+        EmptyProblemTests,
+        BollardBackend::new(docker, cfg.api_timeout),
+        cfg,
+        preflights,
+        "worker",
+    ))
+}
+
 #[tokio::main]
 async fn run_worker() -> Result<(), Box<dyn std::error::Error>> {
     let cfg = JudgeConfig::from_env()?;
@@ -116,6 +190,9 @@ async fn run_worker() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let (stop, shutdown) = watch::channel(false);
+    #[cfg(feature = "sandbox")]
+    let serving = tokio::spawn(serve(pool, cfg, sandbox_executor(&stop).await?, shutdown));
+    #[cfg(not(feature = "sandbox"))]
     let serving = tokio::spawn(serve(pool, cfg, NoExecutor, shutdown));
     wait_for_stop_signal().await?;
     // The receivers live inside `serve`, so this only fails after it has already stopped.

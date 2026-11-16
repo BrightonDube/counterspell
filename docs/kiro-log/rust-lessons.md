@@ -1466,3 +1466,11 @@ The builder is a plain function from stored values to sections, so its tests nee
 - Bollard's `ListContainersOptionsBuilder::filters` takes `&HashMap<K, Vec<V>>` where `K`/`V` are `impl Into<String> + Clone` — a `HashMap<String, Vec<String>>` with one `label=counterspell.managed=true` entry does daemon-side filtering, so unlabelled containers never reach the sweeper.
 - `tokio::time::interval` ticks once immediately, so `run_sweeper` sweeps at start-up and then every interval with no extra code. `tokio::select!` between `ticks.tick()` and `stop.changed()` ends the loop cleanly on a `watch` signal.
 - `saturating_sub` and `i64::try_from(...).unwrap_or(i64::MAX)` keep timestamp arithmetic panic-free for any daemon clock value.
+
+## judge-sandbox T24: an executor behind a generic seam (16 Nov 2026)
+
+- A trait that declares `fn f(...) -> impl Future` accepts an `async fn` in the impl — but clippy's `unused-async` fires when the body never awaits. Splitting the sync body into its own method and wrapping it in `ready(...)` keeps both the trait shape and the lint happy.
+- `watch::Receiver::clone` gives each holder its own view of the same signal; a new `RunContext::stop_watch` accessor lets the executor pass a clone to `execute_run` while `ctx` keeps the original. A dropped sender counts as a stop everywhere, which is why `RecordingContext::without_stop` (whose sender is dropped) can only be used for pre-permit paths.
+- `tokio::select!` without `biased` polls its branches randomly when several are ready — a fired stop signal could lose to a free semaphore permit. `biased` with the stop branch first makes the outcome deterministic.
+- `structopt`-style generic bounds: `RunExecutor: Send + Sync + 'static` propagates onto `B`, so the sandbox impl needed `B: Backend + Send + Sync + 'static` — the trait itself stays lighter.
+- clippy `too_many_lines` counts a function's lines, not complexity. Pulling one small `match` destructure into `Step::into_ran` dropped `execute_run` under the limit without changing what it does.

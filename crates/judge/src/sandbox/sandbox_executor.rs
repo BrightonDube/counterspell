@@ -1,0 +1,409 @@
+// SPDX-License-Identifier: MIT
+//! The executor that runs one submission in the sandbox (judge-sandbox T24, design
+//! section 14).
+//!
+//! The flow: language lookup, problem load, preflight gate, container permit,
+//! `compiling` event, source re-check, run, per-test events, verdict, result. The
+//! executor never writes a status or a verdict to the queue — [`RunContext`] has no
+//! method for that. Cleanup is the run loop's job: `execute_run` closes its container
+//! on every exit path, and the sweeper reaps whatever still escapes.
+
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
+use counterspell_common::events::{PublicEvent, PublicTest, SampleDetail};
+use counterspell_common::status::{FailureReason, TestVerdict, Verdict};
+use tokio::sync::{watch, Semaphore};
+use tokio::time::Instant;
+
+use super::backend::{Backend, InfraError};
+use super::compare::Expected;
+use super::config::SandboxConfig;
+use super::driver_protocol::parse_answer;
+use super::precheck::precheck;
+use super::preflight::PreflightState;
+use super::problem::{ProblemSpec, ProblemTests, TestCase};
+use super::run::{execute_run, PlannedTest, RunResult, RunSettings};
+use super::sanitize::{sanitize_display, DETAIL_CAP};
+use super::spec::{build_tar, driver_file_name, SandboxFiles, SessionSpec};
+use super::verdict::FinalVerdict;
+use crate::executor::{ExecError, RunContext, RunExecutor, RunInput, RunOutcome};
+use crate::languages::{LanguageCatalog, LanguageDefinition};
+use crate::queue::finish::{FinalResult, TestRecord};
+
+/// The message stored as `compile_output` when the source is refused or fails to
+/// compile. Fixed, so no compiler text — which could quote the source — ever leaks.
+const COMPILE_MESSAGE: &str = "The source did not compile.";
+
+/// The real executor: submissions run inside sandbox containers, never on the host.
+///
+/// `P` is where problems come from (`EmptyProblemTests` in production until the
+/// catalogue exists), `B` the sandbox backend. The executor is `Send + Sync` so the
+/// worker can share one instance across claimed runs.
+pub struct SandboxExecutor<P: ProblemTests, B: Backend> {
+    languages: LanguageCatalog,
+    problems: P,
+    backend: B,
+    config: SandboxConfig,
+    /// Caps live sandbox containers. A permit is held for a whole run and released when
+    /// `execute_run` has closed its container.
+    containers: Arc<Semaphore>,
+    /// One preflight state per probed language. All must pass before a run may start.
+    preflights: Vec<Arc<PreflightState>>,
+    /// This worker's id, stamped on container labels.
+    worker: String,
+    /// The directory the catalogue's driver paths resolve against.
+    driver_root: PathBuf,
+}
+
+impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
+    /// Builds the executor. Driver paths resolve against the catalogue file's directory.
+    #[must_use]
+    pub fn new(
+        languages: LanguageCatalog,
+        problems: P,
+        backend: B,
+        config: SandboxConfig,
+        preflights: Vec<Arc<PreflightState>>,
+        worker: impl Into<String>,
+    ) -> Self {
+        let containers = Arc::new(Semaphore::new(config.max_containers));
+        let driver_root = config
+            .languages_file
+            .parent()
+            .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+        Self {
+            languages,
+            problems,
+            backend,
+            config,
+            containers,
+            preflights,
+            worker: worker.into(),
+            driver_root,
+        }
+    }
+
+    /// Builds the tar archive the sandbox unpacks: the source, the driver file the
+    /// catalogue names, and the problem's public signature. Nothing else enters the
+    /// container.
+    fn archive(
+        &self,
+        code: &str,
+        lang: &LanguageDefinition,
+        spec: &ProblemSpec,
+    ) -> Result<Vec<u8>, ExecError> {
+        let driver_path = self.driver_root.join(lang.driver().as_str());
+        let driver_code = std::fs::read(&driver_path).map_err(|error| {
+            tracing::warn!(%error, path = %driver_path.display(), "the driver file could not be read");
+            ExecError::Infrastructure("driver_unreadable".to_owned())
+        })?;
+        let signature = serde_json::to_vec(&spec.signature)
+            .map_err(|_| ExecError::Infrastructure("signature_unwritable".to_owned()))?;
+        let driver_name = driver_file_name(lang)
+            .ok_or_else(|| ExecError::Infrastructure("driver_name_invalid".to_owned()))?;
+        let files = SandboxFiles::new(
+            lang.file().clone(),
+            driver_name,
+            code.as_bytes().to_vec(),
+            driver_code,
+            signature,
+        )
+        .map_err(|error| ExecError::Infrastructure(error.to_string()))?;
+        build_tar(&files).map_err(|error| ExecError::Infrastructure(error.to_string()))
+    }
+
+    /// Emits one public event per executed test and builds the stored result, honouring
+    /// the visibility rule: once a hidden test has run, every later record is
+    /// verdict-and-time only.
+    async fn report(
+        &self,
+        result: &RunResult,
+        spec: &ProblemSpec,
+        ctx: &RunContext,
+        verdict: Verdict,
+    ) -> Result<FinalResult, ExecError> {
+        let mut hidden_phase = false;
+        let mut records = Vec::with_capacity(result.timings.len());
+        let mut passed = 0_u32;
+        let mut runtime_ms = 0_u32;
+        for timing in &result.timings {
+            let Some(executed) = result
+                .executed
+                .iter()
+                .find(|test| test.ordinal() == timing.ordinal)
+            else {
+                return Err(ExecError::Infrastructure("run_records_mismatch".to_owned()));
+            };
+            let test_verdict = test_verdict(executed.verdict());
+            if test_verdict == TestVerdict::Pass {
+                passed = passed.saturating_add(1);
+            }
+            let time_ms = u32::try_from(timing.elapsed.as_millis()).unwrap_or(u32::MAX);
+            runtime_ms = runtime_ms.max(time_ms);
+            let visible = timing.sample && !hidden_phase;
+            if !timing.sample {
+                hidden_phase = true;
+            }
+            let record = if visible {
+                let case = spec
+                    .tests
+                    .iter()
+                    .find(|test| test.ordinal == timing.ordinal);
+                let detail = sample_detail(case, executed);
+                ctx.emit(&PublicEvent::Test(PublicTest::Sample {
+                    ordinal: timing.ordinal,
+                    verdict: test_verdict,
+                    time_ms,
+                    detail: detail.clone(),
+                }))
+                .await?;
+                TestRecord::Sample {
+                    ordinal: timing.ordinal,
+                    verdict: test_verdict,
+                    time_ms,
+                    detail,
+                }
+            } else {
+                ctx.emit(&PublicEvent::Test(PublicTest::Hidden {
+                    ordinal: timing.ordinal,
+                    verdict: test_verdict,
+                    time_ms,
+                }))
+                .await?;
+                TestRecord::Hidden {
+                    ordinal: timing.ordinal,
+                    verdict: test_verdict,
+                    time_ms,
+                }
+            };
+            records.push(record);
+        }
+        let total = result.facts.planned;
+        let score = passed.saturating_mul(100).checked_div(total).unwrap_or(0);
+        Ok(FinalResult {
+            verdict,
+            passed,
+            total,
+            score,
+            runtime_ms,
+            compile_output: (verdict == Verdict::CompileError).then(|| COMPILE_MESSAGE.to_owned()),
+            measured: None,
+            tests: records,
+        })
+    }
+}
+
+impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for SandboxExecutor<P, B> {
+    async fn execute(&self, run: RunInput, ctx: RunContext) -> Result<RunOutcome, ExecError> {
+        // 1. The language must be known and enabled.
+        let Some(lang) = self
+            .languages
+            .get(&run.lang)
+            .filter(|language| language.is_enabled())
+        else {
+            return Ok(RunOutcome::Failed(FailureReason::LanguageUnavailable));
+        };
+        // 2. The problem must load. An absent problem fails the run; a broken store
+        //    is infrastructure.
+        let spec = match self.problems.load(&run.problem_slug, run.mode).await {
+            Ok(Some(spec)) => spec,
+            Ok(None) => return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable)),
+            Err(error) => {
+                tracing::warn!(%error, "the problem store failed");
+                return Err(ExecError::Infrastructure("problem_store".to_owned()));
+            }
+        };
+        // 3. Every probed language's preflight must pass. No report counts as failing.
+        if !self.preflights.iter().all(|state| state.passed()) {
+            return Err(ExecError::Infrastructure(
+                "sandbox_preflight_failed".to_owned(),
+            ));
+        }
+        // 4. Wait for a container permit; a stop while waiting ends the run.
+        let mut stop = ctx.stop_watch();
+        let _permit = tokio::select! {
+            biased;
+            () = wait_stopped(&mut stop) => return Err(ExecError::Stopped),
+            permit = self.containers.clone().acquire_owned() => match permit {
+                Ok(permit) => permit,
+                Err(_closed) => {
+                    return Err(ExecError::Infrastructure("container_permits_closed".to_owned()));
+                }
+            },
+        };
+        // 5. `compiling` is always the first event of a run that can complete.
+        ctx.emit(&PublicEvent::Compiling).await?;
+        // 6. The judge re-checks the source (VAL-1, VAL-3). A refusal is a compile
+        //    error, and no container is ever created for it.
+        if let Err(rejection) = precheck(run.code.as_bytes(), lang.max_source_bytes()) {
+            tracing::info!(%rejection, "the judge refused the source before the sandbox");
+            let total = u32::try_from(spec.tests.len()).unwrap_or(u32::MAX);
+            return Ok(RunOutcome::Completed(rejected_result(total)));
+        }
+        // 7. Build the archive and the plan, then run it.
+        let archive = self.archive(&run.code, lang, &spec)?;
+        let plan = plan_of(&spec, lang);
+        let settings = RunSettings {
+            run_deadline: Instant::now() + self.config.run_wall_cap,
+            kill_slack: self.config.kill_slack,
+            max_consecutive_abnormal: self.config.max_consecutive_abnormal,
+        };
+        let worker = self.worker.clone();
+        let expires = expiry(self.config.orphan_age);
+        let run_cap = self.config.run_wall_cap;
+        let runtime = self.config.runtime;
+        let session_spec = |ordinal: u32| {
+            SessionSpec::new(
+                lang,
+                run_cap,
+                runtime,
+                run.run_id.as_uuid(),
+                &worker,
+                ordinal,
+                expires,
+            )
+            .map_err(|error| InfraError::Unexpected(error.to_string()))
+        };
+        let result = execute_run(
+            &self.backend,
+            lang,
+            &archive,
+            session_spec,
+            plan,
+            settings,
+            &mut stop,
+        )
+        .await
+        .map_err(|error| {
+            tracing::warn!(%error, "the sandbox failed mid-run");
+            ExecError::Infrastructure("sandbox_infrastructure".to_owned())
+        })?;
+        // 8. The verdict decides the outcome. A stopped run is `Stopped`, an
+        //    unexplained shortfall an internal fault — never a verdict.
+        let verdict = match result.verdict() {
+            FinalVerdict::Stopped => return Err(ExecError::Stopped),
+            FinalVerdict::Incomplete => {
+                return Err(ExecError::Infrastructure("run_incomplete".to_owned()));
+            }
+            verdict => final_verdict(verdict),
+        };
+        let finished = self.report(&result, &spec, &ctx, verdict).await?;
+        Ok(RunOutcome::Completed(finished))
+    }
+}
+
+/// The result for a source the judge refused before the sandbox: a compile error with
+/// the fixed public message, no tests and no container.
+fn rejected_result(total: u32) -> FinalResult {
+    FinalResult {
+        verdict: Verdict::CompileError,
+        passed: 0,
+        total,
+        score: 0,
+        runtime_ms: 0,
+        compile_output: Some(COMPILE_MESSAGE.to_owned()),
+        measured: None,
+        tests: Vec::new(),
+    }
+}
+
+/// Resolves when the stop signal fires or its sender is gone.
+async fn wait_stopped(stop: &mut watch::Receiver<bool>) {
+    loop {
+        if *stop.borrow() {
+            return;
+        }
+        if stop.changed().await.is_err() {
+            return;
+        }
+    }
+}
+
+/// The plan for a run: the problem's tests in stored order (the run sorts them), each
+/// with the problem's time limit or the language default.
+fn plan_of(spec: &ProblemSpec, lang: &LanguageDefinition) -> Vec<PlannedTest> {
+    let fallback = Duration::from_millis(lang.time_ms_per_test());
+    spec.tests
+        .iter()
+        .map(|case| PlannedTest {
+            ordinal: case.ordinal,
+            sample: case.is_sample,
+            args: case.args.clone(),
+            expected: Expected::new(case.expected.clone()),
+            comparator: spec.comparator,
+            time_limit: spec
+                .time_limit_ms
+                .map_or(fallback, |ms| Duration::from_millis(u64::from(ms))),
+        })
+        .collect()
+}
+
+/// The unix time after which a container counts as an orphan: now plus the orphan age,
+/// matching the sweeper's `created_at + orphan_age` rule.
+fn expiry(orphan_age: Duration) -> i64 {
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |since| {
+            i64::try_from(since.as_secs()).unwrap_or(i64::MAX)
+        });
+    now.saturating_add(i64::try_from(orphan_age.as_secs()).unwrap_or(i64::MAX))
+}
+
+/// The public detail of a visible sample test. `got` is the parsed answer value when the
+/// line is well-formed, the sanitised raw line when it is not, and empty when the program
+/// never answered.
+fn sample_detail(case: Option<&TestCase>, executed: &super::verdict::ExecutedTest) -> SampleDetail {
+    let input = case
+        .and_then(|case| serde_json::to_string(&case.args).ok())
+        .unwrap_or_default();
+    let expected = case
+        .map(|case| case.expected.to_string())
+        .unwrap_or_default();
+    let got = executed
+        .answer()
+        .and_then(|line| {
+            parse_answer(line, u64::from(executed.ordinal()))
+                .map(|value| value.to_string())
+                .ok()
+        })
+        .or_else(|| {
+            executed
+                .answer()
+                .map(|line| sanitize_display(line, DETAIL_CAP).text)
+        })
+        .unwrap_or_default();
+    SampleDetail::new(&input, &expected, &got)
+}
+
+/// Maps the sandbox's test verdict onto the queue's verdict enum. The two enums list the
+/// same outcomes; `WrongReason` detail stays inside the judge.
+fn test_verdict(verdict: &super::compare::TestVerdict) -> TestVerdict {
+    match verdict {
+        super::compare::TestVerdict::Pass(_) => TestVerdict::Pass,
+        super::compare::TestVerdict::WrongAnswer(_) => TestVerdict::WrongAnswer,
+        super::compare::TestVerdict::RuntimeError => TestVerdict::RuntimeError,
+        super::compare::TestVerdict::TimeLimit => TestVerdict::TimeLimit,
+        super::compare::TestVerdict::MemoryLimit => TestVerdict::MemoryLimit,
+        super::compare::TestVerdict::OutputLimit => TestVerdict::OutputLimit,
+    }
+}
+
+/// Maps the run verdict onto the queue's verdict enum. `Stopped` and `Incomplete` have no
+/// verdict and never reach this function.
+fn final_verdict(verdict: FinalVerdict) -> Verdict {
+    match verdict {
+        FinalVerdict::Accepted => Verdict::Accepted,
+        FinalVerdict::CompileError => Verdict::CompileError,
+        FinalVerdict::WrongAnswer => Verdict::WrongAnswer,
+        FinalVerdict::TimeLimit => Verdict::TimeLimit,
+        FinalVerdict::MemoryLimit => Verdict::MemoryLimit,
+        FinalVerdict::OutputLimit => Verdict::OutputLimit,
+        // These never reach this function — the caller returns first. The arm exists so
+        // the match stays total if the verdict enum grows.
+        FinalVerdict::RuntimeError | FinalVerdict::Stopped | FinalVerdict::Incomplete => {
+            Verdict::RuntimeError
+        }
+    }
+}

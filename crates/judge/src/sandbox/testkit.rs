@@ -441,3 +441,147 @@ pub fn weakened_policy(
     }
     policy
 }
+
+/// Problems seeded in memory for executor tests. The `testkit` feature is off in
+/// release builds, so this loader never runs in production.
+#[derive(Debug, Clone, Default)]
+pub struct StaticProblemTests {
+    specs: std::collections::HashMap<String, super::problem::ProblemSpec>,
+}
+
+impl StaticProblemTests {
+    /// A loader holding `specs`, keyed by slug.
+    #[must_use]
+    pub fn new(specs: impl IntoIterator<Item = super::problem::ProblemSpec>) -> Self {
+        Self {
+            specs: specs
+                .into_iter()
+                .map(|spec| (spec.slug.clone(), spec))
+                .collect(),
+        }
+    }
+}
+
+impl super::problem::ProblemTests for StaticProblemTests {
+    fn load(
+        &self,
+        slug: &str,
+        mode: counterspell_common::status::RunMode,
+    ) -> impl Future<
+        Output = Result<Option<super::problem::ProblemSpec>, super::problem::ProblemError>,
+    > + Send {
+        let spec = self
+            .specs
+            .get(slug)
+            .map(|spec| super::problem::tests_for_mode(spec, mode));
+        ready(Ok(spec))
+    }
+}
+
+/// Loads problems from `<dir>/<slug>.json` fixtures, for tests that want the real file
+/// shape instead of a seeded struct. Only file names that are valid slugs are read, so a
+/// slug can never escape the directory.
+#[derive(Debug, Clone)]
+pub struct DirProblemTests {
+    dir: std::path::PathBuf,
+}
+
+impl DirProblemTests {
+    /// A loader rooted at `dir`, for example `tests/fixtures/problems`.
+    #[must_use]
+    pub fn new(dir: impl Into<std::path::PathBuf>) -> Self {
+        Self { dir: dir.into() }
+    }
+}
+
+/// The on-disk shape of a fixture problem.
+#[derive(serde::Deserialize)]
+struct FixtureSpec {
+    slug: String,
+    version: u32,
+    signature: serde_json::Value,
+    comparator: String,
+    time_limit_ms: Option<u32>,
+    tests: Vec<FixtureTest>,
+    reference_python: Option<String>,
+}
+
+/// One fixture test.
+#[derive(serde::Deserialize)]
+struct FixtureTest {
+    ordinal: u32,
+    is_sample: bool,
+    args: Vec<serde_json::Value>,
+    expected: serde_json::Value,
+}
+
+/// True when `slug` is safe to use as a file name inside the fixture directory.
+fn safe_slug(slug: &str) -> bool {
+    !slug.is_empty()
+        && slug
+            .chars()
+            .all(|ch| ch.is_ascii_alphanumeric() || ch == '-' || ch == '_')
+}
+
+impl super::problem::ProblemTests for DirProblemTests {
+    fn load(
+        &self,
+        slug: &str,
+        mode: counterspell_common::status::RunMode,
+    ) -> impl Future<
+        Output = Result<Option<super::problem::ProblemSpec>, super::problem::ProblemError>,
+    > + Send {
+        ready(self.load_sync(slug, mode))
+    }
+}
+
+impl DirProblemTests {
+    /// The synchronous body of `load`; kept separate so `load` stays an `impl Future`.
+    fn load_sync(
+        &self,
+        slug: &str,
+        mode: counterspell_common::status::RunMode,
+    ) -> Result<Option<super::problem::ProblemSpec>, super::problem::ProblemError> {
+        if !safe_slug(slug) {
+            return Ok(None);
+        }
+        let path = self.dir.join(format!("{slug}.json"));
+        let text = match std::fs::read_to_string(&path) {
+            Ok(text) => text,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+            Err(error) => {
+                return Err(super::problem::ProblemError::Store(error.to_string()));
+            }
+        };
+        let raw: FixtureSpec = serde_json::from_str(&text)
+            .map_err(|error| super::problem::ProblemError::Store(error.to_string()))?;
+        // An unsupported comparator is an absent problem, never a guess.
+        let comparator = match raw.comparator.as_str() {
+            "exact" => counterspell_engine::Comparator::Exact,
+            "unordered" => counterspell_engine::Comparator::Unordered,
+            other => {
+                tracing::warn!(%other, slug, "fixture uses a comparator the judge does not support");
+                return Ok(None);
+            }
+        };
+        let spec = super::problem::ProblemSpec {
+            slug: raw.slug,
+            version: raw.version,
+            signature: raw.signature,
+            comparator,
+            time_limit_ms: raw.time_limit_ms,
+            tests: raw
+                .tests
+                .into_iter()
+                .map(|test| super::problem::TestCase {
+                    ordinal: test.ordinal,
+                    is_sample: test.is_sample,
+                    args: test.args,
+                    expected: test.expected,
+                })
+                .collect(),
+            reference_python: raw.reference_python,
+        };
+        Ok(Some(super::problem::tests_for_mode(&spec, mode)))
+    }
+}

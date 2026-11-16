@@ -41,13 +41,31 @@ pub enum FinalVerdict {
 pub struct ExecutedTest {
     ordinal: u32,
     verdict: TestVerdict,
+    /// The raw answer line, kept only so a sample test's public record can show what the
+    /// program printed. The executor decides what is emitted; a hidden test's answer is
+    /// never in a public record.
+    answer: Option<Vec<u8>>,
 }
 
 impl ExecutedTest {
     /// Records the verdict of the test with this ordinal.
     #[must_use]
     pub fn new(ordinal: u32, verdict: TestVerdict) -> Self {
-        Self { ordinal, verdict }
+        Self {
+            ordinal,
+            verdict,
+            answer: None,
+        }
+    }
+
+    /// Records the verdict plus the answer line the program printed, when it printed one.
+    #[must_use]
+    pub fn with_answer(ordinal: u32, verdict: TestVerdict, answer: Vec<u8>) -> Self {
+        Self {
+            ordinal,
+            verdict,
+            answer: Some(answer),
+        }
     }
 
     /// The test's position in the problem.
@@ -60,6 +78,12 @@ impl ExecutedTest {
     #[must_use]
     pub fn verdict(&self) -> &TestVerdict {
         &self.verdict
+    }
+
+    /// The answer line the program printed, when it answered.
+    #[must_use]
+    pub fn answer(&self) -> Option<&[u8]> {
+        self.answer.as_deref()
     }
 }
 

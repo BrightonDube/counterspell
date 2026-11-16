@@ -29,3 +29,12 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo test -p counterspell-judge --features sandbox --test sbx_sweeper -- --ignored`: **PASS** (1 passed, 1.98 s). The managed orphan was force-removed; the same-aged unlabelled container survived.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok; `cargo test --workspace` all binaries green.
 - Recorded deviation: `sweep_once(backend, orphan_age, now)` injects `now` instead of taking `cfg` — model tests script container ages without a full `SandboxConfig`; `run_sweeper` supplies `now_unix()`. See the review-queue entry.
+
+## T24 ProblemTests, SandboxExecutor and judge wiring (SUPERVISED)
+
+- Commit: this commit (`judge-sandbox T24: ProblemTests, SandboxExecutor, judge wiring`).
+- Proving tests: `tests/model_sandbox_executor.rs` (10 tests) + `tests/fixtures/problems/two-sum.json`.
+- Verification run 16 Nov 2026:
+  - `cargo test -p counterspell-judge --test model_sandbox_executor`: **PASS** (10 passed).
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok; `cargo test --workspace` all binaries green.
+- Recorded deviations queued in the review entry: `stop_watch()` added to `RunContext`; `Vec<Arc<PreflightState>>` instead of a single state; per-test events emitted after `execute_run` returns rather than streamed; `expires` label = `now + orphan_age`.

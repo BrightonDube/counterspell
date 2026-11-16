@@ -162,6 +162,13 @@ impl RunContext {
         *self.stop.borrow()
     }
 
+    /// A clone of the stop signal, for executors that run interruptible work like the
+    /// sandbox's test calls. Each clone sees the same signal.
+    #[must_use]
+    pub fn stop_watch(&self) -> watch::Receiver<bool> {
+        self.stop.clone()
+    }
+
     /// Waits until the stop signal fires. A dropped sender also counts as a stop.
     pub async fn stopped(&mut self) {
         loop {
