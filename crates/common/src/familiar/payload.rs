@@ -80,6 +80,46 @@ pub fn capped_points(points: &[PointSummary]) -> Vec<PointSummary> {
     kept
 }
 
+/// The `bench_start` event. Sent once before the bench times anything.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BenchStartPayload {
+    /// The sizes the bench will time, in increasing order. Public by definition.
+    pub sizes: Vec<u64>,
+}
+
+impl BenchStartPayload {
+    /// Turns the payload into an event object, refusing anything over the event cap.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the payload is over the event size cap.
+    pub fn to_bounded_json(&self) -> Result<BoundedJson, BoundedJsonError> {
+        BoundedJson::from_serialize(self)
+    }
+}
+
+/// The `bench_point` event. Sent as each size's median is measured.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BenchPointPayload {
+    /// The input size that was timed.
+    pub n: u64,
+    /// The median of the timed repeats at `n`, in nanoseconds.
+    pub median_ns: u64,
+}
+
+impl BenchPointPayload {
+    /// Turns the payload into an event object, refusing anything over the event cap.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the payload is over the event size cap.
+    pub fn to_bounded_json(&self) -> Result<BoundedJson, BoundedJsonError> {
+        BoundedJson::from_serialize(self)
+    }
+}
+
 /// The `complexity` event. Sent only when a bench was fitted.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]

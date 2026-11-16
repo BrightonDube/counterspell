@@ -10,16 +10,17 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use counterspell_common::events::PublicEvent;
+use counterspell_common::familiar::ClassId;
 use counterspell_common::ids::RunId;
 use counterspell_common::status::{FailureReason, RunMode, Verdict};
-use counterspell_engine::Comparator;
+use counterspell_engine::{Comparator, Schema};
 use counterspell_judge::executor::{ExecError, RunExecutor, RunInput, RunOutcome};
 use counterspell_judge::languages::LanguageCatalog;
 use counterspell_judge::sandbox::backend::InfraError;
 use counterspell_judge::sandbox::config::{OciRuntime, SandboxConfig};
 use counterspell_judge::sandbox::preflight::{PreflightCheck, PreflightReport, PreflightState};
 use counterspell_judge::sandbox::problem::{
-    EmptyProblemTests, ProblemSpec, ProblemTests, TestCase,
+    BenchDecl, EmptyProblemTests, ProblemSpec, ProblemTests, TestCase,
 };
 use counterspell_judge::sandbox::sandbox_executor::SandboxExecutor;
 use counterspell_judge::sandbox::testkit::{
@@ -92,6 +93,37 @@ fn problem() -> ProblemSpec {
             },
         ],
         reference_python: None,
+        bench: None,
+        generator_schema: None,
+        reference_complexity: None,
+    }
+}
+
+/// The same problem with a full bench declaration: the `nums` parameter grows.
+fn benched_problem() -> ProblemSpec {
+    ProblemSpec {
+        bench: Some(BenchDecl {
+            sizes: vec![16, 64, 256],
+            size_param: 0,
+        }),
+        generator_schema: Some(Schema::Tuple {
+            items: vec![
+                Schema::IntArray {
+                    min_len: 0,
+                    max_len: 16,
+                    min: 0,
+                    max: 10_000,
+                    sorted: false,
+                    unique: false,
+                },
+                Schema::Int {
+                    min: 0,
+                    max: 20_000,
+                },
+            ],
+        }),
+        reference_complexity: Some(ClassId::Linear),
+        ..problem()
     }
 }
 
@@ -116,9 +148,18 @@ fn executor(
     backend: &FakeBackend,
     languages_file: PathBuf,
 ) -> SandboxExecutor<StaticProblemTests, FakeBackend> {
+    executor_with(catalog, backend, languages_file, problem())
+}
+
+fn executor_with(
+    catalog: LanguageCatalog,
+    backend: &FakeBackend,
+    languages_file: PathBuf,
+    spec: ProblemSpec,
+) -> SandboxExecutor<StaticProblemTests, FakeBackend> {
     SandboxExecutor::new(
         catalog,
-        StaticProblemTests::new([problem()]),
+        StaticProblemTests::new([spec]),
         backend.clone(),
         config(languages_file),
         vec![passing()],
@@ -142,8 +183,8 @@ async fn compiling_is_the_first_event_of_every_completed_run() {
     let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
     assert_eq!(
         names,
-        ["compiling", "test", "test"],
-        "compiling is first, then one event per executed test"
+        ["compiling", "test", "test", "familiar"],
+        "compiling is first, then one event per executed test, then the familiar"
     );
     let RunOutcome::Completed(result) = outcome else {
         panic!("a passing run must complete: {outcome:?}");
@@ -358,5 +399,144 @@ async fn dir_problem_tests_loads_a_fixture_and_filters_by_mode() {
             .expect("a missing file is not an error")
             .is_none(),
         "an absent fixture is problem_unavailable"
+    );
+}
+
+#[tokio::test]
+async fn dir_problem_tests_loads_the_bench_declaration() {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/problems");
+    let problems = DirProblemTests::new(dir);
+
+    let spec = problems
+        .load("two-sum", RunMode::Submit)
+        .await
+        .expect("the fixture parses")
+        .expect("two-sum exists");
+    let bench = spec.bench.expect("two-sum declares a bench");
+    assert_eq!(bench.sizes, vec![16, 64, 256, 1024, 2048, 4096]);
+    assert_eq!(bench.size_param, 0, "the nums parameter grows");
+    assert_eq!(spec.reference_complexity, Some(ClassId::Linear));
+    match spec.generator_schema {
+        Some(Schema::Tuple { items }) => assert_eq!(items.len(), 2),
+        other => panic!("the generator schema must be the parameter tuple: {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn an_accepted_benched_run_measures_and_records_timings() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // Two correctness calls (ids 1 and 2), then 3 sizes x 7 bench calls (ids 0..=20).
+    let mut script = vec![answer(1, &json!([0, 1])), answer(2, &json!([0, 1]))];
+    script.extend((0..21u32).map(|id| answer(id, &json!([0, 1]))));
+    backend.script_program(script);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        benched_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names[..7],
+        [
+            "compiling",
+            "test",
+            "test",
+            "bench_start",
+            "bench_point",
+            "bench_point",
+            "bench_point"
+        ],
+        "the bench runs after the tests"
+    );
+    // The fit may or may not settle a class on scripted timings; when it does, the
+    // complexity event precedes the mood, which always ends the run.
+    let tail = &names[7..];
+    assert!(
+        tail == ["familiar"] || tail == ["complexity", "familiar"],
+        "the mood always ends the run: {tail:?}"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a passing run must complete: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::Accepted);
+    let measured = result.measured.expect("a measured run stores its columns");
+    assert!(measured.fit.is_some(), "a fitted bench stores its fit");
+    assert!(measured.familiar_mood.is_some());
+
+    let timings = log.timings();
+    assert_eq!(timings.len(), 15, "three sizes, five timed repeats each");
+    for size in [16_u64, 64, 256] {
+        let rows: Vec<_> = timings.iter().filter(|row| row.n == size).collect();
+        assert_eq!(rows.len(), 5, "one row per timed repeat at n={size}");
+        assert!(
+            rows.iter().map(|row| row.repeat).eq(1..=5),
+            "repeats count from 1"
+        );
+        assert!(rows.iter().all(|row| row.ns > 0));
+    }
+    assert_eq!(backend.ledger().live(), 0, "the container is removed");
+}
+
+#[tokio::test]
+async fn a_wrong_answer_on_a_benched_problem_never_runs_the_bench() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([0, 1])), answer(2, &json!([9, 9]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        benched_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names,
+        ["compiling", "test", "test", "familiar"],
+        "no bench runs for a failed verdict"
+    );
+    assert!(log.timings().is_empty(), "no samples are stored");
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a completed run: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+    let measured = result.measured.expect("the mood is still measured");
+    assert!(measured.measured_complexity.is_none());
+    assert!(measured.familiar_mood.is_some());
+}
+
+#[tokio::test]
+async fn a_partial_bench_declaration_is_infrastructure() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([0, 1])), answer(2, &json!([0, 1]))]);
+    // The sizes are declared but the schema and reference are missing: a broken store.
+    let mut spec = problem();
+    spec.bench = Some(BenchDecl {
+        sizes: vec![16, 64],
+        size_param: 0,
+    });
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor.execute(input(RunMode::Submit), ctx).await;
+    assert!(
+        matches!(outcome, Err(ExecError::Infrastructure(_))),
+        "a half-declared bench is a store fault, not a verdict: {outcome:?}"
     );
 }

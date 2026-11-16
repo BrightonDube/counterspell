@@ -46,7 +46,15 @@ async fn sbx_s01_a_correct_solution_is_accepted_with_compiling_first() {
     assert_eq!(verdict_of(&observation), Verdict::Accepted);
     assert_eq!(
         observation.event_names(),
-        ["compiling", "test", "test", "test", "test", "test"]
+        [
+            "compiling",
+            "test",
+            "test",
+            "test",
+            "test",
+            "test",
+            "familiar"
+        ]
     );
     assert!(
         sbx::cleared_within(&docker, &cfg, std::time::Duration::from_secs(15))

@@ -18,6 +18,7 @@ use counterspell_judge::sandbox::config::OciRuntime;
 use counterspell_judge::sandbox::session::{open_session, Opened};
 use counterspell_judge::sandbox::spec::SessionSpec;
 use counterspell_judge::sandbox::testkit::{Behaviour, FakeBackend};
+use counterspell_judge::testkit::RecordingContext;
 use tokio::sync::watch;
 use uuid::Uuid;
 
@@ -96,6 +97,7 @@ async fn a_complete_bench_times_every_size_and_every_rep() {
     backend.script_program((0..21).map(|id| answer(id, 5)));
     let mut opened = opened(&backend, &catalog).await;
     let (_tx, mut stop) = watch::channel(false);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let outcome = {
         let mut collector = SandboxBenchCollector::new(
@@ -103,6 +105,7 @@ async fn a_complete_bench_times_every_size_and_every_rep() {
             catalog.get("python").unwrap(),
             schema(),
             Duration::from_secs(5),
+            &ctx,
             &mut stop,
         );
         collector
@@ -154,6 +157,7 @@ async fn a_zero_budget_reports_incomplete_before_any_call() {
     let backend = FakeBackend::new();
     let mut opened = opened(&backend, &catalog).await;
     let (_tx, mut stop) = watch::channel(false);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let outcome = {
         let mut collector = SandboxBenchCollector::new(
@@ -161,6 +165,7 @@ async fn a_zero_budget_reports_incomplete_before_any_call() {
             catalog.get("python").unwrap(),
             schema(),
             Duration::from_secs(5),
+            &ctx,
             &mut stop,
         );
         collector
@@ -190,6 +195,7 @@ async fn a_driver_crash_fails_the_bench() {
     }]));
     let mut opened = opened(&backend, &catalog).await;
     let (_tx, mut stop) = watch::channel(false);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let outcome = {
         let mut collector = SandboxBenchCollector::new(
@@ -197,6 +203,7 @@ async fn a_driver_crash_fails_the_bench() {
             catalog.get("python").unwrap(),
             schema(),
             Duration::from_secs(5),
+            &ctx,
             &mut stop,
         );
         collector
@@ -215,6 +222,7 @@ async fn a_hang_fails_the_bench_within_the_call_deadline() {
     backend.script_program([Behaviour::Hang]);
     let mut opened = opened(&backend, &catalog).await;
     let (_tx, mut stop) = watch::channel(false);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let started = std::time::Instant::now();
     let outcome = {
@@ -223,6 +231,7 @@ async fn a_hang_fails_the_bench_within_the_call_deadline() {
             catalog.get("python").unwrap(),
             schema(),
             Duration::from_millis(50),
+            &ctx,
             &mut stop,
         );
         collector
@@ -244,6 +253,7 @@ async fn the_stop_signal_fails_the_bench_as_stopped() {
     let backend = FakeBackend::new();
     let mut opened = opened(&backend, &catalog).await;
     let (_tx, mut stop) = watch::channel(true);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let result = {
         let mut collector = SandboxBenchCollector::new(
@@ -251,6 +261,7 @@ async fn the_stop_signal_fails_the_bench_as_stopped() {
             catalog.get("python").unwrap(),
             schema(),
             Duration::from_secs(5),
+            &ctx,
             &mut stop,
         );
         collector
@@ -273,6 +284,7 @@ async fn sandbox_failures_are_infrastructure_never_a_verdict() {
     backend.fail_call(7, InfraError::ApiTimeout);
     let mut opened = opened(&backend, &catalog).await;
     let (_tx, mut stop) = watch::channel(false);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let result = {
         let mut collector = SandboxBenchCollector::new(
@@ -280,6 +292,7 @@ async fn sandbox_failures_are_infrastructure_never_a_verdict() {
             catalog.get("python").unwrap(),
             schema(),
             Duration::from_secs(5),
+            &ctx,
             &mut stop,
         );
         collector

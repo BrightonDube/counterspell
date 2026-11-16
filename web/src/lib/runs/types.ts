@@ -15,6 +15,7 @@ import {
 } from '../contract';
 import {
   parseBenchPoint,
+  parseBenchStart,
   parseComplexityFact,
   parseMeasuredFamiliar,
   type BenchPoint,
@@ -35,6 +36,7 @@ export const RUN_EVENT_NAMES = [
   'ghost_hunting',
   'shrink_step',
   'ghost',
+  'bench_start',
   'bench_point',
   'complexity',
   'familiar',
@@ -150,6 +152,7 @@ export type RunEventPayload =
   | { kind: 'test'; test: PublicTest }
   | { kind: 'shrink_step'; step: ShrinkStepView }
   | { kind: 'ghost'; ghost: GhostView }
+  | { kind: 'bench_start'; sizes: number[] }
   | { kind: 'bench_point'; point: BenchPoint }
   | { kind: 'complexity'; fact: ComplexityFact }
   | { kind: 'familiar'; familiar: MeasuredFamiliar }
@@ -303,6 +306,8 @@ function parsePayload(
       return { kind: 'shrink_step', step: parseShrinkStep(payload, path) };
     case 'ghost':
       return { kind: 'ghost', ghost: parseGhost(payload) };
+    case 'bench_start':
+      return { kind: 'bench_start', sizes: parseBenchStart(payload, path) };
     case 'bench_point':
       return { kind: 'bench_point', point: parseBenchPoint(payload, path) };
     case 'complexity':

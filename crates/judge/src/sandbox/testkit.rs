@@ -504,6 +504,18 @@ struct FixtureSpec {
     time_limit_ms: Option<u32>,
     tests: Vec<FixtureTest>,
     reference_python: Option<String>,
+    bench: Option<FixtureBench>,
+}
+
+/// A fixture's bench declaration: sizes, the growing parameter, the declared class
+/// and the generator schema — atomic, so a partial declaration cannot load.
+#[derive(serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FixtureBench {
+    sizes: Vec<u64>,
+    size_param: usize,
+    reference: counterspell_common::familiar::class::ClassId,
+    schema: counterspell_engine::Schema,
 }
 
 /// One fixture test.
@@ -581,6 +593,12 @@ impl DirProblemTests {
                 })
                 .collect(),
             reference_python: raw.reference_python,
+            bench: raw.bench.as_ref().map(|bench| super::problem::BenchDecl {
+                sizes: bench.sizes.clone(),
+                size_param: bench.size_param,
+            }),
+            generator_schema: raw.bench.as_ref().map(|bench| bench.schema.clone()),
+            reference_complexity: raw.bench.map(|bench| bench.reference),
         };
         Ok(Some(super::problem::tests_for_mode(&spec, mode)))
     }

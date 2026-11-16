@@ -10,6 +10,8 @@
 
 use std::time::Duration;
 
+use counterspell_common::events::PublicEvent;
+use counterspell_common::familiar::payload::{BenchPointPayload, BenchStartPayload};
 use counterspell_engine::complexity::{bench_seed, sized_input};
 use counterspell_engine::Schema;
 use serde_json::Value;
@@ -23,8 +25,9 @@ use super::driver_protocol::{encode_call, parse_answer};
 use super::session::Opened;
 use super::spec::ExecSpec;
 use super::stream::LineReader;
-use crate::executor::ExecError;
+use crate::executor::{ExecError, RunContext};
 use crate::familiar::assess::BenchPoint;
+use crate::familiar::store::TimingRow;
 use crate::familiar::{BenchCollector, BenchOutcome, BenchPlan};
 use crate::languages::LanguageDefinition;
 
@@ -33,6 +36,14 @@ pub const WARM_UPS: usize = 2;
 
 /// Timed calls per size; the point is their median.
 pub const TIMED_REPS: usize = 5;
+
+/// The whole-bench budget for a `Run` (sample-mode) attempt: a short bench over
+/// three sizes.
+pub const RUN_BENCH_BUDGET: Duration = Duration::from_millis(1500);
+
+/// The whole-bench budget for a `Submit` attempt: the full bench over five to
+/// six sizes.
+pub const SUBMIT_BENCH_BUDGET: Duration = Duration::from_secs(4);
 
 /// Why a bench call had to stop.
 #[derive(Debug, Error)]
@@ -63,18 +74,25 @@ pub struct SandboxBenchCollector<'a, S: BackendSession + 'static> {
     /// Splits driver stdout into protocol lines, with the same per-call byte
     /// budget the correctness call enforces.
     stdout: LineReader,
+    /// The run context: `bench_start`/`bench_point` events and the `run_timings`
+    /// rows go through it, fenced by the attempt it carries.
+    ctx: &'a RunContext,
+    /// The raw timed samples for `run_timings`, one row per timed call.
+    timings: Vec<TimingRow>,
     /// The run's stop signal: cancel, lost lease, shutdown.
     stop: &'a mut watch::Receiver<bool>,
 }
 
 impl<'a, S: BackendSession + 'static> SandboxBenchCollector<'a, S> {
     /// Wraps the run's still-open session. `schema` is the signature's parameter
-    /// tuple (`Schema::Tuple`), `call_deadline` the per-call limit.
+    /// tuple (`Schema::Tuple`), `call_deadline` the per-call limit, `ctx` the run's
+    /// event and store sink.
     pub fn new(
         opened: &'a mut Opened<S>,
         lang: &'a LanguageDefinition,
         schema: Schema,
         call_deadline: Duration,
+        ctx: &'a RunContext,
         stop: &'a mut watch::Receiver<bool>,
     ) -> Self {
         Self {
@@ -83,6 +101,8 @@ impl<'a, S: BackendSession + 'static> SandboxBenchCollector<'a, S> {
             schema,
             call_deadline,
             stdout: LineReader::with_budget(STDOUT_BUDGET, STDOUT_BUDGET),
+            ctx,
+            timings: Vec::new(),
             stop,
         }
     }
@@ -208,6 +228,17 @@ impl<S: BackendSession + 'static> SandboxBenchCollector<'_, S> {
         let container = self.opened.session.container_mut()?;
         let mut driver = container.open_driver(&spec).await?;
 
+        // Announce the bench: the sizes are the whole public payload.
+        let start = BenchStartPayload {
+            sizes: plan.sizes.clone(),
+        }
+        .to_bounded_json()
+        .map_err(|e| BenchStop::Infrastructure(InfraError::Unexpected(e.to_string())))?;
+        self.ctx
+            .emit(&PublicEvent::BenchStart(start))
+            .await
+            .map_err(exec_stop)?;
+
         let budget_deadline = Instant::now() + plan.budget;
         let mut points = Vec::new();
         let mut id = 0u64;
@@ -233,6 +264,11 @@ impl<S: BackendSession + 'static> SandboxBenchCollector<'_, S> {
                     Ok(Some(elapsed)) => {
                         if rep >= WARM_UPS {
                             timings.push(elapsed);
+                            self.timings.push(TimingRow {
+                                n,
+                                repeat: u32::try_from(rep - WARM_UPS + 1).unwrap_or(u32::MAX),
+                                ns: u64::try_from(elapsed.as_nanos()).unwrap_or(u64::MAX),
+                            });
                         }
                         id += 1;
                     }
@@ -243,20 +279,50 @@ impl<S: BackendSession + 'static> SandboxBenchCollector<'_, S> {
                     }
                 }
             }
-            points.push(BenchPoint {
+            let point = BenchPoint {
                 n,
                 median_ns: median_ns(&timings),
                 spread: spread(&timings),
-            });
+            };
+            points.push(point);
+            let payload = BenchPointPayload {
+                n,
+                median_ns: point.median_ns,
+            }
+            .to_bounded_json()
+            .map_err(|e| BenchStop::Infrastructure(InfraError::Unexpected(e.to_string())))?;
+            self.ctx
+                .emit(&PublicEvent::BenchPoint(payload))
+                .await
+                .map_err(exec_stop)?;
         }
 
-        // Put the bench driver back so the caller's close path sees a coherent Opened.
+        // Samples land only when the bench loop itself ended normally: a misbehaving
+        // driver's measurements are not trusted. Put the bench driver back so the
+        // caller's close path sees a coherent Opened.
+        if result.is_ok() {
+            self.ctx
+                .record_timings(&self.timings)
+                .await
+                .map_err(exec_stop)?;
+        }
         self.opened.driver = Some(driver);
 
         match result {
             Ok(()) if points.len() == plan.sizes.len() => Ok(BenchOutcome::Complete(points)),
             Ok(()) => Ok(BenchOutcome::Incomplete(points)),
             Err(error) => Err(error),
+        }
+    }
+}
+
+/// Maps a run-context failure to the bench stop it is: a lost claim is the stop
+/// signal, anything else is the judge failing to persist.
+fn exec_stop(error: ExecError) -> BenchStop {
+    match error {
+        ExecError::Stopped => BenchStop::Stopped,
+        ExecError::Infrastructure(reason) => {
+            BenchStop::Infrastructure(InfraError::Unexpected(reason))
         }
     }
 }

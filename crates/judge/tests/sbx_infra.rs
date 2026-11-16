@@ -61,6 +61,7 @@ async fn execute_with_backend(
     sbx::RunObservation {
         outcome,
         events: log.events(),
+        timings: log.timings(),
         run_wall: started.elapsed(),
     }
 }

@@ -23,6 +23,7 @@ use counterspell_common::events::PublicEvent;
 use counterspell_common::ids::RunId;
 use counterspell_common::status::RunMode;
 use counterspell_judge::executor::{ExecError, RunExecutor, RunInput, RunOutcome};
+use counterspell_judge::familiar::store::TimingRow;
 use counterspell_judge::languages::LanguageCatalog;
 use counterspell_judge::sandbox::backend::{Backend, ManagedContainer};
 use counterspell_judge::sandbox::bollard_backend::BollardBackend;
@@ -189,6 +190,8 @@ pub struct RunObservation {
     pub outcome: Result<RunOutcome, ExecError>,
     /// The public events the executor emitted, in emission order.
     pub events: Vec<PublicEvent>,
+    /// The raw bench samples the run recorded for `run_timings`.
+    pub timings: Vec<TimingRow>,
     /// Wall time of `executor.execute` alone — the preflight probe before it is not
     /// part of the run cap.
     pub run_wall: Duration,
@@ -250,6 +253,7 @@ pub async fn run_source(
     RunObservation {
         outcome,
         events: log.events(),
+        timings: log.timings(),
         run_wall: started.elapsed(),
     }
 }
@@ -309,6 +313,7 @@ pub async fn execute_on(
     RunObservation {
         outcome,
         events: log.events(),
+        timings: log.timings(),
         run_wall: started.elapsed(),
     }
 }
@@ -422,6 +427,7 @@ pub fn spawn_source(
         RunObservation {
             outcome,
             events: log.events(),
+            timings: log.timings(),
             run_wall: started.elapsed(),
         }
     });

@@ -227,9 +227,10 @@ pub async fn assert_invariants(pool: &PgPool) -> Result<(), String> {
     }
 }
 
-/// The events a scripted or recording run emitted, readable after the run ends.
+/// The events and bench timings a scripted or recording run produced, readable after
+/// the run ends.
 #[derive(Clone)]
-pub struct EventLog(Arc<Mutex<Vec<PublicEvent>>>);
+pub struct EventLog(Arc<Mutex<crate::executor::Recorded>>);
 
 impl EventLog {
     /// A copy of every event recorded so far, in the order they were emitted.
@@ -237,7 +238,16 @@ impl EventLog {
     pub fn events(&self) -> Vec<PublicEvent> {
         self.0
             .lock()
-            .map(|events| events.clone())
+            .map(|recorded| recorded.events.clone())
+            .unwrap_or_default()
+    }
+
+    /// A copy of every raw bench sample recorded so far, in the order it was stored.
+    #[must_use]
+    pub fn timings(&self) -> Vec<crate::familiar::store::TimingRow> {
+        self.0
+            .lock()
+            .map(|recorded| recorded.timings.clone())
             .unwrap_or_default()
     }
 }
@@ -250,7 +260,7 @@ impl RecordingContext {
     #[must_use]
     pub fn without_stop(attempt: u16) -> (RunContext, EventLog) {
         let (_sender, stop) = watch::channel(false);
-        let log = EventLog(Arc::new(Mutex::new(Vec::new())));
+        let log = EventLog(Arc::new(Mutex::new(crate::executor::Recorded::default())));
         let ctx = RunContext::recording(log.0.clone(), RunId::new(), attempt, stop);
         (ctx, log)
     }
@@ -259,7 +269,7 @@ impl RecordingContext {
     #[must_use]
     pub fn with_stop(attempt: u16) -> (RunContext, EventLog, watch::Sender<bool>) {
         let (sender, stop) = watch::channel(false);
-        let log = EventLog(Arc::new(Mutex::new(Vec::new())));
+        let log = EventLog(Arc::new(Mutex::new(crate::executor::Recorded::default())));
         let ctx = RunContext::recording(log.0.clone(), RunId::new(), attempt, stop);
         (ctx, log, sender)
     }

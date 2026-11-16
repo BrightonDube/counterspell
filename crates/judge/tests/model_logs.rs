@@ -79,6 +79,9 @@ fn problem() -> ProblemSpec {
             })
             .collect(),
         reference_python: None,
+        bench: None,
+        generator_schema: None,
+        reference_complexity: None,
     }
 }
 

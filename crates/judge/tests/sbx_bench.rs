@@ -10,8 +10,9 @@ mod sbx;
 
 use std::time::Duration;
 
-use counterspell_common::status::RunMode;
+use counterspell_common::status::{RunMode, Verdict};
 use counterspell_engine::Schema;
+use counterspell_judge::executor::RunOutcome;
 use counterspell_judge::familiar::{BenchCollector, BenchOutcome, BenchPlan};
 use counterspell_judge::languages::{LanguageCatalog, LanguageDefinition};
 use counterspell_judge::sandbox::backend::BackendSession;
@@ -20,6 +21,7 @@ use counterspell_judge::sandbox::bollard_backend::BollardBackend;
 use counterspell_judge::sandbox::config::SandboxConfig;
 use counterspell_judge::sandbox::session::{open_session, Opened};
 use counterspell_judge::sandbox::spec::{build_tar, driver_file_name, SandboxFiles, SessionSpec};
+use counterspell_judge::testkit::RecordingContext;
 use serde_json::Value;
 use tokio::sync::watch;
 use uuid::Uuid;
@@ -120,6 +122,7 @@ async fn sbx_bench_records_timed_points_in_the_same_container() {
     let archive = js_archive(lang, js_driver(&cfg, lang), JS_TWO_SUM);
     let mut opened = bench_session(&backend, &catalog, &cfg, &archive).await;
     let (_tx, mut stop) = watch::channel(false);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let outcome = {
         let mut collector = SandboxBenchCollector::new(
@@ -127,6 +130,7 @@ async fn sbx_bench_records_timed_points_in_the_same_container() {
             lang,
             schema(),
             Duration::from_secs(2),
+            &ctx,
             &mut stop,
         );
         collector
@@ -169,6 +173,7 @@ async fn sbx_bench_budget_cut_is_incomplete_and_the_container_is_clean() {
     let archive = js_archive(lang, js_driver(&cfg, lang), JS_TWO_SUM);
     let mut opened = bench_session(&backend, &catalog, &cfg, &archive).await;
     let (_tx, mut stop) = watch::channel(false);
+    let (ctx, _log) = RecordingContext::without_stop(1);
 
     let started = std::time::Instant::now();
     let outcome = {
@@ -177,6 +182,7 @@ async fn sbx_bench_budget_cut_is_incomplete_and_the_container_is_clean() {
             lang,
             schema(),
             Duration::from_secs(2),
+            &ctx,
             &mut stop,
         );
         collector
@@ -202,4 +208,75 @@ async fn sbx_bench_budget_cut_is_incomplete_and_the_container_is_clean() {
 
     opened.session.close().await.expect("the session closes");
     sbx::drain_dead(&docker, &cfg, Duration::from_secs(60)).await;
+}
+
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
+async fn sbx_bench_run_publishes_points_and_records_timings() {
+    let (docker, cfg) = sbx::sandbox().await;
+    let catalog = sbx::catalogue(&cfg);
+
+    // The full executor path: correctness, then the bench in the same container.
+    let observation = sbx::run_source(
+        &docker,
+        &cfg,
+        &catalog,
+        "javascript",
+        "two-sum",
+        JS_TWO_SUM,
+        RunMode::Submit,
+    )
+    .await;
+
+    let outcome = observation.outcome.as_ref().expect("the run completes");
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("the run must complete: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::Accepted);
+
+    // three tests, then bench_start, one point per declared size, the fit, the mood.
+    let names = observation.event_names();
+    assert_eq!(
+        names[..11],
+        [
+            "compiling",
+            "test",
+            "test",
+            "test",
+            "bench_start",
+            "bench_point",
+            "bench_point",
+            "bench_point",
+            "bench_point",
+            "bench_point",
+            "bench_point"
+        ],
+        "the bench tail follows the test events in order"
+    );
+    // The fit on real timings usually settles a class; when it does it precedes the
+    // mood, which always ends the run.
+    let tail = &names[11..];
+    assert!(
+        tail == ["familiar"] || tail == ["complexity", "familiar"],
+        "the mood always ends the run: {tail:?}"
+    );
+    assert_eq!(
+        observation.timings.len(),
+        30,
+        "six sizes, five timed repeats each"
+    );
+    assert!(
+        observation.timings.iter().all(|row| row.ns > 0),
+        "every recorded sample is positive"
+    );
+    assert!(
+        result.measured.is_some(),
+        "the measured columns ride the terminal result"
+    );
+    assert!(
+        sbx::cleared_within(&docker, &cfg, Duration::from_secs(15))
+            .await
+            .is_empty(),
+        "no container survives the run"
+    );
 }

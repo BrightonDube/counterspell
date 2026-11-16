@@ -13,22 +13,30 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use counterspell_common::events::{PublicEvent, PublicTest, SampleDetail};
-use counterspell_common::status::{FailureReason, TestVerdict, Verdict};
+use counterspell_common::familiar::class::ClassId;
+use counterspell_common::familiar::payload::MeasuredColumns;
+use counterspell_common::status::{FailureReason, RunMode, TestVerdict, Verdict};
 use tokio::sync::{watch, Semaphore};
 use tokio::time::Instant;
 
 use super::backend::{Backend, InfraError};
+use super::bench::{SandboxBenchCollector, RUN_BENCH_BUDGET, SUBMIT_BENCH_BUDGET};
 use super::compare::Expected;
 use super::config::SandboxConfig;
 use super::driver_protocol::parse_answer;
 use super::precheck::precheck;
 use super::preflight::PreflightState;
 use super::problem::{ProblemSpec, ProblemTests, TestCase};
-use super::run::{execute_run, PlannedTest, RunResult, RunSettings};
+use super::run::{execute_run_and_keep, PlannedTest, RunResult, RunSettings};
 use super::sanitize::{sanitize_display, DETAIL_CAP};
+use super::session::Opened;
 use super::spec::{build_tar, driver_file_name, SandboxFiles, SessionSpec};
 use super::verdict::FinalVerdict;
 use crate::executor::{ExecError, RunContext, RunExecutor, RunInput, RunOutcome};
+use crate::familiar::gate::{BenchGate, BenchSettings};
+use crate::familiar::load::ProcLoadAvg;
+use crate::familiar::store::find_baseline;
+use crate::familiar::{measure_run, BenchPlan, MeasureInput};
 use crate::languages::{LanguageCatalog, LanguageDefinition};
 use crate::queue::finish::{FinalResult, TestRecord};
 
@@ -55,6 +63,10 @@ pub struct SandboxExecutor<P: ProblemTests, B: Backend> {
     worker: String,
     /// The directory the catalogue's driver paths resolve against.
     driver_root: PathBuf,
+    /// The bench permit gate (serialised benches by default).
+    gate: BenchGate,
+    /// The bench settings (serialise, max load).
+    bench: BenchSettings,
 }
 
 impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
@@ -73,6 +85,7 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
             .languages_file
             .parent()
             .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+        let bench = BenchSettings::default();
         Self {
             languages,
             problems,
@@ -82,7 +95,17 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
             preflights,
             worker: worker.into(),
             driver_root,
+            gate: BenchGate::new(bench.serialise),
+            bench,
         }
+    }
+
+    /// Overrides the bench settings, for tests and deployment tuning.
+    #[must_use]
+    pub fn with_bench_settings(mut self, settings: BenchSettings) -> Self {
+        self.gate = BenchGate::new(settings.serialise);
+        self.bench = settings;
+        self
     }
 
     /// Builds the tar archive the sandbox unpacks: the source, the driver file the
@@ -193,6 +216,149 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
             tests: records,
         })
     }
+
+    /// Runs the bench and the familiar assessment for one completed run, then
+    /// returns the measured columns the terminal write stores. Whatever this
+    /// returns, the kept session — when there is one — is closed first.
+    async fn measure(&self, call: MeasureCall<'_, B>) -> Result<MeasuredColumns, ExecError> {
+        let MeasureCall {
+            mut session,
+            spec,
+            lang,
+            run,
+            verdict,
+            ctx,
+            stop,
+        } = call;
+        // A bench needs all three declarations; a partial one is a broken store.
+        let bench_plan = match (
+            &spec.bench,
+            &spec.generator_schema,
+            spec.reference_complexity,
+        ) {
+            (None, None, None) => None,
+            (Some(bench), Some(_), Some(_)) => Some(BenchPlan {
+                mode: run.mode,
+                sizes: bench.sizes.clone(),
+                size_param: bench.size_param,
+                problem_slug: spec.slug.clone(),
+                problem_version: spec.version,
+                budget: match run.mode {
+                    RunMode::Run => RUN_BENCH_BUDGET,
+                    RunMode::Submit => SUBMIT_BENCH_BUDGET,
+                },
+            }),
+            _ => {
+                return Err(ExecError::Infrastructure(
+                    "bench_declaration_incomplete".to_owned(),
+                ));
+            }
+        };
+        // Baseline points exist only on the queue path; a bench without them still fits.
+        let baseline = if bench_plan.is_some() && verdict == Verdict::Accepted {
+            match ctx.pool() {
+                Some(pool) => find_baseline(
+                    pool,
+                    &spec.slug,
+                    spec.version,
+                    &run.lang,
+                    lang.image().as_str(),
+                )
+                .await
+                .map_err(|error| ExecError::Infrastructure(error.to_string()))?,
+                None => Vec::new(),
+            }
+        } else {
+            Vec::new()
+        };
+        let input = MeasureInput {
+            verdict: Some(verdict),
+            mode: run.mode,
+            reference: spec.reference_complexity.unwrap_or(ClassId::Linear),
+            baseline: Some(&baseline),
+            plan: bench_plan.as_ref(),
+            max_load: self.bench.max_load,
+        };
+        let call_deadline = Duration::from_millis(
+            spec.time_limit_ms
+                .map_or_else(|| lang.time_ms_per_test(), u64::from),
+        );
+        let mut collector =
+            match (verdict, session.as_mut(), spec.generator_schema.clone()) {
+                (Verdict::Accepted, Some(opened), Some(schema)) => Some(
+                    SandboxBenchCollector::new(opened, lang, schema, call_deadline, ctx, stop),
+                ),
+                _ => None,
+            };
+        let columns = measure_run::<SandboxBenchCollector<B::Session>>(
+            ctx,
+            &self.gate,
+            &ProcLoadAvg,
+            collector.as_mut(),
+            &input,
+        )
+        .await;
+        drop(collector);
+        if let Some(opened) = session {
+            if let Err(error) = opened.session.close().await {
+                tracing::warn!(%error, "closing the run's container did not confirm removal");
+            }
+        }
+        columns
+    }
+
+    /// The precheck outcome for the judge's own source re-check (VAL-1, VAL-3): `None`
+    /// when the source may run, or the completed compile-error result — with its
+    /// familiar verdict, though never a bench — when the judge refuses it and no
+    /// container is ever created.
+    async fn rejected_before_sandbox(
+        &self,
+        spec: &ProblemSpec,
+        lang: &LanguageDefinition,
+        run: &RunInput,
+        ctx: &RunContext,
+        stop: &mut watch::Receiver<bool>,
+    ) -> Result<Option<FinalResult>, ExecError> {
+        let Err(rejection) = precheck(run.code.as_bytes(), lang.max_source_bytes()) else {
+            return Ok(None);
+        };
+        tracing::info!(%rejection, "the judge refused the source before the sandbox");
+        let total = u32::try_from(spec.tests.len()).unwrap_or(u32::MAX);
+        let mut rejected = rejected_result(total);
+        // A refused source is still a completed run: it gets the same familiar
+        // verdict a compile error in the sandbox would, but never a bench.
+        rejected.measured = Some(Box::new(
+            self.measure(MeasureCall {
+                session: None,
+                spec,
+                lang,
+                run,
+                verdict: Verdict::CompileError,
+                ctx,
+                stop,
+            })
+            .await?,
+        ));
+        Ok(Some(rejected))
+    }
+}
+
+/// The pieces [`SandboxExecutor::measure`] needs, packed so the call sites stay small.
+struct MeasureCall<'a, B: Backend> {
+    /// The run's kept session, which `measure` closes at the end whatever happens.
+    session: Option<Opened<B::Session>>,
+    /// The problem the run measured against.
+    spec: &'a ProblemSpec,
+    /// The language the run used.
+    lang: &'a LanguageDefinition,
+    /// The run's input; its mode sizes the bench budget.
+    run: &'a RunInput,
+    /// The verdict the correctness tests produced.
+    verdict: Verdict,
+    /// The run's event and store sink.
+    ctx: &'a RunContext,
+    /// The run's stop signal.
+    stop: &'a mut watch::Receiver<bool>,
 }
 
 impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for SandboxExecutor<P, B> {
@@ -237,10 +403,11 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
         ctx.emit(&PublicEvent::Compiling).await?;
         // 6. The judge re-checks the source (VAL-1, VAL-3). A refusal is a compile
         //    error, and no container is ever created for it.
-        if let Err(rejection) = precheck(run.code.as_bytes(), lang.max_source_bytes()) {
-            tracing::info!(%rejection, "the judge refused the source before the sandbox");
-            let total = u32::try_from(spec.tests.len()).unwrap_or(u32::MAX);
-            return Ok(RunOutcome::Completed(rejected_result(total)));
+        if let Some(rejected) = self
+            .rejected_before_sandbox(&spec, lang, &run, &ctx, &mut stop)
+            .await?
+        {
+            return Ok(RunOutcome::Completed(rejected));
         }
         // 7. Build the archive and the plan, then run it.
         let archive = self.archive(&run.code, lang, &spec)?;
@@ -266,7 +433,7 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
             )
             .map_err(|error| InfraError::Unexpected(error.to_string()))
         };
-        let result = execute_run(
+        let (result, session) = execute_run_and_keep(
             &self.backend,
             lang,
             &archive,
@@ -289,7 +456,22 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
             }
             verdict => final_verdict(verdict),
         };
-        let finished = self.report(&result, &spec, &ctx, verdict).await?;
+        let mut finished = self.report(&result, &spec, &ctx, verdict).await?;
+        // 9. Measure: every completed run gets its familiar verdict; an accepted
+        //    run with a declared bench also gets timed points, still in the run's
+        //    own container. `measure` closes the kept session, whatever it returns.
+        finished.measured = Some(Box::new(
+            self.measure(MeasureCall {
+                session,
+                spec: &spec,
+                lang,
+                run: &run,
+                verdict,
+                ctx: &ctx,
+                stop: &mut stop,
+            })
+            .await?,
+        ));
         Ok(RunOutcome::Completed(finished))
     }
 }
