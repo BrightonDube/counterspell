@@ -80,7 +80,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: no execution of user code; parsing only.
   - Rust lesson: why length prefixes stop two different inputs from making the same bytes; `Option` for the fallback path.
 
-- [ ] **H06 [P] (25 min) Fallback rule**
+- [x] **H06 [P] (25 min) Fallback rule**
   - Files: `crates/server/src/hints/chain.rs`.
   - Implement `next_step` exactly as in the design, plus a `run_chain` helper generic over a `FnMut(usize) -> Future<Result<T, ProviderError>>` that calls providers in order and stops at the first success.
   - Requirements: R5.2, R5.3, R5.4.

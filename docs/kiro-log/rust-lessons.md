@@ -1332,3 +1332,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A `match` or `if` on the `Gate` enum forces the caller to deal with `Open`, `Revealed` and `Locked`. A missing branch is a compile error, not a silent bug.
 - `BTreeSet` keeps its numbers sorted and unique, so `contains` checks and the prefix property are easy to state in a test.
 - `proptest` runs the property over many random lists of attempts. A failure prints a small reproducing list, which is the fastest way to find an ordering bug.
+
+# Rust lesson: hints H06
+
+- `run_chain` takes a closure that returns a future. Each call to the closure starts one provider attempt, so the code decides which provider to call next without knowing what the provider is.
+- Matching on a tuple `(step, outcome)` lets one `match` cover the success path and the failure path together. An impossible pair falls into a single `_` arm that stops the loop.
+- `futures_util::FutureExt::now_or_never` runs a ready future to its value in a test, without starting a runtime.
