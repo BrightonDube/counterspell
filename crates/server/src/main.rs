@@ -66,7 +66,11 @@ async fn main() -> Result<(), io::Error> {
     .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
     // The cleanup and demo-reset tasks run for the life of the process.
     let _background_tasks = start_background(&auth, &auth_config).await;
+    let hints =
+        counterspell_server::hints::handlers::hint_state_from_env(pool.clone(), &config.valkey_url)
+            .map_err(|message| io::Error::new(io::ErrorKind::InvalidInput, message))?;
     let state = AppState::new(pool, config, limiter)
+        .with_hints(hints)
         .with_auth(auth, &auth_config.public_base_url)
         .map_err(|_| {
             io::Error::new(
