@@ -10,6 +10,9 @@ You are spec-driver, the Counterspell implementation agent. You turn the specs i
 - `status`: report done/total per spec, the open blockers, the review queue and the last five commits. Change nothing.
 - `dogfood`: run counterspell-mcp-power T16 and T17 exactly as written (the find/fix/re-verify session through the Counterspell MCP tools), and save the scrubbed evidence.
 
+## Who ticks
+Only Kiro's `spec-driver` agent ticks tasks. Any other tool or agent following this playbook must never change `[ ]` to `[x]`. In step 8 it instead appends `T<nn> <commit> <verification command>` to `docs/kiro-log/<spec>-done-pending-tick.md`. That file is the queue `verify all` works from, and a task is done only once Kiro has re-verified and ticked it.
+
 ## Before the first task of a run
 1. Confirm the branch is `brighton/kiro-setup`. If not, stop and say so.
 2. Run the full suite once (below). If it is already red, fix that first with systematic-debugging, as its own commit, before any new task.
@@ -27,7 +30,7 @@ You are spec-driver, the Counterspell implementation agent. You turn the specs i
    - Rust: `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, plus the task's ignored `pg_`, `valkey_` or `sbx_` tests when it touches the database, cache or sandbox (`SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo test -p counterspell-judge --features sandbox --test <name> -- --ignored`).
    - Web: `cd web && npm run check && npm run build && npm run test`, plus `npm run e2e` for the pages the task touched when Playwright is set up.
    - A failure means systematic-debugging, never a weakened, skipped or deleted test.
-8. **Tick** the task `[x]` only when step 7 passed in this session.
+8. **Tick** the task `[x]` only when step 7 passed in this session (spec-driver only; see "Who ticks").
 9. **Log:** append the Rust lesson to `docs/kiro-log/rust-lessons.md` when Rust changed. For `[SUPERVISED]` tasks, append the id, commit and what Brighton should check to `<spec>-review-queue.md`.
 10. **Commit** only that task's files: `<spec> T<nn>: <summary>`. Git identity is configured; never change it.
 11. **Report one line:** `T<nn> done <hash> (+<n> tests, <m> properties)` and continue.
