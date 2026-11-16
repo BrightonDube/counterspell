@@ -152,10 +152,11 @@ pub async fn drain_dead(docker: &Docker, cfg: &SandboxConfig, within: Duration) 
     loop {
         let mut survivors = Vec::new();
         for container in &leftovers {
-            let inspected = docker
-                .inspect_container(&container.id, None)
-                .await
-                .expect("the daemon inspects a managed container");
+            // A container can vanish between listing and inspection when the
+            // daemon finishes a removal — that is the clean outcome.
+            let Ok(inspected) = docker.inspect_container(&container.id, None).await else {
+                continue;
+            };
             if inspected
                 .state
                 .and_then(|state| state.running)
