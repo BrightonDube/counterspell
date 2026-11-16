@@ -74,3 +74,18 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
 - Check:
   - A commit that newly sets `status = "published"` in `packs/*/meta.toml` must say "Approved by Brighton" in its own message. A phrase in another commit does not count.
   - The end-to-end push hook was not run, because it runs the full Rust and web gates and would push if run against a real remote. Only the check is tested.
+
+## PA18: register the publish guard hook
+
+- Commit: see `git log --grep "PA18"`.
+- Files: `.kiro/hooks/pack-publish-guard.json` (created with the `createHook` tool, PreToolUse, matcher `fs_write|str_replace|fs_append`), `.kiro/hooks/pack-validate.json` (matcher widened to `(packs|target/pack-assembly)/.*\.(md|toml|json|py|rs)$`), `scripts/tests/hooks-register-test.sh` (6 checks, using `jq`).
+- Check:
+  - The new hook is active from the next session. Confirm it fires on a real `fs_write` to a `meta.toml` in a session that is not used for other work.
+  - The matcher for `pack-publish-guard` covers `fs_append`. The spec named only `fs_write` and `str_replace`, so this is a small widening.
+
+## PA13: author agent definition (`.kiro/agents/pack-author.json`)
+
+- Commit: see `git log --grep "PA13"`.
+- Tools: `["read", "write"]`. No shell and no code-running tool. The orchestrator runs S9 to S11 instead, so the author never needs a shell.
+- Limits: "one slug" and the forbidden writes (`status = published`, any `approval.toml`, `docs/pack-reviews/`) are stated in the prompt. The publish guard hook (PA16, PA18) blocks the `published` and `approval.toml` writes at run time. Nothing blocks a write to `docs/pack-reviews/` at run time yet. That relies on the prompt alone, which Brighton should decide on.
+- Test: 5 agent checks in `crates/grimoire/tests/pipeline_agents.rs`.

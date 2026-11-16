@@ -150,7 +150,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: a test reads the JSON and asserts that no write tool and no `run_reference`, `find_ghost_input` or `shrink_input` appears in its tools.
   - Rust lesson: none.
 
-- [ ] **PA13 [P] [SUPERVISED] (30 min) Author agent definition**
+- [x] **PA13 [P] [SUPERVISED] (30 min) Author agent definition**
   - Files: `.kiro/agents/pack-author.json`.
   - Tools: read and write limited to one slug (by prompt instruction and by the publish guard), `validate_pack`, and the code-running tools only when a session is started by the operator with approval (D6). It must not have `status` write rights, `approval.toml` write rights, or write access to `docs/pack-reviews/`.
   - Requirements: PIP-1, PIP-2, PIP-39.
@@ -193,7 +193,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: a temporary git repository with two commits: one publishes without the phrase (refused), one publishes with it (allowed). Tests do not push anywhere.
   - Rust lesson: none.
 
-- [ ] **PA18 [S] [SUPERVISED] (20 min) Register the publish guard hook**
+- [x] **PA18 [S] [SUPERVISED] (20 min) Register the publish guard hook**
   - Files: `.kiro/hooks/pack-publish-guard.json` (created with the `createHook` tool, not by hand), `.kiro/hooks/pack-validate.json` (matcher widened to `packs/**` and the assembled tree).
   - Requirements: PIP-43.
   - Depends on: PA16.
