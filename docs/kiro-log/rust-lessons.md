@@ -1429,3 +1429,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `contextlib.redirect_stdin` does not exist. The driver swaps `sys.stdout` and `sys.stdin` in a `@contextmanager` and restores them in `finally`. The Rust side had the same kind of issue: a helper that looks right can still be wrong, so the sandbox test caught it.
 - The Rust test reads stdout as chunks, not lines, so it joins bytes until the first newline before the judge's `parse_answer` runs. A test that trusts one chunk as one line would pass by luck.
 - Clippy's `needless_pass_by_value` pushed `list_of` to take `&Value`. Passing references to `json!` keeps the caller's value intact.
+
+## language-drivers T04: a shared test harness and associated-type aliases (16 Nov 2026)
+
+- Two test files used the same sandbox helpers, so the helpers moved into `tests/sbx_support/mod.rs`. A module under `tests/<dir>/mod.rs` is not compiled as its own test crate, so one harness serves many test files.
+- `type Session = <BollardBackend as Backend>::Session;` names a type that the trait chooses. The alias keeps function signatures readable and needs no extra generic parameters.
+- A trait method is only callable when its trait is in scope. `write_line` failed to compile until `DriverChannel` was imported, which the compiler's message pointed to directly.
+- `include_str!` and `CARGO_MANIFEST_DIR` paths are relative to the file or crate. One extra `../` silently points at the wrong directory, so the first test run is the check that the path is right.

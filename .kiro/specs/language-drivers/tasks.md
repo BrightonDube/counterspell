@@ -27,7 +27,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 1: JavaScript launch driver
 
-- [ ] **T04 [S] (30 min) Implement the Node.js JavaScript driver**
+- [x] **T04 [S] (30 min) Implement the Node.js JavaScript driver**
   - Files: `languages/drivers/javascript/driver.js` and JavaScript driver fixtures/tests.
   - Load `/box/signature.json`, resolve the documented CommonJS function export, parse request lines, invoke scalar and array signatures, await returned Promises, validate JSON-safe results, capture language-level stdout, and emit only `{t,out}` answer lines.
   - Depends on: T01 and T03.
