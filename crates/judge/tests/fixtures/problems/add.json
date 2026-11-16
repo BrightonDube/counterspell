@@ -1,0 +1,23 @@
+{
+  "slug": "add",
+  "version": 1,
+  "signature": {
+    "protocol_version": 1,
+    "function": "add",
+    "parameters": [
+      {"name": "a", "type": {"kind": "int"}},
+      {"name": "b", "type": {"kind": "int"}}
+    ],
+    "returns": {"kind": "int"}
+  },
+  "comparator": "exact",
+  "time_limit_ms": 2000,
+  "tests": [
+    {"ordinal": 1, "is_sample": true,  "args": [2, 3],  "expected": 5},
+    {"ordinal": 2, "is_sample": true,  "args": [10, -4], "expected": 6},
+    {"ordinal": 3, "is_sample": false, "args": [0, 0],  "expected": 0},
+    {"ordinal": 4, "is_sample": false, "args": [-7, -3], "expected": -10},
+    {"ordinal": 5, "is_sample": false, "args": [1000000, 234567], "expected": 1234567}
+  ],
+  "reference_python": "def add(a, b):\n    return a + b\n"
+}

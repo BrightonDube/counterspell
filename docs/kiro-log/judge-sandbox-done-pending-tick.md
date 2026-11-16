@@ -38,3 +38,13 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `cargo test -p counterspell-judge --test model_sandbox_executor`: **PASS** (10 passed).
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok; `cargo test --workspace` all binaries green.
 - Recorded deviations queued in the review entry: `stop_watch()` added to `RunContext`; `Vec<Arc<PreflightState>>` instead of a single state; per-test events emitted after `execute_run` returns rather than streamed; `expires` label = `now + orphan_age`.
+
+## T25 sandbox test harness, fixtures and corpus layout (SUPERVISED)
+
+- Commit: this commit (`judge-sandbox T25: sbx harness, fixtures, corpus layout`).
+- Proving tests: `tests/model_corpus.rs::hostile_files_are_data` (non-ignored, passes); harness verified end-to-end by a temporary smoke test on the rootless daemon (`Accepted`, 5/5 on `add`; temp file removed after the run).
+- Verification run 16 Nov 2026:
+  - `cargo test -p counterspell-judge --test model_corpus`: **PASS** (1 passed).
+  - `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock` smoke run of `run_source`: **PASS** — `add_correct.py` accepted, events `[compiling, test×5]`.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok.
+- Files: `tests/sbx/mod.rs` (harness), `tests/fixtures/problems/{add,sort_list}.json`, `tests/fixtures/solutions/{add_correct,add_wrong,sort_correct,sort_wrong}.py`, `tests/hostile/README.md`. Scenario files in T26+ will live at `tests/sbx_*.rs` top level with `mod sbx;`, matching the existing `sbx_support` convention.
