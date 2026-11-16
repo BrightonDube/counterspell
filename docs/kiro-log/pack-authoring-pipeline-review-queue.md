@@ -29,3 +29,22 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
   - The manifest hash is not computed in Rust. It arrives as text from `sha256sum` in the assembly script (PA07). The one-byte change test is in PA07, as the blockers log records.
   - Ghost `program` values keep the `incorrect/` prefix used in `known_ghosts.toml`. GHC-02 points at that program path.
   - `approval.toml` is parsed with `deny_unknown_fields`, so an approval cannot carry a hidden field.
+
+## PA07: assembly script for the two trees (`scripts/pack-assemble.sh`)
+
+- Commit: see `git log --grep "PA07"`.
+- Files: `scripts/pack-assemble.sh`, `scripts/tests/pack-assemble-test.sh` (17 checks, temporary directories, synthetic canary `CANARY-HIDDEN-pa7`). The real private repository was not used.
+- Shell choices: `set -euo pipefail`; every path is quoted; the slug must match `^[a-z0-9][a-z0-9-]*$` (blocks `../`); symbolic links in either tree are refused; a private file name or folder in the public tree, or the same relative path in both trees, gives `LAY-05` (exit 3); a missing private tree gives `PIP-34` (exit 4). The assembled copy is removed and rebuilt, and only under `PACK_ASSEMBLY_ROOT`.
+- Hashing: `sha256sum` over the sorted manifest. The one-byte change test (PA06 blockers note) is case 4 of the test.
+- Check: the script prints only the content hash on stdout. Diagnostics name codes and file names, never contents.
+- Note: the `packs/` layout uses the public and private roots as the repository roots (`<root>/packs/<slug>`). Confirm this before PA08 and the importer.
+
+## PA12: reviewer agent definition and review skill
+
+- Commit: see `git log --grep "PA12"`.
+- Files: `.kiro/agents/pack-reviewer.json`, `.kiro/skills/pack-review/SKILL.md`, test `crates/grimoire/tests/pipeline_agents.rs` (3 checks).
+- Format: confirmed with the Kiro configuration reference through `introspect`. The `custom-agent-creator` agent described Markdown agents and could not confirm JSON, so its answer was not used. A JSON agent takes `prompt` for the system text, and `tools` takes tags. `tools` is `["read"]` only, so there is no write, shell or code-running tool.
+- Check:
+  - The `validate_pack` MCP tool is not used yet, because counterspell-mcp is not built. The reviewer reads the S9 report that the orchestrator passes in. When the MCP tool exists, add it to `tools` in a new review.
+  - The agent prompt names the checklist and says it has no author notes.
+  - The agent is read-only, and it cannot run any code.

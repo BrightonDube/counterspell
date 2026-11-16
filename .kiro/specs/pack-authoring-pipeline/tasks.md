@@ -142,7 +142,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: PA10 checklist-ID test covers the new author checklist too; the skill names only checks that exist in grimoire.
   - Rust lesson: none.
 
-- [ ] **PA12 [P] [SUPERVISED] (30 min) Reviewer agent definition and review skill**
+- [x] **PA12 [P] [SUPERVISED] (30 min) Reviewer agent definition and review skill**
   - Files: `.kiro/agents/pack-reviewer.json`, `.kiro/skills/pack-review/SKILL.md`.
   - The reviewer's tool list contains read tools and the pure validator (`validate_pack`), and no write tool and no code-running tool. Its prompt names the checklist and the output format (scores, findings with IDs and pointers, no quoted hidden values). It states that it has no author notes.
   - Requirements: PIP-2, PIP-22, PIP-38, PIP-41.
