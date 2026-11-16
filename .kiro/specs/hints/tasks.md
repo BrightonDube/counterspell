@@ -15,7 +15,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 0: shared types and the authored ladder
 
-- [ ] **G1 [P] (25 min) Parse the authored ladder in `counterspell-grimoire`**
+- [x] **G1 [P] (25 min) Parse the authored ladder in `counterspell-grimoire`**
   - Files: `crates/grimoire/src/hints.rs`, `crates/grimoire/src/lib.rs` (re-export only).
   - Add `AuthoredLadder` with `parse(toml_or_yaml_section)` returning exactly four rungs in order 1 to 4. Reject a missing, duplicate or extra rung.
   - Requirements: R1.1.

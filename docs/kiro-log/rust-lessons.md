@@ -1308,3 +1308,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 
 - `serde_json::Value` reads an arbitrary JSON file without a struct. Indexing with `definition["tools"]` returns a `Value` that is `Null` when the key is missing, and `as_array()` then returns `None`. Using `expect` on that in a test turns a missing key into a clear message.
 - The forbidden tool list is a `const` array. `contains` checks membership, so adding a new forbidden tool is a one-line change.
+
+# Rust lesson: hints G1
+
+- An `enum` with one variant per failure (`Count`, `RungOrder`, `Parse`) lets the caller `match` each case. The compiler then reminds you when a new case is added.
+- `Result` returns bad author input as a value. A panic would stop the whole validator for one bad file, so the error travels upward with `?` and `map_err`.
+- `<[String; 4]>::try_from(vec)` checks the length when it runs and hands the vector back on failure, so no `unwrap` is needed.
