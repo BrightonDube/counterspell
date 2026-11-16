@@ -48,3 +48,11 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
   - The `validate_pack` MCP tool is not used yet, because counterspell-mcp is not built. The reviewer reads the S9 report that the orchestrator passes in. When the MCP tool exists, add it to `tools` in a new review.
   - The agent prompt names the checklist and says it has no author notes.
   - The agent is read-only, and it cannot run any code.
+
+## PA15: review digest and routing script (`scripts/pack-review-digest.sh`)
+
+- Commit: see `git log --grep "PA15"`.
+- Files: `scripts/pack-review-digest.sh`, `scripts/tests/pack-review-digest-test.sh` (7 checks).
+- Subcommands: `prepare` copies the assembled pack, the checklist and the reports into `target/pack-review/<slug>/input`, which holds hidden files and stays under the git-ignored `target/`. It prints only that path. `publish-summary` runs the `SUM-01` scan and writes to `docs/pack-reviews/` only when the scan is clean.
+- Check: the scan looks for fixed tokens (`hidden.toml`, `generator.toml`, `known_ghosts.toml`, `approval.toml`, `retired-values.toml`, `reference/`, `incorrect/`, `/case/`, `CANARY-`). It reports the code `SUM-01` and never the matched line. This is a first filter. A reviewer still reads each summary.
+- PA14 check: the template and the README pass `publish-summary`.
