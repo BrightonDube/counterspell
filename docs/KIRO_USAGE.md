@@ -446,3 +446,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-16 02:47-02:49 SAST: 36-pack-authoring-pipeline-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-pack-authoring-pipeline-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0247-36-pack-authoring-pipeline-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.07 (credits used now 3636.77/4000).
+
+### 2026-11-16 02:55-02:58 SAST: 33-starter-pack-hardening-v2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-33-starter-pack-hardening-v2.md`. Transcript: `docs/kiro-log/2026-11-16T0255-33-starter-pack-hardening-v2.log`. Exit 0.
+- Credits used (from /usage): 2.54 (credits used now 3639.86/4000).
