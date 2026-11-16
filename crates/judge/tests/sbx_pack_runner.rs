@@ -62,6 +62,30 @@ fn signature(pack: &Path) -> Value {
     signature_descriptor(&record).expect("the wire signature serialises")
 }
 
+/// Reads a real pack's runner sources from disk: `reference/solution.py`
+/// under [`REFERENCE_SOURCE`] and every `incorrect/` file under its path.
+fn real_sources(pack: &Path) -> BTreeMap<String, String> {
+    let mut sources = BTreeMap::new();
+    sources.insert(
+        REFERENCE_SOURCE.to_string(),
+        std::fs::read_to_string(pack.join("reference/solution.py"))
+            .expect("the pack reference reads"),
+    );
+    for entry in std::fs::read_dir(pack.join("incorrect")).expect("incorrect/ reads") {
+        let entry = entry.expect("an incorrect/ entry");
+        let name = entry.file_name();
+        let Some(name) = name.to_str() else { continue };
+        if !entry.file_type().is_ok_and(|kind| kind.is_file()) {
+            continue;
+        }
+        sources.insert(
+            format!("incorrect/{name}"),
+            std::fs::read_to_string(entry.path()).expect("an incorrect program reads"),
+        );
+    }
+    sources
+}
+
 /// A daemon client, test config and a runtime to hold the runner's handle.
 struct Daemon {
     runtime: Runtime,
@@ -188,6 +212,26 @@ fn pack_runner_bench_returns_sized_pairs() {
         "the sizes pass through in order"
     );
     drop(runner);
+    daemon.drain();
+}
+
+/// T20's verify: the same checks `sandbox_fake.rs` proves with a model runner
+/// must pass against the real Python files through the real sandbox — every
+/// starter pack clean under `grimoire::validate_sandbox`.
+#[test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
+fn starter_packs_pass_sandbox_checks_with_the_real_runner() {
+    let daemon = Daemon::connect();
+    for slug in ["count-pairs", "diagonal-total", "longest-run-length"] {
+        let dir = sbx::repo_root().join("packs").join(slug);
+        let mut runner = daemon.runner(real_sources(&dir), &signature(&dir));
+        let report = counterspell_grimoire::validate_sandbox(&dir, &mut runner)
+            .unwrap_or_else(|fault| panic!("{slug}: sandbox fault: {fault:?}"));
+        assert!(
+            !report.has_errors(),
+            "{slug}: sandbox checks reported errors: {report:?}"
+        );
+    }
     daemon.drain();
 }
 
