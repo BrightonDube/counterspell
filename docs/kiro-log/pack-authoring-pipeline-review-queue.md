@@ -56,3 +56,12 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
 - Subcommands: `prepare` copies the assembled pack, the checklist and the reports into `target/pack-review/<slug>/input`, which holds hidden files and stays under the git-ignored `target/`. It prints only that path. `publish-summary` runs the `SUM-01` scan and writes to `docs/pack-reviews/` only when the scan is clean.
 - Check: the scan looks for fixed tokens (`hidden.toml`, `generator.toml`, `known_ghosts.toml`, `approval.toml`, `retired-values.toml`, `reference/`, `incorrect/`, `/case/`, `CANARY-`). It reports the code `SUM-01` and never the matched line. This is a first filter. A reviewer still reads each summary.
 - PA14 check: the template and the README pass `publish-summary`.
+
+## PA16: publish guard, pack-code shell rule and validate hook extension
+
+- Commit: see `git log --grep "PA16"`.
+- Files: `scripts/kiro-hooks/pack-publish-guard.sh` (new), `scripts/kiro-hooks/dangerous-shell.sh` (one rule added), `scripts/kiro-hooks/pack-validate.sh` (private-name refusal added), `scripts/tests/pack-publish-guard-test.sh` (10 checks).
+- Check:
+  - The guard reads the `path` field of the event, so a doc that mentions `approval.toml` is allowed. Confirm the real hook payload uses a `path`, `filePath` or `target` key. The test uses that shape, and the real format was not inspected.
+  - The shell rule blocks `python`, `python3` and `node` on `packs/` or `pack-assembly/` paths (PIP-38).
+  - The validate hook refuses a private file name under `packs/` with `LAY-05` before any check runs.

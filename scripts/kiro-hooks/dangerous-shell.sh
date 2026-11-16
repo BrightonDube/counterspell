@@ -31,5 +31,10 @@ if grep -Eiq -- 'curl[^[:cntrl:]]+[|][[:space:]]*(sh|bash)([[:space:]]|$)' <<< "
   printf '%s\n' 'blocked: piping curl directly into a shell is not allowed'
   exit 2
 fi
+# Pack code (reference, incorrect programs, generators) runs only in the judge sandbox (PIP-38).
+if grep -Eiq -- '(^|[^[:alnum:]_])(python3?|node)[[:space:]]+[^[:cntrl:]]*(packs/|pack-assembly/)' <<< "$event"; then
+  printf '%s\n' 'blocked: pack code runs only in the judge sandbox, never as a host command (PIP-38)'
+  exit 2
+fi
 
 exit 0
