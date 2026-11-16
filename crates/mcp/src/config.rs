@@ -6,7 +6,7 @@
 
 use counterspell_judge::sandbox::daemon::{validate_socket_path, SocketPathError};
 use std::fmt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// The environment variable that names the sandbox-only daemon socket. The judge reads the same name.
 pub const SANDBOX_SOCKET_VAR: &str = "SANDBOX_DOCKER_SOCKET";
@@ -46,9 +46,35 @@ pub fn sandbox_socket(raw: Option<&str>) -> Result<PathBuf, ConfigError> {
     }
 }
 
+/// Finds the workspace root: the nearest directory at or above `start` whose `Cargo.toml`
+/// declares a `[workspace]`. A Power launched from `kiro-power/` therefore still finds the repository.
+#[must_use]
+pub fn workspace_root(start: &Path) -> Option<PathBuf> {
+    start
+        .ancestors()
+        .find(|dir| {
+            std::fs::read_to_string(dir.join("Cargo.toml"))
+                .is_ok_and(|text| text.contains("[workspace]"))
+        })
+        .map(Path::to_path_buf)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn the_workspace_root_is_found_from_a_nested_directory() {
+        let nested = Path::new(env!("CARGO_MANIFEST_DIR")).join("src");
+        let root = workspace_root(&nested).expect("the repository is a workspace");
+        assert!(root.join("crates").is_dir());
+        assert!(root.join("Cargo.toml").is_file());
+    }
+
+    #[test]
+    fn a_directory_outside_any_workspace_has_no_root() {
+        assert_eq!(workspace_root(Path::new("/")), None);
+    }
 
     #[test]
     fn a_missing_sandbox_socket_is_not_configured() {
