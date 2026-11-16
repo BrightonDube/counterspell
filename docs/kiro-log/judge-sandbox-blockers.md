@@ -132,3 +132,9 @@ The pinned Python and Node images are pulled onto the rootless sandbox daemon, a
   - Commit 0d94d99 (language-drivers T02) set `enabled = true` for JavaScript. The file header and brighton-decisions (15 and 16 Nov) say JavaScript stays disabled until its driver exists. I did not change `languages.toml`, because it belongs to language-drivers.
   - Unblock: language-drivers T03 and T04 (add `drivers/python/driver.py` and `drivers/javascript/driver.js`), or Brighton's decision to disable JavaScript again.
 - **Not ticked, waiting on real runs:** T22 (probe runner, `PreflightState`, `preflight` command, `sbx_preflight_*`), T23 (sweeper needs a list-containers method on `Backend`; that is a T14 trait change, so it needs a decision), and T24 (needs run-lifecycle wiring and a driver).
+
+## T36 (boundary tests) not started: needs a decision
+
+- Checks 1 to 4 and 6 need no new crate. Check 1 can parse `Cargo.lock` as text. Check 2 must look for `use bollard` and `bollard::` in code, not doc comments (`backend.rs` mentions bollard only in docs; `mod.rs` declares `pub mod bollard_backend`).
+- Check 5 (`docker-compose.yml`) needs a YAML parser. T36 names a "YAML dev-dependency" but no crate, and `Cargo.lock` has no YAML crate. Brighton or the next run must choose one (licence checked with `cargo deny`). `serde_yaml` is archived, so do not use it by default.
+- Unblock: pick the YAML dev-dependency. Then T36 can be written and ticked.
