@@ -4,7 +4,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 0: decisions and contracts
 
-- [ ] **T01 [S] (20 min) Confirm external schemas and dependency versions**
+- [x] **T01 [S] (20 min) Confirm external schemas and dependency versions**
   - Files: `.kiro/specs/counterspell-mcp-power/design.md` only if decisions need recording; later `Cargo.toml`/lockfile during implementation.
   - Verify the official `rmcp` release/features, its stdio server API, the Agent Plugins `plugin.json`/`mcp.json` schema, and the supported Power working-directory syntax.
   - Preserve: six-package workspace, official Rust SDK, Apache-2.0-compatible licensing, and the exact six tool names.
