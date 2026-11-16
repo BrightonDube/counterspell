@@ -50,3 +50,23 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - Commit: `a8c72ba`.
 - `catalogue::languages::get_languages` clones `state.languages.entries()` into `LanguageSummary { id, display_name, max_source_bytes }` inside `{"languages": [...]}` — the response never shares the `Arc<LanguageCatalog>`; disabled stretch languages (java, cpp) are never in the catalogue so they cannot appear. `seams::Language` gained `display_name`; `LanguageCatalog` gained `entries()`.
 - Proving tests: `tests/catalogue_api.rs` — `launch_catalogue_lists_exactly_python_and_javascript` (ids, plus java/cpp absent), `language_keys_match_the_allow_list_exactly`, and `get_languages_returns_the_enabled_languages` over the real router (200, exact key set per entry). 12/12 tests pass; `cargo clippy -p counterspell-server --all-targets` clean.
+
+
+## C19b refused public-only import and approval-gate tests
+
+- Commit: `8af8074`. Fixtures under `crates/judge/tests/fixtures/c19b/` (published `add-one` pack + `lonesome` with no private part; canary strings only; `approval.toml` written per-test with the recomputed manifest hash).
+- `tests/pg_catalogue_private_tree_required.rs` (2 pg tests, passing): bare `import` exits 2 with every catalogue table at zero rows; a private root missing `lonesome` refuses it (`private_part_missing`) while `add-one` is created end-to-end — zero rows for the refused slug.
+- `tests/pg_catalogue_approval_gate.rs` (3 pg tests, passing): missing approval -> `approval_missing`; wrong `pack_version` and hash mismatch -> `approval_mismatch`, each through the real binary with zero writes. The in-process test drives the production order (`check_approval` before `validate_sandbox`) with a counting `PackRunner`: 0 calls across all refusals, then `Validated` with calls > 0 once the gate opens.
+- Verified live: `cargo test -p counterspell-judge --test pg_catalogue_private_tree_required --test pg_catalogue_approval_gate -- --ignored` -> 5/5 pass.
+
+## C34 operator runbook
+
+- Commit: `30cc2df`. `docs/catalogue-operations.md` names every command (import, validate-sandbox, publish, unpublish, list, seed-dev, seed-demo), both env-var names only, the draft gate, the `pack_version` bump rule, dry-run semantics, the private checkout (CAT-PT14), approval.toml, retired-values.toml and rotation. Linked from `packs/README.md`.
+
+## C36 full database and API pass
+
+- Recorded in `docs/kiro-log/problem-catalogue-verify.md`: judge 65/65, server 29/29. Found and fixed a real regression — `read.rs` decoded the old meta-shape signature while C19 stores the driver-protocol descriptor; `catalogue_no_leak` 500s reproduced it, `0788e1e` decodes the wire shape.
+
+## C37 repo-wide gates
+
+- Recorded in `docs/kiro-log/problem-catalogue-verify.md`: fmt clean, `clippy --workspace --all-targets -D warnings` clean, `cargo test --workspace` 1469 passed / 0 failed, `cargo deny check licenses` ok (one unused-allowance note, not a rejection).
