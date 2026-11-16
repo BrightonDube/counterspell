@@ -107,3 +107,14 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
     - `sbx_s24`: stop fired while the run's container was live on the daemon → `ExecError::Stopped`, container killed+removed inside cleanup budget + 5 s.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (75 binaries, 0 failed).
 - The victim is a real `cargo` example binary built by the test (`required-features = ["sandbox", "testkit"]`), spawned with `std::process::Command` — scoped `#[allow(clippy::disallowed_methods)]` since the repo lint bans host process spawn in judge code (the spec mandates `Child::kill` for S16).
+
+## T32 — concurrency scenarios S18, S19 (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T32: concurrency scenarios`).
+- Files: `tests/sbx_concurrency.rs`, `tests/sbx/mod.rs` (`shared_executor`, `execute_on`, `sample_managed_peak`/`ManagedPeak`).
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`, `--test-threads=1`:
+  - `sbx_concurrency -- --ignored`: **PASS 2/2 in 55 s** —
+    - `sbx_s18`: fork bomb + `add_correct` concurrently through one executor → good run `Accepted` in 782 ms, bomb contained (2.98 s, never accepted); `peak_running=2`.
+    - `sbx_s19`: six runs through one executor (`max_containers=4`) with a 200 ms daemon sampler → `peak_running=4` = limit, `peak_listed=4`; batch 8.75 s, per-run walls recorded for the report.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (76 binaries).
+- Interpretation recorded: the semaphore bounds concurrent runs; a killed container can linger listed/running on the daemon past the kill call, so the sampler reports `listed` and `running` peaks separately and the bound is asserted on `running` after a clean-slate `drain_dead`.

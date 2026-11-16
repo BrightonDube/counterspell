@@ -254,6 +254,115 @@ pub async fn run_source(
     }
 }
 
+/// One executor shared by several runs — concurrency scenarios need a single
+/// container semaphore, so two `run_source` calls (two executors) would not do.
+/// Preflight runs once for every enabled language before the executor is built.
+pub async fn shared_executor(
+    docker: &Docker,
+    cfg: &SandboxConfig,
+    catalog: &LanguageCatalog,
+) -> Arc<SandboxExecutor<DirProblemTests, BollardBackend>> {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let mut states = Vec::new();
+    for name in ["python", "javascript"] {
+        if let Some(lang_def) = catalog.get(name).filter(|lang| lang.is_enabled()) {
+            let state = Arc::new(PreflightState::new());
+            let spec =
+                preflight::probe_spec(lang_def, cfg.run_wall_cap, cfg.runtime).expect("probe spec");
+            preflight::refresh(&state, &backend, &spec)
+                .await
+                .expect("the preflight probe runs");
+            assert!(state.passed(), "preflight must pass for {name}");
+            states.push(state);
+        }
+    }
+    Arc::new(SandboxExecutor::new(
+        catalog.clone(),
+        DirProblemTests::new(fixture_dir()),
+        backend,
+        cfg.clone(),
+        states,
+        "sbx-scenario",
+    ))
+}
+
+/// Runs `source` through an already-built executor — for S18/S19 where the
+/// container semaphore must be shared between concurrent runs.
+pub async fn execute_on(
+    executor: &SandboxExecutor<DirProblemTests, BollardBackend>,
+    lang: &str,
+    slug: &str,
+    source: &str,
+    mode: RunMode,
+) -> RunObservation {
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+    let run = RunInput {
+        run_id: RunId::new(),
+        problem_slug: slug.to_owned(),
+        lang: lang.to_owned(),
+        mode,
+        code: source.to_owned(),
+        attempt: 1,
+    };
+    let started = std::time::Instant::now();
+    let outcome = executor.execute(run, ctx).await;
+    RunObservation {
+        outcome,
+        events: log.events(),
+        run_wall: started.elapsed(),
+    }
+}
+
+/// Peak container counts the sampler observed.
+#[derive(Debug, Clone, Copy)]
+pub struct ManagedPeak {
+    /// The most managed containers the daemon ever listed in one sample —
+    /// dead corpses included, since Docker's removal can lag a kill.
+    pub listed: usize,
+    /// The most containers still `running` in one sample — the count the
+    /// container semaphore is actually bound to.
+    pub running: usize,
+}
+
+/// Samples the daemon's managed-container list every `every` until `stop`
+/// fires, reporting the largest listed and running counts seen. Sampling is
+/// out-of-band evidence: it watches the daemon, not anything the runs report.
+pub async fn sample_managed_peak(
+    docker: Docker,
+    cfg: SandboxConfig,
+    every: Duration,
+    mut stop: tokio::sync::watch::Receiver<bool>,
+) -> ManagedPeak {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let mut peak = ManagedPeak {
+        listed: 0,
+        running: 0,
+    };
+    loop {
+        let containers = managed_containers(&backend).await;
+        peak.listed = peak.listed.max(containers.len());
+        let mut running = 0_usize;
+        for container in &containers {
+            // A container removed between the list and the inspect no longer
+            // counts — it cannot be running any more.
+            let inspected = docker.inspect_container(&container.id, None).await;
+            let running_state = inspected
+                .ok()
+                .and_then(|container| container.state)
+                .and_then(|state| state.running)
+                .unwrap_or(false);
+            if running_state {
+                running += 1;
+            }
+        }
+        peak.running = peak.running.max(running);
+        tokio::select! {
+            () = tokio::time::sleep(every) => {}
+            _ = stop.changed() => return peak,
+        }
+    }
+}
+
 /// Starts [`run_source`] on a spawned task and returns its stop sender with the
 /// task handle. Firing `stop` mid-call is how S17's cancel path and S24's stop
 /// scenario reach a live call — the daemon's container list is the out-of-band

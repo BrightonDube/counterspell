@@ -1520,3 +1520,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `required-features` on `[[example]]` keeps the victim out of default builds but still lets `--all-targets --all-features` gates compile it.
 - The repo clippy bans `std::process` in judge code — test-side helpers that the spec itself mandates get a scoped `#[allow(clippy::disallowed_methods)]`, not a lint waiver.
 - `RunOutcome` is not `PartialEq` (FinalResult isn't) — assert with `matches!`.
+
+## judge-sandbox T32: sampling a moving target (16 Nov 2026)
+
+- A `docker ps`-style list counts corpses; a kill's container can report `running` for tens of seconds after the verdict. Peak-concurrency assertions must count `running` state and start from a drained daemon, or leftovers convict the new batch.
+- Inspecting containers between list and inspect races with removal — 404 means "gone", not "fail".
+- A permit semaphore bounds *runs*, not daemon-visible containers: session replacement within one run can transiently show two containers for one run. Assert on running state with the batch's own window.
+- `tokio::spawn` needs owned args (`'static`) — pass `docker.clone()`/`cfg.clone()`, not borrows.

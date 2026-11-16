@@ -148,3 +148,8 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `tests/sbx_recovery.rs`, `examples/sbx_victim.rs`.
 - Brighton to check: (1) the test spawns `cargo build` + the example binary via `std::process::Command` — needed for `Child::kill` (spec-literal) and scoped-allowed against the judge's no-host-process lint; `tokio::process` feature was deliberately not added to the lib. (2) The 60 s bound is measured from the daemon's `created_at`, not wall time. (3) The sweeper-alone proof is arithmetic: `sleep 125` > removal at ≤60 s, so self-expiry could not have fired — no inspection needed. (4) `spawn_source` runs preflight inside the spawned task; run-id name filtering keeps probe containers out of the wait.
 - Verified: 3/3 pass on the rootless daemon.
+
+## T32 (SUPERVISED, judge-sandbox) concurrency on the daemon
+- Code: `tests/sbx_concurrency.rs`.
+- Brighton to check: (1) `list_managed` counts dead corpses too — the first S19 run saw `peak_listed=6/running=5` from an S18 bomb corpse still tearing down; the test now drains leftovers first and asserts on `running` while still reporting `listed`. (2) `peak_running >= 2` proves the runs actually overlapped (serial execution would also satisfy the bound vacuously). (3) Six-run walls are printed for T37's report.
+- Verified: 2/2 pass on the rootless daemon.
