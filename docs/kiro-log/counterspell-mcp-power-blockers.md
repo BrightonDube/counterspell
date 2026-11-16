@@ -22,3 +22,27 @@
 - **Timeout expectation corrected.** A test I wrote expected a timeout ghost. The engine documents that timeouts count only when a target asks for them, and `find_ghost_input` has no target, so the test now expects `NotFound`. This is my own new test, not an existing requirement test, so no `test-change` marker was used.
 - **Review.** I did not start a sub-agent for `requesting-code-review`. Self-review was done against the checklist, with clippy `-D warnings` clean and fmt clean. Minor findings: `config.rs` still has a `#[must_use]` candidate in tests (none outstanding in clippy); `tools.rs` is long (about 900 lines with tests) and could be split into pure and code-running modules.
 - **Sandbox endpoint.** `SANDBOX_DOCKER_SOCKET` is the variable name, matching the judge. The MCP validates it with the judge's guard, which refuses the main daemon socket.
+
+## Run note (16 Nov 2026, attempt 3)
+
+- **T14 still open. The `kiro-scope` deny rule blocked the write again.** The `fs_write` to `.kiro/settings/mcp.json` returned "Blocked by a permission rule (deny fs_write ... Source: kiro-scope)". I did not bypass it with a shell write. Unblock: Brighton allows that path, or creates the file with this content. Command and cwd match the Power (`cwd` is `${workspaceFolder}/kiro-power`, which is unverified in Kiro). `autoApprove` lists only `validate_pack`, `explain_verdict` and `fit_complexity`:
+
+  ```json
+  {
+    "mcpServers": {
+      "counterspell-mcp": {
+        "command": "cargo",
+        "args": ["run", "-q", "--release", "--manifest-path", "../Cargo.toml", "-p", "counterspell-mcp"],
+        "cwd": "${workspaceFolder}/kiro-power",
+        "disabled": false,
+        "autoApprove": ["validate_pack", "explain_verdict", "fit_complexity"]
+      }
+    }
+  }
+  ```
+
+- **T05 and T10 still blocked.** judge-sandbox T20 to T24 are still `[ ]`. The T20 run from 16 Nov reached catalogue load, and the pinned images were pulled at 03:15, so the `sbx_` tests can now be rerun. T24 (`SandboxExecutor`) is still not built, so there is no production runner for T05 to share. The spec says to log this blocker rather than build another spec's runner here.
+- **T11 still open.** It needs Brighton's Kiro Power import test, and the approval-list question above is still open.
+- **T15 still blocked.** The hook `LAY-05`/`PIP-31` and Brighton's 14 Nov decision still conflict on where the hidden reference and incorrect files go. Nothing new was written under `packs/_demo/`.
+- **T16 to T19 still blocked** by T05, T10, T14, T15 and T17. T18 also waits on T14 and T17.
+- No task was ticked this run, because none had its verification met.
