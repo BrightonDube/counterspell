@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Ask which k values make one window, and where the last window starts."
+
+[[hint]]
+rung = 2
+text = "Think about the windows as a list of starting positions, from the first to the last one that still fits."
+
+[[hint]]
+rung = 3
+text = "Make sure the loop that chooses starting positions reaches the last position that still fits."
+
+[[hint]]
+rung = 4
+text = "Check the upper end of the loop range. It may stop one position too early."

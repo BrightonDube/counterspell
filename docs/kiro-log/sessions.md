@@ -331,3 +331,8 @@
  docs/kiro-log/language-drivers-blockers.md |  3 +++
  docs/kiro-log/sessions.md                  | 20 ++++++++++++++++++++
  5 files changed, 39 insertions(+)
+- 2026-11-16T04:12:43Z | model: not reported | last commit: ae9e004 counterspell-mcp-power: record attempt-3 blocker status (T14 write refused by kiro-scope)
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
