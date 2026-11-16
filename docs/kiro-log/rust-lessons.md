@@ -1505,3 +1505,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A `bridge`-networked container on rootless Docker sees `172.17.0.1` (the rootlesskit netns) — it answers TCP RST but does NOT forward to host listeners. The host is reachable only through its LAN IP; slirp's `10.0.2.2` does not exist on this stack.
 - Host-side listeners must bind `0.0.0.0` (not `127.0.0.1`) to see container traffic NATed to the host LAN IP. `host_ip()` discovers it with the UDP-connect route probe — no traffic sent.
 - A network-isolation test without a reachability control proves nothing: 'zero connections' could mean an invisible listener. The trusted control script runs inside a `testkit`-only weakened (`Network`) container and asserts observability first.
+
+## judge-sandbox T30: out-of-band evidence has expected noise (16 Nov 2026)
+
+- `docker diff` on a read-only container is not empty — it lists tmpfs mountpoints and docker's `/etc` bind mounts. Assert against an exact allow-list, not emptiness.
+- `/proc/<pid>/environ` is readable when the exec user shares PID 1's UID — the leak surface is the *container's own* env, so image-level env hygiene matters more than the read path.
+- `clippy::items_after_statements` rejects `const` blocks mid-function; hoist them to file scope.
+- `LIBC.keyctl` does not exist in glibc — `AttributeError`, not `OSError`; probe helpers must catch broadly and prefer raw `libc.syscall(n)` for symbols libc may not wrap.

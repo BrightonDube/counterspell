@@ -86,3 +86,12 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `sbx_network -- --ignored`: **PASS, conclusive** — control reached the listeners via `host.docker.internal` and the host LAN IP (4 attempts recorded), then all six hostile programs added **zero** attempts and were never accepted.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
 - Host-reachability findings (dev daemon): the bridge gateway (`172.17.0.1`) answers RST but does not forward to host listeners; the host is reachable only via its LAN IP — listeners must bind `0.0.0.0` and the test detects the IP with the UDP-connect route probe.
+
+## T30 — filesystem and host-visibility scenarios S13 + S26 (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T30: filesystem and host-visibility scenarios`).
+- Files: `tests/sbx_filesystem.rs`, `tests/hostile/{write_root,write_proc,write_sys,fill_box,big_file,read_host,syscalls_blocked}.py`.
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`, `--test-threads=1`:
+  - `sbx_filesystem -- --ignored`: **PASS 4/4** — all five write/fill programs never accepted; `container_changes` shows only docker-owned entries (`/etc/*` binds + tmpfs mountpoints) after all five ran inside one production-policy container; mount table matches the exact expected set; `read_host` finds only `/proc/self/mounts` and `/proc/1/environ` (image's public build metadata); mount/unshare/ptrace/keyctl all refused.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (74 binaries).
+- Dual-use corpus: `read_host.py` and `syscalls_blocked.py` print `REPORT:` lines when exec'd directly as probe scripts and answer wrongly when judged — one file serves both the hostile run and the out-of-band check.
