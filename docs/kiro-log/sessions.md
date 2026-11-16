@@ -346,3 +346,16 @@
  docs/KIRO_USAGE.md        | 4 ++++
  docs/kiro-log/sessions.md | 2 ++
  2 files changed, 6 insertions(+)
+- 2026-11-16T09:41:25Z | model: not reported | last commit: 467a8ae Add spec-driver custom agent and start/stop launcher
+ | diff stat:
+ .kiro/agents/spec-driver.json | 73 +++++++++++++++++++++++++++++++++++++------
+ docs/kiro-log/sessions.md     |  2 ++
+ 2 files changed, 65 insertions(+), 10 deletions(-)
+- 2026-11-16T09:45:30Z | model: not reported | last commit: 33ea4e6 spec-driver: add verify all
+ | diff stat:
+ docs/kiro-log/sessions.md | 7 +++++++
+ 1 file changed, 7 insertions(+)
+- 2026-11-16T09:53:45Z | model: not reported | last commit: c2425d7 verify all: record results, no ticks
+ | diff stat:
+ docs/kiro-log/sessions.md | 11 +++++++++++
+ 1 file changed, 11 insertions(+)

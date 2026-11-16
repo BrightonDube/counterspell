@@ -95,3 +95,6 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 ## T21 (commit a16d2ad, 16 Nov 2026)
 - Brighton should check the read-back change in `crates/judge/src/sandbox/bollard_backend.rs` (`without_image_env`, `verify_readback`, `check_image`). It drops only variables that the pinned image declares with the same value. Injected or changed variables still fail, and fixed keys are never dropped. Confirm you accept this loosening of the exact environment check.
 - The T21 `sbx_` tests (`sbx_exec_roundtrip`, `sbx_tar_delivery`, `sbx_kill_remove_confirms_absence`, `sbx_oom_counter_visible`) passed on the rootless sandbox daemon (`/run/user/1000/docker.sock`) on 16 Nov 2026.
+
+## T20 verified on the rootless daemon (16 Nov 2026)
+- `sbx_create_readback_matches` now passes on the rootless sandbox daemon (`/run/user/1000/docker.sock`): the drivers exist (`languages/drivers/python/driver.py`, `languages/drivers/javascript/driver.js`), cgroup cpuset/io delegation is applied, and both pinned images are on the daemon. Tmpfs option echo and `pid_mode` `""` held on the real daemon — the two behaviours the entry above asked the real test to confirm.
