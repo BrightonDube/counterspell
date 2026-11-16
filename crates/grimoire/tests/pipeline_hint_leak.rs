@@ -145,6 +145,32 @@ fn a_fenced_block_of_three_lines_is_allowed() {
 }
 
 #[test]
+fn a_value_written_with_other_spacing_is_still_a_match() {
+    let rungs = owned(&["Check the case where the answer is [0,1] here."]);
+    let sample = owned(&[]);
+    let hidden = owned(&["[0, 1]"]);
+    let ghost = owned(&[]);
+
+    let diagnostics = check_rungs(&rungs, &fixture_values(&sample, &hidden, &ghost));
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].pointer, "hint rung 1 matches hidden value 1");
+}
+
+#[test]
+fn a_value_in_another_letter_case_is_still_a_match() {
+    let rungs = owned(&["Compare with ABC before you return."]);
+    let sample = owned(&[]);
+    let hidden = owned(&["abc"]);
+    let ghost = owned(&[]);
+
+    let diagnostics = check_rungs(&rungs, &fixture_values(&sample, &hidden, &ghost));
+
+    assert_eq!(diagnostics.len(), 1);
+    assert_eq!(diagnostics[0].code, "HNT-03");
+}
+
+#[test]
 fn the_report_never_contains_the_leaked_value() {
     let canary = "CANARY-HIDDEN-pa5";
     let rungs = owned(&["The answer looks like CANARY-HIDDEN-pa5 here."]);

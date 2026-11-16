@@ -56,11 +56,31 @@ pub fn check_rungs(rungs: &[String], values: &HiddenValues<'_>) -> Vec<Diagnosti
     diagnostics
 }
 
-/// Returns `true` when `value` appears in `text` with no letter or digit directly before or after it.
+/// Returns `true` when `value` appears in `text`, ignoring letter case.
+///
+/// A plain word or number must be a whole token, with no letter or digit directly before or after it.
+/// A value with punctuation (for example a JSON list) may also be written with other spacing,
+/// so the spaces are removed from both sides before the comparison.
 fn contains_token(text: &str, value: &str) -> bool {
-    if value.is_empty() {
+    if value.trim().is_empty() {
         return false;
     }
+    let text = text.to_lowercase();
+    let value = value.to_lowercase();
+    if has_whole_token(&text, &value) {
+        return true;
+    }
+    if value
+        .chars()
+        .any(|character| !character.is_alphanumeric() && !character.is_whitespace())
+    {
+        return without_spaces(&text).contains(&without_spaces(&value));
+    }
+    false
+}
+
+/// Returns `true` when `value` appears in `text` with no letter or digit directly before or after it.
+fn has_whole_token(text: &str, value: &str) -> bool {
     text.match_indices(value).any(|(start, matched)| {
         let before_is_word = text[..start]
             .chars()
@@ -72,6 +92,13 @@ fn contains_token(text: &str, value: &str) -> bool {
             .is_some_and(char::is_alphanumeric);
         !before_is_word && !after_is_word
     })
+}
+
+/// The text with every whitespace character removed.
+fn without_spaces(text: &str) -> String {
+    text.chars()
+        .filter(|character| !character.is_whitespace())
+        .collect()
 }
 
 /// The number of lines in the longest fenced block of `rung`. The fence lines themselves are not counted.

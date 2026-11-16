@@ -118,5 +118,19 @@ status=0
 "$assemble" >/dev/null 2>&1 || status=$?
 if [[ "$status" -eq 2 ]]; then pass; else fail "usage: status $status"; fi
 
+# Case 11: approval.toml names the content hash, so it is left out of the manifest. Changing it
+# must not change the content hash, or an approval could never match its own tree (review I1).
+make_trees approval
+run_assemble approval demo "$tmp/approval/public" "$tmp/approval/private"
+before_approval="$out"
+printf 'slug = "demo"\ncontent_sha256 = "%s"\n' "$before_approval" > "$tmp/approval/private/packs/demo/approval.toml"
+run_assemble approval demo "$tmp/approval/public" "$tmp/approval/private"
+if [[ "$status" -eq 0 && "$out" == "$before_approval" ]] \
+    && ! grep -q "approval.toml" "$tmp/approval/assembly/demo.manifest"; then
+    pass
+else
+    fail "approval.toml changed the content hash or was listed in the manifest"
+fi
+
 printf 'pack-assemble tests: %d passed, %d failed\n' "$passed" "$failed"
 [[ "$failed" -eq 0 ]]

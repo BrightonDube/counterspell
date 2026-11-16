@@ -103,3 +103,25 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
 - Files: `.kiro/pipeline/rotation.md`.
 - Not ticked: the task's verification is a reviewer's check against PIP-35. Brighton or a reviewer should read the plan and confirm it. The plan does not run anything.
 - Check: the plan lists the three starter packs and their current public hidden parts. It records that moving those files is a later step after approval.
+
+## End-of-wave review (semantic review of f54c631..HEAD) and fixes
+
+Fixed in this pass (each with a test that failed first):
+- I1: `pack-assemble.sh` hashed `approval.toml` into its own manifest, so an approval could never match. The manifest now leaves `approval.toml` out. Test: case 11 in `pack-assemble-test.sh`.
+- C1: the publish guard matched `approval.toml` and `published` case-sensitively and only with double quotes. It now lower-cases the event and accepts single or double quotes. Tests added to `pack-publish-guard-test.sh`.
+- I2: the private-name refusal ran only after a save (`PostFileSave`). The publish guard (`PreToolUse`) now refuses a write of `hidden`, `generator`, `known_ghosts` or `retired-values` under `packs/`.
+- C2: shell commands could write `published` or touch `approval.toml`. `dangerous-shell.sh` now refuses shell commands that name `approval.toml`, and shell writes that set `published` in a `meta.toml`.
+- I3: the summary scan checked only fixed tokens. `pack-review-digest.sh publish-summary` now also refuses any value (four characters or more) from `PACK_HIDDEN_VALUES_FILE`. Test added.
+- I4: the hint leak check was case- and spacing-sensitive. It now ignores case, and for values with punctuation it ignores spacing. Tests added.
+- Minor: the duplicate `Diagnostic` import in `originality.rs` was tidied (one import, at the top).
+
+Open for Brighton (not changed):
+- **C2 (decision needed).** The "Approved by Brighton" phrase is not an identity control. Any commit can carry it. A stronger gate needs a decision: require a signed commit from Brighton's key (`git log --format=%G?` must show `G`), or check the author against an allow-list. Until then, the merged pull request and `approval.toml` are the real gate.
+- **Hidden values shorter than four characters** are not checked by the summary scan. A reviewer must read each summary.
+- **Publish guard coverage.** The guard reads the path key `path`, `filePath` or `target`. Confirm the real Kiro hook payload uses one of those keys. The repo does not show the payload shape.
+
+Minor, not changed:
+- `approval.rs` `check_publish` compares only the hash. It does not check `approval.slug` or `pack_version` against the pack's `meta.toml`. Add when the importer (problem-catalogue C17) is built.
+- `pack-publish-check.sh` misses single-quoted TOML (`status = 'published'`) and would match `status = "published"` inside a TOML comment.
+- `pre-push.sh` uses `--not --remotes` for a new branch, so commits already on any remote-tracking branch are skipped.
+- `hint_leak.rs` flags short values such as `3` in ordinary rungs. This is documented as a false-positive cost.

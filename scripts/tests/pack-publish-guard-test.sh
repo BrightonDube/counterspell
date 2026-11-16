@@ -67,5 +67,25 @@ status=0
 bash "$pack_validate" "packs/count-pairs/hidden.toml" >/dev/null 2>&1 </dev/null || status=$?
 if [[ "$status" -eq 2 ]]; then pass; else fail "hidden.toml under packs/ was not refused: $status"; fi
 
+# Review C1: the approval name and the published value are matched without regard to case or quote style.
+expect "upper-case APPROVAL.TOML is blocked" 2 "$publish_guard" \
+    '{"tool":"fs_write","path":"private/packs/count-pairs/APPROVAL.TOML","content":"x"}'
+expect "single-quoted published is blocked" 2 "$publish_guard" \
+    '{"tool":"fs_write","path":"packs/count-pairs/meta.toml","content":"status = '\''published'\''\n"}'
+
+# Review I2: a private file name is refused before it is saved under packs/, not after.
+expect "hidden.toml write under packs/ is blocked before the save" 2 "$publish_guard" \
+    '{"tool":"fs_write","path":"packs/count-pairs/hidden.toml","content":"x"}'
+
+# Review C2: shell commands that write a published status or touch approval.toml are refused.
+expect "shell append of published to meta.toml is blocked" 2 "$dangerous_shell" \
+    '{"tool":"execute_bash","command":"echo published >> packs/count-pairs/meta.toml"}'
+expect "shell sed of published into meta.toml is blocked" 2 "$dangerous_shell" \
+    '{"tool":"execute_bash","command":"sed -i s/draft/published/ packs/count-pairs/meta.toml"}'
+expect "shell copy onto approval.toml is blocked" 2 "$dangerous_shell" \
+    '{"tool":"execute_bash","command":"cp /tmp/x approval.toml"}'
+expect "shell read of meta.toml is allowed" 0 "$dangerous_shell" \
+    '{"tool":"execute_bash","command":"cat packs/count-pairs/meta.toml"}'
+
 printf 'pack-publish-guard tests: %d passed, %d failed\n' "$passed" "$failed"
 [[ "$failed" -eq 0 ]]

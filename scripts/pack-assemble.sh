@@ -83,7 +83,8 @@ if ! cp -R -- "$public_dir/." "$assembled/" || ! cp -R -- "$private_dir/." "$ass
 fi
 
 # The manifest: every file's SHA-256, sorted by path. Its own hash is the content hash.
-if ! (cd "$assembled" && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum) > "$manifest"; then
+# approval.toml is left out: it names this hash, so hashing it would make an approval impossible to match.
+if ! (cd "$assembled" && find . -type f ! -name approval.toml -print0 | LC_ALL=C sort -z | xargs -0 -r sha256sum) > "$manifest"; then
     die 5 "hashing the assembled tree for $slug failed"
 fi
 content_sha256="$(sha256sum -- "$manifest" | cut -d' ' -f1)"
