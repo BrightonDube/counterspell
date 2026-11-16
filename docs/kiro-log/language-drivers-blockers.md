@@ -177,3 +177,19 @@ I did not build a separate-container bench, because it would not match the spec.
 5. **Minor: early Python failures.** Two early failures were fixed: a driver bug (`contextlib.redirect_stdin` does not exist) and a harness race in the missing-function test, which now reads stderr instead of sending a call. Both are recorded in the T03 note above.
 
 **Unblock, in order:** (a) Brighton decides the `DriverChannel` stop primitive, or names another route to end the normal driver in the same container. (b) judge-sandbox T24 (`ProblemTests`). (c) Brighton reviews the packs (grimoire-packs T28). (d) Brighton reviews the read-back fix above.
+
+## Run stop point (attempt 2, 16 Nov 2026): nothing ticked, no code changed
+
+- **Checked before writing anything.**
+  - `DriverChannel` (`crates/judge/src/sandbox/backend.rs`) still has only `write_line` and `next_event`. There is no stop, close-input or kill primitive for the normal driver, so T08's "stop the normal driver, start a bench driver in the same container" cannot be built without a judge-sandbox interface change.
+  - judge-sandbox T24 (`ProblemTests`, `SandboxExecutor`, judge wiring) is still `[ ]`. T08 also needs bench inputs from `ProblemTests`.
+  - Every starter pack (`count-pairs`, `diagonal-total`, `longest-run-length`) is still `status = "draft"`. Brighton has not run grimoire-packs T28. T10 needs published packs, and fixtures for draft packs would be guesswork.
+- **T08:** blocked on the two judge-sandbox items above. It is not marked `[BLOCKED]` in tasks.md, so this note records the reason.
+- **T09, T11, T12:** depend on T08 (and T10 for T11 and T12). Not started.
+- **T10:** blocked on grimoire-packs T28 (Brighton publishes the packs).
+- **T13 to T16:** `[stretch]`, skipped this pass. T12 has not passed.
+- **Next start, in order:**
+  1. Brighton or the judge-sandbox owner decides the `DriverChannel` stop primitive, and judge-sandbox T24 lands (`ProblemTests`, `SandboxExecutor`).
+  2. T08 then starts as RED: a bench handoff test that expects two warm-ups, five samples per size, and cleanup on timeout, run on the rootless daemon.
+  3. Brighton publishes the starter packs (grimoire-packs T28). T10 then writes known-correct fixtures for published packs only.
+- **Security note:** no stop primitive was added here. It changes the sandbox security boundary, and the judge-sandbox owner should review it.
