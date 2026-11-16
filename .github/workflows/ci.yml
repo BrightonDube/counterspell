@@ -121,6 +121,27 @@ jobs:
             echo "| $passed | $ignored |"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$passed" -eq 0 ]; then echo "::error::No Rust tests ran. TDD: every change ships with tests."; exit 1; fi
+      - name: Database and Valkey tests (ignored pg_ and valkey_)
+        run: |
+          set -o pipefail
+          cargo test --workspace --all-features --locked -- --ignored pg_ valkey_ 2>&1 | tee "$RUNNER_TEMP/db-test.log"
+          passed=$(grep -oE 'test result: ok\. [0-9]+ passed' "$RUNNER_TEMP/db-test.log" | awk '{s+=$4} END{print s+0}')
+          if [ "$passed" -eq 0 ]; then echo "::error::No database or Valkey tests ran. Check the pg_ and valkey_ test prefixes."; exit 1; fi
+      - name: Release builds carry no test kit
+        run: |
+          set -o pipefail
+          cargo build --release --locked -p counterspell-server -p counterspell-judge -v 2>&1 | tee "$RUNNER_TEMP/release.log"
+          if grep -q 'feature="testkit"' "$RUNNER_TEMP/release.log"; then
+            echo "::error::the testkit feature reached a release build"
+            exit 1
+          fi
+      - name: Upload the definition-of-done report
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: run-lifecycle-dod-report
+          path: target/run-lifecycle/dod-report.json
+          if-no-files-found: error
+          retention-days: 14
 
   coverage:
     name: Rust coverage (cargo-llvm-cov)

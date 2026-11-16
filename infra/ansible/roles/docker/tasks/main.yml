@@ -1,0 +1,61 @@
+---
+# Docker Engine and Compose for the main daemon (deploy-ops R2.6, R4.8).
+
+- name: Create the apt keyring directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: Fetch Docker's apt signing key
+  ansible.builtin.get_url:
+    url: "{{ docker_apt_key_url }}"
+    dest: /etc/apt/keyrings/docker.asc
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Add Docker's apt repository
+  ansible.builtin.apt_repository:
+    repo: "deb [arch=amd64 signed-by=/etc/apt/keyrings/docker.asc] {{ docker_apt_repo_url }} {{ ansible_distribution_release }} stable"
+    filename: docker
+    state: present
+    update_cache: true
+
+- name: Install pinned Docker Engine and Compose plugin
+  ansible.builtin.apt:
+    name:
+      - "docker-ce={{ docker_ce_version }}"
+      - "docker-ce-cli={{ docker_ce_version }}"
+      - "docker-compose-plugin={{ docker_compose_plugin_version }}"
+    state: present
+    allow_downgrade: false
+
+- name: Write the Docker daemon settings with log limits (R4.8)
+  ansible.builtin.template:
+    src: daemon.json.j2
+    dest: /etc/docker/daemon.json
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Restart docker
+
+- name: Let the operator use the main daemon
+  ansible.builtin.user:
+    name: "{{ operator_user }}"
+    groups: docker
+    append: true
+
+- name: Keep the deploy user out of the docker group (G7)
+  ansible.builtin.user:
+    name: "{{ deploy_user }}"
+    groups: []
+    append: false
+
+- name: Start Docker
+  ansible.builtin.systemd:
+    name: docker
+    enabled: true
+    state: started

@@ -1,6 +1,6 @@
 # Requirements: judge-sandbox
 
-Status: **draft for Brighton's review of the trusted/untrusted boundary. Nothing in this spec is implemented, and no task may start until task T00 is signed off.**
+Status: **T00 signed off by Brighton on 14 Nov 2026, with amendments A1 to A3 (see `design.md`, "Review decisions"). Nothing in this spec is implemented yet. Implementation starts at T01.**
 
 ## Purpose
 
@@ -21,7 +21,7 @@ Findings, with the resolution this spec adopts. Items marked ⚠ touch isolation
 | A3 | Both `docs/system-design.md` §6 and the `language-drivers` spec give Python `compile = []`. A syntax error would then surface inside the driver, and the program could pretend to be a "compile error". | Python gets a worker-run compile step (`py_compile`), executed by the worker with a fixed command. The verdict then comes from an exit code the worker observed, never from anything the program printed. ⚠ Changes `languages.toml` relative to the other specs. |
 | A4 | The brief requires digest-pinned images. `language-drivers` says tags are "local/development defaults". | Strict: the loader rejects a tag for any enabled language and there is no override. ⚠ |
 | A5 | §7 says `/box` is `exec` only "where compiled binaries live". Python has none. | Python's scratch space is `noexec,nosuid,nodev`. A per-language flag turns exec on for compiled languages later. |
-| A6 | §7 says "reads at most 1 MB of stdout and 64 KB of stderr". It does not say per what. | Stdout: 1 MiB per call. Stderr: 64 KiB per container session. Either breach kills the container with `output_limit`. |
+| A6 | §7 says "reads at most 1 MB of stdout and 64 KB of stderr". It does not say per what. | Stdout: 1 MiB per call. Stderr: 64 KiB per container session. A stdout breach kills the container with `output_limit`. Stderr over 64 KiB is truncated with a marker and does not change the verdict (amendment A2, 14 Nov 2026). |
 | A7 | "Reaper within 60 s" depends on the sweep interval, not only on the age threshold. | Containers expire by themselves (PID 1 is `sleep <cap + 5 s>`), and the sweeper removes anything older than 40 s every 10 s, so no container outlives about 50 s from creation. Stated and tested as such (R10). |
 | A8 | "Never Accepted for the hostile corpus" is wrong for a program that probes the network, fails, and then returns the right answer. That program deserves Accepted. | Every hostile corpus program is written so that it **cannot** produce a correct answer. Containment is checked out of band (host listener, daemon-reported filesystem changes, kernel counters), never from what the program reports. |
 | A9 | Run events and `test_results` (run-lifecycle) have no "not run" per-test verdict. | Tests that were never executed are omitted from events and `test_results`. The final verdict and the `passed`/`total` counts explain why. Open question 10. |
@@ -135,7 +135,7 @@ THE judge SHALL create every sandbox container with all of the following. A sing
 
 1. THE worker SHALL read the answer stream through a reader that never holds more than 1 MiB plus one chunk of stdout for a call. [P5]
 2. IF a call's stdout exceeds 1 MiB before a newline or in total for that call, THEN THE worker SHALL kill the container and record `output_limit`. [P5, S09, S11]
-3. IF a session's stderr exceeds 64 KiB, THEN THE worker SHALL kill the container and record `output_limit`. [P5, S10]
+3. WHEN a session's stderr exceeds 64 KiB, THE worker SHALL keep the first 64 KiB for display and append a truncation marker. THE worker SHALL keep draining and discarding the rest without storing it, so a program cannot block on a full stderr pipe. THE worker SHALL NOT kill the container and SHALL NOT change the verdict because of stderr alone. THE worker SHALL also keep the last complete stderr line, capped at 4 KiB, so exception-class extraction still sees the final line. [P5, S10] (Amendment A2, 14 Nov 2026: replaces the earlier `output_limit` rule for stderr. Stdout is unchanged.)
 4. THE results SHALL be the same for any way the byte stream is split into chunks. [P5]
 5. THE worker's memory use SHALL stay bounded while a program floods output. [S09]
 
@@ -200,6 +200,8 @@ THE implementation SHALL keep these as separate modules with no shared mutable s
 4. THE sanitiser SHALL cap stored snippets at 64 KiB and event detail fields at 4 KiB each. [P11]
 5. THE judge's logs SHALL contain run id, session id, container id, phase, verdict kind and durations. They SHALL NOT contain source code, test data, program output or stderr. [log test T35]
 6. THE judge's error messages that reach events SHALL come from a fixed table (run-lifecycle `ErrorPayload`). [P12]
+7. THE judge SHALL run every visible (sample) test of a run before any hidden test. A run plan SHALL NOT schedule a visible test after the first hidden test. [P15, S28] (Amendment A1, 14 Nov 2026. The driver keeps state between the tests of one run (open question 17), so a program could remember a hidden input and print it during a later visible test.)
+8. FROM the first hidden test of a run onward, THE judge SHALL NOT show any program output to the user: no stdout, stderr, exception text, sanitised snippet or sample detail for any test executed after the first hidden test. Those tests carry only the verdict and the time. [P15, S28] (Amendment A1.)
 
 ### R14. Pre-sandbox validation contract (VAL-1 to VAL-5)
 
@@ -226,7 +228,7 @@ Browser checks are for feedback only. The API server repeats every check before 
 
 ### R16. Evidence: hostile corpus, properties and honest reporting
 
-1. THE spec SHALL include the model properties P1 to P14 and the real-sandbox scenarios S01 to S27 defined in `design.md`, each tied to a requirement above.
+1. THE spec SHALL include the model properties P1 to P15 and the real-sandbox scenarios S01 to S28 defined in `design.md`, each tied to a requirement above.
 2. EVERY real-sandbox scenario SHALL run only against a daemon that passes the daemon-identity checks of R1, and SHALL refuse to run otherwise. No hostile code SHALL run on the host, including in tests.
 3. EVERY program in the hostile corpus SHALL be unable to return a correct answer, except the explicit good-solution fixtures. For these programs the verdict SHALL never be `accepted`. [S05–S15]
 4. FOR every scenario, THE test SHALL assert the documented limit (verdict set, wall time, container removal) and, where the attack has a side effect, SHALL check it out of band. [S12, S13]

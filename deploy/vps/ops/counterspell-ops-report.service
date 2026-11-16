@@ -1,0 +1,16 @@
+[Unit]
+Description=Counterspell ops report (queue, leases, dead jobs, internal errors, p95)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/counterspell/ops.env
+Environment=OPS_SQL_FILE=/usr/local/share/counterspell/ops-report.sql
+ExecStart=/usr/local/sbin/counterspell-ops-report
+User=root
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

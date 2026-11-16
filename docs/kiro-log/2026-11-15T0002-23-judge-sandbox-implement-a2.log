@@ -1,0 +1,92 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by checking whether design.md contains Brighton's "Review decisions" note, since T00 gates the whole spec.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=68
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+T00 is signed off, and T01 through T19 are ticked. The first open, non-stretch, non-blocked task is T20. T02 is marked BLOCKED for the VPS, so I'll skip it. Next I'll check the repo state and the existing sandbox code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=142
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The last commit already contains T20 code, but T20 is still unchecked. I'll read the blockers file and the existing bollard backend to see what is missing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=110
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T20's only missing piece is its `sbx_create_readback_matches` real-daemon test. The guard blocked that file last time because it allows `#[ignore]` only on `pg_`/`valkey_` tests. I'll read the backend API, then retry the write once so the hook's current message is on record.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=297
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I'll look at the create and remove signatures before writing the real-daemon test.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=82
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The new rules block is only standing constraints, so nothing new is asked of me. I'll continue the judge-sandbox run from T20, where I stopped. First I need the policy constructor and language types for the real-daemon test.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=163
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=52
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the helpers I need. I'll write the real-daemon test with `#[ignore]` and a socket guard, which the spec requires, and see whether the hook accepts it.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=326
+[tool] status: Failed: Write File
+The hook blocked the write, as the last run's notes predicted. I won't bypass it or add a feature gate to get around it. Next I'll check whether T24's dependencies (run-lifecycle T16 and T19) are done, because T24 has fake-backend tests that don't need the blocked marker.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=122
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Every remaining task depends on T20 or T24, and T20's real-daemon test is blocked by the hook. The only unblocked work is the non-test runner, so I'll record this run's stop point in the blockers file and stop there.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=341
+[tool] status: Pending
+[tool] status: Completed
+I stopped at T20 because the PreToolUse guard blocks the real-daemon test it needs. Nothing new is ticked, and no code changed in this run.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T00 to T19 | Already `[x]` in earlier runs | — | — | — |
+| T02 | Skipped (BLOCKED: VPS re-verify) | — | — | — |
+| T20 | Open: real-daemon test blocked by guard | 0 this run (10 model tests already in `d74705c`) | Model tests pass from the previous run. `sbx_create_readback_matches` was not written. | `d74705c` (code only) |
+| T21 to T39 | Not started | — | Dependencies on T20 (and T24 for T24 onward) are open | — |
+
+**Why I stopped:** The guard allows `#[ignore]` only on `pg_*` and `valkey_*` tests. The spec requires `#[ignore]` on `sbx_` tests. I retried the write once and got the same refusal. I did not bypass it, add a feature gate, or write a runtime skip. Every later task depends on T20 or T24, so I could not do unblocked work in order without skipping ahead.
+
+**Blockers:**
+- **Guard vs. spec on `sbx_` tests.** Brighton needs to decide one of two things:
+  1. Allow `#[ignore]` on `sbx_*` tests in the guard, as it already does for `pg_`/`valkey_`. This is my preferred option.
+  2. Approve another gating method in writing. A runtime skip is not acceptable, because it would pass silently without the socket.
+- **Unblocks:** T20 to T24 and T25 to T33, then T34 to T39.
+- **Recorded:** `docs/kiro-log/judge-sandbox-blockers.md`.
+- **Dependencies met:** run-lifecycle T16 and T19 are already ticked.
+
+**Review queue:** No new `[SUPERVISED]` task was completed, so nothing was added to `docs/kiro-log/judge-sandbox-review-queue.md`.
+
+**Human steps:** T02 and T03 stay with `docs/kiro-log/judge-sandbox-human-steps.md`. Nothing new was added.
+
+**Open Minor findings (from the T20 review, not fixed):**
+- The read-back assumes the daemon echoes the tmpfs option string unchanged. The real-daemon test must confirm this.
+- `host_resources` includes inspect `Mounts`, so an image-declared `VOLUME` counts as a host resource. This is fail-closed. Brighton should confirm it.
+- The T16 test that changed for R8.4 (extra output is now a protocol violation) still needs Brighton's confirmation.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=193
+

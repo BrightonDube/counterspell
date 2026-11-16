@@ -18,7 +18,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 0: core contracts and query foundations
 
-- [ ] **T01 [S] (25 min) Confirm feature seams and dashboard response types**
+- [x] **T01 [S] (25 min) Confirm feature seams and dashboard response types**
   - Files: `crates/server/src/dashboard/{mod.rs,types.rs,errors.rs}`, and the existing server router/seam files only where route registration requires it.
   - Add the dashboard module boundary, authenticated handler input, response structs, stable empty response shape, and error mapping for `unauthenticated`, `dashboard_unavailable`, and safe internal failures.
   - Reuse the existing `CurrentUser`/`UserResolver` seam and the run-lifecycle lifecycle/verdict split. Do not introduce a second auth extractor or a user-id request field.
@@ -27,7 +27,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: auth and run-lifecycle seams being available; no database migration required.
   - Rust lesson: explain how a typed response struct makes the JSON contract explicit and how `Result` carries safe handler failures.
 
-- [ ] **T02 [P] (25 min) Add only the required dashboard indexes**
+- [x] **T02 [P] (25 min) Add only the required dashboard indexes**
   - Files: `migrations/<timestamp>_dashboard_indexes.sql` if an inspection shows the run-lifecycle/catalogue indexes are insufficient.
   - Add user/finished-time, user/problem/verdict, and user/created-time indexes only when absent. Do not create a materialised dashboard table or duplicate existing indexes.
   - Verify: migration applies twice through SQLx; `pg_indexes` shows the expected index coverage; the migration contains no secrets and no user data.
@@ -36,7 +36,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: run-lifecycle and catalogue migrations being known.
   - Rust lesson: none for SQL-only work; in the task reply explain how an index narrows reads without becoming a second source of truth.
 
-- [ ] **T03 [S] (30 min) Implement the one-query dashboard read model**
+- [x] **T03 [S] (30 min) Implement the one-query dashboard read model**
   - Files: `crates/server/src/dashboard/query.rs`, plus a small test fixture module if needed.
   - Implement one parameterised PostgreSQL query/function with ownership-filtered CTEs for accepted problems, solved counts, UTC activity dates/streak inputs, weak concepts, ten recent submissions, and up to three suggestions.
   - Start each user-scoped path with the authenticated `UserId` or derive it from an already constrained CTE. Use the catalogue's published problem/concept seam and the run-lifecycle `status = completed` plus `verdict` fields.
@@ -46,7 +46,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T01, T02, run-lifecycle tables, and catalogue schema.
   - Rust lesson: explain borrowing a `UserId` into a SQL query, why parameterisation matters, and how `?` preserves database errors.
 
-- [ ] **T04 [P] (25 min) Add pure streak and recommendation helpers**
+- [x] **T04 [P] (25 min) Add pure streak and recommendation helpers**
   - Files: `crates/server/src/dashboard/recommendations.rs` and/or `streak.rs`.
   - Implement UTC streak calculation for no activity, today, yesterday, gaps, duplicate same-day activity, and old activity. Implement deterministic suggestion ranking, solved/unpublished exclusion, weak-concept reasons, and slug tie-breaks.
   - Keep helpers independent of Axum and PostgreSQL so property/unit tests can cover them directly.
@@ -57,7 +57,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 1: core API and privacy proof
 
-- [ ] **T05 [S] (25 min) Wire `GET /api/dashboard`**
+- [x] **T05 [S] (25 min) Wire `GET /api/dashboard`**
   - Files: `crates/server/src/dashboard/handler.rs`, `dashboard/mod.rs`, and the existing API router registration.
   - Add the authenticated GET route with no user selector. Execute the one-query read model, map it to the response, and return stable JSON errors without SQL details.
   - Ensure a failed database read returns `503 dashboard_unavailable` rather than a partial dashboard. Do not add a Valkey cache in this task.
@@ -66,7 +66,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T01, T03, T04 and existing auth/router seams.
   - Rust lesson: explain Axum extractors, async `Result` handling, and why the handler must not trust browser-supplied ownership data.
 
-- [ ] **T06 [P] (30 min) Add dashboard database isolation and aggregate tests** [SUPERVISED]
+- [x] **T06 [P] (30 min) Add dashboard database isolation and aggregate tests** [SUPERVISED]
   - Files: `crates/server/tests/dashboard.rs` or the existing server integration-test location.
   - Add ignored `pg_` tests with two users and distinct canary slugs/concepts. Prove user A cannot see user B's solved counts, weak concepts, recent submissions, or suggested challenges.
   - Cover duplicate accepted submissions counting once, unfinished/expired/internal-error rows not counting as solved or activity, ten recent rows, and three suggestions excluding solved/unpublished problems.
@@ -75,7 +75,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T03 and T05.
   - Rust lesson: explain test fixture ownership, `Option` for nullable database values, and why canary assertions catch aggregate leakage.
 
-- [ ] **T07 [P] (25 min) Add core API contract and failure tests**
+- [x] **T07 [P] (25 min) Add core API contract and failure tests**
   - Files: `crates/server/tests/dashboard_api.rs` or the existing HTTP test location.
   - Test JSON field names, zero/empty response shape, stable `401` and `503` errors, active submission with no verdict, and safe output that contains no code or hidden-test fields.
   - Verify: tests use the repository's authenticated test resolver and do not call external OAuth, Resend, Valkey, or Docker services.
@@ -83,7 +83,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T05 and the existing server testkit.
   - Rust lesson: explain borrowing a test response body, `serde_json` value ownership, and how stable error codes decouple clients from SQL details.
 
-- [ ] **T08 [S] (30 min) Core freeze-safe checkpoint** [SUPERVISED]
+- [x] **T08 [S] (30 min) Core freeze-safe checkpoint** [SUPERVISED]
   - Files: only implementation fixes required by this checkpoint; no planned feature expansion.
   - Run the dashboard core unit, database, and HTTP tests, plus `cargo fmt --all -- --check`, Clippy with warnings denied, workspace tests, frontend check/build, `cargo deny check licenses`, and `docker compose config` as available in the current repository.
   - Confirm the core API is authenticated, one-query, privacy-tested, deterministic, and free of fabricated data. Confirm the server has no Docker dependency/socket and Valkey remains unused for truth.
@@ -95,7 +95,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 2: core frontend, after API tests are green
 
-- [ ] **T09 [S] (30 min) Build the core dashboard screen**
+- [x] **T09 [S] (30 min) Build the core dashboard screen**
   - Files: `web/src/routes/dashboard/+page.svelte`, `web/src/lib/dashboard/{client.ts,types.ts}`, and small components under `web/src/lib/dashboard/components/`.
   - Fetch `GET /api/dashboard` with the existing cookie session, display solved counts, streak, weak concepts, ten recent submissions, and suggested challenges.
   - Implement loading, no-activity, unauthenticated, retry/error, and active-run states. Do not use fixture values as production data and do not expose code or hidden outputs.
@@ -112,6 +112,12 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Requirements: DASH-1, DASH-7, DASH-8, DASH-9.
   - Depends on: T06, T07, T08, and T09.
   - Rust lesson: explain any Rust fixes made; if no Rust file changes are needed, say so rather than adding an artificial lesson.
+
+- [x] **T19 [optional] [P] (25 min) Orange and poison pumpkins on empty, loading and celebration states**
+  - Files: dashboard empty / loading / streak components under `web/src/lib/dashboard/`, tests, CSS.
+  - Use `art/familiar/jack-o-lantern-orange` on the no-activity empty state, the loading state, and as a small streak or badge accent. Use `art/familiar/jack-o-lantern-poison` only for success or celebration moments (for example a streak milestone or a just-solved prompt), not for errors. WebP stills, explicit size, `loading="lazy"` below the fold, `alt=""`. No ambient looping motion (dashboard rule: no GSAP/ambient motion); reduced motion stays still. Palette tokens only; do not move or delete the files.
+  - Verify: `npm run check && npm run build`; empty, loading and celebration states render without layout shift or raw hex.
+  - Depends on: T09.
 
 ## Wave 3: [stretch] FSRS foundation, only after T08
 

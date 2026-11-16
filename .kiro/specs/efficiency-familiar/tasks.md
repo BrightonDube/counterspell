@@ -22,7 +22,7 @@ Conventions for every web task:
 
 ## Wave 0: prerequisites and shared types
 
-- [ ] **T01 [S] (20 min) Audit prerequisites and record what exists**
+- [x] **T01 [S] (20 min) Audit prerequisites and record what exists**
   - Files: `docs/kiro-log/efficiency-familiar-prereqs.md` (new). No source changes.
   - Check and record, as a table of present / missing / blocked tasks: run-lifecycle migrations, `FinalResult`, `PublicEvent::{Complexity, Familiar}`, `RunContext::emit`, read model and shared JSON error envelope; `Verdict` and `RunMode` in `counterspell-common`; `language-drivers` bench code and its `run_timings` use; `hints::ai::generate(Kind::Familiar, …)` and the `hints` table; `.kiro/specs/judge-sandbox/` and the sandbox runner and image digest; `PackRunner::bench`; `web/static/familiar/` and any `assets/` art; `vitest` in `web/package.json`; existing `web/src/lib/familiar/**` from `ide-workspace`.
   - For every missing item, list the tasks below that it blocks.
@@ -31,7 +31,7 @@ Conventions for every web task:
   - Verify: the file names every seam row from the design's seam table with a status.
   - Preserve: nothing is created outside the log file. Do not generate art.
 
-- [ ] **T02 [P] (25 min) Class, confidence, mood and effect types in `counterspell-common`**
+- [x] **T02 [P] (25 min) Class, confidence, mood and effect types in `counterspell-common`**
   - Files: `crates/common/src/familiar/{mod.rs,class.rs}`, `crates/common/src/lib.rs` (module line only).
   - Implement `ClassId` (seven ids exactly as GRM-16: `1`, `log n`, `n`, `n log n`, `n^2`, `n^3`, `2^n`) with `rank()`, `id()`, `display_name()` ("constant" … "exponential"), `FromStr`, and serde as the id string; `Confidence`; `Mood` (newtype checked 1 to 5, `name()`: furious … laughing); `Effect` (`none`, `crack_burst`, `laugh_burst`).
   - Tests: ranks 0 to 6 in order; every id round-trips; unknown ids are rejected; `Mood::try_from` accepts only 1 to 5; serde forms are stable.
@@ -41,7 +41,7 @@ Conventions for every web task:
   - Preserve: `counterspell-common` gains no dependency and no async, DB or Docker code.
   - Rust lesson: enums with data-free variants, `FromStr`, newtypes that enforce a range.
 
-- [ ] **T03 [S] (30 min) `MeasuredFacts` and the `decide` function**
+- [x] **T03 [S] (30 min) `MeasuredFacts` and the `decide` function**
   - Files: `crates/common/src/familiar/{facts.rs,mood.rs}`.
   - Implement `MeasuredFacts`, `BenchFacts`, `NoMeasurement`, `MoodReason` (every reason code in R5.1) and `decide` exactly as the R5.1 table, including gap calculation, the `<= 2.0` ratio rule, effects, and Run versus Submit.
   - Tests: one example per table row; property P8 (totality and table), P9 (monotone in gap), P10 (effects); an exhaustive test over the finite combinations (verdicts × modes × no-measurement × classes × confidences × ratio buckets).
@@ -52,7 +52,7 @@ Conventions for every web task:
   - Preserve: `decide` is pure, takes only `&MeasuredFacts`, and has no other input path.
   - Rust lesson: exhaustive `match`, why the compiler checks you covered every case, and small pure functions.
 
-- [ ] **T04 [P] (30 min) Payload and column types**
+- [x] **T04 [P] (30 min) Payload and column types**
   - Files: `crates/common/src/familiar/payload.rs`.
   - Implement `ComplexityPayload`, `FamiliarPayload`, `ComplexitySection`, `FamiliarSection`, `FitSummary`, `BenchStatus` (`measured`, `not_specified`, `host_busy`, `failed`, `incomplete`) and `MeasuredColumns` (the five stored values). All `Serialize`/`Deserialize` with `deny_unknown_fields` on inputs. Add `to_bounded_json` helpers that use run-lifecycle's `BoundedJson`.
   - Tests: JSON shapes match the design examples; a maximal `FitSummary` (32 points) stays under 4 KiB or is truncated by documented rules (points capped at 8 in storage); payloads stay under 16 KiB; unknown fields are rejected.
@@ -62,7 +62,7 @@ Conventions for every web task:
   - Preserve: no field can hold source, hidden input, expected output or stderr.
   - Rust lesson: `serde` derive, `deny_unknown_fields`, and why wire types are separate from internal types.
 
-- [ ] **T05 [S] (30 min) Wording: headline, badge, template**
+- [x] **T05 [S] (30 min) Wording: headline, badge, template**
   - Files: `crates/common/src/familiar/words.rs`.
   - Implement `headline`, `badge` and `template_bubble` as pure functions of (decision, observed class, confidence, plausible classes, reference, ratio, mode, verdict) following the design's wording table. Add `FORBIDDEN_WORDS`. "Quick check: " prefix for Run in measured cases.
   - Tests: P12 as an exhaustive enumeration over all (mood, reason, class, confidence, mode) combinations: headline ≤ 160 characters, badge ≤ 40, plain text (no `<`, `>`, backticks), no forbidden word, the top mood uses exactly "Matches reference complexity" or "Scales better than the reference", failure text never mentions complexity.
@@ -74,7 +74,7 @@ Conventions for every web task:
 
 ## Wave 1: the fit and bench inputs (engine)
 
-- [ ] **T06 [S] (25 min) Engine complexity module skeleton and validation**
+- [x] **T06 [S] (25 min) Engine complexity module skeleton and validation**
   - Files: `crates/engine/src/complexity/mod.rs`, `crates/engine/src/lib.rs` (module line, docs), `crates/engine/Cargo.toml` is **not** changed.
   - Add `Class` (seven classes, rank, id), `Point`, `Mode`, `Confidence`, `Reason`, `FitConfig` with the design's constants and `Default`, `FitError`, `FitReport`, `Comparison`, `FIT_VERSION = "fit-1"`. Implement input validation only. Until T09, `fit` returns the temporary variant `FitError::NotImplemented` after validation succeeds; T09 removes that variant.
   - Tests: every R3.1 rejection (2 points, 33 points, `n < 2`, not increasing, zero median, negative, NaN and infinite spread).
@@ -84,7 +84,7 @@ Conventions for every web task:
   - Preserve: the engine keeps only `serde` and `serde_json`; it does not depend on `counterspell-common`.
   - Rust lesson: `Result` and custom error enums, and why a crate's dependency list is part of its design.
 
-- [ ] **T07 [S] (30 min) Model fitting: basis, weighted non-negative least squares, residuals**
+- [x] **T07 [S] (30 min) Model fitting: basis, weighted non-negative least squares, residuals**
   - Files: `crates/engine/src/complexity/models.rs`.
   - Implement the six polynomial/logarithmic models as `t ≈ a + c·g(n)` with `a, c ≥ 0` (normal equations, clamp and refit), normalising the basis and the timings first, the log-space `2^n` model, and the RMS log residual `E_m` with the large constant for non-positive predictions.
   - Tests: exact data from each model with an offset is recovered with `E ≈ 0` for its own model and clearly larger for the others; flat data collapses every model to the constant; decreasing data does not produce negative parameters; huge `n` (up to `u64::MAX`) gives finite residuals and no overflow for `2^n`.
@@ -94,7 +94,7 @@ Conventions for every web task:
   - Preserve: all arithmetic is deterministic `f64`; no random numbers.
   - Rust lesson: `f64` pitfalls (NaN, infinity), `is_finite`, and clamping.
 
-- [ ] **T08 [S] (30 min) Noise, slope view and local exponents**
+- [x] **T08 [S] (30 min) Noise, slope view and local exponents**
   - Files: `crates/engine/src/complexity/{noise.rs,views.rs}`.
   - Implement per-point and combined noise (`σ_i`, `σ̄`), the least-squares log-log slope over the top `max(3, ceil(k/2))` points with `se_b = max(regression SE, σ̄/sqrt(Sxx))`, and the local exponents with their median over the same segment.
   - Tests: exact power laws give the right slope and exponents; known spread maps to the expected `σ_i`; unknown spread uses `DEFAULT_NOISE`; `k = 3` uses the noise-implied SE.
@@ -104,7 +104,7 @@ Conventions for every web task:
   - Preserve: functions are pure and take plain slices.
   - Rust lesson: slices, iterators and why `windows(2)` suits consecutive pairs.
 
-- [ ] **T09 [S] (30 min) Plausible set, agreement, stability, confidence, `fit` and `compare`**
+- [x] **T09 [S] (30 min) Plausible set, agreement, stability, confidence, `fit` and `compare`**
   - Files: `crates/engine/src/complexity/{decide.rs,mod.rs}`.
   - Implement steps 4 to 10 of the design's algorithm: plausible set, agreement per model (including the `2^n` rule), drop-one stability for `k ≥ 5`, the `Low`/`Medium`/`High` rules, the run-mode cap, `class` only for `Medium` and `High`, `reasons`, and `compare` (gap and `reference_plausible`). Make `fit` return a `FitReport` with serde.
   - Tests: golden cases for clean `n`, `n log n`, `n^2`, `n^3`, flat, a single spiked point, a short range, a class outside the set (`n^1.5`), `k = 3` for `Mode::Quick`; each asserts class, confidence and reasons.
@@ -114,7 +114,7 @@ Conventions for every web task:
   - Preserve: a class is never reported at `Low`; `High` needs all the listed conditions.
   - Rust lesson: borrowing slices, `Option` for "maybe a class", and sorting with `partial_cmp`.
 
-- [ ] **T10 [P] (30 min) Synthetic timing corpus and strategies**
+- [x] **T10 [P] (30 min) Synthetic timing corpus and strategies**
   - Files: `crates/engine/tests/support/complexity.rs`, `crates/engine/tests/support/mod.rs` (add a module line).
   - Build the series generator from the design: true class ∈ {`n`, `n log n`, `n^2`, `n^3`}; `k` ∈ 3..=8; size factor 2 or 4; `n_0` ∈ 2^6..2^10; fixed overhead `ρ` ∈ [0, 3] of the compute at `n_0`; lognormal multiplicative noise `s` ∈ [0, 0.25]; spike probability up to 0.1 with multiplier 1.5 to 3; five repeats per point, median and `(max − min)/median` as `Point`. A seeded variant for the calibration report. Offer a "spread unknown" form.
   - Tests: the generator itself obeys its parameter ranges; noise-free output is exactly `a + c·g(n)`.
@@ -124,7 +124,7 @@ Conventions for every web task:
   - Preserve: test support only; nothing here ships.
   - Rust lesson: `proptest` strategies and why a generator needs its own tests.
 
-- [ ] **T11 [S] (30 min) Fit properties P1 to P7**
+- [x] **T11 [S] (30 min) Fit properties P1 to P7**
   - Files: `crates/engine/tests/properties_complexity.rs`.
   - Implement P1 (soundness), P2 (usefulness), P3 (scale invariance with powers of two), P4 (totality on arbitrary and extreme inputs), P5 (determinism), P6 (class only with confidence; `plausible` contains `leaning`), P7 (`Quick` never `High`). Run them. If P1 or P2 fail, **record the failing seeds and stop**; T12 fixes constants.
   - Requirements: R3.4 to R3.10.
@@ -133,7 +133,7 @@ Conventions for every web task:
   - Preserve: regression files are committed.
   - Rust lesson: property tests versus example tests, and reading a shrunk counterexample.
 
-- [ ] **T12 [S] [SUPERVISED] (30 min) Calibrate and freeze the constants as `fit-1`**
+- [x] **T12 [S] [SUPERVISED] (30 min) Calibrate and freeze the constants as `fit-1`**
   - Files: `crates/engine/src/complexity/mod.rs` (constants only), `docs/kiro-log/efficiency-familiar-calibration.md`.
   - Adjust only constants in `FitConfig`, and only toward less confidence, until P1 and P2 pass with at least 4,000 cases. Do not change the algorithm. Record the final constants, the corpus parameters, and for each true class the share of `Low`, `Medium`-correct, `Medium`-adjacent and `High`-correct results, and the number of wrong-at-`High` results (must be zero). If P2 cannot pass without breaking P1, stop and report to Brighton instead of weakening either property.
   - Requirements: R3.8, R3.9, R15.2.
@@ -142,7 +142,7 @@ Conventions for every web task:
   - Preserve: `FIT_VERSION` stays `fit-1` only if constants are frozen here; any later change bumps it.
   - Rust lesson: constants as configuration, and why tuning tests is different from tuning to the tests.
 
-- [ ] **T13 [P] (30 min) Sized bench inputs and the bench seed**
+- [x] **T13 [P] (30 min) Sized bench inputs and the bench seed**
   - Files: `crates/engine/src/complexity/bench_input.rs`.
   - Implement `sized_input` and `bench_seed` as in the design, using the engine's existing PRNG (`SplitMix64`) and `derive_seed`-style FNV-1a with length-prefixed fields plus `GENERATOR_VERSION`. Support `int_array`, `str` and `matrix` size parameters inside a tuple root; honour range, alphabet, `sorted`, `unique`; return `BenchInputError` when `unique` is impossible or the size parameter is not a supported kind.
   - Tests: P15 (exact size; valid by `Schema::contains` apart from the size parameter's length bound; deterministic; independent of anything but its arguments; error cases); pinned `bench_seed` values.
@@ -152,7 +152,7 @@ Conventions for every web task:
   - Preserve: the engine stays pure and synchronous.
   - Rust lesson: deterministic random numbers and why seeds are derived from data, not time.
 
-- [ ] **T14 [P] (20 min) Ratio vs baseline**
+- [x] **T14 [P] (20 min) Ratio vs baseline**
   - Files: `crates/judge/src/familiar/{mod.rs,ratio.rs}`.
   - Implement the geometric-mean ratio over common sizes, absent for fewer than two common sizes or any zero median. Add the usability filter type for baselines (problem version, image digest) as a pure function over rows.
   - Tests: P14; stale version and wrong digest are rejected; order independence.
@@ -164,7 +164,7 @@ Conventions for every web task:
 
 ## Wave 2: persistence, judge wiring and read model
 
-- [ ] **T15 [S] [SUPERVISED] (30 min) Migration: columns, constraints, freeze trigger, tables and grants**
+- [x] **T15 [S] [SUPERVISED] (30 min) Migration: columns, constraints, freeze trigger, tables and grants**
   - Files: `migrations/<timestamp>_efficiency_familiar.sql` (timestamp later than every existing migration).
   - Add the five `submissions` columns and the `submissions_familiar_ck` constraint from the design; the separate `cs_familiar_frozen` trigger; `run_timings` and `problem_baselines` (`IF NOT EXISTS`); the grants in the design's privilege table (column-level `UPDATE` for the judge role, none for the server role). No `DELETE` or `TRUNCATE` grants. No passwords or secrets.
   - Requirements: R7.1 to R7.5, R12.2.
@@ -172,7 +172,7 @@ Conventions for every web task:
   - Verify: `sqlx migrate run` twice on a clean database succeeds; `docker compose config` still valid.
   - Preserve: the bootstrap migration and run-lifecycle migrations are untouched; the freeze function of run-lifecycle is not replaced.
 
-- [ ] **T16 [S] (30 min) Database tests for constraints, freeze and roles (P16)**
+- [x] **T16 [S] (30 min) Database tests for constraints, freeze and roles (P16)**
   - Files: `crates/judge/tests/familiar_pg.rs`.
   - `pg_familiar_constraints`: a non-accepted verdict with mood above 1 is rejected; a class with `low` confidence is rejected; a mood on a non-completed run is rejected; mood without reason is rejected; an oversize `fit` is rejected; a valid row is accepted.
   - `pg_familiar_frozen`: after `finished_at` is set, changing any of the five columns fails, and the terminal `UPDATE` that sets them together with `finished_at` succeeds.
@@ -183,7 +183,7 @@ Conventions for every web task:
   - Preserve: tests use an admin pool for setup and `SET LOCAL ROLE` for role checks.
   - Rust lesson: `sqlx` queries and transactions that roll back after a test.
 
-- [ ] **T17 [S] (30 min) Pure `assess` and the engine-to-common mapping**
+- [x] **T17 [S] (30 min) Pure `assess` and the engine-to-common mapping**
   - Files: `crates/judge/src/familiar/assess.rs`.
   - Implement `AssessInput`, `Assessment`, `BenchState` and `assess` as in the design. One exhaustive `match` converts engine `Class`/`Confidence` to common `ClassId`/`Confidence`. The complexity payload, the familiar payload and the stored columns are built from the same values. Non-completed runs yield no mood.
   - Tests: P13 (one value, two uses) as PBT; a table of scenarios from the failure matrix (no bench, host busy, failed, incomplete, low, each gap, no baseline, slower constant, matches, better); engine and common agree on ids and ranks for all seven classes.
@@ -193,7 +193,7 @@ Conventions for every web task:
   - Preserve: pure; no clock, no I/O.
   - Rust lesson: conversion functions between types, `From`, and exhaustive `match` for safety.
 
-- [ ] **T18 [P] (25 min) Load guard and bench gate**
+- [x] **T18 [P] (25 min) Load guard and bench gate**
   - Files: `crates/judge/src/familiar/{load.rs,gate.rs}`.
   - `LoadSource` trait with `ProcLoadAvg` (reads the first field of `/proc/loadavg`, returns an error on parse failure) and a test double; `quiet(before, after, limit)` is a pure function; `BenchGate` is a one-permit `tokio::sync::Semaphore` wrapper controlled by `BENCH_SERIALISE` (default true), with `BENCH_MAX_LOAD` (default 3.0 [E]).
   - Tests: quiet/busy cases at the boundary; unreadable load is treated as unknown and does not discard the bench (logged); two tasks cannot hold the gate together; a waiter proceeds after release; the gate does not hold a database connection.
@@ -203,7 +203,7 @@ Conventions for every web task:
   - Preserve: reading `/proc/loadavg` is the only file access.
   - Rust lesson: traits as seams for testing, and `Semaphore` permits dropping automatically.
 
-- [ ] **T19 [S] [SUPERVISED] (30 min) Store the measured columns in the terminal write**
+- [x] **T19 [S] [SUPERVISED] (30 min) Store the measured columns in the terminal write**
   - Files: wherever run-lifecycle T14 defined `FinalResult` and `finish` (`crates/judge/src/queue/finish.rs` expected).
   - Add `measured: Option<MeasuredColumns>` to `FinalResult`. In the existing fenced transaction, set the five columns in the same `UPDATE` that sets `finished_at`. Failed, expired and internal-error paths store none.
   - Tests: a completed run stores exactly the columns `assess` produced; a worker that lost its lease writes nothing; a violating value (mood 5 with a wrong verdict) fails the transaction and is reported as an infrastructure error; the existing terminal-write tests still pass.
@@ -213,7 +213,7 @@ Conventions for every web task:
   - Preserve: the three barriers (fence, frozen row, one terminal event) remain intact.
   - Rust lesson: `Option` fields in a struct, and why a database transaction keeps related writes together.
 
-- [ ] **T20 [S] (30 min) `measure_run`: collector trait, events and the failure matrix**
+- [x] **T20 [S] (30 min) `measure_run`: collector trait, events and the failure matrix**
   - Files: `crates/judge/src/familiar/mod.rs`, `crates/judge/src/executor.rs` or the existing call site (one small call).
   - Define `BenchPlan`, `BenchPoint`, `BenchOutcome` and `BenchCollector` as in the design. Implement `measure_run(ctx, run, collector, baselines, problem)`: failure path emits `familiar` right after the last test and before `ghost_hunting`; pass path acquires the gate, reads load, calls the collector, reads load, assesses, then emits `complexity` (only when fitted) and `familiar`. Maps `Failed` and `Incomplete` and `host_busy` to missing measurements, not errors; maps `ExecError` through unchanged. Provide a scripted collector in `testkit`.
   - Tests with the fake executor: every row of the failure matrix; event order (`bench_start`… `complexity`, `familiar`, then `done`); a `restarted` attempt produces a fresh result; infrastructure error is retried and never yields a mood; hidden-data canary absent from every payload.
@@ -223,7 +223,7 @@ Conventions for every web task:
   - Preserve: the executor still cannot write a verdict or status; `language-drivers` bench code is not rewritten here, only called through the trait.
   - Rust lesson: async traits with `impl Future`, generics instead of `dyn`, and passing a context object.
 
-- [ ] **T21 [S] (30 min) Baseline store**
+- [x] **T21 [S] (30 min) Baseline store**
   - Files: `crates/judge/src/familiar/store.rs`.
   - `insert_baseline(rows)` (insert-only, `ON CONFLICT DO NOTHING`, returns how many were new) and `find_baseline(slug, version, lang, digest)` returning sorted `(n, median_ns)`; all SQL for this module lives here. The reader returns nothing for a stale version or a different digest.
   - Tests (`pg_`): insert, re-insert (no overwrite), a new version creates a second set, a digest mismatch finds nothing, the judge role cannot update or delete.
@@ -243,7 +243,7 @@ Conventions for every web task:
   - Preserve: all execution goes through the sandbox runner; nothing is executed on the host.
   - Rust lesson: command-line subcommands, exit codes and `Result` at a program's edge.
 
-- [ ] **T23 [S] (30 min) Read model sections and stream parity test (P17)**
+- [x] **T23 [S] (30 min) Read model sections and stream parity test (P17)**
   - Files: `crates/server/src/runs/read.rs`, `crates/server/tests/familiar_read.rs`.
   - Build the `complexity` and `familiar` sections of `GET /api/runs/{id}` from stored columns only; absent when null; no `effect`. Add the `pg_` integration test: run the scripted executor and collector, collect the SSE `complexity`/`familiar` payloads, fetch the read model after, and assert equality (minus `effect`) and that a reload from a fresh client shows the same.
   - Requirements: R7.4, R7.8, R7.9.
@@ -274,7 +274,7 @@ Conventions for every web task:
 
 ## Wave 3: the mascot (web) and preferences
 
-- [ ] **T26 [S] (30 min) Web prerequisites: asset contract, placeholder, GSAP and notices**
+- [x] **T26 [S] (30 min) Web prerequisites: asset contract, placeholder, GSAP and notices**
   - Files: `web/src/lib/familiar/mascot/contract.ts`, `contract.test.ts`, `web/static/familiar/` (audit; placeholder only if the art is absent), `web/package.json`, `web/package-lock.json`, `THIRD-PARTY-NOTICES.md`, `docs/kiro-log/efficiency-familiar-prereqs.md` (append).
   - Audit `web/static/familiar/`. Implement `validate(svgText)` for the id contract in the design. If a conforming SVG exists, validate it and record its size. If not, add a **clearly labelled placeholder** (`jack-o-lantern.placeholder.svg`, text "PLACEHOLDER ART" in the file) that satisfies the contract, so the code can be built and tested; record in the log that the real art is still needed. Add `gsap` as a dependency (npm only, not vendored) and its notice; add `vitest` if run-lifecycle T32 has not.
   - Requirements: R9.1, R9.11, R9.12.
@@ -282,7 +282,7 @@ Conventions for every web task:
   - Verify: `cd web && npm ci && npm test && npm run check && npm run build`; the contract test names any missing id; SVG size within the 120 KB budget or the overrun is recorded.
   - Preserve: do not draw or generate final art; the placeholder never ships as the default once real art exists.
 
-- [ ] **T27 [P] (25 min) Mood styling and the effect planner (P22)**
+- [x] **T27 [P] (25 min) Mood styling and the effect planner (P22)**
   - Files: `web/src/lib/familiar/mascot/{mood-style.ts,plan.ts}`, tests.
   - `mood-style.ts`: mood to name, layer ids, icon name, text token, and the glow recipe (token names and mix percentages, no hex). `plan.ts`: `planEffect` exactly as designed.
   - Tests: exhaustive table for `planEffect` over all combinations; every mood has a style; no hex strings in either file (source scan); passing moods never select the danger text token.
@@ -291,7 +291,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- mascot`.
   - Preserve: both modules are pure and import nothing from GSAP.
 
-- [ ] **T28 [P] (25 min) Seeded particle and ember plans (P24)**
+- [x] **T28 [P] (25 min) Seeded particle and ember plans (P24)**
   - Files: `web/src/lib/familiar/mascot/particles.ts`, tests.
   - Pure functions that build the 40-particle crack plan (position, velocity, size, colour token name) and the 12-ember + 3-spark ring from a seed, with target durations (about 900 ms and 700 ms).
   - Tests: counts exact; values finite and bounded; same seed gives the same plan; durations within 5% of target.
@@ -300,7 +300,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- particles`.
   - Preserve: no GSAP, no DOM.
 
-- [ ] **T29 [S] (30 min) `Mascot.svelte`: static rendering of five moods**
+- [x] **T29 [S] (30 min) `Mascot.svelte`: static rendering of five moods**
   - Files: `web/src/lib/familiar/mascot/Mascot.svelte`, tests.
   - Load the SVG lazily, show the layers for the current mood, set the glow from the resolved palette tokens, expose the `aria-live="polite"` text and the badge, support the hidden-dot form, and render everything without GSAP. Props: `mood`, `reason`, `headline`, `badge`, `effect`, `live`, `muted`, `hidden`, `reducedMotion`. Missing art shows the badge text only.
   - Tests (component): each mood shows the right layer; headline and badge appear as text; an HTML-looking headline renders as text (P25); the aria-live text matches the required form; hidden state is a keyboard-operable button with a 44 px target; no `onerror` or `innerHTML` in the component.
@@ -309,7 +309,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- Mascot && npm run check`.
   - Preserve: the mascot never covers editor text and fetches only its own static assets.
 
-- [ ] **T30 [S] (30 min) GSAP timelines: crossfade, laugh burst, crack-and-burst, dispose**
+- [x] **T30 [S] (30 min) GSAP timelines: crossfade, laugh burst, crack-and-burst, dispose**
   - Files: `web/src/lib/familiar/mascot/timelines.ts`, `Mascot.svelte` (wiring only), tests.
   - Dynamic `import('gsap')` only when `planEffect` returns `play` and motion is allowed. Implement the 300 ms crossfade, the crack draw-on followed by the particle burst, and the laugh shake with embers and sparks, using only transform and opacity and the plans from T28. Register every timeline with a disposer and call it on unmount, route change and change of `reducedMotion`, `muted` or `hidden`.
   - Tests: with GSAP mocked, `import('gsap')` is never called under reduced motion or muted; a played effect creates the expected number of `fam-fx` children and removes them on dispose; a second effect inside 2 s applies the mood without playing; disposing twice is safe.
@@ -318,7 +318,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- timelines`; manual check in `npm run dev` with the placeholder art recorded in the log (screen recording optional).
   - Preserve: no looping animation; effects play once.
 
-- [ ] **T31 [S] (30 min) Mute and hide behaviour and the component contract**
+- [x] **T31 [S] (30 min) Mute and hide behaviour and the component contract**
   - Files: `web/src/lib/familiar/mascot/Mascot.svelte`, `web/src/lib/familiar/mascot/CONTRACT.md` (short), tests.
   - Muted: static face, no timelines, headline visible. Hidden: 16 px dot in the status bar, text equivalent still announced. Document the props that `ide-workspace`'s `Familiar.svelte` passes, and the events it must pass back (toggle mute, toggle hide).
   - Tests: muted never loads GSAP; hidden removes the face from the tab order but keeps the dot focusable and the live text; reduced motion plus a `crack_burst` shows the badge text "Wrong answer" or "Timeout" and no particles.
@@ -327,7 +327,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- Mascot && npm run check`.
   - Preserve: the menu UI belongs to `ide-workspace`; do not duplicate it.
 
-- [ ] **T32 [P] (30 min) Preferences endpoints**
+- [x] **T32 [P] (30 min) Preferences endpoints**
   - Files: `crates/server/src/familiar/{mod.rs,prefs.rs}`, `crates/server/tests/familiar_prefs.rs`.
   - `prefs.rs` (pure): `validate_patch`, `merge`, defaults. `GET` and `PATCH /api/me/familiar` use `AuthUser`, the origin guard, a 1 KiB body limit, JSON-only, the window limiter, and only touch the session user's `users.familiar_prefs`.
   - Tests: unknown field, wrong type, bad enum, oversized body and wrong content type are rejected; defaults are filled; a valid patch merges and persists; user A cannot change user B; the demo user can change prefs; unauthenticated gets 401.
@@ -337,7 +337,7 @@ Conventions for every web task:
   - Preserve: the server role writes only `familiar_prefs`.
   - Rust lesson: validating untrusted JSON into a typed struct with `serde`.
 
-- [ ] **T33 [S] (30 min) Browser state rules and preference sync (P23)**
+- [x] **T33 [S] (30 min) Browser state rules and preference sync (P23)**
   - Files: `web/src/lib/familiar/familiar-state.ts`, `web/src/lib/api/familiar.ts` (extend or create), tests.
   - Ensure the reducer changes mood only on a `familiar` event (`live = true`) or on hydration from the read model (`live = false`, effect dropped), clears on `restarted`, and has no input from editor changes or the guess. Preferences: load from `GET /api/me/familiar`, apply locally first, `PATCH` in the background, mark "not synced" on failure.
   - Tests: edits, language switches and unrelated events leave the state unchanged; duplicates by `seq` ignored; reload hydration shows a static face; a failed PATCH keeps the local choice.
@@ -346,7 +346,24 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- familiar-state`.
   - Preserve: do not duplicate `ide-workspace`'s reducer; extend it.
 
-- [ ] **T34 [P] (25 min) Explainer view-model for "How does it judge me?"**
+## Mascot real art (amendment 15 Nov 2026)
+
+- [x] **T49 [S] (30 min) Real jack-o'-lantern contract SVG and loader**
+  - Files: `web/static/familiar/jack-o-lantern.svg` (new), `web/src/lib/familiar/mascot/contract.test.ts`, the mascot loader.
+  - Build the contract SVG around the five `/art/familiar/moods/familiar-N-mood.webp` stills as in the design amendment (one `<image>` layer per mood, rasters not embedded). Make it the default; fall back to the placeholder only if the real file fails to load or validate. Do not use `jack-o-lantern-orange` or `-poison` as the mascot body.
+  - Verify: `validate()` passes on the new file with every id in the updated contract; SVG <= 120 KB (raster bytes recorded separately in `docs/kiro-log/efficiency-familiar-art.md`); `cd web && npm test && npm run check && npm run build`.
+  - Requirements: R9.1, R9.11, R9.12. Preserve: no generated replacement art; the placeholder file is kept; `web/static/art/familiar/jack-o-lantern-orange` and `-poison` are left untouched.
+- [x] **T50 [S] (30 min) Cross-fade the five realistic mood images**
+  - Files: `mood-style.ts`, `Mascot.svelte`, the GSAP timelines, their tests.
+  - Show exactly one of the five approved mood images at a time and cross-fade to the next on mood change. No drawn-over face paths, and no overlay eyes, mouths or cracks that invent a new carving. Keep existing rules: mood only from `decide`; calm while typing; at most one change per 2 s; reduced motion and mute give the static WebP frame (instant swap, no animation).
+  - Verify: pure mapping tests for all five moods; component tests for reduced motion and the 2 s / typing calm rules; existing P22 to P24 tests green.
+  - Requirements: R9 (mascot). Preserve: the mood still comes only from `decide`.
+- [x] **T51 [P] (20 min) Impeccable polish of the Familiar dock**
+  - Files: the dock or `Familiar.svelte` styles, `docs/kiro-log/efficiency-familiar-art.md`.
+  - Apply the Impeccable craft-floor and polish playbooks to the editor-corner Familiar, now using the five mood stills: size, crop, token halo, spacing, no ambient loop in the IDE. Record findings and fixes.
+  - Verify: `npm run check && npm run build`; the log lists the findings and fixes.
+
+- [x] **T34 [P] (25 min) Explainer view-model for "How does it judge me?"**
   - Files: `web/src/lib/familiar/explain.ts`, tests.
   - Pure function from the read-model `complexity` section to what the popover shows: points on log-log axes, the slope with its error, the plausible classes, the per-model residuals sorted, the reference, the ratio vs baseline, and fixed sentences for the honest limits. No new data is invented; missing sections give an explicit "not measured" state.
   - Tests: sample sections give stable view-models; `Low` confidence shows "unsure" and the plausible list; text contains no forbidden word.
@@ -357,7 +374,7 @@ Conventions for every web task:
 
 ## Wave 4: the speech bubble
 
-- [ ] **T35 [P] (30 min) Familiar prompt builder (P19)**
+- [x] **T35 [P] (30 min) Familiar prompt builder (P19)**
   - Files: `crates/server/src/familiar/prompt.rs`.
   - Build the `Prompt` for `Kind::Familiar` from: the code (≤ 8 KB), the stored measured block, the reference class, the verdict summary and the public ghost fields. Use the hints data markers and instruction skeleton; add the "never name an unmeasured complexity", "unsure when low", "never optimal" lines. Return a `NotApplicable`/`CodeTooLarge` variant instead of a prompt when needed.
   - Tests: P19 (canary in a hidden expected output or in the statement never appears; size bound under 16 KiB for any code up to the limit); the prompt includes no identity fields; an injection string in the code stays inside the data markers.
@@ -367,7 +384,7 @@ Conventions for every web task:
   - Preserve: pure function; no I/O.
   - Rust lesson: borrowing strings into a larger value, and `Cow` or `&str` versus `String`.
 
-- [ ] **T36 [P] (30 min) Claim guard (P18)**
+- [x] **T36 [P] (30 min) Claim guard (P18)**
   - Files: `crates/server/src/familiar/claims.rs`.
   - Implement `check_claims(text, allowed: &[ClassId]) -> Verdict { Ok, UnmeasuredClass(id|any), Forbidden }` with the fixed pattern lists from the design, case-insensitive, word-bounded, including `O(…)` forms and the superscript forms.
   - Tests: P18 with generated sentences; allowed classes pass; any other class is rejected; each forbidden phrase is rejected; "linear search" with `n` not allowed is rejected (strict by design).

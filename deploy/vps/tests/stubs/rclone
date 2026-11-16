@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Test stub for rclone. Records its arguments and fails when FAIL_RCLONE is set. `lsf` prints
+# FIXTURE_LSF. `copyto SRC DST` copies the fixture named by SRC's base name from FIXTURE_DIR.
+echo "rclone $*" >> "${STUB_LOG:?}"
+if [[ -n "${FAIL_RCLONE:-}" ]]; then exit 1; fi
+command="$1"
+shift
+while [[ "$1" == --* ]]; do shift 2; done
+case "$command" in
+  lsf) printf '%s\n' "${FIXTURE_LSF:-}" ;;
+  copyto) cp -- "${FIXTURE_DIR:?}/$(basename -- "$1")" "$2" ;;
+esac
+exit 0

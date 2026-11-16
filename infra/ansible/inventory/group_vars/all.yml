@@ -1,0 +1,29 @@
+# Non-secret variables only (deploy-ops R2.8). Secrets never go here: Brighton writes them by hand
+# into /etc/counterspell/*.env (T27).
+
+site_name: counterspell
+operator_user: brighton
+deploy_user: deploy
+sandbox_user: sandbox
+sandbox_uid: 1001
+judge_uid: 10001
+ssh_port: 22
+
+# Public keys only. The CI deploy key is restricted to the forced-command entry point (R2.9).
+# Add one entry per key; rotation adds the new key first, then removes the old one (RUNBOOK.md).
+deploy_public_keys: []
+
+# Operator (brighton) public keys, installed for the operator login. Brighton sets them before the base role runs.
+operator_public_keys: []
+
+# Repository root on the controller, used to read files to copy to the host.
+repo_root: "{{ playbook_dir }}/../.."
+
+# Docker pins, shared by the docker and sandbox roles. [U] Confirmed at T24 (see the docker role).
+docker_ce_version: "5:28.0.0-1~ubuntu.24.04~noble"
+docker_compose_plugin_version: "2.24.0-1~ubuntu.24.04~noble"
+
+# Non-secret host values, the operator's site address and the trusted proxy subnet (R5.4, R4.9).
+caddy_site_address: ""
+trusted_proxies: 172.30.10.0/24
+ghcr_owner: brightondube

@@ -1,0 +1,21 @@
+{
+  "slug": "two-sum",
+  "version": 1,
+  "signature": {
+    "protocol_version": 1,
+    "function": "two_sum",
+    "parameters": [
+      {"name": "nums", "type": {"kind": "list", "items": {"kind": "int"}}},
+      {"name": "target", "type": {"kind": "int"}}
+    ],
+    "returns": {"kind": "list", "items": {"kind": "int"}}
+  },
+  "comparator": "exact",
+  "time_limit_ms": 1000,
+  "tests": [
+    {"ordinal": 1, "is_sample": true,  "args": [[2, 7], 9], "expected": [0, 1]},
+    {"ordinal": 2, "is_sample": false, "args": [[3, 4], 7],  "expected": [0, 1]},
+    {"ordinal": 3, "is_sample": false, "args": [[3, 3], 6],  "expected": [0, 1]}
+  ],
+  "reference_python": "def two_sum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        if target - n in seen:\n            return [seen[target - n], i]\n        seen[n] = i\n"
+}

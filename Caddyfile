@@ -1,4 +1,36 @@
-:80 {
+# Caddy edge for Counterspell (deploy-ops T08, R6.1 to R6.6).
+# The site address comes from CADDY_SITE_ADDRESS (host.env on the VPS). Locally it stays on :80.
+# Caddy obtains and renews the TLS certificate itself when the address is a real hostname.
+{$CADDY_SITE_ADDRESS::80} {
     log
-    reverse_proxy server:8080
+
+    # Security headers on every response (R6.3). The Content-Security-Policy is report-only until the
+    # Q17 decision: the SvelteKit build inlines a bootstrap script, so an enforced policy needs a
+    # hash or nonce strategy first. Violations are reported, not blocked.
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+        X-Frame-Options "DENY"
+        Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        -Server
+    }
+
+    # Readiness is for the deploy script only, which calls it inside the edge network (R6.6).
+    respond /api/ready 404
+
+    # Run event streams must reach the browser as each event is written.
+    # Flushing immediately and skipping compression keeps SSE live (R6.4).
+    @run_events path_regexp run_events ^/api/runs/[^/]+/events$
+    handle @run_events {
+        reverse_proxy server:8080 {
+            flush_interval -1
+        }
+    }
+
+    handle {
+        encode zstd gzip
+        reverse_proxy server:8080
+    }
 }

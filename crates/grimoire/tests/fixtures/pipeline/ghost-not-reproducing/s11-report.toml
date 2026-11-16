@@ -1,0 +1,11 @@
+# Synthetic S11 report. The wrong_start.py program returns the expected value on its ghost input.
+
+[[ghost]]
+program = "incorrect/off_by_one.py"
+kind = "wrong"
+verified = true
+
+[[ghost]]
+program = "incorrect/wrong_start.py"
+kind = "wrong"
+verified = false

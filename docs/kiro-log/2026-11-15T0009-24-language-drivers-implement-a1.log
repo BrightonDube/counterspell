@@ -1,0 +1,193 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7
+I'll start by reading the language-drivers spec and its task list.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=76
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The first unchecked non-stretch task is T01. Before starting, I need the current state of the judge crate, the `languages/` directory, the judge-sandbox spec, and the steering and skill files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+
+[tool] Check repo state, languages dir, judge crate and specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+There's an untracked log from an earlier language-drivers attempt. I'll read it along with the existing registry, the judge's language and driver-protocol code, and the judge-sandbox blockers.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=139
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The system rules are constraints only. I'm continuing the language-drivers run. Next I'll check what the judge already provides (executor, sandbox runner, the existing language tests) and whether Docker, Node and Python are available here.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=273
+
+[tool] Check Docker, Node, Python and judge sandbox API surface
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Check Docker, Node, Python and judge sandbox API surface
+Docker, Node and Python are on the host, but the judge sandbox runner is not usable yet: the judge-sandbox real-daemon tests are blocked (T20 `#[ignore]` guard decision, T02 VPS spike). Before choosing what to build, I'll confirm which judge modules are public and how the existing protocol tests import them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=596
+
+[tool] Inspect judge module exports and existing protocol tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The judge's protocol module is public and its tests run without Docker. I'll start T01 test-first: a test that reads `languages/protocol.md`, requires every ```json example to parse, and checks that answer examples pass the judge's own `parse_answer`. The file doesn't exist yet, so this should fail.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=461
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=44
+[tool] Run new protocol doc test to confirm it fails first
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test fails for the expected reason: the document is missing. Now I'll write `languages/protocol.md` using the design's assumed choices (`{t,args}` calls, `{t,out}` answers, `/box/signature.json`).
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1030
+[tool] status: Pending
+[tool] status: Completed
+The document is written. I'll run the doc test again to see it pass.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=67
+
+[tool] Run protocol doc test after writing the document
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both tests pass. Next is the Rust gate for the workspace: formatting, Clippy with warnings as errors, and the full test run.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=98
+
+[tool] Run fmt, clippy and workspace tests for the T01 change
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Two things fail: formatting in my new test file and a Clippy doc lint. I'll look at the exact Clippy messages before fixing them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=84
+
+[tool] Show the exact Clippy errors in the new test file
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=136
+[tool] Fix doc lint and formatting in the new protocol test, then recheck
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The gate is green: fmt passes, Clippy is clean for the whole workspace, and the full workspace test run passed earlier with no failures. Next I'll add the Rust lesson, tick T01 in `tasks.md`, and commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=139
+
+[tool] Read the format of the existing Rust lessons log
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=218
+[tool] Tick T01, log the Rust lesson and commit the task
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T01 is committed. Before deciding what else can be done without a sandbox, I'll check whether the judge's `spec.rs` already builds the driver argv, since T05 and T07 depend on that.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=218
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+`ExecSpec::driver` builds only the normal run argv. It never appends `bench_args`, and nothing writes `signature.json`. Both are pure Rust work that T05, T07 and T08 need. I'll check whether a problem-signature type already exists to build the descriptor from.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=146
+
+[tool] Search for an existing problem signature type in the crates
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Grimoire already has a `Signature` type, but the judge does not depend on it. Building `signature.json` from it would add a cross-crate dependency that no task names, so I'll leave that for a blocker entry. The bench argv change stays inside the judge, so I'll do that test-first. I'll check the existing `ExecSpec` tests first.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=116
+
+[tool] Find existing ExecSpec driver tests and their helpers
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=52
+[tool] Read the existing driver exec test and shipped catalogue helper
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I'll add the bench argv test next to the existing driver test. It fails to compile until `ExecSpec::bench` exists, which is the red step for this change.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=175
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=53
+[tool] Confirm the bench exec test fails to compile before the change
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The red step fails for the expected reason: `ExecSpec::bench` does not exist. Now the minimal green change, which appends `bench_args` to the catalogue run argv.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=142
+[tool] status: Pending
+[tool] status: Completed
+Now the gate on the workspace.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=116
+
+[tool] Run fmt, clippy and workspace tests after the bench argv change
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The gate is green. T05 and T08 stay unticked because their named verification needs a real sandbox run. I'll log the Rust lesson and commit the argv change as a partial step, then write the blockers file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=333
+
+[tool] Commit the partial bench argv change with its lesson
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=706
+[tool] status: Pending
+[tool] status: Completed
+The blockers file is written. I'll commit it, then confirm the final tree state.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=112
+
+[tool] Commit the blockers log and confirm a clean tree
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I finished one task (T01) and made partial progress on T05. Every other task is blocked. The blocker is that nothing can run driver code yet: the judge-sandbox runner needs a rootless sandbox daemon, and the sandbox tests are waiting on Brighton's decision about `#[ignore]` on `sbx_*` tests. The spec forbids running driver code on the host, so I did not run any.
+
+## Summary
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T01 Protocol document | Done, ticked | 2 (`model_protocol_doc.rs`) | Red confirmed (file missing), then green. Every JSON example parses, and answer examples pass `parse_answer`. fmt, clippy and workspace tests pass. | `b8f8c7e` |
+| T02 Registry validation | Blocked, unticked | none | Python driver file is missing, so the real catalogue fails to load. JavaScript digest is still a placeholder. | none |
+| T03 Python driver | Blocked, unticked | none | Needs a sandbox run. No driver code written, since TDD requires a red test that can run. | none |
+| T04 Node driver | Blocked, unticked | none | Needs a sandbox run. | none |
+| T05 JavaScript registry entry | Partial, unticked | 1 (`model_spec.rs`) | Bench argv works: `ExecSpec::bench` appends `bench_args` and leaves the run argv unchanged. The sandbox start check is still open. Needs the Node digest. | `cb52f4c` |
+| T06 to T12 | Blocked, unticked | none | Each needs a sandbox run, or a pinned image or pack fixture. T10 also needs packs that Brighton has not approved. | none |
+| T13 to T16 (stretch) | Not started | none | The core gate T12 has not passed. | none |
+
+I added no crates or dependencies.
+
+## Blockers
+
+Full detail is in `docs/kiro-log/language-drivers-blockers.md`.
+
+1. **No verified sandbox.** T03 onward needs a sandbox run. The judge-sandbox chain is blocked on the VPS spike (T02) and on Brighton's `sbx_` `#[ignore]` decision, which is already logged in `judge-sandbox-blockers.md`.
+2. **JavaScript digest.** Enabling JavaScript needs a real `node:22-slim` digest pinned by a human, the same step the judge-sandbox spec took for Python.
+3. **Signature descriptor (T07).** `signature.json` needs a signature type that the judge can read. The only one is in grimoire, and the judge does not depend on grimoire. Brighton needs to choose between adding a dependency and moving the type into `counterspell-common`.
+
+## Review queue
+
+No tasks in this spec are marked `[SUPERVISED]`, so nothing was added to the review queue.
+
+## Open Minor review findings
+
+- The protocol test checks answer examples but does not cover the refused-line cases in the document. Those are covered by the existing `model_protocol.rs` tests.
+- The protocol document describes the `nullable` flag and the `tuple` type kind. The parser does not enforce either; that check belongs in the drivers.
+
+## Notes
+
+- The untracked file `docs/kiro-log/2026-11-15T0009-24-language-drivers-implement-a1.log` is from the earlier attempt. I left it u[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=245
+ncommitted.
+- Next run: once the sandbox tests can run, start T03 with failing protocol fixture tests, then write `driver.py`.

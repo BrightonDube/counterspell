@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Ops report (deploy-ops T17, R9.4 to R9.6). Runs ops-report.sql as the read-only cs_ops_ro login,
+# logs one JSON line of counts to journald, and pings Healthchecks.
+#
+# Alerts (R9.6): the oldest queued job is over 120 s old, or an internal error or a dead job appeared in
+# the last hour. A breach exits 1 and pings the failure URL, which sends the email. A query failure does
+# the same. A clean run pings the success URL.
+#
+# Configuration comes from /etc/counterspell/ops.env (root, 0600): OPS_DATABASE_URL (the cs_ops_ro
+# login, written by hand at T27), HC_OPS_URL and HC_OPS_FAIL_URL.
+set -euo pipefail
+umask 077
+
+SQL_FILE="${OPS_SQL_FILE:-/usr/local/share/counterspell/ops-report.sql}"
+MAX_QUEUE_AGE_SECONDS=120
+
+ping_hc() {
+  if [[ -n "${1:-}" ]]; then
+    curl -fsS -m 10 --retry 3 -o /dev/null "$1" || true
+  fi
+}
+
+on_exit() {
+  local status=$?
+  if ((status != 0)); then
+    ping_hc "${HC_OPS_FAIL_URL:-}"
+  fi
+}
+trap on_exit EXIT
+
+main() {
+  : "${OPS_DATABASE_URL:?OPS_DATABASE_URL is not set (ops.env, cs_ops_ro login)}"
+
+  local report breached
+  report="$(psql "$OPS_DATABASE_URL" -X -A -t -v ON_ERROR_STOP=1 -f "$SQL_FILE")"
+  printf '%s' "$report" | jq -e 'type == "object"' > /dev/null
+
+  logger -t counterspell-ops-report -- "$report" 2>/dev/null || true
+  echo "$report"
+
+  breached="$(printf '%s' "$report" | jq -r --argjson max "$MAX_QUEUE_AGE_SECONDS" '
+    if (.oldest_queued_age_seconds > $max or .internal_errors_1h > 0 or .dead_jobs_1h > 0)
+    then "yes" else "no" end')"
+  if [[ "$breached" == "yes" ]]; then
+    echo "ops threshold crossed (R9.6)" >&2
+    exit 1
+  fi
+
+  ping_hc "${HC_OPS_URL:-}"
+}
+
+main "$@"

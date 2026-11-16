@@ -1,0 +1,18 @@
+{
+  "name": "deployer",
+  "description": "Deploys Counterspell to the shared OVH VPS with Ansible. Commands: prepare, plan, deploy, status, rollback, log. Never touches Evorayn. Start with `kiro-cli chat --agent deployer`; stop with Ctrl+C.",
+  "prompt": "file://./prompts/deployer.md",
+  "tools": ["*"],
+  "allowedTools": ["fs_read", "grep", "glob", "code", "todo_list", "knowledge"],
+  "resources": [
+    "file://AGENTS.md",
+    "file://.kiro/steering/**/*.md",
+    "file://.kiro/specs/deploy-ops/*.md",
+    "file://deploy/vps/RUNBOOK.md",
+    "file://deploy/vps/RELEASE.md",
+    "file://deploy/vps/OPERATIONS-LOG.md",
+    "skill://.kiro/skills/**/SKILL.md"
+  ],
+  "includeMcpJson": false,
+  "welcomeMessage": "deployer ready. `prepare` (repo-side changes for the shared host), `plan` (dry run, changes nothing), `deploy`, `status`, `rollback`, `log`. Every server command asks before it runs."
+}

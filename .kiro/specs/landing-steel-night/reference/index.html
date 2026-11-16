@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Counterspell</title>
+<style>
+@font-face{font-family:'Creepster';font-style:normal;font-weight:400;font-display:block;src:url('fonts/creepster.woff2') format('woff2')}
+@font-face{font-family:'Cinzel';font-style:normal;font-weight:400;font-display:block;src:url('fonts/cinzel-400.ttf') format('truetype')}
+@font-face{font-family:'Cinzel';font-style:normal;font-weight:700;font-display:block;src:url('fonts/cinzel-700.ttf') format('truetype')}
+@font-face{font-family:'Geist';font-style:normal;font-weight:400;font-display:block;src:url('fonts/geist-400.ttf') format('truetype')}
+@font-face{font-family:'Geist';font-style:normal;font-weight:500;font-display:block;src:url('fonts/geist-500.ttf') format('truetype')}
+@font-face{font-family:'Geist';font-style:normal;font-weight:600;font-display:block;src:url('fonts/geist-600.woff2') format('woff2')}
+:root{--bg:#080d0e;--bone:#f4efe3;--ember:#ffb24a}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--bone);font-family:'Geist',system-ui,sans-serif;overflow:hidden;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.stage{position:relative;width:100%;height:100dvh;min-height:100vh;overflow:hidden;isolation:isolate}
+.bg{position:absolute;inset:0;z-index:0;overflow:hidden;container-type:size}
+.plate{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:max(100%, calc(100cqh * 16 / 9));
+  height:max(100%, calc(100cqw * 9 / 16))}
+.plate img,.plate video{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none}
+.plate video{z-index:1}
+.pumpkin-glow{position:absolute;z-index:2;pointer-events:none;left:14.1%;top:67.2%;width:26%;height:40%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(ellipse at 52% 48%,rgba(255,170,60,.40) 0%,rgba(255,130,25,.18) 30%,rgba(217,120,30,.07) 52%,transparent 70%);
+  mix-blend-mode:screen;animation:ember 2.8s ease-in-out infinite;filter:blur(1.5px)}
+.scrim{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    radial-gradient(ellipse 70% 48% at 50% 18%, rgba(6,10,12,.40) 0%, rgba(6,10,12,0) 72%),
+    linear-gradient(180deg, rgba(5,8,10,.30) 0%, rgba(5,8,10,.06) 20%, transparent 32%),
+    radial-gradient(ellipse 55% 32% at 50% 100%, rgba(4,7,9,.88) 0%, rgba(4,7,9,.42) 42%, transparent 72%)}
+.frame{position:relative;z-index:2;height:100%;display:flex;flex-direction:column;align-items:center;padding:7.5vh 5vw 6vh}
+.brand{position:relative;margin-top:3.2vh;text-align:center;max-width:min(94vw,1280px);padding:0 1.5vw}
+.brand::before{content:"";position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);width:118%;height:165%;
+  background:radial-gradient(ellipse at 50% 48%, rgba(5,8,10,.52) 0%, rgba(5,8,10,.18) 48%, transparent 72%);
+  z-index:-1;pointer-events:none}
+.brand h1{font-family:'Creepster',cursive;font-weight:400;font-size:clamp(2.4rem, 9.2vw, 7.2rem);
+  letter-spacing:.06em;line-height:.95;color:#f7f3ea;text-transform:uppercase;
+  text-shadow:0 0 8px rgba(5,8,10,.95),0 2px 8px rgba(0,0,0,.95),0 0 16px rgba(255,190,90,.55),0 0 42px rgba(255,140,30,.45),0 0 70px rgba(255,100,20,.2)}
+.tag{margin-top:1.05rem;font-family:'Geist',system-ui,sans-serif;font-weight:500;
+  font-size:clamp(13px, 1.35vw, 18px);letter-spacing:.28em;text-indent:.28em;text-transform:uppercase;color:#f0e4c8;
+  text-shadow:0 0 8px rgba(255,200,110,.55),0 0 22px rgba(255,170,60,.35),0 2px 10px rgba(0,0,0,.95);
+  animation:tagPulse 3.2s ease-in-out infinite}
+.enter{margin-top:auto;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:1.05rem 3.2rem 1.15rem;border-radius:6px;border:1px solid rgba(255,170,70,.8);
+  background:rgba(16,8,2,.55);
+  box-shadow:0 0 0 1px rgba(0,0,0,.45),0 0 24px rgba(255,140,30,.5),0 0 60px rgba(255,110,20,.28);
+  animation:enterPulse 2.2s ease-in-out infinite}
+.enter .label{font-family:'Creepster',cursive;font-size:clamp(32px, 3.6vw, 48px);letter-spacing:.2em;text-indent:.2em;
+  line-height:1;color:#ffcc6a;text-transform:uppercase;
+  text-shadow:0 0 14px rgba(255,170,50,.95),0 0 32px rgba(255,120,20,.7),0 2px 8px rgba(0,0,0,.9)}
+.enter .hint{margin-top:.48rem;font-family:'Geist',system-ui,sans-serif;font-weight:600;font-size:12px;
+  letter-spacing:.32em;text-indent:.32em;text-transform:uppercase;color:#ffe9c4;
+  text-shadow:0 0 10px rgba(255,180,70,.5),0 1px 6px rgba(0,0,0,.85)}
+.enter:focus-visible{outline:2px solid var(--ember);outline-offset:5px}
+@keyframes ember{0%,100%{opacity:.72;transform:translate(-50%,-50%) scale(1)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.07)}}
+@keyframes tagPulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.88;filter:brightness(1.15)}}
+@keyframes enterPulse{
+  0%,100%{filter:brightness(1);box-shadow:0 0 0 1px rgba(0,0,0,.5),0 10px 32px rgba(0,0,0,.5),0 0 24px rgba(255,160,50,.4),0 0 48px rgba(255,140,30,.18)}
+  50%{filter:brightness(1.22);box-shadow:0 0 0 1px rgba(0,0,0,.5),0 10px 32px rgba(0,0,0,.5),0 0 40px rgba(255,180,70,.75),0 0 80px rgba(255,140,30,.4)}
+}
+@media (max-width:700px){
+  .frame{padding:7vh 4.5vw 4.5vh}
+  .brand{margin-top:5.5vh;padding:0 1vw}
+  .brand h1{font-size:9.15vw;letter-spacing:.045em}
+  .tag{letter-spacing:.18em;font-size:10.5px;margin-top:.85rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .pumpkin-glow,.tag,.enter{animation:none}
+  body:not(.rec) .plate video{display:none}
+}
+body.ui-only{background:transparent}
+body.ui-only .plate img, body.ui-only .plate video{display:none}
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="bg">
+      <div class="plate">
+        <img src="bg/hero-moon-living-poster.jpg" alt="" width="1920" height="1080">
+        <video id="loop" autoplay muted loop playsinline preload="auto" poster="bg/hero-moon-living-poster.jpg">
+          <source src="bg/hero-moon-living-1920.mp4" type="video/mp4">
+          <source src="bg/hero-moon-living-1920.webm" type="video/webm">
+        </video>
+        <div class="pumpkin-glow" aria-hidden="true"></div>
+      </div>
+    </div>
+    <div class="scrim" aria-hidden="true"></div>
+    <main class="frame">
+      <div class="brand">
+        <h1>Counterspell</h1>
+        <p class="tag">Master the algorithms that matter</p>
+      </div>
+      <a class="enter" href="#login" aria-label="Enter, go to sign in">
+        <span class="label">ENTER</span>
+        <span class="hint">Press to begin</span>
+      </a>
+    </main>
+  </div>
+  <script>
+    (function(){
+      var q = new URLSearchParams(location.search);
+      if (q.get('rec') === '1') document.body.classList.add('rec');
+      if (q.get('ui') === '1') document.body.classList.add('ui-only');
+      var vid = document.getElementById('loop');
+      var reduce = !document.body.classList.contains('rec')
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (!vid) return;
+      if (reduce) { vid.removeAttribute('autoplay'); vid.pause(); return; }
+      var play = function(){ return vid.play().catch(function(){}); };
+      if (vid.readyState >= 2) play();
+      else vid.addEventListener('canplay', play, {once:true});
+    })();
+  </script>
+</body>
+</html>

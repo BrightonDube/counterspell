@@ -15,7 +15,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 0: contracts and safe seams
 
-- [ ] **T01 [P] (25 min) Freeze browser API and view-model contracts**
+- [x] **T01 [P] (25 min) Freeze browser API and view-model contracts**
   - Files: `web/src/lib/api/types.ts`, `web/src/lib/runs/types.ts`, `web/src/lib/ghost/types.ts`, `web/src/lib/familiar/types.ts`, focused tests.
   - Define strict browser types for `ProblemDetail`, `LanguageSummary`, run read models, public SSE envelopes, sample/hidden test rows, ghost/autopsy payloads, authored hints, measured Familiar data, and stable API errors. Keep raw server data at the adapter boundary and expose only public view models to components.
   - Add schema guards for hidden test payloads, bounded text, shrink trace entries, terminal results, and measured-only Familiar fields. Fixtures belong only in test files, not production modules.
@@ -32,14 +32,14 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Preserve: server has no Bollard dependency or Docker socket; Postgres remains the queue and source of truth.
   - Rust lesson: explain why the route validates and enqueues but never executes source code, and how `?` preserves database error context.
 
-- [ ] **T03 [P] (25 min) Wire problem and language API adapters**
+- [x] **T03 [P] (25 min) Wire problem and language API adapters**
   - Files: `web/src/lib/api/client.ts`, `web/src/lib/api/problems.ts`, `web/src/lib/api/languages.ts`, adapter tests.
   - Implement same-origin `GET /api/problems/{slug}` and `GET /api/languages` loaders with abort support, stable error decoding, safe markdown input, and strict response validation. Do not put production problem content in the bundle.
   - Depends on: T01 and the catalogue/language API seams.
   - Verify: loading, 401, 404, malformed JSON, timeout, and abort tests; no secrets or raw server error internals are exposed.
   - Preserve: enabled language flags from the server are authoritative.
 
-- [ ] **T04 [P] (25 min) Add the fixture-only prototype route boundary**
+- [x] **T04 [P] (25 min) Add the fixture-only prototype route boundary**
   - Files: `web/src/routes/prototype/ide-workspace/+page.svelte`, fixture module under `web/src/lib/prototype/`, route tests.
   - Create a visually useful shell fixture for UI work that has a persistent, high-contrast `Prototype fixture — not a real run` banner. Use unmistakable fixture ids and prevent fixture actions from calling production run endpoints.
   - Depends on: T01.
@@ -48,28 +48,28 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 1: UI foundation and entry
 
-- [ ] **T05 [UI] [P] (25 min) Establish the workspace Steel Night shell and semantic tokens**
+- [x] **T05 [UI] [P] (25 min) Establish the workspace Steel Night shell and semantic tokens**
   - Files: `web/src/app.css`, shared UI primitives, route skeleton, font loading configuration.
   - Apply `docs/palette.md` semantic variables, Geist/JetBrains Mono, dark launch theme, focus token, status tokens, and calm panel surfaces. Do not put raw hex values in components; keep documented Monaco values in the theme boundary.
   - Depends on: T04 and the existing frontend scaffold.
   - Verify: `npm run check && npm run build`; inspect that success green and danger red are reserved correctly and no purple/ambient animation is introduced.
   - Preserve: no second styling system and no landing-page animation in the IDE.
 
-- [ ] **T06 [UI] [P] (25 min) Build the problem statement panel**
+- [x] **T06 [UI] [P] (25 min) Build the problem statement panel**
   - Files: `web/src/lib/workspace/ProblemPanel.svelte`, safe statement renderer, component tests.
   - Show title, breadcrumb/track, concepts, difficulty, constraints, signature, examples, and collapsible detail sections. Render statement markdown safely with raw HTML disabled or allowlisted.
   - Depends on: T01, T03, T05.
   - Verify: keyboard expand/collapse, safe markup, missing optional fields, long constraints, and sample rendering tests.
   - Preserve: sample values are data, not HTML.
 
-- [ ] **T07 [UI] [P] (25 min) Add the lazy Monaco editor and Crypt theme**
+- [x] **T07 [UI] [P] (25 min) Add the lazy Monaco editor and Crypt theme**
   - Files: `web/src/lib/editor/MonacoEditor.svelte`, `web/src/lib/editor/crypt-theme.ts`, Monaco loader tests.
   - Dynamically import Monaco on workspace entry/editor focus, define the documented `crypt` theme, configure Python/JavaScript language modes, expose an accessible editor label, and dispose the model/editor on route leave.
   - Depends on: T05 and T03.
   - Verify: editor is not in the initial shell bundle, theme tokens match `docs/palette.md`, language switching preserves models, and dispose is called on unmount.
   - Preserve: no browser execution, Pyodide, or fabricated diagnostics.
 
-- [ ] **T08 [UI] [P] (25 min) Implement per-problem/language draft persistence**
+- [x] **T08 [UI] [P] (25 min) Implement per-problem/language draft persistence**
   - Files: `web/src/lib/editor/draft-store.ts`, `source-validation.ts`, tests.
   - Store source under a versioned `(problem slug, language)` key with debounced writes, restore valid drafts, count UTF-8 bytes, and preserve the in-memory value if storage is unavailable. Do not store runs, hidden values, AI prompts, cookies, or secrets.
   - Depends on: T01.
@@ -85,21 +85,21 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 2: editing and run lifecycle UI
 
-- [ ] **T10 [UI] [P] (25 min) Add Run/Submit controls and draft readiness rules**
+- [x] **T10 [UI] [P] (25 min) Add Run/Submit controls and draft readiness rules**
   - Files: `web/src/lib/workspace/RunControls.svelte`, `keyboard.ts`, `StatusAnnouncer.svelte`, component tests.
   - Add Run, Submit, language selection, byte warning, save state, shortcut help, disabled/loading rules, and accessible status text. Use `Ctrl/Cmd+Enter` for Run and `Ctrl/Cmd+Shift+Enter` for Submit without overriding Monaco editing commands unexpectedly.
   - Depends on: T08 and T09.
   - Verify: controls remain safe during duplicate clicks, source-too-large warning reports bytes, keyboard shortcuts, visible focus, and API error preservation tests.
   - Preserve: controls never infer a verdict from local validation.
 
-- [ ] **T11 [UI] [P] (30 min) Integrate the persisted SSE reducer and stream client**
+- [x] **T11 [UI] [P] (30 min) Integrate the persisted SSE reducer and stream client**
   - Files: `web/src/lib/runs/reducer.ts`, `stream.ts`, `api/runs.ts`, tests or reconciliation with existing `run-lifecycle` browser logic.
   - Use one idempotency key per user action, connect to real SSE, apply `seq` ordering, ignore duplicates/stale events, detect gaps, reconnect using the last sequence, handle `204`, close after terminal, and fetch the authoritative run read model.
   - Depends on: T01 and existing `run-lifecycle` T32/T33 or their equivalent.
   - Verify: fake EventSource unit tests for duplicates, gaps, reconnects, `restarted`, terminal close, malformed events, and 429 errors; no in-memory event source is used as production truth.
   - Preserve: public payload visibility and ownership rules remain server-side.
 
-- [ ] **T12 [UI] [S] (25 min) Build sample and hidden test result panels**
+- [x] **T12 [UI] [S] (25 min) Build sample and hidden test result panels**
   - Files: `web/src/lib/workspace/TestPanel.svelte`, test row components, tests.
   - Render queued/claimed/compiling/running/terminal statuses, sample input/expected/got/time, and hidden ordinal/verdict/time rows. Add text/icons for every status and safe truncated plain-text output.
   - Depends on: T10, T11.
@@ -115,7 +115,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 3: ghost, autopsy, hints, and Familiar
 
-- [ ] **T14 [UI] [P] (25 min) Implement the recorded shrink playback controller**
+- [x] **T14 [UI] [P] (25 min) Implement the recorded shrink playback controller**
   - Files: `web/src/lib/ghost/shrink-playback.ts`, tests.
   - Build a pure controller that accepts only received ordered steps, preserves head/tail omission metadata, verifies final input agreement, caps total display time near 3 seconds, and selects static mode under reduced motion.
   - Depends on: T01 and T11.
@@ -130,14 +130,14 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: fixture route visual test has the prototype banner; production component tests prove no percentages or fake steps appear; screen-reader list contains all actual steps.
   - Preserve: a timeout ghost is shown according to engine metadata and is not falsely called minimized.
 
-- [ ] **T16 [UI] [S] (30 min) Build the Bug Autopsy card**
+- [x] **T16 [UI] [S] (30 min) Build the Bug Autopsy card**
   - Files: `web/src/lib/workspace/AutopsyCard.svelte`, `web/src/lib/ghost/autopsy.ts`, tests.
   - Show failing input, expected, actual/crash/timeout, failure kind, engine explanation, structural differences, truncation marker, concept tags, and Authored explanation or AI hint label. Use success/danger semantic presentation plus text/icons.
   - Depends on: T01, T15.
   - Verify: expected/actual/difference paths are text-only, incomplete payloads produce unavailable state, authored versus AI labels are exact, timeout wording does not claim shrinking, and hidden canaries never render.
   - Preserve: the browser does not recompute or contradict the trusted engine diff.
 
-- [ ] **T17 [UI] [P] (25 min) Add authored hint ladder and AI hint display**
+- [x] **T17 [UI] [P] (25 min) Add authored hint ladder and AI hint display**
   - Files: `web/src/lib/workspace/HintPanel.svelte`, `web/src/lib/api/hints.ts`, tests.
   - Reveal authored rungs in order, preserve already revealed text, show retry/cap states, and display optional server-provided AI text with an explicit `AI hint` label. Render all hint text as plain text.
   - Depends on: T01, T16.
@@ -151,7 +151,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: ownership, schema, rate limit, idempotency, real queue event, one public custom result, and no unrelated hidden detail; API errors do not erase the autopsy.
   - Preserve: the source runs only in the trusted sandbox.
 
-- [ ] **T19 [UI] [P] (30 min) Build measured Familiar component and state reducer**
+- [x] **T19 [UI] [P] (30 min) Build measured Familiar component and state reducer**
   - Files: `web/src/lib/familiar/Familiar.svelte`, `familiar-state.ts`, `how-it-judges.svelte`, SVG mood assets, tests.
   - Implement five measured moods, dock/hide/mute controls, text equivalent, the “How does it judge me?” popover, and semantic visual rules. Consume only `complexity`, `familiar`, or terminal measured data; code edits never change mood.
   - Use lazy-loaded SVG art, calm 120–200ms transitions, and no live typing guess. Keep the Familiar inside the result region and never over editor text.

@@ -1,0 +1,8 @@
+# MCP rule: code-running tools go through the judge's sandbox runner. This crate
+# must never start a host process for user or reference code.
+#
+# `allow-invalid` keeps the tokio entry silent while tokio's `process` feature is off.
+disallowed-methods = [
+    { path = "std::process::Command::new", reason = "MCP code-running tools must use the judge sandbox, never a host process" },
+    { path = "tokio::process::Command::new", reason = "MCP code-running tools must use the judge sandbox, never a host process", allow-invalid = true },
+]

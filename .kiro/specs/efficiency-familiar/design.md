@@ -718,7 +718,7 @@ Each property has a test name that points back to a requirement. "PBT" means a `
 
 Each states the choice assumed so the spec stays implementable. Brighton can overrule any of them.
 
-1. **The art is not in the repository.** The brief says the SVG art and mood animations may exist in `web/static/familiar/`, but that folder, and the `assets/pack-realistic/creatures/` source named in system design §8b, are absent. **Assumed:** Brighton will add the art. Tasks first audit the folder, define the id contract, and build against a clearly labelled placeholder SVG that follows it. Kiro does not draw or generate the final art.
+1. **The art is not in the repository.** The brief says the SVG art and mood animations may exist in `web/static/familiar/`, but that folder, and the `assets/pack-realistic/creatures/` source named in system design §8b, are absent. **Assumed:** Brighton will add the art. Tasks first audit the folder, define the id contract, and build against a clearly labelled placeholder SVG that follows it. Kiro does not draw or generate the final art. **Answered 15 Nov 2026 (Brighton): the approved realistic art is in `web/static/art/familiar/`; see the amendment below.**
 2. **Who owns `Familiar.svelte`.** `ide-workspace` T19 and T20 already plan `Familiar.svelte`, `familiar-state.ts`, `how-it-judges.svelte`, the dock, the mute and hide menu and the preference client. **Assumed:** `ide-workspace` owns the dock, the menu UI and the popover; this spec owns `mascot/`, the bubble, the explainer view-model and all server work. Every web task begins by checking what exists and extending it.
 3. **Run (samples only) can show Laughing.** §8b says Run gives a quick mood and only Submit gets the laugh burst. **Assumed:** a Run may reach mood 5 at `medium` confidence at most, without the burst. **Alternative:** cap Run at Pleased, which avoids a Run saying "Laughing" and a Submit later saying "Uneasy".
 4. **A pass with no measurement is Pleased.** The five moods have no "not judged" state. **Assumed:** mood 4 with the explicit headline "Efficiency was not measured for this problem", never a claim about complexity. **Alternative:** a calm neutral face, which means a sixth visual state.
@@ -742,3 +742,22 @@ Each states the choice assumed so the spec stays implementable. Brighton can ove
 22. **Palette tension.** Mood 2 (a passing but slow solution) has a red-leaning "ember" glow because §8b specifies it, while the palette says red is only for failures. **Assumed:** only the glow uses the mix; text and icons for passing runs never use the danger colour.
 23. **Launch bench coverage may be thin.** The three starter packs have no `[bench]`; whether each of the 10 problems can pass admission is unknown, and the demo walkthrough (a quadratic Two Sum fixed to linear) needs a pairs-style problem with a bench. **Assumed:** target at least three bench-enabled problems; report honestly if fewer. Unenabled problems get pass or fail reactions only.
 24. **Stretch guess grammars.** The source and size of the Python and JavaScript tree-sitter `.wasm` files [U]. **Assumed:** resolved in the first stretch task; if they exceed a size budget the stretch is dropped, not the core.
+
+## Amendment (15 Nov 2026, Brighton): real jack-o'-lantern art
+
+Open question 1 is answered. Brighton approved five realistic mood paintings at 15:21 SAST on 15 Nov 2026. They live in `web/static/art/familiar/moods/`:
+
+- `familiar-1-furious`
+- `familiar-2-angry`
+- `familiar-3-uneasy`
+- `familiar-4-pleased`
+- `familiar-5-laughing`
+
+Each has a 1024 px transparent `.webp`/`.png` and a self-contained animated `.svg`. All five share one framing, so they swap in place. See `.kiro/steering/brighton-decisions.md`, 15 Nov 2026 15:21. The placeholder stays as a fallback only and never ships as the default.
+
+The earlier `web/static/art/familiar/jack-o-lantern-orange` and `jack-o-lantern-poison` files stay in the repo for other surfaces. They are not the mascot body and must not be deleted. The 14:00 plan that mapped all five moods onto those two pumpkins with drawn-over face paths is superseded for the mascot.
+
+- **Contract file.** A new `web/static/familiar/jack-o-lantern.svg` follows an updated id contract for the realistic art. Keep `fam-body`, the glow stops (`fam-glow-stop-inner`, `fam-glow-stop-outer`) and `fam-fx`. Inside `fam-body`, put five `<image>` layers (`fam-mood-1` … `fam-mood-5`) whose `href` values point at `/art/familiar/moods/familiar-N-mood.webp` (the raster is loaded separately, not embedded, so the SVG stays within the 120 KB budget). `validate()` is updated for these ids. Do not require `fam-eyes-N`, `fam-mouth-N` or `fam-cracks` path groups on the realistic file.
+- **Moods are five images.** On a mood change, opacity-cross-fade between those five images (300 ms, or instant under reduced motion). There are no drawn-over face paths: do not invent overlay eyes, mouths or cracks to fake a carving on a single pumpkin. Live-event particle bursts may still spawn in `fam-fx` (transform and opacity only).
+- **Existing rules, unchanged.** Mood comes only from `decide`, from measured facts. The mascot stays calm while the student is typing (no mood change on keystrokes). At most one mood or effect change per 2 s. Animated `.svg` loops are not used in the IDE idle state (calm IDE). Only live events may play a short motion. Reduced motion or mute shows the static WebP frame for the current mood, with the text intact.
+- **Quality bar.** Apply `.kiro/skills/impeccable` to the dock: size, crop, halo from palette tokens, no clutter around the editor.

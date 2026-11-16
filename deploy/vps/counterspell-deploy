@@ -1,68 +1,190 @@
 #!/usr/bin/env bash
-# Forced command for the CI deploy key (authorized_keys: restrict,command="/usr/local/sbin/counterspell-deploy").
-# Accepts exactly one of:
-#   deploy <40-hex sha> <server sha256 digest> <judge sha256 digest> <migrate sha256 digest>
+# Root-only deploy script. Installed as /usr/local/sbin/counterspell-deploy (root:root, 0755).
+# It is called only by counterspell-deploy-entry through `sudo -n` with fixed arguments, and it
+# validates them again. Accepted verbs:
+#   deploy <40-hex sha> <server digest> <judge digest> <migrate digest>
+#   rollback
 #   status
-# Anything else is refused. Images are pulled by digest only; on a failed health check the
-# previous digests are restored. Database migrations are NOT rolled back.
-# Install: root-owned, mode 0755. Not tested against a real server yet.
+# Images are pulled by digest only. Compose files are checked against compose.sha256 before anything
+# runs. Preflight and migrations run before the stack changes; if either fails, nothing changes.
+# If readiness or the public health check fails after the stack changed, the previous release is
+# restored. Migrations are never reversed (expand-only rule, RELEASE.md).
 set -euo pipefail
 umask 027
 
 APP_DIR="${COUNTERSPELL_DIR:-/opt/counterspell}"
-REGISTRY="ghcr.io/brightondube"
-HEALTH_URL="${COUNTERSPELL_HEALTH_URL:-http://127.0.0.1/api/health}"
+HOST_ENV="${COUNTERSPELL_HOST_ENV:-/etc/counterspell/host.env}"
 CURRENT="$APP_DIR/deploy.env"
 PREVIOUS="$APP_DIR/deploy.env.previous"
+CANDIDATE="$APP_DIR/deploy.env.new"
 COMPOSE=(docker compose --project-directory "$APP_DIR" -f "$APP_DIR/docker-compose.yml" -f "$APP_DIR/compose.prod.yml")
 
 refuse() { echo "refused: $*" >&2; exit 2; }
+fail() { echo "failed: $*" >&2; exit 1; }
 log() { logger -t counterspell-deploy -- "$*" 2>/dev/null || true; echo "$*"; }
 
-req="${SSH_ORIGINAL_COMMAND:-}"
-hex40='[0-9a-f]{40}'
-dig='sha256:[0-9a-f]{64}'
-
-if [[ "$req" == "status" ]]; then
-  [[ -f "$CURRENT" ]] && cat "$CURRENT" || echo "no deploy yet"
-  exit 0
-fi
-[[ "$req" =~ ^deploy\ ($hex40)\ ($dig)\ ($dig)\ ($dig)$ ]] || refuse "expected 'deploy <sha> <digest> <digest> <digest>' or 'status'"
-sha="${BASH_REMATCH[1]}"; d_server="${BASH_REMATCH[2]}"; d_judge="${BASH_REMATCH[3]}"; d_migrate="${BASH_REMATCH[4]}"
-
-exec 9>"$APP_DIR/.deploy.lock"
-flock -n 9 || refuse "another deploy is running"
-
-up() { # $1 = env file
-  "${COMPOSE[@]}" --env-file "$1" pull server judge migrate
-  "${COMPOSE[@]}" --env-file "$1" run --rm migrate
-  "${COMPOSE[@]}" --env-file "$1" up -d --no-build --remove-orphans
+# Prints one value from host.env. Fails when the key is missing, so a bad host file stops a deploy.
+host_value() {
+  local value
+  value="$(grep -m1 "^$1=" "$HOST_ENV" | cut -d= -f2- || true)"
+  [[ -n "$value" ]] || fail "host.env has no $1"
+  printf '%s' "$value"
 }
-healthy() {
-  for _ in $(seq 1 30); do curl -fsS --max-time 3 "$HEALTH_URL" > /dev/null && return 0; sleep 2; done
+
+# Runs docker compose with the env file given as $1 and the remaining arguments as the command.
+dc() {
+  local env_file="$1"
+  shift
+  "${COMPOSE[@]}" --env-file "$env_file" "$@"
+}
+
+# Stops with nothing changed on the host, and removes the candidate record.
+abort_unchanged() {
+  rm -f "$CANDIDATE"
+  fail "$* (nothing changed)"
+}
+
+check_compose_files() {
+  (cd "$APP_DIR" && sha256sum --check --quiet compose.sha256) \
+    || refuse "compose files differ from compose.sha256; run the app role"
+}
+
+# Waits up to 60 s for the server's readiness route, asked from inside the edge network via caddy.
+server_ready() {
+  local env_file="$1"
+  for _ in $(seq 1 30); do
+    if dc "$env_file" exec -T caddy wget -q -O /dev/null http://server:8080/api/ready; then
+      return 0
+    fi
+    sleep 2
+  done
   return 1
 }
 
-new="$APP_DIR/deploy.env.new"
-{
-  echo "COUNTERSPELL_SHA=$sha"
-  echo "COUNTERSPELL_SERVER_IMAGE=$REGISTRY/counterspell-server@$d_server"
-  echo "COUNTERSPELL_JUDGE_IMAGE=$REGISTRY/counterspell-judge@$d_judge"
-  echo "COUNTERSPELL_MIGRATE_IMAGE=$REGISTRY/counterspell-migrate@$d_migrate"
-} > "$new"
+# Waits up to 60 s for the public health route over HTTPS. Set COUNTERSPELL_HEALTH_URL only in tests.
+public_healthy() {
+  local url body
+  url="${COUNTERSPELL_HEALTH_URL:-https://$(host_value CADDY_SITE_ADDRESS)/api/health}"
+  for _ in $(seq 1 30); do
+    body="$(curl -fsS --max-time 5 "$url" || true)"
+    if [[ "$body" == *'"ok"'* ]]; then
+      return 0
+    fi
+    sleep 2
+  done
+  return 1
+}
 
-log "deploying $sha"
-if up "$new" && healthy; then
-  [[ -f "$CURRENT" ]] && cp "$CURRENT" "$PREVIOUS"
-  mv "$new" "$CURRENT"
-  log "deployed $sha"
-  exit 0
-fi
+# Writes the candidate release record: the three digests plus a copy of host.env (R5.4).
+write_candidate() {
+  local sha="$1" d_server="$2" d_judge="$3" d_migrate="$4" owner
+  owner="$(host_value GHCR_OWNER)"
+  {
+    echo "COUNTERSPELL_SHA=$sha"
+    echo "COUNTERSPELL_SERVER_IMAGE=ghcr.io/$owner/counterspell-server@$d_server"
+    echo "COUNTERSPELL_JUDGE_IMAGE=ghcr.io/$owner/counterspell-judge@$d_judge"
+    echo "COUNTERSPELL_MIGRATE_IMAGE=ghcr.io/$owner/counterspell-migrate@$d_migrate"
+    cat "$HOST_ENV"
+  } > "$CANDIDATE"
+}
 
-log "health check failed for $sha"
-if [[ -f "$CURRENT" ]]; then
-  "${COMPOSE[@]}" --env-file "$CURRENT" up -d --no-build --remove-orphans || true
-  log "rolled back to $(grep '^COUNTERSPELL_SHA=' "$CURRENT" | cut -d= -f2)"
-fi
-rm -f "$new"
-exit 1
+# Makes the candidate the current release and keeps the old current record as previous.
+promote() {
+  if [[ -f "$CURRENT" ]]; then
+    cp -p "$CURRENT" "$PREVIOUS"
+  fi
+  mv "$CANDIDATE" "$CURRENT"
+}
+
+# Restores the current release after a failed check, without touching migrations.
+restore_current() {
+  if [[ -f "$CURRENT" ]]; then
+    dc "$CURRENT" up -d --no-build --remove-orphans || true
+    log "restored $(grep '^COUNTERSPELL_SHA=' "$CURRENT" | cut -d= -f2)"
+  fi
+  rm -f "$CANDIDATE"
+}
+
+deploy_release() {
+  local sha="$1" d_server="$2" d_judge="$3" d_migrate="$4"
+  write_candidate "$sha" "$d_server" "$d_judge" "$d_migrate"
+  log "deploying $sha"
+
+  dc "$CANDIDATE" pull server judge migrate || abort_unchanged "image pull failed"
+  dc "$CANDIDATE" run --rm judge preflight || abort_unchanged "judge preflight failed"
+  dc "$CANDIDATE" run --rm migrate || abort_unchanged "migration failed"
+
+  dc "$CANDIDATE" up -d --no-build --remove-orphans
+  if server_ready "$CANDIDATE" && public_healthy; then
+    promote
+    log "deployed $sha"
+    exit 0
+  fi
+
+  log "checks failed for $sha; restoring the previous release"
+  restore_current
+  exit 1
+}
+
+rollback_release() {
+  [[ -f "$PREVIOUS" ]] || refuse "no previous release record to roll back to"
+  local previous_sha
+  previous_sha="$(grep '^COUNTERSPELL_SHA=' "$PREVIOUS" | cut -d= -f2)"
+  log "rolling back to $previous_sha"
+
+  dc "$PREVIOUS" pull server judge || fail "image pull failed; release records unchanged"
+  dc "$PREVIOUS" up -d --no-build --remove-orphans
+  if server_ready "$PREVIOUS" && public_healthy; then
+    local swap="$APP_DIR/deploy.env.swap"
+    mv "$CURRENT" "$swap"
+    mv "$PREVIOUS" "$CURRENT"
+    mv "$swap" "$PREVIOUS"
+    log "rolled back to $previous_sha"
+    exit 0
+  fi
+  fail "rollback checks failed; release records unchanged"
+}
+
+show_status() {
+  if [[ -f "$CURRENT" ]]; then
+    grep -E '^COUNTERSPELL_(SHA|SERVER_IMAGE|JUDGE_IMAGE|MIGRATE_IMAGE)=' "$CURRENT"
+  else
+    echo "no deploy yet"
+  fi
+}
+
+main() {
+  local verb="${1:-}"
+  local hex40='^[0-9a-f]{40}$'
+  local digest='^sha256:[0-9a-f]{64}$'
+
+  case "$verb" in
+    status)
+      [[ $# -eq 1 ]] || refuse "status takes no arguments"
+      show_status
+      exit 0
+      ;;
+    rollback)
+      [[ $# -eq 1 ]] || refuse "rollback takes no arguments"
+      ;;
+    deploy)
+      [[ $# -eq 5 ]] || refuse "expected 'deploy <sha> <digest> <digest> <digest>'"
+      [[ "$2" =~ $hex40 ]] || refuse "sha must be 40 lowercase hex characters"
+      [[ "$3" =~ $digest && "$4" =~ $digest && "$5" =~ $digest ]] || refuse "digests must be sha256:<64 hex>"
+      ;;
+    *)
+      refuse "expected 'deploy', 'rollback' or 'status'"
+      ;;
+  esac
+
+  exec 9>"$APP_DIR/.deploy.lock"
+  flock -n 9 || refuse "another deploy is running"
+  check_compose_files
+
+  case "$verb" in
+    deploy) deploy_release "$2" "$3" "$4" "$5" ;;
+    rollback) rollback_release ;;
+  esac
+}
+
+main "$@"

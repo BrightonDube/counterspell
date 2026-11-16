@@ -1,0 +1,4 @@
+# Synthetic fixture: published, with an approval.toml that names a different hash.
+
+slug = "count-pairs"
+status = "published"

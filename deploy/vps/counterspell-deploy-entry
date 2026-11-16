@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Forced-command entry point for the CI deploy key. Installed as /usr/local/sbin/counterspell-deploy-entry
+# (root:root, 0755). authorized_keys: restrict,command="/usr/local/sbin/counterspell-deploy-entry" <key>
+# Accepts exactly one of these requests in SSH_ORIGINAL_COMMAND:
+#   deploy <40-hex sha> <server digest> <judge digest> <migrate digest>
+#   rollback
+#   status
+# It validates the request, then runs the root script through sudo with fixed arguments. The sudoers
+# rule names only the root script (no wildcards). The root script validates the arguments again.
+set -euo pipefail
+umask 027
+
+DEPLOY_BIN=/usr/local/sbin/counterspell-deploy
+digest='^deploy ([0-9a-f]{40}) (sha256:[0-9a-f]{64}) (sha256:[0-9a-f]{64}) (sha256:[0-9a-f]{64})$'
+req="${SSH_ORIGINAL_COMMAND:-}"
+
+refuse() { echo "refused: $*" >&2; exit 2; }
+
+case "$req" in
+  status | rollback)
+    exec sudo -n "$DEPLOY_BIN" "$req"
+    ;;
+  deploy*)
+    [[ "$req" =~ $digest ]] || refuse "expected 'deploy <sha> <digest> <digest> <digest>'"
+    exec sudo -n "$DEPLOY_BIN" deploy "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
+    ;;
+  *)
+    refuse "expected 'deploy <sha> <digest> <digest> <digest>', 'rollback' or 'status'"
+    ;;
+esac

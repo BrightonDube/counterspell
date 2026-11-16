@@ -78,7 +78,7 @@ Everything that crosses from Z4 back to Z2 is untrusted bytes. The judge reads i
 1. Integrity of verdicts (an `accepted` must mean the code was right).
 2. Confidentiality of hidden tests and expected outputs.
 3. The host (VPS), its secrets, and the application data (Postgres, Valkey, Caddy, `.env`).
-4. Availability for other users and for the judges until 29 Jan 2027.
+4. Availability for other users and for reviewers until 29 Jan 2027.
 5. Isolation between users' runs.
 
 ### Adversaries
@@ -110,7 +110,7 @@ Out of scope as adversaries: a compromised judge host, a compromised Postgres, a
 | T2 | Infinite loop, sleep, or loop at import | Worker deadline and kill from outside | Run cap, `sleep` PID 1 expires the container | P6, S05, S06 |
 | T3 | Memory exhaustion | cgroup `memory.max`, swap 0 | Kernel `oom_kill` counter read by the worker | S07 |
 | T4 | Fork or thread bomb | cgroup `pids.max` 64 | CPU quota; no shared `nproc` | S08, S18 |
-| T5 | Output flood on stdout, stderr or one endless line | Bounded reader kills the container | Log driver `none` | P5, S09 to S11 |
+| T5 | Output flood on stdout, stderr or one endless line | Stdout: the bounded reader kills the container (`output_limit`). Stderr: the store is bounded and the excess is drained (A2) | Log driver `none` | P5, S09 to S11 |
 | T6 | Network access to anything | Network `none` | Out-of-band host listener; probe sees only `lo` | S12, S20 |
 | T7 | Write to the root filesystem, `/proc`, `/sys`, other mounts | Read-only rootfs, masked paths, `nosuid,nodev` scratch, all caps dropped | Daemon-reported filesystem changes must be empty | S13, S26 |
 | T8 | Fill scratch space | `tmpfs` size caps, `fsize` ulimit | Counts against the memory limit | S13 |
@@ -126,6 +126,7 @@ Out of scope as adversaries: a compromised judge host, a compromised Postgres, a
 | T18 | Compromised judge or daemon misuse | Out of scope as an adversary, but the blast radius is limited to the `sandbox` OS user | Systemd user-slice limits | Residual risk 2 |
 | T19 | Keyword evasion (`getattr(__builtins__, ...)`) | No blocklist exists to evade; the sandbox is the boundary | S27 | S27 |
 | T20 | Compile-time abuse (huge or deeply nested source) | Size limit, compile budget, compile runs inside the sandbox | `compile_error` verdict | S03 |
+| T21 | A program remembers hidden inputs and prints them during a later visible test | Visible tests run first; no output is shown from the first hidden test onward (A1) | Hidden tests carry verdict and time only | P15, S28 |
 
 ## 3. Deviations from the docs
 
@@ -136,14 +137,15 @@ Everything here is a place where this design is not word-for-word `docs/system-d
 | D1 | `ulimit nproc` as belt and braces | **Not set** | The limit is per namespaced UID. Concurrent containers share the UID, so one fork bomb could stop the other slot from forking. The PID cgroup limit is the control. S18 proves isolation. | ⚠ |
 | D2 | `AutoRemove` | `AutoRemove` **off**; the worker removes explicitly; PID 1 expires itself; the sweeper removes by label | The exit state (exit code, OOM flag) is needed to classify an abnormal end. Without it a user killing their own container looks like a daemon fault. | ⚠ |
 | D3 | Python `compile = []` | Python has a worker-run syntax check (`py_compile`) | Keeps `compile_error` a worker-observed fact instead of something the program can claim | ⚠ |
-| D4 | Image tags allowed "as local defaults" (language-drivers) | Digest required, no override | The brief requires digest-pinned images | ⚠ |
+| D4 | Image tags allowed "as local defaults" (language-drivers) | Digest required, no override. The weekly digest refresh is opened as a bot pull request (Renovate, A3). A human merges it | The brief requires digest-pinned images | ⚠ |
 | D5 | `/box` `exec` allowed | `noexec` for Python; per-language flag for compiled languages | Python needs no executable scratch | |
 | D6 | `/box` mode `1777` | Owned by the sandbox UID, mode `0700` | One user only; no need for world-writable | |
 | D7 | Files copied into the container | Delivered as a tar stream on stdin of a fixed `tar` command (fallback decided by spike T02) | `docker cp` into a read-only container is unreliable, and files copied before start would be hidden by the `tmpfs` | |
-| D8 | "Reads at most 1 MB stdout and 64 KB stderr" | 1 MiB stdout **per call**, 64 KiB stderr **per session** | Defines the unit the docs left open | |
+| D8 | "Reads at most 1 MB stdout and 64 KB stderr" | 1 MiB stdout **per call** kills with `output_limit`. Stderr: the first 64 KiB are kept, the excess is drained and discarded with a truncation marker, and the verdict is unchanged (A2) | Defines the unit the docs left open. Amendment A2 replaces the docs' "kill on stderr" | ⚠ |
 | D9 | `--memory-swap 256m` | Same: swap equals memory, so no swap. `tmpfs` use counts against the memory limit, so scratch plus heap share 256 MiB | Documented, not hidden | ⚠ |
 | D10 | Reaper removes containers older than 60 s | Sweeper every 10 s removes those older than 40 s; containers also expire themselves at the run cap plus 5 s | Makes "no container outlives about 50 s" true, not only "older than 60 s" | |
 | D11 | A fresh container per run "where possible" | Always a fresh container per run and per restart; **never pooled** | Cross-user contamination is worse than cold-start cost | ⚠ |
+| D12 | Not stated in the docs | Visible (sample) tests run before any hidden test in a run. From the first hidden test onward, no program output is shown to the user (A1) | The driver keeps state between the tests of one run (open question 17), so a program could remember a hidden input and print it during a later visible test | ⚠ |
 
 ## 4. Boundary review checklist (for T00)
 
@@ -199,8 +201,8 @@ crates/judge/
 │   ├── data/source_vectors.json   # shared validation vectors (R14.8)
 │   ├── fixtures/problems/<slug>/  # small test problems: statement-free tests + expected + good/bad solutions
 │   ├── hostile/*.py               # the hostile corpus: DATA, never executed on the host
-│   ├── model_*.rs                 # properties P1 to P14, no Docker
-│   └── sbx/…                      # scenarios S01 to S27, need a sandbox daemon, names start with sbx_
+│   ├── model_*.rs                 # properties P1 to P15, no Docker
+│   └── sbx/…                      # scenarios S01 to S28, need a sandbox daemon, names start with sbx_
 languages/
 ├── languages.toml                 # python enabled; javascript, java, cpp present with enabled = false
 └── drivers/python/driver.py       # owned by language-drivers; this spec only needs the protocol
@@ -351,7 +353,7 @@ call(t, args, limit):
         stop signal                    → kill session           → CallFacts::Stopped
         write line, then read one line → within bounds          → CallFacts::Answer(bytes, elapsed)
         stdout > 1 MiB in this call    → kill session           → CallFacts::OutputLimit(Stdout)
-        stderr total > 64 KiB          → kill session           → CallFacts::OutputLimit(Stderr)
+        stderr beyond 64 KiB           → keep draining, store nothing more → no effect on the call (A2)
         driver stream ended            → read exit state        → CallFacts::DriverExited(...)
     after any kill: confirm the container is gone within KILL_SLACK, else InfraError::KillFailed
 ```
@@ -360,7 +362,7 @@ call(t, args, limit):
 - **Elapsed time** is `now() - start` on the worker's monotonic clock. The driver prints no time and the worker would ignore it.
 - **Unsolicited output.** Bytes that arrive while no call is outstanding are counted against the 1 MiB budget and kept for the next call, where an answer line with the wrong id makes it a protocol violation.
 - **Bounded reader.** `stream.rs` has a pure state machine: feed it chunks, it yields complete lines, or `Overflow` the moment the cap is crossed. P5 proves the result does not depend on how the bytes were chunked.
-- **Stderr** is kept (first 64 KiB) for exception-class extraction and sample details; crossing the cap is `output_limit`.
+- **Stderr** keeps the first 64 KiB for sample details and display. It also keeps the last complete line (capped at 4 KiB) for exception-class extraction. Past 64 KiB it appends a truncation marker and keeps draining without storing (A2). Crossing that cap does not kill the container and does not change the verdict. Draining keeps the pipe from blocking, so the call deadline still decides a stuck program.
 - **Timeouts for daemon calls** (`SANDBOX_API_TIMEOUT_SECS`) apply to every API call. A timeout is an `InfraError`, not a verdict.
 
 ### Time bounds
@@ -384,7 +386,8 @@ call(t, args, limit):
 | Driver exited abnormally, `oom_kill` > 0 | `memory_limit` | Kernel counter |
 | Driver exited abnormally, no OOM evidence | `runtime_error` | Class taken from the last stderr line, then sanitised |
 | Deadline missed | `time_limit` | |
-| Stdout > 1 MiB in a call, or stderr > 64 KiB | `output_limit` | |
+| Stdout > 1 MiB in a call | `output_limit` | Kill |
+| Stderr over 64 KiB | no verdict change | Stored truncated with a marker; the run continues (A2) |
 | Stop signal | none: `ExecError::Stopped` | |
 | Any `InfraError` | none: `ExecError::Infrastructure` | Never a verdict |
 
@@ -392,7 +395,7 @@ call(t, args, limit):
 
 ### Exception class extraction
 
-If the driver exits abnormally the executor looks at the last non-empty stderr line. A line of the form `Name: message` or `Name` where `Name` matches `[A-Za-z_][A-Za-z0-9_.]{0,63}` gives a candidate class. It is untrusted text: `counterspell-engine` sanitises it again (ghost-engine R4.8). The contract with `language-drivers` is that on a user exception the Python driver writes the traceback to stderr and exits with a non-zero code. Nothing else about the exception is trusted.
+If the driver exits abnormally the executor looks at the last non-empty stderr line, which is kept separately so it survives the 64 KiB truncation (A2). A line of the form `Name: message` or `Name` where `Name` matches `[A-Za-z_][A-Za-z0-9_.]{0,63}` gives a candidate class. It is untrusted text: `counterspell-engine` sanitises it again (ghost-engine R4.8). The contract with `language-drivers` is that on a user exception the Python driver writes the traceback to stderr and exits with a non-zero code. Nothing else about the exception is trusted.
 
 ## 10. Verdict authority in code
 
@@ -427,7 +430,7 @@ The sweeper only deletes by label and age; it takes no decision about verdicts. 
 ## 12. Concurrency and run isolation
 
 - The worker's semaphore (`JUDGE_CONCURRENCY`) limits runs. A second `Semaphore` in `SandboxExecutor` limits live containers (`SANDBOX_MAX_CONTAINERS`, default 4 so a ghost hunt can hold a user and a reference container). A permit is released only after the container is confirmed gone.
-- One run never shares a container with another run, and never reuses one after an abnormal end. Tests of one run do share a container (the user's own driver process persists between calls). This is the same model the ghost hunt uses ("interactive mode") and it means a program can keep state between tests of its own run. Open question 17.
+- One run never shares a container with another run, and never reuses one after an abnormal end. Tests of one run do share a container (the user's own driver process persists between calls). This is the same model the ghost hunt uses ("interactive mode") and it means a program can keep state between tests of its own run. Open question 17. Amendment A1 limits what that state can reveal: all visible tests run before any hidden test, and no program output is shown from the first hidden test onward (P15, S28).
 - No `nproc` ulimit (D1). S18 runs a fork bomb in one slot while a correct solution runs in the other.
 - No `--cpuset-cpus`. CPU limits are a quota. The deployment note adds an aggregate limit on the `sandbox` user's systemd slice (CPU, memory, tasks) as a backstop for the whole VPS.
 
@@ -535,7 +538,7 @@ Written with `proptest`. A `FakeBackend` (testkit) simulates Docker with a ledge
 | P2 | **Forgery resistance.** For any byte string the program prints (arbitrary bytes, JSON that looks like a verdict, a correct-looking answer with the wrong id, extra lines), `judge_answer` returns `Pass` only if the parsed `out` equals `expected` and the id matches. | R8.2, R8.4 |
 | P3 | **Policy completeness and non-vacuity.** For any language definition, the built policy has no violations. Weakening any single control (network, rootfs, caps, seccomp, privileged, memory, swap, pids, user, binds, log driver, tmpfs flags) is reported. | R3.16 |
 | P4 | **Request independence.** For any two sources and inputs, the commands, environment, labels, names and archive entry names of every request are equal. Only archive content and stdin lines differ. | R2.3, R2.4 |
-| P5 | **Stream bounds.** For any byte stream and any chunking, the line reader never holds more than cap + one chunk, signals overflow exactly when the cap is crossed, and yields the same lines. | R6 |
+| P5 | **Stream bounds.** For any byte stream and any chunking, the stdout line reader never holds more than cap + one chunk and signals overflow exactly when the 1 MiB cap is crossed. The stderr store keeps the first 64 KiB and the last line (capped at 4 KiB), marks truncation exactly when bytes were dropped, and gives the same result for any chunking. | R6 |
 | P6 | **Call deadline.** For any scripted program timing, `call` returns within limit + slack of virtual time; the verdict is `time_limit` iff the complete answer did not arrive before the limit. | R5.1 to R5.5 |
 | P7 | **Run cap and fail-fast.** For any scripted behaviour (including every call hanging), the run is decided within the run cap + slack, restarts happen after timeouts only while the cap allows, and execution stops after the abnormal-streak limit. | R5.4 to R5.8 |
 | P8 | **Cleanup ledger.** For any script, fault point, cancel or panic, after `execute` returns (or its task is dropped and cleanup completes) the ledger shows every created container removed. No container is shared between runs. | R10.1, R10.7, R11.3 |
@@ -545,6 +548,7 @@ Written with `proptest`. A `FakeBackend` (testkit) simulates Docker with a ledge
 | P12 | **Redaction.** With canary strings in hidden inputs and expected values and in everything the fake program prints, no serialised event or record for a hidden test contains a canary. Sample records contain only the allowed fields. | R13.1, R8.5 |
 | P13 | **Configuration validation.** Generated invalid language files and environment values (tag instead of digest, bad file names, zero limits, orphan age too small, unknown fields, duplicate names) are rejected; a valid file round-trips. | R2.1, R2.5, R10.4, R12, R17 |
 | P14 | **Daemon guard and read-back.** Socket paths for the main daemon, TCP addresses and empty values are refused. A daemon report that differs from the policy in any one field fails the read-back. | R1.1, R1.2, R3.15 |
+| P15 | **Hidden-test ordering and output visibility (A1).** For any test plan, every sample test is scheduled before the first hidden test. For any run, no public event carries stdout, stderr, exception text, a sanitised snippet or sample detail for a test executed after the first hidden test. | R13.7, R13.8 |
 
 ### Real-sandbox scenarios (need a rootless sandbox daemon; `#[ignore]`, names start with `sbx_`)
 
@@ -561,7 +565,7 @@ Run with `SANDBOX_DOCKER_SOCKET=… cargo test -p counterspell-judge --features 
 | S07 | Memory bomb (list growth and one huge allocation) | `memory_limit` (kernel `oom_kill` > 0) or `runtime_error` for a `MemoryError`; never `accepted`; other slot unaffected |
 | S08 | Fork bomb and thread bomb | Contained by the PID limit; verdict not `accepted`; host and other slot unaffected; wall bound holds |
 | S09 | Endless stdout via `print` and via `os.write(1, …)` | `output_limit`; worker memory bounded |
-| S10 | Endless stderr | `output_limit` |
+| S10 | Endless stderr with no answer | Stored stderr is truncated with a marker; worker memory bounded; the container is not killed for stderr alone; the verdict is `time_limit` from the missed deadline, not `output_limit` (A2) |
 | S11 | One 2 MiB line without a newline | `output_limit` |
 | S12 | Network: TCP, UDP, DNS, IPv6, raw socket, link-local and metadata addresses, the bridge gateway, loopback of the host | A listener on the host and on the usual gateway addresses sees **zero** connections. A control run with networking enabled shows the listener *can* see a connection; if the control is inconclusive on this host the report says so |
 | S13 | Write outside scratch: `/`, `/usr`, `/etc`, `/proc/sys`, `/sys`; fill `/box`; huge single file | The daemon's filesystem-changes report for the container is empty; fills stop at the tmpfs size; verdict not `accepted` |
@@ -579,6 +583,7 @@ Run with `SANDBOX_DOCKER_SOCKET=… cargo test -p counterspell-judge --features 
 | S25 | Probe report | Report JSON saved to the verification report |
 | S26 | Host visibility: mounts, `/var/run/docker.sock` absent, no secrets, blocked syscalls (`mount`, `unshare`, `ptrace`) | No other mounts; operations fail; not `accepted` |
 | S27 | A harmless-looking solution that imports `os`, `subprocess`, `socket`, `ctypes` | Passes validation, runs, correct answer is `accepted` (no blocklist exists) |
+| S28 | Remember-and-replay: a program keeps every input it receives and prints earlier inputs during later calls, via `print` and raw `os.write`. Test order: two visible tests, then two hidden tests | Visible tests run first; from the first hidden test onward only verdict and time are public; no public event contains a hidden input or any output text from a hidden-test call; the run is not `accepted` (A1) |
 
 ### Hostile corpus rules
 
@@ -588,7 +593,7 @@ Run with `SANDBOX_DOCKER_SOCKET=… cargo test -p counterspell-judge --features 
 
 ### Definition of done (reported, not assumed)
 
-`verification-report.md` (T37) contains, from a run on the VPS: the preflight report; pass/fail for S01 to S27 with the date and host; timings; and the status word for every guarantee (`TESTED on VPS`, `TESTED in CI`, `MODEL ONLY`, `NOT TESTED`).
+`verification-report.md` (T37) contains, from a run on the VPS: the preflight report; pass/fail for S01 to S28 with the date and host; timings; and the status word for every guarantee (`TESTED on VPS`, `TESTED in CI`, `MODEL ONLY`, `NOT TESTED`).
 
 Measurements reported separately: container create+start, file delivery, compile, per-call overhead (empty function), Run end-to-end p50/p95 over 50 runs, hostile-run wall times against their limits, kill latency, and peak live containers under concurrency. The target is Run under 1.5 s p95 on a warm image [E, unmeasured until T37].
 
@@ -605,7 +610,8 @@ Measurements reported separately: container create+start, file delivery, compile
 | Container removal fails | `execute` returns after the cleanup budget; sweeper retries every 10 s | Automatic |
 | Event write fails (lease lost) | `ctx.emit` error → `Stopped` (lease lost) or `Infrastructure` | run-lifecycle rules apply |
 | Executor task panics | Guard `Drop` removes the container; run-lifecycle releases for retry | Automatic |
-| Hostile output floods | Reader kills the container at the cap | Verdict `output_limit` |
+| Hostile stdout floods | Reader kills the container at the cap | Verdict `output_limit` |
+| Hostile stderr floods | Stored stderr is truncated with a marker; draining continues; no kill | Verdict from the answers and the deadline, not from stderr (A2) |
 | `tar` over exec stdin unsupported on an image | Spike T02 detects it; fallback is the archive upload API | Decided before implementation |
 | Probe passes but a real run's read-back differs | Run fails as `InfraError` | Investigate |
 
@@ -615,7 +621,7 @@ Measurements reported separately: container create+start, file delivery, compile
 2. **A compromised judge** can create containers with any options on the sandbox daemon and so act as the `sandbox` user (for example mount world-readable host paths read-only). Deployment mitigations: the `sandbox` user's home holds nothing sensitive; application secrets are mode 0600 and owned by another user; the sandbox user slice has CPU, memory and task limits. A socket-filtering proxy was considered and rejected as unable to inspect request bodies.
 3. **Side channels** (CPU timing, cache) between concurrent runs. Not mitigated.
 4. **Hash randomisation**: `python -I` ignores `PYTHONHASHSEED`, so set-order-dependent code can behave differently between runs. The ghost engine's double-check handles this (ghost-engine); open question 18.
-5. **Stateful programs**: a program can keep state between the tests of its own run (open question 17).
+5. **Stateful programs**: a program can keep state between the tests of its own run (open question 17). Amendment A1 orders visible tests first and hides output from the first hidden test onward (P15, S28). What remains public for a hidden test is its verdict and time.
 6. **Pack authors** are trusted not to write hostile references; references still run in the sandbox.
 7. **Timing noise** on a shared VPS can move a borderline test across its limit.
 8. **Preflight is a point-in-time check** (re-run every 60 s). A change in the daemon between checks is not detected until the next one. The per-container read-back narrows that window.
@@ -635,9 +641,9 @@ Measurements reported separately: container create+start, file delivery, compile
 
 1. `cargo fmt --all -- --check`
 2. `cargo clippy --workspace --all-targets --all-features -- -D warnings`
-3. `cargo test --workspace` (properties P1 to P14, no Docker needed)
+3. `cargo test --workspace` (properties P1 to P15, no Docker needed)
 4. `cargo deny check licenses`
-5. `cargo test -p counterspell-judge --features sandbox -- --ignored sbx_` on the VPS (S01 to S27)
+5. `cargo test -p counterspell-judge --features sandbox -- --ignored sbx_` on the VPS (S01 to S28)
 6. `counterspell-judge preflight` on the VPS, report saved
 7. Boundary tests (T36): server dependency closure, `bollard` imports, compose mounts, no host process spawning
 8. `verification-report.md` written and honest about what was and was not tested
@@ -649,12 +655,12 @@ Each lists the choice this spec assumed so work can proceed. ⚠ means it change
 1. ⚠ **No `nproc` ulimit.** The limit is per namespaced UID and all concurrent containers share it, so a fork bomb could break the other slot. **Assumed:** rely on the PID cgroup limit (64) and prove isolation with S18. **Alternative:** one UID per slot (for example 20000 + slot), which makes `nproc` valid again at the cost of per-slot ownership details.
 2. ⚠ **One UID (65534) for PID 1, the driver and all execs.** **Assumed:** yes, and a program may end its own container. **Alternative:** PID 1 as a different UID (more moving parts, same outcome).
 3. ⚠ **Python gets a worker-run syntax check** (`py_compile`) so `compile_error` is a worker-observed fact. This changes `compile = []` in the system design and `language-drivers`. **Assumed:** yes; whichever spec lands second updates the other.
-4. ⚠ **Digest pinning is strict.** No override for local development; developers pull by digest into their sandbox daemon. **Assumed:** strict, per the brief. The committed digest comes from T03.
+4. ⚠ **Digest pinning is strict.** No override for local development; developers pull by digest into their sandbox daemon. **Assumed:** strict, per the brief. The committed digest comes from T03. **Decided (amendment A3):** the weekly digest refresh is automated by a bot that opens a pull request (Renovate), see T38. Strictness does not change.
 5. ⚠ **A fresh container per run, never pooled.** Slower (one container start per run) but no cross-user contamination. **Assumed:** yes. A pool would need a separate threat analysis.
 6. ⚠ **`tmpfs` counts against the 256 MiB memory limit.** Up to 96 MiB of scratch, `/tmp` and `/dev/shm` could be used by a program and reduce its heap. **Assumed:** accept; sizes are in the policy and easy to lower.
 7. ⚠ **Preflight failure stops all execution with no skip flag.** Runs then end as `internal_error` after three attempts. WSL2 development machines without delegation cannot run the `sbx_` tests. **Assumed:** fail closed, use the VPS or CI for sandbox tests. A worker "not ready" gate in run-lifecycle would avoid burning attempts; not requested.
 8. **Fail-fast after 3 abnormal tests in a row.** Users see results for the first failures only. **Assumed:** 3, configurable. It cuts the cost of one hostile submission from up to 20 s to about 7 s.
-9. **Stderr over 64 KiB is `output_limit`.** A noisy but correct program is judged `output_limit`. **Assumed:** as the system design says.
+9. **Stderr over 64 KiB.** **Decided 14 Nov 2026 (amendment A2):** stderr is truncated with a truncation marker. The container is not killed, and the verdict is unaffected. Stdout over 1 MiB per call still gives `output_limit`. The docs disagree: `docs/system-design.md` §7 and `docs/requirements.md` (VAL-5) still say the sandbox kills the run when stderr exceeds 64 KB. Those brief documents need a matching update, which Brighton has not yet asked for.
 10. **Tests that were not run are omitted** from events and `test_results` (no "not run" verdict exists in run-lifecycle). **Assumed:** omit; `passed` and `total` show the gap. A `not_run` value would need a run-lifecycle change.
 11. **Server-side VAL-1 to VAL-4 stay in run-lifecycle.** This spec only adds the contract, the judge re-check, the loader's `max_source_bytes` and shared vectors. **Assumed:** one implementation each. **Alternative:** move those tasks here.
 12. **`memory_kb` stays empty.** The worker cannot read a peak from the host cgroup. **Assumed:** null in `test_results`. `memory.peak` read from inside the container is possible later.
@@ -662,7 +668,7 @@ Each lists the choice this spec assumed so work can proceed. ⚠ means it change
 14. **CI for the sandbox daemon.** Installing a rootless daemon with cgroup delegation on a GitHub-hosted runner is uncertain. **Assumed:** the `sbx_` job starts as non-blocking; the VPS run is the authoritative evidence.
 15. **No socket-filtering proxy** between the judge and the sandbox daemon. **Assumed:** none; the daemon is rootless and the blast radius is the `sandbox` OS user. Aggregate limits go on that user's systemd slice.
 16. ⚠ **`AutoRemove` is off** (D2). Cleanup is explicit removal, plus self-expiry, plus the sweeper. The exit state of an exited container is needed to tell "the user ended their own container" from "the daemon failed". **Assumed:** accepted. **Alternative:** `AutoRemove` on, treating any vanished container as `runtime_error` when the daemon is healthy.
-17. **A driver process persists between the tests of one run**, so a program can keep global state across tests. **Assumed:** accepted; it matches the interactive protocol the ghost hunt needs.
+17. **A driver process persists between the tests of one run**, so a program can keep global state across tests. **Assumed:** accepted; it matches the interactive protocol the ghost hunt needs. **Decided 14 Nov 2026:** accepted, with amendment A1. Visible tests run before any hidden test, and no program output is shown from the first hidden test onward.
 18. **Python hash randomisation** under `-I`. **Assumed:** documented only; the ghost double-check absorbs it.
 19. **`SandboxOracle` needs a multi-threaded Tokio runtime** and is called from `spawn_blocking`. **Assumed:** as ghost-engine specifies. Calling it from an async context would deadlock, so it checks and returns `OracleError`.
 20. **gVisor** is selectable with `SANDBOX_RUNTIME=runsc` but untested. **Assumed:** nothing claims it works until S23 passes on the VPS.
@@ -671,3 +677,68 @@ Each lists the choice this spec assumed so work can proceed. ⚠ means it change
 23. **Image supplies `sleep`, `tar` and `cat`** (Debian-based images do). **Assumed:** verified by T02 for the pinned Python image; a different image would need the same check.
 24. **Where the Python reference comes from.** **Assumed:** `ProblemSpec.reference_python`, supplied by the catalogue's `reference_solutions`. It is used only by `SandboxOracle`.
 25. **Existing reconciliations.** run-lifecycle Open question 10 (`RunExecutor` shape) and language-drivers' `languages.rs` ownership are both settled by this spec: the trait is used as written; the loader is created here and extended there.
+
+## Review decisions
+
+**Date:** 14 Nov 2026. **Signed off by:** Brighton. **Reviewed input:** `docs/reviews/judge-sandbox-T00.md`.
+
+**Result:** T00 is signed off. Every recommendation in the review is accepted, with the three amendments below. Implementation starts at T01. The "Analyze Requirements" click in the Kiro IDE is still pending for Brighton. The CLI run could not do it, and it is not a blocker for T01.
+
+### Boundary review checklist (section 4)
+
+Accepted in full, as amended by A1 to A3. The checklist items were checked against the design after the amendments.
+
+### Answers to the open questions
+
+| # | Topic | Decision |
+|---|---|---|
+| 1 | No `nproc` ulimit; PID cgroup limit 64 | Accepted as assumed. S18 proves it |
+| 2 | One UID (65534) for PID 1, driver and execs | Accepted as assumed |
+| 3 | Python worker-run `py_compile` | Accepted as assumed. `language-drivers` must adopt this contract (it currently says `compile = []`) |
+| 4 | Strict digest pinning, no override | Accepted as assumed. Weekly refresh automated, see A3 |
+| 5 | Fresh container per run, never pooled | Accepted as assumed |
+| 6 | `tmpfs` counts against the 256 MiB limit | Accepted as assumed |
+| 7 | Preflight fails closed, no skip flag | Accepted as assumed |
+| 8 | Fail-fast after 3 abnormal tests in a row | Accepted as assumed |
+| 9 | Stderr over 64 KiB | **Amended**, see A2 |
+| 10 | Tests not run are omitted from events and `test_results` | Accepted as assumed |
+| 11 | VAL-1 to VAL-4 stay in run-lifecycle | Accepted as assumed |
+| 12 | `memory_kb` stays empty | Accepted as assumed |
+| 13 | Judge-side source re-check failure maps to `compile_error` with a fixed message | Accepted as assumed |
+| 14 | `sbx_` CI job is non-blocking; the VPS run is authoritative | Accepted as assumed |
+| 15 | No socket-filtering proxy; aggregate limits on the `sandbox` user's slice | Accepted as assumed |
+| 16 | `AutoRemove` off | Accepted as assumed |
+| 17 | Driver state persists between tests of one run | Accepted, **amended** by A1 |
+| 18 | Python hash randomisation under `-I` | Accepted as assumed |
+| 19 | `SandboxOracle` uses `Handle::block_on` inside `spawn_blocking` and rejects async context | Accepted as assumed |
+| 20 | gVisor selectable but untested; never claimed until S23 passes on the VPS | Accepted as assumed |
+| 21 | File delivery method (tar over exec versus archive API) | Accepted as assumed. T02 decides |
+| 22 | Per-call limit clamp, 100 ms to 10 s | Accepted as assumed |
+| 23 | Image provides `sleep`, `tar` and `cat` | Accepted as assumed. T02 verifies the pinned image |
+| 24 | `ProblemSpec.reference_python` is used only by `SandboxOracle` | Accepted as assumed |
+| 25 | Reconciliations with run-lifecycle and language-drivers | Accepted as assumed |
+
+### Amendments
+
+**A1. Hidden-test leak (tightens isolation).** The driver persists across the tests of one run (question 17). A program could therefore remember a hidden-test input and print it during a later visible test. Decided:
+
+- All visible (sample) tests run before any hidden test in a run. A run plan never schedules a visible test after the first hidden test.
+- From the first hidden test onward, no program output (stdout, stderr, exception text, snippets or sample detail) is shown to the user. Those tests carry only the verdict and the time.
+- Added as requirements R13.7 and R13.8, property P15, scenario S28, deviation D12, and tasks T13, T17, T26 and the completion checklist.
+
+**A2. Stderr truncation instead of `output_limit` (question 9 changed).** Decided:
+
+- Stderr over 64 KiB is truncated with a marker. The container is not killed, and the verdict is not changed by stderr alone.
+- The worker keeps draining and discarding the excess, so a program cannot block on a full stderr pipe. The call deadline still decides a stuck program.
+- The last complete stderr line (capped at 4 KiB) is kept separately, so exception-class extraction still works after truncation.
+- Stdout over 1 MiB per call still gives `output_limit`. Worker memory stays bounded (R6.5, S09 to S11).
+- Updated: requirements R6.3, deviation D8, the call algorithm and verdict table in section 9, property P5, scenario S10, the failure matrix, and open question 9. Tasks T07, T16 and T28 changed.
+- **Brief conflict:** `docs/system-design.md` §7 and `docs/requirements.md` (VAL-5) still say stderr over 64 KB kills the run. This spec does not edit those brief documents. Brighton should decide whether to update them.
+
+**A3. Automated weekly digest refresh (question 4 operations).** Strict digest pinning stays. A free bot (Renovate) opens a weekly pull request that updates the digest in `languages/languages.toml`. A human reviews and merges it. The bot never auto-merges, and the loader still rejects tags. Added to T38 and to the deploy notes plan (`deploy/rootless-sandbox-daemon.md`).
+
+### Follow-ups recorded, not done in this change
+
+- `language-drivers` must adopt `py_compile` (answer 3).
+- `run-lifecycle` T22 should reuse `crates/judge/tests/data/source_vectors.json` (T12).
+- The brief documents named in A2 need the stderr wording updated, if Brighton agrees.

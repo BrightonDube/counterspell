@@ -1,0 +1,226 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by checking the spec's T00 gate in design.md and the current task list.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=82
+
+[tool] Check T00 gate and read judge-sandbox tasks
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T00 gate exists in design.md. Next I'll list the unchecked tasks to find where to resume.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] List unchecked tasks and existing judge code
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Tasks T00 to T19 are done. T20 is the first open task that the blockers note says can now run, since the image pulls and cgroup delegation are reported as applied. I'll read T20 to T24 and check the rootless daemon state.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=122
+
+[tool] Read T20-T24 and check rootless daemon state
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Cgroup delegation is applied and both pinned images are on the rootless daemon. I'll run the T20 real-daemon test to see where it stands now.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+
+[tool] Run T20 real-daemon sbx test on rootless daemon
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T20 test fails at catalogue load. `languages.toml` enables JavaScript, but `languages/drivers/` does not exist. Before I decide anything, I'll check where that enable came from and what the rules say about it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=128
+
+[tool] Trace commit that enabled JavaScript
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The JavaScript enable came from language-drivers T02 (commit 0d94d99). It contradicts the file's own header and the 15 and 16 Nov decisions. The Python driver file is also missing, so the T20 real-daemon test cannot pass until language-drivers T03 and T04 add the drivers. I'll record that and check whether the T21 session tests, which may not load the catalogue, can run now.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=330
+
+[tool] Run T21 real-daemon session tests on rootless daemon
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The four T21 real-daemon tests now reach `create`, and they fail there with a real read-back mismatch on the environment. I'll debug that with the code involved.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=106
+
+[tool] Locate environment checks in policy and backend
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=80
+[tool] Inspect fixed env and the image's own env
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The cause is Docker's inspect behaviour, not a policy bug. The container's `Config.Env` contains the image's own variables (`GPG_KEY`, `PYTHON_VERSION`, `PYTHON_SHA256`) merged with ours, so the exact-equality read-back fails. I'll look at the create path to see where the image env is available.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=212
+
+[tool] Outline functions in bollard backend
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=60
+[tool] Read create and readback functions and related tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The fix belongs at the read-back edge. I'll drop only the variables that the pinned image itself declares with the same value, and keep the fixed keys exact. Any extra or changed variable still fails. I'll check the test file's imports and the bollard `ImageConfig` shape before writing the red test.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=158
+
+[tool] Check test imports and bollard version
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Check test imports and bollard version
+I'll write the red tests first. They pin the filter's behaviour with hand-written literals: image variables are tolerated, injected or altered variables are kept, and fixed keys are never dropped. I'll check the working-directory constant so the literals are right.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=158
+
+[tool] Find working dir constant and test file tail
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=336
+[tool] status: Pending
+[tool] status: Completed
+The four red tests are written. The next step is the minimal implementation: a pure filter in `bollard_backend.rs`, and the image env threaded from `check_image` into `verify_readback`. I'll read the current `check_image` and `verify_readback` signatures, then edit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=143
+
+[tool] Confirm the new red tests fail to compile for the expected reason
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Red confirmed: the function is missing. Now the green step. I'll add the pure filter, have `check_image` return the image's env, and pass it into the read-back.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=334
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=43
+[tool] status: Pending
+[tool] status: Completed
+Now `check_image` has to return the image env, and `create_checked` has to pass it on.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=180
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=277
+[tool] status: Pending
+[tool] status: Completed
+Next I'll run the model tests and then the T20 real-daemon test to see whether the fix holds.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Run bollard model tests and the T21 real-daemon tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All four real-daemon session tests now pass against the rootless daemon. The model test still fails because the new test file does not import `without_image_env`. I'll add the import.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=95
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=57
+[tool] Run bollard model tests after the fix
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 14 model tests pass, including the four new ones. Before I tick T21, I'll run the full Rust gate: fmt, clippy, and the workspace tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=159
+
+[tool] Run fmt, clippy and workspace tests as the Rust gate
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Formatting differs in my edit, so I'll apply `cargo fmt`. Then I'll rerun the gate and check explicitly for any failure lines, since the earlier summary was truncated.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=134
+
+[tool] Format, then rerun clippy and full workspace tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The workspace gate is green: 1367 passed, 0 failed, 360 ignored (the `pg_`, `valkey_` and `sbx_` tests). Before I tick T21 I need to confirm its "unit tests for error mapping" exist.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=151
+
+[tool] Check error-mapping tests and existing log files
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The error-mapping tests exist, and the four `sbx_` session tests pass on the rootless daemon. T21 meets its verification, so I'll tick it and record the T20 blocker and the Rust lesson.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=121
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=117
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=233
+[tool] status: Pending
+[tool] status: Completed
+Next I'll commit only the files this task changed.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=109
+
+[tool] Commit the T21 change and the read-back fix
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Commit the T21 change and the read-back fix
+The pre-commit gitleaks hook reported two leaks and blocked the commit. I'll check the commit state and find which lines it flagged, without printing secret values.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=101
+
+[tool] Check commit state and inspect staged lines for secret-like text
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The two leaks are the Python release-signing fingerprint in the test literals. It is public, but gitleaks flags 40-character hex. I'll replace it with a clear placeholder. The test only checks equality, so the value does not matter.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=125
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=43
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=91
+[tool] Replace flagged fingerprint, retest, and commit T21
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T21 is committed as `a16d2ad`, and the gitleaks hook now reports no leaks. Next I'll read T34 to T36, the tasks that need no real daemon, to see whether any can be finished in this pass.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=152
+
+[tool] Read T34 to T36 task definitions
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T36 is mostly static checks: the dependency graph, which files import `bollard`, process spawning, and the compose file. I'll check which of its inputs exist and which crates are already available before writing it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=154
+
+[tool] Check compose file, dev-deps, bollard imports, process spawning
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T36 inputs mostly exist, but two things need a closer look. `bollard` is also referenced in `backend.rs` and `mod.rs`, not only the two files the spec names. The compose check needs a YAML parser that the spec names but does not pick. I'll check the two `bollard` references before I record anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=197
+
+[tool] See how bollard is referenced in backend.rs and mod.rs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both `bollard` mentions in `backend.rs` and `mod.rs` are a doc comment and a `pub mod` declaration, so the boundary check has to look for `use bollard` and `bollard::` in code only. T36 still needs a YAML crate choice that the spec does not make, so I'll stop T36 here. I'll record the T36 blocker, add the T21 review-queue entry, and commit the notes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=353
+
+[tool] Record T36 blocker and T21 review item, then commit
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The run stopped partway. T21 is done and committed. T20 and the rest of the spec are still open for the reasons below.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T20 bollard create and read-back | Open. Real-daemon test blocked by JavaScript enabled without a driver | 4 model tests (read-back env rule) | `sbx_create_readback_matches` fails at catalogue load (`MissingDriver javascript`) | (fix in a16d2ad) |
+| T21 bollard start, exec, files, kill, remove | **Ticked** | 4 model tests | 4 `sbx_` session tests pass on the rootless daemon. Model tests 14/14. Workspace 1367 passed, 0 failed, 360 ignored | a16d2ad |
+| T22 to T24 | Open. Pure parts exist, but the probe, sweeper and executor need real runs or a trait decision | none | not run | — |
+| T25 to T33 | Open. The `sbx_` scenarios need the T24 wiring and a real run | none | not run | — |
+| T34 to T35 | Open. Depend on T24 | none | not run | — |
+| T36 boundary tests | Open. Needs a YAML crate choice | none | not started | — |
+| T37, T02 | Blocked on the VPS (`[HUMAN]`) | none | — | — |
+| T38, T39 | Open | none | not run | — |
+
+**The bug fix.** The create read-back rejected every real container with "the environment must be the fixed set". Docker merges the pinned image's own variables (`GPG_KEY`, `PYTHON_VERSION`, `PYTHON_SHA256`) into the container. `without_image_env` in `bollard_backend.rs` now drops only variables the image declares with the same value. Injected or changed variables still fail, and fixed keys are never dropped. This loosens the exact environment check, so Brighton should confirm it. It is in the review queue.
+
+**Blockers** (in `docs/kiro-log/judge-sandbox-blockers.md`):
+- **T20 and `languages.toml`:** commit 0d94d99 (language-drivers T02) enabled JavaScript. The file header and your 15 and 16 Nov decisions say it stays disabled until its driver exists. Neither `languages/drivers/python/driver.py` nor `drivers/javascript/driver.js` exists. I did not edit `languages.toml`, because language-drivers owns it. Unblock: language-drivers T03 and T04, or disable JavaScript again.
+- **T23:** the sweeper needs a list-containers method on `Backend`. That is a trait change to T14, so it needs your decision.
+- **T36:** the compose check needs a YAML dev-dependency. The spec names the need but not a crate, and `serde_yaml` is archived.
+- **T02, T37:** need the VPS.
+
+**Review queue:** the T21 read-back change, in `docs/kiro-log/judge-sandbox-review-queue.md`.
+
+**Process notes:**
+- The first commit attempt was blocked by the gitleaks hook. The 40-character GPG fingerprint in the test literals was flagged. I replaced it with a placeholder and committed again as a new commit.
+- I did not run a subagent code review. The wave-end review under `requesting-code-review` is still[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=316
+ owed for Wave 2 onward.
+- Rust lesson is in `docs/kiro-log/rust-lessons.md`.
+
+**Open Minor findings:** none recorded yet. The review above is still pending.

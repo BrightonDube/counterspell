@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-label="Efficiency Familiar">
+  <!-- Efficiency Familiar body. Five painted mood images share one framing (1024 px square).
+       Only one is visible at a time; the mascot sets opacity in code. The rasters load from
+       /art/familiar/moods/ and are not embedded, so this file stays small. -->
+  <defs>
+    <radialGradient id="fam-glow" cx="50%" cy="55%" r="50%">
+      <stop id="fam-glow-stop-inner" offset="0%" style="stop-color: var(--fam-glow)" stop-opacity="0.55"/>
+      <stop id="fam-glow-stop-outer" offset="100%" stop-color="transparent"/>
+    </radialGradient>
+  </defs>
+  <g id="fam-body">
+    <ellipse cx="512" cy="560" rx="470" ry="420" fill="url(#fam-glow)"/>
+    <image id="fam-mood-1" href="/art/familiar/moods/familiar-1-furious.webp" x="0" y="0" width="1024" height="1024" preserveAspectRatio="xMidYMid meet"/>
+    <image id="fam-mood-2" href="/art/familiar/moods/familiar-2-angry.webp" x="0" y="0" width="1024" height="1024" preserveAspectRatio="xMidYMid meet"/>
+    <image id="fam-mood-3" href="/art/familiar/moods/familiar-3-uneasy.webp" x="0" y="0" width="1024" height="1024" preserveAspectRatio="xMidYMid meet"/>
+    <image id="fam-mood-4" href="/art/familiar/moods/familiar-4-pleased.webp" x="0" y="0" width="1024" height="1024" preserveAspectRatio="xMidYMid meet"/>
+    <image id="fam-mood-5" href="/art/familiar/moods/familiar-5-laughing.webp" x="0" y="0" width="1024" height="1024" preserveAspectRatio="xMidYMid meet"/>
+  </g>
+  <g id="fam-fx"></g>
+</svg>

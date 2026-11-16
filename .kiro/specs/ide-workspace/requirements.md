@@ -2,7 +2,7 @@
 
 ## Introduction
 
-The IDE workspace is Counterspell's central learner experience and the main Costume Contest showcase. It turns a published problem, a learner's draft, the trusted judge's persisted run events, and the ghost engine's real minimized counterexample into one calm, keyboard-accessible loop:
+The IDE workspace is Counterspell's central learner experience and the main showcase. It turns a published problem, a learner's draft, the trusted judge's persisted run events, and the ghost engine's real minimized counterexample into one calm, keyboard-accessible loop:
 
 `problem → edit → Run samples → Submit → live judge → Ghost Hunting → shrink trace → Bug Autopsy → hint/custom run → resubmit → Accepted → measured Familiar`
 
@@ -34,8 +34,8 @@ Until the upstream APIs exist, an explicitly labelled prototype route may use de
 ### P1 Learner
 A job-seeker or student opens a published problem, edits a Python or JavaScript function, runs samples, submits against hidden tests, studies a minimized counterexample, fixes the draft, and submits again.
 
-### P2 Judge
-A hackathon judge signs in, opens a known problem, submits an intentionally wrong solution, sees real per-test progress and Ghost Hunting, reads the real Bug Autopsy, fixes the code, and reaches Accepted without reloading.
+### P2 Reviewer
+A reviewer signs in, opens a known problem, submits an intentionally wrong solution, sees real per-test progress and Ghost Hunting, reads the real Bug Autopsy, fixes the code, and reaches Accepted without reloading.
 
 ### P3 Keyboard and reduced-motion learner
 A learner uses the same workspace without a mouse, with visible focus and non-colour status labels, or with `prefers-reduced-motion: reduce` enabled.

@@ -1,0 +1,22 @@
+{
+  "slug": "sort_list",
+  "version": 1,
+  "signature": {
+    "protocol_version": 1,
+    "function": "sort_list",
+    "parameters": [
+      {"name": "nums", "type": {"kind": "list", "items": {"kind": "int"}}}
+    ],
+    "returns": {"kind": "list", "items": {"kind": "int"}}
+  },
+  "comparator": "exact",
+  "time_limit_ms": 2000,
+  "tests": [
+    {"ordinal": 1, "is_sample": true,  "args": [[3, 1, 2]],        "expected": [1, 2, 3]},
+    {"ordinal": 2, "is_sample": true,  "args": [[]],               "expected": []},
+    {"ordinal": 3, "is_sample": false, "args": [[5, -1, 0]],       "expected": [-1, 0, 5]},
+    {"ordinal": 4, "is_sample": false, "args": [[9, 9, 9, 1]],     "expected": [1, 9, 9, 9]},
+    {"ordinal": 5, "is_sample": false, "args": [[4, 3, 2, 1, 0]],  "expected": [0, 1, 2, 3, 4]}
+  ],
+  "reference_python": "def sort_list(nums):\n    return sorted(nums)\n"
+}
