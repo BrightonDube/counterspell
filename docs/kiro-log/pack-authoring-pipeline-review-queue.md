@@ -97,3 +97,9 @@ Each supervised task (`[SUPERVISED]`) is implemented test-first and committed. B
 - Check: the scan passes on the real pipeline prompts, agents, skills, summaries and pack scripts. It refuses a token, a password, a `.env` path, an echoed credential variable and a retired marker.
 - Assumed choices are in the blockers log (PA19 and PA09 section).
 - PA09 is ticked on this result. Its check is this scan plus the PA10 citation test.
+
+## PA22: rotation procedure (plan only, not ticked)
+
+- Files: `.kiro/pipeline/rotation.md`.
+- Not ticked: the task's verification is a reviewer's check against PIP-35. Brighton or a reviewer should read the plan and confirm it. The plan does not run anything.
+- Check: the plan lists the three starter packs and their current public hidden parts. It records that moving those files is a later step after approval.
