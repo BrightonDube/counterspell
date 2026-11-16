@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Ask what adding one means for a whole number."
+
+[[hint]]
+rung = 2
+text = "Think of one arithmetic operator that maps each input to its output."
+
+[[hint]]
+rung = 3
+text = "return value + 1"
+
+[[hint]]
+rung = 4
+text = "If the output is off by one, check the sign of the term you add."

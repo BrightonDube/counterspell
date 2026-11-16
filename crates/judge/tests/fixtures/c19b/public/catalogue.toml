@@ -1,0 +1,9 @@
+# Fixture taxonomy for the C19b tests — canary names only.
+
+[[tracks]]
+slug = "numbers"
+name = "Numbers"
+
+[[concepts]]
+slug = "arithmetic"
+name = "Arithmetic"
