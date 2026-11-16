@@ -1,6 +1,6 @@
 slug = "count-pairs"
 title = "Count the Pairs"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "arrays"
 concepts = ["arrays", "pairs", "nested-loops"]
