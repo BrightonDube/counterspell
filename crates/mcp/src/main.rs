@@ -1,6 +1,5 @@
-//! Placeholder MCP stdio process boundary.
+//! Placeholder entry point. The stdio server is added in a later step.
 //!
-//! This binary intentionally does not execute code. Future code-running tools
-//! must delegate through the trusted judge and its separate sandbox daemon.
+//! This binary intentionally does not execute code.
 
 fn main() {}

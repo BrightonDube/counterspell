@@ -1400,3 +1400,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - Test helpers that build a `HintState` by hand use `HintConfig::from_map` with fake keys. The key values never leave the test process.
 - `.expect("message")` is allowed here because it is in a test. A failed set-up step then stops the test with its message.
 - A struct literal with `pub` fields (`HintState { ... }`) is the simplest way for a test to inject its own pieces, with no mocking framework.
+
+# Rust lesson: counterspell-mcp-power T02
+
+- A trait that the rest of the code already uses (Grimoire's `PackRunner`) is the cheapest contract. The MCP stores it as `Box<dyn PackRunner + Send>`, so tests inject a fake and production injects the judge, with no new layer.
+- `Option<Box<dyn Trait>>` in a small slot type makes "no runner" a value. `get()` returns `Err` instead of panicking, so a missing sandbox fails closed.
+- Returning `Result<RunnerSlot, ConfigError>` from the production constructor means a bad socket path stops start-up before any runner exists.
+- `?` on a `Result<_, ConfigError>` converts the error and returns early, so the guard runs in one line.
