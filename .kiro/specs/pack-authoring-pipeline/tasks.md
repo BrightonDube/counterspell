@@ -59,7 +59,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: unit tests for each transition in design §7 and for a refused transition (for example `approved` back to `in_review`). A state file with a key named `hidden_expected` fails to parse.
   - Rust lesson: an enum with `match` makes the compiler list every state you must handle. Explain why an illegal transition returns `Result::Err` instead of panicking.
 
-- [ ] **PA02 [P] (30 min) Review scoring and pass rule**
+- [x] **PA02 [P] (30 min) Review scoring and pass rule**
   - Files: `crates/grimoire/src/pipeline/review.rs`, `crates/grimoire/tests/pipeline_review.rs`.
   - Input: seven category scores (1 to 5), a finding list (`id`, `category`, `severity`, `pointer`, `message`) and the content hash. Output: `Pass` or `Fail(Vec<RuleName>)`. Implement every rule in PIP-23 at its boundary. The output never repeats a message that could contain a pointer to hidden data; it names the rule only.
   - Requirements: PIP-22, PIP-23, PIP-24.
