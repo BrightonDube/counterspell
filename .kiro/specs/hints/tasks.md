@@ -176,7 +176,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 4: web client
 
-- [ ] **H15 [P] (30 min) Client module and ladder reducer**
+- [x] **H15 [P] (30 min) Client module and ladder reducer**
   - Files: `web/src/lib/hints/client.ts`, `web/src/lib/hints/reducer.ts`, `web/src/lib/hints/reducer.test.ts` (if the frontend already has a unit test runner; otherwise type-checked only).
   - `requestHint({submissionId, rung, ai})` posts JSON with `credentials: 'same-origin'`. `reducer` tracks revealed rungs, AI rungs, quota and the notice flag. The client renders bodies as text nodes only.
   - Requirements: R9.1, R9.2, R2.5 (client side), R11.1.
