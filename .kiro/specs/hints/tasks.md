@@ -53,7 +53,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: no environment access inside the function.
   - Rust lesson: `Option` versus empty string for "not set"; keeping parsing pure so tests need no environment.
 
-- [ ] **H03 [P] (20 min) Ladder gate**
+- [x] **H03 [P] (20 min) Ladder gate**
   - Files: `crates/server/src/hints/ladder.rs`.
   - Implement `gate(&BTreeSet<u8>, u8) -> Gate` exactly as in the design.
   - Requirements: R1.2, R1.3.

@@ -4,3 +4,4 @@
 //! knows SQL, and only `quota.rs` knows Valkey.
 
 pub mod config;
+pub mod ladder;

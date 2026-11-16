@@ -1326,3 +1326,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `Option<&String>` from `HashMap::get` means "not set". `map_or(default, ...)` turns that into the default in one step, so a missing variable and an empty one are handled on purpose.
 - Keeping `from_map` pure (it takes a map and does no I/O) means the tests never change the real environment. Only `from_env` reads the process environment.
 - A wrapper such as `Redacted<T>` with a `Debug` that prints `[redacted]` stops a key from appearing in any `{:?}` log line, because the compiler uses that impl everywhere.
+
+# Rust lesson: hints H03
+
+- A `match` or `if` on the `Gate` enum forces the caller to deal with `Open`, `Revealed` and `Locked`. A missing branch is a compile error, not a silent bug.
+- `BTreeSet` keeps its numbers sorted and unique, so `contains` checks and the prefix property are easy to state in a test.
+- `proptest` runs the property over many random lists of attempts. A failure prints a small reproducing list, which is the fastest way to find an ordering bug.
