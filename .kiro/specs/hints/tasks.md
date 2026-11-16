@@ -165,7 +165,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: `main.rs` stays thin.
   - Rust lesson: sharing state with `Arc`, and why state is cloned cheaply.
 
-- [ ] **H-test [S] (30 min) Integration tests and demo reset**
+- [x] **H-test [S] (30 min) Integration tests and demo reset**
   - Files: `crates/server/tests/hints_integration.rs`.
   - End-to-end `pg_` and `valkey_` tests with `ScriptedTransport`: ladder order, reveal, AI success, cache hit with no quota change, cap refusal with `next_rung`, fallback, code-too-large, and a canary check on the prompt (P12). Demo reset removes demo hints (a `pg_` test that calls `cs_reset_demo_account()` and checks the row count).
   - Requirements: R12.1, R12.2, R12.3.
