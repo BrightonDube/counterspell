@@ -1344,3 +1344,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - Money is kept as whole micro-dollars (`i64`). Integer division is exact, so no value drifts the way `f64` sums can.
 - Rounding up with `(total + divisor - 1) / divisor` makes any fraction of a micro-dollar count as a whole unit.
 - `saturating_mul` and `saturating_add` stop an overflow from wrapping to a negative cost. The cost stays large and positive instead.
+
+# Rust lesson: hints H05
+
+- tree-sitter returns a tree of nodes. A `Vec` used as a stack walks the tree without recursion, so a deeply nested submission cannot overflow the thread's stack.
+- `Node::kind` returns a `&'static str`, so the kinds can be stored in a `Vec` without copying the text.
+- Length-prefixing each field before hashing it means `("ab", "c")` and `("a", "bc")` can never give the same bytes, even though the joined text is the same.

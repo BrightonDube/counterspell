@@ -3,6 +3,7 @@
 //! The design is in `.kiro/specs/hints/design.md`. Only `provider.rs` knows HTTP, only `store.rs`
 //! knows SQL, and only `quota.rs` knows Valkey.
 
+pub mod cache;
 pub mod chain;
 pub mod config;
 pub mod cost;

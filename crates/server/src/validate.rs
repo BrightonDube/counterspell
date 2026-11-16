@@ -108,7 +108,7 @@ pub fn validate_source(
     check_parses(language, &grammar, code)
 }
 
-fn grammar_for(language: &str) -> Result<Grammar, ValidationError> {
+pub(crate) fn grammar_for(language: &str) -> Result<Grammar, ValidationError> {
     match language {
         "python" => Ok(tree_sitter_python::LANGUAGE.into()),
         "javascript" => Ok(tree_sitter_javascript::LANGUAGE.into()),

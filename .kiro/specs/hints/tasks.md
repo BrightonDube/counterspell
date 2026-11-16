@@ -71,7 +71,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: the builder accepts only ghost row fields and sample data; there is no argument for hidden tests.
   - Rust lesson: slices and `char_indices` for safe cutting; why a function signature can enforce "no hidden data" by leaving the parameter out.
 
-- [ ] **H05 [P] (25 min) Cache key and AST hash**
+- [x] **H05 [P] (25 min) Cache key and AST hash**
   - Files: `crates/server/src/hints/cache.rs`.
   - `ast_hash(lang, code)` uses the tree-sitter parser already used for VAL-2, hashes the node kinds in order with SHA-256 (`sha2`), and falls back to hashing the bytes when parsing fails. `cache_key(problem, rung, ast_hash, ghost_input_json)` uses length-separated fields.
   - Requirements: cache identity (design §Cache key), R2.4.
