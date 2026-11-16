@@ -171,3 +171,71 @@ fn an_id_without_a_number_is_refused() {
         Err(ChecklistError::MalformedId("RV-clarity".to_owned()))
     );
 }
+
+/// Every `AAA-00` style code named in `text` (three capitals, a hyphen, two digits).
+fn named_codes(text: &str) -> BTreeSet<String> {
+    text.split(|character: char| !(character.is_ascii_alphanumeric() || character == '-'))
+        .filter(|token| {
+            token.len() == 6
+                && token.as_bytes()[..3].iter().all(u8::is_ascii_uppercase)
+                && token.as_bytes()[3] == b'-'
+                && token.as_bytes()[4..].iter().all(u8::is_ascii_digit)
+        })
+        .map(str::to_owned)
+        .collect()
+}
+
+/// The code IDs the validator defines in `codes.rs`, read from `error("...")` and `warning("...")`.
+fn grimoire_codes() -> BTreeSet<String> {
+    let text = fs::read_to_string(repo_root().join("crates/grimoire/src/codes.rs"))
+        .expect("codes.rs is readable");
+    text.lines()
+        .filter(|line| {
+            line.contains("const ") && (line.contains("error(\"") || line.contains("warning(\""))
+        })
+        .filter_map(|line| line.split('"').nth(1))
+        .map(str::to_owned)
+        .collect()
+}
+
+#[test]
+fn the_author_checklist_has_unique_items() {
+    let text = fs::read_to_string(repo_root().join(".kiro/pipeline/checklists/author.md"))
+        .expect("the author checklist exists at .kiro/pipeline/checklists/author.md");
+    let ids: Vec<String> = text
+        .lines()
+        .filter(|line| line.trim_start().starts_with("- `AU-"))
+        .filter_map(|line| line.split('`').nth(1))
+        .map(str::to_owned)
+        .collect();
+    let unique: BTreeSet<&String> = ids.iter().collect();
+
+    assert!(
+        ids.len() >= 8,
+        "expected at least eight author items, got {}",
+        ids.len()
+    );
+    assert_eq!(
+        unique.len(),
+        ids.len(),
+        "author checklist IDs must be unique"
+    );
+}
+
+#[test]
+fn every_grimoire_code_named_by_the_authoring_skill_exists() {
+    let skill =
+        fs::read_to_string(repo_root().join(".kiro/skills/grimoire-pack-authoring/SKILL.md"))
+            .expect("the authoring skill exists");
+    let defined = grimoire_codes();
+
+    let unknown: Vec<String> = named_codes(&skill)
+        .into_iter()
+        .filter(|code| !defined.contains(code))
+        .collect();
+
+    assert!(
+        unknown.is_empty(),
+        "the skill names codes grimoire does not define: {unknown:?}"
+    );
+}
