@@ -33,7 +33,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: validation runs before import, so bad text never reaches `problem_hints`.
   - Rust lesson: collecting many errors with `Vec` instead of stopping at the first.
 
-- [ ] **H01 [S] (30 min) Shared hint types in `counterspell-common`**
+- [x] **H01 [S] (30 min) Shared hint types in `counterspell-common`**
   - Files: `crates/common/src/hints.rs`, `crates/common/src/lib.rs` (add `pub mod hints;`).
   - Add `HintRung` (newtype over `u8`, `TryFrom` accepts only 1 to 4), `HintSource` (`ladder`, `ai`, `familiar`), `HintRequest` (`submission_id: Uuid`, `rung: HintRung`, `ai: bool`, `#[serde(deny_unknown_fields)]`), `HintView`, `QuotaView`, and the error code list from the design's HTTP table.
   - Requirements: R11.1, R11.2.
