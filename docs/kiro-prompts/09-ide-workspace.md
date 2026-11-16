@@ -2,9 +2,9 @@
 
 Paste the block below into the Kiro IDE (new spec / Plan mode as named in the title). Model and mode: see docs/kiro-playbook.md A.2.
 
-*Rewritten 12 Nov from critique §5.7 ("ghost workspace"), with Brighton's decisions. This is the main Costume Contest showcase.*
+*Rewritten 12 Nov from critique §5.7 ("ghost workspace"), with Brighton's decisions. This is the main showcase.*
 ```
-Create a Requirements-First feature spec named ide-workspace. This is the central Counterspell experience and the main Costume Contest showcase. UI will be implemented partly outside Kiro, so keep tasks granular, label UI-only tasks "[UI]", and mark independent UI tasks so they can run in parallel.
+Create a Requirements-First feature spec named ide-workspace. This is the central Counterspell experience and the main showcase. UI will be implemented partly outside Kiro, so keep tasks granular, label UI-only tasks "[UI]", and mark independent UI tasks so they can run in parallel.
 Context: #[[file:docs/product-brief.md]] core loop, #[[file:docs/requirements.md]] IDE-1–IDE-6, GHO-1–GHO-6, FAM-1, FAM-3–FAM-6, VAL-5, #[[file:docs/system-design.md]] §5, §8, §8b, §9 and §16, and #[[file:docs/palette.md]] (Monaco "Crypt" theme). Use SvelteKit, Svelte 5, Monaco, Bits UI, Tailwind 4 and GSAP. Follow Steel Night. No React, Next.js or Pyodide.
 User journey:
 1. Open a problem with a clear statement, constraints and starter function (Python or JavaScript at launch; Java/C++ appear only if the stretch drivers ship).

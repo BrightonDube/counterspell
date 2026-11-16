@@ -1,0 +1,8 @@
+=== rung 1
+Ask what one pass over the readings can remember as you go.
+=== rung 2
+Trace a small case where the total comes out as 13, and see which pair you counted.
+=== rung 3
+Think about the pair you need, and what you would store to find it.
+=== rung 4
+Use a dictionary to store what you have seen, then check each new reading against it.

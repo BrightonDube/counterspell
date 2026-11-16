@@ -1,0 +1,149 @@
+I'll start by checking the spec for Brighton's "Review decisions" note, since the run must stop without code changes if it's missing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=77
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+T00 is signed off, so the run may start. Next I'll check the blockers log, the git state, and whether T02's host facts exist, since T19 depends on T02's fixture JSON.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=148
+
+[tool] Inspect git state, blockers log and sandbox files
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T00 is signed off and T01 and T04 to T18 are ticked. The next unchecked task is T19, which depends on T02. T02 is a human VPS step and `deploy/sandbox-verification.md` does not exist yet. Before deciding how far I can go, I'll read the steering the spec requires, the Cargo setup, and the current gate state.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=271
+
+[tool] Read judge Cargo config, sandbox module and steering
+[tool] Run judge crate tests as a baseline
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The baseline is green: all judge tests pass and the only ignored tests are the `pg_` ones. Next I'll check the bollard 0.21 connect API in the local registry, and whether the `sandbox` daemon fixtures from T02 exist.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=160
+
+[tool] Inspect bollard API and human steps file
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T02 steps need the VPS, so the fixture-based parts of T19 cannot be verified here. I'll look at bollard's `SystemInfo` shape and the read-once writing guide before writing the daemon guard.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=271
+
+[tool] Check bollard types and test guidance
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The bollard models live in `bollard-stubs`. I'll read the `SystemInfo` field types from there.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=117
+
+[tool] Read SystemInfo field types from bollard stubs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Read SystemInfo field types from bollard stubs
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=80
+[tool] Read cgroup enum variants
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need for the pure parts of T19. Its verification still depends on recorded T02 fixtures, so I'll build the code and tests against hand-written fixtures, mark them as synthetic, and leave T19 unticked. I'll write the failing tests first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1180
+[tool] status: Pending
+[tool] status: Completed
+The new rules block matches what I'm already following, so I'll continue T19. The test file is written; next I'll run it to confirm it fails because `daemon` doesn't exist yet.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Run daemon tests expecting a compile failure (RED)
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The red run fails on the missing module, as expected. Now I'll write the minimal `daemon.rs`: the path guard, the pure facts checker, and the bollard-only conversion and connect, which are the only parts that import bollard.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1363
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=40
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=50
+[tool] Run daemon tests after implementation
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 15 daemon tests pass. Next is the full gate: formatting, clippy with warnings denied, the whole workspace test suite, and a build without the `sandbox` feature.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=97
+
+[tool] Run fmt, clippy and no-default-features check
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Two issues: fmt wants a few lines reflowed, and clippy flags a by-value `serde_json::Value` argument in my test helper. I'll pass it by reference, then run `cargo fmt`.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=219
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=111
+[tool] Format touched files, then clippy and workspace tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean and every workspace test passes. `cargo fmt --check` still exits 1, so I'll find which files it wants to change.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] List files that fail formatting check
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Only my two new files are unformatted. I'll run `cargo fmt` on the judge package and check that it touches nothing else.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=75
+
+[tool] Format judge package and recheck formatting
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Formatting is clean. T19's code is done, but its tick needs T02's recorded VPS fixtures, which don't exist yet, so I'll leave it unchecked. I'll rerun the daemon tests and clippy on the formatted files, then write the Rust lesson and the blocker note.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=196
+
+[tool] Recheck daemon tests and clippy; read lesson log tail
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=110
+[tool] status: Pending
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=162
+[tool] status: Pending
+[tool] status: Completed
+Now I'll commit only the T19 files. The unrelated modified and untracked files stay out of this commit.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=115
+
+[tool] Commit the T19 work
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The run stopped at T19. Its code is committed, but the task stays unticked because its verification needs VPS data that doesn't exist yet. Every later task depends on T19 or on the sandbox daemon, so no further task can be completed in this environment.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T19 Daemon connection, identity guard, daemon info | Code written, **not ticked** | 15 in `model_daemon.rs` (path guard, facts checker, bollard conversion) | 15 pass. Workspace tests pass. Clippy clean. `fmt --check` clean. | `36576ed` |
+| T20 to T31 | Not started (blocked, see below) | none | none | none |
+
+**Why T19 is unticked:** its verification asks for `info` parsing against recorded `docker info` fixtures from T02. T02 is a HUMAN VPS step, and `deploy/sandbox-verification.md` does not exist. The tests use hand-written facts, which are labelled as synthetic in the test file. The `DOCKER_HOST` environment-independence case from P14 is not tested. Ticking T19 needs T02's recorded fixtures added to the tests.
+
+**Blockers (`docs/kiro-log/judge-sandbox-blockers.md`):**
+- **T02** (VPS host spike) and **T03** (Python digest pin) are HUMAN steps. Commands are in `docs/kiro-log/judge-sandbox-human-steps.md`. Nothing after T19 can be verified without them.
+- **T20 and T21** depend on T19 being ticked. **T22** needs T02 facts. **T23 and T24** also depend on run-lifecycle T16 and T19.
+- **T25 to T31** need a real rootless sandbox daemon on the VPS. Their `sbx_` tests are `#[ignore]`d.
+
+**Review queue:** none added this run. T19 is not `[SUPERVISED]`, and the wave 3 review waits for the remaining tasks.
+
+**Open Minor findings:**
+- Path guard does not resolve symlinks. A symlink to `/var/run/docker.sock` would pass the string check. Worth a check when T22 runs on the VPS.
+- The "limit support" warning rule matches any warning that contains "no " and "support". It is broad by design and should be tuned against the real `docker info` output from T02.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=190
+

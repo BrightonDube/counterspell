@@ -1,0 +1,91 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by checking the judge-sandbox spec for the T00 "Review decisions" note, since the run must stop without code changes if it is missing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=91
+
+[tool] Check spec files and T00 review decisions note
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T00 note exists, so the run can proceed. The first unchecked task is T20. I'll read it and the blockers log.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=108
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+T20 is still open. Its last blocker was `MissingDriver` for JavaScript. I'll check whether the drivers and the sandbox environment exist now, and look at the working tree.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=159
+
+[tool] Check git state, drivers, enabled languages and sandbox daemon
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The language drivers directory is still missing, and both Python and JavaScript are enabled in `languages.toml`. I'll look at how the T20 real-daemon test loads its configuration before deciding whether it can run without the language-drivers work.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=184
+
+[tool] Read the T20 real-daemon test and driver loader check
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T20 test loads the shipped `languages.toml`. The loader refuses the whole catalogue while Python and JavaScript are enabled without driver files. That fix belongs to language-drivers, so T20 cannot be verified in this spec. I'll check what design.md specifies for the sweeper's list method, the probe and the preflight state, so I can see which unblocked work is still in scope.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=310
+
+[tool] Find sweeper, probe and preflight design details
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Nothing that is still open can be ticked honestly in this pass. Every remaining task either needs a real `sbx_` test to pass, depends on T20, or waits on a decision. I'll confirm the current state of the real-daemon create test on the rootless sandbox daemon, using the environment file the scripts already source, without printing its contents.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=213
+
+[tool] Run T20 real-daemon create test on rootless sandbox daemon
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The real-daemon test fails on the same catalogue error as before, so the blocker is confirmed. I'll record this run's status in the blockers file and leave the tasks unchecked.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=388
+[tool] status: Pending
+[tool] status: Completed
+I'll commit only the blockers file, leaving the unrelated `docs/KIRO_USAGE.md` change alone.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=85
+
+[tool] Commit the blockers update for judge-sandbox
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I did not tick any task in this pass. The first open task, T20, is blocked on another spec, and every later task depends on it or on a real-daemon test that has not passed.
+
+**Summary**
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T00 boundary review | Already signed off (14 Nov), so the run could start | none | `Review decisions` note present in `design.md` | existing |
+| T20 bollard create and read-back | Open. Blocked on language-drivers | none this pass | `sbx_create_readback_matches` fails: `MissingDriver { language: "javascript" }` | — |
+| T22 preflight and `preflight` command | Open. Partly done in code from 16 Nov. Needs the probe runner, `PreflightState`, the subcommand and the `sbx_preflight_*` tests | none this pass | not run | — |
+| T23 sweeper | Open. Needs a list method on the `Backend` trait | none | not run | — |
+| T24 onward (T25 to T39) | Open. Depend on T20, T22 or T23, or need VPS/decision input | none | not run | — |
+| Blockers note | Updated | none | committed | `3df651c` |
+
+**Why T20 is blocked**
+- `languages/languages.toml` enables Python and JavaScript. `languages/drivers/` does not exist, so the loader refuses the whole shipped catalogue.
+- Disabling JavaScript would not unblock it, because the Python driver is missing too. The fix is language-drivers T03 (Python driver), then T04 or a disable decision for JavaScript.
+- I did not edit `languages.toml`, because that file belongs to language-drivers.
+
+**Decision needed from Brighton**
+- Approve adding a list-containers method (`list_managed`) to the `Backend` trait. The sweeper in design section 12 needs it, but it changes the T14 trait, so I did not add it.
+
+**Blockers**
+- T02 and T37 need the VPS (HUMAN).
+- T03 is done, but the image digest must be re-checked on the VPS in T37.
+- T36 needs a YAML dev-dependency choice. The task names no crate, so I did not add one.
+- T20 and T22 need the language drivers, as above.
+
+**Review queue**
+- Nothing new this pass. Earlier entries stay in `docs/kiro-log/judge-sandbox-review-queue.md`.
+
+**Open Minor review findings**
+- The T20 read-back assumes the daemon echoes tmpfs option strings unchanged. Confirm this in the real-daemon run (T37).
+- `host_resources` treats an image-declared `VOLUME` as a host resource. This is fail-closed but not in the design text. Brighton should confirm.
+
+**Other notes**
+- `docs/KIRO_USAGE.md` already had uncommitted changes. I did not touch them.
+- The rootless daemon's cgroup delegation (cpuset and io) is now applied, so the identity check passes. The only remaining failure is the catalogue load.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=208
+

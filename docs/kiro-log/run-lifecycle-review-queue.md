@@ -1,0 +1,144 @@
+# Run-lifecycle review queue (SUPERVISED tasks)
+
+Brighton reviews each entry before the next task that depends on it starts.
+
+## T12: fence, append-event and `emit` (commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/queue/fence.rs`, `crates/judge/src/queue/emit.rs`, `crates/judge/tests/emit.rs`, plus `queue/mod.rs` (`EventRejected`, token constructor) and `testkit.rs` (`force_claim`, `token_with`).
+- What to check:
+  - `lock_claim` locks the job row with `FOR UPDATE` and matches (job, owner, attempts). Every judge write must start with it.
+  - `append_event_locked` locks the submission row, checks the status rule with `status_after_event`, then bumps `last_event_seq`. The `NOTIFY` payload is only the run id.
+  - `emit` is the only public write path to `run_events`. It accepts a `PublicEvent`, never raw JSON.
+  - The dev-dependency on the crate itself (`counterspell-judge` with `testkit`) is a deliberate choice so `cargo test` sees the test kit. Confirm that is acceptable.
+- Gap to revisit: the concurrency test covers eight writers with one valid fence. It does not yet race a reaper-style locked writer; that belongs to T15 and the model test in T18.
+
+## T11: claim with `FOR UPDATE SKIP LOCKED` (commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/queue/claim.rs`, `crates/judge/tests/claim.rs`; `ClaimToken::new` is no longer test-only.
+- What to check:
+  - One transaction: the CTE locks one ready job, then the submission is set to `claimed` and, when `attempts > 0`, a `restarted` event is appended through `append_event_locked`.
+  - Order is cancel-first (`NULLS LAST`), then `run_after`, then `id`. Future `run_after` is skipped.
+  - All times come from the database (`now()`, `make_interval`). The lease length is passed in as seconds.
+- Ordering note: T11 was implemented after T12 because T11's `restarted` event uses T12's append helper. T11's own text allows this order.
+
+## T13: lease renewal and release for retry (commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/queue/lease.rs`, `crates/judge/tests/lease.rs`, plus `emit.rs` changes.
+- What to check:
+  - `renew` matches (job, owner, attempts) and does not look at the clock, so renewal after expiry but before a reap still counts.
+  - `requeue_or_exhaust_locked` is the shared body for release and the reaper (T15). It requeues with a backoff, or marks the job `dead` and emits `error` with `retries_exhausted`.
+  - `append_event_locked` now sets `finished_at` and `failure_reason` for an error event, because the table's CHECK requires them in the same update.
+  - `emit` now refuses `done` and `error` (test `pg_emit_refuses_terminal_events`). Only the terminal write (T14) and the retry path may end a run.
+  - `sanitize_last_error` strips control characters and caps the text at 500 characters.
+- Gap: `pg_lost_lease_stops_writes` covers emit, renew and release. The finish write is checked in T14.
+
+## T14: terminal write (commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/queue/finish.rs`, `crates/judge/tests/finish.rs`; `emit.rs` split into `read_status_locked` and `store_event_row` helpers.
+- What to check:
+  - `finish` does the fence, the status rule, the result columns, the test rows, the `done` event and the job update in one transaction. The `done` payload and the columns come from the same `FinalResult`.
+  - `TestRecord::Hidden` has no field for input, expected or program output, so none can be stored.
+  - `finish_failed` accepts only `cancelled`, `problem_unavailable` and `language_unavailable`. Retry exhaustion and expiry have their own paths.
+  - `QueueError::InvalidResult` refuses counts that do not fit an `int` column.
+- Note: the atomicity test forces a duplicate ordinal to fail after the submission update. It does not inject a fault inside the code path.
+
+## T17: worker loop (PARTIAL, not ticked; commit: see `git log --oneline -1`)
+
+- Files: `crates/judge/src/worker.rs`, `crates/judge/tests/worker.rs`; `ClaimedRun` gained `cancel_requested`.
+- Passing tests: completion, infrastructure retry, panic containment, cancel before claim (executor never runs), cancel while running (real time), concurrency limit, graceful shutdown (real time), hard deadline (real time, 5.7 s).
+- Missing: `pg_cancel_vs_complete_race`, `pg_crash_recovery_real_time`, NOTIFY wake-ups. See blockers file.
+- What to check: the three stop reasons (cancel, lease lost, shutdown) map to the right write. A lost lease writes nothing. Infrastructure errors release for retry and never become verdicts.
+- The concurrency test checks that a third run has not started after 100 scheduler yields. That shows the cap holds on this runtime, but it does not prove it under every timing.
+
+## T17: worker loop, completed (attempt 3; commit: see `git log --oneline -1`)
+
+- Change: the heartbeat is now a future inside the run's task (it was a spawned task). The executor task is wrapped in `AbortOnDrop`, so dropping the worker future aborts both renewal and the program. This is what makes `pg_crash_recovery_real_time` possible. The design text says "heartbeat task per run"; this is the one deviation, and Brighton should confirm it.
+- New tests: `pg_cancel_vs_complete_race_real_time` (a verdict the program produced is kept after a cancel) and `pg_crash_recovery_real_time` (abort mid-run, lease expires in real time, reaper requeues, retry opens with `restarted` and ends with one terminal event).
+- What to check: `execute` (the `select!` loop and the three outcomes), and `AbortOnDrop`.
+- Gap, not done: the claim loop polls `CLAIM_POLL` only. The `NOTIFY run_jobs` wake-up and the `NOTIFY run_cancel` wake-up from the design are not wired. Polling is correct but slower. Add with T24 (enqueue) or in a later task.
+
+## T24: enqueue transaction (commit: see `git log --oneline -1`)
+
+- Files: `crates/server/src/runs/enqueue.rs`, `crates/server/src/runs/mod.rs`, `crates/server/tests/enqueue.rs`, `Cargo.toml` (sqlx gains the `migrate` and `macros` features for `#[sqlx::test]`; no new crate).
+- What to check:
+  - One transaction: the advisory lock for the user, the replay check, the active cap, the queue depth cap, the insert of the run and job, and `pg_notify('run_jobs')`. Any failure rolls everything back.
+  - Mutation check (run once, restored): with the advisory lock removed, `pg_parallel_enqueues_by_one_user_respect_the_cap` created 6 runs against a cap of 3 on each of three runs. With the lock it passes. So the test does catch the race.
+  - Deviation from design Path 1: a unique-index violation on `(user_id, idempotency_key)` is returned as a database error (a `500` once wired), not as a replay. The advisory lock serialises same-user requests, so this should not happen. Brighton to decide whether to add a re-read after a unique violation.
+  - `NewRun::new` computes the SHA-256 of the code itself, so a caller cannot pass a digest that does not match.
+
+## Attempt 6 (14 Nov 2026): items for Brighton
+
+- **T38 (commits 4e9d4a2, 025c526), not SUPERVISED, listed because it changes deployment.** The judge in `docker-compose.yml` now reads `DATABASE_URL` from `JUDGE_DATABASE_URL`, and the server reads `SERVER_DATABASE_URL`. Until those host variables are set to login users, both services start with an empty URL and fail. Check that the login users in `deploy/run-lifecycle.md` exist before the next `docker compose up`.
+- **T38 Caddy route:** `/api/runs/{id}/events` now bypasses compression and flushes at once. Validated with `caddy validate`. Manual check through a running stack is still needed (deferred: E2E).
+- **T33 (commit a4a6e3e):** `startRunAction` is a new helper in `web/src/lib/runs/api.ts`. Components that start runs should call it once per click. It has not been wired into any screen (screens belong to the ide-workspace spec).
+
+## T29 (SUPERVISED, SSE core): items for Brighton
+
+- Code: `crates/server/src/runs/sse.rs` (`parse_cursor`, `REPLAY_SQL`, `run_position`, `stream_run`, `next_event`, `wait_for_change`). Route added in `crates/server/src/lib.rs`. Config in `crates/server/src/config.rs` (`SseSettings`).
+- Check the owner predicate on every event query (`REPLAY_SQL` joins `submissions` and filters `s.user_id`), and that the ownership check and cursor parse run before any event read.
+- Choice: when both `Last-Event-ID` and `last_event_id` are given, the header wins. The design does not say which wins.
+- Choice: the stream subscribes to the waker before its first query, as design Path 9 step 5 requires.
+- Not yet covered: the per-user stream limit (T30), heartbeat and headers (T30), the max-age close (T30). End-to-end tests are in T31.
+
+## T30 (SSE hardening): notes
+
+- Stream slots are per process (`StreamSlots` in `crates/server/src/runs/streams.rs`), as design open question 13 allows for one server process.
+- The `429 too_many_streams` response carries `retry_after_seconds: 5`. The spec does not give a value; this is an assumed choice.
+- The heartbeat is an SSE comment line (`: heartbeat`), sent every `SSE_HEARTBEAT_SECS`. Heartbeat timing, max-age close and the 429 path are tested end to end in T31.
+
+## T31 (SSE integration tests): notes
+
+- `SSE_MAX_AGE_SECS` now accepts 1 to 86400 seconds (was 60 minimum). The 1 s floor lets `pg_sse_max_age_closes_and_resumes` run in about a second. The default stays 900 s.
+- Test client `crates/server/tests/support/sse_client.rs` uses `hyper` 1.x and `hyper-util`, added as server dev-dependencies (MIT, listed in THIRD-PARTY-NOTICES). The task named `hyper-util` and `http-body-util`; `hyper` itself is the client they need.
+- One real bug was found and fixed by these tests: the stream's position query returned a column name that did not match the struct, so every owner request returned `500`. Foreign and missing runs still returned `404`, which is why the ownership test alone did not catch it.
+- Test names use the `pg_` prefix (for example `pg_sse_replay_after_drop_at_every_position`), following the convention for database-backed tests.
+
+## Wave 2 end-of-wave review (T20–T31): dispositions
+
+- **Fixed (Critical):** rows read after the terminal event were sent. `next_event` now checks `finished` before it drains the queue. Test: `pg_sse_sends_nothing_after_the_terminal_event`.
+- **Fixed (Minor):** the replay batch size is tied to the SQL. A unit test checks that `LIMIT` equals `REPLAY_BATCH`.
+- **Not changed:** leading zeros in the cursor (`007`) are accepted. R13.2 asks for a non-negative integer, and `007` is one. Brighton may want strict canonical form.
+- **Not changed:** the cursor is checked before ownership. Design Path 9 orders step 2 (parse) before step 3 (ownership) on purpose. A malformed cursor reveals nothing about the run.
+- **Not changed:** the stream closes silently on a database error, so `EventSource` reconnects. A `retry:` hint could slow that loop during an outage. Left for the deployment pass.
+- **Not changed:** after the waker reports `Closed`, the stream sleeps one poll interval and checks again. That is the intended fallback, not a double wait.
+
+## T34 (canary privacy): decision for Brighton
+
+- The canary test scans `run_events`, `test_results`, `GET /api/runs/{id}` and the raw SSE bytes for three hidden markers. It passes. A deliberate leak through `compile_output` makes it fail (checked, then reverted).
+- Gap: `compile_output` is the one free-text field that reaches public events, and the design has no redaction for it. The test therefore does not put markers there. By construction the compiler runs before the tests and never sees hidden data, so a leak needs a bug in the executor. A redaction pass in the worker would need the hidden values, which the worker does not hold in this spec. Brighton to decide whether to accept this or add a redaction rule when the sandbox runner lands.
+
+## T35 (restart and recovery): notes
+
+- "Server restart" is modelled by aborting the accept loop, dropping the open stream and starting a new router with new state (new waker, new stream slots) on the same database. Connections already handed to hyper are not aborted by the test, so this is a close model rather than a process restart.
+- Judge crash is modelled by aborting a worker task that holds a claim (executor `Hang`), ageing the lease with SQL and running `reap_once`. The design calls this "kill all workers"; the real process kill is covered by T36's fleet test and the deploy checks.
+- `pg_retries_exhausted_end_to_end` uses three hung attempts, matching the database default of `max_attempts = 3`. The test constant is named `MAX_ATTEMPTS`.
+
+## T36 (SUPERVISED, definition of done): what Brighton should check
+
+- Code: `crates/server/tests/dod_twenty_runs.rs` and `crates/server/tests/support/report.rs`. The test passed on the dev machine (WSL, Docker Desktop and rootless Docker both running, Postgres 17 in a throwaway container). Run it with `cargo test -p counterspell-server --test dod_twenty_runs -- --ignored pg_ --nocapture`.
+- Report: `target/run-lifecycle/dod-report.json`. Its six metrics are `enqueue_ms`, `first_event_ms`, `completion_ms`, `queue_wait_ms`, `execution_ms` and `delivery_ms`, each with count, mean, p50, p95 and max. The numbers in the last run are the first-run numbers that T39 will record.
+- Observed: enqueue p95 around 160 ms, under the 300 ms target. Queue wait is about 1.2 s on average, because twenty runs share six judge slots (three judges, concurrency two) and each scripted run takes about 160 ms of executor time. Brighton should check that the claim poll interval (`CLAIM_POLL`) is not a larger part of that wait than intended.
+- Gap to check: the canary markers in this test are a constant that the scripted judges never hold, so the scan proves only that no public surface carries that string. The real hidden-data canary check is T34. Brighton to decide whether that is enough for the definition of done.
+- Only one run was measured. T39 should record the numbers from a single named run, as the design says, not an average over runs.
+
+## T37 (CI): what Brighton should check
+
+- Added to the `rust` job of `.github/workflows/ci.yml`, after the existing test step: (1) `cargo test --workspace --all-features --locked -- --ignored pg_ valkey_` against the job's Postgres 17 and Valkey 8 services; (2) a release build of `counterspell-server` and `counterspell-judge` that fails if `feature="testkit"` appears in the compiler flags; (3) an upload of `target/run-lifecycle/dod-report.json` as `run-lifecycle-dod-report`.
+- The `web` job already ran `npm run test` (Vitest) before this task, so no change was needed there.
+- Local check: the same ignored-test command passed against the dev containers (322 tests across the workspace). The release flag check passed (0 `testkit` flags). A debug positive control showed the grep does match when the feature is on (2 matches).
+- Not verified: a real GitHub run. No push was allowed in this pass, so Brighton should confirm the job is green after the next push.
+
+## Wave 4 end-of-wave review (T34–T39): dispositions
+
+- **Fixed:** the DoD stream check passed for an empty stream. Each stream now must hold exactly five events (compile, three tests, done).
+- **Fixed:** a body error looked like a normal end of stream. The SSE test client now records a transport failure, and the DoD and restart tests assert there was none.
+- **Fixed:** the restart test finished the run before the stream opened, so it did not interrupt a live stream. It now writes two events, stops the server, writes two more, restarts, and finishes the run while the resumed stream is open.
+- **Fixed:** first-event time was measured from the start of the streams, not from each client's own `202`. It now starts at the client's own `202`.
+- **Fixed:** the CI database step had no guard against zero tests. It now fails when no `pg_` or `valkey_` test ran (checked locally: 322).
+- **Fixed:** the canary scan now includes `GET /api/dashboard`, which lists the user's recent runs.
+- **Fixed:** delivery time is no longer clamped at zero. A negative value would show clock skew.
+- **Fixed:** the report's concurrency and judge count come from the same constants the test uses.
+- **Fixed:** the results document no longer says a script copied the numbers. It says a check confirmed the values appear in the file.
+- **Declined:** the canary test does not put markers in `compile_output`. The design has no redaction rule for it. A deliberate leak through that field does fail the scan (checked by mutation in T34). Brighton to decide on a redaction rule.
+- **Declined:** the `GET /api/me/familiar` and cancel responses are not scanned. They carry no run data.
+- **Kept:** the DoD `CANARY` constant is smoke-only, and the code comment says so. The real hidden-data check is T34.

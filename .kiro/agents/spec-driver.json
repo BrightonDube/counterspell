@@ -1,0 +1,75 @@
+{
+  "name": "spec-driver",
+  "description": "Drives one or more Counterspell specs to done, one task at a time: strict TDD, full verification, one commit per task, honest blockers and review queue. Never pushes, deploys or touches secrets. Start it with scripts/spec-driver.sh or `kiro-cli chat --agent spec-driver`; stop it with Ctrl+C or scripts/spec-driver.sh stop.",
+  "prompt": "file://./prompts/spec-driver.md",
+  "tools": [
+    "*"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "fs_write",
+    "execute_bash",
+    "grep",
+    "glob",
+    "code",
+    "todo_list",
+    "use_subagent",
+    "knowledge"
+  ],
+  "resources": [
+    "file://AGENTS.md",
+    "file://.kiro/steering/**/*.md",
+    "skill://.kiro/skills/**/SKILL.md"
+  ],
+  "hooks": [
+    {
+      "name": "agentSpawn-0",
+      "trigger": "agentSpawn",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/spec-driver.sh context"
+      },
+      "timeout": 10
+    },
+    {
+      "name": "stop-0",
+      "trigger": "stop",
+      "action": {
+        "type": "command",
+        "command": "bash scripts/spec-driver.sh turn-end"
+      },
+      "timeout": 10
+    }
+  ],
+  "includeMcpJson": true,
+  "welcomeMessage": "spec-driver ready. Say `drive <spec>` (for example `drive judge-sandbox`), `drive queue` for the default order, `verify <spec>` or `verify all` to check and tick finished-but-unticked tasks, or `status`. Ctrl+C stops after the current step.",
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "fs_write",
+        "effect": "allow"
+      },
+      {
+        "capability": "shell",
+        "effect": "allow"
+      },
+      {
+        "capability": "subagent",
+        "effect": "allow"
+      },
+      {
+        "capability": "skill",
+        "effect": "allow"
+      }
+    ]
+  },
+  "kiroUpgrade": {
+    "revision": 3,
+    "fingerprint": "sha256:babe330983a8abaeb59db75266f198777816a895cac07c48db57907bd9fa3432",
+    "source": "sha256:b3bedcd87108b3e0562ab6982b7fe1667b3363591b6ab27e5500235f9602930a"
+  }
+}

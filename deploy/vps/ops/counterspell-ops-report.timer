@@ -1,0 +1,10 @@
+[Unit]
+Description=Run the Counterspell ops report every 5 minutes
+
+[Timer]
+OnCalendar=*:0/5
+Persistent=true
+Unit=counterspell-ops-report.service
+
+[Install]
+WantedBy=timers.target

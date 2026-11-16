@@ -1,0 +1,308 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7
+I'll start by checking the judge-sandbox spec for Brighton's T00 review note, since the run must stop without code changes if it is missing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=86
+
+[tool] Check spec files and T00 review note
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T00 is signed off in `design.md`, so the run can start. Next I'll list the unchecked tasks to find the first one that is not blocked, stretch or human.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=100
+
+[tool] List unchecked tasks and existing judge code
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Tasks T01 to T19 are already ticked, so the first eligible task is T20 (T02 and T37 are human or blocked). I'll read the remaining task definitions and the existing sandbox code before changing anything.
+[tool] Read tasks T08 to T19
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=105
+[tool] Read tasks T20 to T39
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T20 is the first eligible task. Several T20 to T24 files already exist in some form, so I'll check their current state before writing anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=127
+
+[tool] Inspect existing sandbox backend code
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`bollard_backend.rs` already holds much of T20, though the task is unticked. I'll see how far it goes and whether the judge crate builds and passes its current tests.
+[tool] Read rest of bollard backend file
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=130
+[tool] Run judge crate tests for baseline
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The baseline is green. Next I'll check whether any test already covers the bollard conversion, and look at the policy and daemon helpers T20 depends on.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=120
+
+[tool] Find tests and APIs for bollard backend
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T20 code and tests were already committed in `d74705c`, with the commit noting the sbx test was blocked. I'll read the existing tests and the blockers log to see what is still missing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=104
+
+[tool] Read sbx test, model test and blockers file
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The blockers log says T20's real-daemon test is held up by cgroup delegation. I'll check whether Brighton has applied the drop-in since then, and rerun the T20 sbx test if so.
+[tool] Check cgroup delegation and rerun T20 sbx test
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=156
+[tool] status: Completed
+The cgroup delegation is applied now, and the identity check passes. The test then fails on the shipped catalogue, which reports a missing JavaScript driver. I'll check `languages.toml` and the drivers directory.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=95
+
+[tool] Inspect shipped languages catalogue and drivers
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The shipped catalogue enables Python and JavaScript, but `languages/drivers/` does not exist. The loader therefore refuses it, and the T20 real-daemon test cannot load its catalogue. Before deciding how to handle this, I'll check where the language-drivers spec stands on creating those files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=238
+
+[tool] Check language-drivers task status for driver files
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Language-drivers T03 and T04, which create `driver.py` and `driver.js`, are still unchecked. The T20 real-daemon test is therefore blocked by another spec, not by this one. T20 stays unticked and I'll record that. The remaining work for T21 onward can still proceed against the fake backend and the real API surface, so I'll read the exec spec and the bollard API before writing T21.
+[tool] Read exec and session spec module
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=484
+[tool] Read design section headings and file delivery notes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have enough of the exec model for T21. I'll read the session steps in design section 8 to confirm the exact order of start, load, compile, and driver calls.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Read session and preflight design sections
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I'll check the bollard 0.21 exec and start APIs in the local cargo registry, so the T21 code compiles against the real signatures.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=139
+
+[tool] Find bollard exec and container method signatures
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+[tool] Find bollard method and exec option signatures
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=107
+[tool] Read bollard exec config and option structs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the exec and container method shapes. Before writing the driver channel, I need to see how `call.rs` consumes `DriverEvent::Line` and `Chunk`, and which `LogOutput` variants bollard returns.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=452
+
+[tool] Check call.rs driver event use and bollard types
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`call.rs` splits lines itself, so the driver channel can forward raw stdout as `Chunk` events. I'll confirm the remaining bollard names I need: the error enum variants and the kill and start option builders.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=158
+
+[tool] Check bollard error variants and kill option builder
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=72
+[tool] Read bollard error enum and builders in stubs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=39
+[tool] List bollard error enum variants
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the error variants I need. Two more checks before I write the failing tests: the field shapes of `IOError` and `DockerResponseServerError`, and the exports from `policy.rs` that the exec spec uses.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=670
+
+[tool] Check bollard error fields and test support layout
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need for T21. Following TDD, I'll write the failing model tests first for the pure pieces: the bounded output collector, the OOM counter parser, and the daemon error mapping.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=656
+[tool] status: Pending
+[tool] status: Completed
+The sandbox rules match what I'm already doing: trusted workers own verdicts, and bollard only talks to the rootless daemon. My T21 model tests are written and failing for the expected reason, since the helpers don't exist yet. Next I'll update the imports in `bollard_backend.rs` and make `remove_forced` treat an already-gone container as removed.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=812
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=157
+[tool] status: Pending
+[tool] status: Completed
+Next I'll append the session code: the pure helpers (`OutputCollector`, `parse_oom_kill`, `map_error`), then the bollard backend, session and driver channel that implement the traits.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2223
+[tool] status: Pending
+[tool] status: Completed
+I'll compile the judge crate with the `sandbox` feature and run the model tests to see the current state.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=113
+
+[tool] Compile and run new model tests for bollard session
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The 11 model tests pass on the first compile. Before I write the T21 real-daemon tests, I'll check whether the pinned Python image is on the rootless daemon. Creating a container needs it, and the judge never pulls at run time.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=95
+
+[tool] Check images present on rootless sandbox daemon
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The rootless daemon has no images, so the real-daemon tests cannot create a container yet. Pulling the image onto the sandbox daemon is a setup step I'll leave to Brighton rather than do silently. I'll write the T21 `sbx_` tests now and confirm they compile.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=984
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+[tool] Compile the real-daemon T21 test file
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The T21 real-daemon tests compile. Next I'll run the Rust gate: format, clippy with warnings denied, and the full judge tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=87
+
+[tool] Run fmt and clippy gate across the workspace
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=58
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=76
+[tool] Rerun fmt, clippy and full workspace tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=40
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=75
+[tool] Recheck fmt, clippy and workspace tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Format, clippy and the full workspace test run all pass. The real-daemon T21 tests have not run, because the pinned image is missing from the sandbox daemon, so T21 stays unticked. I'll log the Rust lesson, the blockers, and the review-queue entry for this SUPERVISED task.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=584
+
+[tool] Log lessons and blockers, then commit T21
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T21 is committed with its code and logs. I'll move on to T22's pure part: parsing the probe outputs and comparing them with the policy. First I'll check the policy field names it compares against.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=322
+
+[tool] Read policy struct fields for preflight comparison
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The policy fields are what I need. I'll write the T22 model tests first. They check that a correct probe passes and that weakening each control produces exactly one named failure.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=906
+[tool] status: Pending
+[tool] status: Completed
+The model tests are written and will fail until `preflight.rs` exists. I'll confirm the RED state, then write the module.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=173
+
+[tool] Confirm the preflight tests fail before implementation
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The failure is the expected missing module. I'll write the pure evaluator and register it in `mod.rs`.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1404
+[tool] status: Pending
+[tool] status: Completed
+Before compiling I'll fix two things I can already see. `parse_size` slices by byte length, which can panic on a multi-byte last character. `scratch_check` also needs a tidier shape.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=192
+[tool] status: Pending
+[tool] status: Completed
+That `parse_size` was already safe: a multi-byte last character falls into the `_` arm, so the byte slice only runs for ASCII units. I'll tidy `scratch_check` next.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=324
+[tool] status: Pending
+[tool] status: Completed
+`mount_for` returns only the options, so the scratch check cannot tell a tmpfs from another filesystem type. The mutation test would miss that case. I'll make the helper return the filesystem type too and require `tmpfs`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=492
+
+[tool] Make mount lookup return filesystem type and require tmpfs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The mount helper is updated. Next I'll register the module and run the T22 model tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=97
+
+[tool] Register preflight module and run its model tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All five T22 model tests pass, including the mutation test that checks each control fails on its own. The probe runner, the `PreflightState`, and the `preflight` subcommand are still to do, so T22 stays unticked. I'll run the gate, then commit the pure part.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=161
+
+[tool] Run fmt, clippy and workspace tests after preflight
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy flags type complexity and missing semicolons in the test's mutation table. I'll add a type alias and the semicolons.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=171
+
+[tool] Add type alias and semicolons to mutation table
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The regex left some closures without semicolons. Clippy can apply its own mechanical fix to this one test target, so I'll run that and re-check.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=141
+
+[tool] Apply clippy fixes to preflight test and recheck
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy is clean and the preflight tests pass. I'll run the full workspace test suite once more, then log and commit the T22 pure part.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=297
+
+[tool] Run workspace tests, log T22 progress and commit
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both commits are in. I'll pull the hashes and the final git state for the hand-off.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=155
+
+[tool] Confirm commits and clean working tree
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I stopped after T22's pure part. Most of the judge-sandbox spec is still open, and most of what remains needs a real sandbox daemon or the language driver files. No task is ticked in this run.
+
+## Summary
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T00 gate | Already signed off | none | design.md "Review decisions" present | n/a |
+| T20 bollard create and read-back | Code was already committed. Not ticked: the real-daemon test fails at catalogue load | none new | Model tests pass. `sbx_create_readback_matches` fails: `MissingDriver` for JavaScript | `d74705c` (earlier) |
+| T21 bollard start, exec, files, kill, remove | Code done, not ticked. `sbx_` tests compile but have not run | 11 model, 4 `sbx_` (ignored) | fmt and clippy clean, workspace tests pass | `b6c7e44` |
+| T22 preflight evaluation (pure part) | Partly done, not ticked. Probe runner, state and `preflight` subcommand still to do | 5 model | fmt and clippy clean, workspace tests pass | `2e1fc48` |
+| T23 to T39 | Not started | | | |
+
+The workspace gate passed after each commit: `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`, and `cargo test --workspace`.
+
+## Blockers
+
+- **T20 real-daemon test (blocked by language-drivers).** The cgroup delegation is applied now, so the identity check passes. The test then fails because `languages/languages.toml` enables Python and JavaScript, but `languages/drivers/` does not exist. The language-drivers T03 and T04 tasks create those files and are unchecked. Commit `0d94d99` also contradicts the 15 Nov decision that JavaScript stays disabled until its driver exists. Brighton needs to decide which one to change.
+- **T21 real-daemon tests (image missing).** The rootless sandbox daemon has no images. I did not pull the pinned Python image onto it, because that is a setup step for Brighton. The command is in `docs/kiro-log/judge-sandbox-blockers.md`.
+- **T02, T37 and T39 (VPS).** These stay open as before.
+- **T23 needs a trait change.** The sweeper must list labelled containers, and the `Backend` trait has no list method. I did not add one, because that changes T14's interface. A decision is needed.
+- **T24 onward.** These depend on T20/T21 real-daemon results and on language-drivers.
+
+## Review queue (Brighton to check)
+
+- T21: an exec that exceeds the 64 KiB cap kills the whole container, because the Docker API cannot stop one exec. Also, a failed write to the driver's stdin is ignored, since the driver's exit is reported separately. Both are in `docs/kiro-log/judge-sandbox-review-queue.md`.
+
+## Open Minor findings
+
+- The read-back in T20 assumes the daemon echoes the tmpfs options unchanged. The real-daemon test must confirm this.
+- `host_resources` reports an image-declared `VOLUME` as a host resource. This fails closed, but the design does not mention it.
+- The exec write is not bounded by a deadline inside `run_exec`. Callers must wrap it.
+
+Rust lessons for T21 and T22 are in `docs/kiro-log/rust-lessons.md`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=247
+

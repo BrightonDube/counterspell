@@ -18,7 +18,7 @@ Counterspell is a horror-themed, HackerRank-style coding practice platform. When
 7. The break room (daily Lichess chess puzzle, a simple chess bot, one brain game) is a stretch goal, **built last**.
 
 ## MVP scope (deadline Fri 4 Dec 2026 14:00 PT = Sat 5 Dec 00:00 SAST; feature freeze Wed 2 Dec; submit by Fri 4 Dec 20:00 SAST)
-- **Must have:** auth (GitHub, Google, email; no automatic account linking by email; a judge demo account), catalogue (**10 polished original problems**), IDE with **Python and JavaScript**, server-side sandboxed judging with live SSE results, ghost engine, hints, dashboard, landing page, Efficiency Familiar measured mood.
+- **Must have:** auth (GitHub, Google, email; no automatic account linking by email; a demo account), catalogue (**10 polished original problems**), IDE with **Python and JavaScript**, server-side sandboxed judging with live SSE results, ghost engine, hints, dashboard, landing page, Efficiency Familiar measured mood.
 - **Should have:** the visible shrink animation, the Bug Autopsy card, the Kiro dogfooding demo (Kiro uses `counterspell-mcp` to find a counterexample in a deliberately buggy reference, fixes it and re-verifies), and the familiar's AI speech bubble.
 - **Stretch, only after the core is freeze-safe:** Java and C++, FSRS reviews, the familiar's live-typing guess, Night Shift timed assessment, break room.
 - **Out of scope:** payments, proctoring, mobile apps, copying HackerRank content.
@@ -44,5 +44,5 @@ Counterspell is a horror-themed, HackerRank-style coding practice platform. When
 
 ## People and process
 - Brighton is the sole builder and **new to Rust**. Kiro writes the code and Brighton reviews it. Every Rust change must end with a short plain-English "Rust lesson".
-- Hackathon: Kiroween 2026. **Main category: Costume Contest** (one category only; Frankenstein-style elements can appear in the build, but Frankenstein is not a second category). Judges score Potential Impact, Technological Implementation (how well Kiro is used), Design, Innovation and Presentation, 20% each.
+- Competition: an external showcase with a v1 deadline. Its rules and scoring are kept outside this brief.
 - The repository must be public, MIT licensed, with `/.kiro` committed (never in `.gitignore`).

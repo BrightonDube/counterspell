@@ -1,0 +1,76 @@
+---
+# Adds one Counterspell site file to the shared Caddy, validates the whole config, then reloads.
+# Never restarts Caddy, so Evorayn stays up. If validation or reload fails, the change is undone
+# (site file removed, Caddyfile restored) and the play stops.
+
+- name: Refuse to run without the public site address
+  ansible.builtin.assert:
+    that:
+      - caddy_site_address | length > 0
+    fail_msg: "Set caddy_site_address for this host in the inventory."
+    quiet: true
+
+- name: Attach the running Caddy to the Counterspell network (no restart)
+  ansible.builtin.command: "docker network connect {{ caddy_site_network }} {{ caddy_site_container }}"
+  register: caddy_site_connect
+  changed_when: caddy_site_connect.rc == 0
+  failed_when: caddy_site_connect.rc != 0 and 'already exists' not in caddy_site_connect.stderr
+  when: caddy_site_connect_network | bool
+
+- name: Write the Counterspell site file
+  ansible.builtin.template:
+    src: counterspell.caddy.j2
+    dest: "{{ caddy_site_host_sites_dir }}/{{ caddy_site_file_name }}"
+    owner: "{{ caddy_site_proxy_owner }}"
+    group: "{{ caddy_site_proxy_group }}"
+    mode: "0644"
+  register: caddy_site_file
+
+- name: Look for an existing import of the sites directory
+  ansible.builtin.command: "grep -Eq '^[[:space:]]*import[[:space:]]+(\\./)?sites/' {{ caddy_site_host_caddyfile }}"
+  register: caddy_site_import
+  changed_when: false
+  failed_when: caddy_site_import.rc > 1
+
+- name: Add the single import line and reload, or undo everything
+  when: caddy_site_file.changed or caddy_site_import.rc == 1
+  block:
+    - name: Add one import line for the Counterspell site file (the only edit to the shared Caddyfile)
+      ansible.builtin.lineinfile:
+        path: "{{ caddy_site_host_caddyfile }}"
+        line: "import sites/{{ caddy_site_file_name }}"
+        insertafter: EOF
+        backup: true
+      register: caddy_site_import_edit
+      when: caddy_site_import.rc == 1
+
+    - name: Check that the container sees the site file
+      ansible.builtin.command: "docker exec {{ caddy_site_container }} test -f {{ caddy_site_container_sites_dir }}/{{ caddy_site_file_name }}"
+      changed_when: false
+
+    - name: Validate the whole Caddy configuration
+      ansible.builtin.command: "docker exec {{ caddy_site_container }} caddy validate --config {{ caddy_site_container_caddyfile }}"
+      changed_when: false
+
+    - name: Reload Caddy (never restart)
+      ansible.builtin.command: "docker exec {{ caddy_site_container }} caddy reload --config {{ caddy_site_container_caddyfile }}"
+      changed_when: true
+  rescue:
+    - name: Remove the Counterspell site file
+      ansible.builtin.file:
+        path: "{{ caddy_site_host_sites_dir }}/{{ caddy_site_file_name }}"
+        state: absent
+
+    - name: Restore the Caddyfile from the backup taken by this run
+      ansible.builtin.copy:
+        src: "{{ caddy_site_import_edit.backup }}"
+        dest: "{{ caddy_site_host_caddyfile }}"
+        remote_src: true
+        owner: "{{ caddy_site_proxy_owner }}"
+        group: "{{ caddy_site_proxy_group }}"
+        mode: preserve
+      when: caddy_site_import_edit.backup is defined
+
+    - name: Stop, with the shared Caddy unchanged
+      ansible.builtin.fail:
+        msg: "Caddy validation or reload failed. The Counterspell site file was removed and the Caddyfile restored. Nothing else was changed."

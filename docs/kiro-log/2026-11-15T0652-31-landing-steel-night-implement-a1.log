@@ -1,0 +1,434 @@
+I'll start by reading the landing-steel-night tasks and the existing blocker and review logs.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=67
+
+[tool] Read File
+[tool] status: InProgress
+[tool] List Directory
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The tasks file has no completed boxes, and a previous landing run left a log. I'll check that log, the git state, and the current `web/` tree.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=91
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The previous landing attempt left only a log, so nothing is done yet. Next I'll read the design, requirements, frontend steering, and the current web setup.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=107
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The steering rule block repeated without new content, so I'm continuing the landing work. Next I'll read the current `web/` landing, styles and smoke test before changing anything.
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=149
+Fonts and the smoke marker already exist from `ide-workspace`, so T02 needs checking rather than rebuilding. I'll check the font files, the OFL notices, and the existing `THIRD-PARTY-NOTICES.md` entries.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=145
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The OFL notices and self-hosted font wiring already exist, so T02 needs a build check and a note about the skipped preload. Next I'll author the five original SVG scene assets (T01) in palette colours.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=686
+[tool] status: Pending
+[tool] status: Completed
+All five SVGs are written. Next I'll verify T01: no scripts, no foreignObject, no external hrefs, and the total size is within 100 KB.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T01 passes: all five files parse as XML, contain no script, foreignObject or external href, and total 3,120 bytes. Next I'll verify T02 with a build and check that the built CSS references only local font files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=103
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T02 passes: the build succeeds and every font URL in the built CSS is local. The Geist file is the full variable font and the JetBrains Mono weights are fontsource subsets, which differs from the Latin-subset plan. Next is T03, starting with a failing test for the copy module.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=386
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=28
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test fails because `copy.ts` does not exist yet, which is the expected reason. Next I'll write the minimal copy module.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=295
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=38
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+One test fails because it scans the whole source file, and my own explanatory comment contains the banned phrases. I'll change the test to check only the exported copy strings, which is what R9 is about.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=213
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T03 passes all seven copy tests. Next is T04, the pure motion planner. I'll write its table-driven test first, covering the design's three rules and the width boundaries.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=633
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=36
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test fails on the missing module, as expected. I'll write the planner to match the design rules.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=287
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T03 and T04 pass (9 tests in the landing folder) and svelte-check is clean. Before writing Svelte components, I'll read the Svelte best-practices skill.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=82
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I've read the skill's guidance on `$derived`, props and attributes. Next is T05, the hero. I'll write its component test first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=247
+[tool] status: Pending
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=34
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=249
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T05 passes: the hero test and the full landing suite are green, and svelte-check is clean. Next is T06, the three beats and the labelled example. I'll write its test first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=415
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=147
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=227
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=37
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Three GhostExample tests fail, so I'll read the actual error before changing anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=61
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The error comes from the test harness. Earlier renders in the same file stay in the DOM, so the queries find duplicates. I'll scope each query to its own render container.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=337
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 23 landing tests pass. Next is T07, the sign-up call to action. I'll write its test first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=275
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=142
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The two failures come from the same leakage: the second test finds two "Log in" links because the first render stays mounted. I'll add per-file cleanup.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=133
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T06 and T07 pass, so 27 landing tests are green. Next is T08, composing the route. I'll add a route test that checks the static content and the smoke marker, and run it against the current skeleton page first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=301
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=35
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The three route tests fail as expected: the page has no `lang`, no beats, and still shows the skeleton text. I'll compose the route, call the planner in `onMount`, and keep the marker.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=244
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=96
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+The run shows two failed test files, four svelte-check errors in one file, and a build that exceeded the 120 s timeout. I'll inspect each separately, starting with the failing suites and the check errors.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The project aliases `$lib` to `#lib` in its `package.json` imports, so I'll switch the route's imports to `#lib/...`. I'll also run the build in the background to avoid the timeout.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=94
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=31
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Vitest now resolves the imports, but svelte-check cannot find `#lib/landing/motion-plan`. I'll check how existing routes import from `#lib` so I follow the same pattern.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=71
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Existing routes use explicit `.js` extensions, which work for JavaScript but not for the TypeScript files here. I'll switch the route to relative imports, which both tools resolve.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=86
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Tests and svelte-check are both clean. I'll run the production build in the background and poll for the result, since it ran past the timeout before.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=65
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=66
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+The build succeeded, but the grep found none of the expected landing text in `build/index.html`. I'll inspect that file directly.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The built `index.html` is the SPA fallback shell, not the prerendered page. The build log also printed `adapter_fallback_overwrites`, which suggests the fallback replaces the prerendered home page. I'll read the full warning and check what the Rust server expects.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+The root cause is the repo's adapter config, `adapter({ fallback: 'index.html' })`. That writes the SPA shell over the prerendered `/`, so the landing HTML cannot be verified in `index.html` without changing either the adapter fallback or the Rust server's `index.html` fallback. Both fall outside this spec's web-only scope, so I'll record it as a blocker and keep T08 unchecked. I'll start the blockers log now.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=739
+[tool] status: Pending
+[tool] status: Completed
+The blockers log is in place. Next is T09, the GSAP scene module. I can test it without a real GSAP by injecting the loader and the scheduler, so I'll write the tests against a recording fake first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1041
+[tool] status: Pending
+[tool] status: Completed
+Before writing the module, the fake needs to name targets properly. Otherwise the phone-rule assertion would pass trivially. I'll pass GSAP selector strings scoped to the root, which lets the test see which layers are targeted.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=751
+[tool] status: Pending
+[tool] status: Completed
+I'm simplifying the root type: the scroll trigger needs an element, so I'll take an `Element` and drop the cast. Then I'll run the tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=229
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T09 passes: seven scene tests and svelte-check are clean. I did write the tests before the module but did not capture a red run for this one, so I'll note that in the summary. Next is T10, wiring the plan into the page with cleanup on leave. I'll write a route test that mocks the scene module and checks that the scenes start only in motion mode and are disposed on unmount.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=387
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=39
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both motion tests fail for the expected reason: the page does not start the scenes yet. I'll wire the planner's result into `onMount`, with the dispose hook returned on leave.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=311
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=68
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=31
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+svelte-check is type-checking the route test file. I'll add JSDoc types and a `vi.fn` cast so the test is typed without disabling checks.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=294
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+The route and landing suites pass (44 tests), and svelte-check is clean. I'll leave the browser check of the leave-page cleanup as deferred E2E and rely on the dispose test. Next is T11, the reduced-motion CSS. I'll write a test against the stylesheet first.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=321
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=42
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both tests fail, as expected: the landing block does not exist yet. The existing global reduced-motion block sets 0.01 ms rather than the 0 ms the spec names, so I'll add the explicit landing block and give the CTA a `cta` hook class.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=159
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The landing CSS test passes. Next I'll run the full web gate in the background: `npm run check`, the full `npm test`, and `npm run build`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=151
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=30
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=14
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The full web gate passes: svelte-check shows 0 errors, all 355 tests in 52 files pass, and the build succeeds. Next I'll tick the tasks that have passing verification and update the blockers log for T12 to T14, which need a rendered static page, Lighthouse, and a browser or Compose check.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=213
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The task boxes are updated. I'll append the T12 to T14 blockers and the Lighthouse reason to the blockers log.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=326
+[tool] status: Pending
+[tool] status: Completed
+Before committing, I'll review the wave's code against the checklist. One real gap: if the GSAP chunk fails to load, the `startScenes` promise rejects and the page has no catch, which would surface as an unhandled rejection. Motion is optional, so I'll catch it, add a test, and rerun.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=295
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The catch is in and the 47 landing and route tests pass. Next I'll check `git status` so I only stage the files this run changed.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=48
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Only landing-related files changed, plus the pre-existing log and the task file. I'll commit by task group using explicit file names, starting with the SVG assets, the copy, and the planner.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=238
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Four commits are in, and the pre-commit secret scan passed each one. Next I'll commit the scene module, then the route, motion wiring and CSS fallback.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=165
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Commits are in and the working tree is clean apart from the pre-existing log. For the wave review, I'll check the one budget I have not measured yet: the Geist variable font's size against the 60 KB design budget.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=134
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Geist's variable woff2 is 69.5 KB, which is above the design's 60 KB per-weight budget. It covers both weights in one file, so I'll record it as a Minor finding rather than change the font setup, and commit the note.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=216
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I worked through landing-steel-night in order. Ten of fourteen tasks are done, and T08 is code-complete but unchecked because its build verification is blocked. T12 to T14 are blocked by the same cause or need a browser. The `web/` gate passes: svelte-check reports 0 errors, the full suite passed (355 tests in 52 files), and the build succeeds.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T01 SVG scene assets | [x] | none (checked by script) | No script, foreignObject or external href. All five parse as XML. Total 3,120 bytes. Browser render deferred (E2E). | 4d7f3e7 |
+| T02 Fonts | [x] | none | `npm run build` passes. Built CSS uses only local font files. OFL notices already present. Preload skipped (see deviations). | none (blockers note in b800df9) |
+| T03 Copy module | [x] | 7 | Copy tests pass. R9 check runs on the exported strings only. | 588a163 |
+| T04 Motion planner | [x] | 7 | Table-driven over widths 320/639/640/1280 and all boolean combinations. | c3e4475 |
+| T05 Hero | [x] | 3 | Component tests pass. Five decorative `img` layers, `alt=""`, explicit sizes. | f48eadd |
+| T06 Beats and example | [x] | 6 | Heading order, icons `aria-hidden`, labelled example, illustration caption. | f48eadd |
+| T07 Sign-up CTA | [x] | 4 | `href="/login"`, candle focus ring, no paid-tier wording. | f48eadd |
+| T08 Route composition | [ ] blocked | 3 | Unit tests pass. `build/index.html` is the SPA shell (see blockers). | d28db0f |
+| T09 GSAP scenes | [x] | 7 | Injected loader and scheduler. Only transform and opacity. No repeats. Revert on dispose. Browser network check deferred. | a8d6b94 |
+| T10 Wire motion and cleanup | [x] | 4 | Scenes start only in motion mode. Disposed on unmount. Load failure keeps the static page. Browser leave check deferred. | d28db0f |
+| T11 Reduced-motion CSS | [x] | 2 | CSS tests: `.cta` 0 ms under reduced motion, no raw colours in the landing block. | d28db0f |
+| T12 No-JS content check | [ ] blocked | — | Needs the static `index.html` (T08). | — |
+| T13 Lighthouse median | [ ] blocked | — | Needs T08, a served build and headless Chrome. | — |
+| T14 Accessibility and Compose smoke | [ ] blocked / E2E | — | Keyboard, contrast and Compose checks need a browser or the stack. | — |
+
+**Blocker:** `web/vite.config.js` uses `adapter({ fallback: 'index.html' })`, so the SPA shell overwrites the prerendered `/`. The Rust server also uses `index.html` as its fallback. Brighton needs to choose between renaming the fallback in the adapter and the server (a Rust change in `crates/server`) or removing the adapter fallback. Details and both options are in `docs/kiro-log/landing-steel-night-blockers.md`.
+
+**Deviations I made:**
+- **T02:** The fonts come from `ide-workspace`, so I kept that wiring. Geist is the full variable font, not a Latin subset. I did not add a Geist preload, because Vite hashes the file name.
+- **T04:** Static mode hides the smoke layer, following `design.md`. `tasks.md` says static mode shows every layer.
+- **T01:** The SVGs use the palette hex values inline. Components use tokens only.
+- **T[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=466
+09:** I wrote the tests before the module but did not capture a red run for them.
+
+**Review queue:** No `[SUPERVISED]` tasks in this spec, so nothing was added.
+
+**Rust lessons:** No Rust changed, so none were added.
+
+**Open Minor review findings (also in the blockers file):**
+- Geist's variable woff2 is 69.5 KB, above the design's 60 KB per-weight guideline. Lighthouse decides whether it matters.
+- The `.cta` transition rule duplicates the global reduced-motion rule. It is harmless.
+- The hero's scene wrapper and each `img` carry `aria-hidden`. Redundant but correct.
+
+**Not re-run after the last change:** I added the catch for a failed GSAP load after the full gate ran. I re-ran the landing and route suites (47 tests) and svelte-check after that change, but not the whole suite or the build.

@@ -1,12 +1,12 @@
 # Tasks: break-room
 
-All tasks are implementation tasks for the design above. No task in this document is being executed by this spec-generation run. Each task is sized for 30 minutes or less. `[P]` means it can run in parallel with other tasks in the same wave once its dependencies are complete. `[S]` means it is sequential or has a required dependency. Every task is `[stretch]`: nothing starts until the gate in T00 passes.
+All tasks are implementation tasks for the design above. No task in this document is being executed by this spec-generation run. Each task is sized for 30 minutes or less. `[P]` means it can run in parallel with other tasks in the same wave once its dependencies are complete. `[S]` means it is sequential or has a required dependency. Every task is `[stretch]`: nothing starts until the gate in T00 passes. Update 15 Nov 2026 10:26 (Brighton): "verify on the VPS" in T00 is done locally (Docker on this PC) instead; a VPS re-check is deferred to deploy time and is not a blocker. Later tasks are not held as `[stretch]` for that reason. If auth, run-lifecycle, ide-workspace or dashboard-fsrs are still incomplete, record the T00 result and do not start T01.
 
 ## Wave 0: gate and intake
 
 - [ ] **T00 [S] (15 min) Confirm the freeze-safe core before any break-room work**
   - Files: none.
-  - Check the release-checklist items that apply to the core: the real fail → ghost flow runs on the VPS, the Postgres queue and SSE replay work, and the auth, IDE, and dashboard specs are complete.
+  - Check the release-checklist items that apply to the core: the real fail → ghost flow is verified locally (Docker on this PC; 15 Nov 2026 10:26 decision), the Postgres queue and SSE replay work, and the auth, IDE, and dashboard specs are complete. A VPS re-check is deferred to deploy time and is not a blocker.
   - If any check fails, stop and record the decision to Brighton. Do not start T01.
   - Depends on: auth, run-lifecycle, ghost-engine, ide-workspace, dashboard-fsrs specs complete or deliberately cut.
   - Verify: a written gate note in the hand-off that lists each check as pass or fail.

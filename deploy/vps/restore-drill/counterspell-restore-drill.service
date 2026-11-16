@@ -1,0 +1,17 @@
+[Unit]
+Description=Counterspell monthly restore drill (manual trigger; the identity file must be placed under /dev/shm first)
+Wants=network-online.target docker.service
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+# Brighton copies the age identity to /dev/shm and sets DRILL_IDENTITY_FILE in this file (not in git).
+EnvironmentFile=/etc/counterspell/drill.env
+ExecStart=/usr/local/sbin/counterspell-restore-drill
+User=root
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ReadWritePaths=/dev/shm /var/backups/counterspell
+TimeoutStartSec=30min

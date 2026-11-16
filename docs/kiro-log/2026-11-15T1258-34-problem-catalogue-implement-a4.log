@@ -1,0 +1,400 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=9
+I'll start by reading the spec's task list to find the first unchecked task.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=57
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The blockers file says C16 is blocked on a crate-graph decision, and that block cascades to C17 through C23. I need the rest of the task list to see what does not depend on it.
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=181
+[tool] status: Completed
+The first actionable task is C28. C16 and everything that depends on it stay blocked on the crate-graph decision, and C26, C32 and C33 are blocked on other specs. C28 depends only on C27 and C04, both done. I'll check the blocking statuses in the related specs and the current server code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=206
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+C28 is the next actionable task. I'll read its design section and the current production wiring in `lib.rs` and `main.rs`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I need the `AppState` constructors and how existing `pg_` server tests connect as the server role.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=85
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The lookup has to read the `problems` table as the server role, and the test should reuse the catalogue fixture. I'll check the fixture's public API, the server-role grants, and the `problems` columns.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=262
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=70
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need for the query and the grants. Before writing the test, I'll check whether the static fixture publishes anything, and confirm the test pool owner can use the judge fixture.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=171
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next I'll write the failing test first. The module does not exist yet, so the expected failure is an unresolved import.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=531
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=34
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test fails for the expected reason: the `catalogue` module does not exist. Next I'll check how `lib.rs` declares its modules, so the new module matches.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=68
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=258
+[tool] status: Pending
+[tool] status: Completed
+I left `EmptyCatalogue` in the import, and it is now unused in `lib.rs`. I'll remove it so clippy stays clean, then write the module.
+[tool] Replace in File
+[tool] Write File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=356
+[tool] status: Pending
+[tool] status: Completed
+Next I'll run the new database tests against the throwaway Postgres. `DATABASE_URL` is already set in this shell, so I'm not writing it anywhere.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=96
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All five pass. The wiring change in `AppState::new` affects every server test that builds the state, so I'll run the format, lint and full server suites.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The import landed in the wrong group. I'll move it to the top-level `use crate::` list and rerun the format check.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=177
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+Formatting passes. Next I'll run clippy and the whole server test suite, both the default tests and the database `pg_` tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=86
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The default suite passes with no failures. Because `AppState::new` now queries the database, I'll also run the server's ignored `pg_` tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=77
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All server tests pass, including the 81 ignored database tests. I'll tick C28, add its Rust lesson, and commit it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=134
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Run Command
+[tool] Append to File
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=161
+[tool] status: Pending
+[tool] status: Completed
+Next I'll commit C28 with only the files it touched.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=111
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The commit went through and the secret scanner found nothing. C28 is marked `[SUPERVISED]`, so I'll check the review-queue format before adding its entry.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=90
+[tool] status: Pending
+[tool] status: Completed
+C28 is recorded. Next is C29, which has its dependencies done (C28 and run-lifecycle T24). I'll read the existing enqueue code and the design's `INSERT … SELECT` shape.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=32
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+C29 replaces the handler's separate publication check with an atomic `INSERT … SELECT` in `enqueue`. Before I change that, I need to know which existing tests depend on the in-memory problem lookup or on the unpublished `two-sum` helper row.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=240
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The in-memory lookup tests and the `ensure_problem` helper both depend on the old behaviour. Changing the insert to require a published row means the test helper must create a genuinely published problem. I'll check the publish gate and the child table columns to see how small that helper can be.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=344
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The gate needs a full set of child rows, so the helper cannot publish a problem with a few inserts. The judge crate's fixture already builds one. I need to see how many test call sites would change before choosing where that fixture is called.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=241
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The judge test kit already builds a published problem through the production triggers. Test files in the server crate can call it through the existing dev-dependency, but the server's own `ensure_problem` helper cannot. I'll read the judge fixture's SQL so the server helper can use the same rows without adding a dependency.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=250
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The judge fixture is about 200 lines of SQL and triggers. Copying it into the server's lib-level test kit would duplicate a large fixture. Adding judge as an optional server dependency would add a dependency the task does not name. So C29 needs a fixture decision that is not mine to make in this pass. I'll record it, leave C29 unchecked, and check whether C30 can go ahead without that decision.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=402
+[tool] status: Pending
+[tool] status: Completed
+Next is C30, the `GET /api/problems` list. I'll read the design's list query and DTO shape first.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=67
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The design query uses `s.verdict`, which may not match the run-lifecycle `submissions` columns. I'll check the real columns, how an existing route handler and its non-database test are built, and the error envelope.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=135
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=106
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The solved rule is `status = 'completed' AND verdict = 'accepted'`. I'll also need to see how existing tests build the router without a live database, and whether the run-lifecycle guards restrict how a test can mark a submission complete.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=364
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=36
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Submissions are inserted as `queued`, and the guard only allows the transitions the run flow uses, so the test will move each submission through `claimed` and `compiling` to `completed`. Next I'll check the HTTP helper names in the shared test support module.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=120
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the helper names. Next I'll write the failing tests for C30. The no-database file covers the invalid-filter path and the response key allow-list. The database file covers published-only rows, filters and status from the caller's own submissions.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=768
+[tool] status: Pending
+[tool] status: Completed
+Before writing the database tests, I'll confirm how `dashboard_contract` builds its limiter, so the no-database test uses the same constructor.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=67
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The limiter is an enum, not a constructor. The shared `state_for` helper already builds this state, so I'll use it in both tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=155
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The no-database file now uses the shared helper. For the database file, the authenticated requests need the test resolver to map a bearer token to a known user id, so I'll check how that mapping works.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=134
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The resolver maps `test-user-<n>` to `Uuid::from_u128(n)`, so the test can insert matching user rows directly. I'll write the database test file now.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1076
+[tool] status: Pending
+[tool] status: Completed
+Now I'll confirm the RED state. Both test files should fail to compile, because the `catalogue` and `dto` modules do not exist yet.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=99
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The RED state is confirmed: the first compile error is the missing `catalogue::dto` module. Next I'll write the minimal GREEN code. That is the response structs, the filter parser and query, the handler, and the route. I'll check `UserId::as_uuid` first so the viewer id type is right.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=196
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=369
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=818
+[tool] status: Pending
+[tool] status: Completed
+Now the handler, the module list, and the route.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=272
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=62
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=109
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+All ten tests pass. Next are the format and lint gates, then the full server suite.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=65
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The only format differences are in files I wrote, so I'll run the formatter on the server package and rerun the checks.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=84
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Format, clippy and the two new test files are green. Next I'll run the full server suite, default and `pg_` ignored, because the new route sits in the same router as the other endpoints.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=94
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The filter printed nothing, but that could also mean the suite did not compile. I'll count the result lines to confirm the tests actually ran.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=113
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both runs passed with zero failures: 237 default tests and 167 database tests. C30 is done, so I'll tick it, add its Rust lesson and commit.
+[tool] Append to File
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=250
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=84
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+C30 is committed. The remaining tasks are blocked by dependencies, so I'll record the blocks and the design deviations in the blockers file.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=264
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+This pass completed two tasks, C28 and C30. Everything else is blocked, mainly on a crate-layout decision and a test-fixture choice that need Brighton.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| C28 `PgProblemLookup` and production wiring | Done, `[x]`, `[SUPERVISED]` | 5 `pg_` tests in `pg_catalogue_lookup.rs` | Format and clippy clean. Server suite: 237 default tests and 167 `pg_` tests pass, 0 failed | 455e8db |
+| C30 `GET /api/problems` list | Done, `[x]` | 5 no-database tests in `catalogue_api.rs`, 5 `pg_` tests in `pg_catalogue_api.rs` | Same gates, all passing | 7823ab3 |
+| C16 sandbox checks through `PackRunner` | Not started, blocked | none | none | none |
+| C17, C18, C19, C19b, C21, C22, C23 | Not started, blocked by C16 | none | none | none |
+| C26 version parameter in `ProblemTests` | Blocked on judge-sandbox T24 | none | none | none |
+| C29 enqueue pins the version | Not started, blocked on a fixture decision | none | none | none |
+| C31 detail endpoint and no-leak tests | Blocked on C17 (its listed dependency) | none | none | none |
+| C32 languages endpoint | Blocked on the language accessor (X10), not specified | none | none | none |
+| C33 ghost lookup | Blocked on D16 (`ghosts` table owner) | none | none | none |
+| C34 to C37 runbook and gates | Blocked on the chain above | none | none | none |
+| C00a, C38, C39, C40 | HUMAN, left unchecked. Brighton has not created the private repo | none | none | none |
+
+**Decisions for Brighton**
+- **C16 crate graph:** C16 needs `PackRunner` from `counterspell-grimoire`. The 15 Nov decision keeps the judge free of grimoire, but C19 names that dependency. Choose either (a) judge depends on grimoire for the trait only, or (b) move `PackRunner` and `Target` into `counterspell-common`. This unblocks C16 to C23.
+- **C29 test fixture:** `enqueue` can only check publication if test problems are really published. The server's test helper inserts unpublished rows. Choose (a) call the judge fixture from each affected server test file, (b) add the judge test kit as an optional server dependency, or (c) copy the fixture SQL into the server test kit. C35 is the same work.
+
+**Deviations from the design, for Brighton to confirm (C30)**
+- `attempted` counts any run the caller has, including queued ones, as CAT-A2 says. The design's SQL counted only completed runs.
+- A well-formed track or concept slug that matches nothing returns an empty list, not `400`. Only malformed slugs and unknown difficulties return `400 invalid_filter`.
+
+**Review queue**
+- C28 is recorded in `docs/kiro-log/problem-catalogue-review-queue.md`. It covers the wiring change for every server test that builds state, and the fail-closed database error.
+
+**Open Minor findings**
+- C28: a database error during lookup is answered as "unknown problem" (404), so an outage looks like a missing problem. Logged, but a monitor is needed.
+- C30: the 200-item cap and the track sort order have no test. Both need 201 published fixtures or a sort-order setup.
+- C29 is not started. The handler still runs the separate `published` check, which the spec says to replace.
+- The wave-end code review is not done. Wave 5 is incomplete, and[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=394
+ no subagent was started. I did not re-review the work myself.
+- An untracked `crates/server/tests/pg_auth_tokens.proptest-regressions` file was already in the tree. I did not commit it.
+
+Rust lessons for C28 and C30 are in `docs/kiro-log/rust-lessons.md`. Blockers and the design notes are in `docs/kiro-log/problem-catalogue-blockers.md`.

@@ -1,0 +1,22 @@
+{
+  "_about": "Shared source validation vectors (judge-sandbox R14.8). Each vector gives the source as exactly one of: text (UTF-8 string), hex (raw bytes, no spaces), or repeat {text, count}. expect is one of ok, too_large, not_utf8, nul, control. run-lifecycle T22 should load this same file.",
+  "vectors": [
+    { "name": "one byte over the limit", "text": "aaaaaaaaaaa", "max_bytes": 10, "expect": "too_large" },
+    { "name": "exactly at the limit", "text": "aaaaaaaaaa", "max_bytes": 10, "expect": "ok" },
+    { "name": "multi-byte straddling the limit is counted in bytes", "text": "aéé", "max_bytes": 4, "expect": "too_large" },
+    { "name": "multi-byte character fits within the limit", "text": "aé", "max_bytes": 4, "expect": "ok" },
+    { "name": "invalid UTF-8", "hex": "ff", "max_bytes": 10, "expect": "not_utf8" },
+    { "name": "NUL byte", "hex": "610062", "max_bytes": 10, "expect": "nul" },
+    { "name": "BEL control character", "hex": "6107", "max_bytes": 10, "expect": "control" },
+    { "name": "ESC control character", "hex": "1b5b", "max_bytes": 10, "expect": "control" },
+    { "name": "DEL control character", "hex": "617f", "max_bytes": 10, "expect": "control" },
+    { "name": "C1 control U+0085", "hex": "c285", "max_bytes": 10, "expect": "control" },
+    { "name": "tab, LF and CR are allowed", "hex": "090a0d61", "max_bytes": 10, "expect": "ok" },
+    { "name": "empty source", "text": "", "max_bytes": 10, "expect": "ok" },
+    { "name": "UTF-8 byte order mark", "hex": "efbbbf7072696e74", "max_bytes": 100, "expect": "ok" },
+    { "name": "long single line at the limit", "repeat": { "text": "a", "count": 65536 }, "max_bytes": 65536, "expect": "ok" },
+    { "name": "long single line one byte over", "repeat": { "text": "a", "count": 65537 }, "max_bytes": 65536, "expect": "too_large" },
+    { "name": "many short lines", "repeat": { "text": "x = 1\n", "count": 5000 }, "max_bytes": 65536, "expect": "ok" },
+    { "name": "forbidden-looking imports are valid code", "text": "import os, subprocess, socket, ctypes\n", "max_bytes": 65536, "expect": "ok" }
+  ]
+}

@@ -10,5 +10,5 @@ U0=$(usage); TS=$(date +%Y-%m-%dT%H%M); LOG=docs/kiro-log/${TS}-${LABEL}.log; ST
 RC=$?
 U1=$(usage)
 DELTA=$(awk -v a="$U0" -v b="$U1" 'BEGIN{printf "%.2f", b-a}')
-printf '\n### %s %s-%s SAST: %s (Kiro CLI, %s, mode %s)\n- Prompt: `%s`. Transcript: `%s`. Exit %s.\n- Credits used (from /usage): %s (hackathon credits used now %s/4000).\n' "$(date +%F)" "$START" "$(date +%H:%M)" "$LABEL" "$MODEL" "$MODE" "$PF" "$LOG" "$RC" "$DELTA" "$U1" >> docs/KIRO_USAGE.md
+printf '\n### %s %s-%s SAST: %s (Kiro CLI, %s, mode %s)\n- Prompt: `%s`. Transcript: `%s`. Exit %s.\n- Credits used (from /usage): %s (credits used now %s/4000).\n' "$(date +%F)" "$START" "$(date +%H:%M)" "$LABEL" "$MODEL" "$MODE" "$PF" "$LOG" "$RC" "$DELTA" "$U1" >> docs/KIRO_USAGE.md
 echo "DONE $LABEL rc=$RC credits=$DELTA total=$U1" > /tmp/kiro-run.status

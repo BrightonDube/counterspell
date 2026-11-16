@@ -1,128 +1,48 @@
-use std::{
-    env, io,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    str::FromStr,
-};
+//! Start-up for `counterspell-server`. The logic lives in the library so tests can build the same router.
 
-use axum::{
-    http::StatusCode,
-    response::IntoResponse,
-    routing::{any, get},
-    Json, Router,
+use std::{io, net::SocketAddr};
+
+use counterspell_server::{
+    auth::{
+        config::AuthConfig,
+        setup::{build_state, start_background},
+    },
+    build_router,
+    config::ServerConfig,
+    ensure_static_files,
+    ratelimit::Limiter,
+    ratelimit::ValkeyLimiter,
+    AppState,
 };
-use serde_json::{json, Value};
+use sqlx::postgres::PgPoolOptions;
 use tokio::net::TcpListener;
-use tower_http::services::{ServeDir, ServeFile};
-
-#[derive(Debug)]
-struct Config {
-    host: String,
-    port: u16,
-    static_dir: PathBuf,
-}
-
-impl Config {
-    fn from_env() -> Result<Self, io::Error> {
-        let host = env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_owned());
-        let port = parse_port(&env::var("PORT").unwrap_or_else(|_| "8080".to_owned()))?;
-        let static_dir =
-            PathBuf::from(env::var("STATIC_DIR").unwrap_or_else(|_| "web/build".to_owned()));
-
-        Ok(Self {
-            host,
-            port,
-            static_dir,
-        })
-    }
-
-    fn address(&self) -> Result<SocketAddr, io::Error> {
-        let address = format!("{}:{}", self.host, self.port);
-        SocketAddr::from_str(&address).map_err(|error| {
-            io::Error::new(
-                io::ErrorKind::InvalidInput,
-                format!("invalid server address {address}: {error}"),
-            )
-        })
-    }
-}
-
-fn parse_port(value: &str) -> Result<u16, io::Error> {
-    value.parse::<u16>().map_err(|error| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!("PORT must be a number from 0 to 65535: {error}"),
-        )
-    })
-}
-
-fn app(static_dir: PathBuf) -> Router {
-    let index_file = static_dir.join("index.html");
-    let static_files = ServeDir::new(static_dir).fallback(ServeFile::new(index_file));
-
-    Router::new()
-        .route("/api/health", get(health))
-        .route("/api", any(api_not_found))
-        .route("/api/{*path}", any(api_not_found))
-        .fallback_service(static_files)
-}
-
-async fn health() -> Json<Value> {
-    Json(json!({ "status": "ok" }))
-}
-
-async fn api_not_found() -> impl IntoResponse {
-    (
-        StatusCode::NOT_FOUND,
-        Json(json!({
-            "code": "not_found",
-            "message": "API route not found"
-        })),
-    )
-}
-
-fn ensure_static_files(static_dir: &Path) -> Result<(), io::Error> {
-    let metadata = std::fs::metadata(static_dir).map_err(|error| {
-        io::Error::new(
-            error.kind(),
-            format!(
-                "static directory {} is unavailable: {error}",
-                static_dir.display()
-            ),
-        )
-    })?;
-    if !metadata.is_dir() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!("static path {} is not a directory", static_dir.display()),
-        ));
-    }
-
-    let index_file = static_dir.join("index.html");
-    let index_metadata = std::fs::metadata(&index_file).map_err(|error| {
-        io::Error::new(
-            error.kind(),
-            format!(
-                "SPA entry point {} is unavailable: {error}",
-                index_file.display()
-            ),
-        )
-    })?;
-    if !index_metadata.is_file() {
-        return Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            format!("SPA entry point {} is not a file", index_file.display()),
-        ));
-    }
-
-    Ok(())
-}
 
 #[tokio::main]
 async fn main() -> Result<(), io::Error> {
-    let config = Config::from_env()?;
+    // Logging must never print secrets or request bodies. Errors here are already safe messages.
+    let _ = tracing_subscriber::fmt().with_writer(io::stderr).try_init();
+
+    let config = ServerConfig::from_env()
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
+    // Auth settings are checked before anything listens, so a bad deploy refuses to start.
+    let auth_config = AuthConfig::from_env()
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
     ensure_static_files(&config.static_dir)?;
-    let address = config.address()?;
+    let address = config
+        .address()
+        .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
+
+    // connect_lazy opens no connection yet, so a database outage does not stop the server from starting.
+    let pool = PgPoolOptions::new()
+        .max_connections(10)
+        .connect_lazy(&config.database_url)
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "DATABASE_URL is not a valid Postgres URL",
+            )
+        })?;
+
     let listener = TcpListener::bind(address).await.map_err(|error| {
         io::Error::new(
             error.kind(),
@@ -130,7 +50,39 @@ async fn main() -> Result<(), io::Error> {
         )
     })?;
 
-    axum::serve(listener, app(config.static_dir))
-        .await
-        .map_err(|error| io::Error::other(format!("server stopped unexpectedly: {error}")))
+    let limiter = Limiter::Valkey(ValkeyLimiter::open(&config.valkey_url).map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "VALKEY_URL is not a valid Valkey URL",
+        )
+    })?);
+
+    let auth = build_state(
+        pool.clone(),
+        &auth_config,
+        limiter.clone(),
+        config.trusted_proxies.clone(),
+    )
+    .map_err(|error| io::Error::new(io::ErrorKind::InvalidInput, error))?;
+    // The cleanup and demo-reset tasks run for the life of the process.
+    let _background_tasks = start_background(&auth, &auth_config).await;
+    let hints =
+        counterspell_server::hints::handlers::hint_state_from_env(pool.clone(), &config.valkey_url)
+            .map_err(|message| io::Error::new(io::ErrorKind::InvalidInput, message))?;
+    let state = AppState::new(pool, config, limiter)
+        .with_hints(hints)
+        .with_auth(auth, &auth_config.public_base_url)
+        .map_err(|_| {
+            io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "PUBLIC_BASE_URL is not an origin",
+            )
+        })?;
+
+    axum::serve(
+        listener,
+        build_router(state).into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .map_err(|error| io::Error::other(format!("server stopped unexpectedly: {error}")))
 }

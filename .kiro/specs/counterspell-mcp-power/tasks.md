@@ -4,14 +4,14 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 0: decisions and contracts
 
-- [ ] **T01 [S] (20 min) Confirm external schemas and dependency versions**
+- [x] **T01 [S] (20 min) Confirm external schemas and dependency versions**
   - Files: `.kiro/specs/counterspell-mcp-power/design.md` only if decisions need recording; later `Cargo.toml`/lockfile during implementation.
   - Verify the official `rmcp` release/features, its stdio server API, the Agent Plugins `plugin.json`/`mcp.json` schema, and the supported Power working-directory syntax.
   - Preserve: six-package workspace, official Rust SDK, Apache-2.0-compatible licensing, and the exact six tool names.
   - Depends on: none.
   - Verify: selected versions and any schema spelling changes are recorded before code is written.
 
-- [ ] **T02 [S] (25 min) Define the shared typed runner contract**
+- [x] **T02 [S] (25 min) Define the shared typed runner contract**
   - Files: existing `crates/judge/` library boundary and any engine/Grimoire interface adjustments required by their approved specs.
   - Define the trusted runner request, target, bounded result, infrastructure failure, and judge-backed Oracle/PackRunner adapter. Keep expected outputs, comparator, deadlines, and cleanup in the judge.
   - Preserve: MCP may depend on the existing judge package library, but no seventh crate or host execution path is introduced.
@@ -20,14 +20,14 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 1: pure engine and Grimoire seams
 
-- [ ] **T03 [P] (30 min) Expose or complete the engine adapter surface**
+- [x] **T03 [P] (30 min) Expose or complete the engine adapter surface**
   - Files: `crates/engine/**` as required by the ghost-engine spec.
   - Ensure MCP can call the public schema, comparator, hunt, shrink, autopsy/difference, provenance, result serialization, and pure complexity-fit APIs without duplicate algorithms.
   - Preserve: engine remains synchronous, pure, and free of process, filesystem, Docker, network, Tokio, and HTTP dependencies.
   - Depends on: T02 and the approved engine implementation tasks.
   - Verify: engine property tests and JSON round-trip tests pass.
 
-- [ ] **T04 [P] (30 min) Expose the Grimoire static validator library contract**
+- [x] **T04 [P] (30 min) Expose the Grimoire static validator library contract**
   - Files: `crates/grimoire/**` as required by the Grimoire spec.
   - Make the MCP call `validate_static`/equivalent typed library APIs and return the existing diagnostic report. Keep static validation execution-free and avoid shelling out to the Grimoire binary.
   - Preserve: hidden data is not printed; sandbox validation remains a separate judge-backed operation.
@@ -43,7 +43,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T02, T03, T04, and the judge-sandbox implementation.
   - Verify: worker and a library consumer use the same runner configuration, images, driver, comparator, deadlines, bounded output, and cleanup.
 
-- [ ] **T06 [S] (25 min) Add the MCP-facing trusted Oracle/PackRunner adapter**
+- [x] **T06 [S] (25 min) Add the MCP-facing trusted Oracle/PackRunner adapter**
   - Files: `crates/judge/src/runner/**` and `crates/mcp/src/judge_adapter.rs`.
   - Adapt judge execution into the engine's existing synchronous observation/probe contract without adding runtime or Docker dependencies to the engine.
   - Preserve: infrastructure errors remain infrastructure errors; user crashes/timeouts are classified only by the trusted judge/engine contract.
@@ -52,21 +52,21 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 3: MCP protocol and tools
 
-- [ ] **T07 [S] (25 min) Add MCP dependencies and stdio service startup**
+- [x] **T07 [S] (25 min) Add MCP dependencies and stdio service startup**
   - Files: `crates/mcp/Cargo.toml`, `crates/mcp/src/main.rs`, `crates/mcp/src/server.rs`, `crates/mcp/src/config.rs`.
   - Add the pinned official `rmcp` dependency and required serde/Tokio/path dependencies. Start a stdio server with protocol output on stdout, logs on stderr, clean EOF/cancellation, and no HTTP listener.
   - Preserve: no `unwrap()`/`expect()` in production Rust; missing sandbox config must not prevent pure-tool registration unless the SDK requires a single initialization path.
   - Depends on: T01, T05, and T06.
   - Verify: an MCP initialize/list-tools smoke test succeeds and no socket listener appears.
 
-- [ ] **T08 [P] (25 min) Implement tool schemas and safe error mapping**
+- [x] **T08 [P] (25 min) Implement tool schemas and safe error mapping**
   - Files: `crates/mcp/src/schemas.rs`, `crates/mcp/src/errors.rs`, `crates/mcp/src/paths.rs`.
   - Define bounded request/response types, stable error categories, workspace-relative path validation, symlink/traversal rejection, and redaction/truncation helpers.
   - Preserve: no absolute host path disclosure, hidden data disclosure, secret reads, or unbounded output.
   - Depends on: T01 and T06.
   - Verify: malformed, oversized, unknown-field, invalid-path, invalid-budget, and missing-sandbox cases return structured errors without panics.
 
-- [ ] **T09 [P] (30 min) Implement pure/read-only tools**
+- [x] **T09 [P] (30 min) Implement pure/read-only tools**
   - Files: `crates/mcp/src/tools.rs`, engine/Grimoire adapter modules as needed.
   - Implement `validate_pack`, `explain_verdict`, and `fit_complexity` using existing libraries. Keep `validate_pack` static-only and `fit_complexity` pure timing fitting.
   - Preserve: no code execution, no LLM call, no repository writes, no duplicate validator/autopsy/fit logic.
@@ -89,14 +89,14 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T01 and T07.
   - Verify: clean-checkout JSON/schema validation and Kiro custom-Power import test.
 
-- [ ] **T12 [P] (25 min) Write the problem-authoring skill**
+- [x] **T12 [P] (25 min) Write the problem-authoring skill**
   - Files: `kiro-power/skills/author-problem/SKILL.md`.
   - Document original-content rules, Grimoire layout, schema/generator/reference/hints, static-first validation, explicit approval for execution, and sandbox-only code execution.
   - Preserve: no host execution instructions and no copied third-party problem text.
   - Depends on: T04 and T11.
   - Verify: skill references the six canonical tools accurately and is usable from a clean checkout.
 
-- [ ] **T13 [P] (25 min) Write the ghost-hunting skill**
+- [x] **T13 [P] (25 min) Write the ghost-hunting skill**
   - Files: `kiro-power/skills/hunt-ghost/SKILL.md`.
   - Document reproduce → find → inspect → explain → fix → validate → re-hunt, honest minimized-counterexample language, and explicit approval for code-running tools.
   - Preserve: never claim global minimality and never instruct Kiro to run pack code directly.

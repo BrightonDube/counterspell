@@ -1,0 +1,982 @@
+//! The six tool handlers. Each one takes typed arguments and returns bounded JSON or a
+//! `ToolError`. The rmcp layer in `server.rs` only translates to and from protocol types.
+//!
+//! The first three tools never run code. The last three use the runner slot, which
+//! fails closed when no sandbox runner is configured.
+
+use crate::config::ConfigError;
+use crate::errors::{bounded, ErrorCategory, ToolError};
+use crate::judge_adapter::{load_pack, PackContext};
+use crate::paths::{resolve_inside, PathError};
+use crate::runner::RunnerSlot;
+use crate::schemas::{
+    ExplainVerdictArgs, FindGhostArgs, FitComplexityArgs, RunReferenceArgs, ShrinkInputArgs,
+    ValidatePackArgs, MAX_FIT_POINTS,
+};
+use counterspell_engine::complexity::{self, Class, FitConfig, Mode, Point};
+use counterspell_engine::{
+    build_autopsy, classify, hunt, AbortReason, Budget, Classification, FailureKind,
+    FailurePredicate, HuntOutcome, ProgramResult, SystemClock,
+};
+use counterspell_grimoire::runner::{ProgramOracle, RunnerError, Target};
+use counterspell_grimoire::validate_static;
+use serde_json::{json, Value};
+use std::fs;
+use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
+
+/// The time an explanation assumes for an observed timeout, in milliseconds.
+const EXPLAIN_LIMIT_MS: u64 = 2000;
+
+/// Maps a path refusal to a tool error.
+fn path_error(error: &PathError, root: &Path) -> ToolError {
+    let (category, message) = match error {
+        PathError::Invalid(reason) => (ErrorCategory::InvalidRequest, *reason),
+        PathError::Symlink => (
+            ErrorCategory::InvalidRequest,
+            "the path passes through a symbolic link",
+        ),
+        PathError::NotFound => (ErrorCategory::NotFound, "the path does not exist"),
+        PathError::Outside => (
+            ErrorCategory::InvalidRequest,
+            "the path resolves outside the workspace",
+        ),
+    };
+    ToolError::new(category, message, root)
+}
+
+/// Maps a sandbox configuration refusal to a tool error. The category never reads as a verdict.
+fn config_error(error: &ConfigError, root: &Path) -> ToolError {
+    ToolError::new(
+        ErrorCategory::SandboxNotConfigured,
+        &error.to_string(),
+        root,
+    )
+}
+
+/// Resolves a pack directory argument and loads the pack.
+fn pack_from(root: &Path, pack_path: &str) -> Result<(PathBuf, PackContext), ToolError> {
+    let pack_dir = resolve_inside(root, pack_path).map_err(|error| path_error(&error, root))?;
+    let context = load_pack(&pack_dir, root)?;
+    Ok((pack_dir, context))
+}
+
+/// Resolves an incorrect program named inside the pack and reads its bytes.
+fn program_from(pack_dir: &Path, root: &Path, program: &str) -> Result<Vec<u8>, ToolError> {
+    let is_python = Path::new(program)
+        .extension()
+        .is_some_and(|extension| extension == "py");
+    if !program.starts_with("incorrect/") || !is_python {
+        return Err(ToolError::new(
+            ErrorCategory::InvalidRequest,
+            "the program must be a .py file under incorrect/",
+            root,
+        ));
+    }
+    let path = resolve_inside(pack_dir, program).map_err(|error| path_error(&error, root))?;
+    fs::read(path).map_err(|_| {
+        ToolError::new(
+            ErrorCategory::NotFound,
+            "the program could not be read",
+            root,
+        )
+    })
+}
+
+/// Checks an input against the pack schema before anything runs.
+fn check_input(context: &PackContext, input: &Value, root: &Path) -> Result<(), ToolError> {
+    context
+        .meta
+        .input_schema
+        .contains(input)
+        .map_err(|violation| {
+            ToolError::new(
+                ErrorCategory::InvalidRequest,
+                &format!(
+                    "input is outside the pack schema at {}: {}",
+                    violation.path, violation.reason
+                ),
+                root,
+            )
+        })
+}
+
+/// `validate_pack`: the static Grimoire report. Never runs code.
+///
+/// # Errors
+///
+/// Returns `InvalidRequest` or `NotFound` for a bad path.
+pub fn validate_pack(root: &Path, args: &ValidatePackArgs) -> Result<Value, ToolError> {
+    let pack_dir =
+        resolve_inside(root, &args.pack_path).map_err(|error| path_error(&error, root))?;
+    let report = validate_static(&pack_dir)
+        .map_err(|_| ToolError::new(ErrorCategory::Internal, "the pack could not be read", root))?;
+    let warnings_block = args.deny_warnings && report.warning_count() > 0;
+    Ok(json!({
+        "passed": !report.has_errors() && !warnings_block,
+        "report": report.to_json(),
+    }))
+}
+
+/// `explain_verdict`: the engine's Bug Autopsy for one observed failure. Never runs code.
+///
+/// # Errors
+///
+/// Returns `InvalidRequest` for an unknown kind or a bad path.
+pub fn explain_verdict(root: &Path, args: &ExplainVerdictArgs) -> Result<Value, ToolError> {
+    let (_, context) = pack_from(root, &args.pack_path)?;
+    let (predicate, got) = match args.kind.as_str() {
+        "wrong" => {
+            let actual = args.actual.clone().ok_or_else(|| {
+                ToolError::new(
+                    ErrorCategory::InvalidRequest,
+                    "a wrong answer needs actual",
+                    root,
+                )
+            })?;
+            (
+                FailurePredicate {
+                    kind: FailureKind::WrongAnswer,
+                    exception_class: None,
+                },
+                ProgramResult::Returned(actual),
+            )
+        }
+        "crash" => {
+            let class = args.exception_class.clone().unwrap_or_default();
+            (
+                FailurePredicate {
+                    kind: FailureKind::RuntimeError,
+                    exception_class: Some(class.clone()),
+                },
+                ProgramResult::Crashed {
+                    exception_class: class,
+                    message: String::new(),
+                },
+            )
+        }
+        "timeout" => (
+            FailurePredicate {
+                kind: FailureKind::Timeout,
+                exception_class: None,
+            },
+            ProgramResult::TimedOut,
+        ),
+        _ => {
+            return Err(ToolError::new(
+                ErrorCategory::InvalidRequest,
+                "kind must be wrong, crash or timeout",
+                root,
+            ))
+        }
+    };
+    let known: Vec<_> = context
+        .known
+        .iter()
+        .map(|ghost| ghost.known.clone())
+        .collect();
+    let autopsy = build_autopsy(
+        &args.input,
+        &predicate,
+        args.expected.as_ref(),
+        &got,
+        Duration::from_millis(EXPLAIN_LIMIT_MS),
+        &known,
+        &context.meta.concepts,
+    );
+    serde_json::to_value(&autopsy).map_err(|_| {
+        ToolError::new(
+            ErrorCategory::Internal,
+            "the autopsy could not be encoded",
+            root,
+        )
+    })
+}
+
+/// Maps a declared class name to the engine class. Only the seven launch names are accepted.
+#[must_use]
+pub fn parse_class(name: &str) -> Option<Class> {
+    match name.trim() {
+        "1" => Some(Class::Constant),
+        "log n" => Some(Class::Logarithmic),
+        "n" => Some(Class::Linear),
+        "n log n" => Some(Class::Linearithmic),
+        "n^2" => Some(Class::Quadratic),
+        "n^3" => Some(Class::Cubic),
+        "2^n" => Some(Class::Exponential),
+        _ => None,
+    }
+}
+
+/// `fit_complexity`: the pure engine fit of supplied timings. Never runs code.
+///
+/// # Errors
+///
+/// Returns `InvalidRequest` for too many samples, an unknown class, or samples the fit rejects.
+pub fn fit_complexity(root: &Path, args: &FitComplexityArgs) -> Result<Value, ToolError> {
+    if args.samples.len() > MAX_FIT_POINTS {
+        return Err(ToolError::new(
+            ErrorCategory::InvalidRequest,
+            "too many timing samples",
+            root,
+        ));
+    }
+    let reference = parse_class(&args.reference_complexity).ok_or_else(|| {
+        ToolError::new(
+            ErrorCategory::InvalidRequest,
+            "reference_complexity must be one of 1, log n, n, n log n, n^2, n^3, 2^n",
+            root,
+        )
+    })?;
+    let points: Vec<Point> = args
+        .samples
+        .iter()
+        .map(|sample| Point {
+            n: sample.n,
+            median_ns: sample.median_ns,
+            spread: None,
+        })
+        .collect();
+    let report = complexity::fit(&points, Mode::Full, &FitConfig::default())
+        .map_err(|error| ToolError::new(ErrorCategory::InvalidRequest, &error.to_string(), root))?;
+    let comparison = complexity::compare(&report, reference);
+    Ok(json!({
+        "report": serde_json::to_value(&report).unwrap_or(Value::Null),
+        "reference_complexity": args.reference_complexity,
+        "gap": comparison.gap,
+        "reference_plausible": comparison.reference_plausible,
+    }))
+}
+
+/// Encodes one raw program result as bounded JSON.
+fn result_json(result: &ProgramResult) -> Value {
+    match result {
+        ProgramResult::Returned(value) => json!({ "outcome": "returned", "value": value }),
+        ProgramResult::Crashed {
+            exception_class,
+            message,
+        } => json!({
+            "outcome": "crashed",
+            "exception_class": exception_class,
+            "message": bounded(message, 240),
+        }),
+        ProgramResult::TimedOut => json!({ "outcome": "timed_out" }),
+        ProgramResult::Garbled { snippet } => json!({
+            "outcome": "garbled",
+            "snippet": bounded(snippet, 240),
+        }),
+    }
+}
+
+/// Maps a runner fault to an infrastructure error. It is never a user verdict.
+fn runner_fault(error: &RunnerError, root: &Path) -> ToolError {
+    let RunnerError::Infrastructure(message) = error;
+    ToolError::new(ErrorCategory::SandboxInfrastructure, message, root)
+}
+
+/// `run_reference`: runs the trusted reference on one input through the sandbox runner.
+///
+/// # Errors
+///
+/// Returns `SandboxNotConfigured` without a runner, `SandboxInfrastructure` on a runner fault,
+/// and `InvalidRequest` for an input outside the schema.
+pub fn run_reference(
+    root: &Path,
+    slot: &mut RunnerSlot,
+    args: &RunReferenceArgs,
+) -> Result<Value, ToolError> {
+    let (_, context) = pack_from(root, &args.pack_path)?;
+    check_input(&context, &args.input, root)?;
+    let limit = limit_of(&context, root)?;
+    let runner = slot.get().map_err(|error| config_error(&error, root))?;
+    let result = runner
+        .run(Target::Reference, &args.input, limit)
+        .map_err(|error| runner_fault(&error, root))?;
+    Ok(result_json(&result))
+}
+
+/// The per-test time limit of a pack, from its metadata.
+fn limit_of(context: &PackContext, root: &Path) -> Result<Duration, ToolError> {
+    let millis = u64::try_from(context.meta.limits.time_ms).map_err(|_| {
+        ToolError::new(
+            ErrorCategory::InvalidRequest,
+            "the pack time limit is invalid",
+            root,
+        )
+    })?;
+    Ok(Duration::from_millis(millis))
+}
+
+/// Builds the budget from optional arguments, starting from the engine defaults.
+fn budget_from(
+    args: Option<&crate::schemas::BudgetArgs>,
+    root: &Path,
+) -> Result<Budget, ToolError> {
+    let mut budget = Budget::default();
+    if let Some(args) = args {
+        if let Some(value) = args.max_candidates {
+            budget.max_candidates = value;
+        }
+        if let Some(value) = args.search_ms {
+            budget.search_wall = Duration::from_millis(value);
+        }
+        if let Some(value) = args.max_shrink_evals {
+            budget.max_shrink_evals = value;
+        }
+        if let Some(value) = args.shrink_ms {
+            budget.shrink_wall = Duration::from_millis(value);
+        }
+        if let Some(value) = args.total_ms {
+            budget.total_wall = Duration::from_millis(value);
+        }
+    }
+    budget
+        .validate()
+        .map_err(|reason| ToolError::new(ErrorCategory::InvalidRequest, reason, root))?;
+    Ok(budget)
+}
+
+/// `find_ghost_input`: the engine hunt, with every evaluation run through the sandbox runner.
+///
+/// `image_digest` is the pinned Python image, resolved once at start-up from the language catalogue.
+///
+/// # Errors
+///
+/// Returns `SandboxNotConfigured` without a runner, `SandboxInfrastructure` when the
+/// runner fails, `EngineAborted` for other aborts, and `InvalidRequest` for bad arguments.
+/// A search that finds nothing within budget is a normal result.
+pub fn find_ghost_input(
+    root: &Path,
+    slot: &mut RunnerSlot,
+    image_digest: &str,
+    args: &FindGhostArgs,
+) -> Result<Value, ToolError> {
+    let (pack_dir, context) = pack_from(root, &args.pack_path)?;
+    let program_bytes = program_from(&pack_dir, root, &args.program)?;
+    let budget = budget_from(args.budget.as_ref(), root)?;
+    let runner = slot.get().map_err(|error| config_error(&error, root))?;
+    let mut request = context.hunt_request(&program_bytes, image_digest);
+    request.budget = budget;
+    request.seed_override = args.seed_override;
+    let mut oracle = ProgramOracle::new(runner, &args.program);
+    let report = hunt(&request, &mut oracle, &SystemClock::new());
+    match &report.outcome {
+        HuntOutcome::Found(_) | HuntOutcome::NotFound(_) => {
+            serde_json::to_value(&report).map_err(|_| {
+                ToolError::new(
+                    ErrorCategory::Internal,
+                    "the hunt could not be encoded",
+                    root,
+                )
+            })
+        }
+        HuntOutcome::Aborted(reason) => Err(abort_error(reason, root)),
+    }
+}
+
+/// Maps an engine abort to the tool error category.
+fn abort_error(reason: &AbortReason, root: &Path) -> ToolError {
+    match reason {
+        AbortReason::OracleFailure(message) => {
+            ToolError::new(ErrorCategory::SandboxInfrastructure, message, root)
+        }
+        AbortReason::ReferenceUnreliable => ToolError::new(
+            ErrorCategory::EngineAborted,
+            "the reference failed too often, so its expected values cannot be trusted",
+            root,
+        ),
+        AbortReason::InvalidRequest(message) => {
+            ToolError::new(ErrorCategory::InvalidRequest, message, root)
+        }
+    }
+}
+
+/// `shrink_input`: the engine shrinker, where every probe is judged by the sandbox runner.
+///
+/// # Errors
+///
+/// Returns `InvalidRequest` for a timeout target, a bad input or a bad path,
+/// `SandboxNotConfigured` without a runner, `SandboxInfrastructure` on a runner fault, and
+/// `EngineAborted` when the shrunk input does not reproduce the failure.
+pub fn shrink_input(
+    root: &Path,
+    slot: &mut RunnerSlot,
+    args: &ShrinkInputArgs,
+) -> Result<Value, ToolError> {
+    let (pack_dir, context) = pack_from(root, &args.pack_path)?;
+    program_from(&pack_dir, root, &args.program)?;
+    check_input(&context, &args.input, root)?;
+    let kind = match args.target.kind.as_str() {
+        "wrong" => FailureKind::WrongAnswer,
+        "crash" => FailureKind::RuntimeError,
+        _ => {
+            return Err(ToolError::new(
+                ErrorCategory::InvalidRequest,
+                "shrink_input supports only wrong and crash targets",
+                root,
+            ))
+        }
+    };
+    let limit = limit_of(&context, root)?;
+    let comparator = context.meta.engine_comparator();
+    let runner = slot.get().map_err(|error| config_error(&error, root))?;
+    let mut oracle = ProgramOracle::new(runner, &args.program);
+    let deadline = Instant::now() + Duration::from_millis(args.wall_ms);
+    let mut fault: Option<ToolError> = None;
+    let outcome = {
+        let mut probe = |candidate: &Value| {
+            if Instant::now() >= deadline {
+                return counterspell_engine::shrink::Probe::Stop;
+            }
+            match counterspell_engine::Oracle::evaluate(&mut oracle, candidate, limit) {
+                Ok(observation) => match classify(&observation, &comparator) {
+                    Classification::Fail(predicate) if predicate.kind == kind => {
+                        counterspell_engine::shrink::Probe::Keep
+                    }
+                    _ => counterspell_engine::shrink::Probe::Reject,
+                },
+                Err(error) => {
+                    fault = Some(ToolError::new(
+                        ErrorCategory::SandboxInfrastructure,
+                        error.message(),
+                        root,
+                    ));
+                    counterspell_engine::shrink::Probe::Stop
+                }
+            }
+        };
+        counterspell_engine::shrink::shrink(
+            &context.meta.input_schema,
+            args.input.clone(),
+            args.max_evals,
+            &mut probe,
+        )
+    };
+    if let Some(error) = fault {
+        return Err(error);
+    }
+    Ok(json!({
+        "value": outcome.value,
+        "report": serde_json::to_value(&outcome.report).unwrap_or(Value::Null),
+    }))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::config::ConfigError;
+    use crate::schemas::{BudgetArgs, ShrinkTargetArg};
+    use counterspell_engine::Oracle;
+    use counterspell_grimoire::runner::PackRunner;
+
+    /// The repository root, two levels above this crate.
+    fn repo_root() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .canonicalize()
+            .expect("repository root exists")
+    }
+
+    /// What the fake says the named program does on every input.
+    #[derive(Clone, Copy)]
+    enum ProgramBehaviour {
+        /// Counts a value paired with itself, which is the authored same-index bug.
+        CountsSelf,
+        /// Gives the reference answer, so no failure exists.
+        Correct,
+        /// Raises an exception.
+        Crashes,
+        /// Runs past its time limit.
+        TimesOut,
+        /// Prints something the driver cannot read.
+        Garbles,
+    }
+
+    /// A fake runner that computes count-pairs answers in Rust. It never runs Python.
+    ///
+    /// It knows exactly one program. Any other program name is an infrastructure fault.
+    struct ScriptedRunner {
+        program: &'static str,
+        behaviour: ProgramBehaviour,
+        reference_crashes: bool,
+    }
+
+    impl ScriptedRunner {
+        fn new(program: &'static str, behaviour: ProgramBehaviour) -> Self {
+            Self {
+                program,
+                behaviour,
+                reference_crashes: false,
+            }
+        }
+
+        fn program_result(&self, input: &Value) -> ProgramResult {
+            match self.behaviour {
+                ProgramBehaviour::CountsSelf => answer(count_pairs(input, true)),
+                ProgramBehaviour::Correct => answer(count_pairs(input, false)),
+                ProgramBehaviour::Crashes => ProgramResult::Crashed {
+                    exception_class: "ValueError".to_string(),
+                    message: "min() of an empty list".to_string(),
+                },
+                ProgramBehaviour::TimesOut => ProgramResult::TimedOut,
+                ProgramBehaviour::Garbles => ProgramResult::Garbled {
+                    snippet: "not a value".to_string(),
+                },
+            }
+        }
+    }
+
+    /// Wraps a computed count as a returned result, or a garbled one when the input is unreadable.
+    fn answer(count: Option<i64>) -> ProgramResult {
+        match count {
+            Some(value) => ProgramResult::Returned(json!(value)),
+            None => ProgramResult::Garbled {
+                snippet: "unreadable input".to_string(),
+            },
+        }
+    }
+
+    fn count_pairs(input: &Value, include_same: bool) -> Option<i64> {
+        let values = input.get(0)?.as_array()?;
+        let target = input.get(1)?.as_i64()?;
+        let mut count = 0;
+        for (i, first) in values.iter().enumerate() {
+            for (j, second) in values.iter().enumerate() {
+                let pairs = if include_same { i <= j } else { i < j };
+                if pairs && first.as_i64()? + second.as_i64()? == target {
+                    count += 1;
+                }
+            }
+        }
+        Some(count)
+    }
+
+    impl PackRunner for ScriptedRunner {
+        fn run(
+            &mut self,
+            target: Target<'_>,
+            input: &Value,
+            _limit: Duration,
+        ) -> Result<ProgramResult, RunnerError> {
+            match target {
+                Target::Reference if self.reference_crashes => Ok(ProgramResult::Crashed {
+                    exception_class: "KeyError".to_string(),
+                    message: "reference broke".to_string(),
+                }),
+                Target::Reference => Ok(answer(count_pairs(input, false))),
+                Target::Program(name) if name == self.program => Ok(self.program_result(input)),
+                Target::Program(_) => Err(RunnerError::Infrastructure(
+                    "the fake runner has no such program".to_string(),
+                )),
+            }
+        }
+
+        fn bench(
+            &mut self,
+            _sized_inputs: &[(u64, Value)],
+            _limit: Duration,
+        ) -> Result<Vec<(u64, u64)>, RunnerError> {
+            Ok(Vec::new())
+        }
+    }
+
+    /// A stand-in pinned digest. Tests never read the real language catalogue.
+    const FAKE_DIGEST: &str = "sha256:test-digest";
+
+    fn fake_slot() -> RunnerSlot {
+        RunnerSlot::injected(Box::new(ScriptedRunner::new(
+            "incorrect/same-index.py",
+            ProgramBehaviour::CountsSelf,
+        )))
+    }
+
+    fn slot_for(program: &'static str, behaviour: ProgramBehaviour) -> RunnerSlot {
+        RunnerSlot::injected(Box::new(ScriptedRunner::new(program, behaviour)))
+    }
+
+    fn hunt_args(program: &str) -> FindGhostArgs {
+        FindGhostArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: program.to_string(),
+            seed_override: Some(1),
+            budget: None,
+        }
+    }
+
+    /// Decodes a found or not-found hunt result back into the engine type.
+    fn decode(output: Value) -> counterspell_engine::HuntReport {
+        serde_json::from_value(output).expect("the hunt result decodes")
+    }
+
+    fn validate_args(path: &str) -> ValidatePackArgs {
+        ValidatePackArgs {
+            pack_path: path.to_string(),
+            deny_warnings: false,
+        }
+    }
+
+    #[test]
+    fn validate_pack_matches_the_grimoire_report_for_the_same_pack() {
+        let root = repo_root();
+        let output =
+            validate_pack(&root, &validate_args("packs/count-pairs")).expect("tool result");
+        let direct = validate_static(&root.join("packs/count-pairs")).expect("direct report");
+        assert_eq!(output["report"], direct.to_json());
+    }
+
+    #[test]
+    fn validate_pack_refuses_a_path_outside_the_workspace_without_reading_it() {
+        let error = validate_pack(&repo_root(), &validate_args("../outside")).expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn explain_verdict_uses_the_authored_known_ghost_for_a_matching_wrong_answer() {
+        let args = ExplainVerdictArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            input: json!([[0], 0]),
+            expected: Some(json!(0)),
+            actual: Some(json!(1)),
+            kind: "wrong".to_string(),
+            exception_class: None,
+        };
+        let output = explain_verdict(&repo_root(), &args).expect("tool result");
+        assert_eq!(output["authored_mistake"]["known_ghost_id"], "same-index");
+    }
+
+    #[test]
+    fn explain_verdict_lists_the_wrong_value_as_a_difference() {
+        let args = ExplainVerdictArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            input: json!([[0], 0]),
+            expected: Some(json!(0)),
+            actual: Some(json!(1)),
+            kind: "wrong".to_string(),
+            exception_class: None,
+        };
+        let output = explain_verdict(&repo_root(), &args).expect("tool result");
+        let differences = output["differences"].as_array().expect("array");
+        assert_eq!(differences.len(), 1);
+        assert_eq!(differences[0]["expected"], json!(0));
+        assert_eq!(differences[0]["got"], json!(1));
+    }
+
+    #[test]
+    fn explain_verdict_refuses_an_unknown_kind() {
+        let args = ExplainVerdictArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            input: json!([[0], 0]),
+            expected: None,
+            actual: None,
+            kind: "maybe".to_string(),
+            exception_class: None,
+        };
+        let error = explain_verdict(&repo_root(), &args).expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn fit_complexity_refuses_more_samples_than_the_engine_allows() {
+        let samples = (0..=MAX_FIT_POINTS)
+            .map(|i| crate::schemas::SampleArg {
+                n: 2 + i as u64,
+                median_ns: 10 + i as u64,
+            })
+            .collect();
+        let args = FitComplexityArgs {
+            samples,
+            reference_complexity: "n".to_string(),
+        };
+        let error = fit_complexity(&repo_root(), &args).expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn fit_complexity_refuses_an_unknown_reference_class() {
+        let args = FitComplexityArgs {
+            samples: Vec::new(),
+            reference_complexity: "n!".to_string(),
+        };
+        let error = fit_complexity(&repo_root(), &args).expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn run_reference_without_a_runner_fails_closed() {
+        let args = RunReferenceArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            input: json!([[1, 2, 3, 2], 4]),
+        };
+        let mut slot = RunnerSlot::unconfigured();
+        let error = run_reference(&repo_root(), &mut slot, &args).expect_err("fails closed");
+        assert_eq!(error.category, ErrorCategory::SandboxNotConfigured);
+    }
+
+    #[test]
+    fn run_reference_returns_the_sample_answer_from_the_runner() {
+        let args = RunReferenceArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            input: json!([[1, 2, 3, 2], 4]),
+        };
+        let output = run_reference(&repo_root(), &mut fake_slot(), &args).expect("tool result");
+        assert_eq!(output, json!({ "outcome": "returned", "value": 2 }));
+    }
+
+    #[test]
+    fn run_reference_refuses_an_input_outside_the_schema() {
+        let args = RunReferenceArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            input: json!(["not a list", 4]),
+        };
+        let error = run_reference(&repo_root(), &mut fake_slot(), &args).expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn a_runner_fault_is_an_infrastructure_error_never_a_wrong_answer() {
+        let args = FindGhostArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "incorrect/empty-min.py".to_string(),
+            seed_override: None,
+            budget: None,
+        };
+        let error = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+            .expect_err("aborted");
+        assert_eq!(error.category, ErrorCategory::SandboxInfrastructure);
+    }
+
+    #[test]
+    fn find_ghost_input_finds_a_failing_input_for_the_same_index_bug() {
+        let args = FindGhostArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "incorrect/same-index.py".to_string(),
+            seed_override: Some(1),
+            budget: Some(BudgetArgs::default()),
+        };
+        let output = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+            .expect("tool result");
+        assert!(output["outcome"].get("Found").is_some());
+    }
+
+    #[test]
+    fn find_ghost_input_without_a_runner_fails_closed() {
+        let args = FindGhostArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "incorrect/same-index.py".to_string(),
+            seed_override: None,
+            budget: None,
+        };
+        let error = find_ghost_input(
+            &repo_root(),
+            &mut RunnerSlot::unconfigured(),
+            FAKE_DIGEST,
+            &args,
+        )
+        .expect_err("fails closed");
+        assert_eq!(error.category, ErrorCategory::SandboxNotConfigured);
+    }
+
+    #[test]
+    fn find_ghost_input_refuses_a_program_outside_incorrect() {
+        let args = FindGhostArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "reference/solution.py".to_string(),
+            seed_override: None,
+            budget: None,
+        };
+        let error = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+            .expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn shrink_input_keeps_a_wrong_answer_and_returns_a_failing_input() {
+        let args = ShrinkInputArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "incorrect/same-index.py".to_string(),
+            input: json!([[0, 0, 0], 0]),
+            target: ShrinkTargetArg {
+                kind: "wrong".to_string(),
+            },
+            max_evals: 300,
+            wall_ms: 3000,
+        };
+        let output = shrink_input(&repo_root(), &mut fake_slot(), &args).expect("tool result");
+        let shrunk = output["value"].clone();
+        let mut fake = ScriptedRunner::new("incorrect/same-index.py", ProgramBehaviour::CountsSelf);
+        let mut oracle = ProgramOracle::new(&mut fake, "incorrect/same-index.py");
+        let observed = oracle
+            .evaluate(&shrunk, Duration::from_secs(1))
+            .expect("fake answers");
+        assert!(matches!(
+            classify(&observed, &counterspell_engine::Comparator::Exact),
+            Classification::Fail(_)
+        ));
+    }
+
+    #[test]
+    fn shrink_input_refuses_a_timeout_target() {
+        let args = ShrinkInputArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "incorrect/same-index.py".to_string(),
+            input: json!([[0], 0]),
+            target: ShrinkTargetArg {
+                kind: "timeout".to_string(),
+            },
+            max_evals: 10,
+            wall_ms: 100,
+        };
+        let error = shrink_input(&repo_root(), &mut fake_slot(), &args).expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn a_missing_sandbox_is_reported_as_not_configured_with_no_path_leak() {
+        let error = config_error(&ConfigError::NotConfigured, &repo_root());
+        assert_eq!(error.category, ErrorCategory::SandboxNotConfigured);
+        assert!(!error.message.contains(&repo_root().display().to_string()));
+    }
+
+    #[test]
+    fn a_crashing_program_gives_a_crash_ghost() {
+        let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Crashes);
+        let output = find_ghost_input(
+            &repo_root(),
+            &mut slot,
+            FAKE_DIGEST,
+            &hunt_args("incorrect/empty-min.py"),
+        )
+        .expect("tool result");
+        match decode(output).outcome {
+            counterspell_engine::HuntOutcome::Found(ghost) => {
+                assert_eq!(
+                    ghost.predicate.kind,
+                    counterspell_engine::FailureKind::RuntimeError
+                );
+            }
+            other => panic!("expected a crash ghost, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_timeout_is_not_a_default_ghost_because_the_engine_hunts_timeouts_only_when_targeted() {
+        let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::TimesOut);
+        let output = find_ghost_input(
+            &repo_root(),
+            &mut slot,
+            FAKE_DIGEST,
+            &hunt_args("incorrect/empty-min.py"),
+        )
+        .expect("tool result");
+        assert!(matches!(
+            decode(output).outcome,
+            counterspell_engine::HuntOutcome::NotFound(_)
+        ));
+    }
+
+    #[test]
+    fn a_garbled_answer_is_reported_as_a_wrong_answer() {
+        let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Garbles);
+        let output = find_ghost_input(
+            &repo_root(),
+            &mut slot,
+            FAKE_DIGEST,
+            &hunt_args("incorrect/empty-min.py"),
+        )
+        .expect("tool result");
+        match decode(output).outcome {
+            counterspell_engine::HuntOutcome::Found(ghost) => {
+                assert_eq!(
+                    ghost.predicate.kind,
+                    counterspell_engine::FailureKind::WrongAnswer
+                );
+            }
+            other => panic!("expected a wrong-answer ghost, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_correct_program_gives_a_not_found_result_within_budget() {
+        let args = FindGhostArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "incorrect/empty-min.py".to_string(),
+            seed_override: Some(1),
+            budget: Some(BudgetArgs {
+                max_candidates: Some(40),
+                search_ms: Some(1000),
+                max_shrink_evals: Some(20),
+                shrink_ms: Some(500),
+                total_ms: Some(4000),
+            }),
+        };
+        let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Correct);
+        let output =
+            find_ghost_input(&repo_root(), &mut slot, FAKE_DIGEST, &args).expect("tool result");
+        assert!(matches!(
+            decode(output).outcome,
+            counterspell_engine::HuntOutcome::NotFound(_)
+        ));
+    }
+
+    #[test]
+    fn a_reference_that_always_fails_aborts_the_hunt_as_engine_aborted() {
+        let mut runner =
+            ScriptedRunner::new("incorrect/same-index.py", ProgramBehaviour::CountsSelf);
+        runner.reference_crashes = true;
+        let mut slot = RunnerSlot::injected(Box::new(runner));
+        let error = find_ghost_input(
+            &repo_root(),
+            &mut slot,
+            FAKE_DIGEST,
+            &hunt_args("incorrect/same-index.py"),
+        )
+        .expect_err("aborted");
+        assert_eq!(error.category, ErrorCategory::EngineAborted);
+    }
+
+    #[test]
+    fn a_budget_over_the_eight_second_cap_is_refused() {
+        let args = FindGhostArgs {
+            pack_path: "packs/count-pairs".to_string(),
+            program: "incorrect/same-index.py".to_string(),
+            seed_override: None,
+            budget: Some(BudgetArgs {
+                total_ms: Some(9000),
+                ..BudgetArgs::default()
+            }),
+        };
+        let error = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+            .expect_err("refused");
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+    }
+
+    #[test]
+    fn fit_complexity_returns_the_engine_fit_for_the_same_samples() {
+        let sizes = [256_u64, 512, 1024];
+        let args = FitComplexityArgs {
+            samples: sizes
+                .iter()
+                .map(|&n| crate::schemas::SampleArg {
+                    n,
+                    median_ns: 10 * n,
+                })
+                .collect(),
+            reference_complexity: "n".to_string(),
+        };
+        let output = fit_complexity(&repo_root(), &args).expect("tool result");
+        let points: Vec<Point> = sizes
+            .iter()
+            .map(|&n| Point {
+                n,
+                median_ns: 10 * n,
+                spread: None,
+            })
+            .collect();
+        let direct =
+            complexity::fit(&points, Mode::Full, &FitConfig::default()).expect("direct fit");
+        assert_eq!(
+            output["report"],
+            serde_json::to_value(&direct).expect("encodes")
+        );
+    }
+}

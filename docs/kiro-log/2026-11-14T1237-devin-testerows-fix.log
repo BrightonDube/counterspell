@@ -1,0 +1,78 @@
+I'll start by reading the function, its tests, and the reducer's error-code mapping.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=103
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Check git state and locate the function and reducer mapping
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The rule block is steering context, so I'll continue the Devin fix. Next I'm reading the existing tests, the reducer mapping, and the judge's `run_state.rs` to confirm which codes are real.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=145
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The defect reproduces. `runOutcomeLabel` checks for `code === 'internal_error'`, but the judge sends `retries_exhausted` (`run_state.rs` maps it to `InternalError`). Before writing tests, I'll confirm the wire strings and the TypeScript type of the error code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=205
+
+[tool] Confirm FailureReason wire strings and web error-code type
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The wire strings match the reducer and `run_state.rs`. Requirement IDE-3 item 8 covers "infrastructure failure is not a wrong answer", so that is the requirement ID for the test-change marker. First, the RED step: I'll add tests with real codes only.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=215
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=39
+[tool] Run test-rows tests to confirm the RED failure
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+RED is confirmed: `retries_exhausted` shows "Run failed". Next is the GREEN fix. The function checks the real `retries_exhausted` code, and the other failure codes keep the plain failure label.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=111
+[tool] status: Pending
+[tool] status: Completed
+The GREEN fix makes the existing mixed-outcome test fail. That test sends `code: 'internal_error'`, which the judge never sends. Its expectation is wrong against the wire contract, so I'll change only its input code and add the required `test-change` marker for IDE-3, the infrastructure-not-wrong-answer requirement. The expected label stays the same.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+[tool] Run targeted tests, then check, full tests and build
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All checks pass. I'll commit only the two changed files on `brighton/kiro-setup`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=142
+
+[tool] Commit the fix on the working branch
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The defect reproduced and is fixed in commit `b031ea6` on `brighton/kiro-setup`.
+
+**The bug:** `runOutcomeLabel` checked for `code === 'internal_error'`, but the judge sends `retries_exhausted` for infrastructure exhaustion (`crates/common/src/run_state.rs` maps it to `InternalError`). An infra-failed run showed "Run failed".
+
+**Files changed**
+- `web/src/lib/workspace/test-rows.ts`: the check now tests for `retries_exhausted`. The other failure codes keep the "Run failed" label. I chose `retries_exhausted` because it is the only code the judge maps to `InternalError`. `expired` maps to `RunStatus::Expired`, which is not an internal error.
+- `web/src/lib/workspace/test-rows.test.ts`: two changes.
+  - Added the `runOutcomeLabel for error events` block:
+    - `labels retries_exhausted as an internal error, not a wrong answer`
+    - `labels the other failure codes as a plain run failure`, which covers `cancelled`, `problem_unavailable`, `language_unavailable` and `expired`.
+  - The existing mixed-outcome test sent the fake `internal_error` code. Its input now uses `retries_exhausted`, with the marker `// test-change: IDE-3`. I kept the expected label unchanged, so the assertion is not weakened.
+
+**TDD sequence:** the new `retries_exhausted` test failed first with "expected 'Run failed'". After the fix, all tests passed.
+
+**Verification**
+- `npm run check`: 0 errors, 0 warnings.
+- `npm test`: 249 passed, 0 failed.
+- `npm run build`: succeeded. Its only output was the usual adapter fallback notice.
+
+I did not touch `.kiro/specs/**`, `tasks.md`, or `main`. I left the untracked `docs/kiro-log/` and `docs/reviews/` files alone because they are not part of this change.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=121
+

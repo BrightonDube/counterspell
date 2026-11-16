@@ -430,8 +430,11 @@ fn known_ghost_that_a_smaller_input_also_breaks_is_an_sbx_04_warning() {
 }
 
 #[test]
-fn declared_bench_warns_sbx_08_without_calling_the_bench_runner() {
-    // The model runner's bench always fails, so any call to it would surface as an error.
+// test-change: PCK-1
+// The bench now runs on the runner (R13.1 of efficiency-familiar). The old test expected
+// SBX-08 and no call. A bench fault must now surface as an infrastructure fault (exit 2).
+fn declared_bench_calls_the_runner_and_a_fault_is_infrastructure() {
+    // The model runner's bench always fails, so the fault must reach the caller.
     let meta = format!(
         "reference_complexity = \"n^2\"\n{META}\n[bench]\nsize_param = \"values\"\nsizes = [8, 16, 32]\n"
     );
@@ -444,10 +447,12 @@ fn declared_bench_warns_sbx_08_without_calling_the_bench_runner() {
         ],
     );
 
-    let report = run_sandbox(&pack.root(), &mut runner);
+    let outcome = validate_sandbox(&pack.root(), &mut runner);
 
-    assert_eq!(codes(&report), ["SBX-08"]);
-    assert!(!report.has_errors());
+    assert!(matches!(
+        outcome,
+        Err(SandboxFault::Runner(RunnerError::Infrastructure(_)))
+    ));
 }
 
 /// A runner whose sandbox is down: every call is an infrastructure fault.
@@ -766,4 +771,92 @@ fn diagonal_total_models_match_hand_traces() {
         diagonal_assumes_square(&json!([[[]]])),
         ProgramResult::Crashed { exception_class, .. } if exception_class == "IndexError"
     ));
+}
+
+/// A runner that answers program runs from the model runner and returns fixed bench timings.
+struct TimedRunner {
+    inner: ModelRunner,
+    points: Vec<(u64, u64)>,
+}
+
+impl PackRunner for TimedRunner {
+    fn run(
+        &mut self,
+        target: Target<'_>,
+        input: &Value,
+        limit: Duration,
+    ) -> Result<ProgramResult, RunnerError> {
+        self.inner.run(target, input, limit)
+    }
+
+    fn bench(
+        &mut self,
+        _sized_inputs: &[(u64, Value)],
+        _limit: Duration,
+    ) -> Result<Vec<(u64, u64)>, RunnerError> {
+        Ok(self.points.clone())
+    }
+}
+
+/// Validates a pack whose reference declares `declared` and whose bench returns `points`.
+fn bench_report(label: &str, declared: &str, points: Vec<(u64, u64)>) -> Report {
+    let meta = format!(
+        "reference_complexity = \"{declared}\"\n{META}\n[bench]\nsize_param = \"values\"\nsizes = [8, 32, 128, 256, 512]\n"
+    );
+    let pack = TempPack::new(label, &[("meta.toml", meta)]);
+    let mut runner = TimedRunner {
+        inner: ModelRunner::new(
+            reference_model,
+            &[
+                ("incorrect/same-index.py", same_index_model),
+                ("incorrect/empty-min.py", empty_min_model),
+            ],
+        ),
+        points,
+    };
+    validate_sandbox(&pack.root(), &mut runner).expect("runner and pack files are readable")
+}
+
+#[test]
+fn quadratic_timings_against_a_linear_declaration_warn_sbx_05() {
+    // Time is 10 * n^2 at each size, but the pack declares n.
+    let quadratic = vec![
+        (8, 640),
+        (32, 10_240),
+        (128, 163_840),
+        (256, 655_360),
+        (512, 2_621_440),
+    ];
+
+    let report = bench_report("bench-quadratic", "n", quadratic);
+
+    assert!(codes(&report).contains(&"SBX-05"));
+    assert!(!report.has_errors(), "SBX-05 is a warning, not an error");
+}
+
+#[test]
+fn linear_timings_against_a_linear_declaration_do_not_warn() {
+    // Time is 100 * n at each size, and the pack declares n.
+    let linear = vec![
+        (8, 800),
+        (32, 3_200),
+        (128, 12_800),
+        (256, 25_600),
+        (512, 51_200),
+    ];
+
+    let report = bench_report("bench-linear", "n", linear);
+
+    assert!(!codes(&report).contains(&"SBX-05"));
+    assert!(!report.has_errors());
+}
+
+#[test]
+fn timings_too_short_to_fit_warn_sbx_05() {
+    // Two points cannot be fitted, so the declared class cannot be confirmed.
+    let short = vec![(8, 800), (512, 51_200)];
+
+    let report = bench_report("bench-short", "n", short);
+
+    assert!(codes(&report).contains(&"SBX-05"));
 }

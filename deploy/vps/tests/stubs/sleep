@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+# Test stub: sleeps are no-ops so health retries finish at once.
+exit 0

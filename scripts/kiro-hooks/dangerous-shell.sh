@@ -31,5 +31,21 @@ if grep -Eiq -- 'curl[^[:cntrl:]]+[|][[:space:]]*(sh|bash)([[:space:]]|$)' <<< "
   printf '%s\n' 'blocked: piping curl directly into a shell is not allowed'
   exit 2
 fi
+# Pack code (reference, incorrect programs, generators) runs only in the judge sandbox (PIP-38).
+if grep -Eiq -- '(^|[^[:alnum:]_])(python3?|node)[[:space:]]+[^[:cntrl:]]*(packs/|pack-assembly/)' <<< "$event"; then
+  printf '%s\n' 'blocked: pack code runs only in the judge sandbox, never as a host command (PIP-38)'
+  exit 2
+fi
+# Shell writes cannot publish a pack or touch its approval (review C2; PIP-1, PIP-28).
+if grep -Eiq -- 'approval\.toml' <<< "$event"; then
+  printf '%s\n' 'blocked: approval.toml is written by Brighton only (PIP-28)'
+  exit 2
+fi
+if grep -Eiq -- 'packs/[^" ]*meta\.toml' <<< "$event" \
+  && grep -Eiq -- 'published' <<< "$event" \
+  && grep -Eiq -- '(>|tee |sed -i|cp |mv |dd )' <<< "$event"; then
+  printf '%s\n' 'blocked: a shell write must not set a pack to published (PIP-1, PIP-28)'
+  exit 2
+fi
 
 exit 0

@@ -17,6 +17,7 @@ if [ -z "$GL" ] && [ -x "$HOME/.local/bin/gitleaks" ]; then
 fi
 zero=0000000000000000000000000000000000000000
 pushing=0
+refs="$(cat)"
 if [ -n "$GL" ] && [ -x "$GL" ]; then
   cfg=()
   [ -f "$root/.gitleaks.toml" ] && cfg=(--config "$root/.gitleaks.toml")
@@ -30,7 +31,7 @@ if [ -n "$GL" ] && [ -x "$GL" ]; then
       range="$rsha..$lsha"
     fi
     "$GL" git "${cfg[@]}" --log-opts="$range" --redact --no-banner --exit-code 1 "$root" || status=1
-  done
+  done <<< "$refs"
   if [ "$status" -ne 0 ]; then
     echo "Push blocked: gitleaks found a possible secret. Rotate it, remove it, then push." >&2
     exit 1
@@ -40,12 +41,26 @@ else
   while read -r _lref lsha _rref _rsha; do
     [ "$lsha" = "$zero" ] && continue
     pushing=1
-  done
+  done <<< "$refs"
 fi
 
 if [ "$pushing" -eq 0 ]; then
   exit 0
 fi
+
+# PUB-01 (PIP-44): a push may not publish a pack unless the commit says it was approved by Brighton.
+while read -r _lref lsha _rref rsha; do
+  [ "$lsha" = "$zero" ] && continue
+  if [ "$rsha" = "$zero" ]; then
+    publish_range=("$lsha" --not --remotes)
+  else
+    publish_range=("$rsha..$lsha")
+  fi
+  if ! "$root/scripts/pack-publish-check.sh" "${publish_range[@]}"; then
+    echo "Push blocked: a pack was published without approval (PUB-01)." >&2
+    exit 1
+  fi
+done <<< "$refs"
 
 echo "pre-push: cargo fmt --check"
 cargo fmt --all -- --check

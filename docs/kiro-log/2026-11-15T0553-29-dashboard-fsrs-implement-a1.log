@@ -1,0 +1,322 @@
+I'll start by reading the dashboard-fsrs spec and its task list.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=80
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The spec is clear. T01 is the first unchecked non-stretch task. Before writing anything, I need to see what the server crate and migrations already contain, since the tasks depend on the auth, run-lifecycle and catalogue seams.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=103
+
+[tool] Inspect server crate, migrations and spec state
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The problem-catalogue spec is marked spec-only, so I need to check whether `problems`, `concepts` and `submissions` tables exist in the migrations before T03 can depend on them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=115
+
+[tool] Check existing tables and prior dashboard run log
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The catalogue tables do not exist. The problem-catalogue spec is spec-only per Brighton's 14 Nov decision, so the dashboard's published-problem and concept data has no backing table yet. I'll confirm the `submissions` shape and the auth/router seams that T01 must reuse, and check what the catalogue spec says.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=253
+
+[tool] Read submissions schema and catalogue spec status
+[tool] Read server seams, router and error mapping
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+Key facts so far:
+
+- `submissions` exists with `status`, `verdict`, `finished_at` and `user_id` (FK to `users`).
+- No catalogue tables exist. The only catalogue seam is `ProblemLookup::published(slug)`, which returns just a slug. Weak concepts, difficulty counts, suggestions and titles all need catalogue data, so T03 cannot be built without implementing the spec-only catalogue. That makes T03 and everything depending on it blocked.
+- T01 (response types and error mapping) and T02 (an index) do not need the catalogue, and T04 (pure helpers) can be built without a database.
+
+Next I'll read the API conventions, the test-writing guide the task rules require, and the test harness pattern so my code matches them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=358
+
+[tool] Read API conventions and test-writing guidance
+[tool] Read server Cargo manifest and test harness patterns
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+I have what I need for T01. Two findings shape it:
+
+- The existing `CurrentUser` extractor returns error code `unauthorized`. DASH-1.2 and T01 require `unauthenticated`. I will wrap the same seam in a dashboard extractor that changes only the error code, rather than add a second auth path or touch the shared extractor.
+- Timestamps and dates need serde support from `time`, which the server does not enable. I will keep them as RFC 3339 and `YYYY-MM-DD` strings in the DTOs rather than add a feature flag.
+
+Next I'll check the workspace lints, the toolchain, and whether the Postgres test variable is set, without printing its value.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=405
+
+[tool] Check workspace lints, toolchain and DB env presence
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+DATABASE_URL is present in this environment, so Postgres tests can run. `SANDBOX_DOCKER_SOCKET` is unset, which only matters for sandbox tests, and this spec has none.
+
+Next I'll read the rest of the HTTP test helpers so my T01 contract test uses the real request path.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=304
+
+[tool] Read remaining HTTP test helper functions
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The existing `testkit_seams.rs` already tests `CurrentUser` through a probe router, so I'll use the same pattern. The T01 test list:
+
+- Unit: the default dashboard serialises to a literal empty shape. Each error maps to the right status and code. The 503 body does not leak the database detail.
+- Integration: a signed-out probe gets `401 unauthenticated`. A bearer session reaches the handler with its own user id.
+
+I'll write the tests first and confirm they fail before adding the implementation.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1236
+[tool] Create dashboard module declarations for the red step
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The module file went in through a shell `printf`. I'll use the file tools for all further writes. Next I'll register the module in `lib.rs` and run the tests to confirm they fail for the expected reason.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=132
+[tool] Run dashboard unit tests expecting compile failure
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+The red step failed for the expected reason: the response and error types do not exist yet. Now I'll add the minimal types to `types.rs`, keeping the test module.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1422
+[tool] status: Pending
+[tool] status: Completed
+Now the implementation is in place. I'll run the T01 tests, then the full Rust gate.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+
+[tool] Run T01 dashboard unit and contract tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All seven T01 tests pass. Next is the full Rust gate: format, Clippy with warnings denied, and the workspace test suite.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=116
+
+[tool] Check Rust formatting
+[tool] Run Clippy across the workspace with warnings denied
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+Two issues: a few lines exceed the format width, and Clippy wants backticks around `snake_case` in a doc comment. I'll format only the files I touched and fix the doc comment.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=167
+[tool] Format touched files and rerun fmt and Clippy
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Format and Clippy pass. Now the full workspace test run.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=77
+
+[tool] Run the full Rust workspace test suite
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The full workspace suite passes with the same counts as before plus the seven new tests. The one ignored test was already ignored before this change. T01 is verified, so I'll tick it, add its Rust lesson, and commit only the T01 files.
+[tool] Replace in File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=332
+[tool] Commit T01 changes after checks pass
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T01 is committed as `f62b0f1`, and the pre-commit secret scan found no leaks.
+
+For T02, the existing indexes cover `(user_id, created_at)` and `(user_id, problem_slug, created_at)`. Nothing covers completed-run ordering by `finished_at`, which the streak and weak-concept queries need, and nothing covers accepted-problem lookups by verdict. I'll add only those two. First I'll read how the existing `pg_` schema tests apply migrations so the new test follows the same pattern.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=170
+
+[tool] Read an existing pg schema test for migration pattern
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The existing pattern is `#[sqlx::test(migrations = ...)]` with `#[ignore]`. I'll write the T02 test first and add an empty migration file, so the red run shows the real failure, which is missing indexes, and not a missing-file compile error.
+[tool] Write File
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=639
+[tool] Run T02 database tests expecting missing-index failure
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The red run failed for the right reason: the completed-run index is missing from the current schema. The re-run test passes on the empty file, as expected. Now I'll write the two indexes.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=240
+[tool] Run T02 database tests after adding indexes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both database tests pass, including the re-run check. Next I'll format the new test file and run the full Rust gate plus the server's database test set, since every database test applies this migration.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=146
+
+[tool] Format T02 test file and rerun fmt and Clippy
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=54
+[tool] Run all server database tests against migrations
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All server database tests pass against the new migration. I'll tick T02, add its lesson, and commit the migration, its test and the task list.
+[tool] Replace in File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=254
+[tool] Commit T02 index migration and tests
+[tool] status: Pending
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+T02 is committed as `2b2a86a`.
+
+T03 needs the catalogue tables for published problems, difficulty, concept names and suggestions. Those tables do not exist and the catalogue spec is on hold, so I'll leave T03 open and log it as a blocker. T04's pure streak and ranking helpers need no catalogue or database, so I'll build those next. I'll write the streak tests first.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1683
+[tool] Confirm dashboard module list before wiring T04 modules
+[tool] status: Pending
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+I introduced a stray `"` in one test name, so I'll fix that before the red run. I'll also wire the two new modules into `dashboard/mod.rs`.
+[tool] Replace in File
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=206
+[tool] Run T04 tests expecting missing implementation errors
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=48
+[tool] Run dashboard lib tests expecting missing implementation errors
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The red run fails for the right reason: the streak and ranking functions and their types are missing. `Difficulty` also needs `Ord` so the ranking can compare difficulty levels. I'll add that to `types.rs`, then implement both helpers.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1120
+[tool] Run T04 streak and recommendation unit tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All 19 dashboard unit tests pass. Next I'll format, run Clippy with warnings denied, and check the workspace tests before ticking T04.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=112
+
+[tool] Format dashboard modules and run Clippy
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy wants `assert_eq!` against an empty `Vec` instead of `is_empty()`. I'll make that change and rerun.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=153
+[tool] Recheck fmt, Clippy and the workspace tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Format, Clippy and the full workspace suite pass. I'll tick T04, record its lesson, and commit.
+[tool] Replace in File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=276
+[tool] Commit T04 helpers and task update
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+T04 is committed as `4f8e9da`. Next is the blocker for T03, and everything that depends on it.
+
+T03's query needs catalogue data that does not exist yet, so the rest of the core chain (T05 to T10) and the stretch gate cannot open. I'll record that in the blockers file with what would unblock it, and keep the open questions I resolved as assumptions.
+[tool] Write File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=772
+[tool] Commit the dashboard-fsrs blockers note
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I stopped after T04 because the next task is blocked. I ran one self-review against the checklist instead of spawning a reviewer subagent, since the wave is not complete.
+
+## Summary
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T01 response types, error codes, owner extractor | [x] done | 5 unit, 2 integration (`dashboard_contract`) | fmt, clippy `-D warnings`, full workspace test pass | `f62b0f1` |
+| T02 dashboard indexes | [x] done | 2 `pg_` (ignored, run against the dev Postgres) | Both pass. Full server `pg_` suite exit 0. fmt, clippy pass | `2b2a86a` |
+| T03 one-query read model | BLOCKED, unchecked | none | not started | none |
+| T04 streak and ranking helpers | [x] done | 14 unit (8 streak, 6 ranking) | fmt, clippy, full workspace test pass | `4f8e9da` |
+| T05 to T10 | BLOCKED by T03, unchecked | none | not started | none |
+| T11 to T18 (FSRS, stretch) | skipped, as instructed. The T08 gate cannot pass | none | none | none |
+
+Blocker note: `ae30bde`.
+
+**Rust lessons** (also in `docs/kiro-log/rust-lessons.md`):
+- T01: A `Default` struct is the JSON contract, and `From<DashboardError> for ApiError` fixes each error's status and code.
+- T02: `include_str!` runs the exact migration SQL in the test, and a partial index stores only the rows a query needs.
+- T04: `BTreeSet` removes duplicate days and keeps them ordered, so `last()` gives the newest without a sort.
+
+## Blockers
+
+- **T03 (and so T05 to T10).** The dashboard needs catalogue tables: published problems, difficulty, titles and concepts. None exist. The problem-catalogue spec is spec-only under Brighton's 14 Nov decision, and I did not implement it. Unblock by approving `problem-catalogue`. The assumed difficulty set is `easy`/`medium`/`hard`.
+- **T08 cannot pass** until T03 to T07 exist. The FSRS slice stays closed.
+- No `[SUPERVISED]` task was implemented, so the review queue has no entries. T06 and T08 are blocked.
+
+## Open Minor findings for hand-off
+
+1. **Error logging.** `DashboardError::unavailable` logs the full source error text. Postgres messages name tables and constraints, not row data. T03 should pass only the sqlx error.
+2. **Suggestion fallback.** Every non-overlap pick is labelled `continue_track`. No track data is in the candidate set yet.
+3. **Ranking formula.** The design's score (`100×overlap + 10×concepts + difficulty bonus`) is not implemented. Ordering uses overlap, then the highest shared failure count, then difficulty, then slug. It matches the design's numbered ordering rules.
+4. **Timestamps and dates** are strings in the response, not typed `time` values. I did not add the `time` serde feature.
+5. **Signed-out code.** The dashboard returns `unauthenticated`, but the other API routes return `unauthorized`. Unif[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=412
+ying them is an api-conventions decision for Brighton.
+6. **Index shape.** T02 uses a partial index `(user_id, problem_slug) WHERE verdict = 'accepted'` instead of the design's three-column example.

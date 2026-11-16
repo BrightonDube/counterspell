@@ -1,0 +1,115 @@
+I'll start by checking the uncommitted state before touching anything.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=75
+
+[tool] Check git state, compose diff, and guard test
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The compose diff is the single `VALKEY_URL` line plus its comment. Next I'll confirm the test's variable list matches `config.rs`, then run the test and compose validation.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=101
+
+[tool] Verify required vars, run guard test, validate compose
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The guard test passes and `docker compose config` exits 0. Before committing, I'll run the Rust gate on the new test file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=96
+
+[tool] Run fmt and clippy gate for server crate
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=86
+[tool] Commit the VALKEY_URL compose fix and test
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Fix 1 is committed as `bdc1fe1`. Now Fix 2. I'll read the reducer, its tests, and the Rust source of truth for failure reasons.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=80
+
+[tool] Read reducer, its tests, and Rust run state
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The reducer maps `internal_error` directly, and the Rust side maps by `FailureReason`. I need the real wire codes from `status.rs` and the TypeScript types to see which test uses an impossible code.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=137
+
+[tool] Read FailureReason, ErrorPayload, and TS error types
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The wire codes are `retries_exhausted`, `expired`, and so on. The reducer checks for `internal_error`, which the judge never sends on an `error` event. Before I change the mapping, I'll check the `RunStatus` union and the other consumer at `test-rows.ts:95`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=153
+
+[tool] Check RunStatus union and dependent consumer
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The reducer's status for an `error` event should follow the Rust table: `retries_exhausted` → `internal_error`, `expired` → `expired`, and the other three reasons → `failed`. The `test-rows.ts` label check on `'internal_error'` is a separate consumer. I'll note it in the summary rather than widen this fix.
+
+I'll write the RED tests first, replacing the test that used the non-wire `internal_error` code.
+[tool] Replace in File
+[tool] status: Pending
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=444
+[tool] status: Completed
+The RED tests are in place. I'll run them to confirm they fail for the expected reason before changing the reducer.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=71
+
+[tool] Run reducer tests to confirm RED failures
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both defects reproduce: `retries_exhausted` becomes `failed` and `expired` becomes `failed`. The three `failed` codes already pass, which is correct. Now the GREEN change in `reducer.ts`.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=172
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=59
+[tool] Run web check, test, and build gates
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All three gates pass: `svelte-check` reports 0 errors, 247 tests pass (36 files), and the build succeeds. I'll check that the build output is ignored before committing only the two reducer files.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=172
+
+[tool] Commit reducer fix with its tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both fixes are committed on `brighton/kiro-setup`. I did not touch `main`, `.kiro/specs/**`, or `tasks.md`.
+
+## Commits
+
+1. **`bdc1fe1` fix(deploy): wire VALKEY_URL into the compose server**
+   - `docker-compose.yml`: added `VALKEY_URL: ${VALKEY_URL:-redis://valkey:6379}` under `services.server.environment`, with a comment. The server exits at start-up without it.
+   - `crates/server/tests/compose_env.rs` (new): reads the compose file and checks that `services.server.environment` sets every variable `config.rs` requires (`DATABASE_URL`, `VALKEY_URL`).
+
+2. **`1819b5d` fix(web): map run error codes to the status the judge state machine uses**
+   - `web/src/lib/runs/reducer.ts`: the old code checked for an `internal_error` code that the judge never sends. A new `statusForErrorCode` maps the real `FailureReason` wire codes the same way `status_after_event` does in `run_state.rs`:
+     - `expired` → `expired`
+     - `retries_exhausted` → `internal_error`
+     - `cancelled`, `problem_unavailable`, `language_unavailable`, and any unknown code → `failed`
+   - `web/src/lib/runs/reducer.test.ts`: replaced the test that used the non-existent `internal_error` code.
+
+## Tests added
+
+- Rust: `compose_server_service_sets_every_required_config_variable`
+- Web:
+  - `maps retries_exhausted to internal_error, never to a wrong answer`
+  - `maps expired to the expired status`
+  - `maps %s to the failed status` (a table test for `cancelled`, `problem_unavailable`, `language_unavailable`)
+
+## Verification
+
+- **Fix 1**
+  - Diff is exactly the `VALKEY_URL` line plus its comment.
+  - `cargo test -p counterspell-server --test compose_env`: passes.
+  - `docker compose config`: exit 0.
+  - `cargo fmt --all -- --check` and `cargo clippy -p counterspell-server --all-targets -- -D warnings`: pass.
+  - I did not run a boot smoke test, as the brief allowed.
+  - I did not confirm that the guard test fails when the line is removed. I only confirmed that it passes with the line present.
+- **Fix 2**
+  - RED: before the change, `retries_exhausted` gave `failed` (expected `internal_error`), and `expired` gave `failed` (expected `expired`). The other three codes already passed.
+  - GREEN: `npm run check` reports 0 errors and 0 warnings. `npm test` passes 247 of 247 tests in 36 files. `npm run build` succeeds.
+
+## Things to check
+
+- **Follow-up in `web/src/lib/workspace/test-rows.ts:95`.** `runOutcomeLabel` still checks `terminal.code === 'internal_error'`. The judge sends `retries_exhausted`, so a failed-infrastructure run will now show "Run failed" instead of "Internal error (not a wrong answer)". The brief limited this fix to the reducer, so I did not change it. It should be fixed next, and it would be a good candidate for a test.
+- **Untracked files.** `docs/kiro-log/` (two logs), `docs/kiro-prompts/devin/` and `docs/reviews/` were already untracked before I started. I left them alone and did not commit them.
+
+## Rust lesson
+
+`FailureReason` is an enum, so the Rust side can `match` on every variant and the compiler checks that none is missed. The TypeScript side receives the code as a plain `string`, so the compiler cannot check it. That is why this bug went unnoticed: a wrong string literal compiles fine. The `default` branch in `statusForErrorCode` is a safe fallback, not a guarantee.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=256
+

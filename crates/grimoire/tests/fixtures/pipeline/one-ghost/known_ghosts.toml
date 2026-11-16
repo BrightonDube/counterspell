@@ -1,0 +1,5 @@
+# Synthetic fixture: one known ghost, which is one fewer than the two GHC-01 requires.
+
+[[ghost]]
+program = "incorrect/off_by_one.py"
+kind = "wrong"

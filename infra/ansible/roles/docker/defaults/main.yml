@@ -1,0 +1,7 @@
+# Docker for the main daemon (the web stack only; sandboxes use the separate rootless daemon).
+# The version pins live in inventory/group_vars/all.yml (docker_ce_version), so the sandbox role can use them.
+# [U] Compose must be 2.24 or later for `!reset` (deploy-ops R4.10, design §Production Compose).
+docker_apt_repo_url: https://download.docker.com/linux/ubuntu
+docker_apt_key_url: https://download.docker.com/linux/ubuntu/gpg
+docker_log_max_size: 10m
+docker_log_max_file: "5"

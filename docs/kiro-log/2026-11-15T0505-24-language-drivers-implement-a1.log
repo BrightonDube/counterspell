@@ -1,0 +1,169 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7
+I'll start by reading the language-drivers tasks, then the design and the steering rules.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=44
+
+[tool] Read File
+[tool] status: InProgress
+[tool] List Directory
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+T01 is already checked, so T02 is the first open task. I'll read the design, requirements, existing protocol doc, registry and the test-writing guide.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=87
+
+[tool] Read File
+[tool] status: InProgress
+[tool] File Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The sandbox rule is a steering note and doesn't change the work. Next I'll look at the judge's existing `languages.rs`, the driver files, and the log directory.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=123
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The tree is clean apart from an earlier run log. I'll read the current `languages.rs`, the language-drivers blockers, and the most recent run log.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=66
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+[tool] status: Completed
+The judge crate guidance is noted. Before deciding T02, I'll check the existing loader tests and the current judge test baseline.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=152
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=47
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The loader tests pass (18/18). The shipped-catalogue test still asserts that JavaScript is disabled, which contradicts T02. I'll check whether anything loads the real catalogue at startup, since Python is enabled with no `driver.py`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=150
+
+[tool] Run Command
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+Nothing in production loads the shipped catalogue yet. Only tests do, and they stub the Python driver. I'll read the fixture helper before changing the shipped-catalogue test.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=188
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The helper truncates the file before `[javascript]`, so the JavaScript entry is only checked by the shipped-catalogue test. I'll make that test expect JavaScript enabled, stubbing both drivers, and mark the assertion change as a requirement change (IDE-1: Python and JavaScript at launch). First the RED step.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=286
+[tool] status: Pending
+[tool] status: Completed
+The test edit is in. I'll run it now to confirm it fails because JavaScript is still disabled.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=61
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The test fails for the expected reason. Next is the GREEN step: enable the JavaScript entry and update the header comment that says it is disabled.
+[tool] Replace in File
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+I'll also fix the stale sentence about Python being unusable, then run the gate: fmt, clippy and the whole workspace test suite.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=202
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+fmt and clippy are clean, and every workspace test passes. The count didn't drop: I edited one test and removed none. Before I tick T02, I'll confirm the executor state that blocks T03 onward, so the blocker note is accurate.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=205
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+The executor is still `NoExecutor`, so driver code cannot run through the sandbox yet. That blocks T03 onward. I'll record the Rust lesson, tick T02, and commit.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=181
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=109
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T02 is committed (`0d94d99`) and gitleaks found no secrets. T03 to T12 still need a working sandbox executor, and T13 to T16 are stretch work. I'll record this run's stop point in the blockers file.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=278
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=61
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I ticked T02 and stopped there. T03 through T12 are blocked, and T13 through T16 are stretch work that the spec says not to start.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T01 | Already [x] before this run | — | — | — |
+| T02 | Done. JavaScript is enabled in `languages/languages.toml`. Python and JavaScript load as enabled. Java and C++ stay disabled. | 0 new. One existing test changed (see below). | `cargo fmt --check` passes. `cargo clippy --workspace --all-targets -D warnings` passes. `cargo test --workspace` passes, 18/18 in `model_languages`. | `0d94d99` |
+| T03 | Blocked | — | — | — |
+| T04 | Blocked | — | — | — |
+| T05 | Blocked | — | — | — |
+| T06 to T12 | Blocked | — | — | — |
+| T13 to T16 | Stretch, not started (T12 has not passed) | — | — | — |
+
+**What changed in T02**
+- `languages/languages.toml`: `[javascript] enabled = true`. The header comment is updated.
+- `crates/judge/tests/model_languages.rs`: the shipped-catalogue test used to assert that JavaScript was disabled. It now expects Python and JavaScript enabled, with stub driver files. I marked that assertion change `test-change: IDE-1`, because IDE-1 in `docs/requirements.md` makes Python and JavaScript the launch languages. No test was removed.
+- `docs/kiro-log/rust-lessons.md`: the Rust lesson for this change.
+
+**Why T03 to T12 stay open**
+- `crates/judge/src/main.rs` still runs `NoExecutor`, so no driver can be started in a container.
+- The spec forbids running driver code on the host.
+- Without a sandbox executor, the red-green cycle for drivers can't run.
+
+**Blockers**
+- The real `languages.toml` will not load until `drivers/python/driver.py` and `drivers/javascript/driver.js` exist. Nothing in production loads it yet. Only tests do, and they stub both files. T03 and T04 remove this.
+- The T07 signature-type choice is still open: add a `counterspell-grimoire` dependency to the judge, or move the type into `counterspell-common`. This is a crate-graph decision for Brighton.
+- The judge-sandbox `sbx_` ignore decision and the cgroup `cpuset`/`io` delegation drop-in are still open. Both are in `docs/kiro-log/judge-sandbox-blockers.md`.
+- All of these are logged in `docs/kiro-log/language-drivers-blockers.md`.
+
+**Review queue:** no `[SUPERVISED]` tasks in this spec.
+
+**Wave review:** Wave 0 is complete, but I did not run a subagent review. The only change is a config flag and one test, so I checked it against the review checklist myself.
+
+**Open Minor findings:** none raised.
+
+**Commits:** `0d94d99` (T02) and `75ffd97` (blockers note).[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=196
+

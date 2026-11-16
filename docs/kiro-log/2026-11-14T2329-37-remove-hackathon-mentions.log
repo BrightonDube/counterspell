@@ -1,0 +1,227 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=8
+I'll start with the inventory the task asks for.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Inventory event-specific wording and git status
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The inventory matches the pre-change count in the prompt. Before editing, I need to check whether any script parses the "hackathon credits used now" wording, since that would break if I change it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=287
+
+[tool] Check parsers of usage log and list all context
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+My second search matched "judge" everywhere, which is too broad. I'll narrow it to the event terms.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=113
+
+[tool] Narrow inventory of event terms outside the usage log
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=71
+[tool] List event-term line locations outside usage log
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Some hits are in `docs/kiro-prompts/`, which the prompt does not mention. I'll check those lines and the remaining scripts before deciding.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=121
+
+[tool] Inspect remaining hits in prompts and the run script
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The run script's printf is the only place that writes the "hackathon credits" log wording, and nothing parses it back, so it is safe to neutralize. Next I'll read the exact lines in the specs and requirements I need to reword.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=504
+
+[tool] Read exact lines for specs and requirements rewording
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The UI string "Judging? Use the demo account" is in `web/src/routes/login/+page.svelte`, so I'll check that no test asserts on it before changing it. I'll also record the before-counts for the plan file.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=197
+
+[tool] Count baseline matches and check web for the demo-link string
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+My web grep used `-r`, which is ripgrep's replace flag, so that output is garbled. I'll rerun it correctly.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=93
+
+[tool] Search web and crates for the demo link string
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Several Rust doc comments and spec sentences say "judge demo account". That phrase exists only because the demo account was built for event reviewers, and the prompt's list of close variants covers it, so I'll reword it to "demo account" in comments and prose. The trusted `counterspell-judge` worker is a different concept and stays as is.
+
+Next I'll write the plan file before editing anything.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=748
+[tool] status: Pending
+[tool] status: Completed
+Starting with the first commit: scripts, `.gitignore` and the prompt-source comments.
+[tool] Replace in File
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=173
+[tool] Reword Costume Contest in prompt source files
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=98
+[tool] Syntax-check run script and commit scripts and comments
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Next is the Rust and web wording. First I'll check whether any string literal, not just a comment, contains "judge demo", since tests could assert on it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+
+[tool] Find judge-demo wording in code and string literals
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Every match is a comment, and no string literal depends on the old wording. I'll reword the comments and the login link text.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=177
+
+[tool] Reword judge demo comments in server crate
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Confirm web link text and scripts
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=82
+[tool] status: Completed
+The frontend rules are noted; the only web change so far is one plain-text link label. Committing the Rust comment and web label group now, then moving to the specs.
+[tool] Commit server comment and login link wording
+[tool] status: InProgress
+[tool] status: InProgress
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=143
+[tool] status: Completed
+Next are the specs. I need the exact text of the ide-workspace intro line and whether "P2 Judge" is referenced elsewhere before I rename it.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=250
+
+[tool] Read exact spec phrases before editing
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The demo-account and reviewer phrases are clear. I'll apply exact-string replacements with perl, keeping the `counterspell_judge` role and the judge worker wording unchanged.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=443
+
+[tool] Apply exact wording replacements across specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Most remaining "judging" hits describe the trusted judge worker, which is product terminology, so they stay. A few tasks and design lines still point at the event: a tasks line with the old link text, "judge demo account" in break-room, and "judges" and "judging window" in auth and judge-sandbox. I'll fix those.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=225
+
+[tool] Fix remaining event-linked lines in specs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The remaining event references are in the four top-level docs. Two whole lines (the category line in `requirements.md` and the scoring line in `product-brief.md`) need full-line replacement, so I'll match them by their starting text.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=725
+
+[tool] Reword event wording in top-level docs
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The remaining hits in the four docs are either the trusted judge worker or the intended rules URL. Two event-linked labels are still left: "Judges:" in the licence rules and "ACC-6 Judge access". I'll fix those, then do the usage log.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=219
+
+[tool] Finish label rewording and usage log phrase
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The usage log now has only the replaced phrase and the header line. I'll confirm the diff touches nothing else before committing the three groups.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=142
+
+[tool] Verify usage log diff is only the phrase change
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Only the header and the phrase changed. Committing the three groups separately.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=104
+
+[tool] Commit spec, doc and usage log groups
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All commits are in. Now the full gate: Rust format, Clippy and tests, then the web check, build and test scripts.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=86
+
+[tool] Run cargo fmt check and clippy
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=54
+[tool] Run full cargo test workspace suite
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Rust tests all pass. Now the web gate.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=62
+
+[tool] Run web check, build and tests
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The tail of the vitest output doesn't show the pass count, so I'll rerun it and grep for the summary. I also want to confirm the build's git status is clean, since `build/` may be new output.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=82
+
+[tool] Confirm vitest summary and clean git status
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Web check, build and 39 vitest files pass. Next is the final `rg` inventory with the same command as the start, plus the allowed-set check.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=124
+
+[tool] Re-run event-name inventory after changes
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The remaining hits all fall in the allowed set: the rules URL, the usage-pool regex, the policy bullets, this prompt, the queue script references, the playbook, and historical logs. Recording the before and after counts in the log file.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=580
+[tool] Commit the plan and results log
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The event wording is gone from the code, UI, comments, config, tests, specs and steering, except for the allowed set. Five commits are on the current branch and nothing was pushed.
+
+**Counts:** the `rg` inventory went from 141 matches on 116 lines in 22 files to 76 matches on 47 lines in 14 files. The prompt's 14 Nov baseline was 101/90/15. My starting count is higher because the session logs have grown since then, so I used my own measurement.
+
+**Files changed**
+- `.gitignore`: comment now says "repository rule".
+- `scripts/kiro-run.sh`: log line now reads "credits used now %s/4000". Nothing parses that wording. The `kiroween-2026:` pool regex is unchanged.
+- `docs/kiro-prompts/09-ide-workspace*.md`: "Costume Contest showcase" is now "showcase".
+- Rust comments in `crates/server` (auth modules and three `pg_auth_demo_*` tests): "judge demo account" is now "demo account". Comments only, and no test string depended on the old wording.
+- `web/src/routes/login/+page.svelte`: link text "Judging? Use the demo account" is now "Try the demo account". No test asserted the old text.
+- Specs: `.kiro/specs/auth/*`, `ide-workspace`, `counterspell-mcp-power`, `judge-sandbox/design.md`, `break-room/design.md`. The "Devpost private field" is now "private field of the external submission form", and "hackathon judge" is now "reviewer".
+- Docs: `docs/requirements.md`, `docs/system-design.md`, `docs/product-brief.md`, `docs/licence-rules.md`. Dates, the demo account, uptime to 29 Jan 2027, the feature freeze and the video are kept.
+- `docs/KIRO_USAGE.md`: "hackathon credits" became "credits" and the header line was reworded. The numbers and the rest of the log are unchanged.
+- `docs/kiro-log/remove-hackathon-mentions.md`: the plan, the before and after counts, and the remaining hits.
+
+**Remaining `rg` hits (allowed)**
+- Policy bullets in `.kiro/steering/brighton-decisions.md`.
+- This prompt and its filename.
+- The `kiroween-2026:` usage regex in four scripts.
+- Queue-script references to this prompt's filename and log label in `kiro-gap-specs.sh` and `kiro-after-current.sh`. Renaming them would break the queue.
+- The official rules URL in `docs/system-design.md`, kept as licence evidence.
+- `docs/kiro-playbook.md`.
+- Historical logs under `docs/kiro-log/`.
+
+**Judgement calls to check**
+- "Judge demo account" and "Judging?" were treated as event wording. "Judge" still refers to the trusted `counterspell-judge` worker wherever that is meant.
+- The "Judging?" login link text is a UI change. It is text only.
+- I removed the event's category and scoring line from `docs/product-brief.md`. The original text is in git history. Say if you want it kept somewhere else.
+
+**Test results (fresh runs after all edits)**
+- `cargo fmt --all -- --check`: pass.
+- `cargo clippy --workspace --all-targets -- -D warnings`: pass.
+- `cargo test --workspace`: all suites pass. The `pg_` and `valkey_` tests are ignored by convention and were not run.
+- `npm run check`: 0 errors and 0 warnings.
+- `npm run build`: pass.
+- `npm run test`: 39 test files pass.
+
+No test was removed, skipped or weakened.
+
+**Commits** (on the current branch, not pushed)
+- `e723c57` scripts, `.gitignore` and prompt-source comments
+- `b82954a` server comments and login link text
+- `2b299bb` specs
+- `2c1a102` top-level docs
+- `61e0741` usage log phrase
+- `8d80370` plan and results log
+
+The run log `docs/kiro-log/2026-11-14T2329-37-remove-hackathon-mentions.log` is still untracked. `kiro-gap-specs.sh` commits it, so I left it alone.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=282
+

@@ -1,0 +1,6 @@
+# Synthetic S11 report: the one ghost reproduces.
+
+[[ghost]]
+program = "incorrect/off_by_one.py"
+kind = "wrong"
+verified = true

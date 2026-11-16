@@ -1,0 +1,32 @@
+# Renders the base role's templates into a temporary directory, for check-base-render.sh. The
+# values here are fixtures (documentation key, fixed paths), never real keys or secrets.
+- name: Render base role templates
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    operator_user: brighton
+    deploy_user: deploy
+    base_deploy_script: /usr/local/sbin/counterspell-deploy
+    base_deploy_entry: /usr/local/sbin/counterspell-deploy-entry
+    base_ssh_port: 22
+    deploy_public_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFIXTUREFIXTUREFIXTUREFIXTUREFIXTUREFIXTUREFIXTUR counterspell-ci-fixture
+  tasks:
+    - name: Render the sudoers rule
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/base/templates/sudoers_deploy.j2"
+        dest: "{{ render_dir }}/sudoers"
+        mode: "0440"
+
+    - name: Render the authorized keys line
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/base/templates/authorized_keys_deploy.j2"
+        dest: "{{ render_dir }}/authorized_keys"
+        mode: "0600"
+
+    - name: Render the sshd drop-in
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/base/templates/sshd_hardening.conf.j2"
+        dest: "{{ render_dir }}/sshd.conf"
+        mode: "0644"

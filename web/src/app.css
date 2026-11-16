@@ -1,8 +1,32 @@
 @import 'tailwindcss';
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/500.css';
+@import '@fontsource/jetbrains-mono/600.css';
+@import '@fontsource/jetbrains-mono/700.css';
+
+/* Geist (OFL-1.1) is self-hosted from the pinned `geist` package. */
+@font-face {
+  font-family: 'Geist';
+  src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Creepster (OFL-1.1, Font Diner) is self-hosted. It is used only for the title-screen wordmark
+   and the ENTER label (landing-steel-night T21). */
+@font-face {
+  font-family: 'Creepster';
+  src: url('../static/fonts/Creepster-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
 
 @theme {
   --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-wordmark: 'Creepster', cursive;
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-raised: var(--raised);
@@ -71,6 +95,11 @@ body {
   outline-offset: 2px;
 }
 
+::selection {
+  background: var(--accent-moss-deep);
+  color: var(--text);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -80,4 +109,29 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
   }
+}
+
+/* landing: begin */
+.cta {
+  transition-duration: 200ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cta {
+    transition-duration: 0ms;
+  }
+}
+
+/* Hero scrim: the art fades into the page background behind the headline, so text keeps its contrast. */
+.hero-scrim {
+  background: linear-gradient(
+    to bottom,
+    color-mix(in oklab, var(--bg) 15%, transparent) 0%,
+    var(--bg) 88%
+  );
+}
+
+/* Title-screen hero: one ember colour (red, green, blue channels) that the pumpkin glow reads. */
+:root {
+  --hero-ember: 255 170 60;
 }

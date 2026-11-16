@@ -1,0 +1,25 @@
+# Defaults for the sandbox role: the rootless Docker daemon that runs user code, and nothing else.
+sandbox_runtime_dir: "/run/user/{{ sandbox_uid }}"
+sandbox_socket: "/run/user/{{ sandbox_uid }}/docker.sock"
+sandbox_home: "/home/{{ sandbox_user }}"
+sandbox_subid_range: "100000:65536"
+
+# Aggregate limits for the sandbox user's services (R3.3, design Q13).
+sandbox_memory_max: 4G
+sandbox_tasks_max: 512
+sandbox_cpu_quota: "300%"
+
+# The dependency on the cgroup controllers that must be delegated before any pull (R3.2).
+sandbox_required_controllers:
+  - cpu
+  - cpuset
+  - io
+  - memory
+  - pids
+
+# Package versions follow the docker role's pins (docker_ce_version).
+sandbox_packages:
+  - uidmap
+  - dbus-user-session
+  - acl
+  - slirp4netns

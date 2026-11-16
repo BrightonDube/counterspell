@@ -10,12 +10,16 @@
 
 use crate::codes;
 use crate::ghosts::{self, SandboxGhost};
-use crate::meta::Meta;
+use crate::meta::{Bench, Meta};
 use crate::pack::Pack;
 use crate::report::{Diagnostic, Report};
 use crate::runner::{PackRunner, RunnerError, Target};
 use crate::samples::accepts_return;
 use crate::signature::LaunchType;
+use counterspell_engine::complexity::{
+    bench_seed, fit, sized_input, Class as EngineClass, FitConfig, Mode as EngineMode,
+    Point as EnginePoint,
+};
 use counterspell_engine::generate::{CandidateStream, GeneratorConfig};
 use counterspell_engine::shrink::{shrink, Probe};
 use counterspell_engine::{
@@ -65,14 +69,8 @@ pub fn check(
     let limit = Duration::from_millis(u64::try_from(meta.limits.time_ms).unwrap_or_default());
     check_samples(meta, runner, limit, report)?;
     check_hidden(meta, runner, limit, report)?;
-    if meta.bench.is_some() {
-        // PackRunner::bench is not implemented yet, so no complexity is claimed.
-        report.push(Diagnostic::new(
-            codes::SBX_08,
-            "meta.toml",
-            Some("/bench"),
-            "complexity is not checked yet: the bench fit is not available",
-        ));
+    if let Some(bench) = &meta.bench {
+        check_bench(meta, bench, runner, limit, report)?;
     }
     let ghosts = pack
         .text("known_ghosts.toml")
@@ -245,4 +243,273 @@ fn observe(
     let user = runner.run(Target::Program(program), input, limit)?;
     let reference = runner.run(Target::Reference, input, limit)?;
     Ok(Observation { user, reference })
+}
+
+/// Times the reference on the declared bench sizes and checks the measured class (BEN-01, SBX-05).
+///
+/// # Errors
+///
+/// Returns the runner's fault. A fault is infrastructure, so the caller exits 2.
+fn check_bench(
+    meta: &Meta,
+    bench: &Bench,
+    runner: &mut dyn PackRunner,
+    limit: Duration,
+    report: &mut Report,
+) -> Result<(), RunnerError> {
+    let inputs = match bench_inputs(meta, bench) {
+        Ok(inputs) => inputs,
+        Err(diagnostic) => {
+            report.push(diagnostic);
+            return Ok(());
+        }
+    };
+    let points = runner.bench(&inputs, limit)?;
+    if let Some(declared) = &meta.reference_complexity {
+        if let Some(diagnostic) = compare_with_declared(declared, &points) {
+            report.push(diagnostic);
+        }
+    }
+    Ok(())
+}
+
+/// Builds one input per declared bench size with the engine's seeded generator (BEN-01 on failure).
+fn bench_inputs(meta: &Meta, bench: &Bench) -> Result<Vec<(u64, Value)>, Diagnostic> {
+    let Some(index) = meta
+        .params
+        .iter()
+        .position(|param| param.name == bench.size_param)
+    else {
+        return Err(ben_01(format!(
+            "size parameter `{}` is not a parameter of the function",
+            bench.size_param
+        )));
+    };
+    let version = u32::try_from(meta.pack_version)
+        .map_err(|_| ben_01("pack_version must be a positive 32-bit number"))?;
+    let mut inputs = Vec::with_capacity(bench.sizes.len());
+    for &size in &bench.sizes {
+        let n = u64::try_from(size).map_err(|_| ben_01(format!("size {size} is negative")))?;
+        let seed = bench_seed(&meta.slug, version, n);
+        let value = sized_input(&meta.input_schema, index, n, seed)
+            .map_err(|error| ben_01(format!("size {n}: {error}")))?;
+        inputs.push((n, value));
+    }
+    Ok(inputs)
+}
+
+/// A BEN-01 diagnostic for a bench size that cannot become an input.
+fn ben_01(message: impl Into<String>) -> Diagnostic {
+    Diagnostic::new(codes::BEN_01, "meta.toml", Some("/bench/sizes"), message)
+}
+
+/// Fits the timings and compares the class with the declared one (SBX-05). `None` when it is confirmed.
+fn compare_with_declared(declared: &str, points: &[(u64, u64)]) -> Option<Diagnostic> {
+    let expected = declared_class(declared)?;
+    let fit_points: Vec<EnginePoint> = points
+        .iter()
+        .map(|&(n, median_ns)| EnginePoint {
+            n,
+            median_ns,
+            spread: None,
+        })
+        .collect();
+    let report = match fit(&fit_points, EngineMode::Full, &FitConfig::default()) {
+        Ok(report) => report,
+        Err(error) => {
+            return Some(sbx_05(format!(
+                "the bench timings cannot be fitted: {error}"
+            )))
+        }
+    };
+    let plausible = report
+        .plausible
+        .iter()
+        .map(|class| class.id())
+        .collect::<Vec<_>>()
+        .join(", ");
+    match report.class {
+        Some(class) if class == expected => None,
+        Some(class) => Some(sbx_05(format!(
+            "the measured class {} differs from reference_complexity {declared} (plausible: {plausible})",
+            class.id()
+        ))),
+        None => Some(sbx_05(format!(
+            "the measured class is not confirmed, so {declared} is not checked (plausible: {plausible})"
+        ))),
+    }
+}
+
+/// An SBX-05 warning about the bench's measured class.
+fn sbx_05(message: impl Into<String>) -> Diagnostic {
+    Diagnostic::new(
+        codes::SBX_05,
+        "meta.toml",
+        Some("/reference_complexity"),
+        message,
+    )
+}
+
+/// The engine class named by a `reference_complexity` value, or `None` for an unknown name.
+fn declared_class(text: &str) -> Option<EngineClass> {
+    match text {
+        "1" => Some(EngineClass::Constant),
+        "log n" => Some(EngineClass::Logarithmic),
+        "n" => Some(EngineClass::Linear),
+        "n log n" => Some(EngineClass::Linearithmic),
+        "n^2" => Some(EngineClass::Quadratic),
+        "n^3" => Some(EngineClass::Cubic),
+        "2^n" => Some(EngineClass::Exponential),
+        _ => None,
+    }
+}
+
+#[cfg(test)]
+mod bench_tests {
+    use super::*;
+    use crate::fixtures;
+    use counterspell_engine::ProgramResult;
+
+    /// A runner whose bench returns the scripted result. Its `run` is never expected to be used.
+    struct ScriptedBench(Result<Vec<(u64, u64)>, RunnerError>);
+
+    impl PackRunner for ScriptedBench {
+        fn run(
+            &mut self,
+            _target: Target<'_>,
+            _input: &Value,
+            _limit: Duration,
+        ) -> Result<ProgramResult, RunnerError> {
+            Err(RunnerError::Infrastructure(
+                "run is not scripted".to_owned(),
+            ))
+        }
+
+        fn bench(
+            &mut self,
+            _sized_inputs: &[(u64, Value)],
+            _limit: Duration,
+        ) -> Result<Vec<(u64, u64)>, RunnerError> {
+            self.0.clone()
+        }
+    }
+
+    /// The valid pack, declared as `reference_complexity = "n"`, with a bench over `values`.
+    fn benched_meta(size_param: &str, sizes: &str) -> Meta {
+        let text = fixtures::valid_text().replace(
+            "comparator = \"exact\"\n",
+            "comparator = \"exact\"\nreference_complexity = \"n\"\n",
+        ) + &format!("\n[bench]\nsize_param = \"{size_param}\"\nsizes = {sizes}\n");
+        fixtures::parse(&text)
+    }
+
+    /// Eight sizes spanning 128 times, so a clean curve can reach `Medium`.
+    const EIGHT_SIZES: &str = "[8, 16, 32, 64, 128, 256, 512, 1024]";
+
+    fn codes(report: &Report) -> Vec<&str> {
+        report.diagnostics().iter().map(|d| d.code).collect()
+    }
+
+    fn limit() -> Duration {
+        Duration::from_millis(2000)
+    }
+
+    #[test]
+    fn a_bench_on_an_unknown_parameter_is_ben01_and_the_runner_is_not_called() {
+        let meta = benched_meta("missing", EIGHT_SIZES);
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let mut runner = ScriptedBench(Err(RunnerError::Infrastructure("down".to_owned())));
+        let mut report = Report::new("count-pairs");
+
+        let outcome = check_bench(&meta, &bench, &mut runner, limit(), &mut report);
+
+        assert_eq!(outcome, Ok(()));
+        assert_eq!(codes(&report), vec!["BEN-01"]);
+    }
+
+    #[test]
+    fn a_unique_bench_size_the_range_cannot_hold_is_ben01() {
+        let text = fixtures::valid_text()
+            .replace(
+                "comparator = \"exact\"\n",
+                "comparator = \"exact\"\nreference_complexity = \"n\"\n",
+            )
+            .replace(
+                "{ type = \"int_array\", min_len = 0, max_len = 30, min = -50, max = 50 }",
+                "{ type = \"int_array\", min_len = 0, max_len = 30, min = 0, max = 3, unique = true }",
+            )
+            + "\n[bench]\nsize_param = \"values\"\nsizes = [8, 16, 32]\n";
+        let meta = fixtures::parse(&text);
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let mut runner = ScriptedBench(Err(RunnerError::Infrastructure("down".to_owned())));
+        let mut report = Report::new("count-pairs");
+
+        let outcome = check_bench(&meta, &bench, &mut runner, limit(), &mut report);
+
+        assert_eq!(outcome, Ok(()));
+        assert_eq!(codes(&report), vec!["BEN-01"]);
+    }
+
+    #[test]
+    fn a_runner_fault_during_the_bench_is_returned_not_reported() {
+        let meta = benched_meta("values", EIGHT_SIZES);
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let mut runner = ScriptedBench(Err(RunnerError::Infrastructure("down".to_owned())));
+        let mut report = Report::new("count-pairs");
+
+        let outcome = check_bench(&meta, &bench, &mut runner, limit(), &mut report);
+
+        assert_eq!(outcome, Err(RunnerError::Infrastructure("down".to_owned())));
+        assert_eq!(codes(&report), Vec::<&str>::new());
+    }
+
+    #[test]
+    fn a_linear_bench_against_a_linear_reference_is_not_reported() {
+        let meta = benched_meta("values", EIGHT_SIZES);
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let points: Vec<(u64, u64)> = [8_u64, 16, 32, 64, 128, 256, 512, 1024]
+            .iter()
+            .map(|&n| (n, 1000 * n))
+            .collect();
+        let mut runner = ScriptedBench(Ok(points));
+        let mut report = Report::new("count-pairs");
+
+        check_bench(&meta, &bench, &mut runner, limit(), &mut report).expect("no fault");
+
+        assert!(report.diagnostics().is_empty(), "{:?}", codes(&report));
+    }
+
+    #[test]
+    fn a_quadratic_bench_against_a_linear_reference_is_sbx05() {
+        let meta = benched_meta("values", EIGHT_SIZES);
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let points: Vec<(u64, u64)> = [8_u64, 16, 32, 64, 128, 256, 512, 1024]
+            .iter()
+            .map(|&n| (n, 3 * n * n + 500))
+            .collect();
+        let mut runner = ScriptedBench(Ok(points));
+        let mut report = Report::new("count-pairs");
+
+        check_bench(&meta, &bench, &mut runner, limit(), &mut report).expect("no fault");
+
+        assert_eq!(codes(&report), vec!["SBX-05"]);
+        assert!(report.diagnostics()[0].message.contains("n^2"));
+    }
+
+    #[test]
+    fn flat_timings_are_reported_as_not_confirmed() {
+        let meta = benched_meta("values", EIGHT_SIZES);
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let points: Vec<(u64, u64)> = [8_u64, 16, 32, 64, 128, 256, 512, 1024]
+            .iter()
+            .map(|&n| (n, 700))
+            .collect();
+        let mut runner = ScriptedBench(Ok(points));
+        let mut report = Report::new("count-pairs");
+
+        check_bench(&meta, &bench, &mut runner, limit(), &mut report).expect("no fault");
+
+        assert_eq!(codes(&report), vec!["SBX-05"]);
+        assert!(report.diagnostics()[0].message.contains("not confirmed"));
+    }
 }

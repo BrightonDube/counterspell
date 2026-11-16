@@ -1,0 +1,484 @@
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=7
+I'll start by reading the auth spec's task list and the conventions at its top.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=65
+
+[tool] Read File
+[tool] status: InProgress
+[tool] Run Command
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Many auth tasks are already ticked from earlier runs. I need the unchecked ones, so I'll list every task line with its status.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=71
+
+[tool] Grep Search
+[tool] status: InProgress
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: Completed
+The blockers file shows the state at attempt 9. I'll check which auth tasks are still unchecked and whether the database is reachable in this shell.
+[tool] Grep Search
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=104
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Remaining unchecked auth tasks are T33, T34, T35, T36 and T37. The database URLs are set in this shell, so `pg_` tests can run. I'll read the full text of those four tasks and check whether run-lifecycle T29 (the SSE endpoint that T34 depends on) is done.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=175
+
+[tool] Run Command
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Run-lifecycle T29 (the SSE endpoint) is still unchecked, so the T34 heartbeat check has nothing to attach to yet. I'll confirm whether an SSE route exists, then read the current log-capture test that T35 extends.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=26
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T35 still needs the OAuth canaries and the Resend key canary. I'll look at how the existing OAuth model test wires `FakeProvider`, and at the `with_oauth` setup, so the canary test can reuse the same path.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=106
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The OAuth flow can run through `FakeProvider`, and the GitHub and Resend adapters can be tested against `wiremock`. Before I write T35's canary test, I need the constructors and any tracing calls in those adapters.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=217
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=67
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The GitHub and Resend adapters can be driven against `wiremock` with canary values, and their logs can be captured. The T35 text also lists the OAuth link flow, so I'll check the link start route and the `OutgoingMail` constructor before writing the test.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=239
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The link flow needs a signed-in session. I'll check how `pg_auth_link_provider.rs` obtains one, so the canary test can reuse that approach.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=73
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have what I need for the canary tests. I'll read the mock helpers in `auth_github.rs` so the new GitHub canary test uses the same shape.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=482
+
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+I'll make the log capture a single global subscriber, so several tests in this binary can share it. Then I'll add the OAuth, GitHub and Resend canary tests.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=259
+[tool] status: Pending
+[tool] status: Completed
+Next I'll update the file header, the imports, and the first test's call site.
+[tool] status: Failed: Invalid input for str_replace — path: expected string, received undefined[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=373
+
+The edit failed because I left out the file path. I'll retry with it.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=401
+[tool] status: Pending
+[tool] status: Completed
+The new accessor is named `logs`, which clashes with the local variable in each test. I'll rename it to `shared_logs` and update the existing call site.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=90
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Before I write the OAuth link canary, I need to know whether the link start route sets the `cs_oauth` binding cookie. I'll check that and the callback's redirect target.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=354
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The link start route sets no binding cookie. Link flows are bound to the session alone, and success redirects to `/settings/account?linked=github`. I'll append the OAuth, GitHub and Resend canary tests now.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=1847
+[tool] status: Pending
+[tool] status: Completed
+The canary tests are written. I'll run the `auth_logs` binary with the ignored Postgres tests included. The database URL is already set in this shell.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=69
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The link callback did not redirect to the success URL. I'll make the assertion print the actual redirect, so the failure shows the real error code.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=99
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=37
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The failure is correct behaviour, not a leak. Signing in with GitHub already created the GitHub identity, so linking GitHub again is refused with `provider_already_linked`. I'll change the test to expect that refusal, which still runs the link callback and its provider call.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=156
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=42
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All four log-capture tests pass. Next I'll run fmt and clippy on the server crate, since the workspace enforces `-D warnings`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=80
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Clippy and fmt pass. `cargo fmt --all` can reformat files outside this task, so I'll check git status before committing.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=44
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Only `auth_logs.rs` changed. I'll look at the existing Rust lesson format, then tick T35 and add its lesson.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=70
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=152
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T35 is ticked. I'll commit it on its own.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=89
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+The commit was blocked by the gitleaks pre-commit hook, which found one leak. The canary values look like credentials, so I need to see which line it flagged.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=83
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=38
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=53
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=24
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The hook runs `gitleaks git --staged`. I'll run the same command with `--redact` and print only the rule and line number.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=110
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=60
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Failed: Run Command
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=59
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=27
+[tool] Read File
+[tool] status: InProgress
+[tool] status: Completed
+The flagged line is the idempotency key canary. The file already uses a `gitleaks:allow` comment for test canaries, so I'll follow that convention on this line.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=85
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T35 is committed as `4dc930b`. Next is T36, delete account. I'll read requirement R17 and the design notes for it, plus the current `/api/me` handler it extends.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The design has the `DELETE /api/me` contract and the capability flag already exists. I'll check the error codes, the capability enum, the router's mutating-route list, and how the run tables reference users, so the `runs_active` check is right.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=159
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The helper patterns are clear. Next I'll find how run-lifecycle stores active jobs and whether anything already raises `RunsActive`, and look at the router block and the matrix test that lists mutating routes.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=101
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I need the exact `jobs.state` values, the cascade on `run_events` and `test_results`, and the `email_tokens` columns before writing the delete query.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=118
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The schema is clear: `jobs.state` is `queued`, `claimed`, `succeeded`, `failed` or `dead`, and every run table cascades from `submissions`. I'll check the testkit helpers for creating submissions and the demo matrix test that lists mutating routes, because adding `DELETE /api/me` affects both.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=245
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+`MUTATING_ROUTES` makes the matrix test POST to every listed path. Adding `/api/me` there would break that test, so I'll keep DELETE out of that list and cover the demo refusal in the delete tests. Next I need the testkit problem fixture and the required `submissions` columns to seed a run.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=112
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have the seeding shape. Before writing the delete tests, I need the `oauth_flows` columns, the demo seeding helper from the demo matrix test, and the module list in `handlers/mod.rs`.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=297
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I have everything needed for the delete tests. I'll write them first (RED). They cover the cascade, isolation, the handle check, the active-run block, the demo refusal and the unauthenticated case.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=2623
+[tool] status: Pending
+[tool] status: Completed
+The tests are written. I'll run them now and confirm they fail for the expected reason, which is the missing `DELETE /api/me` route.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The five tests fail with `405`, so the route is missing, as expected. I'll add the handler and mount it on `/api/me`.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=500
+[tool] status: Pending
+[tool] status: Completed
+The handler is written. Next I'll register the module and chain the DELETE method onto the existing `/api/me` route.
+[tool] Replace in File
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=117
+[tool] status: Pending
+[tool] status: Pending
+[tool] status: Completed
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=45
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Three tests pass. The other two fail at line 174, which is in a seeding helper, so the problem is in my fixture rather than the handler. I'll read the panic message.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=78
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The failure is a `submissions_check` constraint in my fixture. A completed run needs a finish time. I'll check the constraint's exact rule before I fix the seed.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=81
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+A completed run also needs a verdict. I'll set `verdict` and `finished_at` in the fixture only when the status is `completed`.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=156
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=49
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Both failures are in my fixtures. `fill_account` creates a second session, and the fixed hash bytes collide when two users are seeded. I'll make `fill_account` reuse the session the test already created, and derive 32-byte hashes from each user's id.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=328
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The `as_uuid()` value is a temporary, so the borrow of its bytes does not outlive the statement. I'll copy the 16 bytes into a local array first.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=103
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=49
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+All five delete tests pass. The task also names a settings-page button, so I'll run the Rust gate first, then look at the web part.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=117
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Fmt and clippy are clean. Next is the settings-page button, so I'll find the account settings page and the web auth client that T32 created.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=64
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=52
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The client already has `deleteAccount`, and its test exists. I'll confirm the client function's signature and the test expectations, so the page calls it the same way.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=92
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The client function and its test already exist. For the settings UI, I'll move the "does the typed handle match" rule into a small pure function with a test first. Then the page only wires it to the button. I'll check the danger colour tokens before using them.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=122
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+I'll write the confirmation test first, run it to see the missing module fail, and then implement the function.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=183
+[tool] status: Pending
+[tool] status: Completed
+The frontend rule applies here, so the settings UI will use the existing Steel Night danger tokens and the page's current button and section patterns. First I'll write the pure confirmation function that the new test expects.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=164
+[tool] status: Pending
+[tool] status: Completed
+Next the settings page gets a "Delete account" section, placed after Sessions. It uses the handle confirmation and the danger tokens. I'll add the imports and the handler first.
+[tool] Replace in File
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=209
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=39
+[tool] status: Pending
+[tool] status: Completed
+That edit was a no-op, so I'll add the delete handler and a danger button style just above the existing `buttonClass` definition.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=126
+[tool] status: Pending
+[tool] status: Completed
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=275
+[tool] status: Pending
+[tool] status: Completed
+The markup refers to `dangerButtonClass`, so I'll define it beside the other button class.
+[tool] Replace in File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=100
+[tool] status: Pending
+[tool] status: Completed
+The page is wired. Now the web gate: unit tests, the svelte check and the build.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=56
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Web gates pass: 411 tests, the svelte check is clean, and the build succeeds. T36's named verification (`pg_auth_delete`) passed earlier. I'll tick T36, add its Rust lesson, and commit.
+[tool] Replace in File
+[tool] Append to File
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=204
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=93
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+T36 is committed as `4b489f2`. T34 still depends on the SSE endpoint, which does not exist in the code yet, and T33 needs Brighton's Caddy approval. Both stay open. Next I'll run T37's Rust gates across the whole workspace, including the database tests.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=182
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+One failure: `sbx_create_readback_matches` in the judge crate. I'll check its message to confirm it is the sandbox socket requirement and not an auth problem.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=70
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+That failure is the sandbox test needing `SANDBOX_DOCKER_SOCKET`, which is not set in this shell. Cargo also stopped at that binary, so later suites did not run. I'll rerun with `--no-fail-fast` and skip only the `sbx_` tests, which the standing decision says run only on the sandbox daemon.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=118
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The full workspace passes at `PROPTEST_CASES=512`: 1331 tests, 0 failures, with only the sandbox-socket tests skipped. Next are the licence check and the Compose config check.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=96
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Licence check, clippy and Compose config all pass. T37 itself also requires the VPS smoke checklist, which needs real services and Brighton, so it stays unchecked. I'll record the gate results in `auth-dod.md` and log the open items in the blockers file.
+[tool] Write File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=515
+[tool] status: Pending
+[tool] status: Completed
+Before I commit that document, I'll check the property-to-file mapping against the repo, since I wrote some of it from memory.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=74
+
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+The mapping holds: `auth_limits.rs` has the Valkey tests and the CSRF and proptest files exist. I'll append this run's status to the blockers file and commit the docs.
+[tool] Append to File
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=360
+[tool] status: Pending
+[tool] status: Completed
+[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=51
+[tool] Run Command
+[tool] status: InProgress
+[tool] status: InProgress
+[tool] status: Completed
+Auth work this run: T35 and T36 are done and committed, and the T37 automated gates pass. T33, T34 and T37's manual checklist remain open because they need Brighton or work from another spec.
+
+| Task | Status | Tests added | Verification | Commit |
+|---|---|---|---|---|
+| T35 log-capture canaries | [x] ticked | 3 new (`pg_oauth_sign_in_and_link_write_no_secret_to_the_logs`, `auth_logs_github_exchange_keeps_secret_and_token_out_of_logs`, `auth_logs_resend_failure_keeps_key_and_address_out_of_logs`) | `auth_logs` 4/4 pass; fmt and clippy clean | `4dc930b` |
+| T36 delete account | [x] ticked | 5 in `pg_auth_delete.rs`, 2 in `web/src/lib/auth/delete-account.test.js` | Delete tests 5/5 pass; web check, test (411) and build pass | `4b489f2` |
+| T37 final verification | [ ] left open (manual checklist deferred) | none | Full workspace `PROPTEST_CASES=512 --include-ignored --skip sbx_`: 1331 passed, 0 failed. `cargo deny check licenses` ok. `docker compose config` ok. Clippy with all features clean. | `fb42af7` (gate record) |
+| T33 wiring, Caddy | [ ] open | none | Waiting on Brighton's approval of the Caddy log filter (open question 16), plus a manual stack run | — |
+| T34 run-lifecycle integration | [ ] open | none | Needs run-lifecycle T29 (SSE endpoint). No `text/event-stream` handler exists in the code yet. | — |
+
+**Tests and what changed:**
+- T35 covers OAuth sign-in and link (code, state, binding, PKCE verifiers, session cookie), the GitHub exchange (client secret, access token, verifier) and the Resend failure path (key, recipient, response body). The HTTP trace lines for callback and verify routes are not covered, because the auth router has no trace layer.
+- T36 adds `DELETE /api/me`. It needs the exact handle, refuses a queued or claimed run with `409 runs_active`, refuses the demo account with `403`, and clears the session cookie. The settings page gets a "Delete account" section using the existing danger tokens.
+- `DELETE /api/me` is not in `MUTATING_ROUTES`, because the matrix test POSTs to every listed path. The delete endpoint is covered by its own test file.
+
+**Blockers (also in `docs/kiro-log/auth-blockers.md`):**
+- T33: Brighton approves the Caddy log filter for the OAuth callback query string. The manual Compose run is also needed.
+- T34: run-lifecycle T29 must land first, then the heartbeat revalidation and its test.
+- T37: the manual smoke checklist needs the VPS, real provider apps and Resend. Deferred under rule 7.
+- `sbx_*` tests were skipped. They need `SANDBOX_DOCKER_SOCKET`, which this shell does not set. Without it, `cargo test --workspace --include-ignored` fails at `sbx_create_readback_matches` in the judge crate, which stops the run before later suites.
+
+**Review queue:** nothing new. T35 and T36 are not `[SUPERVISED]`.
+
+**Open Minor review findings:**
+- The delete handler locks the user row, but run enqueue does not lock it. A run could be queued between the active-run check and the delete. The cascade would then remove that run. Worth a follow-up in run-lifecycle.
+- I did not run the `requesting-code-review` subagent at the wave end. The review was my own pass against the checklist, not an independent review.
+- The T35 canary checks are not yet proven to fail on a real leak. The sentinel check shows the capture works, but I did not inject a leak to confirm a canary is caught.
+- The `gitleaks:allow` comments mark two canary literals in `auth_logs.rs`, following the file's existing convention.[INFO] [KRS] <-- GenerateAssistantResponseCommand done totalEvents=320
+

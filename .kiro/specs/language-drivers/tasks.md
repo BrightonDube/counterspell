@@ -4,21 +4,21 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 0: protocol and registry foundations
 
-- [ ] **T01 [S] (25 min) Define the versioned driver protocol**
+- [x] **T01 [S] (25 min) Define the versioned driver protocol**
   - Files: `languages/protocol.md` and any narrowly scoped protocol fixture file.
   - Document the signature descriptor, JSON-lines request/answer envelopes, call IDs, supported JSON-safe types, stdout purity, stderr behavior, errors, source export conventions, and protocol version 1.
   - Depends on: repo-skeleton completion and the judge-sandbox interface being available.
   - Verify: the examples parse; the document explicitly states that drivers never emit verdicts, expected values, timings, or Familiar moods.
   - Preserve: the trusted worker owns comparison, deadlines, timing, and verdicts; no code execution on the host.
 
-- [ ] **T02 [P] (25 min) Add and validate the language registry schema**
+- [x] **T02 [P] (25 min) Add and validate the language registry schema**
   - Files: `languages/languages.toml`; registry validation in the existing `crates/judge/` modules.
   - Add Python and enabled JavaScript entries with driver path, run command, bench arguments, limits, protocol version, and byte limit. Add disabled Java and C++ entries with their stretch images and commands.
   - Depends on: T01.
   - Verify: the loader rejects malformed entries and missing drivers; Python and JavaScript load as enabled; Java and C++ remain unavailable.
   - Preserve: the six-package workspace and the canonical `languages/` location; no runtime image pulls.
 
-- [ ] **T03 [P] (25 min) Establish the Python baseline driver contract**
+- [x] **T03 [P] (25 min) Establish the Python baseline driver contract**
   - Files: `languages/drivers/python/driver.py` and Python driver tests/fixtures.
   - Bring the Python driver into the versioned protocol if needed. Add signature loading, one-call-at-a-time framing, JSON-safe return validation, stdout capture, clean stderr failures, repeated calls, and `--mode bench` parity.
   - Depends on: T01.
@@ -27,21 +27,21 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 1: JavaScript launch driver
 
-- [ ] **T04 [S] (30 min) Implement the Node.js JavaScript driver**
+- [x] **T04 [S] (30 min) Implement the Node.js JavaScript driver**
   - Files: `languages/drivers/javascript/driver.js` and JavaScript driver fixtures/tests.
   - Load `/box/signature.json`, resolve the documented CommonJS function export, parse request lines, invoke scalar and array signatures, await returned Promises, validate JSON-safe results, capture language-level stdout, and emit only `{t,out}` answer lines.
   - Depends on: T01 and T03.
   - Verify: the driver handles named exports and callable module exports, preserves call IDs, rejects undefined/non-finite/cyclic outputs, flushes each answer, and sends diagnostics only to stderr.
   - Preserve: Node runs only in the sandbox; user output cannot declare a verdict.
 
-- [ ] **T05 [P] (20 min) Add the JavaScript registry entry and driver packaging**
+- [x] **T05 [P] (20 min) Add the JavaScript registry entry and driver packaging**
   - Files: `languages/languages.toml`, language-driver packaging/configuration used by the judge.
   - Add `node:22-slim`, `solution.js`, `drivers/javascript/driver.js`, `node --max-old-space-size=192 driver.js`, `--mode bench`, memory/time/source limits, and protocol version 1.
   - Depends on: T02 and T04.
   - Verify: a sandbox can start the configured command with a known-correct fixture and the judge can append bench arguments without changing the normal command.
   - Preserve: no compile step for JavaScript and no per-language reference solution.
 
-- [ ] **T06 [S] (30 min) Verify Python/JavaScript observable parity**
+- [x] **T06 [S] (30 min) Verify Python/JavaScript observable parity**
   - Files: driver test fixtures only, plus implementation fixes in the two driver templates if required.
   - Run identical protocol cases through Python and Node, including generated JSON-safe values, function errors, user prints, repeated calls, and bench-mode calls.
   - Depends on: T03, T04, and T05.
@@ -50,7 +50,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 2: trusted judge and Efficiency Familiar bench handoff
 
-- [ ] **T07 [S] (30 min) Integrate configured drivers with the existing sandbox runner**
+- [x] **T07 [S] (30 min) Integrate configured drivers with the existing sandbox runner**
   - Files: `crates/judge/src/` language integration modules and focused tests.
   - Copy the selected source, read-only driver template, and non-secret signature descriptor into the sandbox; build normal argv; start the configured image with the existing isolation, output caps, cleanup labels, and process lifecycle.
   - Depends on: T02, T03, T05, and the judge-sandbox implementation.

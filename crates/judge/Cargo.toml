@@ -5,5 +5,36 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 
+[features]
+default = ["sandbox"]
+# Docker support through bollard, used only on the separate rootless sandbox daemon.
+# Only `sandbox/bollard_backend.rs` and `sandbox/daemon.rs` may import bollard.
+sandbox = ["dep:bollard"]
+# Test helpers: a seeding and invariant-checking kit, a scripted sandbox backend, and a scripted executor. Off in release builds.
+testkit = []
+
+[dependencies]
+bollard = { version = "0.21", optional = true }
+bytes = "1"
+counterspell-common = { path = "../common" }
+counterspell-engine = { path = "../engine" }
+futures-util = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "json", "migrate", "macros"] }
+tar = "0.4"
+thiserror = "2"
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "signal", "sync", "time", "io-util"] }
+toml = "0.8"
+tracing = "0.1"
+uuid = { version = "1", features = ["v4", "serde"] }
+
+[dev-dependencies]
+# Tests always see the test kit. Release builds leave the feature off.
+counterspell-judge = { path = ".", features = ["testkit"] }
+proptest = { version = "1.9", default-features = false, features = ["std"] }
+tempfile = "3"
+
 [lints]
 workspace = true

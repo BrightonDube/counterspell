@@ -1,0 +1,8 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "counterspell-mcp",
+  "version": "0.1.0",
+  "description": "Counterspell pack tools for Kiro: validate problem packs, explain failures, and find and shrink ghost inputs in a locked-down sandbox.",
+  "license": "MIT",
+  "keywords": ["ghost input", "grimoire", "problem pack", "shrink"]
+}
