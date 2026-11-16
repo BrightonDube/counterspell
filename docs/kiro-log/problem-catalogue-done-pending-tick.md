@@ -43,3 +43,10 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - `catalogue::seed::list` reads `problems` (slug, state, pinned version); `publish_validated` is the shared publish step (`publish` with a `None` pin). `run_seed` is one function with a `demo` flag so the two paths cannot drift: eligibility (real pack dir + `published` status + private part) is decided before any DB connect or runner demand; drafts/missing parts are skipped, not refused; `seed-demo` additionally publishes each imported problem.
 - Proving tests: `tests/pg_catalogue_seed.rs` (4 pg tests, all passing): `seed-dev --static-only` and `seed-demo` over the shipped draft packs both print `no eligible packs` and exit 0 with zero problem rows written; `--private-root` is required (exit 2); `list` prints `slug state version` lines including the post-unpublish `unpublished <v>` history shape.
 - Live CLI smoke 16 Nov 2026: `list` -> `two-sum unpublished 1` exit 0; `seed-dev --static-only` -> `no eligible packs` exit 0. The `seed-demo` publish step is covered by `pg_catalogue_publish` (it needs the sandbox runner, so it stays out of CI per spec).
+
+
+## C32 GET /api/languages
+
+- Commit: `a8c72ba`.
+- `catalogue::languages::get_languages` clones `state.languages.entries()` into `LanguageSummary { id, display_name, max_source_bytes }` inside `{"languages": [...]}` — the response never shares the `Arc<LanguageCatalog>`; disabled stretch languages (java, cpp) are never in the catalogue so they cannot appear. `seams::Language` gained `display_name`; `LanguageCatalog` gained `entries()`.
+- Proving tests: `tests/catalogue_api.rs` — `launch_catalogue_lists_exactly_python_and_javascript` (ids, plus java/cpp absent), `language_keys_match_the_allow_list_exactly`, and `get_languages_returns_the_enabled_languages` over the real router (200, exact key set per entry). 12/12 tests pass; `cargo clippy -p counterspell-server --all-targets` clean.
