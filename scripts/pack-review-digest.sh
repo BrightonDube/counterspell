@@ -11,6 +11,8 @@
 #   scripts/pack-review-digest.sh publish-summary <slug> <summary-file>
 #       Scans the summary (SUM-01). If the scan is clean, copies it to
 #       $PACK_REVIEWS_DIR/<slug>.md (default docs/pack-reviews). Otherwise writes nothing.
+#       If $PACK_HIDDEN_VALUES_FILE is set, each line of that file is a private value (four
+#       characters or more) that the summary must not repeat.
 #
 # Exit codes: 0 done, 2 usage or bad slug, 3 refused by SUM-01, 4 missing input.
 set -euo pipefail
@@ -92,6 +94,20 @@ publish_summary() {
             die 3 "SUM-01: the summary names a private file, a pointer or a canary; not published"
         fi
     done
+
+    # Values from the private tree (one per line) must not appear in a summary (review I3).
+    # Values shorter than four characters are skipped: they would match ordinary words.
+    if [[ -n "${PACK_HIDDEN_VALUES_FILE:-}" ]]; then
+        if [[ ! -f "$PACK_HIDDEN_VALUES_FILE" ]]; then
+            die 4 "the hidden values file is missing"
+        fi
+        local value
+        while IFS= read -r value; do
+            if [[ "${#value}" -ge 4 ]] && grep -F -q -- "$value" "$summary"; then
+                die 3 "SUM-01: the summary repeats a value from the private tree; not published"
+            fi
+        done < "$PACK_HIDDEN_VALUES_FILE"
+    fi
 
     local reviews_dir="${PACK_REVIEWS_DIR:-docs/pack-reviews}"
     mkdir -p -- "$reviews_dir"

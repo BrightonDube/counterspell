@@ -85,5 +85,20 @@ status=0
 "$digest" prepare "../demo" "$assembled" "$reports" >/dev/null 2>&1 || status=$?
 if [[ "$status" -eq 2 ]]; then pass; else fail "a bad slug was accepted: status $status"; fi
 
+# Case 8 (review I3): values read from the private tree are refused in a summary, even when no token matches.
+printf 'DEEP-VALUE-4417\n' > "$tmp/hidden-values.txt"
+value_summary="$tmp/value.md"
+printf 'The answer for the hidden case is DEEP-VALUE-4417 here.\n' > "$value_summary"
+status=0
+PACK_HIDDEN_VALUES_FILE="$tmp/hidden-values.txt" "$digest" publish-summary value "$value_summary" >/dev/null 2>"$tmp/value.err" || status=$?
+if [[ "$status" -eq 3 && ! -e "$PACK_REVIEWS_DIR/value.md" ]]; then pass; else fail "a summary with a hidden value was published"; fi
+
+# Case 9: a clean summary still publishes when a values file is set.
+clean_again="$tmp/clean-again.md"
+printf 'The problem asks for a count of pairs.\n' > "$clean_again"
+status=0
+PACK_HIDDEN_VALUES_FILE="$tmp/hidden-values.txt" "$digest" publish-summary clean-again "$clean_again" >/dev/null 2>&1 || status=$?
+if [[ "$status" -eq 0 && -f "$PACK_REVIEWS_DIR/clean-again.md" ]]; then pass; else fail "a clean summary was refused with a values file"; fi
+
 printf 'pack-review-digest tests: %d passed, %d failed\n' "$passed" "$failed"
 [[ "$failed" -eq 0 ]]
