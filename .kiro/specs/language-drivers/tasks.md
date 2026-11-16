@@ -50,7 +50,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 2: trusted judge and Efficiency Familiar bench handoff
 
-- [ ] **T07 [S] (30 min) Integrate configured drivers with the existing sandbox runner**
+- [x] **T07 [S] (30 min) Integrate configured drivers with the existing sandbox runner**
   - Files: `crates/judge/src/` language integration modules and focused tests.
   - Copy the selected source, read-only driver template, and non-secret signature descriptor into the sandbox; build normal argv; start the configured image with the existing isolation, output caps, cleanup labels, and process lifecycle.
   - Depends on: T02, T03, T05, and the judge-sandbox implementation.

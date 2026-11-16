@@ -714,11 +714,15 @@ impl Backend for BollardBackend {
     type Session = BollardSession;
 
     async fn create(&self, spec: &SessionSpec) -> Result<BollardSession, InfraError> {
+        // Read the image's declared environment first, so that `read_policy` can tolerate it
+        // exactly as the create-time read-back does. A failure here creates nothing.
+        let image_env = check_image(&self.docker, &spec.policy, self.api_timeout).await?;
         let id = create_checked(&self.docker, &spec.policy, &spec.name, self.api_timeout).await?;
         Ok(BollardSession {
             docker: self.docker.clone(),
             id,
             api_timeout: self.api_timeout,
+            image_env,
         })
     }
 }
@@ -728,6 +732,9 @@ pub struct BollardSession {
     docker: Docker,
     id: String,
     api_timeout: Duration,
+    /// The `KEY=VALUE` entries the pinned image declares. The daemon merges them into the
+    /// container, so the read-back must tolerate them (see `without_image_env`).
+    image_env: Vec<String>,
 }
 
 impl BackendSession for BollardSession {
@@ -745,8 +752,10 @@ impl BackendSession for BollardSession {
         )
         .await?
         .map_err(|error| map_error(&error))?;
-        from_inspect(&inspect)
-            .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))
+        let mut read = from_inspect(&inspect)
+            .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))?;
+        read.env = without_image_env(read.env, &self.image_env);
+        Ok(read)
     }
 
     async fn start(&mut self) -> Result<(), InfraError> {

@@ -1446,3 +1446,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 
 - The parity test keeps each case as one struct with two solutions and one signature. A loop runs both languages in both modes and compares the replies with `!=`. Adding a case means adding one struct, so the two languages cannot drift apart silently.
 - `Reply` derives `PartialEq`, so `assert` compares whole answer lists and exit codes. An enum with data is compared as a value, not field by field.
+
+## language-drivers T07: two read-backs must agree on what they tolerate (16 Nov 2026)
+
+- Two functions checked the same container, but only one knew the image's own environment variables. The create-time check passed and the session check failed. Both now read the same stored list, so the rule lives in one place.
+- Storing a value on the session (`image_env: Vec<String>`) costs one field and avoids a second daemon call on every read. The field is private, so only the backend can set it.
+- The `Instant` in a struct field decides which `Instant` type you need. `RunSettings` uses `tokio::time::Instant`, so `std::time::Instant` fails to compile at the field.

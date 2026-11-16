@@ -13,7 +13,7 @@
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use counterspell_judge::languages::{FileName, LanguageCatalog};
+use counterspell_judge::languages::{FileName, LanguageCatalog, LanguageDefinition};
 use counterspell_judge::sandbox::backend::{Backend, BackendSession, DriverChannel, DriverEvent};
 use counterspell_judge::sandbox::bollard_backend::BollardBackend;
 use counterspell_judge::sandbox::config::OciRuntime;
@@ -118,6 +118,24 @@ pub fn list_of(items: &Value) -> Value {
     json!({"kind": "list", "items": items})
 }
 
+/// Builds the archive the sandbox unpacks: the solution, the real driver template and the
+/// public signature. Only these three files reach the container.
+pub fn run_archive(
+    language: &LanguageDefinition,
+    solution: &str,
+    signature_json: Vec<u8>,
+) -> Vec<u8> {
+    let files = SandboxFiles::new(
+        FileName::parse(language.file().as_str()).expect("valid solution name"),
+        driver_file_name(language).expect("the driver file name is valid"),
+        solution.as_bytes().to_vec(),
+        driver_source(language.driver().as_str()),
+        signature_json,
+    )
+    .expect("three distinct names");
+    build_tar(&files).expect("archive builds")
+}
+
 /// Starts a container for `lang`, delivers the solution, the real driver template and the
 /// signature, and starts the driver in the given mode. The caller ends the session with
 /// [`finish`].
@@ -132,16 +150,7 @@ pub async fn start(
     let language = catalog
         .get(lang)
         .expect("the language is in the shipped catalogue");
-
-    let files = SandboxFiles::new(
-        FileName::parse(language.file().as_str()).expect("valid solution name"),
-        driver_file_name(language).expect("the driver file name is valid"),
-        solution.as_bytes().to_vec(),
-        driver_source(language.driver().as_str()),
-        signature_json,
-    )
-    .expect("three distinct names");
-    let archive = build_tar(&files).expect("archive builds");
+    let archive = run_archive(language, solution, signature_json);
 
     let spec = SessionSpec::new(
         language,
