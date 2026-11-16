@@ -438,3 +438,11 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-16 01:42-01:45 SAST: 35-deploy-ops-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-deploy-ops-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0142-35-deploy-ops-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.87 (credits used now 3596.98/4000).
+
+### 2026-11-16 01:55-02:47 SAST: 36-pack-authoring-pipeline-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-pack-authoring-pipeline-a1.md`. Transcript: `docs/kiro-log/2026-11-16T0155-36-pack-authoring-pipeline-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 38.72 (credits used now 3635.70/4000).
+
+### 2026-11-16 02:47-02:49 SAST: 36-pack-authoring-pipeline-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-pack-authoring-pipeline-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0247-36-pack-authoring-pipeline-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 1.07 (credits used now 3636.77/4000).
