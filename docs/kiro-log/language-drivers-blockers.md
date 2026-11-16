@@ -127,3 +127,53 @@ A local rootless Docker daemon is now running (see `deploy/sandbox-verification.
 
 ## 16 Nov 2026 03:15 SAST: images now on the sandbox daemon
 The pinned Python and Node images are pulled onto the rootless sandbox daemon, and the Node digest is pinned (see brighton-decisions.md, 16 Nov 03:15). The image blockers above are cleared; rerun the sbx_ tests.
+
+## Run (attempt 1 continued, 16 Nov 2026, later): T03 to T07 done; T08 onward blocked
+
+**Done this run (all verified on the rootless sandbox daemon, `SANDBOX_DOCKER_SOCKET` from `dev-test.env`):**
+- T03 Python driver, `eba247e`: 16 `sbx_python_*` tests pass.
+- T04 Node driver, `374226d`: 20 `sbx_javascript_*` tests pass.
+- T05 JavaScript registry contract tests, `8f8da09`: `model_spec` tests pass.
+- T06 Python/Node parity, `8b50d8f`: 8 cases in normal and bench mode agree; `sbx_driver_stderr_carries_only_diagnostics` passes.
+- T07 JavaScript run path through `execute_run`, `815f432`: 5 `sbx_javascript_run_*` tests pass.
+- The Rust gate (`fmt --check`, `clippy -D warnings`, `cargo test --workspace`) is clean after each commit.
+
+**T03 note:** the RED step was real. All 15 tests failed on the missing `driver.py`. The first GREEN attempt failed for two reasons. `contextlib.redirect_stdin` does not exist, and the backend emits stdout in chunks, not lines. Both were fixed in the driver and the test helper.
+
+**T04 note:** the RED step was real. The tests failed on the missing `driver.js`. The first run passed all 19 tests.
+
+**T06 note:** a verification task. The drivers were written before the parity table, so the parity test is an after-the-fact check. It passed on the first run.
+
+### Judge-sandbox fix made in T07 (needs Brighton's review; the judge is the security boundary)
+
+- **Defect found:** `BollardSession::read_policy` compared the container with the policy but did not remove variables the image declares. The create-time read-back (`verify_readback`) did remove them. The session path, which `open_session` uses for real runs, therefore failed for any image that declares its own variables. The Node image declares `NODE_VERSION` and `YARN_VERSION`, so the first real run failed with `PolicyReadbackMismatch(UnexpectedEnvironment)`. The Python tests never reached that path, because they call `create` and `open_driver` directly.
+- **Fix:** `BollardSession` stores the image's declared environment at create time. `read_policy` applies the same `without_image_env` filter. `create` reads the image before it creates the container, so a failed image check creates nothing.
+- **Verification:** `sbx_javascript_run_*` (five tests) and the regression `sbx_session_read_policy_tolerates_image_env` pass. I did not watch the regression test fail against the old code. The Node run test did fail on the old code with the error above.
+- **Review question:** please confirm the policy still rejects injected or changed variables. `without_image_env` only removes a pair that matches one the image declares exactly.
+
+### T08 (bench handoff): blocked
+
+Two things are missing. Neither can be built inside T08 without changing an interface that another spec owns.
+
+1. **No way to end the normal driver in the same container.** The spec says to stop the normal driver and start a clean bench driver in the same container. `DriverChannel` has only `write_line` and `next_event`. The bollard driver cannot close the driver's stdin, and there is no kill-the-process call. A second container would break "same container" and the one-compile-per-run rule. *Unblock:* add a `close_input` (or stop) primitive to `DriverChannel` and its bollard implementation. That is a judge-sandbox change, so judge-sandbox's owner should decide it.
+2. **No bench inputs.** The bench needs the problem's generator to produce arguments for each size. Those come from `ProblemTests`, which is judge-sandbox T24 and is still open.
+
+I did not build a separate-container bench, because it would not match the spec.
+
+### T09 to T12, T13 to T16
+
+- **T09** (persist and publish bench events) depends on T08 and on run-lifecycle `bench_*` persistence. Neither is ready.
+- **T10** (known-correct fixtures for every published problem) needs published packs. The packs are still drafts and wait for Brighton's review (grimoire-packs T28). I did not write fixtures for draft packs.
+- **T11** (hostile protocol and cleanup tests) depends on T08 and T10. See the open findings below, which T11 should cover.
+- **T12** (the core freeze-safe gate) cannot be recorded until T06, T09, T10 and T11 pass. It is not recorded.
+- **T13 to T16** are `[stretch]`, and T12 has not passed. They were not started.
+
+### Open findings for the review (Minor and Important)
+
+1. **Important (for T11): stray stdout between calls.** Both drivers capture user output only while a call runs. Output written later, from a timer, a callback or a background thread, still goes to the real stdout. The judge reads the next line as the answer to its next call. A program could therefore put a correct-looking answer line on the stream before the real answer, and the judge would compare it. The drivers cannot fully close this, because the judge only sees lines. Likely fix: the judge treats any stdout line that is not the answer to the outstanding call as a protocol failure, and T11 adds a test for a timer that prints a forged answer. Python's `os.write(1, ...)` and Node's `fs.writeSync(1, ...)` bypass the capture the same way. Node's stdout write is only overridden during a call.
+2. **Minor: duplicate keys.** The Python driver rejects a call line with a repeated key. The Node driver cannot, because `JSON.parse` keeps the last copy. The judge writes every call line itself, so this is not exploitable. It is a parity gap and is documented in the Node driver's header.
+3. **Minor: `process.exit` in user code.** The Node driver swaps `process.exit` only during a call, so a timer can exit the process with code 0 between calls. The judge treats an exit without an answer as a failure, so no run is Accepted. The exit code is simply less precise than the Python driver's.
+4. **Minor: stdin.** Python hides `sys.stdin` during a call. The Node driver cannot, so user code that reads `process.stdin` could consume call lines. The external deadline still ends that run.
+5. **Minor: early Python failures.** Two early failures were fixed: a driver bug (`contextlib.redirect_stdin` does not exist) and a harness race in the missing-function test, which now reads stderr instead of sending a call. Both are recorded in the T03 note above.
+
+**Unblock, in order:** (a) Brighton decides the `DriverChannel` stop primitive, or names another route to end the normal driver in the same container. (b) judge-sandbox T24 (`ProblemTests`). (c) Brighton reviews the packs (grimoire-packs T28). (d) Brighton reviews the read-back fix above.
