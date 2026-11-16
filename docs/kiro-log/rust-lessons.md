@@ -1356,3 +1356,15 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `PromptContext` has no field for hidden test data. The compiler then guarantees that the builder cannot read it, which is stronger than a runtime check.
 - `char_indices().nth(n)` finds a cut point that never splits a UTF-8 character. Cutting a `&str` at a plain byte index can panic, so the code walks back to a boundary with `is_char_boundary`.
 - A `Vec<&str>` built from `lines()` lets the guard look ahead to a closing fence without copying the text. The output is joined back into one `String` at the end.
+
+# Rust lesson: hints H08
+
+- A trait method that returns `impl Future + Send` lets the real HTTP client and the test script share one interface. The compiler then checks that both return the same types.
+- `tokio::time::timeout` wraps the whole call, including reading the body. A provider that sends headers and then stalls still ends at the deadline.
+- `Option::pointer` and `Value::as_str` read nested JSON without panicking. A missing field becomes `None`, and `ok_or` turns it into a named error.
+
+# Rust lesson: hints H09
+
+- Valkey runs each `INCRBY` as one atomic step, so two requests that arrive together cannot both read the same old count. The reply tells each caller its own new total.
+- An enum such as `Reserve::Granted(Reservation)` or `CapReached` makes "refused" a normal value, not an error. Only a broken connection becomes an `Err`.
+- Functions that take `&mut` to a small `Taken` record note each count as it succeeds. On failure, `undo` removes exactly those counts, which is the safe way to clean up after an `await` that failed part-way.
