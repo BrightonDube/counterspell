@@ -57,7 +57,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: a passing and failing JavaScript run produce worker-owned comparison results; malformed answers, exceptions, and process failures never become Accepted.
   - Preserve: the server has no Docker access; the judge uses only the separate rootless sandbox daemon.
 
-- [ ] **T08 [S] (30 min) Add generic bench-mode process handoff**
+- [x] **T08 [S] (30 min) Add generic bench-mode process handoff**
   - Files: `crates/judge/src/bench.rs` or the existing judge lifecycle module, plus focused tests.
   - After correctness passes, stop the normal driver and start a clean driver with `bench_args` in the same sandbox container. Send two untimed warm-ups, five timed calls per generated size, and enforce Run/Submit budgets and per-call deadlines using the worker clock.
   - Depends on: T07 and the problem bench interface.

@@ -193,3 +193,13 @@ I did not build a separate-container bench, because it would not match the spec.
   2. T08 then starts as RED: a bench handoff test that expects two warm-ups, five samples per size, and cleanup on timeout, run on the rootless daemon.
   3. Brighton publishes the starter packs (grimoire-packs T28). T10 then writes known-correct fixtures for published packs only.
 - **Security note:** no stop primitive was added here. It changes the sandbox security boundary, and the judge-sandbox owner should review it.
+
+## Run (16 Nov 2026, continued): T08 done, both blockers resolved without interface changes
+
+- **Normal-driver stop:** no new `DriverChannel` primitive was needed. Dropping the channel (`opened.driver.take()` then drop) closes the exec attach, the driver process sees stdin end, and its serve loop exits on its own. A clean driver then opens with `ExecSpec::bench` in the same container, inside `SandboxBenchCollector`.
+- **Bench inputs:** `counterspell_engine::complexity::{sized_input, bench_seed}` build seeded inputs from the signature schema directly; `ProblemTests` is not on this path. (judge-sandbox T24 has since landed anyway.)
+- **Real bug found while wiring:** `BollardDriver::next_event` emits raw `Chunk`s, not `Line`s — `LineReader` (`sandbox/stream.rs`) does the splitting, exactly as `call.rs` does. The fake backend emits `Line`, which hid this in model tests. The collector now pushes both variants through `LineReader` with the `STDOUT_BUDGET` cap and treats any output that is not exactly one answer line as a protocol failure.
+- **Real bug fixed:** call lines were encoded once per size and reused per repetition; ids are now sequential across all warm-ups, timed reps and sizes.
+- **Budget semantics fixed:** a budget that runs out mid-call is `BenchOutcome::Incomplete` (finished points kept), not `Failed`.
+- **Done:** T08 ticked in `tasks.md`. Evidence: `model_bench` 6/6, `sbx_bench` 2/2 on the rootless daemon (six Submit sizes, real medians, budget cut `Incomplete`, container reaped). Review entry in `language-drivers-review-queue.md`.
+- **Still open:** T09 (bench persistence/events, needs run-lifecycle `bench_*` types and the keep-session handoff in `execute_run`), T10 (published-pack fixtures, still waiting on grimoire-packs T28), T11, T12. T13-T16 stretch, gate not passed.

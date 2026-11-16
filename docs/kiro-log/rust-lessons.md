@@ -1538,3 +1538,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 ## 2026-11-16 — Handle::try_current() lies on spawn_blocking threads
 
 `Handle::try_current()` returns `Ok` inside `tokio::task::spawn_blocking` closures because blocking threads carry the runtime's thread-local context — but `handle.block_on()` is *legal* there (it is the documented sync→async bridge). It only panics on async worker threads ('can call blocking only when running on the multi-threaded runtime' — actually panics with 'Cannot block_on within a runtime context'). So a sync-trait bridge (like `Oracle::evaluate`) cannot distinguish legal from illegal callers via `try_current`. The correct probe is `catch_unwind(|| handle.block_on(...))`: convert the panic into an error value. Model test must verify both sides: rejected from a worker thread, accepted from `spawn_blocking`.
+
+## language-drivers T08: fake Line events hide the real backend's Chunks (16 Nov 2026)
+
+- `BollardDriver::next_event` emits raw stdout `Chunk`s; line splitting lives in `LineReader` (`sandbox/stream.rs`), fed by `call.rs`. `FakeDriver` emits whole `Line` events, so a consumer greened only against the fake compiles and passes model tests but never sees a complete line on the real daemon. New driver consumers must handle `Line | Chunk` through `LineReader` with the `STDOUT_BUDGET` cap, exactly as `call.rs` does — and a real-daemon test is the first gate, not the last.
+- Dropping a driver channel closes the exec attach stdin; a well-behaved driver's serve loop then ends and the process exits by itself — no kill primitive needed for a cooperative stop.
+- A whole-bench deadline is a `tokio::time::Instant` shared across calls; `call_deadline.min(budget_deadline)` per call makes a budget that runs out mid-call distinguishable from a driver that is actually slow, so the cutoff maps to `Incomplete`, not `Failed`.

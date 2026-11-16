@@ -368,3 +368,11 @@
  crates/judge/src/sandbox/testkit.rs         | 62 +++++++++++++++++++++++++++--
  docs/kiro-log/sessions.md                   |  2 +
  6 files changed, 153 insertions(+), 9 deletions(-)
+- 2026-11-16T14:47:32Z | model: not reported | last commit: 0496ebd judge-sandbox: verify and tick T20, T22-T36
+ | diff stat:
+ .kiro/agents/deployer.json        | 32 +++++++++++++++++++---
+ crates/judge/src/sandbox/mod.rs   |  1 +
+ crates/judge/src/sandbox/run.rs   | 56 ++++++++++++++++++++++++++++-----------
+ deploy/vps/tests/compose_shape.sh | 43 +++++++++++++++++++++++-------
+ docs/kiro-log/sessions.md         |  2 ++
+ 5 files changed, 107 insertions(+), 27 deletions(-)

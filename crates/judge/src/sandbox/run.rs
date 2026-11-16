@@ -124,6 +124,35 @@ pub async fn execute_run<B: Backend>(
     settings: RunSettings,
     stop: &mut watch::Receiver<bool>,
 ) -> Result<RunResult, InfraError> {
+    let (result, session) =
+        execute_run_and_keep(backend, lang, archive, session_spec, plan, settings, stop).await?;
+    if let Some(open) = session {
+        if let Err(error) = open.session.close().await {
+            tracing::warn!(%error, "closing the run's container did not confirm removal");
+        }
+    }
+    Ok(result)
+}
+
+/// Runs a plan like [`execute_run`], but hands the still-open session back to the
+/// caller instead of closing it. The bench collector (T08) uses this to run the
+/// bench driver in the same container the correctness calls ran in; the caller
+/// becomes responsible for closing it, whatever the outcome.
+///
+/// # Errors
+///
+/// Returns an [`InfraError`] when the sandbox fails. An infrastructure error is never a
+/// verdict on the user's code.
+#[allow(clippy::too_many_arguments)]
+pub async fn execute_run_and_keep<B: Backend>(
+    backend: &B,
+    lang: &LanguageDefinition,
+    archive: &[u8],
+    session_spec: impl Fn(u32) -> Result<SessionSpec, InfraError>,
+    plan: Vec<PlannedTest>,
+    settings: RunSettings,
+    stop: &mut watch::Receiver<bool>,
+) -> Result<(RunResult, Option<Opened<B::Session>>), InfraError> {
     if settings.max_consecutive_abnormal == 0 {
         return Err(InfraError::Unexpected(
             "max_consecutive_abnormal must be at least 1".to_owned(),
@@ -211,22 +240,19 @@ pub async fn execute_run<B: Backend>(
         });
     }
 
-    if let Some(open) = current {
-        if let Err(error) = open.session.close().await {
-            tracing::warn!(%error, "closing the run's container did not confirm removal");
-        }
-    }
-
-    Ok(RunResult {
-        executed: progress.executed,
-        timings: progress.timings,
-        facts: RunFacts {
-            compiled: progress.compiled,
-            planned,
-            cut_by_cap: progress.cut_by_cap,
-            stopped: progress.stopped,
+    Ok((
+        RunResult {
+            executed: progress.executed,
+            timings: progress.timings,
+            facts: RunFacts {
+                compiled: progress.compiled,
+                planned,
+                cut_by_cap: progress.cut_by_cap,
+                stopped: progress.stopped,
+            },
         },
-    })
+        current,
+    ))
 }
 
 /// What one test's call produced.
