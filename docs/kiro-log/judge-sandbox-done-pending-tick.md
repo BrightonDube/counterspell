@@ -57,3 +57,12 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - `cargo test -p counterspell-judge --features sandbox --test sbx_functional --test sbx_forgery -- --ignored`: **PASS** — 7/7 functional, 5/5 forgery.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
 - Noted deviations: (1) `fake_verdict.py` proves the forged verdict twice — `print` is swallowed by the driver's `sys.stdout` sink, `os.write(1,…)` hits the protocol pipe and violates the one-answer contract; the verdict stays `WrongAnswer` because only `verdict::decide` produces `Pass`. (2) `remember_replay.py` answers ordinals 1–3 correctly so the run genuinely reaches the hidden phase; the no-fail-fast scheduler then fails it on hidden 4–5. (3) `cleared_within` polls for up to 15 s because abnormal-end removal can lag the verdict by a moment.
+
+## T27 — time, memory and process scenarios S05–S08 (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T27: time, memory, process scenarios`).
+- Files: `tests/sbx_limits.rs`, `tests/hostile/{infinite_loop,import_loop,sleep_forever,sigstop_self,memory_list,memory_alloc,fork_bomb,thread_bomb}.py`, `tests/sbx/mod.rs` (+`run_wall`, +`drain_dead`).
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`, `--test-threads=1`:
+  - `cargo test -p counterspell-judge --features sandbox --test sbx_limits -- --ignored`: **PASS 9/9** — S05/S06 time limits inside bounds; S07 memory contained (`MemoryLimit`/`RuntimeError`, never accepted) + `oom_kill` channel probe; S08 PID-limit containment.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
+- Daemon observations for review: (1) removal of a deadline-killed container is asynchronous and lagged past 15 s under load — corpses are `Exited`, still contained; tests assert "not running within 20 s" then reap like the sweeper. (2) Under a fork bomb a daemon call can exceed the API timeout, so the run may end `ExecError::Infrastructure` instead of a completed non-accepted verdict — both accepted for S08a; never `accepted`, always bounded.

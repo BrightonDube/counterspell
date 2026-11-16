@@ -134,6 +134,49 @@ pub async fn cleared_within(
     last
 }
 
+/// Asserts no managed container is still *running* within `within`, then reaps
+/// any corpses — the role the sweeper plays in production (no sweeper runs
+/// during scenario tests). Docker's removal of a killed container can lag the
+/// verdict by tens of seconds under load, so absence is not the bound; "not
+/// running" is. Returns how many corpses were reaped.
+pub async fn drain_dead(docker: &Docker, cfg: &SandboxConfig, within: Duration) -> usize {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let deadline = tokio::time::Instant::now() + within;
+    let mut leftovers = managed_containers(&backend).await;
+    loop {
+        let mut survivors = Vec::new();
+        for container in &leftovers {
+            let inspected = docker
+                .inspect_container(&container.id, None)
+                .await
+                .expect("the daemon inspects a managed container");
+            if inspected
+                .state
+                .and_then(|state| state.running)
+                .unwrap_or(false)
+            {
+                survivors.push(container.name.clone());
+            }
+        }
+        if survivors.is_empty() || tokio::time::Instant::now() >= deadline {
+            assert!(
+                survivors.is_empty(),
+                "containers still running — the program was not contained: {survivors:?}"
+            );
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(400)).await;
+        leftovers = managed_containers(&backend).await;
+    }
+    let mut reaped = 0;
+    for container in &leftovers {
+        if backend.remove_managed(&container.id).await.is_ok() {
+            reaped += 1;
+        }
+    }
+    reaped
+}
+
 /// What one real run produced: the executor's outcome and every public event it
 /// emitted, in order.
 pub struct RunObservation {
@@ -141,6 +184,9 @@ pub struct RunObservation {
     pub outcome: Result<RunOutcome, ExecError>,
     /// The public events the executor emitted, in emission order.
     pub events: Vec<PublicEvent>,
+    /// Wall time of `executor.execute` alone — the preflight probe before it is not
+    /// part of the run cap.
+    pub run_wall: Duration,
 }
 
 impl RunObservation {
@@ -194,10 +240,12 @@ pub async fn run_source(
         code: source.to_owned(),
         attempt: 1,
     };
+    let started = std::time::Instant::now();
     let outcome = executor.execute(run, ctx).await;
     RunObservation {
         outcome,
         events: log.events(),
+        run_wall: started.elapsed(),
     }
 }
 

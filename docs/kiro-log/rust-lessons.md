@@ -1487,3 +1487,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `languages/drivers/python/driver.py` replaces `sys.stdout`/`sys.stdin` with a `_Sink` while user code runs, so `print`/`sys.stdout.write` never reach the protocol pipe. Only raw `os.write(1, …)` bypasses the sink — a forgery test must use the raw channel to prove the protocol still rejects it, and keep the `print` copy to document the sink.
 - Killed containers can outlive the verdict by a beat: `session.abort` is best-effort kill-then-remove, so a cleanup assertion should poll `list_managed` (seconds bound, not the orphan age) rather than asserting emptiness immediately.
 - Integration asserts on run.rs semantics: there is no fail-fast break — every scheduled test executes, so sample/hidden event counts are exact only when the corpus program's answer pattern is known.
+
+## judge-sandbox T27: container death and removal are not the same bound (16 Nov 2026)
+
+- `docker kill` lands inside the kill slack, but the *removal* is asynchronous — under load a corpse sits `Exited` for tens of seconds. Assert `!running` (containment) promptly and reap corpses (sweeper's role); asserting absence conflates the two bounds.
+- A fork bomb can make a daemon call on that container exceed the API timeout, so the honest outcome is sometimes `ExecError::Infrastructure`, not a verdict. Both satisfy "never accepted, always bounded" — but the test must accept both or flake.
+- `clippy::unnested_or_patterns` wants `A(x) | B(x)` collapsed into `A | B` under one constructor; `clippy::manual_contains` wants `.contains(&v)` over `.iter().any(|v| *v == x)`.
