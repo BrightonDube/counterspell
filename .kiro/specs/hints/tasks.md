@@ -100,7 +100,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 2: I/O adapters
 
-- [ ] **H08 [S] (35 min) Provider client and scripted transport**
+- [x] **H08 [S] (35 min) Provider client and scripted transport**
   - Files: `crates/server/src/hints/provider.rs`, `crates/server/src/testkit.rs` (feature `testkit`, `ScriptedTransport`).
   - `ChatTransport` trait, `ReqwestTransport` (one shared client, per-call timeout), `OpenAiCompatible`, `ProviderError`. Request and response JSON as in the design. Provider error bodies are dropped; only the status code is kept.
   - Requirements: R5.1, R5.2, R7.2, R8.3.
