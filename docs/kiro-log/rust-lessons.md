@@ -1314,3 +1314,15 @@ The builder is a plain function from stored values to sections, so its tests nee
 - An `enum` with one variant per failure (`Count`, `RungOrder`, `Parse`) lets the caller `match` each case. The compiler then reminds you when a new case is added.
 - `Result` returns bad author input as a value. A panic would stop the whole validator for one bad file, so the error travels upward with `?` and `map_err`.
 - `<[String; 4]>::try_from(vec)` checks the length when it runs and hands the vector back on failure, so no `unwrap` is needed.
+
+# Rust lesson: hints H01
+
+- A newtype such as `HintRung(u8)` has a private field, so the only way to build one is `TryFrom`. That makes an invalid rung impossible to create anywhere in the code.
+- `#[serde(try_from = "u8")]` runs the same check when JSON is read, so the rule lives in one place for both the web input and the code.
+- `#[serde(deny_unknown_fields)]` makes a request with an extra field fail to parse. A client cannot slip in a model or price this way.
+
+# Rust lesson: hints H02
+
+- `Option<&String>` from `HashMap::get` means "not set". `map_or(default, ...)` turns that into the default in one step, so a missing variable and an empty one are handled on purpose.
+- Keeping `from_map` pure (it takes a map and does no I/O) means the tests never change the real environment. Only `from_env` reads the process environment.
+- A wrapper such as `Redacted<T>` with a `Debug` that prints `[redacted]` stops a key from appearing in any `{:?}` log line, because the compiler uses that impl everywhere.
