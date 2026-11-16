@@ -153,3 +153,8 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `tests/sbx_concurrency.rs`.
 - Brighton to check: (1) `list_managed` counts dead corpses too — the first S19 run saw `peak_listed=6/running=5` from an S18 bomb corpse still tearing down; the test now drains leftovers first and asserts on `running` while still reporting `listed`. (2) `peak_running >= 2` proves the runs actually overlapped (serial execution would also satisfy the bound vacuously). (3) Six-run walls are printed for T37's report.
 - Verified: 2/2 pass on the rootless daemon.
+
+## T33 (SUPERVISED, judge-sandbox) infra + runtime on the daemon
+- Code: `tests/sbx_infra.rs`, generated `probe-report.json`.
+- Brighton to check: (1) S21's two halves are deliberately different layers — `connect` refuses a missing path outright (no backend exists), while an existing-but-silent socket fails the probe closed; both are "Infrastructure, never a verdict". (2) S22's no-pull proof is the image list being identical, plus sub-second refusal. (3) S23 is env-gated: it will print TESTED + the real outcome only when `SANDBOX_RUNTIME=runsc` is set — on this host it records NOT TESTED. (4) `probe-report.json` is generated evidence for T37's verification report; it is committed so the report has material to embed.
+- Verified: 4/4 pass on the rootless daemon.

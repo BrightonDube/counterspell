@@ -118,3 +118,15 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
     - `sbx_s19`: six runs through one executor (`max_containers=4`) with a 200 ms daemon sampler → `peak_running=4` = limit, `peak_listed=4`; batch 8.75 s, per-run walls recorded for the report.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok (76 binaries).
 - Interpretation recorded: the semaphore bounds concurrent runs; a killed container can linger listed/running on the daemon past the kill call, so the sampler reports `listed` and `running` peaks separately and the bound is asserted on `running` after a clean-slate `drain_dead`.
+
+## T33 — infrastructure and runtime scenarios S21–S23, S25 (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T33: infrastructure and runtime scenarios`).
+- Files: `tests/sbx_infra.rs`, `.kiro/specs/judge-sandbox/probe-report.json` (written by S25). S20 stays in `sbx_preflight.rs` (T22) — the infra file header cross-references it.
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`, `--test-threads=1`:
+  - `sbx_infra -- --ignored`: **PASS 4/4** —
+    - `sbx_s21`: missing socket → `connect` refuses to build a client (DaemonError); deaf unix listener (accepts, never answers) → probe fails closed inside the API timeout and `execute` returns `ExecError::Infrastructure`, never a verdict.
+    - `sbx_s22`: bogus `sha256:000…` pinned digest → `create` fails with `InfraError` in < 1 s; `docker images` identical before and after — nothing pulled.
+    - `sbx_s23`: recorded **NOT TESTED** — `SANDBOX_RUNTIME` is not runsc; never assumed.
+    - `sbx_s25`: probe JSON with expected/observed per check written to `.kiro/specs/judge-sandbox/probe-report.json`.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok.

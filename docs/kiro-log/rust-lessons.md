@@ -1527,3 +1527,10 @@ The builder is a plain function from stored values to sections, so its tests nee
 - Inspecting containers between list and inspect races with removal — 404 means "gone", not "fail".
 - A permit semaphore bounds *runs*, not daemon-visible containers: session replacement within one run can transiently show two containers for one run. Assert on running state with the batch's own window.
 - `tokio::spawn` needs owned args (`'static`) — pass `docker.clone()`/`cfg.clone()`, not borrows.
+
+## judge-sandbox T33: dead daemons and honest records (16 Nov 2026)
+
+- `Docker::connect_with_unix` checks the socket exists eagerly — "wrong socket" fails at connect, while "stopped daemon" needs a socket that exists but never answers (accept-and-drop `UnixListener`).
+- Bollard 0.21's `list_images` takes `Option<ListImagesOptions>` — call it with `None::<ListImagesOptions>`, no turbofish on the method.
+- `BollardSession` has no `Debug` — format the error, not the `Result`.
+- "NOT TESTED" is a valid recorded outcome (S23) — a status line that never claims what it didn't measure.
