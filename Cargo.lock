@@ -408,6 +408,7 @@ dependencies = [
  "bytes",
  "counterspell-common",
  "counterspell-engine",
+ "counterspell-grimoire",
  "counterspell-judge",
  "futures-util",
  "proptest",
