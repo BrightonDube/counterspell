@@ -77,3 +77,12 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
   - Regression: `sbx_functional` 7/7, `sbx_forgery` 5/5, `sbx_limits` 9/9 (incl. s08a clean) — 26/26 on the daemon.
   - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
 - Corpus note: `stdout_flood.py` writes `sys.__stdout__` (the real stream — the driver's `quiet()` only replaced `sys.stdout`); floods carry no newline, so the byte cap — not a parse failure — ends the call.
+
+## T29 — network scenario S12 (done, pending Kiro tick)
+
+- Commit: this commit (`judge-sandbox T29: network isolation scenario`).
+- Files: `tests/sbx_network.rs`, `tests/hostile/{net_tcp,net_udp,net_dns,net_ipv6,net_raw,net_metadata}.py`, `tests/probes/net_control.py` (trusted control), `tests/sbx/mod.rs` (+`probes_dir`, +`host_ip`, listeners now bind `0.0.0.0`).
+- Verification run 16 Nov 2026 on `/run/user/1000/docker.sock`:
+  - `sbx_network -- --ignored`: **PASS, conclusive** — control reached the listeners via `host.docker.internal` and the host LAN IP (4 attempts recorded), then all six hostile programs added **zero** attempts and were never accepted.
+  - `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets --all-features -- -D warnings` ok; `cargo test -p counterspell-judge --all-features` ok.
+- Host-reachability findings (dev daemon): the bridge gateway (`172.17.0.1`) answers RST but does not forward to host listeners; the host is reachable only via its LAN IP — listeners must bind `0.0.0.0` and the test detects the IP with the UDP-connect route probe.

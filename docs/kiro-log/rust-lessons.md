@@ -1499,3 +1499,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `docker rm -f` on a detached flooding container takes ~0.5 s, but >10 s while the client's attach stream stays open — the daemon waits on stream teardown. `abnormal()` aborted with the `Driver` still alive, so floods always became `KillFailed` → `Infrastructure` instead of the recorded verdict. `Opened.driver` is `Option` now; both abort paths drop it first.
 - Borrow shape for the fix: keep `&mut Opened` whole and scope driver borrows into tiny `write_call`/`next_event` fns so `abnormal` can take the full struct — destructuring `Opened { session, driver }` once pins the borrow for the whole loop.
 - Flood corpus design: `print`/`sys.stdout` are sunk by the driver's `quiet()`; only `sys.__stdout__` or `os.write(1)` reach the pipe, and floods must carry no newline or the first bad line ends the call as `ExtraOutput`, not `OutputLimit`.
+
+## judge-sandbox T29: the host from inside a rootless bridge (16 Nov 2026)
+
+- A `bridge`-networked container on rootless Docker sees `172.17.0.1` (the rootlesskit netns) — it answers TCP RST but does NOT forward to host listeners. The host is reachable only through its LAN IP; slirp's `10.0.2.2` does not exist on this stack.
+- Host-side listeners must bind `0.0.0.0` (not `127.0.0.1`) to see container traffic NATed to the host LAN IP. `host_ip()` discovers it with the UDP-connect route probe — no traffic sent.
+- A network-isolation test without a reachability control proves nothing: 'zero connections' could mean an invisible listener. The trusted control script runs inside a `testkit`-only weakened (`Network`) container and asserts observability first.

@@ -49,6 +49,11 @@ pub fn fixture_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/problems")
 }
 
+/// The trusted probe scripts directory (`tests/probes`).
+pub fn probes_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/probes")
+}
+
 /// Reads one fixture solution file (`tests/fixtures/solutions/<name>`) as text.
 pub fn solution(name: &str) -> String {
     let path = Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -266,14 +271,30 @@ impl ListenerSet {
     }
 }
 
-/// Binds a TCP and a UDP socket on the loopback and records every connection or
-/// datagram until the returned set is dropped.
+/// The host's primary LAN IP, found by asking the OS which interface a packet
+/// to a public address would leave on. A rootless bridge container reaches the
+/// host through this address — the bridge gateway and `host.docker.internal`
+/// answer locally but do not forward.
+pub fn host_ip() -> std::net::IpAddr {
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").expect("a UDP socket binds");
+    socket
+        .connect("192.0.2.1:53")
+        .expect("connect only picks a route");
+    socket
+        .local_addr()
+        .expect("the socket has a local address")
+        .ip()
+}
+
+/// Binds a TCP and a UDP socket on every interface and records every connection
+/// or datagram until the returned set is dropped. `0.0.0.0` is required: the
+/// sandbox reaches this host through its LAN IP, not its loopback.
 pub async fn listeners() -> ListenerSet {
     let attempts: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
-    let tcp = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+    let tcp = TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], 0)))
         .await
         .expect("the TCP listener binds");
-    let udp = UdpSocket::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+    let udp = UdpSocket::bind(SocketAddr::from(([0, 0, 0, 0], 0)))
         .await
         .expect("the UDP socket binds");
     let tcp_port = tcp.local_addr().expect("TCP address").port();
