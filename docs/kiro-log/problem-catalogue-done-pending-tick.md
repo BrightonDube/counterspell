@@ -70,3 +70,28 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 ## C37 repo-wide gates
 
 - Recorded in `docs/kiro-log/problem-catalogue-verify.md`: fmt clean, `clippy --workspace --all-targets -D warnings` clean, `cargo test --workspace` 1469 passed / 0 failed, `cargo deny check licenses` ok (one unused-allowance note, not a rejection).
+
+## catalogue-cli crate split (15 Nov decision)
+
+- Commit: `0330f58`. `counterspell-catalogue` binary, `catalogue/load.rs`,
+  `catalogue/sandbox_fill.rs` and `sandbox/pack_runner.rs` moved from
+  `crates/judge` into new `crates/catalogue-cli`; `crates/judge` no longer
+  depends on `counterspell-grimoire`. DB-side catalogue modules (approval,
+  manifest, plan, write, taxonomy, publish, seed, private_tree, report,
+  starter, statement, discover, retired, testkit) stay in the judge —
+  they never needed grimoire.
+- Grimoire two-root API: `pack::load_pair`, `validate_static_pair`,
+  `validate_sandbox_pair`, `record::build_pair` — the private tree contributes
+  `reference/`, `incorrect/` and `known_ghosts.toml` only; duplicates resolve
+  private-first deterministically.
+- MCP `load_pack`/`validate_pack` are pair-aware with a sibling-checkout or
+  `COUNTERSPELL_PACKS_PRIVATE_ROOT` fallback (`paths::private_pack_dir`).
+- New `crates/catalogue-cli/tests/catalogue_purity.rs` guards the moved
+  importer source (no process/network/git/credential tokens); the judge
+  counterpart still pins `PackRunner` out of `src/catalogue`.
+- Gates: `cargo fmt --check` clean; `clippy -p catalogue-cli -p grimoire -p
+  mcp -p judge --all-targets -D warnings` clean; judge suite green;
+  catalogue-cli 49 non-gated tests green; grimoire suite green.
+- Real daemon (SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock):
+  sbx_pack_runner 6/6 incl. starter packs through `validate_sandbox_pair`
+  (114.5 s); sbx_pack_props 1/1.

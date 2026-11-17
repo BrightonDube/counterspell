@@ -63,3 +63,17 @@ Real-daemon evidence (SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock):
   sbx_driver_parity 5/5, sbx_driver_hostile 2/2
 - cargo fmt --check clean; cargo clippy -p counterspell-judge
   --all-targets --all-features -D warnings clean
+
+## Pack-tree split — reference/incorrect/known_ghosts go private
+
+- Commits: public `176cf9a` + refactor `0330f58`; private repo `42467cd`.
+- `packs/<slug>/{reference,incorrect,known_ghosts.toml}` moved (not copied)
+  into `../counterspell-packs-private/packs/<slug>/`, matching the private
+  README layout. Public `packs/` now holds problem.md/meta.toml/hints.toml/
+  fixtures only — no executable code.
+- Consumers updated: catalogue CLI `pack_sources` is private-first;
+  grimoire starter/mutation/sandbox-fake tests use the pair API and skip
+  cleanly without a checkout; `packs/README.md` documents the split.
+- Verify on the real daemon: `sbx_pack_runner` 6/6 including
+  `starter_packs_pass_sandbox_checks_with_the_real_runner` over the merged
+  pair (114.5 s); `sbx_pack_props` fixtures-agree-with-reference 1/1.
