@@ -1,9 +1,10 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Weekly digest refresh for the enabled sandbox images in languages/languages.toml (judge-sandbox T38). Digest-only updates, one pull request per refresh, no auto-merge — a human reviews, merges, then `counterspell-judge preflight` runs on the VPS before user runs resume.",
+  "description": "Weekly grouped dependency updates: Cargo, npm, Docker and GitHub Actions, plus the digest refresh for the enabled sandbox images in languages/languages.toml (judge-sandbox T38). Sandbox images get digest-only updates, one pull request per refresh, no auto-merge — a human reviews, merges, then `counterspell-judge preflight` runs on the VPS before user runs resume.",
   "extends": ["config:recommended"],
   "schedule": ["before 05:00 on Monday"],
   "automerge": false,
+  "labels": ["dependencies"],
   "customManagers": [
     {
       "customType": "regex",
@@ -29,6 +30,30 @@
       "matchDatasources": ["docker"],
       "matchFileNames": ["languages/**"],
       "groupName": "enabled sandbox image digests"
+    },
+    {
+      "description": "Cargo crates, grouped weekly",
+      "matchManagers": ["cargo"],
+      "groupName": "cargo dependencies",
+      "groupSlug": "cargo"
+    },
+    {
+      "description": "npm packages (web/), grouped weekly",
+      "matchManagers": ["npm"],
+      "groupName": "npm dependencies",
+      "groupSlug": "npm"
+    },
+    {
+      "description": "Docker image pins in Dockerfiles and compose files, grouped weekly",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "groupName": "Docker images",
+      "groupSlug": "docker"
+    },
+    {
+      "description": "GitHub Actions, grouped weekly",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions",
+      "groupSlug": "github-actions"
     }
   ]
 }
