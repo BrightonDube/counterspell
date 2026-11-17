@@ -110,3 +110,19 @@ Clean detached worktree at `335968e`, throwaway dev Postgres, `PGPASSWORD` deriv
 | C19b | NOT ticked. `pg_approval_gate_runs_the_sandbox_only_after_approval` fails: it calls the public-only `validate_sandbox`, so after the pack-tree split the stored `add-one` pack reports `LAY-01`/`REF-01` (`reference/solution.py` missing). The test (or its call) must use `validate_sandbox_pair`. The other 4 C19b tests pass. |
 | C36 | NOT ticked. Depends on C19b; one pg test is red. |
 | C37 | NOT ticked. Gates are not all green at `335968e`: `cargo fmt --check` failed (fixed by the uncommitted rustfmt change in `crates/grimoire/src/lib.rs`) and 12 `counterspell-mcp` tests fail. |
+
+## Pack-split fallout fixes (17 Nov)
+
+- `3477caa`: mcp `program_from` resolves `incorrect/` through the private pack
+  root (12 NotFound failures fixed); `validate_pack` test mirrors the pair;
+  pg approval-gate test uses `record::build_pair`; `catalogue_url` helpers
+  keep the password via `PgConnectOptions::to_url_lossy`.
+- `c865ea1`: grimoire-packs T20 verify line amended to
+  `counterspell-catalogue validate-sandbox --private-root`; reason logged in
+  problem-catalogue-blockers.md.
+- Dev env: tests fall back to the sibling `counterspell-packs-private`
+  checkout automatically; `~/code/counterspell-packs-private` is the empty
+  scaffold — leave `COUNTERSPELL_PACKS_PRIVATE_ROOT` unset or point it at
+  `Personal Projects/counterspell-packs-private`.
+- TMPDIR=/home/brighton/tmp and CARGO_TARGET_DIR=/home/brighton/cargo-target
+  keep builds off the 3.9 GB /tmp tmpfs.
