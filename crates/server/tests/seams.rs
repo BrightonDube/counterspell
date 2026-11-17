@@ -59,7 +59,7 @@ async fn current_user_extractor_rejects_anonymous_requests() {
 
     assert_eq!(reply.status, 401);
     assert!(
-        reply.body.contains(r#""code":"unauthorized""#),
+        reply.body.contains(r#""code":"unauthenticated""#),
         "{}",
         reply.body
     );

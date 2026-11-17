@@ -187,7 +187,8 @@ async fn check_pack(
             .filter(|lang| lang.is_enabled())
             .unwrap_or_else(|| panic!("{lang} is enabled"))
             .clone();
-        let fixture = read_pack_file(&pack_dir.join(format!("fixtures/{lang}/known_correct.{ext}")));
+        let fixture =
+            read_pack_file(&pack_dir.join(format!("fixtures/{lang}/known_correct.{ext}")));
         let mut oracle = SandboxOracle::new(
             handle.clone(),
             BollardBackend::new(docker.clone(), cfg.api_timeout),

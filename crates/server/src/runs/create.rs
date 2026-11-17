@@ -71,7 +71,7 @@ pub async fn post_run(
         .user_resolver
         .resolve(&headers)
         .await
-        .ok_or_else(ApiError::unauthorized)?;
+        .ok_or_else(ApiError::unauthenticated)?;
     let key = idempotency_key(&headers)?;
     let mode = RunMode::parse(&request.mode)
         .ok_or_else(|| ApiError::bad_request("invalid_request", "mode must be run or submit."))?;

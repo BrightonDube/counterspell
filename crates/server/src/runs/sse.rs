@@ -170,7 +170,7 @@ pub async fn stream_run(
         .user_resolver
         .resolve(&headers)
         .await
-        .ok_or_else(ApiError::unauthorized)?;
+        .ok_or_else(ApiError::unauthenticated)?;
     let header = match headers.get("last-event-id") {
         Some(value) => Some(value.to_str().map_err(|_| invalid_cursor())?),
         None => None,

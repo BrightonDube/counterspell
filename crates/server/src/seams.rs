@@ -125,6 +125,6 @@ impl FromRequestParts<AppState> for CurrentUser {
             .resolve(&parts.headers)
             .await
             .map(CurrentUser)
-            .ok_or_else(ApiError::unauthorized)
+            .ok_or_else(ApiError::unauthenticated)
     }
 }

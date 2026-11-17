@@ -39,13 +39,13 @@ pub async fn get_prefs(
         .user_resolver
         .resolve(&headers)
         .await
-        .ok_or_else(ApiError::unauthorized)?;
+        .ok_or_else(ApiError::unauthenticated)?;
     let stored: Value = sqlx::query_scalar("SELECT familiar_prefs FROM users WHERE id = $1")
         .bind(user.as_uuid())
         .fetch_optional(&state.pool)
         .await
         .map_err(ApiError::internal)?
-        .ok_or_else(ApiError::unauthorized)?;
+        .ok_or_else(ApiError::unauthenticated)?;
     Ok(Json(to_json(&from_stored(&stored))).into_response())
 }
 
@@ -65,7 +65,7 @@ pub async fn patch_prefs(
         .user_resolver
         .resolve(&headers)
         .await
-        .ok_or_else(ApiError::unauthorized)?;
+        .ok_or_else(ApiError::unauthenticated)?;
     require_json(&headers)?;
     enforce(
         &state
@@ -91,7 +91,7 @@ pub async fn patch_prefs(
     .fetch_optional(&state.pool)
     .await
     .map_err(ApiError::internal)?
-    .ok_or_else(ApiError::unauthorized)?;
+    .ok_or_else(ApiError::unauthenticated)?;
     Ok(Json(to_json(&from_stored(&stored))).into_response())
 }
 

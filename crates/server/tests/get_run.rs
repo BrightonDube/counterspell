@@ -117,7 +117,7 @@ async fn pg_get_run_requires_session(pool: PgPool) {
     let reply = get(address, &format!("/api/runs/{}", run.as_uuid()), &[]).await;
 
     assert_eq!(reply.status, 401);
-    assert_eq!(json(&reply)["code"], "unauthorized");
+    assert_eq!(json(&reply)["code"], "unauthenticated");
 }
 
 #[ignore = "needs DATABASE_URL"]

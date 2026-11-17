@@ -54,15 +54,15 @@ describe('getJson', () => {
   });
 
   // Breaks if an unauthenticated 401 is shown as a generic failure instead of a sign-in prompt.
-  it('maps a 401 to unauthorized with the server safe message', async () => {
+  it('maps a 401 to unauthenticated with the server safe message', async () => {
     const fetchImpl = async () =>
       jsonResponse(401, {
-        code: 'unauthorized',
+        code: 'unauthenticated',
         message: 'Sign in to open this problem.'
       });
     const error = await errorFrom(loadProblem('two-sum', { fetchImpl }));
     expect(error.status).toBe(401);
-    expect(error.code).toBe('unauthorized');
+    expect(error.code).toBe('unauthenticated');
     expect(error.message).toBe('Sign in to open this problem.');
   });
 
