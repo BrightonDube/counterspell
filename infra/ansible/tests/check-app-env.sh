@@ -31,6 +31,8 @@ pg="$RENDER_DIR/postgres.env"
 check_grep "$pg" "POSTGRES_USER=counterspell" "postgres.env sets the superuser name"
 check_grep "$pg" "POSTGRES_DB=counterspell" "postgres.env sets the database"
 check_grep "$pg" "POSTGRES_PASSWORD=fixture-postgres-pw" "postgres.env carries the vault password"
+check_grep "$pg" "CS_SERVER_PASSWORD=fixture-server-pw" "postgres.env carries the cs_server password for initdb"
+check_grep "$pg" "CS_JUDGE_PASSWORD=fixture-judge-pw" "postgres.env carries the cs_judge password for initdb"
 
 # migrate.env is the sqlx CLI's DATABASE_URL; it runs as the database owner.
 mg="$RENDER_DIR/migrate.env"

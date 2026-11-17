@@ -88,6 +88,12 @@ services:
     # POSTGRES_HOST_AUTH_METHOD=trust is dropped, so TCP logins use scram-sha-256 only (R4.6).
     env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/postgres.env"]
     environment: !override {}
+    volumes: !override
+      - pgdata:/var/lib/postgresql/data
+      # First-initdb only: creates the NOLOGIN group roles plus the cs_server/cs_judge LOGIN roles
+      # and memberships, so services can connect before the first migration. Ignored once pgdata
+      # exists; password rotation is manual (RUNBOOK).
+      - ./postgres-initdb.sh:/docker-entrypoint-initdb.d/00-roles.sh:ro
     command: ["postgres", "-c", "shared_buffers=256MB", "-c", "password_encryption=scram-sha-256"]
     mem_limit: 1024m
     pids_limit: 256

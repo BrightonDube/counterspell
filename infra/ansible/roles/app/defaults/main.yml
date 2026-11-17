@@ -26,6 +26,9 @@ app_compose_files:
     dest: compose.shared.yml
   - src: Caddyfile
     dest: Caddyfile
+  # Runs once at first initdb: creates the group and login roles from postgres.env passwords.
+  - src: deploy/vps/postgres-initdb.sh
+    dest: postgres-initdb.sh
 
 # Deploy scripts. /usr/local/sbin (root-owned) on a dedicated host; a bin directory under app_dir on the shared host.
 app_bin_dir: /usr/local/sbin
