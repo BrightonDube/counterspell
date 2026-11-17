@@ -8,12 +8,44 @@
 //! and running the sandbox are other tasks.
 
 use crate::catalogue::plan::{self, Incoming, Plan, Refusal, StoredVersion};
-use crate::catalogue::sandbox_fill::{CaseSource, SandboxFill};
 use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 use sqlx::{PgConnection, PgPool};
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
+
+/// Which authored or produced case a refusal names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CaseSource {
+    /// A public `[[samples]]` example.
+    Sample,
+    /// A curated hidden case from `hidden.toml`.
+    Curated,
+    /// A generated hidden case from `CandidateStream`.
+    Generated,
+}
+
+/// One hidden case the fill produced: the input and the expected value the reference
+/// computed inside the sandbox.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HiddenFill {
+    /// `curated` (authored input, verified expected) or `generated`.
+    pub source: CaseSource,
+    /// The case input.
+    pub input: Value,
+    /// The reference's own answer. For a curated case it equals the authored value,
+    /// or the case was refused instead.
+    pub expected: Value,
+}
+
+/// The hidden data one sandbox import writes, minus anything already static.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SandboxFill {
+    /// Hidden cases in write order: curated first, then generated.
+    pub hidden: Vec<HiddenFill>,
+    /// The sandbox image digest that computed the expected values.
+    pub digest: String,
+}
 
 /// A known ghost: a failing input that the pack documents, with its authored explanation.
 #[derive(Debug, Clone, PartialEq)]

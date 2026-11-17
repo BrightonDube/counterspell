@@ -128,7 +128,15 @@ fn bollard_stays_behind_two_files() {
         PathBuf::from("crates/judge/src/sandbox/daemon.rs"),
     ];
     let mut offenders = Vec::new();
-    for krate in ["common", "engine", "grimoire", "judge", "mcp", "server"] {
+    for krate in [
+        "catalogue-cli",
+        "common",
+        "engine",
+        "grimoire",
+        "judge",
+        "mcp",
+        "server",
+    ] {
         for (path, text) in rust_files(&root().join("crates").join(krate).join("src")) {
             if allowed
                 .iter()

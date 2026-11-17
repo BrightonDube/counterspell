@@ -19,13 +19,13 @@ use serde_json::Value;
 use tokio::runtime::{Handle, Runtime};
 use tokio::sync::watch;
 
-use crate::languages::{LanguageCatalog, LanguageDefinition};
+use counterspell_judge::languages::{LanguageCatalog, LanguageDefinition};
 
-use super::backend::Backend;
-use super::bollard_backend::BollardBackend;
-use super::config::SandboxConfig;
-use super::daemon::connect;
-use super::oracle::{evaluate_side, side, Role, Side};
+use counterspell_judge::sandbox::backend::Backend;
+use counterspell_judge::sandbox::bollard_backend::BollardBackend;
+use counterspell_judge::sandbox::config::SandboxConfig;
+use counterspell_judge::sandbox::daemon::connect;
+use counterspell_judge::sandbox::oracle::{evaluate_side, side, Role, Side};
 
 /// The source-map key for the pack's trusted reference.
 pub const REFERENCE_SOURCE: &str = "reference";

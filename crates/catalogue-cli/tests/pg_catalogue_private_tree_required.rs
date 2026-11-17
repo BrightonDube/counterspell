@@ -54,7 +54,7 @@ fn private_root_with_approval() -> tempfile::TempDir {
     let source = fixture_root().join("private/packs/add-one");
     let target = root.path().join("packs/add-one");
     copy_dir(&source, &target);
-    let files = counterspell_judge::catalogue::load::read_pack(
+    let files = counterspell_catalogue_cli::load::read_pack(
         &fixture_root().join("public/add-one"),
         Some(&target),
     )

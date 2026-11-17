@@ -31,45 +31,13 @@ use serde_json::Value;
 
 use sqlx::PgPool;
 
-use crate::catalogue::retired::{
+use counterspell_judge::catalogue::retired::{
     canonical_hash, canonical_json, check_retired, RetiredFile, RetiredRefusal,
 };
-use crate::catalogue::write::{
+use counterspell_judge::catalogue::write::{
     sandbox_gate, write_sandbox, GateOutcome, SandboxImport, SandboxOutcome, WriteError,
 };
-
-/// Which authored or produced case a refusal names.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CaseSource {
-    /// A public `[[samples]]` example.
-    Sample,
-    /// A curated hidden case from `hidden.toml`.
-    Curated,
-    /// A generated hidden case from `CandidateStream`.
-    Generated,
-}
-
-/// One hidden case the fill produced: the input and the expected value the reference
-/// computed inside the sandbox.
-#[derive(Debug, Clone, PartialEq)]
-pub struct HiddenFill {
-    /// `curated` (authored input, verified expected) or `generated`.
-    pub source: CaseSource,
-    /// The case input.
-    pub input: Value,
-    /// The reference's own answer. For a curated case it equals the authored value,
-    /// or the case was refused instead.
-    pub expected: Value,
-}
-
-/// The hidden data one sandbox import writes, minus anything already static.
-#[derive(Debug, Clone, PartialEq)]
-pub struct SandboxFill {
-    /// Hidden cases in write order: curated first, then generated.
-    pub hidden: Vec<HiddenFill>,
-    /// The sandbox image digest that computed the expected values.
-    pub digest: String,
-}
+pub use counterspell_judge::catalogue::write::{CaseSource, HiddenFill, SandboxFill};
 
 /// A pack refusal from the sandbox checks. Every variant maps to a stable code;
 /// none carries a hidden value, only indices, ids and hash prefixes.

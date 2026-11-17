@@ -7,13 +7,13 @@
 use std::collections::{HashMap, VecDeque};
 use std::time::Duration;
 
+use counterspell_catalogue_cli::sandbox_fill::{
+    sandbox_fill, CaseSource, FillOutcome, FillRefusal, SandboxCheck,
+};
 use counterspell_engine::{Comparator, ProgramResult, Schema};
 use counterspell_grimoire::ghosts::sandbox_ghosts;
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
 use counterspell_judge::catalogue::retired::{canonical_hash, RetiredFile};
-use counterspell_judge::catalogue::sandbox_fill::{
-    sandbox_fill, CaseSource, FillOutcome, FillRefusal, SandboxCheck,
-};
 use serde_json::{json, Value};
 
 /// A scripted runner: `run` pops the next result scripted for its target —

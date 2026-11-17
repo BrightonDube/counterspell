@@ -1,7 +1,8 @@
 # Catalogue operations runbook
 
 How an operator imports, validates, publishes and seeds catalogue problems with
-the `counterspell-catalogue` binary (`crates/judge`, decision D2). This document
+the `counterspell-catalogue` binary (`crates/catalogue-cli`, decision D2; moved
+out of `crates/judge` per the 15 Nov decision). This document
 names environment variables; it never contains a value, a credential or a URL.
 Source of truth: `.kiro/specs/problem-catalogue/design.md`.
 

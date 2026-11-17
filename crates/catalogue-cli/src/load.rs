@@ -23,12 +23,12 @@ use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
 use thiserror::Error;
 
-use crate::catalogue::manifest::{build_manifest, Manifest, Tree};
-use crate::catalogue::retired::RetiredFile;
-use crate::catalogue::sandbox_fill::{SandboxCheck, SandboxPack};
-use crate::catalogue::starter::{starter, Lang, Signature as StarterSignature};
-use crate::catalogue::statement::constraints;
-use crate::catalogue::write::{KnownGhost, StaticImport};
+use crate::sandbox_fill::{SandboxCheck, SandboxPack};
+use counterspell_judge::catalogue::manifest::{build_manifest, Manifest, Tree};
+use counterspell_judge::catalogue::retired::RetiredFile;
+use counterspell_judge::catalogue::starter::{starter, Lang, Signature as StarterSignature};
+use counterspell_judge::catalogue::statement::constraints;
+use counterspell_judge::catalogue::write::{KnownGhost, StaticImport};
 
 /// Sub-directories whose files belong to the pack, at one level of nesting.
 const PACK_DIRS: [&str; 2] = ["reference", "incorrect"];
@@ -164,7 +164,9 @@ impl PackFiles {
     /// # Errors
     ///
     /// Returns `ManifestError` on a duplicate prefixed path.
-    pub fn manifest(&self) -> Result<Manifest, crate::catalogue::manifest::ManifestError> {
+    pub fn manifest(
+        &self,
+    ) -> Result<Manifest, counterspell_judge::catalogue::manifest::ManifestError> {
         let files: Vec<(Tree, &str, &[u8])> = self
             .public
             .iter()

@@ -17,12 +17,12 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::Duration;
 
+use counterspell_catalogue_cli::load::{assemble_sandbox, read_pack};
+use counterspell_catalogue_cli::sandbox_fill::{validate_sandbox, ValidateOutcome};
 use counterspell_engine::classify::ProgramResult;
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
 use counterspell_judge::catalogue::approval::{check_approval, parse_approval, ApprovalRefusal};
-use counterspell_judge::catalogue::load::{assemble_sandbox, read_pack};
 use counterspell_judge::catalogue::retired::parse_retired;
-use counterspell_judge::catalogue::sandbox_fill::{validate_sandbox, ValidateOutcome};
 use serde_json::{json, Value};
 use sqlx::postgres::PgConnectOptions;
 use sqlx::PgPool;

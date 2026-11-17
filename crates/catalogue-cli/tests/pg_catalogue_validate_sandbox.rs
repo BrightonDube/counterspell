@@ -11,12 +11,12 @@
 use std::collections::VecDeque;
 use std::time::Duration;
 
+use counterspell_catalogue_cli::sandbox_fill::{
+    validate_sandbox, FillRefusal, SandboxCheck, SandboxPack, ValidateOutcome,
+};
 use counterspell_engine::{Comparator, ProgramResult, Schema};
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
 use counterspell_judge::catalogue::retired::RetiredFile;
-use counterspell_judge::catalogue::sandbox_fill::{
-    validate_sandbox, FillRefusal, SandboxCheck, SandboxPack, ValidateOutcome,
-};
 use counterspell_judge::catalogue::testkit::static_import as import;
 use counterspell_judge::catalogue::write::write_static;
 use serde_json::{json, Value};
@@ -264,7 +264,7 @@ async fn pg_catalogue_validate_sandbox_refusal_writes_nothing(pool: PgPool) {
     assert_eq!(
         outcome,
         ValidateOutcome::Refused(FillRefusal::ReferenceFailed {
-            source: counterspell_judge::catalogue::sandbox_fill::CaseSource::Generated,
+            source: counterspell_judge::catalogue::write::CaseSource::Generated,
             index: 0,
         }),
         "the fill refusal reaches the report, not a panic"

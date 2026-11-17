@@ -18,31 +18,37 @@ use std::path::{Path, PathBuf};
 use std::time::Duration;
 
 use bollard::Docker;
+use counterspell_catalogue_cli::load::signature_descriptor;
+use counterspell_catalogue_cli::pack_runner::{PackSandboxRunner, REFERENCE_SOURCE};
 use counterspell_engine::ProgramResult;
 use counterspell_grimoire::record;
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
-use counterspell_judge::catalogue::load::signature_descriptor;
 use counterspell_judge::sandbox::bollard_backend::BollardBackend;
 use counterspell_judge::sandbox::config::SandboxConfig;
-use counterspell_judge::sandbox::pack_runner::{PackSandboxRunner, REFERENCE_SOURCE};
 use serde_json::{json, Value};
 use tokio::runtime::Runtime;
 
 /// Per-call deadline handed to the runner, matching the fixture's `time_ms`.
 const LIMIT: Duration = Duration::from_secs(4);
 
-/// The synthetic canary pack — `add_one(value) -> int`, no hidden data.
+/// The synthetic canary pack's public tree — `add_one(value) -> int`, no
+/// hidden data. Its `reference/` lives in the fixture's private tree.
 fn pack_dir() -> PathBuf {
-    sbx::repo_root().join("crates/judge/tests/fixtures/c19b/public/add-one")
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/c19b/public/add-one")
+}
+
+/// The canary pack's private tree.
+fn pack_private_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/c19b/private/packs/add-one")
 }
 
 /// The pack's sources as the catalogue binary assembles them: the reference
 /// under `REFERENCE_SOURCE`, each `incorrect/` file under its own path.
-fn sources(pack: &Path) -> BTreeMap<String, String> {
+fn sources(_pack: &Path) -> BTreeMap<String, String> {
     let mut sources = BTreeMap::new();
     sources.insert(
         REFERENCE_SOURCE.to_string(),
-        std::fs::read_to_string(pack.join("reference/solution.py"))
+        std::fs::read_to_string(pack_private_dir().join("reference/solution.py"))
             .expect("the fixture reference reads"),
     );
     sources.insert(
@@ -57,21 +63,22 @@ fn sources(pack: &Path) -> BTreeMap<String, String> {
 }
 
 /// The driver-wire signature `signature_descriptor` produces for the pack.
-fn signature(pack: &Path) -> Value {
-    let record = record::build(pack).expect("the fixture pack records");
+fn signature(public_dir: &Path, private_dir: &Path) -> Value {
+    let record = record::build_pair(public_dir, private_dir).expect("the fixture pack records");
     signature_descriptor(&record).expect("the wire signature serialises")
 }
 
-/// Reads a real pack's runner sources from disk: `reference/solution.py`
-/// under [`REFERENCE_SOURCE`] and every `incorrect/` file under its path.
-fn real_sources(pack: &Path) -> BTreeMap<String, String> {
+/// Reads a real pack's runner sources from its private tree:
+/// `reference/solution.py` under [`REFERENCE_SOURCE`] and every `incorrect/`
+/// file under its path.
+fn real_sources(private_dir: &Path) -> BTreeMap<String, String> {
     let mut sources = BTreeMap::new();
     sources.insert(
         REFERENCE_SOURCE.to_string(),
-        std::fs::read_to_string(pack.join("reference/solution.py"))
+        std::fs::read_to_string(private_dir.join("reference/solution.py"))
             .expect("the pack reference reads"),
     );
-    for entry in std::fs::read_dir(pack.join("incorrect")).expect("incorrect/ reads") {
+    for entry in std::fs::read_dir(private_dir.join("incorrect")).expect("incorrect/ reads") {
         let entry = entry.expect("an incorrect/ entry");
         let name = entry.file_name();
         let Some(name) = name.to_str() else { continue };
@@ -146,7 +153,10 @@ impl Daemon {
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_reference_returns() {
     let daemon = Daemon::connect();
-    let mut runner = daemon.runner(sources(&pack_dir()), &signature(&pack_dir()));
+    let mut runner = daemon.runner(
+        sources(&pack_dir()),
+        &signature(&pack_dir(), &pack_private_dir()),
+    );
     let result = runner
         .run(Target::Reference, &json!([41]), LIMIT)
         .expect("the reference call runs");
@@ -162,7 +172,10 @@ fn pack_runner_reference_returns() {
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_program_gets_own_session() {
     let daemon = Daemon::connect();
-    let mut runner = daemon.runner(sources(&pack_dir()), &signature(&pack_dir()));
+    let mut runner = daemon.runner(
+        sources(&pack_dir()),
+        &signature(&pack_dir(), &pack_private_dir()),
+    );
     let result = runner
         .run(
             Target::Program("incorrect/always-zero.py"),
@@ -182,7 +195,10 @@ fn pack_runner_program_gets_own_session() {
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_timeout_is_a_program_result() {
     let daemon = Daemon::connect();
-    let mut runner = daemon.runner(sources(&pack_dir()), &signature(&pack_dir()));
+    let mut runner = daemon.runner(
+        sources(&pack_dir()),
+        &signature(&pack_dir(), &pack_private_dir()),
+    );
     let result = runner
         .run(Target::Program("incorrect/hangs.py"), &json!([1]), LIMIT)
         .expect("a hanging program is a result, not infrastructure");
@@ -198,7 +214,10 @@ fn pack_runner_timeout_is_a_program_result() {
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_bench_returns_sized_pairs() {
     let daemon = Daemon::connect();
-    let mut runner = daemon.runner(sources(&pack_dir()), &signature(&pack_dir()));
+    let mut runner = daemon.runner(
+        sources(&pack_dir()),
+        &signature(&pack_dir(), &pack_private_dir()),
+    );
     let timings = runner
         .bench(&[(1, json!([5])), (2, json!([6])), (3, json!([7]))], LIMIT)
         .expect("the bench runs");
@@ -221,12 +240,21 @@ fn pack_runner_bench_returns_sized_pairs() {
 #[test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn starter_packs_pass_sandbox_checks_with_the_real_runner() {
+    let Some(private_root) = sbx::private_packs_root() else {
+        eprintln!("skipping: no counterspell-packs-private checkout is available");
+        return;
+    };
     let daemon = Daemon::connect();
     for slug in ["count-pairs", "diagonal-total", "longest-run-length"] {
-        let dir = sbx::repo_root().join("packs").join(slug);
-        let mut runner = daemon.runner(real_sources(&dir), &signature(&dir));
-        let report = counterspell_grimoire::validate_sandbox(&dir, &mut runner)
-            .unwrap_or_else(|fault| panic!("{slug}: sandbox fault: {fault:?}"));
+        let public_dir = sbx::repo_root().join("packs").join(slug);
+        let private_dir = private_root.join("packs").join(slug);
+        let mut runner = daemon.runner(
+            real_sources(&private_dir),
+            &signature(&public_dir, &private_dir),
+        );
+        let report =
+            counterspell_grimoire::validate_sandbox_pair(&public_dir, &private_dir, &mut runner)
+                .unwrap_or_else(|fault| panic!("{slug}: sandbox fault: {fault:?}"));
         assert!(
             !report.has_errors(),
             "{slug}: sandbox checks reported errors: {report:?}"
@@ -239,7 +267,10 @@ fn starter_packs_pass_sandbox_checks_with_the_real_runner() {
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_unknown_program_is_infrastructure() {
     let daemon = Daemon::connect();
-    let mut runner = daemon.runner(sources(&pack_dir()), &signature(&pack_dir()));
+    let mut runner = daemon.runner(
+        sources(&pack_dir()),
+        &signature(&pack_dir(), &pack_private_dir()),
+    );
     let Err(RunnerError::Infrastructure(message)) =
         runner.run(Target::Program("incorrect/missing.py"), &json!([1]), LIMIT)
     else {

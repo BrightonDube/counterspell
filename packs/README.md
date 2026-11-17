@@ -4,7 +4,10 @@ Status: **provisional until grimoire-packs is reviewed.** This file describes th
 
 Sources: `docs/system-design.md` §4 (problem columns), §6 (languages), §8 (engine input and comparators), §8b (bench and reference complexity), §9 (hint rules). The requirements are in `docs/requirements.md` (PCK-1 to PCK-3).
 
-`packs/` holds reviewed files only. There is no code in this folder except the Python reference and incorrect programs inside each pack. Nothing here is run by the validator in its default mode.
+`packs/` holds reviewed public files only — there is no executable code in this
+tree. `reference/`, `incorrect/` and `known_ghosts.toml` live in the private
+pack repository (`counterspell-packs-private`), joined to this tree by slug;
+the validator checks the merged pair (`pack::load_pair`).
 
 ## Layout
 
@@ -15,15 +18,21 @@ packs/
 │   ├── problem.md             statement (required)
 │   ├── meta.toml              metadata, signature, schema, generator, samples (required)
 │   ├── hints.toml             four-rung hint ladder (required)
-│   ├── known_ghosts.toml      authored failing inputs (optional)
-│   ├── reference/solution.py  the Python reference (required, exactly one)
-│   └── incorrect/*.py         deliberately wrong programs (only with known_ghosts.toml)
+│   └── fixtures/<lang>/       per-language known-correct fixtures (optional, public)
 └── _test/                     ghost-engine fixtures; underscore packs are skipped by the importer
+
+<private-root>/packs/count-pairs/   in counterspell-packs-private — joined by slug
+    ├── reference/solution.py       the Python reference (required, exactly one)
+    ├── incorrect/*.py              deliberately wrong programs (only with known_ghosts.toml)
+    ├── known_ghosts.toml           authored failing inputs (required with incorrect/)
+    ├── hidden.toml                 curated hidden cases
+    ├── generator.toml              seed and count for generated hidden cases
+    └── approval.toml               pack approval record (excluded from the content hash)
 ```
 
 ## Required and optional files
 
-- **Required:** `problem.md`, `meta.toml`, `hints.toml`, `reference/solution.py`.
+- **Required (merged pair):** `problem.md`, `meta.toml`, `hints.toml`, `reference/solution.py`.
 - **Optional:** `known_ghosts.toml` and `incorrect/*.py`. Both are allowed only together.
 - **Nothing else.** Any other file is rejected, including dot-prefixed files, `.pyc` files, notebooks, archives and data files.
 - **Directory names** start with a letter, use lower-case letters, digits and hyphens, and are 3 to 40 characters long. A name that starts with `_` is for tests only.
@@ -103,7 +112,7 @@ Each text is 1 to 600 characters. A fenced code block inside a hint is at most 3
 
 ## Known ghosts (optional)
 
-`known_ghosts.toml` holds at most 10 `[[ghost]]` entries with unique kebab-case `id` values.
+`known_ghosts.toml` (private tree) holds at most 10 `[[ghost]]` entries with unique kebab-case `id` values.
 
 - `input` must fit the schema.
 - `program` names a file under `incorrect/`, and that file defines `function`.
@@ -114,7 +123,7 @@ Each text is 1 to 600 characters. A fenced code block inside a hint is at most 3
 
 ## Reference
 
-Exactly one `reference/solution.py`. It must contain a line starting at column 0 with `def <function>(`. The static check reads the text and does not run Python. The sandbox check proves the behaviour.
+Exactly one `reference/solution.py`, in the private tree. It must contain a line starting at column 0 with `def <function>(`. The static check reads the text and does not run Python. The sandbox check proves the behaviour.
 
 ## Diagnostic codes
 

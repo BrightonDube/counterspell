@@ -6,11 +6,11 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
-use counterspell_grimoire::meta::Meta;
-use counterspell_grimoire::record::{Difficulty, ProblemRecord, Signature};
-use counterspell_judge::catalogue::load::{
+use counterspell_catalogue_cli::load::{
     assemble_import, assemble_sandbox, read_pack, AssembleError,
 };
+use counterspell_grimoire::meta::Meta;
+use counterspell_grimoire::record::{Difficulty, ProblemRecord, Signature};
 use serde_json::json;
 
 const META: &str = r#"
@@ -114,24 +114,26 @@ approved_by = "t"
 approved_at = "t"
 "#;
 
-/// Writes a synthetic pack into `(public, private)` dirs under `root`.
+/// Writes a synthetic pack into `(public, private)` dirs under `root`, matching
+/// the production split: `reference/`, `incorrect/` and `known_ghosts.toml`
+/// live in the private tree.
 fn write_pack(root: &Path) -> (PathBuf, PathBuf) {
     let public = root.join("two-sum");
     let private = root.join("private").join("two-sum");
-    fs::create_dir_all(public.join("reference")).unwrap();
-    fs::create_dir_all(public.join("incorrect")).unwrap();
-    fs::create_dir_all(&private).unwrap();
+    fs::create_dir_all(private.join("reference")).unwrap();
+    fs::create_dir_all(private.join("incorrect")).unwrap();
+    fs::create_dir_all(&public).unwrap();
     fs::write(public.join("meta.toml"), META).unwrap();
     fs::write(public.join("problem.md"), PROBLEM).unwrap();
     fs::write(public.join("hints.toml"), HINTS).unwrap();
-    fs::write(public.join("known_ghosts.toml"), GHOSTS).unwrap();
+    fs::write(private.join("known_ghosts.toml"), GHOSTS).unwrap();
     fs::write(
-        public.join("reference/solution.py"),
+        private.join("reference/solution.py"),
         "def two_sum(nums, target):\n    return [0, 1]\n",
     )
     .unwrap();
     fs::write(
-        public.join("incorrect/adds-pair.py"),
+        private.join("incorrect/adds-pair.py"),
         "def two_sum(nums, target):\n    return [0, 0]\n",
     )
     .unwrap();
@@ -142,8 +144,8 @@ fn write_pack(root: &Path) -> (PathBuf, PathBuf) {
     (public, private)
 }
 
-fn record_and_meta(dir: &Path) -> (ProblemRecord, Meta) {
-    let record = counterspell_grimoire::record::build(dir).expect("record");
+fn record_and_meta(public: &Path, private: &Path) -> (ProblemRecord, Meta) {
+    let record = counterspell_grimoire::record::build_pair(public, private).expect("record");
     let meta: Meta = toml::from_str(META).expect("meta");
     (record, meta)
 }
@@ -180,8 +182,8 @@ fn read_pack_collects_both_trees() {
     fs::write(public.join(".hidden"), "").unwrap();
     let files = read_pack(&public, Some(&private)).unwrap();
     assert!(files.public.contains_key("meta.toml"));
-    assert!(files.public.contains_key("reference/solution.py"));
-    assert!(files.public.contains_key("incorrect/adds-pair.py"));
+    assert!(files.private.contains_key("reference/solution.py"));
+    assert!(files.private.contains_key("incorrect/adds-pair.py"));
     assert!(files.private.contains_key("hidden.toml"));
     assert!(!files.public.contains_key(".hidden"), "dotfiles skipped");
     assert!(!files.private.contains_key(".gitkeep"), "dotfiles skipped");
@@ -236,7 +238,7 @@ fn assemble_import_maps_everything() {
     let (public, private) = write_pack(root.path());
     let files = read_pack(&public, Some(&private)).unwrap();
     let manifest = files.manifest().unwrap();
-    let (record, meta) = record_and_meta(&public);
+    let (record, meta) = record_and_meta(&public, &private);
     let import = assemble_import(&record, &meta, &files, &manifest).unwrap();
     assert_eq!(import.slug, "two-sum");
     assert_eq!(import.version, 3);
@@ -280,33 +282,12 @@ fn assemble_import_maps_everything() {
 fn assemble_import_refuses_missing_reference() {
     let root = tempfile::tempdir().unwrap();
     let (public, private) = write_pack(root.path());
-    fs::remove_file(public.join("reference/solution.py")).unwrap();
+    fs::remove_file(private.join("reference/solution.py")).unwrap();
     let files = read_pack(&public, Some(&private)).unwrap();
     let manifest = files.manifest().unwrap();
     let meta: Meta = toml::from_str(META).unwrap();
-    // Static validation refuses the missing required file first.
-    assert!(counterspell_grimoire::record::build(&public).is_err());
-    // A private-only reference is found through the private tree.
-    fs::create_dir_all(private.join("reference")).unwrap();
-    fs::write(
-        private.join("reference/solution.py"),
-        "def two_sum(nums, target):\n    return [0, 1]\n",
-    )
-    .unwrap();
-    let files = read_pack(&public, Some(&private)).unwrap();
-    let record = synthetic_record(&meta);
-    let import = assemble_import(&record, &meta, &files, &manifest).unwrap();
-    assert!(import.reference_code.contains("def two_sum"));
-}
-
-#[test]
-fn assemble_import_refuses_when_reference_absent_everywhere() {
-    let root = tempfile::tempdir().unwrap();
-    let (public, private) = write_pack(root.path());
-    fs::remove_file(public.join("reference/solution.py")).unwrap();
-    let files = read_pack(&public, Some(&private)).unwrap();
-    let manifest = files.manifest().unwrap();
-    let meta: Meta = toml::from_str(META).unwrap();
+    // Static validation over the merged pair refuses the missing required file.
+    assert!(counterspell_grimoire::record::build_pair(&public, &private).is_err());
     let record = synthetic_record(&meta);
     let error = assemble_import(&record, &meta, &files, &manifest).unwrap_err();
     assert_eq!(error, AssembleError::ReferenceMissing);
@@ -324,7 +305,7 @@ fn assemble_import_refuses_bad_hints() {
     .unwrap();
     let files = read_pack(&public, Some(&private)).unwrap();
     let manifest = files.manifest().unwrap();
-    let (record, meta) = record_and_meta(&public);
+    let (record, meta) = record_and_meta(&public, &private);
     let error = assemble_import(&record, &meta, &files, &manifest).unwrap_err();
     assert_eq!(error, AssembleError::HintsInvalid);
     assert_eq!(error.code(), "hints_invalid");
@@ -336,7 +317,7 @@ fn assemble_sandbox_parses_hidden_and_generator() {
     let (public, private) = write_pack(root.path());
     let files = read_pack(&public, Some(&private)).unwrap();
     let manifest = files.manifest().unwrap();
-    let (record, meta) = record_and_meta(&public);
+    let (record, meta) = record_and_meta(&public, &private);
     let pack = assemble_sandbox(&record, &meta, &files, &manifest).unwrap();
     assert_eq!(pack.pack_version, 3);
     assert_eq!(pack.curated.len(), 1);
@@ -362,7 +343,7 @@ fn assemble_sandbox_falls_back_to_meta_generator() {
     fs::remove_file(private.join("generator.toml")).unwrap();
     let files = read_pack(&public, Some(&private)).unwrap();
     let manifest = files.manifest().unwrap();
-    let (record, meta) = record_and_meta(&public);
+    let (record, meta) = record_and_meta(&public, &private);
     let pack = assemble_sandbox(&record, &meta, &files, &manifest).unwrap();
     assert_eq!(pack.seed, 1729);
     assert_eq!(pack.hidden_count, 6);
@@ -375,7 +356,7 @@ fn assemble_sandbox_refuses_bad_hidden_toml() {
     fs::write(private.join("hidden.toml"), "not toml [").unwrap();
     let files = read_pack(&public, Some(&private)).unwrap();
     let manifest = files.manifest().unwrap();
-    let (record, meta) = record_and_meta(&public);
+    let (record, meta) = record_and_meta(&public, &private);
     let error = assemble_sandbox(&record, &meta, &files, &manifest)
         .err()
         .unwrap();

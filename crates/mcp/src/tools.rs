@@ -7,7 +7,7 @@
 use crate::config::ConfigError;
 use crate::errors::{bounded, ErrorCategory, ToolError};
 use crate::judge_adapter::{load_pack, PackContext};
-use crate::paths::{resolve_inside, PathError};
+use crate::paths::{private_pack_dir, resolve_inside, PathError};
 use crate::runner::RunnerSlot;
 use crate::schemas::{
     ExplainVerdictArgs, FindGhostArgs, FitComplexityArgs, RunReferenceArgs, ShrinkInputArgs,
@@ -19,7 +19,7 @@ use counterspell_engine::{
     FailurePredicate, HuntOutcome, ProgramResult, SystemClock,
 };
 use counterspell_grimoire::runner::{ProgramOracle, RunnerError, Target};
-use counterspell_grimoire::validate_static;
+use counterspell_grimoire::{validate_static, validate_static_pair};
 use serde_json::{json, Value};
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -103,14 +103,22 @@ fn check_input(context: &PackContext, input: &Value, root: &Path) -> Result<(), 
 
 /// `validate_pack`: the static Grimoire report. Never runs code.
 ///
+/// `reference/` and `incorrect/` live in the private pack tree (the
+/// `counterspell-packs-private` checkout), so the tool validates the merged
+/// pack when `COUNTERSPELL_PACKS_PRIVATE_ROOT` names one.
+///
 /// # Errors
 ///
 /// Returns `InvalidRequest` or `NotFound` for a bad path.
 pub fn validate_pack(root: &Path, args: &ValidatePackArgs) -> Result<Value, ToolError> {
     let pack_dir =
         resolve_inside(root, &args.pack_path).map_err(|error| path_error(&error, root))?;
-    let report = validate_static(&pack_dir)
-        .map_err(|_| ToolError::new(ErrorCategory::Internal, "the pack could not be read", root))?;
+    let private_dir = private_pack_dir(&pack_dir);
+    let report = match &private_dir {
+        Some(private_dir) => validate_static_pair(&pack_dir, private_dir),
+        None => validate_static(&pack_dir),
+    }
+    .map_err(|_| ToolError::new(ErrorCategory::Internal, "the pack could not be read", root))?;
     let warnings_block = args.deny_warnings && report.warning_count() > 0;
     Ok(json!({
         "passed": !report.has_errors() && !warnings_block,

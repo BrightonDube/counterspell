@@ -97,16 +97,45 @@ pub enum RecordError {
 /// Returns [`RecordError::Invalid`] with the report when the pack has any error, and
 /// [`RecordError::Unreadable`] when the directory cannot be read.
 pub fn build(root: &Path) -> Result<ProblemRecord, RecordError> {
-    let report = validate_static(root).map_err(RecordError::Unreadable)?;
+    build_with(
+        || validate_static(root),
+        |scratch| pack::load(root, scratch),
+        root.file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default(),
+    )
+}
+
+/// [`build`] for the split public/private layout ([`crate::pack::load_pair`]):
+/// `reference/` and `incorrect/` come from the private tree.
+///
+/// # Errors
+///
+/// Returns [`RecordError::Unreadable`] when a tree cannot be read and
+/// [`RecordError::Invalid`] when the merged pack has static errors.
+pub fn build_pair(public_root: &Path, private_root: &Path) -> Result<ProblemRecord, RecordError> {
+    build_with(
+        || crate::validate_static_pair(public_root, private_root),
+        |scratch| pack::load_pair(public_root, private_root, scratch),
+        public_root
+            .file_name()
+            .and_then(|name| name.to_str())
+            .unwrap_or_default(),
+    )
+}
+
+/// The shared body behind [`build`] and [`build_pair`].
+fn build_with(
+    validate: impl FnOnce() -> io::Result<Report>,
+    load: impl FnOnce(&mut Report) -> io::Result<pack::Pack>,
+    dir_name: &str,
+) -> Result<ProblemRecord, RecordError> {
+    let report = validate().map_err(RecordError::Unreadable)?;
     if report.has_errors() {
         return Err(RecordError::Invalid(report));
     }
     let mut scratch = Report::new(String::new());
-    let pack = pack::load(root, &mut scratch).map_err(RecordError::Unreadable)?;
-    let dir_name = root
-        .file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or_default();
+    let pack = load(&mut scratch).map_err(RecordError::Unreadable)?;
     let meta = pack
         .text("meta.toml")
         .and_then(|text| meta::check(text, dir_name, &mut scratch))

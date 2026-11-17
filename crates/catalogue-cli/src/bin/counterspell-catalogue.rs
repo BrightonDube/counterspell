@@ -17,27 +17,27 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
+use counterspell_catalogue_cli::load::{
+    assemble_import, assemble_sandbox, read_pack, signature_descriptor, PackFiles,
+};
+use counterspell_catalogue_cli::pack_runner::{PackRunnerFactory, REFERENCE_SOURCE};
+use counterspell_catalogue_cli::sandbox_fill::{validate_sandbox, ValidateOutcome};
 use counterspell_grimoire::meta::Meta;
 use counterspell_grimoire::record::{self, RecordError};
 use counterspell_judge::catalogue::approval::{check_approval, parse_approval};
 use counterspell_judge::catalogue::discover::{
     classify, explicit_slug, Decision, DirEntry, SkipReason,
 };
-use counterspell_judge::catalogue::load::{
-    assemble_import, assemble_sandbox, read_pack, signature_descriptor, PackFiles,
-};
 use counterspell_judge::catalogue::plan::{Plan, Refusal};
 use counterspell_judge::catalogue::private_tree::{preflight, RootState};
 use counterspell_judge::catalogue::publish::{self, PublishOutcome, UnpublishOutcome};
 use counterspell_judge::catalogue::report::{Outcome, PackReport};
 use counterspell_judge::catalogue::retired::{parse_retired, RetiredFile};
-use counterspell_judge::catalogue::sandbox_fill::{validate_sandbox, ValidateOutcome};
 use counterspell_judge::catalogue::seed;
 use counterspell_judge::catalogue::taxonomy::{parse_taxonomy, sync_taxonomy, Taxonomy};
 use counterspell_judge::catalogue::write::{
     dry_run_static, write_static, StaticImport, WriteOutcome,
 };
-use counterspell_judge::sandbox::pack_runner::{PackRunnerFactory, REFERENCE_SOURCE};
 use serde::Deserialize;
 use sqlx::PgPool;
 
@@ -500,12 +500,13 @@ fn pack_runner_factory() -> Option<PackRunnerFactory> {
     PackRunnerFactory::from_env()
 }
 
-/// Assembles a pack's runner sources from its public tree: `reference/`
-/// becomes [`REFERENCE_SOURCE`] and every `incorrect/` file keeps its path.
-/// Private-tree files never enter a runner archive.
+/// Assembles a pack's runner sources from both trees, private first per the
+/// combined-tree convention: `reference/` becomes [`REFERENCE_SOURCE`] and every
+/// `incorrect/` file keeps its path. Other private files never enter a runner
+/// archive.
 fn pack_sources(files: &PackFiles) -> Option<BTreeMap<String, String>> {
     let mut sources = BTreeMap::new();
-    for (path, bytes) in &files.public {
+    for (path, bytes) in files.public.iter().chain(&files.private) {
         let key = if path == "reference/solution.py" {
             REFERENCE_SOURCE.to_string()
         } else if path.starts_with("incorrect/") {
@@ -642,7 +643,7 @@ async fn validate_one(
     let Ok(manifest) = files.manifest() else {
         return refused(slug, "manifest_duplicate_path");
     };
-    let record = match record::build(&public_dir) {
+    let record = match record::build_pair(&public_dir, &private_dir) {
         Ok(record) => record,
         Err(RecordError::Invalid(_)) => return refused(slug, "static_errors"),
         Err(RecordError::Unreadable(_)) => return failed(slug, "pack_unreadable"),
@@ -895,7 +896,8 @@ async fn import_one(
     factory: Option<&PackRunnerFactory>,
 ) -> PackReport {
     let private_dir = private_root.join(PRIVATE_PACKS_DIR).join(slug);
-    let Ok(static_report) = counterspell_grimoire::validate_static(public_dir) else {
+    let Ok(static_report) = counterspell_grimoire::validate_static_pair(public_dir, &private_dir)
+    else {
         return failed(slug, "pack_unreadable");
     };
     if static_report.has_errors() {
@@ -905,7 +907,7 @@ async fn import_one(
         return refused(slug, "static_warnings");
     }
 
-    let record = match record::build(public_dir) {
+    let record = match record::build_pair(public_dir, &private_dir) {
         Ok(record) => record,
         Err(RecordError::Invalid(_)) => return refused(slug, "static_errors"),
         Err(RecordError::Unreadable(_)) => return failed(slug, "pack_unreadable"),

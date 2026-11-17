@@ -19,11 +19,12 @@ mod sbx;
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use counterspell_catalogue_cli::load::signature_descriptor;
 use counterspell_engine::generate::{CandidateStream, GeneratorConfig};
 use counterspell_engine::{Observation, Oracle, OracleError, ProgramResult};
 use counterspell_grimoire::meta::Meta;
 use counterspell_grimoire::record;
-use counterspell_judge::catalogue::load::signature_descriptor;
+use counterspell_judge::languages::{LanguageCatalog, LanguageDefinition};
 use counterspell_judge::sandbox::bollard_backend::BollardBackend;
 use counterspell_judge::sandbox::oracle::SandboxOracle;
 use serde_json::Value;
@@ -114,6 +115,10 @@ async fn evaluate(
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 async fn sbx_published_packs_fixtures_agree_with_reference() {
+    let Some(private_root) = sbx::private_packs_root() else {
+        eprintln!("skipping: no counterspell-packs-private checkout is available");
+        return;
+    };
     let packs = published_packs();
     assert!(
         packs.len() >= 3,
@@ -133,93 +138,119 @@ async fn sbx_published_packs_fixtures_agree_with_reference() {
         .expect("the oracle runtime builds");
 
     for pack_dir in &packs {
-        let meta = pack_meta(pack_dir);
-        let slug = meta.slug.clone();
-        let record = record::build(pack_dir)
-            .unwrap_or_else(|error| panic!("{slug}: the pack record builds: {error:?}"));
-        let signature =
-            signature_descriptor(&record).expect("the signature maps to the protocol shape");
-        let reference = read_pack_file(&pack_dir.join("reference/solution.py"));
-        let inputs = generated_inputs(&meta);
-        assert!(!inputs.is_empty(), "{slug}: the generator yields inputs");
-
-        for (lang, ext) in FIXTURE_LANGS {
-            let lang_def = catalog
-                .get(lang)
-                .filter(|lang| lang.is_enabled())
-                .unwrap_or_else(|| panic!("{lang} is enabled"))
-                .clone();
-            let fixture =
-                read_pack_file(&pack_dir.join(format!("fixtures/{lang}/known_correct.{ext}")));
-            let mut oracle = SandboxOracle::new(
-                runtime.handle().clone(),
-                BollardBackend::new(docker.clone(), cfg.api_timeout),
-                BollardBackend::new(docker.clone(), cfg.api_timeout),
-                lang_def,
-                python.clone(),
-                &signature,
-                &fixture,
-                &reference,
-                &cfg,
-            )
-            .expect("the oracle builds");
-
-            let mut first_answer: Option<Value> = None;
-            for (index, input) in inputs.iter().enumerate() {
-                let (back, result) = evaluate(oracle, input).await;
-                oracle = back;
-                let observation = result.unwrap_or_else(|error| {
-                    panic!(
-                        "{slug}/{lang} input #{index} (seed {}): {error}",
-                        meta.generator.seed
-                    )
-                });
-                let (ProgramResult::Returned(got), ProgramResult::Returned(expected)) =
-                    (&observation.user, &observation.reference)
-                else {
-                    panic!(
-                        "{slug}/{lang} seed {} input #{index} {input}: \
-                         user = {:?}, reference = {:?}",
-                        meta.generator.seed, observation.user, observation.reference
-                    );
-                };
-                // The answer is a canonical JSON value: decoding, re-encoding and
-                // re-decoding preserves it exactly.
-                let reparsed: Value = serde_json::from_str(
-                    &serde_json::to_string(got).expect("the answer re-encodes"),
-                )
-                .expect("the answer re-decodes");
-                assert_eq!(
-                    &reparsed, got,
-                    "{slug}/{lang} seed {} input #{index}: the answer is not canonical JSON",
-                    meta.generator.seed
-                );
-                assert!(
-                    record.comparator.equal(expected, got),
-                    "{slug}/{lang} seed {} input #{index} {input}: fixture {got} \
-                     disagrees with reference {expected}",
-                    meta.generator.seed
-                );
-                if index == 0 {
-                    first_answer = Some(got.clone());
-                }
-            }
-
-            // Repeatability: the same input through the same session returns the
-            // identical answer.
-            let (back, result) = evaluate(oracle, &inputs[0]).await;
-            oracle = back;
-            let repeated = result.expect("the repeat call answers");
-            assert_eq!(
-                repeated.user,
-                ProgramResult::Returned(first_answer.expect("a first answer")),
-                "{slug}/{lang}: a repeated call must be deterministic"
-            );
-            drop(oracle);
-        }
+        check_pack(
+            pack_dir,
+            &private_root,
+            &docker,
+            &cfg,
+            &catalog,
+            &python,
+            runtime.handle(),
+        )
+        .await;
     }
     // Session drops spawn kill+remove on the test runtime; wait for the work to
     // land and reap any corpses so the daemon is left clean.
     sbx::drain_dead(&docker, &cfg, Duration::from_secs(30)).await;
     runtime.shutdown_background();
+}
+
+/// Runs the fixture-vs-reference agreement check for one pack in both fixture
+/// languages.
+#[allow(
+    clippy::too_many_arguments,
+    reason = "the daemon context travels together; a context struct would hide nothing"
+)]
+async fn check_pack(
+    pack_dir: &Path,
+    private_root: &Path,
+    docker: &bollard::Docker,
+    cfg: &counterspell_judge::sandbox::config::SandboxConfig,
+    catalog: &LanguageCatalog,
+    python: &LanguageDefinition,
+    handle: &tokio::runtime::Handle,
+) {
+    let meta = pack_meta(pack_dir);
+    let slug = meta.slug.clone();
+    let private_dir = private_root.join("packs").join(&slug);
+    let record = record::build_pair(pack_dir, &private_dir)
+        .unwrap_or_else(|error| panic!("{slug}: the pack record builds: {error:?}"));
+    let signature =
+        signature_descriptor(&record).expect("the signature maps to the protocol shape");
+    let reference = read_pack_file(&private_dir.join("reference/solution.py"));
+    let inputs = generated_inputs(&meta);
+    assert!(!inputs.is_empty(), "{slug}: the generator yields inputs");
+
+    for (lang, ext) in FIXTURE_LANGS {
+        let lang_def = catalog
+            .get(lang)
+            .filter(|lang| lang.is_enabled())
+            .unwrap_or_else(|| panic!("{lang} is enabled"))
+            .clone();
+        let fixture = read_pack_file(&pack_dir.join(format!("fixtures/{lang}/known_correct.{ext}")));
+        let mut oracle = SandboxOracle::new(
+            handle.clone(),
+            BollardBackend::new(docker.clone(), cfg.api_timeout),
+            BollardBackend::new(docker.clone(), cfg.api_timeout),
+            lang_def,
+            python.clone(),
+            &signature,
+            &fixture,
+            &reference,
+            cfg,
+        )
+        .expect("the oracle builds");
+
+        let mut first_answer: Option<Value> = None;
+        for (index, input) in inputs.iter().enumerate() {
+            let (back, result) = evaluate(oracle, input).await;
+            oracle = back;
+            let observation = result.unwrap_or_else(|error| {
+                panic!(
+                    "{slug}/{lang} input #{index} (seed {}): {error}",
+                    meta.generator.seed
+                )
+            });
+            let (ProgramResult::Returned(got), ProgramResult::Returned(expected)) =
+                (&observation.user, &observation.reference)
+            else {
+                panic!(
+                    "{slug}/{lang} seed {} input #{index} {input}: \
+                     user = {:?}, reference = {:?}",
+                    meta.generator.seed, observation.user, observation.reference
+                );
+            };
+            // The answer is a canonical JSON value: decoding, re-encoding and
+            // re-decoding preserves it exactly.
+            let reparsed: Value =
+                serde_json::from_str(&serde_json::to_string(got).expect("the answer re-encodes"))
+                    .expect("the answer re-decodes");
+            assert_eq!(
+                &reparsed, got,
+                "{slug}/{lang} seed {} input #{index}: the answer is not canonical JSON",
+                meta.generator.seed
+            );
+            assert!(
+                record.comparator.equal(expected, got),
+                "{slug}/{lang} seed {} input #{index} {input}: fixture {got} \
+                 disagrees with reference {expected}",
+                meta.generator.seed
+            );
+            if index == 0 {
+                first_answer = Some(got.clone());
+            }
+        }
+
+        // Repeatability: the same input through the same session returns the
+        // identical answer.
+        let (back, result) = evaluate(oracle, &inputs[0]).await;
+        oracle = back;
+        let repeated = result.expect("the repeat call answers");
+        assert_eq!(
+            repeated.user,
+            ProgramResult::Returned(first_answer.expect("a first answer")),
+            "{slug}/{lang}: a repeated call must be deterministic"
+        );
+        drop(oracle);
+    }
 }

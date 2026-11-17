@@ -10,12 +10,12 @@
 
 use std::time::Duration;
 
+use counterspell_catalogue_cli::sandbox_fill::{
+    sandbox_fill, CaseSource, FillOutcome, HiddenFill, SandboxCheck, SandboxFill,
+};
 use counterspell_engine::{Comparator, ProgramResult, Schema};
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
 use counterspell_judge::catalogue::retired::RetiredFile;
-use counterspell_judge::catalogue::sandbox_fill::{
-    sandbox_fill, CaseSource, FillOutcome, HiddenFill, SandboxCheck, SandboxFill,
-};
 use counterspell_judge::catalogue::testkit::static_import as import;
 use counterspell_judge::catalogue::write::{
     write_sandbox, write_static, SandboxImport, SandboxOutcome,

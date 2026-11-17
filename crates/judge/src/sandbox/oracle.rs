@@ -38,7 +38,7 @@ const SNIPPET_BYTES: usize = 256;
 /// failure into a program result; the reference is trusted code, so its
 /// failures are infrastructure.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Role {
+pub enum Role {
     /// The program under test.
     User,
     /// The problem's trusted reference implementation.
@@ -47,7 +47,7 @@ pub(crate) enum Role {
 
 /// One side of the oracle: its own backend, its own container, and everything
 /// needed to rebuild the session after an abnormal end.
-pub(crate) struct Side<B: Backend> {
+pub struct Side<B: Backend> {
     backend: B,
     lang: LanguageDefinition,
     archive: Vec<u8>,
@@ -170,9 +170,13 @@ impl<B: Backend> Oracle for SandboxOracle<B> {
     }
 }
 
-/// Builds one side's archive and spec material. Returns `Err` when the driver
-/// file cannot be read or the archive cannot be assembled.
-pub(crate) fn side<B: Backend>(
+/// Builds one side's archive and spec material.
+///
+/// # Errors
+///
+/// Returns `Err` when the driver file cannot be read or the archive cannot be
+/// assembled.
+pub fn side<B: Backend>(
     backend: B,
     lang: LanguageDefinition,
     driver_root: &std::path::Path,
@@ -220,7 +224,12 @@ pub(crate) fn side<B: Backend>(
 /// Opens the side's session when none is live, then runs one call and maps the
 /// facts onto [`ProgramResult`]. Any end other than an answer has already
 /// killed the container, so the handle is dropped and the next call reopens.
-pub(crate) async fn evaluate_side<B: Backend>(
+///
+/// # Errors
+///
+/// Returns `Err` when the call cannot complete — session open, I/O or an
+/// unparseable protocol answer.
+pub async fn evaluate_side<B: Backend>(
     side: &mut Side<B>,
     args: &[Value],
     limit: Duration,

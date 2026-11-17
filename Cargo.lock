@@ -372,6 +372,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f8f80099a98041a3d1622845c271458a2d73e688351bf3cb999266764b81d48"
 
 [[package]]
+name = "counterspell-catalogue-cli"
+version = "0.1.0"
+dependencies = [
+ "bollard",
+ "counterspell-common",
+ "counterspell-engine",
+ "counterspell-grimoire",
+ "counterspell-judge",
+ "serde",
+ "serde_json",
+ "sha2 0.10.9",
+ "sqlx",
+ "tempfile",
+ "thiserror 2.0.21",
+ "tokio",
+ "toml",
+]
+
+[[package]]
 name = "counterspell-common"
 version = "0.1.0"
 dependencies = [
@@ -408,7 +427,6 @@ dependencies = [
  "bytes",
  "counterspell-common",
  "counterspell-engine",
- "counterspell-grimoire",
  "counterspell-judge",
  "futures-util",
  "proptest",

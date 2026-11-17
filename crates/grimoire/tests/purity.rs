@@ -47,11 +47,17 @@ fn source_files() -> Vec<(PathBuf, String)> {
     files
 }
 
+/// The production part of a source file: text before the `#[cfg(test)]` test
+/// module, which may write tempdir fixtures and so is out of the guard's scope.
+fn production_text(text: &str) -> &str {
+    text.split("#[cfg(test)]").next().unwrap_or(text)
+}
+
 /// Returns the forbidden API names that appear in `text`.
 fn api_violations(text: &str) -> Vec<&'static str> {
     FORBIDDEN_APIS
         .into_iter()
-        .filter(|api| text.contains(api))
+        .filter(|api| production_text(text).contains(api))
         .collect()
 }
 
@@ -94,7 +100,7 @@ fn no_source_text_uses_a_forbidden_minimality_phrase() {
             // This file defines the list itself, so it is checked by its own tests.
             continue;
         }
-        let found = phrase_violations(&text);
+        let found = phrase_violations(production_text(&text));
         assert!(found.is_empty(), "{} uses {found:?}", path.display());
     }
 }
