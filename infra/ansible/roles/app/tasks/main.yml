@@ -65,3 +65,24 @@
     group: "{{ app_group }}"
     mode: "0755"
   loop: "{{ app_scripts }}"
+
+# On the shared host the app owner is the deploy user, so the forced command runs the deploy
+# script directly with no sudo. On a dedicated host app_owner is root and the base role owns the
+# deploy user's authorized_keys (sudo path), so nothing here applies.
+- name: Create the deploy account's .ssh directory on the shared host
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0700"
+  when: app_owner == deploy_user
+
+- name: Authorize the CI deploy key with the forced command only (R2.9, R7.12)
+  ansible.builtin.template:
+    src: authorized_keys_deploy.j2
+    dest: "/home/{{ deploy_user }}/.ssh/authorized_keys"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+  when: app_owner == deploy_user

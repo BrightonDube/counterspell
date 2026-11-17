@@ -99,7 +99,7 @@ jobs:
           ssh -i "$key" -p "${PORT:-22}" \
             -o IdentitiesOnly=yes -o BatchMode=yes \
             -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$kh" \
-            "deploy@${HOST}" "deploy ${SHA} ${D_SERVER} ${D_JUDGE} ${D_MIGRATE}"
+            "deploy-counterspell@${HOST}" "deploy ${SHA} ${D_SERVER} ${D_JUDGE} ${D_MIGRATE}"
       - name: Summary
         env:
           SHA: ${{ steps.sha.outputs.value }}
