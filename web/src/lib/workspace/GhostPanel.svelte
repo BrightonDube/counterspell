@@ -18,7 +18,12 @@
   } = $props();
 
   /** Run endings that stop the search before it can report a result. */
-  const CUT_OFF_STATUSES = ['aborted', 'cancelled', 'expired', 'internal_error'];
+  const CUT_OFF_STATUSES = [
+    'aborted',
+    'cancelled',
+    'expired',
+    'internal_error'
+  ];
 
   // The replay plan orders and times only the steps the server recorded. Steps that do not end at the
   // ghost input are not shown at all.

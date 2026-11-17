@@ -1,7 +1,12 @@
 // Tests for the Familiar API adapters and the one-speech-request guard (ide-workspace T20).
 // Each test names the break it catches. `fetch` is injected, so no test touches the network.
 import { describe, expect, it } from 'vitest';
-import { createSpeechGuard, loadPreferences, requestSpeech, savePreferences } from './familiar';
+import {
+  createSpeechGuard,
+  loadPreferences,
+  requestSpeech,
+  savePreferences
+} from './familiar';
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -97,7 +102,12 @@ describe('loadPreferences', () => {
     let seen: { url?: string; method?: string } = {};
     const fetchImpl = async (url: string, init?: RequestInit) => {
       seen = { url, method: init?.method };
-      return jsonResponse(200, { muted: true, hidden: true, skin: 'jack-o-lantern', speech: 'off' });
+      return jsonResponse(200, {
+        muted: true,
+        hidden: true,
+        skin: 'jack-o-lantern',
+        speech: 'off'
+      });
     };
     const prefs = await loadPreferences({ fetchImpl });
     expect(seen.url).toBe('/api/me/familiar');

@@ -96,8 +96,14 @@ export async function loadPreferences(
       '/api/me/familiar',
       (raw) => {
         const record = asRecord(raw, 'prefs');
-        if (typeof record.muted !== 'boolean' || typeof record.hidden !== 'boolean') {
-          throw new ContractError('prefs', 'expected muted and hidden to be booleans');
+        if (
+          typeof record.muted !== 'boolean' ||
+          typeof record.hidden !== 'boolean'
+        ) {
+          throw new ContractError(
+            'prefs',
+            'expected muted and hidden to be booleans'
+          );
         }
         return { muted: record.muted, hidden: record.hidden };
       },

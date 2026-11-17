@@ -41,7 +41,10 @@
   }: Props = $props();
 
   // The real art first; the placeholder only when the real file is missing or fails the contract.
-  const ART_URLS = ['/familiar/jack-o-lantern.svg', '/familiar/jack-o-lantern.placeholder.svg'];
+  const ART_URLS = [
+    '/familiar/jack-o-lantern.svg',
+    '/familiar/jack-o-lantern.placeholder.svg'
+  ];
 
   let face: HTMLDivElement | undefined = $state();
   let artDrawn = $state(false);
@@ -89,7 +92,9 @@
     const root = face.querySelector<SVGSVGElement>('svg');
     if (root === null) return;
     const animate = live && !reducedMotion && !muted;
-    for (const layer of root.querySelectorAll<SVGElement>('[id^="fam-mood-"]')) {
+    for (const layer of root.querySelectorAll<SVGElement>(
+      '[id^="fam-mood-"]'
+    )) {
       if (layer.id === style.layer) {
         layer.style.opacity = animate ? '0' : '1';
       } else {
@@ -100,7 +105,6 @@
     const fade = startCrossfade(root, [style.layer]);
     return () => fade.dispose();
   });
-
 
   // Plays the burst only for a live result the planner allows. Any change in the inputs, or the
   // component leaving the page, disposes the burst that is running.
@@ -124,7 +128,10 @@
   });
 </script>
 
-<section aria-label="Efficiency Familiar" class="flex flex-col items-center gap-2">
+<section
+  aria-label="Efficiency Familiar"
+  class="flex flex-col items-center gap-2"
+>
   {#if hidden}
     <button
       type="button"
@@ -132,7 +139,10 @@
       class="flex min-h-11 min-w-11 items-center justify-center rounded"
       onclick={() => onToggleHidden?.()}
     >
-      <span class="block h-4 w-4 rounded-full bg-accent-candle" aria-hidden="true"></span>
+      <span
+        class="block h-4 w-4 rounded-full bg-accent-candle"
+        aria-hidden="true"
+      ></span>
     </button>
   {:else}
     <div
@@ -143,11 +153,17 @@
       data-reason={reason}
       aria-hidden="true"
     ></div>
-    <p class="text-sm font-semibold capitalize {failed ? 'text-danger' : 'text-text'}">
+    <p
+      class="text-sm font-semibold capitalize {failed
+        ? 'text-danger'
+        : 'text-text'}"
+    >
       {style.name}
     </p>
     {#if badge !== ''}
-      <span class="rounded bg-raised px-2 py-1 text-sm text-text-muted">{badge}</span>
+      <span class="rounded bg-raised px-2 py-1 text-sm text-text-muted"
+        >{badge}</span
+      >
     {/if}
     <p class="text-center text-sm text-text-muted">{headline}</p>
   {/if}

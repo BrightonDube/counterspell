@@ -179,9 +179,7 @@ describe('GhostPanel ghost card', () => {
         reducedMotion: false
       }
     });
-    expect(
-      screen.getByText(/The ghost search did not finish/)
-    ).toBeTruthy();
+    expect(screen.getByText(/The ghost search did not finish/)).toBeTruthy();
     expect(
       screen.queryByText(/No ghost input was found within the search budget/)
     ).toBeNull();

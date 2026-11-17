@@ -10,22 +10,24 @@ const css = readFileSync(resolve(here, '../../app.css'), 'utf8');
 
 /** The landing block, from its marker comment to the end of the file. */
 function landingBlock(): string {
-	const start = css.indexOf('/* landing: begin */');
-	expect(start, 'landing block marker').toBeGreaterThanOrEqual(0);
-	return css.slice(start);
+  const start = css.indexOf('/* landing: begin */');
+  expect(start, 'landing block marker').toBeGreaterThanOrEqual(0);
+  return css.slice(start);
 }
 
 describe('landing CSS fallbacks (T11)', () => {
-	it('turns CTA transitions off under reduced motion', () => {
-		const block = landingBlock();
-		const reduced = block.match(/@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/);
-		expect(reduced, 'reduced-motion media block').not.toBeNull();
-		expect(reduced?.[1]).toMatch(/\.cta\s*\{[^}]*transition-duration:\s*0ms/);
-	});
+  it('turns CTA transitions off under reduced motion', () => {
+    const block = landingBlock();
+    const reduced = block.match(
+      /@media \(prefers-reduced-motion: reduce\)\s*\{([\s\S]*?)\n\}/
+    );
+    expect(reduced, 'reduced-motion media block').not.toBeNull();
+    expect(reduced?.[1]).toMatch(/\.cta\s*\{[^}]*transition-duration:\s*0ms/);
+  });
 
-	it('adds no raw colour values in the landing block (tokens only)', () => {
-		const block = landingBlock();
-		expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
-		expect(block).not.toMatch(/\b(rgb|hsl)a?\(/);
-	});
+  it('adds no raw colour values in the landing block (tokens only)', () => {
+    const block = landingBlock();
+    expect(block).not.toMatch(/#[0-9a-fA-F]{3,8}\b/);
+    expect(block).not.toMatch(/\b(rgb|hsl)a?\(/);
+  });
 });
