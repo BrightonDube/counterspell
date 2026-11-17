@@ -95,3 +95,18 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - Real daemon (SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock):
   sbx_pack_runner 6/6 incl. starter packs through `validate_sandbox_pair`
   (114.5 s); sbx_pack_props 1/1.
+
+## Verified (spec-driver `verify all`, 17 Nov 2026)
+
+Clean detached worktree at `335968e`, throwaway dev Postgres, `PGPASSWORD` derived from the dev env (the catalogue-cli test helpers build URLs without a password).
+
+| Task | Result |
+|---|---|
+| C19 | ticked. Bin unit tests, `catalogue_load`, `catalogue_cli` (incl. `pg_cli_dry_run_writes_nothing`) pass. |
+| C21 | ticked. `pg_catalogue_publish_gate_*` (6) and `pg_unpublish_keeps_history_and_is_idempotent` pass. |
+| C22 | ticked. `pg_catalogue_seed` 4/4 pass. |
+| C32 | ticked. `launch_catalogue_lists_exactly_python_and_javascript`, `get_languages_returns_the_enabled_languages` pass. |
+| C34 | ticked. `docs/catalogue-operations.md` names all 7 commands and contains no URL or secret. |
+| C19b | NOT ticked. `pg_approval_gate_runs_the_sandbox_only_after_approval` fails: it calls the public-only `validate_sandbox`, so after the pack-tree split the stored `add-one` pack reports `LAY-01`/`REF-01` (`reference/solution.py` missing). The test (or its call) must use `validate_sandbox_pair`. The other 4 C19b tests pass. |
+| C36 | NOT ticked. Depends on C19b; one pg test is red. |
+| C37 | NOT ticked. Gates are not all green at `335968e`: `cargo fmt --check` failed (fixed by the uncommitted rustfmt change in `crates/grimoire/src/lib.rs`) and 12 `counterspell-mcp` tests fail. |

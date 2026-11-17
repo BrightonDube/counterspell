@@ -56,3 +56,16 @@ Each entry: task id, commit(s), tests that prove it, the exact verification comm
 - Recovery + concurrency: `sbx_recovery` 3/3 and `sbx_concurrency` 2/2 pass under `--test-threads=1`. Under parallel threads they flake on the shared test daemon (s19's global container count sees s18's containers; removal lag exceeds the 10 s `cleared_within` bound under load). This is test-side contention, not a product defect — kills always land and containers are always reaped (verified: daemon empty afterwards).
 - Preserve held: `languages/languages.toml` still has `java.enabled = false`, `cpp.enabled = false`; no stretch work entered the launch path.
 - Java/C++ stretch tasks (T13–T16) may proceed on this gate's strength.
+
+## Verified (spec-driver `verify all`, 17 Nov 2026)
+
+Clean detached worktree at `335968e` (plus the one-line `cargo fmt` fix to `crates/grimoire/src/lib.rs`), rootless daemon `/run/user/1000/docker.sock`, Postgres from the dev env.
+
+| Task | Result |
+|---|---|
+| T09 | ticked. `pg_run_timings_insert_and_read_back` and `pg_run_timings_attempt_fences_retries` pass; `pg_replay_returns_bench_events` passes; `familiar::payload` tests (public-field-only `bench_start`/`bench_point`) pass. |
+| T10 | ticked. `sbx_published_packs_fixtures_agree_with_reference` passes on the real daemon. |
+| T11 | ticked. `sbx_driver_hostile` 5/5 pass (fd-1 forgery, wrong call id, verdict document, infinite loop, flood). |
+| T12 | NOT ticked. The core gate passed on 17 Nov, but it requires the workspace checks green, and they are red now (see `counterspell-mcp-power-blockers.md` and `problem-catalogue-blockers.md`: 12 `counterspell-mcp` tests and one catalogue-cli pg test fail after the pack-tree split; `cargo fmt --check` failed at `335968e`). Re-run T12 once those are fixed. |
+
+Environment notes for whoever re-runs this: `/tmp` is a 3.9 GB tmpfs and filled up during the build (set `TMPDIR` and `CARGO_TARGET_DIR` to the real disk). `COUNTERSPELL_PACKS_PRIVATE_ROOT` in the dev env points at the empty scaffold in `~/code/counterspell-packs-private`; the populated checkout is the sibling `Personal Projects/counterspell-packs-private`.

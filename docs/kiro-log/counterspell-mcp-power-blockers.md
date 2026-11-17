@@ -48,3 +48,6 @@
 - No task was ticked this run, because none had its verification met.
 
 ### verify all, 16 Nov 2026: T11 stays open: the Kiro custom-Power import test has not been run.
+
+## 17 Nov 2026 verify all: 12 `counterspell-mcp` tests fail at `335968e`
+`cargo test -p counterspell-mcp` fails 12 `tools::tests::*` (for example `a_crashing_program_gives_a_crash_ghost`, `find_ghost_input_finds_a_failing_input_for_the_same_index_bug`) with `ToolError NotFound: the path does not exist`. Cause: `program_from` in `crates/mcp/src/tools.rs` resolves `incorrect/<file>.py` only inside the public pack directory, but the pack-tree split moved `incorrect/` to the private tree. Reproduced with `COUNTERSPELL_PACKS_PRIVATE_ROOT` set to the populated private checkout. These passed at `36d6064`. Unblock: resolve the program through the private pack dir (as `validate_pack` already does), then re-run. T11 also still needs the Kiro import test.

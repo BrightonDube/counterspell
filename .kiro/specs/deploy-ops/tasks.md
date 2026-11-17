@@ -77,7 +77,7 @@ Conventions:
   - Verify: `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets -- -D warnings`; `cargo test -p counterspell-server`; the existing health and static tests still pass.
   - Rust lesson: `tokio::time::timeout` returns a `Result` that wraps the future's `Result`; why the 503 body is a fixed string (errors must not leak to clients).
 
-- [ ] **T07 [P] [S] (30 min) Judge `healthcheck` subcommand**
+- [x] **T07 [P] [S] (30 min) Judge `healthcheck` subcommand**
   - Files: `crates/judge/src/main.rs` (subcommand only), `crates/judge/src/health.rs` (new), `crates/judge/tests/healthcheck.rs`.
   - `counterspell-judge healthcheck` reads the worker heartbeat (run-lifecycle T17; Q26) and exits `0` when it is newer than 60 seconds, or `1` otherwise. It prints one line with no connection string.
   - Tests: fresh heartbeat exits 0; stale heartbeat exits 1; missing heartbeat exits 1; the subcommand never starts the worker loop.

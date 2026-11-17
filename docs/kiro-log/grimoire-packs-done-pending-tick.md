@@ -77,3 +77,10 @@ Real-daemon evidence (SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock):
 - Verify on the real daemon: `sbx_pack_runner` 6/6 including
   `starter_packs_pass_sandbox_checks_with_the_real_runner` over the merged
   pair (114.5 s); `sbx_pack_props` fixtures-agree-with-reference 1/1.
+
+## Verified (spec-driver `verify all`, 17 Nov 2026)
+
+| Task | Result |
+|---|---|
+| T20 | NOT ticked. The judge-side runner works: `sbx_pack_runner` 6/6 and `sbx_pack_props` 1/1 pass on the real daemon, and the starter packs validate through `validate_sandbox_pair`. But the task's literal verify command, `counterspell-grimoire validate packs/count-pairs --sandbox`, still exits 2 with `SBX-07 sandbox runner not configured`, because grimoire cannot depend on the judge. The task text needs an amendment (verify through `counterspell-catalogue validate-sandbox`) before it can be ticked. |
+| T28 | NOT ticked. Human step (Brighton's sign-off). |
