@@ -148,3 +148,8 @@ Working tree at the start of this run: only automation log files and `docs/KIRO_
 - C19b: `pg_approval_gate_runs_the_sandbox_only_after_approval` (`crates/catalogue-cli/tests/pg_catalogue_approval_gate.rs`) fails after the pack-tree split; it uses the public-only `validate_sandbox` and gets `LAY-01`/`REF-01`. Use `validate_sandbox_pair` with the private root.
 - Test helpers `catalogue_url` (catalogue_cli.rs, pg_catalogue_approval_gate.rs and the other pg catalogue tests) drop the password, so they only work against a trust-auth Postgres. Passing locally needs `PGPASSWORD`. Minor.
 - `crates/grimoire/tests/mutations.rs` panics (`copy known_ghosts.toml`) instead of skipping when `COUNTERSPELL_PACKS_PRIVATE_ROOT` points at a scaffold with no `known_ghosts.toml`. The dev env points at the empty scaffold in `~/code/counterspell-packs-private`; the populated checkout is the sibling in `Personal Projects/`. Minor, but it turns a missing checkout into a red suite.
+
+
+## 17 Nov 2026 - grimoire-packs T20 verify-line amendment
+
+T20's verify line named `counterspell-grimoire validate packs/count-pairs --sandbox`. After the pack-tree split (0330f58/176cf9a, purged history), `reference/`, `incorrect/` and `known_ghosts.toml` live only in the private checkout, so the single-tree `validate` can no longer load a starter pack. The verify line now reads `counterspell-catalogue validate-sandbox <slug> --private-root <checkout>`, which runs `validate_sandbox_pair` over the merged pair - the same checks, on the production path. Evidence: `sbx_pack_runner::starter_packs_pass_sandbox_checks_with_the_real_runner` (114 s, real daemon) passes all three packs through `validate_sandbox_pair`.

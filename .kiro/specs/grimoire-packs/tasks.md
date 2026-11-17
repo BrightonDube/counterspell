@@ -160,7 +160,7 @@ All tasks are implementation tasks for the design above. No task in this documen
 - [ ] **T20 [BLOCKED] Judge implements PackRunner and wires `--sandbox`**
   - Files (in the judge spec, not here): `crates/judge/` implements `PackRunner` through the rootless sandbox. This spec only records the requirement.
   - Depends on: `judge-sandbox` spec, and a decision on open question 7.
-  - Verify (later): `counterspell-grimoire validate packs/count-pairs --sandbox` runs the reference through the real sandbox, and the vectors in `sandbox_fake.rs` match the real Python output.
+  - Verify (later): `counterspell-catalogue validate-sandbox count-pairs --private-root <checkout>` runs the reference through the real sandbox, and the vectors in `sandbox_fake.rs` match the real Python output. (Amended after the pack-tree split: reference/incorrect live in the private tree, so `counterspell-grimoire validate` on the public dir alone can no longer reach them — see docs/kiro-log/problem-catalogue-blockers.md.)
 
 ## Wave 6: starter packs
 
