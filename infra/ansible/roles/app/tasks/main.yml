@@ -1,6 +1,6 @@
 ---
-# App directories, host values, deploy scripts and the compose checksum record (deploy-ops R5.1,
-# R5.4, R7.13). Secrets are never written here: Brighton writes the env files by hand (T27).
+# App directories, host values, service env files, deploy scripts and the compose checksum record
+# (deploy-ops R5.1, R5.4, R7.13). Env files are templated from the vault, never written by hand.
 # Ownership comes from app_owner: root on a dedicated host, the deploy user on the shared host.
 
 - name: Refuse to run without the public site address
@@ -43,27 +43,16 @@
     group: "{{ app_group }}"
     mode: "0644"
 
-- name: Check that Brighton has written each service env file with mode 0600 (R5.1)
-  ansible.builtin.stat:
-    path: "{{ app_env_dir }}/{{ item }}.env"
+- name: Write the service env files from the vault, owner-only (R5.1)
+  # no_log: the rendered content holds every service secret.
+  ansible.builtin.template:
+    src: "{{ item }}.env.j2"
+    dest: "{{ app_env_dir }}/{{ item }}.env"
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
+    mode: "0600"
   loop: "{{ app_env_services }}"
-  register: app_env_stat
-  tags: [env-check]
-
-- name: Stop until every service env file exists, is owned by the app owner and is mode 0600
-  ansible.builtin.assert:
-    that:
-      - item.stat.exists
-      - item.stat.mode == '0600'
-      - item.stat.pw_name == app_owner
-    fail_msg: >-
-      Missing or wrongly permissioned {{ app_env_dir }}/{{ item.item }}.env. Write it by hand, owned by
-      {{ app_owner }} with mode 0600 (T27).
-    quiet: true
-  loop: "{{ app_env_stat.results }}"
-  loop_control:
-    label: "{{ item.item }}"
-  tags: [env-check]
+  no_log: true
 
 - name: Copy the compose files and write the checksum record
   ansible.builtin.include_tasks: compose_sha.yml

@@ -9,7 +9,7 @@ app_group: "{{ app_owner }}"
 # Non-secret host values, read by counterspell-deploy and merged into each release record.
 app_host_env: "{{ app_dir }}/host.env"
 
-# Service env files Brighton writes by hand (T27). The role only checks them (R5.1).
+# Service env files, templated from the vault into app_env_dir (R5.1). Each renders <name>.env.j2.
 app_env_services:
   - postgres
   - migrate
