@@ -150,12 +150,7 @@ fn validate_pack(pack_name: &str, pack: &pack::Pack, report: &mut Report) {
 /// Returns [`SandboxFault::Io`] when a pack file cannot be read, and
 /// [`SandboxFault::Runner`] when the runner reports an infrastructure fault.
 pub fn validate_sandbox(root: &Path, runner: &mut dyn PackRunner) -> Result<Report, SandboxFault> {
-    validate_sandbox_loader(
-        root,
-        runner,
-        pack::load,
-        validate_static,
-    )
+    validate_sandbox_loader(root, runner, pack::load, validate_static)
 }
 
 /// [`validate_sandbox`] for the split public/private layout
