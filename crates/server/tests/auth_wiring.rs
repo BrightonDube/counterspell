@@ -59,11 +59,25 @@ fn lazy_pool() -> sqlx::PgPool {
 }
 
 /// The router with auth mounted, as `main` builds it.
-fn app_with_auth() -> Router {
+fn auth_config_without_mail() -> AuthConfig {
+    let vars: HashMap<String, String> = [
+        ("APP_ENV", "production"),
+        ("PUBLIC_BASE_URL", BASE),
+        ("DATABASE_URL", "postgres://server:fake-pw@127.0.0.1:1/cs"),
+        ("VALKEY_URL", "redis://127.0.0.1:1"),
+        ("SESSION_SECRET", "fake-session-secret-value-0123456789"),
+    ]
+    .into_iter()
+    .map(|(name, value)| (name.to_owned(), value.to_owned()))
+    .collect();
+    AuthConfig::from_map(&vars).expect("a valid production config without mail")
+}
+
+fn app_with_config(config: &AuthConfig) -> Router {
     let limiter = Limiter::Memory(Arc::new(MemoryLimiter::default()));
     let auth = build_state(
         lazy_pool(),
-        &auth_config(),
+        config,
         limiter.clone(),
         TrustedProxies::default(),
     )
@@ -75,6 +89,10 @@ fn app_with_auth() -> Router {
         [203, 0, 113, 9],
         40_000,
     ))))
+}
+
+fn app_with_auth() -> Router {
+    app_with_config(&auth_config())
 }
 
 async fn send(app: &Router, request: Request<Body>) -> (StatusCode, serde_json::Value) {
@@ -138,6 +156,40 @@ async fn auth_wiring_a_cross_site_write_is_refused_before_any_handler() {
 
     assert_eq!(status, StatusCode::FORBIDDEN);
     assert_eq!(json["code"], "csrf_origin_mismatch");
+}
+
+#[tokio::test]
+async fn auth_wiring_config_reports_email_disabled_without_a_mail_provider() {
+    let app = app_with_config(&auth_config_without_mail());
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/api/auth/config")
+        .body(Body::empty())
+        .expect("valid request");
+
+    let (status, json) = send(&app, request).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["email"]["magic_link"], false);
+    assert_eq!(json["email"]["password"], true);
+    assert_eq!(json["providers"]["github"], false);
+    assert_eq!(json["providers"]["google"], false);
+}
+
+#[tokio::test]
+async fn auth_wiring_magic_link_is_unavailable_when_mail_is_disabled() {
+    let app = app_with_config(&auth_config_without_mail());
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/auth/email/magic")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"email":"someone@example.co"}"#))
+        .expect("valid request");
+
+    let (status, json) = send(&app, request).await;
+
+    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(json["code"], "email_unavailable");
 }
 
 #[tokio::test]

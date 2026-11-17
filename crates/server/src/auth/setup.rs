@@ -65,14 +65,8 @@ pub fn build_state(
         .map(|demo| EmailAddress::parse(&demo.email))
         .transpose()
         .map_err(|_| SetupError::DemoEmail)?;
-    let transport = mail_transport(config)?;
-    let sender = Arc::new(GuardedSender::new(
-        transport,
-        limits.clone(),
-        config.email_daily_cap,
-        demo_email.clone(),
-        clock.clone(),
-    ));
+    // Email sign-in is optional: with no mail provider configured the state keeps mail unwired
+    // and the mail routes answer email_unavailable.
     let state = AuthState::new(
         pool,
         clock,
@@ -81,28 +75,42 @@ pub fn build_state(
         HashGate::new(4, StdDuration::from_secs(2)),
         trusted,
     )
-    .with_mail(MailPort {
-        sender,
-        public_base_url: config.public_base_url.clone(),
-        demo_email,
-    })
     .with_oauth(config.public_base_url.clone(), oauth_providers(config)?)
     .with_settings(PublicSettings::from_config(config));
+    let state = match &config.mail {
+        Some(mail_config) => {
+            let transport = mail_transport(mail_config, config.app_env)?;
+            let sender = Arc::new(GuardedSender::new(
+                transport,
+                state.limits.clone(),
+                config.email_daily_cap,
+                demo_email.clone(),
+                state.clock.clone(),
+            ));
+            state.with_mail(MailPort {
+                sender,
+                public_base_url: config.public_base_url.clone(),
+                demo_email,
+            })
+        }
+        None => state,
+    };
     Ok(state)
 }
 
 /// The mail sender for the configured transport. The log transport is refused in production by
 /// [`LogSender::new`].
-fn mail_transport(config: &AuthConfig) -> Result<Arc<dyn EmailSender>, SetupError> {
-    match config.mail.transport {
+fn mail_transport(
+    config: &crate::auth::config::MailConfig,
+    app_env: crate::auth::config::AppEnv,
+) -> Result<Arc<dyn EmailSender>, SetupError> {
+    match config.transport {
         MailTransport::Resend => {
             let key = config
-                .mail
                 .resend_api_key
                 .clone()
                 .ok_or(SetupError::MissingMailSettings)?;
             let from = config
-                .mail
                 .mail_from
                 .clone()
                 .ok_or(SetupError::MissingMailSettings)?;
@@ -110,7 +118,7 @@ fn mail_transport(config: &AuthConfig) -> Result<Arc<dyn EmailSender>, SetupErro
             Ok(Arc::new(sender))
         }
         MailTransport::Log => {
-            let sender = LogSender::new(config.app_env).map_err(|_| SetupError::Mail)?;
+            let sender = LogSender::new(app_env).map_err(|_| SetupError::Mail)?;
             Ok(Arc::new(sender))
         }
     }

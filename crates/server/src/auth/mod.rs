@@ -162,13 +162,15 @@ impl AuthState {
         self.oauth.as_ref().ok_or(errors::AuthError::Internal)
     }
 
-    /// The mail settings, or an internal error when mail is not wired.
+    /// The mail settings, or `email_unavailable` when email sign-in is not configured.
     ///
     /// # Errors
     ///
-    /// Returns [`errors::AuthError::Internal`] when [`AuthState::with_mail`] was never called.
+    /// Returns [`errors::AuthError::EmailUnavailable`] when [`AuthState::with_mail`] was never called.
     pub fn mail_port(&self) -> Result<&MailPort, errors::AuthError> {
-        self.mail.as_ref().ok_or(errors::AuthError::Internal)
+        self.mail
+            .as_ref()
+            .ok_or(errors::AuthError::EmailUnavailable)
     }
 }
 
@@ -193,7 +195,7 @@ pub const MUTATING_ROUTES: &[&str] = &[
 ///
 /// The cookie middleware sits on this router, so each handler can fill the cookie slot.
 pub fn router(state: AuthState) -> Router {
-    let settings = state.settings;
+    let settings = state.settings.clone();
     let routes = Router::new()
         .route("/api/auth/logout", post(handlers::session::logout))
         .route("/api/auth/logout-all", post(handlers::session::logout_all))
