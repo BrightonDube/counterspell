@@ -15,6 +15,7 @@ use std::path::PathBuf;
 use std::process::Command;
 
 use sqlx::postgres::PgConnectOptions;
+use sqlx::ConnectOptions;
 
 /// The compiled binary under test.
 const BIN: &str = env!("CARGO_BIN_EXE_counterspell-catalogue");
@@ -33,13 +34,7 @@ fn shipped_packs() -> String {
 /// The pool's URL as `CATALOGUE_DATABASE_URL` (the value is never printed by
 /// the binary, but the child still needs it to connect).
 fn catalogue_url(options: &PgConnectOptions) -> String {
-    format!(
-        "postgres://{}@{}:{}/{}",
-        options.get_username(),
-        options.get_host(),
-        options.get_port(),
-        options.get_database().expect("a test database name")
-    )
+    options.to_url_lossy().to_string()
 }
 
 /// Spawns the binary with an isolated environment.

@@ -25,6 +25,7 @@ use counterspell_judge::catalogue::approval::{check_approval, parse_approval, Ap
 use counterspell_judge::catalogue::retired::parse_retired;
 use serde_json::{json, Value};
 use sqlx::postgres::PgConnectOptions;
+use sqlx::ConnectOptions;
 use sqlx::PgPool;
 
 /// The compiled binary under test.
@@ -37,13 +38,7 @@ fn fixture_root() -> PathBuf {
 
 /// The pool's URL as `CATALOGUE_DATABASE_URL`.
 fn catalogue_url(options: &PgConnectOptions) -> String {
-    format!(
-        "postgres://{}@{}:{}/{}",
-        options.get_username(),
-        options.get_host(),
-        options.get_port(),
-        options.get_database().expect("a test database name")
-    )
+    options.to_url_lossy().to_string()
 }
 
 /// Spawns `import --static-only` against the fixture public tree.
@@ -250,8 +245,12 @@ async fn pg_approval_gate_runs_the_sandbox_only_after_approval(pool: PgPool) {
     let manifest = files.manifest().expect("manifest");
     let meta: counterspell_grimoire::meta::Meta =
         toml::from_str(files.text_any("meta.toml").expect("meta")).expect("meta parses");
-    let record = counterspell_grimoire::record::build(&fixture_root().join("public/add-one"))
-        .expect("record");
+    let private_pack = good.path().join("packs/add-one");
+    let record = counterspell_grimoire::record::build_pair(
+        &fixture_root().join("public/add-one"),
+        &private_pack,
+    )
+    .expect("record");
     let data = assemble_sandbox(&record, &meta, &files, &manifest).expect("sandbox data");
     let retired = parse_retired("").expect("empty retired file");
     let pack = data.sandbox_pack("add-one", &retired, "sha256:test-digest");

@@ -356,11 +356,11 @@ impl Workspace {
         for name in ["reference", "incorrect"] {
             copy_dir(&private_dir.join(name), &pack.join(name));
         }
-        fs::copy(
-            private_dir.join("known_ghosts.toml"),
-            pack.join("known_ghosts.toml"),
-        )
-        .expect("copy known_ghosts.toml");
+        let ghosts = private_dir.join("known_ghosts.toml");
+        if !ghosts.is_file() {
+            return None;
+        }
+        fs::copy(ghosts, pack.join("known_ghosts.toml")).expect("copy known_ghosts.toml");
         Some(Self(pack))
     }
 

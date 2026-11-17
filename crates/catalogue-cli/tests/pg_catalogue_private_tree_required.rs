@@ -15,6 +15,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 
 use sqlx::postgres::PgConnectOptions;
+use sqlx::ConnectOptions;
 use sqlx::PgPool;
 
 /// The compiled binary under test.
@@ -27,13 +28,7 @@ fn fixture_root() -> PathBuf {
 
 /// The pool's URL as `CATALOGUE_DATABASE_URL`.
 fn catalogue_url(options: &PgConnectOptions) -> String {
-    format!(
-        "postgres://{}@{}:{}/{}",
-        options.get_username(),
-        options.get_host(),
-        options.get_port(),
-        options.get_database().expect("a test database name")
-    )
+    options.to_url_lossy().to_string()
 }
 
 /// Spawns the binary with `CATALOGUE_DATABASE_URL` pointing at the test pool.

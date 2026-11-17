@@ -5,6 +5,7 @@
 //! be proven from outside. Every case here exits before any database work,
 //! so no `CATALOGUE_DATABASE_URL` is needed.
 
+use sqlx::ConnectOptions;
 use std::path::Path;
 use std::process::Command;
 
@@ -136,13 +137,7 @@ fn shipped_packs() -> String {
 /// A database URL for the `sqlx::test` scratch database, as the CLI expects it.
 fn catalogue_url(pool: &sqlx::PgPool) -> String {
     let options = pool.connect_options();
-    format!(
-        "postgres://{}@{}:{}/{}",
-        options.get_username(),
-        options.get_host(),
-        options.get_port(),
-        options.get_database().expect("a test database name")
-    )
+    options.to_url_lossy().to_string()
 }
 
 /// Counts of every table a dry-run must leave untouched.
