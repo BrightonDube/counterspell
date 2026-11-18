@@ -126,3 +126,19 @@ Clean detached worktree at `335968e`, throwaway dev Postgres, `PGPASSWORD` deriv
   `Personal Projects/counterspell-packs-private`.
 - TMPDIR=/home/brighton/tmp and CARGO_TARGET_DIR=/home/brighton/cargo-target
   keep builds off the 3.9 GB /tmp tmpfs.
+
+## C19b / C36 / C37 — gate verification (18 Nov)
+
+- `C19b` refused public-only import + approval-gate tests: green after the
+  pack-split fixes in `3477caa` (approval gate uses `record::build_pair`
+  against the private fixture tree).
+- `C36` full database and API test pass: green with
+  `DATABASE_URL=postgres://counterspell:<pw>@localhost:55432/counterspell`
+  (`cs-dev-pg` compose postgres; the stale `counterspell-pg-test` container
+  is stopped and port 5432 is a different server that rejects the role).
+  catalogue-cli pg suites 17/17 green; judge pg suites all green.
+- `C37` repo-wide gates: `cargo fmt --all -- --check` clean;
+  `cargo clippy --workspace --all-targets --features sandbox -D warnings`
+  clean; `cargo test --workspace` 0 failures; all `--ignored` sbx suites
+  green on `/run/user/1000/docker.sock` (`sbx_pack_props`, `sbx_bench` 3/3);
+  web `npm run check` (svelte-check) 0 errors / 0 warnings and vitest green.

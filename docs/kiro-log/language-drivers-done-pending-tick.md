@@ -69,3 +69,14 @@ Clean detached worktree at `335968e` (plus the one-line `cargo fmt` fix to `crat
 | T12 | NOT ticked. The core gate passed on 17 Nov, but it requires the workspace checks green, and they are red now (see `counterspell-mcp-power-blockers.md` and `problem-catalogue-blockers.md`: 12 `counterspell-mcp` tests and one catalogue-cli pg test fail after the pack-tree split; `cargo fmt --check` failed at `335968e`). Re-run T12 once those are fixed. |
 
 Environment notes for whoever re-runs this: `/tmp` is a 3.9 GB tmpfs and filled up during the build (set `TMPDIR` and `CARGO_TARGET_DIR` to the real disk). `COUNTERSPELL_PACKS_PRIVATE_ROOT` in the dev env points at the empty scaffold in `~/code/counterspell-packs-private`; the populated checkout is the sibling `Personal Projects/counterspell-packs-private`.
+
+## T12 re-verified (18 Nov)
+
+- The 17 Nov gate ran while the workspace was red (pack-split fallout). Those
+  failures are fixed (`3477caa`, `c865ea1`, `7bf4522`). Re-ran the gate inputs:
+  fmt clean; clippy `-D warnings` clean; `cargo test --workspace` 0 failures;
+  all pg ignored tests green on `cs-dev-pg` (55432); `sbx_pack_props` and
+  `sbx_bench` 3/3 green on the rootless daemon; web svelte-check 0/0.
+- Note for re-runs: `cargo test -- --ignored` needs `SANDBOX_DOCKER_SOCKET`
+  for the sbx suites and the 55432 `DATABASE_URL` for pg; the stopped
+  `counterspell-pg-test` container on 5432 must not be used.
