@@ -8,6 +8,7 @@ members = [
     "crates/grimoire",
     "crates/mcp",
     "crates/common",
+    "crates/testserver",
 ]
 
 [workspace.package]

@@ -72,3 +72,31 @@
   viewport fix.
 - Open per design, deferred to later tasks: Familiar overlay position (T20),
   heavy-asset lazy-load measurements (T27), keyboard shortcut map (T21).
+
+## T13 production Run/Submit against Axum (18 Nov)
+
+- `crates/testserver`: new publish=false fixture crate running the real Axum
+  router, `BearerTestResolver` identities, `RunWaker`, and a scripted
+  `Worker`/`ScriptedExecutor` (`Script::Pass`, 3 tests, 30 ms) against real
+  Postgres. Boot migrates, seeds 256 users and `two-sum` (idempotent). Kept
+  out of `crates/server` on purpose: an optional judge dep put
+  `counterspell-judge` inside the server's production closure and failed
+  `boundary::the_server_cannot_reach_docker_or_the_judge` — the separate crate
+  keeps the boundary green (verified 6/6).
+- `run-session.axum.test.ts` (`@vitest-environment node`, skipped unless
+  `AXUM_TEST_URL`): drives the unmocked `startRunAction`/`getRun`/`watchRun`
+  through `fetchImpl`/SSE-adapter seams with `Bearer test-user-N`. 4 tests:
+  sample run 202 -> streamed events -> terminal read model (`completed`,
+  3 tests); oversized source -> server error envelope -> `failed` with prior
+  view kept; second request under `RUN_RATE_USER=1` -> `rate_limited`, prior
+  view kept; foreign run id -> real `404 not_found`, nothing leaked. Time-
+  rotated users (of 256) keep reruns inside one limiter window deterministic
+  (two consecutive suite runs both 4/4).
+- Already-built pieces confirmed in place: per-action idempotency key in
+  `runs/api.ts`, generation-token cancellation in `run-session.ts`,
+  `view` carried across `starting`/`streaming` until the replacement is
+  terminal, per-language localStorage drafts in `editor-session.ts`.
+- Gates: `cargo fmt --check`, `clippy -D warnings` (testserver), `npm run
+  check` 0/0, axum suite 4/4 twice, `boundary` 6/6.
+- Not covered here by design: full browser journey on real envelopes (T24/T25)
+  and reconnect storms (T26).

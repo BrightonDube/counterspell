@@ -1,0 +1,22 @@
+[package]
+name = "counterspell-testserver"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+# Test-only fixture: real Axum + scripted judge for web/browser verification.
+# Nothing in the workspace depends on this crate, so the server's production
+# dependency closure stays free of the judge.
+publish = false
+
+[dependencies]
+axum = "0.8.7"
+counterspell-common = { path = "../common" }
+counterspell-server = { path = "../server", features = ["testkit"] }
+counterspell-judge = { path = "../judge", default-features = false, features = ["testkit"] }
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "json", "migrate", "macros", "time"] }
+tokio = { version = "1.48.0", features = ["macros", "net", "rt-multi-thread", "sync", "time"] }
+uuid = { version = "1", features = ["v4"] }
+
+[lints]
+workspace = true
