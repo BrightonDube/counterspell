@@ -248,3 +248,41 @@
   Ctrl/Cmd+Enter, Ctrl+Shift+Enter, field-ignore and shortcut help.
 - Gates: new file 10/10; full vitest 65 files, 486 passed, 4 skipped;
   `npm run check` 0 errors/0 warnings.
+
+## T24 real Axum browser harness and test data path (18 Nov)
+
+- `web/tests/real-api/real-api-check.mjs` — Playwright-core (Apache-2.0,
+  driver only; launches installed Chrome via `channel: 'chrome'`). Drives the
+  built `web/build` SPA served by Axum on 127.0.0.1:8088. No `page.route`, no
+  fixture route, no intercepted responses.
+- Test data: `web/tests/real-api/packs/add-two` (public half) plus
+  `private-src/` template; `stamp-approval.mjs` reproduces the importer's
+  manifest hash for `approval.toml`. Private tree materializes outside the
+  repo (the importer refuses nested private roots); `seed-demo` imported and
+  published it through the real sandbox validation gate (hash 4bba9820…).
+- Real stack proven: dev magic-link auth (unique address per run dodges the
+  3/hour mail cap; verify auto-creates the user), problem page through Axum,
+  Monaco input via real keyboard path, Run samples → real `accepted`, Submit
+  `a*b` → real `wrong_answer` through the hidden suite (test events in pg:
+  samples carry input/expected/got, hidden rows carry ordinal/verdict/ms only).
+- Harness checks (12/12 pass): mail link logged, sign-in + SPA redirect,
+  problem loads, Accepted verdict, Wrong-answer verdict, run_events persisted,
+  terminal submissions recorded, zero hidden-event payload leaks, terminal
+  read model verdict, no hidden tuples on the page.
+- Judge wiring fix (required, in scope): `crates/judge/src/main.rs` had
+  `EmptyProblemTests` hard-coded — every run ended `problem_unavailable`.
+  Wired `PgProblemTests::new(pool)` through `sandbox_executor`; the catalogue
+  loader (problem-catalogue C24) now serves pinned versions.
+- Contract fixes found by real traffic: `/api/languages` returns
+  `{languages:[…]}` (parser expected a bare array); problem detail carries
+  `examples` not `samples`; difficulty values are `easy|medium|hard`; language
+  wire rows have no enabled/supports flags. `languages.ts`/`types.ts` parse
+  the real envelopes; fixtures updated (`client.test.ts`, `types.test.ts`,
+  `EditorPanel.test.ts`, `ProblemPanel.test.ts`, `ProblemWorkspace.test.ts`,
+  `WorkspaceShell.test.ts`, `safety-a11y.test.ts`, `prototype/fixtures.ts`,
+  `EditorPanel.svelte`).
+- Gates: affected vitest 9 files / 63 tests pass; `npm run check` 0/0;
+  `cargo check -p counterspell-judge --features sandbox` clean.
+- Known gap logged in the blockers file: the judge never emits
+  `ghost_hunting`/`ghost` on a failing submit (upstream hunt wiring missing) —
+  T25's shrink/autopsy journey is blocked on it.

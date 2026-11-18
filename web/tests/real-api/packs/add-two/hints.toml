@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Read the signature: the judge calls add_two(a, b) and expects one integer back."
+
+[[hint]]
+rung = 2
+text = "The answer is a single expression. Think about which arithmetic operator joins a and b."
+
+[[hint]]
+rung = 3
+text = "Adding is not the only way two numbers combine. Check that your operator gives a + b for the samples, not another combination."
+
+[[hint]]
+rung = 4
+text = "Check the operator you wrote. Multiplication and addition agree on some inputs like (0, 0) and (2, 2) but differ on others."

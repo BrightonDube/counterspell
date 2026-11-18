@@ -23,3 +23,5 @@ infra/ansible/inventory/group_vars/*secret*
 rclone.conf
 deploy/**/*.env
 !deploy/**/*.env.example
+# real-api harness runtime artifacts (server/judge logs, probes)
+web/tests/real-api/.scratch/

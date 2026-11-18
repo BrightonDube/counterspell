@@ -18,7 +18,7 @@ export const FIXTURE_PROBLEM: ProblemDetail = {
   title: 'Fixture: Two Sum',
   track: { slug: 'fixture-arrays', name: 'Fixture track' },
   concepts: [{ slug: 'fixture-hash-maps', name: 'Fixture concept' }],
-  difficulty: 'intro',
+  difficulty: 'easy',
   statementMarkdown:
     'Return the indexes of two numbers that add up to the target. Layout fixture only.',
   constraints: ['Fixture constraint: two items at least.'],

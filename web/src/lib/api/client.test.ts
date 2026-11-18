@@ -17,7 +17,7 @@ const validProblem = {
   title: 'Two Sum',
   track: { slug: 'arrays', name: 'Crypt of Arrays' },
   concepts: [],
-  difficulty: 'intro',
+  difficulty: 'easy',
   statement_markdown: 'Find two indexes.',
   constraints: [],
   signature: {
@@ -25,7 +25,7 @@ const validProblem = {
     parameters: [],
     return_type: 'list<int>'
   },
-  samples: [],
+  examples: [],
   starters: { python: 'def two_sum(nums):\n    pass\n' },
   enabled_languages: ['python']
 };
@@ -152,35 +152,29 @@ describe('loadProblem', () => {
 });
 
 describe('loadLanguages', () => {
-  // Breaks if a language the server disabled reaches the picker because the adapter ignored the flag.
-  it('keeps the server enabled flag for every language', async () => {
+  // Breaks if a listed language is dropped or renamed on the way to the picker.
+  it('maps every listed language to the view model', async () => {
     const fetchImpl = async () =>
-      jsonResponse(200, [
-        {
-          id: 'python',
-          display_name: 'Python',
-          enabled: true,
-          file_name: 'solution.py',
-          max_source_bytes: 65536,
-          supports_run: true,
-          supports_submit: true
-        },
-        {
-          id: 'cpp',
-          display_name: 'C++',
-          enabled: false,
-          file_name: 'solution.cpp',
-          max_source_bytes: 65536,
-          supports_run: false,
-          supports_submit: false
-        }
-      ]);
+      jsonResponse(200, {
+        languages: [
+          {
+            id: 'python',
+            display_name: 'Python',
+            max_source_bytes: 65536
+          },
+          {
+            id: 'javascript',
+            display_name: 'JavaScript',
+            max_source_bytes: 65536
+          }
+        ]
+      });
     const languages = await loadLanguages({ fetchImpl });
     expect(
-      languages.map((language) => [language.id, language.enabled])
+      languages.map((language) => [language.id, language.displayName])
     ).toEqual([
-      ['python', true],
-      ['cpp', false]
+      ['python', 'Python'],
+      ['javascript', 'JavaScript']
     ]);
   });
 });

@@ -30,7 +30,8 @@
     onRequest?: (request: RunRequest) => void;
   } = $props();
 
-  const offered = $derived(languages.filter((language) => language.enabled));
+  // The catalogue only ever lists enabled languages, so the list is used as is.
+  const offered = $derived(languages);
   let chosen = $state('');
   const current = $derived(
     offered.some((language) => language.id === chosen)

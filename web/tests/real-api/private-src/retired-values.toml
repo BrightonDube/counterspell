@@ -1,0 +1,6 @@
+# Retired and rotated hidden-case hashes for the catalogue importer.
+# Test fixture root — no retired or rotated entries yet.
+#
+# [[retired]]
+# slug = "example-slug"
+# hash = "<sha256 of canonical hidden-case JSON>"

@@ -1,0 +1,14 @@
+# Taxonomy for the real-API test packs. Kept tiny on purpose: the harness only
+# needs the track and concepts its one pack uses.
+
+[[tracks]]
+slug = "arrays"
+name = "Arrays"
+
+[[concepts]]
+slug = "edge-cases"
+name = "Edge Cases"
+
+[[concepts]]
+slug = "arithmetic"
+name = "Arithmetic"

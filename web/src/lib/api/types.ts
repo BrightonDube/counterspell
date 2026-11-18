@@ -4,7 +4,6 @@ import {
   asRecord,
   asString,
   readArray,
-  readBool,
   readEnum,
   readInt,
   readJson,
@@ -14,7 +13,7 @@ import {
 } from '../contract';
 
 /** Problem difficulty levels the catalogue documents. */
-export const DIFFICULTIES = ['intro', 'standard', 'hard'] as const;
+export const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
 export interface Named {
@@ -45,14 +44,12 @@ export interface ProblemDetail {
   enabledLanguages: string[];
 }
 
+// Every language the catalogue lists is enabled and supports both verbs; the
+// wire carries no per-language flags for them.
 export interface LanguageSummary {
   id: string;
   displayName: string;
-  enabled: boolean;
-  fileName: string;
   maxSourceBytes: number;
-  supportsRun: boolean;
-  supportsSubmit: boolean;
 }
 
 /** The stable error body every Axum error returns. The message is safe to show to a person. */
@@ -136,7 +133,7 @@ export function parseProblemDetail(raw: unknown): ProblemDetail {
       ),
       returnType: readString(signature, 'return_type', `${path}.signature`, 256)
     },
-    samples: readArray(record, 'samples', path, MAX_LIST, parseSample),
+    samples: readArray(record, 'examples', path, MAX_LIST, parseSample),
     starters: starterMap,
     enabledLanguages: readArray(
       record,
@@ -155,17 +152,13 @@ export function parseLanguageSummary(raw: unknown): LanguageSummary {
   return {
     id: readString(record, 'id', path, 64),
     displayName: readString(record, 'display_name', path, 128),
-    enabled: readBool(record, 'enabled', path),
-    fileName: readString(record, 'file_name', path, 128),
     maxSourceBytes: readInt(
       record,
       'max_source_bytes',
       path,
       1,
       MAX_SOURCE_BYTES
-    ),
-    supportsRun: readBool(record, 'supports_run', path),
-    supportsSubmit: readBool(record, 'supports_submit', path)
+    )
   };
 }
 

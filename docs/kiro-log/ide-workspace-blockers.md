@@ -114,3 +114,36 @@ Upstream state checked this pass: run-lifecycle 54 of 56 done (the SSE route `GE
 - **T24 to T27 deferred: E2E.** T28 waits on judge-sandbox, language-drivers and hints, and on `cargo deny`, `docker compose config` and the real acceptance suite.
 
 ### verify all, 16 Nov 2026: T09, T13, T15, T20 stay open: commits are marked partial or not ticked. Web gate at 36d6064: npm run check 0 errors, build ok, 461 tests pass, but browser checks and the Axum browser harness (T24) are not done. T13/T20 depend on the real run API and Familiar seam; run-lifecycle is now complete.
+
+## Attempt: T24 real-API harness bring-up (18 Nov 2026)
+
+- **Judge problem store was unwired — fixed, in scope.** `counterspell-judge`
+  hard-coded `EmptyProblemTests` ("until the problem catalogue exists"), so
+  every real run ended `problem_unavailable`. `PgProblemTests` (the documented
+  production loader, problem-catalogue C24) was already built but never wired.
+  `crates/judge/src/main.rs` now passes the worker pool into
+  `sandbox_executor` and constructs `PgProblemTests`.
+- **Queue contamination hazard, documented.** A leftover
+  `counterspell-testserver` (scripted judge fixture) shares the dev `jobs`
+  table and claimed real runs, returning scripted all-pass results. The README
+  now says: exactly one judge, no other queue consumer.
+- **Magic-link limits.** The dev mail transport is real, but
+  `Action::Magic` allows 3 links/address/hour and 10/IP/hour (Valkey). The
+  harness uses a unique address per run; verify auto-creates the user.
+- **Client/server contract divergences found and fixed by real traffic.** The
+  production build failed envelope parsing in four places: `/api/languages`
+  wraps the list in `{languages: [...]}`; problem examples arrive as
+  `examples`, not `samples`; difficulty/lang fields differed from the client
+  fixtures. `web/src/lib/api/languages.ts` + `types.ts` now parse the real
+  wire shape; client fixtures updated to match.
+- **T25 blocker found — ghost hunting is not wired in the judge.** The wire
+  contract has `ghost_hunting`/`shrink_step`/`ghost` events and the state
+  machine says `running --> ghost_hunting: failing submit`, but no production
+  code emits them: `SandboxExecutor::execute` runs the suite, measures and
+  finishes; `engine::hunt` is never called; there is no `ghosts` table
+  (problem-catalogue D16 records the owner as unresolved). A wrong submit
+  produces `familiar` then `done` — no hunt. T25's "watch real shrink steps,
+  read the real Bug Autopsy" needs this upstream implementation first.
+- **T20 note:** `POST /api/runs/{id}/familiar-hint` is still 404 — expected;
+  it is efficiency-familiar T38, and the client falls back to the fixed
+  unavailable line by design.
