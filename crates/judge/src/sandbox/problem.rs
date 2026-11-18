@@ -11,7 +11,7 @@ use std::future::Future;
 
 use counterspell_common::familiar::class::ClassId;
 use counterspell_common::status::RunMode;
-use counterspell_engine::{Comparator, Schema};
+use counterspell_engine::{Comparator, KnownGhost, Schema};
 use serde_json::Value;
 use thiserror::Error;
 
@@ -62,6 +62,16 @@ pub struct ProblemSpec {
     pub generator_schema: Option<Schema>,
     /// The complexity class the problem author declared. Required with `bench`.
     pub reference_complexity: Option<ClassId>,
+    /// The input schema a submit ghost hunt generates candidates from (ide-workspace
+    /// T25). Unlike `generator_schema` it is loaded for every problem, bench or not:
+    /// a failing submission hunts whenever the schema parses.
+    pub input_schema: Option<Schema>,
+    /// The authored known ghosts of the pinned version, for the hunt's seed list
+    /// and autopsy matching. Loaded for submits only.
+    pub known_ghosts: Vec<KnownGhost>,
+    /// The problem's concept tags, copied into the ghost's autopsy. Loaded for
+    /// submits only.
+    pub concept_tags: Vec<String>,
 }
 
 /// Why a problem could not be loaded. Always infrastructure, never the user's fault.

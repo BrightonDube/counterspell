@@ -213,7 +213,11 @@ describe('createRunSession', () => {
     const ghostAction = vi.fn(() => ({ key: 'gk', send: ghostSend }));
     const h = harness({ ghostAction });
     const session = createRunSession(h.deps, (s) => h.snapshots.push(s));
-    const started = session.start({ ...input, ghostInput: [0, 0] });
+    const started = session.start({
+      ...input,
+      ghostInput: [0, 0],
+      ghostSourceId: 'run-src'
+    });
     await settle();
 
     expect(started).toBe(true);
@@ -221,7 +225,7 @@ describe('createRunSession', () => {
       expect.objectContaining({
         problem: 'two-sum',
         lang: 'python',
-        ghost: { input: [0, 0] }
+        ghost: { submission_id: 'run-src', input: [0, 0] }
       })
     );
     expect(h.startSend).not.toHaveBeenCalled();

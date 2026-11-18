@@ -16,7 +16,7 @@ use counterspell_common::events::{PublicEvent, PublicTest, SampleDetail};
 use counterspell_common::familiar::class::ClassId;
 use counterspell_common::familiar::payload::MeasuredColumns;
 use counterspell_common::status::{FailureReason, RunMode, TestVerdict, Verdict};
-use counterspell_engine::{classify, Classification, FailureKind, Oracle};
+use counterspell_engine::{classify, Classification, FailureKind, HuntOutcome, Oracle};
 use tokio::runtime::Handle;
 use tokio::sync::{watch, Semaphore};
 use tokio::time::Instant;
@@ -26,6 +26,7 @@ use super::bench::{SandboxBenchCollector, RUN_BENCH_BUDGET, SUBMIT_BENCH_BUDGET}
 use super::compare::Expected;
 use super::config::SandboxConfig;
 use super::driver_protocol::parse_answer;
+use super::hunt;
 use super::oracle::SandboxOracle;
 use super::precheck::precheck;
 use super::preflight::PreflightState;
@@ -497,6 +498,12 @@ impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> RunExecutor
             })
             .await?,
         ));
+        // 10. A failing submit hunts for its ghost (ide-workspace T25): the
+        //     `ghost_hunting`, `shrink_step` and `ghost` events go out after
+        //     `familiar` and before `done`. The verdict is already decided — a
+        //     hunt can only add events, never change it.
+        self.hunt_ghost(&run, &spec, lang, verdict, &ctx, &mut stop)
+            .await?;
         Ok(RunOutcome::Completed(finished))
     }
 }
@@ -616,6 +623,88 @@ impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> SandboxExecuto
                 detail,
             }],
         }))
+    }
+
+    /// The submit ghost hunt (ide-workspace T25): a failing submission searches
+    /// for the minimal failing input through the sandbox oracle and emits the
+    /// ghost events before `done`. The verdict is already decided by the stored
+    /// suite — a hunt can only add events, never change it. A hunt that cannot
+    /// run, finds nothing, or aborts leaves the run exactly as it was: an event
+    /// store failure still propagates as infrastructure, and a stop as `Stopped`.
+    async fn hunt_ghost(
+        &self,
+        run: &RunInput,
+        spec: &ProblemSpec,
+        lang: &LanguageDefinition,
+        verdict: Verdict,
+        ctx: &RunContext,
+        stop: &mut watch::Receiver<bool>,
+    ) -> Result<(), ExecError> {
+        // Nothing trusted to compare against means no hunt, as in `execute_ghost`.
+        let Some(reference) = spec.reference_python.as_deref() else {
+            return Ok(());
+        };
+        let Some(request) = hunt::request(run, spec, lang.image().as_str(), verdict) else {
+            return Ok(());
+        };
+        // Authored references are always Python; a disabled or unknown Python
+        // skips the hunt rather than failing a run whose verdict already stands.
+        let Some(reference_lang) = self
+            .languages
+            .get("python")
+            .filter(|language| language.is_enabled())
+        else {
+            tracing::info!(slug = %spec.slug, "the ghost hunt is skipped: no python for the reference");
+            return Ok(());
+        };
+        ctx.emit(&PublicEvent::GhostHunting).await?;
+        let mut oracle = match SandboxOracle::new(
+            Handle::current(),
+            self.backend.clone(),
+            self.backend.clone(),
+            lang.clone(),
+            reference_lang.clone(),
+            &spec.signature,
+            &run.code,
+            reference,
+            &self.config,
+        ) {
+            Ok(oracle) => oracle,
+            Err(error) => {
+                tracing::warn!(%error, "the ghost hunt could not start; the verdict stands");
+                return Ok(());
+            }
+        };
+        // The engine is synchronous and the oracle blocks on the runtime handle,
+        // exactly like the one-shot evaluate in `execute_ghost`.
+        let joined = tokio::task::spawn_blocking(move || {
+            let clock = counterspell_engine::SystemClock::new();
+            counterspell_engine::hunt(&request, &mut oracle, &clock)
+        })
+        .await;
+        if *stop.borrow() {
+            return Err(ExecError::Stopped);
+        }
+        let report = match joined {
+            Ok(report) => report,
+            Err(error) => {
+                tracing::warn!(%error, "the ghost hunt task failed; the verdict stands");
+                return Ok(());
+            }
+        };
+        match &report.outcome {
+            HuntOutcome::Found(_) => {}
+            HuntOutcome::NotFound(reason) => {
+                tracing::info!(%reason, "the ghost hunt found nothing within its budget");
+            }
+            HuntOutcome::Aborted(reason) => {
+                tracing::warn!(?reason, "the ghost hunt aborted; the verdict stands");
+            }
+        }
+        for event in hunt::events(&report) {
+            ctx.emit(&event).await?;
+        }
+        Ok(())
     }
 }
 

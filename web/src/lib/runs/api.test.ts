@@ -188,7 +188,7 @@ describe('startGhostRun', () => {
         problem: 'two-sum',
         lang: 'python',
         code: 'print(1)',
-        ghost: { input: [0, 0] }
+        ghost: { submission_id: 'run-src', input: [0, 0] }
       },
       'key-9',
       { fetchImpl: fakeFetch(202, { run_id: 'run-ghost' }, calls) }
@@ -201,7 +201,7 @@ describe('startGhostRun', () => {
       'key-9'
     );
     expect(calls[0].init?.body).toBe(
-      '{"problem":"two-sum","lang":"python","code":"print(1)","ghost":{"input":[0,0]}}'
+      '{"problem":"two-sum","lang":"python","code":"print(1)","ghost":{"submission_id":"run-src","input":[0,0]}}'
     );
   });
 
@@ -212,7 +212,7 @@ describe('startGhostRun', () => {
       problem: 'two-sum',
       lang: 'python',
       code: 'x',
-      ghost: { input: 7 }
+      ghost: { submission_id: 'run-src', input: 7 }
     });
     await action.send({ fetchImpl: fakeFetch(202, { run_id: 'r1' }, calls) });
     await action.send({ fetchImpl: fakeFetch(202, { run_id: 'r1' }, calls) });

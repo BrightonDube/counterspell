@@ -176,7 +176,8 @@
       lang: request.lang,
       code: request.code,
       mode: request.mode,
-      ghostInput: ghost?.input
+      ghostInput: ghost?.input,
+      ghostSourceId: ghost === undefined ? undefined : runs.stream?.runId
     });
   }
 

@@ -82,6 +82,9 @@ fn problem() -> ProblemSpec {
         bench: None,
         generator_schema: None,
         reference_complexity: None,
+        input_schema: None,
+        known_ghosts: Vec::new(),
+        concept_tags: Vec::new(),
     }
 }
 

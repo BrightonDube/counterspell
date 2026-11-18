@@ -67,6 +67,35 @@ async fn pg_problem_tests_submit_includes_hidden(pool: PgPool) {
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
+async fn pg_problem_tests_submit_loads_hunt_data(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("fixture");
+    let tests = PgProblemTests::new(pool);
+
+    let spec = tests
+        .load("two-sum", 1, RunMode::Submit)
+        .await
+        .expect("submit load")
+        .expect("the pinned version exists");
+
+    // A submit hunt needs the input schema, the authored known ghosts and the
+    // problem's concept tags (ide-workspace T25).
+    assert!(
+        spec.input_schema.is_some(),
+        "the stored input schema parses for every problem, bench or not"
+    );
+    assert_eq!(spec.known_ghosts.len(), 1);
+    assert_eq!(spec.known_ghosts[0].id, "ghost-1");
+    assert_eq!(
+        spec.known_ghosts[0].kind,
+        counterspell_engine::FailureKind::WrongAnswer
+    );
+    assert_eq!(spec.concept_tags, ["hash-maps"]);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
 async fn pg_problem_tests_unpinned_and_missing_versions_are_none(pool: PgPool) {
     insert_published_fixture(&pool, "two-sum", 1)
         .await

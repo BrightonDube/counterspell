@@ -136,14 +136,12 @@ Upstream state checked this pass: run-lifecycle 54 of 56 done (the SSE route `GE
   `examples`, not `samples`; difficulty/lang fields differed from the client
   fixtures. `web/src/lib/api/languages.ts` + `types.ts` now parse the real
   wire shape; client fixtures updated to match.
-- **T25 blocker found — ghost hunting is not wired in the judge.** The wire
-  contract has `ghost_hunting`/`shrink_step`/`ghost` events and the state
-  machine says `running --> ghost_hunting: failing submit`, but no production
-  code emits them: `SandboxExecutor::execute` runs the suite, measures and
-  finishes; `engine::hunt` is never called; there is no `ghosts` table
-  (problem-catalogue D16 records the owner as unresolved). A wrong submit
-  produces `familiar` then `done` — no hunt. T25's "watch real shrink steps,
-  read the real Bug Autopsy" needs this upstream implementation first.
+- ~~**T25 blocker — ghost hunting is not wired in the judge.**~~ Resolved
+  2026-11-19: `SandboxExecutor::execute` now hunts after `measure` on failing
+  submits via `sandbox/hunt.rs` + `engine::hunt` + `SandboxOracle`; the ghost
+  event row is the durable record (no `ghosts` table needed — D16's rerun
+  owner is `submissions.ghost_source_id` on the custom run). See the
+  done-pending-tick entry for evidence.
 - **T20 note:** `POST /api/runs/{id}/familiar-hint` is still 404 — expected;
   it is efficiency-familiar T38, and the client falls back to the fixed
   unavailable line by design.

@@ -18,7 +18,8 @@ export interface GhostRunInput {
   problem: string;
   lang: string;
   code: string;
-  ghost: { input: unknown };
+  /** The earlier submission (run id) that produced the ghost; the server checks ownership. */
+  ghost: { submission_id: string; input: unknown };
 }
 
 /** Parses the `202` body of `POST /api/runs`, which carries the new run id. */

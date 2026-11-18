@@ -11,7 +11,7 @@ use std::str::FromStr;
 
 use counterspell_common::familiar::class::ClassId;
 use counterspell_common::status::RunMode;
-use counterspell_engine::{Comparator, Schema};
+use counterspell_engine::{Comparator, KnownGhost, Schema};
 
 use crate::sandbox::problem::{BenchDecl, ProblemError, ProblemSpec, ProblemTests, TestCase};
 
@@ -300,10 +300,54 @@ fn bench_decl(signature: &Value, bench: Value) -> Result<BenchDecl, ProblemError
     })
 }
 
-/// Builds the executor's spec from a pinned version and its reference source.
+/// Maps a stored known-ghost row onto the engine type the hunt request takes.
+/// A `kind` outside `wrong`/`crash`/`timeout` is broken catalogue data.
+fn engine_ghost(row: KnownGhostRow) -> Result<KnownGhost, ProblemError> {
+    let kind = match row.kind.as_str() {
+        "wrong" => counterspell_engine::FailureKind::WrongAnswer,
+        "crash" => counterspell_engine::FailureKind::RuntimeError,
+        "timeout" => counterspell_engine::FailureKind::Timeout,
+        other => return Err(store(format!("unknown known-ghost kind {other:?}"))),
+    };
+    Ok(KnownGhost {
+        id: row.ghost_id,
+        input: row.input,
+        kind,
+        exception_class: row.exception_class,
+        got: row.got,
+        explanation: row.explanation,
+        concept_tags: row.concepts,
+    })
+}
+
+/// The concept ids a problem teaches, in stored order, for the hunt's autopsy
+/// (ide-workspace T25). `problem_concepts` is keyed by slug, not version: the
+/// tags describe the problem, not one revision of it.
+///
+/// # Errors
+///
+/// Returns [`StoreError::Database`] when the read fails, for example without
+/// the judge grant on `problem_concepts`.
+pub async fn concept_tags_for(
+    conn: &mut PgConnection,
+    slug: &str,
+) -> Result<Vec<String>, StoreError> {
+    let tags: Vec<String> = sqlx::query_scalar(
+        "SELECT concept_id FROM problem_concepts WHERE problem_slug = $1 ORDER BY concept_id",
+    )
+    .bind(slug)
+    .fetch_all(&mut *conn)
+    .await?;
+    Ok(tags)
+}
+
+/// Builds the executor's spec from a pinned version, its reference source and
+/// the hunt data a submit needs (ide-workspace T25).
 fn pinned_spec(
     pinned: PinnedProblem,
     reference_python: Option<String>,
+    known_ghosts: Vec<KnownGhost>,
+    concept_tags: Vec<String>,
 ) -> Result<ProblemSpec, ProblemError> {
     // The grimoire validator guarantees 'exact' or 'unordered'; anything else defaults
     // to exact exactly as `Meta::engine_comparator` does for a checked pack.
@@ -322,11 +366,10 @@ fn pinned_spec(
         .bench
         .map(|bench| bench_decl(&pinned.signature, bench))
         .transpose()?;
-    let generator_schema = if bench.is_some() {
-        Some(serde_json::from_value::<Schema>(pinned.input_schema).map_err(store)?)
-    } else {
-        None
-    };
+    // The input schema is parsed for every problem, bench or not: a failing
+    // submit hunts with it (T25). Unparseable schema is broken catalogue data.
+    let input_schema = serde_json::from_value::<Schema>(pinned.input_schema).map_err(store)?;
+    let generator_schema = bench.is_some().then(|| input_schema.clone());
     let reference_complexity = pinned
         .reference_complexity
         .map(|text| ClassId::from_str(&text).map_err(store))
@@ -359,6 +402,9 @@ fn pinned_spec(
         bench,
         generator_schema,
         reference_complexity,
+        input_schema: Some(input_schema),
+        known_ghosts,
+        concept_tags,
     })
 }
 
@@ -389,7 +435,22 @@ impl ProblemTests for PgProblemTests {
             let reference = reference_for(&mut conn, &slug, version)
                 .await
                 .map_err(store)?;
-            pinned_spec(pinned, reference).map(Some)
+            // A submit also reads the hunt data: authored known ghosts and the
+            // problem's concept tags (T25). A run never needs them.
+            let (known_ghosts, concept_tags) = if load_mode == LoadMode::Submit {
+                let rows = known_ghosts_for(&mut conn, &slug, version)
+                    .await
+                    .map_err(store)?;
+                let ghosts = rows
+                    .into_iter()
+                    .map(engine_ghost)
+                    .collect::<Result<Vec<_>, _>>()?;
+                let tags = concept_tags_for(&mut conn, &slug).await.map_err(store)?;
+                (ghosts, tags)
+            } else {
+                (Vec::new(), Vec::new())
+            };
+            pinned_spec(pinned, reference, known_ghosts, concept_tags).map(Some)
         }
     }
 }
@@ -436,10 +497,27 @@ mod tests {
         }
     }
 
+    fn ghost_row() -> KnownGhostRow {
+        KnownGhostRow {
+            ghost_id: "ghost-1".to_owned(),
+            kind: "wrong".to_owned(),
+            input: json!([[1, 2], 3]),
+            got: Some(json!(0)),
+            exception_class: None,
+            explanation: "Returns the wrong count.".to_owned(),
+            concepts: vec!["loops".to_owned()],
+        }
+    }
+
     #[test]
     fn pinned_spec_maps_every_column() {
-        let spec = pinned_spec(pinned(), Some("def f():\n    return 0\n".to_owned()))
-            .expect("a well-formed version maps");
+        let spec = pinned_spec(
+            pinned(),
+            Some("def f():\n    return 0\n".to_owned()),
+            vec![engine_ghost(ghost_row()).expect("the row maps")],
+            vec!["hash-maps".to_owned()],
+        )
+        .expect("a well-formed version maps");
         assert_eq!(spec.version, 1);
         assert_eq!(spec.comparator, Comparator::Exact);
         assert_eq!(spec.time_limit_ms, Some(2000));
@@ -448,6 +526,13 @@ mod tests {
         assert_eq!(bench.size_param, 0, "values is parameter 0");
         assert_eq!(bench.sizes, vec![16, 64]);
         assert!(spec.generator_schema.is_some());
+        assert!(
+            spec.input_schema.is_some(),
+            "the input schema is parsed for every problem, bench or not"
+        );
+        assert_eq!(spec.known_ghosts.len(), 1);
+        assert_eq!(spec.known_ghosts[0].id, "ghost-1");
+        assert_eq!(spec.concept_tags, ["hash-maps"]);
         assert_eq!(spec.tests.len(), 2);
         assert_eq!(spec.tests[0].args, vec![json!([1, 2, 3, 2]), json!(4)]);
         assert!(spec.tests[0].is_sample);
@@ -459,11 +544,34 @@ mod tests {
     }
 
     #[test]
+    fn engine_ghost_maps_the_stored_kind() {
+        let cases = [
+            ("wrong", counterspell_engine::FailureKind::WrongAnswer),
+            ("crash", counterspell_engine::FailureKind::RuntimeError),
+            ("timeout", counterspell_engine::FailureKind::Timeout),
+        ];
+        for (stored, kind) in cases {
+            let mut row = ghost_row();
+            row.kind = stored.to_owned();
+            let ghost = engine_ghost(row).expect("a known kind maps");
+            assert_eq!(ghost.kind, kind, "kind {stored}");
+            assert_eq!(ghost.id, "ghost-1");
+            assert_eq!(ghost.concept_tags, ["loops"]);
+        }
+        let mut row = ghost_row();
+        row.kind = "explosion".to_owned();
+        assert!(
+            engine_ghost(row).is_err(),
+            "an unknown kind is broken catalogue data"
+        );
+    }
+
+    #[test]
     fn a_bench_param_outside_the_signature_is_a_store_error() {
         let mut pinned = pinned();
         pinned.bench = Some(json!({"size_param": "missing", "sizes": [16]}));
         assert!(
-            pinned_spec(pinned, None).is_err(),
+            pinned_spec(pinned, None, Vec::new(), Vec::new()).is_err(),
             "a bench that names no parameter is broken catalogue data"
         );
     }
@@ -472,6 +580,6 @@ mod tests {
     fn a_case_input_that_is_not_an_args_array_is_a_store_error() {
         let mut pinned = pinned();
         pinned.hidden[0].input = json!({"not": "an array"});
-        assert!(pinned_spec(pinned, None).is_err());
+        assert!(pinned_spec(pinned, None, Vec::new(), Vec::new()).is_err());
     }
 }

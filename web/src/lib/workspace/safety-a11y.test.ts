@@ -68,7 +68,7 @@ function ghostFixture(): GhostView {
       stop: 'no_smaller_input'
     },
     provenance: {
-      seed: 7,
+      seed: '7',
       generatorVersion: 'gen-1',
       engineVersion: 'eng-1',
       problemVersion: 2,

@@ -192,7 +192,7 @@ async fn insert_version_row(pool: &PgPool, slug: &str, version: i32) -> Result<(
         ],
         "returns": {"kind": "list", "items": {"kind": "int"}}
     }))
-    .bind(json!({"kind": "int"}))
+    .bind(json!({"type": "int", "min": 0, "max": 100}))
     .bind(json!({"time_ms": 2000, "mem_mb": 256}))
     .bind(HIDDEN_COUNT)
     .execute(pool)

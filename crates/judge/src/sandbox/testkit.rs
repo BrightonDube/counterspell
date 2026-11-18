@@ -509,6 +509,15 @@ struct FixtureSpec {
     tests: Vec<FixtureTest>,
     reference_python: Option<String>,
     bench: Option<FixtureBench>,
+    /// The input schema a submit ghost hunt generates candidates from.
+    #[serde(default)]
+    input_schema: Option<counterspell_engine::Schema>,
+    /// Authored known ghosts the fixture wants the hunt to seed and match.
+    #[serde(default)]
+    known_ghosts: Vec<counterspell_engine::KnownGhost>,
+    /// Concept tags copied into a found ghost's autopsy.
+    #[serde(default)]
+    concept_tags: Vec<String>,
 }
 
 /// A fixture's bench declaration: sizes, the growing parameter, the declared class
@@ -605,6 +614,9 @@ impl DirProblemTests {
             }),
             generator_schema: raw.bench.as_ref().map(|bench| bench.schema.clone()),
             reference_complexity: raw.bench.map(|bench| bench.reference),
+            input_schema: raw.input_schema,
+            known_ghosts: raw.known_ghosts,
+            concept_tags: raw.concept_tags,
         };
         // A fixture pins one version; a run pinned to another version finds nothing,
         // exactly like a store that only holds the versions it imported.

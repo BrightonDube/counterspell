@@ -53,6 +53,8 @@ export interface RunSessionDeps {
 /** A start request. `ghostInput` marks a custom ghost run carrying the stored input. */
 export interface SessionStartInput extends StartRunInput {
   ghostInput?: Json;
+  /** The run that produced `ghostInput`; the ghost endpoint requires it for ownership. */
+  ghostSourceId?: string;
 }
 
 export interface RunSession {
@@ -163,7 +165,10 @@ export function createRunSession(
             problem: input.problem,
             lang: input.lang,
             code: input.code,
-            ghost: { input: input.ghostInput }
+            ghost: {
+              submission_id: input.ghostSourceId ?? '',
+              input: input.ghostInput
+            }
           })
         : deps.startAction(input);
     if (!action) return false;

@@ -286,3 +286,37 @@
 - Known gap logged in the blockers file: the judge never emits
   `ghost_hunting`/`ghost` on a failing submit (upstream hunt wiring missing) —
   T25's shrink/autopsy journey is blocked on it.
+
+## T25 judge journey without reload (19 Nov)
+
+- Judge-side hunt implemented (was the T24-known missing feature):
+  `crates/judge/src/sandbox/hunt.rs` builds `HuntRequest` (submit-mode +
+  non-custom runs only, requires `input_schema` + trusted python reference +
+  huntable verdict) and maps `HuntReport` to `ghost_hunting`/`shrink_step*`/
+  `ghost` public events; `sandbox_executor::hunt_ghost` runs `engine::hunt`
+  via `SandboxOracle` on `spawn_blocking` after `measure`, verdict preserved.
+- `ProblemSpec` gains `input_schema`/`known_ghosts`/`concept_tags`; the store
+  parses schemas unconditionally and loads ghosts/tags on submit.
+- `migrations/20261119090000_judge_problem_concepts.sql` grants the judge
+  role SELECT on `problem_concepts`.
+- Wire fixes the real run exposed: `provenance.seed` is a decimal string
+  (u64 exceeded MAX_SAFE_INTEGER and killed the client stream before
+  `ghost`); `parseShrinkStep` accepts engine-zero-based index 0; the
+  ghost-rerun client now sends `ghost.submission_id` (T18 contract predated
+  any real API call — the server 400s without it).
+- Event stream on pg for the wrong submit: compiling,test x11,familiar,
+  ghost_hunting,shrink_step x3,ghost,done — order asserted in pg.
+- Real harness (real-api-check.mjs, 21/21): real hunt shrank [[2,3]]->[0,1];
+  Minimized counterexample + autopsy ("Your solution returned 0; expected 1
+  for input [0,1].") render; Rerun-ghost POST /api/runs/ghost reaches real
+  wrong_answer verdict; corrected source resubmits to real Accepted; zero
+  hidden input/expected/got leaks anywhere; no reload between legs.
+- Gates: judge lib 66, model_sandbox_executor 26, model_logs + pg suites
+  (6+4) pass; `cargo clippy --workspace --all-targets --all-features --locked
+  -D warnings` clean; `cargo fmt --all --check` clean; vitest 65 files /
+  488 pass (4 skipped); `npm run check` 0/0; `npm run build` clean.
+- Known flake: one earlier harness run had a samples run die
+  retries_exhausted during container churn right after the previous hunt —
+  transient sandbox contention, clean on rerun. Judge stdout logging is off
+  (judge.log empty; RUST_LOG unset), so attempt errors leave only restarted
+  markers — worth a tracing line if it recurs.

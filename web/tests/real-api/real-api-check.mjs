@@ -33,7 +33,11 @@ page.on('console', (m) => {
 // so it can read the authoritative terminal model afterwards.
 const runIds = [];
 page.on('response', (r) => {
-  if (r.url().endsWith('/api/runs') && r.request().method() === 'POST' && r.status() === 202)
+  if (
+    (r.url().endsWith('/api/runs') || r.url().endsWith('/api/runs/ghost')) &&
+    r.request().method() === 'POST' &&
+    r.status() === 202
+  )
     r.json()
       .then((body) => runIds.push(body.run_id))
       .catch(() => {});
@@ -100,6 +104,16 @@ const wrong = await page
   .catch(() => null);
 check('submit: wrong answer reaches a real Wrong answer verdict', !!wrong);
 
+// --- Ghost hunt lifecycle on the real stack (ide-workspace T25) ---
+// The verdict lands before the hunt finishes, so the counterexample may still
+// be arriving: `done` follows the ghost events in the stream, but the panel
+// renders the ghost as soon as its event parses.
+const submitId = runIds[runIds.length - 1] ?? '';
+const counterexample = await page
+  .waitForSelector('text=Minimized counterexample', { timeout: 120000 })
+  .catch(() => null);
+check('ghost: minimized counterexample renders after the submit', !!counterexample);
+
 // --- Persisted events + terminal read straight from Postgres ---
 function pgScalar(sql) {
   for (const docker of ['docker exec', 'wsl docker exec']) {
@@ -127,6 +141,40 @@ check(
   `leaking=${rows[2]}`
 );
 
+// The submit's event stream must read familiar -> ghost_hunting -> shrink_step*
+// -> ghost -> done, matching the engine order the client renders.
+const seqLines = pgScalar(
+  `select type from run_events where submission_id = '${submitId}' order by seq`
+).split('\n');
+const at = (type) => seqLines.indexOf(type);
+check(
+  'ghost: hunt follows the familiar verdict in the stream',
+  at('familiar') >= 0 && at('ghost_hunting') > at('familiar'),
+  `stream=${seqLines.join(',')}`
+);
+check(
+  'ghost: shrink steps precede the ghost event',
+  at('shrink_step') > at('ghost_hunting') &&
+    seqLines.lastIndexOf('shrink_step') < at('ghost'),
+  `stream=${seqLines.join(',')}`
+);
+let ghostJson = {};
+try {
+  ghostJson = JSON.parse(
+    pgScalar(
+      `select payload::text from run_events where submission_id = '${submitId}' and type = 'ghost'`
+    )
+  );
+} catch {}
+check(
+  'ghost: payload carries kind, input, provenance and autopsy',
+  ghostJson.kind === 'wrong' &&
+    ghostJson.input !== undefined &&
+    (ghostJson.provenance?.problem_version ?? 0) >= 1 &&
+    (ghostJson.autopsy?.explanation?.length ?? 0) > 0,
+  JSON.stringify(ghostJson).slice(0, 140)
+);
+
 // --- Authoritative terminal read over the same session ---
 if (runIds.length === 0) {
   check('terminal: run ids observed for read model', false);
@@ -142,6 +190,44 @@ if (runIds.length === 0) {
     `status=${read.status()} verdict=${model.verdict}`
   );
 }
+
+// The autopsy's explanation must survive the whole path into the page; the
+// empty card always renders its placeholder line instead.
+const ghostBody = await page.evaluate(() => document.body.innerText);
+check(
+  'ghost: autopsy explanation renders on the page',
+  typeof ghostJson.autopsy?.explanation === 'string' &&
+    ghostJson.autopsy.explanation.length > 0 &&
+    ghostBody.includes(ghostJson.autopsy.explanation),
+  (ghostJson.autopsy?.explanation ?? '').slice(0, 80)
+);
+
+// --- Rerun the found ghost through the custom ghost endpoint (T02) ---
+// The panel's rerun button re-judges the same failing input; the wrong source
+// is still in the editor, so the custom run must reach a real verdict.
+await page.getByRole('button', { name: 'Rerun ghost' }).click();
+let rerunVerdict = '';
+for (let i = 0; i < 180 && !rerunVerdict; i++) {
+  await new Promise((r) => setTimeout(r, 1000));
+  const rerunId = runIds[2];
+  if (!rerunId) continue;
+  rerunVerdict = pgScalar(
+    `select verdict from submissions where id = '${rerunId}' and verdict is not null`
+  );
+}
+check(
+  'ghost: rerun reaches a real verdict',
+  rerunVerdict === 'wrong_answer' || rerunVerdict === 'accepted',
+  `verdict=${rerunVerdict || 'none'} runs=${runIds.length}`
+);
+
+// --- Fix the source, resubmit, reach the real Accepted verdict ---
+await setSource('def add_two(a, b):\n    return a + b\n');
+await page.getByRole('button', { name: 'Submit', exact: true }).click();
+const fixed = await page
+  .waitForSelector('text=Accepted', { timeout: 180000 })
+  .catch(() => null);
+check('submit: corrected source reaches a real Accepted verdict', !!fixed);
 
 // --- Hidden canary: no hidden-test detail on the page ---
 const body = await page.evaluate(() => document.body.innerText);
