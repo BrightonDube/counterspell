@@ -360,4 +360,42 @@ describe('WorkspaceShell', () => {
       await screen.findByText(/Looks linear\./)
     ).toBeTruthy();
   });
+
+  // Breaks if a screen-reader user never hears the run finish, or if a stream
+  // event moves focus away from wherever the learner was working.
+  it('announces the terminal verdict politely and never steals focus', async () => {
+    const stream: RunStreamState = {
+      ...initialRunState('run-verdict'),
+      status: 'completed',
+      terminal: {
+        kind: 'done',
+        verdict: 'wrong_answer',
+        passed: 0,
+        total: 2,
+        score: 0
+      }
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream)
+      }
+    });
+
+    const runButton = await screen.findByRole('button', {
+      name: 'Run samples'
+    });
+    runButton.focus();
+    await fireEvent.click(runButton);
+
+    const announcer = await screen.findByRole('status', {
+      name: 'Run announcements'
+    });
+    await vi.waitFor(() => {
+      expect(announcer.textContent).toContain('Wrong answer');
+    });
+    expect(document.activeElement).toBe(runButton);
+  });
 });

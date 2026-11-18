@@ -178,3 +178,26 @@
   workspace+runs 147 pass earlier.
 - Not covered here: speech copy quality (server-side), browser-harness
   familiar journey (T24/T25).
+
+## T21 — Keyboard navigation and focus management (done pending tick)
+
+- Already in place from earlier tasks: named landmarks (T09), drawer
+  Escape-to-close + focus return to the trigger (T09), 44px targets,
+  Ctrl/Cmd+Enter Run + Ctrl/Cmd+Shift+Enter Submit shortcuts with a
+  discoverable `run-shortcuts` help line (T10), Rerun ghost and hint actions
+  as natively tabbable buttons (T17/T18). Monaco keeps its own editing keys
+  because the shortcut mapper ignores key events inside text fields.
+- New: a sr-only `StatusAnnouncer` (aria-live=polite, labelled "Run
+  announcements") inside the results region, fed by a phase-derived
+  announcement: starting, live status, fetching, terminal outcome via
+  `runOutcomeLabel`, or a fixed start-failure line. Identical text never
+  re-announces, so only transitions speak.
+- `StatusAnnouncer` gained `label` and `srOnly` props; the existing save
+  announcer is unchanged.
+- Tests: the announcer reaches "Finished: Wrong answer." after a terminal
+  event; `document.activeElement` stays on the Run button through the whole
+  async lifecycle — stream events never steal focus.
+- Gates: workspace vitest 103 passed (4 skipped axum-env); `npm run check`
+  0/0.
+- Not covered here: full keyboard-only journey in a real browser (T24/T25
+  harness scope).

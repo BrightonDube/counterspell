@@ -24,11 +24,12 @@
     type FamiliarState
   } from '../familiar/familiar-state';
   import Familiar from '../familiar/Familiar.svelte';
-  import { statusLabel } from './test-rows';
+  import { runOutcomeLabel, statusLabel } from './test-rows';
   import AutopsyCard from './AutopsyCard.svelte';
   import EditorPanel from './EditorPanel.svelte';
   import GhostPanel from './GhostPanel.svelte';
   import ProblemPanel from './ProblemPanel.svelte';
+  import StatusAnnouncer from './StatusAnnouncer.svelte';
   import TestPanel from './TestPanel.svelte';
   import {
     createLayoutMode,
@@ -88,6 +89,27 @@
         ? statusLabel(runs.view.status)
         : 'No run yet'
   );
+
+  // Polite announcements for the phase changes a screen-reader user would miss.
+  // Identical text never repeats, so only transitions speak.
+  const announcement = $derived.by((): string => {
+    switch (runs.phase) {
+      case 'starting':
+        return 'Starting the run.';
+      case 'streaming':
+        return statusLabel(runs.stream?.status ?? 'queued');
+      case 'loading':
+        return 'Fetching the result.';
+      case 'finished':
+        return runs.stream?.terminal
+          ? `Finished: ${runOutcomeLabel(runs.stream.terminal)}.`
+          : 'Finished.';
+      case 'failed':
+        return 'The run could not be started.';
+      default:
+        return '';
+    }
+  });
 
   onDestroy(() => session.cancel());
 
@@ -208,6 +230,11 @@
 {/snippet}
 
 {#snippet resultsContent()}
+  <StatusAnnouncer
+    message={announcement}
+    label="Run announcements"
+    srOnly
+  />
   {#if runs.error}
     <p role="alert" class="text-sm text-danger">{runs.error}</p>
   {/if}
