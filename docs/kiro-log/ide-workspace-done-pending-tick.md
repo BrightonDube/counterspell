@@ -337,3 +337,24 @@ Baseline run first. `cargo fmt --check` and `clippy --workspace --all-targets -D
 | T21 | NOT ticked. Shortcuts, polite announcements and no focus steal are tested. The keyboard-only round trip (problem, editor, Run, Ghost, Hint, Rerun, back) needs the browser harness. |
 | T22 | NOT ticked. Its own notes say media-query emulation is not covered; the task requires browser media-query tests. |
 | T24, T25 | NOT ticked. The real-stack harness (`web/tests/real-api/real-api-check.mjs`, 21/21 recorded) needs Chrome via Playwright `channel: 'chrome'`. Not installed here, so I could not re-run it. T25 also depends on the T18 fix. |
+
+## T26 reconnect, retry, ownership and failure paths (19 Nov)
+
+- `web/tests/real-api/reconnect.spec.mjs` (20/20 on the real stack): real
+  magic-link sign-in for two users, live SSE drop mid-submit, Last-Event-ID
+  resume with no gap, stale-cursor replay identical for client dedup, 400 on
+  a malformed cursor, terminal read model carries verdict + ghost lifecycle
+  (19 events), finished-run replay from cursor 0 for gap recovery, foreign
+  run read/SSE 404, missing run 404, oversized source 413 source_too_large,
+  malformed source 400 source_does_not_parse, unsupported verdicts never hunt
+  (output-limit path: driver does not count function stdout as run output,
+  so the run is accepted and still emits no ghost events), user rate limit
+  and queue cap both 429 in a burst (33 refusals).
+- Worker retry: SIGKILLed the judge mid-ghost_hunting; the reclaimed run
+  re-emitted restarted, re-ran the suite + hunt and finished wrong_answer
+  (events: ...,ghost_hunting,restarted,compiling,...,ghost,done). An earlier
+  run killed mid-compile instead exhausted retries at compile — per-run
+  wedge recorded in ide-workspace-blockers.md.
+- Stack: Axum on 127.0.0.1:8088, real judge + rootless daemon + cs-dev-pg,
+  all restarted post-crash with the README env (dev-test.env + explicit
+  PUBLIC_BASE_URL/SESSION_SECRET/SANDBOX_DOCKER_SOCKET).
