@@ -72,12 +72,16 @@
 
   onDestroy(() => session.cancel());
 
+  const canRerunGhost = $derived(runs.stream?.ghost !== undefined);
+
   function requestRun(request: RunRequest): void {
+    const ghost = request.ghost ? runs.stream?.ghost : undefined;
     session.start({
       problem: problem.slug,
       lang: request.lang,
       code: request.code,
-      mode: request.mode
+      mode: request.mode,
+      ghostInput: ghost?.input
     });
   }
 
@@ -194,7 +198,13 @@
 {/snippet}
 
 {#snippet editor()}
-  <EditorPanel {problem} {languages} busy={inProgress} onRequest={requestRun} />
+  <EditorPanel
+    {problem}
+    {languages}
+    busy={inProgress}
+    {canRerunGhost}
+    onRequest={requestRun}
+  />
 {/snippet}
 
 {#if mode === 'tablet'}

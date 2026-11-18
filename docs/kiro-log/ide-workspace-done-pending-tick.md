@@ -123,3 +123,28 @@
   in a visible bordered block above the fixture layout.
 - Gates: `npm run check` 0 errors / 0 warnings; workspace vitest 96 passed
   (4 skipped = axum suite without env); GhostPanel 11/11; shell 8/8.
+
+## T18 — Rerun ghost as a real custom run (done pending tick)
+
+- `runs/api.ts`: `startGhostRun`/`startGhostRunAction` POST `/api/runs/ghost`
+  with `{problem, lang, code, ghost:{input}}` and one Idempotency-Key per
+  action, same contract as `startRunAction`.
+- `run-session.ts`: `SessionStartInput.ghostInput` routes the start through
+  `deps.ghostAction` (optional dep; absent = start refused, returns false).
+  A refused send now restores `stream` (captured before the starting publish)
+  so the autopsy of the finished run is not erased by an API error.
+- `RunControls`: labelled `Rerun ghost` button (44px, title explains it),
+  rendered only when `canRerunGhost` and wired through `EditorPanel` as a
+  `RunRequest{ghost:true}` carrying the live editor source.
+- `WorkspaceShell`: `canRerunGhost` = current stream has a ghost; the shell
+  supplies `runs.stream.ghost.input` so the judge gets the stored input
+  verbatim. The browser can never invent the input.
+- RED to GREEN: api.test (endpoint, body, idempotency), run-session.test
+  (ghost action used, prior stream+view preserved on refusal),
+  RunControls.test (hidden without ghost, labelled click),
+  WorkspaceShell.test (full path: ghost stream to button to ghostAction
+  called with problem/lang/ghost input).
+- Gates: workspace+runs vitest 147 passed (4 skipped axum-env); `npm run
+  check` 0 errors, 0 warnings.
+- Not covered here: Axum-level ghost rerun (the endpoint itself is covered
+  by server pg tests from T02); browser-harness rerun journey (T24).

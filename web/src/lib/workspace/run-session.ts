@@ -2,9 +2,12 @@
 // loads the authoritative read model when the run finishes. It never invents a result. Every callback
 // checks a generation number, so a run that ends after the learner has moved on cannot update the page.
 import { ApiRequestError } from '../api/client';
+import type { Json } from '../contract';
 import {
   getRun,
+  startGhostRunAction,
   startRunAction,
+  type GhostRunInput,
   type RunMode,
   type StartRunAction,
   type StartRunInput
@@ -18,6 +21,8 @@ export interface RunRequest {
   lang: string;
   code: string;
   mode: RunMode;
+  /** Marks a Rerun-ghost request; the shell supplies the stored ghost input. */
+  ghost?: true;
 }
 
 export type SessionPhase =
@@ -39,13 +44,20 @@ export interface RunSessionSnapshot {
 /** The side effects the session uses. Tests replace them with fakes. */
 export interface RunSessionDeps {
   startAction(input: StartRunInput): StartRunAction;
+  /** Posts a custom ghost run. Required only for Rerun-ghost requests. */
+  ghostAction?(input: GhostRunInput): StartRunAction;
   fetchRun(runId: string, options: { signal: AbortSignal }): Promise<RunView>;
   watch(options: WatchOptions): RunWatch;
 }
 
+/** A start request. `ghostInput` marks a custom ghost run carrying the stored input. */
+export interface SessionStartInput extends StartRunInput {
+  ghostInput?: Json;
+}
+
 export interface RunSession {
   /** Starts one run. Returns false when a run is already in progress, so a double click is ignored. */
-  start(input: StartRunInput): boolean;
+  start(input: SessionStartInput): boolean;
   /** Stops watching and ignores anything the old run sends later. Used when the learner leaves. */
   cancel(): void;
   snapshot(): RunSessionSnapshot;
@@ -54,6 +66,7 @@ export interface RunSession {
 /** The production dependencies: the real run API and the real stream client. */
 export const browserRunSessionDeps: RunSessionDeps = {
   startAction: startRunAction,
+  ghostAction: startGhostRunAction,
   fetchRun: (runId, options) => getRun(runId, options),
   watch: watchRun
 };
@@ -142,16 +155,27 @@ export function createRunSession(
     });
   }
 
-  function start(input: StartRunInput): boolean {
+  function start(input: SessionStartInput): boolean {
     if (isBusy(current.phase)) return false;
+    const action =
+      input.ghostInput !== undefined
+        ? deps.ghostAction?.({
+            problem: input.problem,
+            lang: input.lang,
+            code: input.code,
+            ghost: { input: input.ghostInput }
+          })
+        : deps.startAction(input);
+    if (!action) return false;
     generation += 1;
     const token = generation;
     stopWatch();
     pending?.abort();
-    const action = deps.startAction(input);
     const controller = new AbortController();
     pending = controller;
     // The last finished result stays visible until the replacement has its own terminal result.
+    // The prior stream is captured now so a refused start can restore the autopsy.
+    const priorStream = current.stream;
     publish({ phase: 'starting', mode: input.mode, view: current.view });
 
     action
@@ -173,6 +197,7 @@ export function createRunSession(
           phase: 'failed',
           mode: input.mode,
           view: current.view,
+          stream: priorStream,
           error: safeMessage(error)
         });
       });

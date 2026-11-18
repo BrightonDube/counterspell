@@ -28,6 +28,7 @@ vi.mock('../runs/api', async (importOriginal) => {
 
 import { startRunAction } from '../runs/api';
 import { initialRunState, type RunStreamState } from '../runs/reducer';
+import { parseRunView } from '../runs/types';
 import type { GhostView } from '../ghost/types';
 import type { RunSessionDeps } from './run-session';
 import WorkspaceShell from './WorkspaceShell.svelte';
@@ -78,9 +79,24 @@ function ghostSessionDeps(stream: RunStreamState): RunSessionDeps {
       key: 'ghost-key',
       send: () => Promise.resolve('run-ghost')
     }),
-    fetchRun: () => new Promise(() => {}),
+    fetchRun: () =>
+      Promise.resolve(
+        parseRunView({
+          run_id: 'run-ghost',
+          problem: 'two-sum',
+          lang: 'python',
+          mode: 'run',
+          status: 'completed',
+          terminal: true,
+          verdict: 'wrong_answer',
+          attempt: 1,
+          created_at: '2026-11-15T10:00:00Z',
+          last_seq: 3,
+          tests: []
+        })
+      ),
     watch: (options) => {
-      options.onState(stream);
+      options.onDone(stream);
       return { close() {} };
     }
   };
@@ -259,5 +275,43 @@ describe('WorkspaceShell', () => {
       within(ghostCard).getByText(/Minimized counterexample/)
     ).toBeTruthy();
     expect(within(ghostCard).getByText('Step 1: [3,5,0]')).toBeTruthy();
+  });
+
+  // Breaks if the Rerun ghost action posts to the public endpoint or drops the
+  // stored ghost input, so the judge cannot rerun the exact failing case.
+  it('reruns the stored ghost with the editor source through the ghost action', async () => {
+    const ghostSend = vi.fn(() => Promise.resolve('run-ghost-2'));
+    const ghostAction = vi.fn(() => ({ key: 'gk', send: ghostSend }));
+    const stream: RunStreamState = {
+      ...initialRunState('run-ghost'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    const sessionDeps = { ...ghostSessionDeps(stream), ghostAction };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps
+      }
+    });
+
+    const runButton = await screen.findByRole('button', {
+      name: 'Run samples'
+    });
+    await fireEvent.click(runButton);
+    const rerun = await screen.findByRole('button', {
+      name: /rerun ghost/i
+    });
+    await fireEvent.click(rerun);
+
+    expect(ghostAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        problem: 'two-sum',
+        lang: 'python',
+        ghost: { input: [0, 0] }
+      })
+    );
   });
 });

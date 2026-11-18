@@ -7,15 +7,20 @@
     sourceBytes,
     limitBytes,
     saveMessage = '',
+    canRerunGhost = false,
     onRun,
-    onSubmit
+    onSubmit,
+    onRerunGhost
   }: {
     busy: boolean;
     sourceBytes: number;
     limitBytes: number;
     saveMessage?: string;
+    /** Whether the last finished run produced a stored ghost that can be rerun. */
+    canRerunGhost?: boolean;
     onRun: () => void;
     onSubmit: () => void;
+    onRerunGhost?: () => void;
   } = $props();
 
   // The byte check is advisory. The server repeats it and stays authoritative.
@@ -74,6 +79,18 @@
     >
       Submit
     </button>
+    {#if canRerunGhost && onRerunGhost}
+      <button
+        type="button"
+        class="min-h-11 rounded border border-border-strong px-4 text-text disabled:opacity-60"
+        disabled={blocked}
+        aria-label="Rerun ghost"
+        title="Run your current source on the stored ghost input"
+        onclick={onRerunGhost}
+      >
+        Rerun ghost
+      </button>
+    {/if}
   </div>
   <p id="run-shortcuts" class="text-sm text-text-muted">
     Ctrl+Enter or Cmd+Enter runs samples. Ctrl+Shift+Enter or Cmd+Shift+Enter

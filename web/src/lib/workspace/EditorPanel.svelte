@@ -18,12 +18,15 @@
     problem,
     languages,
     busy = false,
+    canRerunGhost = false,
     onRequest
   }: {
     problem: ProblemDetail;
     languages: LanguageSummary[];
     /** True while a run is in progress. It disables Run and Submit. */
     busy?: boolean;
+    /** Whether the last finished run produced a stored ghost that can be rerun. */
+    canRerunGhost?: boolean;
     onRequest?: (request: RunRequest) => void;
   } = $props();
 
@@ -48,6 +51,16 @@
   function request(mode: RunMode): void {
     if (!session || !current || !onRequest) return;
     onRequest({ lang: current, code: session.source(current), mode });
+  }
+
+  function requestGhost(): void {
+    if (!session || !current || !onRequest) return;
+    onRequest({
+      lang: current,
+      code: session.source(current),
+      mode: 'run',
+      ghost: true
+    });
   }
 
   const statuses = new SvelteMap<string, SessionStatus>();
@@ -134,8 +147,10 @@
       {busy}
       {sourceBytes}
       {limitBytes}
+      {canRerunGhost}
       onRun={() => request('run')}
       onSubmit={() => request('submit')}
+      onRerunGhost={requestGhost}
     />
   {:else}
     <p class="text-sm text-text-muted">
