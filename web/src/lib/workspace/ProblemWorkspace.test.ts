@@ -51,6 +51,13 @@ const languages: LanguageSummary[] = [
 beforeEach(() => {
   api.loadProblem.mockReset();
   api.loadLanguages.mockReset();
+  // happy-dom defaults to a 1024px viewport, which resolves to the shell's tablet
+  // mode; these tests assert the desktop shell, so emulate a wide viewport.
+  (
+    window as unknown as {
+      happyDOM?: { setViewport(v: { width: number; height: number }): void };
+    }
+  ).happyDOM?.setViewport({ width: 1440, height: 900 });
 });
 
 afterEach(() => {

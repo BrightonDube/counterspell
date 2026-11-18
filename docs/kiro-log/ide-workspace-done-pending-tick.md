@@ -37,3 +37,38 @@
 - Note: D16 stays open — this path does not need a `ghosts` table because the
   request carries the ghost input and the judge re-derives the expected value
   from the trusted reference.
+
+## T09 responsive WorkspaceShell (18 Nov)
+
+- `layout-mode.svelte.ts`: matchMedia-driven `desktop >=1200px`,
+  `tablet 768-1199px`, `narrow <768px` buckets, SSR-safe default `desktop`.
+  The component takes an optional `layout` prop so tests pin a mode.
+- Desktop keeps the two-column shell (grid switched from `lg:` to an explicit
+  `minmax(16rem,22rem)` column pair under the mode branch so JS is the single
+  source of truth for breakpoints).
+- Tablet renders the editor and controls in flow with a persistent
+  `role="status" aria-label="Run status"` strip (live phase label or terminal
+  verdict), plus `Problem`/`Results` drawer triggers. Drawers are
+  `role="dialog"` + `tabindex="-1"` panels; opening moves focus inside,
+  Escape/Close returns focus to the trigger (`aria-expanded`, `aria-controls`).
+- Narrow stacks problem, editor, results in reading order with the same
+  collapse toggle; ProblemPanel already keeps title/constraints visible with a
+  collapsible statement.
+- Shared `{#snippet problemContent|resultsContent|problemAside|editor}`
+  keeps all three layouts consistent; run-session wiring unchanged.
+- Vitest (WorkspaceShell.test.ts, 7 tests): named landmarks, collapse/restore,
+  one-run-per-click, tablet triggers/drawer focus + Escape/restore, status
+  strip, narrow reading order. `ProblemWorkspace.test.ts` sets a 1440px
+  happy-dom viewport (`window.happyDOM.setViewport`) since 1024px defaults to
+  tablet mode.
+- Browser verification (real Chrome via playwright-core channel, vite dev +
+  `web/e2e-stub.mjs` fixture server, `web/e2e-shell-check.mjs` — 30 checks):
+  desktop columns side-by-side, tablet drawers/focus/Escape/status strip,
+  live resize swaps modes without reload, narrow full-width stack, no
+  horizontal overflow at 1440/900/390 and 200% zoom (720 CSS px), min target
+  44px at every breakpoint, route change loads new slug with no stale title
+  and back returns. Only console error: favicon 404.
+- Gates: `npm run check` 0 errors 0 warnings; vitest 465 tests green after the
+  viewport fix.
+- Open per design, deferred to later tasks: Familiar overlay position (T20),
+  heavy-asset lazy-load measurements (T27), keyboard shortcut map (T21).
