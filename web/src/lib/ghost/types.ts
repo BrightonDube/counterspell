@@ -111,11 +111,7 @@ function parseTrace(raw: unknown, path: string): ShrinkTraceView {
 }
 
 /** A provenance seed is a u64, which the wire carries as a decimal string because a JS number cannot hold every value. A legacy integer still parses when it is a safe integer. */
-function readSeed(
-  record: RawRecord,
-  key: string,
-  path: string
-): string {
+function readSeed(record: RawRecord, key: string, path: string): string {
   const value = record[key];
   if (typeof value === 'number') {
     if (!Number.isSafeInteger(value) || value < 0) {

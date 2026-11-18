@@ -31,10 +31,7 @@
   import ProblemPanel from './ProblemPanel.svelte';
   import StatusAnnouncer from './StatusAnnouncer.svelte';
   import TestPanel from './TestPanel.svelte';
-  import {
-    createLayoutMode,
-    type LayoutMode
-  } from './layout-mode.svelte.js';
+  import { createLayoutMode, type LayoutMode } from './layout-mode.svelte.js';
   import { createReducedMotion } from './reduced-motion.svelte.js';
   import {
     browserRunSessionDeps,
@@ -74,9 +71,12 @@
 
   let runs = $state<RunSessionSnapshot>({ phase: 'idle' });
   // Session deps are injected once at mount; swapping them mid-run is not supported.
-  const session = createRunSession(untrack(() => sessionDeps), (next) => {
-    runs = next;
-  });
+  const session = createRunSession(
+    untrack(() => sessionDeps),
+    (next) => {
+      runs = next;
+    }
+  );
   const inProgress = $derived(
     runs.phase === 'starting' ||
       runs.phase === 'streaming' ||
@@ -231,11 +231,7 @@
 {/snippet}
 
 {#snippet resultsContent()}
-  <StatusAnnouncer
-    message={announcement}
-    label="Run announcements"
-    srOnly
-  />
+  <StatusAnnouncer message={announcement} label="Run announcements" srOnly />
   {#if runs.error}
     <p role="alert" class="text-sm text-danger">{runs.error}</p>
   {/if}

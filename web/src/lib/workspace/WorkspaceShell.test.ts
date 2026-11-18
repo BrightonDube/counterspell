@@ -302,11 +302,14 @@ describe('WorkspaceShell', () => {
     });
     await fireEvent.click(rerun);
 
+    // test-change: GHO-3. The ghost-run endpoint requires ghost.submission_id (the
+    // source run, which must belong to the caller), so the stored ghost is sent with
+    // its run id. The old expectation sent the input alone, which the server refuses.
     expect(ghostAction).toHaveBeenCalledWith(
       expect.objectContaining({
         problem: 'two-sum',
         lang: 'python',
-        ghost: { input: [0, 0] }
+        ghost: { submission_id: 'run-ghost', input: [0, 0] }
       })
     );
   });
@@ -352,9 +355,7 @@ describe('WorkspaceShell', () => {
       expect(requestSpeech).toHaveBeenCalledWith('run-ghost');
     });
     expect(requestSpeech).toHaveBeenCalledTimes(1);
-    expect(
-      await screen.findByText(/Looks linear\./)
-    ).toBeTruthy();
+    expect(await screen.findByText(/Looks linear\./)).toBeTruthy();
   });
 
   // Breaks if a screen-reader user never hears the run finish, or if a stream
@@ -399,8 +400,7 @@ describe('WorkspaceShell', () => {
   // behind the learner's back.
   it('closes the run watch and drops late results when the shell unmounts', async () => {
     const close = vi.fn();
-    const fetchRun: RunSessionDeps['fetchRun'] = () =>
-      new Promise(() => {});
+    const fetchRun: RunSessionDeps['fetchRun'] = () => new Promise(() => {});
     const sessionDeps: RunSessionDeps = {
       startAction: () => ({
         key: 'k',

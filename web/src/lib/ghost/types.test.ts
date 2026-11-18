@@ -101,7 +101,11 @@ describe('parseShrinkStep', () => {
   // Breaks if the engine's first recorded step is dropped: its index is
   // zero-based ("zero is the first failing input"), so index 0 must parse.
   it('accepts index 0, the first failing input', () => {
-    const parsed = parseShrinkStep({ index: 0, input: [3, 3, 0], evaluations: 0 });
+    const parsed = parseShrinkStep({
+      index: 0,
+      input: [3, 3, 0],
+      evaluations: 0
+    });
     expect(parsed.index).toBe(0);
     expect(parsed.input).toEqual([3, 3, 0]);
   });

@@ -112,7 +112,10 @@ const submitId = runIds[runIds.length - 1] ?? '';
 const counterexample = await page
   .waitForSelector('text=Minimized counterexample', { timeout: 120000 })
   .catch(() => null);
-check('ghost: minimized counterexample renders after the submit', !!counterexample);
+check(
+  'ghost: minimized counterexample renders after the submit',
+  !!counterexample
+);
 
 // --- Persisted events + terminal read straight from Postgres ---
 function pgScalar(sql) {
@@ -124,7 +127,9 @@ function pgScalar(sql) {
       )
         .toString()
         .trim();
-    } catch {}
+    } catch {
+      // This docker prefix did not work here; try the next one.
+    }
   }
   return '';
 }
@@ -165,7 +170,9 @@ try {
       `select payload::text from run_events where submission_id = '${submitId}' and type = 'ghost'`
     )
   );
-} catch {}
+} catch {
+  // No ghost row or unreadable JSON: ghostJson stays empty and the check below fails with it.
+}
 check(
   'ghost: payload carries kind, input, provenance and autopsy',
   ghostJson.kind === 'wrong' &&
@@ -233,7 +240,8 @@ check('submit: corrected source reaches a real Accepted verdict', !!fixed);
 const body = await page.evaluate(() => document.body.innerText);
 check(
   'safety: no hidden input/expected/got detail leaks',
-  !/hidden.*(input|expected|got)/i.test(body) && !/\[\[?-?\d+ *, *-?\d+.*\]\]/.test(body.replace(/\[\d+, \d+\]/g, '')),
+  !/hidden.*(input|expected|got)/i.test(body) &&
+    !/\[\[?-?\d+ *, *-?\d+.*\]\]/.test(body.replace(/\[\d+, \d+\]/g, '')),
   'no generated tuples visible'
 );
 

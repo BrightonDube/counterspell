@@ -108,10 +108,7 @@ describe('output safety', () => {
     for (const [path, source] of Object.entries(files)) {
       if (path.endsWith('.test.ts')) continue;
       for (const sink of sinks) {
-        expect(
-          source.includes(sink),
-          `${path} contains ${sink}`
-        ).toBe(false);
+        expect(source.includes(sink), `${path} contains ${sink}`).toBe(false);
       }
     }
   });
@@ -128,9 +125,7 @@ describe('output safety', () => {
         reducedMotion: false
       }
     });
-    expect(
-      screen.getByText('<img src=x onerror=alert(1)>')
-    ).toBeTruthy();
+    expect(screen.getByText('<img src=x onerror=alert(1)>')).toBeTruthy();
     expect(document.querySelector('img')).toBeNull();
   });
 });
@@ -197,9 +192,7 @@ describe('accessibility', () => {
         reducedMotion: false
       }
     });
-    const items = screen
-      .getByRole('list')
-      .querySelectorAll('li');
+    const items = screen.getByRole('list').querySelectorAll('li');
     const texts = [...items].map((item) => item.textContent ?? '');
     expect(texts).toEqual([
       'Step 1: [3,5,0]',
@@ -240,12 +233,8 @@ describe('accessibility', () => {
     });
     for (const button of screen.getAllByRole('button')) {
       const name =
-        button.getAttribute('aria-label') ??
-        button.textContent?.trim() ??
-        '';
-      expect(name.length, 'a button has no accessible name').toBeGreaterThan(
-        0
-      );
+        button.getAttribute('aria-label') ?? button.textContent?.trim() ?? '';
+      expect(name.length, 'a button has no accessible name').toBeGreaterThan(0);
       expect(
         /min-h-11|min-w-11|h-11|w-11/.test(button.className),
         `"${name}" is under the 44px target`
@@ -274,7 +263,11 @@ describe('palette contrast', () => {
   function token(name: string): string {
     const match = appCss.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
     expect(match, `--${name} is missing from app.css`).not.toBeNull();
-    return match![1]!;
+    const value = match?.[1];
+    if (value === undefined) {
+      throw new Error(`--${name} is missing from app.css`);
+    }
+    return value;
   }
 
   // Breaks if a palette change drops a text pair below WCAG AA (4.5:1).

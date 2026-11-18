@@ -44,6 +44,20 @@ export default defineConfig(
     }
   },
   {
-    ignores: ['.svelte-kit/**', 'build/**', 'node_modules/**']
+    // Node command-line harness scripts. Their job is to print results, so console output is
+    // allowed here. Application code under src/ keeps the no-console rule.
+    files: ['e2e-*.mjs', 'tests/real-api/**/*.mjs'],
+    rules: {
+      'no-console': 'off'
+    }
+  },
+  {
+    ignores: [
+      '.svelte-kit/**',
+      'build/**',
+      'node_modules/**',
+      // Git-ignored runtime artifacts of the real-API harness (see .gitignore).
+      'tests/real-api/.scratch/**'
+    ]
   }
 );

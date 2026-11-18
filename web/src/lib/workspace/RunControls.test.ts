@@ -171,9 +171,7 @@ describe('RunControls', () => {
         onRerunGhost: () => {}
       }
     });
-    expect(
-      screen.queryByRole('button', { name: /rerun ghost/i })
-    ).toBeNull();
+    expect(screen.queryByRole('button', { name: /rerun ghost/i })).toBeNull();
   });
 
   // Breaks if the labelled ghost action never reaches the click handler.

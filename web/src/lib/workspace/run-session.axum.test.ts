@@ -82,7 +82,8 @@ function sseSource(user: number): (url: string) => EventSourceLike {
             const data: string[] = [];
             for (const line of frame.split('\n')) {
               if (line.startsWith('event:')) name = line.slice(6).trim();
-              else if (line.startsWith('data:')) data.push(line.slice(5).trim());
+              else if (line.startsWith('data:'))
+                data.push(line.slice(5).trim());
             }
             for (const listener of listeners.get(name) ?? []) {
               listener({ data: data.join('\n') });
@@ -125,7 +126,10 @@ function untilFinished(
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(
-      () => reject(new Error(`no terminal snapshot; last=${snapshots.at(-1)?.phase}`)),
+      () =>
+        reject(
+          new Error(`no terminal snapshot; last=${snapshots.at(-1)?.phase}`)
+        ),
       15000
     );
     const tick = setInterval(() => {
@@ -157,7 +161,8 @@ describeAxum('run session against a real Axum server', () => {
       snapshots,
       () => snapshots.at(-1)?.phase === 'finished'
     );
-    const done = snapshots.at(-1)!;
+    const done = snapshots.at(-1);
+    if (!done) throw new Error('the session published no snapshot');
     // Every asserted field was emitted by Axum: the 202 id, the streamed
     // states, and the terminal read model's verdict and test rows.
     expect(done.runId).toMatch(/^[0-9a-f-]{36}$/);
@@ -182,7 +187,8 @@ describeAxum('run session against a real Axum server', () => {
       snapshots,
       () => snapshots.at(-1)?.phase === 'finished'
     );
-    const prior = snapshots.at(-1)!;
+    const prior = snapshots.at(-1);
+    if (!prior) throw new Error('the session published no snapshot');
 
     session.start({
       problem: 'two-sum',
@@ -190,11 +196,9 @@ describeAxum('run session against a real Axum server', () => {
       code: 'x'.repeat(70_000),
       mode: 'submit'
     });
-    await untilFinished(
-      snapshots,
-      () => snapshots.at(-1)?.phase === 'failed'
-    );
-    const failed = snapshots.at(-1)!;
+    await untilFinished(snapshots, () => snapshots.at(-1)?.phase === 'failed');
+    const failed = snapshots.at(-1);
+    if (!failed) throw new Error('the session published no snapshot');
     // The message came from the server's own error envelope.
     expect(failed.error).toBeTruthy();
     // The earlier finished view survived the refused request.
@@ -225,16 +229,13 @@ describeAxum('run session against a real Axum server', () => {
       code: 'print(2)\n',
       mode: 'run'
     });
-    await untilFinished(
-      snapshots,
-      () => snapshots.at(-1)?.phase === 'failed'
-    );
+    await untilFinished(snapshots, () => snapshots.at(-1)?.phase === 'failed');
     expect(snapshots.at(-1)?.error).toBeTruthy();
     expect(snapshots.at(-1)?.view?.status).toBe('completed');
     session.cancel();
   });
 
-  it("a foreign run id is not found and reveals nothing", async () => {
+  it('a foreign run id is not found and reveals nothing', async () => {
     const fetchImpl = axumFetch(freshUser());
     const runId = await startRunAction({
       problem: 'two-sum',
