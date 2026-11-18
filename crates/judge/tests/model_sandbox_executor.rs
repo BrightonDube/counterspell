@@ -139,6 +139,7 @@ fn input(mode: RunMode) -> RunInput {
         problem_version: 1,
         lang: "python".to_owned(),
         mode,
+        ghost_input: None,
         code: "def two_sum(nums, target):\n    return [0, 1]\n".to_owned(),
         attempt: 1,
     }
@@ -547,5 +548,147 @@ async fn a_partial_bench_declaration_is_infrastructure() {
     assert!(
         matches!(outcome, Err(ExecError::Infrastructure(_))),
         "a half-declared bench is a store fault, not a verdict: {outcome:?}"
+    );
+}
+
+/// A problem with a trusted reference, for custom ghost runs (ide-workspace T02).
+fn problem_with_reference() -> ProblemSpec {
+    ProblemSpec {
+        reference_python: Some("def two_sum(nums, target):\n    return [0, 1]\n".to_owned()),
+        ..problem()
+    }
+}
+
+/// A run carrying one ghost input instead of the stored suite.
+fn ghost_input(input_value: Value) -> RunInput {
+    let mut run = input(RunMode::Run);
+    run.ghost_input = Some(input_value);
+    run
+}
+
+#[tokio::test]
+async fn a_ghost_run_passes_when_the_answers_match() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // One call per side: first the user answer, then the reference answer.
+    backend.script_program([answer(1, &json!([0, 1])), answer(1, &json!([0, 1]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        problem_with_reference(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(names, ["compiling", "test"], "one custom test, no familiar");
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a passing ghost run must complete: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::Accepted);
+    assert_eq!((result.passed, result.total), (1, 1));
+    assert!(result.measured.is_none(), "a ghost run is never benched");
+}
+
+#[tokio::test]
+async fn a_ghost_run_is_a_wrong_answer_when_the_sides_differ() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([9, 9])), answer(1, &json!([0, 1]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        problem_with_reference(),
+    );
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a wrong ghost run still completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+    assert_eq!((result.passed, result.total), (0, 1));
+}
+
+#[tokio::test]
+async fn a_ghost_run_is_a_runtime_error_when_the_program_crashes() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([
+        Behaviour::Stderr(b"ValueError: boom\n".to_vec()),
+        Behaviour::Exit {
+            code: 1,
+            oom_kill: 0,
+        },
+        answer(1, &json!([0, 1])),
+    ]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        problem_with_reference(),
+    );
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a crashed ghost run still completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::RuntimeError);
+}
+
+#[tokio::test]
+async fn a_ghost_run_times_out_when_the_program_hangs() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([Behaviour::Hang, answer(1, &json!([0, 1]))]);
+    let mut spec = problem_with_reference();
+    spec.time_limit_ms = Some(50);
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a timed-out ghost run still completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::TimeLimit);
+}
+
+#[tokio::test]
+async fn a_ghost_run_without_a_reference_is_problem_unavailable() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    let executor = executor(catalog, &backend, dir.path().join("languages.toml"));
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run resolves");
+
+    assert!(
+        matches!(
+            outcome,
+            RunOutcome::Failed(FailureReason::ProblemUnavailable)
+        ),
+        "no reference means unjudgeable, never a verdict: {outcome:?}"
     );
 }

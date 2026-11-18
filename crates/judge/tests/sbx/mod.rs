@@ -247,6 +247,7 @@ pub async fn run_source(
         problem_version: 1,
         lang: lang.to_owned(),
         mode,
+        ghost_input: None,
         code: source.to_owned(),
         attempt: 1,
     };
@@ -308,6 +309,7 @@ pub async fn execute_on(
         problem_version: 1,
         lang: lang.to_owned(),
         mode,
+        ghost_input: None,
         code: source.to_owned(),
         attempt: 1,
     };
@@ -413,6 +415,7 @@ pub fn spawn_source(
         problem_version: 1,
         lang: lang.to_owned(),
         mode,
+        ghost_input: None,
         code: source.to_owned(),
         attempt: 1,
     };

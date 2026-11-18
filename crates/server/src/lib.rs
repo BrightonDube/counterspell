@@ -194,6 +194,7 @@ pub fn build_router(state: AppState) -> Router {
             post(hints::handlers::post_hint).get(hints::handlers::get_hints),
         )
         .route("/api/runs", post(runs::create::post_run))
+        .route("/api/runs/ghost", post(runs::custom::post_ghost_run))
         .route("/api/runs/{id}", get(runs::read::get_run))
         .route("/api/runs/{id}/cancel", post(runs::cancel::cancel_run))
         .route("/api/runs/{id}/events", get(runs::sse::stream_run))

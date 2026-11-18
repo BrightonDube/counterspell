@@ -90,6 +90,7 @@ async fn main() {
         problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
+        ghost_input: None,
         code: std::fs::read_to_string(manifest.join("tests/hostile/sleep_forever.py"))
             .expect("the hostile program is readable data"),
         attempt: 1,

@@ -54,6 +54,7 @@ async fn execute_with_backend(
         problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
+        ghost_input: None,
         code: source.to_owned(),
         attempt: 1,
     };

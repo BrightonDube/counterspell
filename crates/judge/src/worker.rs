@@ -156,6 +156,7 @@ impl<E: RunExecutor> Worker<E> {
             problem_version: claimed.problem_version.unwrap_or(0),
             lang: claimed.lang,
             mode: claimed.mode,
+            ghost_input: claimed.ghost_input,
             code: claimed.code,
             attempt,
         };

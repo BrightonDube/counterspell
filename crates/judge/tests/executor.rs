@@ -20,6 +20,7 @@ fn input() -> RunInput {
         problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
+        ghost_input: None,
         code: "print(1)".to_owned(),
         attempt: 1,
     }

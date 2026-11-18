@@ -121,6 +121,7 @@ async fn the_canary_never_reaches_the_logs() {
         problem_version: 1,
         lang: "python".to_owned(),
         mode: RunMode::Submit,
+        ghost_input: None,
         code: "def two_sum(nums, target):\n    return [0, 1]\n".to_owned(),
         attempt: 1,
     };

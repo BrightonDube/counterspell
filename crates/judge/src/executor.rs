@@ -29,6 +29,9 @@ pub struct RunInput {
     pub lang: String,
     /// Sample run or hidden-test submission.
     pub mode: RunMode,
+    /// For a custom ghost run: the one input to judge, instead of the problem's
+    /// stored tests. `None` for ordinary runs.
+    pub ghost_input: Option<serde_json::Value>,
     /// The user's source text.
     pub code: String,
     /// The attempt number, starting at 1.

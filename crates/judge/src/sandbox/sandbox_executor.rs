@@ -16,6 +16,8 @@ use counterspell_common::events::{PublicEvent, PublicTest, SampleDetail};
 use counterspell_common::familiar::class::ClassId;
 use counterspell_common::familiar::payload::MeasuredColumns;
 use counterspell_common::status::{FailureReason, RunMode, TestVerdict, Verdict};
+use counterspell_engine::{classify, Classification, FailureKind, Oracle};
+use tokio::runtime::Handle;
 use tokio::sync::{watch, Semaphore};
 use tokio::time::Instant;
 
@@ -24,6 +26,7 @@ use super::bench::{SandboxBenchCollector, RUN_BENCH_BUDGET, SUBMIT_BENCH_BUDGET}
 use super::compare::Expected;
 use super::config::SandboxConfig;
 use super::driver_protocol::parse_answer;
+use super::oracle::SandboxOracle;
 use super::precheck::precheck;
 use super::preflight::PreflightState;
 use super::problem::{ProblemSpec, ProblemTests, TestCase};
@@ -378,7 +381,9 @@ struct MeasureCall<'a, B: Backend> {
     stop: &'a mut watch::Receiver<bool>,
 }
 
-impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for SandboxExecutor<P, B> {
+impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> RunExecutor
+    for SandboxExecutor<P, B>
+{
     async fn execute(&self, run: RunInput, ctx: RunContext) -> Result<RunOutcome, ExecError> {
         // 1. The language must be known and enabled.
         let Some(lang) = self
@@ -420,6 +425,14 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
             .await?
         {
             return Ok(RunOutcome::Completed(rejected));
+        }
+        // 6b. A custom ghost run skips the stored suite entirely: its one input is
+        //     judged against the trusted reference by the sandbox oracle, in the
+        //     same containers under the same caps (ide-workspace T02).
+        if let Some(input) = run.ghost_input.clone() {
+            return self
+                .execute_ghost(&run, &spec, lang, &input, &ctx, &mut stop)
+                .await;
         }
         // 7. Build the archive and the plan, then run it.
         let archive = self.archive(&run.code, lang, &spec)?;
@@ -500,6 +513,123 @@ fn rejected_result(total: u32) -> FinalResult {
         compile_output: Some(COMPILE_MESSAGE.to_owned()),
         measured: None,
         tests: Vec::new(),
+    }
+}
+
+impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> SandboxExecutor<P, B> {
+    /// A custom ghost run (ide-workspace T02): the user's source and the trusted
+    /// reference run in separate containers through the sandbox oracle, and the
+    /// engine's classifier produces the verdict. The problem's stored tests are
+    /// never loaded for this path — the oracle holds the signature only.
+    async fn execute_ghost(
+        &self,
+        run: &RunInput,
+        spec: &ProblemSpec,
+        lang: &LanguageDefinition,
+        input: &serde_json::Value,
+        ctx: &RunContext,
+        stop: &mut watch::Receiver<bool>,
+    ) -> Result<RunOutcome, ExecError> {
+        let Some(reference) = spec.reference_python.as_deref() else {
+            return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable));
+        };
+        // Authored references are always Python. A disabled or unknown Python
+        // makes the ghost run unjudgeable, never a wrong answer.
+        let Some(reference_lang) = self
+            .languages
+            .get("python")
+            .filter(|language| language.is_enabled())
+        else {
+            return Ok(RunOutcome::Failed(FailureReason::LanguageUnavailable));
+        };
+        let mut oracle = SandboxOracle::new(
+            Handle::current(),
+            self.backend.clone(),
+            self.backend.clone(),
+            lang.clone(),
+            reference_lang.clone(),
+            &spec.signature,
+            &run.code,
+            reference,
+            &self.config,
+        )
+        .map_err(|error| ExecError::Infrastructure(error.to_string()))?;
+        let limit = spec.time_limit_ms.map_or_else(
+            || Duration::from_millis(lang.time_ms_per_test()),
+            |ms| Duration::from_millis(u64::from(ms)),
+        );
+        let custom = input.clone();
+        let started = Instant::now();
+        let observation = tokio::task::spawn_blocking(move || oracle.evaluate(&custom, limit))
+            .await
+            .map_err(|_| ExecError::Infrastructure("oracle_join".to_owned()))?
+            .map_err(|error| ExecError::Infrastructure(error.to_string()))?;
+        let time_ms = u32::try_from(started.elapsed().as_millis()).unwrap_or(u32::MAX);
+        if *stop.borrow() {
+            return Err(ExecError::Stopped);
+        }
+
+        let (verdict, test_verdict) = match classify(&observation, &spec.comparator) {
+            Classification::Pass => (Verdict::Accepted, TestVerdict::Pass),
+            Classification::Fail(predicate) => match predicate.kind {
+                FailureKind::WrongAnswer => (Verdict::WrongAnswer, TestVerdict::WrongAnswer),
+                FailureKind::RuntimeError => (Verdict::RuntimeError, TestVerdict::RuntimeError),
+                FailureKind::Timeout => (Verdict::TimeLimit, TestVerdict::TimeLimit),
+            },
+            // The trusted reference failing is a problem defect, not a verdict and
+            // not a transient error worth a retry.
+            Classification::ReferenceFailed => {
+                return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable));
+            }
+        };
+
+        // The ghost input is already the user's own data, so the one test shows
+        // input, expected and got exactly like a sample. `sanitised` bounds any
+        // untrusted exception text before it becomes display detail.
+        let user = observation.user.sanitised();
+        let reference_result = observation.reference.sanitised();
+        let detail = SampleDetail::new(
+            &input.to_string(),
+            &result_text(&reference_result),
+            &result_text(&user),
+        );
+        ctx.emit(&PublicEvent::Test(PublicTest::Sample {
+            ordinal: 1,
+            verdict: test_verdict,
+            time_ms,
+            detail: detail.clone(),
+        }))
+        .await?;
+        let passed = u32::from(test_verdict == TestVerdict::Pass);
+        Ok(RunOutcome::Completed(FinalResult {
+            verdict,
+            passed,
+            total: 1,
+            score: passed * 100,
+            runtime_ms: time_ms,
+            compile_output: None,
+            measured: None,
+            tests: vec![TestRecord::Sample {
+                ordinal: 1,
+                verdict: test_verdict,
+                time_ms,
+                detail,
+            }],
+        }))
+    }
+}
+
+/// The short display text of one side's program result for the ghost test detail.
+fn result_text(result: &counterspell_engine::ProgramResult) -> String {
+    use counterspell_engine::ProgramResult;
+    match result {
+        ProgramResult::Returned(value) => value.to_string(),
+        ProgramResult::Crashed {
+            exception_class,
+            message,
+        } => format!("{exception_class}: {message}"),
+        ProgramResult::TimedOut => String::new(),
+        ProgramResult::Garbled { snippet } => snippet.clone(),
     }
 }
 
