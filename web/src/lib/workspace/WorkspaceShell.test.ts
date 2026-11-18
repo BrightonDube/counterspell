@@ -314,4 +314,50 @@ describe('WorkspaceShell', () => {
       })
     );
   });
+
+  // Breaks if the speech request fires before the terminal read, or fires more
+  // than once for the same run across republished stream states.
+  it('asks for the Familiar speech once, after the run finishes', async () => {
+    const requestSpeech = vi.fn(() =>
+      Promise.resolve({
+        kind: 'ready' as const,
+        label: 'Measured summary' as const,
+        text: 'Looks linear.'
+      })
+    );
+    const loadPreferences = vi.fn(() =>
+      Promise.resolve({ muted: false, hidden: false })
+    );
+    const savePreferences = vi.fn(() => Promise.resolve({ synced: true }));
+    const stream: RunStreamState = {
+      ...initialRunState('run-familiar'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream),
+        familiarDeps: { loadPreferences, savePreferences, requestSpeech }
+      }
+    });
+
+    expect(loadPreferences).toHaveBeenCalledTimes(1);
+    expect(requestSpeech).not.toHaveBeenCalled();
+
+    const runButton = await screen.findByRole('button', {
+      name: 'Run samples'
+    });
+    await fireEvent.click(runButton);
+
+    await vi.waitFor(() => {
+      expect(requestSpeech).toHaveBeenCalledWith('run-ghost');
+    });
+    expect(requestSpeech).toHaveBeenCalledTimes(1);
+    expect(
+      await screen.findByText(/Looks linear\./)
+    ).toBeTruthy();
+  });
 });

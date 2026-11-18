@@ -148,3 +148,33 @@
   check` 0 errors, 0 warnings.
 - Not covered here: Axum-level ghost rerun (the endpoint itself is covered
   by server pg tests from T02); browser-harness rerun journey (T24).
+
+## T20 — Familiar preferences + one speech request per run (done pending tick)
+
+- `Familiar.svelte` is now mounted inside the Results region of
+  `WorkspaceShell`, fed by a `FamiliarState` derived in the shell from the
+  stream's `complexity`, `familiar` and terminal `done` payloads only
+  (`hasBench` = a `bench_start` announced sizes). Edits and speech never
+  reach it.
+- `FamiliarDeps` seam in `api/familiar.ts`: the shell injects
+  `loadPreferences`/`savePreferences`/`requestSpeech` fakes in tests;
+  production uses the real same-origin calls.
+- Mute/hide persist through `PATCH /api/me/familiar`: prefs load once on
+  mount (a user toggle before the load lands wins via `prefsTouched`),
+  save fires on each toggle, a failed save keeps the local choice.
+- `Familiar.svelte` got controlled `prefs`, `onPrefsChange` and `speech`
+  props; local toggle state only applies when no prefs are supplied
+  (existing tests unchanged).
+- Speech: `createSpeechGuard` lets exactly one `POST /api/runs/{id}/
+  familiar-hint` through per run id, fired only when the session reaches
+  `finished`; the result renders as a labelled status line (AI hint /
+  Measured summary / unavailable fallback). It never alters verdict or mood.
+- `SpeechResult` typing flows through; `unavailable` renders its fixed line
+  without a label.
+- svelte-check note: `$effect` prop-sync produced "used before declaration"
+  errors under this toolchain; replaced with `$derived` controlled-prefs
+  semantics — same behaviour, zero diagnostics.
+- Gates: `npm run check` 0/0; shell+familiar+api vitest 107 pass;
+  workspace+runs 147 pass earlier.
+- Not covered here: speech copy quality (server-side), browser-harness
+  familiar journey (T24/T25).

@@ -14,6 +14,13 @@ export type SpeechResult =
   | { kind: 'ready'; label: 'AI hint' | 'Measured summary'; text: string }
   | { kind: 'unavailable'; text: string };
 
+/** The Familiar's own API calls. The workspace injects fakes in tests. */
+export interface FamiliarDeps {
+  loadPreferences(): Promise<FamiliarPrefs | null>;
+  savePreferences(prefs: FamiliarPrefs): Promise<{ synced: boolean }>;
+  requestSpeech(runId: string): Promise<SpeechResult>;
+}
+
 const UNAVAILABLE_TEXT =
   'The speech bubble is unavailable right now. The measured result above is complete.';
 

@@ -1,18 +1,49 @@
 <script lang="ts">
+  import type { SpeechResult } from '../api/familiar';
   import { familiarView, type FamiliarState } from './familiar-state';
   import Mascot from './mascot/Mascot.svelte';
 
   let {
     measured,
-    reducedMotion = false
-  }: { measured: FamiliarState; reducedMotion?: boolean } = $props();
+    reducedMotion = false,
+    prefs,
+    speech = null,
+    onPrefsChange
+  }: {
+    measured: FamiliarState;
+    reducedMotion?: boolean;
+    /** Server-loaded choices. Local toggles mirror them and notify the page, which persists them. */
+    prefs?: { muted: boolean; hidden: boolean };
+    /** The speech bubble for the finished run, or null while none exists. */
+    speech?: SpeechResult | null;
+    onPrefsChange?: (next: { muted: boolean; hidden: boolean }) => void;
+  } = $props();
 
-  let muted = $state(false);
-  let hidden = $state(false);
+  // Local toggles matter only when no server prefs are supplied; once `prefs`
+  // exists it is the source of truth and the page persists every change.
+  let localMuted = $state(false);
+  let localHidden = $state(false);
+  const muted = $derived(prefs?.muted ?? localMuted);
+  const hidden = $derived(prefs?.hidden ?? localHidden);
 
   const view = $derived(
     familiarView(measured, { muted, hidden }, reducedMotion)
   );
+
+  function toggleMuted(): void {
+    localMuted = !muted;
+    onPrefsChange?.({ muted: localMuted, hidden });
+  }
+
+  function toggleHidden(): void {
+    localHidden = !hidden;
+    onPrefsChange?.({ muted, hidden: localHidden });
+  }
+
+  function unhide(): void {
+    localHidden = false;
+    onPrefsChange?.({ muted, hidden: false });
+  }
 
   // A failed run uses the danger text colour. A live result plays its burst only once.
   const failed = $derived(
@@ -43,7 +74,7 @@
         type="button"
         aria-pressed={muted}
         class="min-h-11 rounded border border-border-strong px-3 text-sm text-text"
-        onclick={() => (muted = !muted)}
+        onclick={toggleMuted}
       >
         {muted ? 'Unmute' : 'Mute'}
       </button>
@@ -51,7 +82,7 @@
         type="button"
         aria-pressed={hidden}
         class="min-h-11 rounded border border-border-strong px-3 text-sm text-text"
-        onclick={() => (hidden = !hidden)}
+        onclick={toggleHidden}
       >
         {hidden ? 'Show' : 'Hide'}
       </button>
@@ -70,10 +101,19 @@
       {muted}
       {hidden}
       {reducedMotion}
-      onToggleHidden={() => (hidden = false)}
+      onToggleHidden={unhide}
     />
   {:else}
     <p aria-live="polite" class="text-sm text-text-muted">{view.liveText}</p>
+  {/if}
+
+  {#if speech !== null}
+    <p role="status" class="w-full rounded bg-bg px-3 py-2 text-sm text-text">
+      {#if speech.kind === 'ready'}
+        <span class="font-semibold">{speech.label}:</span>
+      {/if}
+      {speech.text}
+    </p>
   {/if}
 
   <details class="w-full text-sm text-text-muted">
