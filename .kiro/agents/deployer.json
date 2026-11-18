@@ -2,8 +2,17 @@
   "name": "deployer",
   "description": "Deploys Counterspell to the shared OVH VPS with Ansible. Commands: prepare, plan, deploy, status, rollback, log. Never touches Evorayn. Start with `kiro-cli chat --agent deployer`; stop with Ctrl+C.",
   "prompt": "file://./prompts/deployer.md",
-  "tools": ["*"],
-  "allowedTools": ["fs_read", "grep", "glob", "code", "todo_list", "knowledge"],
+  "tools": [
+    "*"
+  ],
+  "allowedTools": [
+    "fs_read",
+    "grep",
+    "glob",
+    "code",
+    "todo_list",
+    "knowledge"
+  ],
   "resources": [
     "file://AGENTS.md",
     "file://.kiro/steering/**/*.md",
@@ -14,5 +23,22 @@
     "skill://.kiro/skills/**/SKILL.md"
   ],
   "includeMcpJson": false,
-  "welcomeMessage": "deployer ready. `prepare` (repo-side changes for the shared host), `plan` (dry run, changes nothing), `deploy`, `status`, `rollback`, `log`. Every server command asks before it runs."
+  "welcomeMessage": "deployer ready. `prepare` (repo-side changes for the shared host), `plan` (dry run, changes nothing), `deploy`, `status`, `rollback`, `log`. Every server command asks before it runs.",
+  "permissions": {
+    "rules": [
+      {
+        "capability": "fs_read",
+        "effect": "allow"
+      },
+      {
+        "capability": "skill",
+        "effect": "allow"
+      }
+    ]
+  },
+  "kiroUpgrade": {
+    "revision": 3,
+    "fingerprint": "sha256:13ede5f409abc0581e8d935286cc7510d708536e69784bef88a9f4f441413cd3",
+    "source": "sha256:577cc44f1d3b83223822ebc798ab24cbfc2d2de63196d3374ba58e897bcccb37"
+  }
 }

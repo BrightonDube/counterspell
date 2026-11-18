@@ -23,5 +23,34 @@ infra/ansible/inventory/group_vars/*secret*
 rclone.conf
 deploy/**/*.env
 !deploy/**/*.env.example
+.devin
 # real-api harness runtime artifacts (server/judge logs, probes)
 web/tests/real-api/.scratch/
+
+# Editor and OS clutter (Windows/WSL downloads leave Zone.Identifier files)
+.idea/
+*.swp
+Thumbs.db
+desktop.ini
+*:Zone.Identifier
+*.Zone.Identifier
+
+# Local tool workspace that holds no project source
+.qodo/
+
+# Coverage and profiling output (CI writes lcov.info at the repo root)
+lcov.info
+*.profraw
+coverage/
+
+# Terraform plan and crash output
+*.tfplan
+infra/**/crash.log
+
+# Web test and build tool output
+web/test-results/
+web/playwright-report/
+web/blob-report/
+web/vite.config.js.timestamp-*
+*.tsbuildinfo
+npm-debug.log*
