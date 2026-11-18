@@ -230,6 +230,14 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 - Prompt: `/tmp/kiro-continue-judge-sandbox-a3.md`. Transcript: `docs/kiro-log/2026-11-14T1948-23-judge-sandbox-implement-a3.log`. Exit 0.
 - Credits used (from /usage): 3.85 (credits used now 3051.72/4000).
 
+### 2026-11-14 20:57-21:45 SAST: 27-efficiency-familiar-implement-a1 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-efficiency-familiar-a1.md`. Transcript: `docs/kiro-log/2026-11-14T2057-27-efficiency-familiar-implement-a1.log`. Exit 0.
+- Credits used (from /usage): 35.00 (credits used now 3086.72/4000).
+
+### 2026-11-14 21:46-22:43 SAST: 27-efficiency-familiar-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
+- Prompt: `/tmp/kiro-continue-efficiency-familiar-a2.md`. Transcript: `docs/kiro-log/2026-11-14T2146-27-efficiency-familiar-implement-a2.log`. Exit 0.
+- Credits used (from /usage): 18.90 (credits used now 3105.62/4000).
+
 ### 2026-11-14 22:49-23:00 SAST: 34-problem-catalogue-spec (Kiro CLI, claude-haiku-5.5, mode spec)
 - Prompt: `docs/kiro-prompts/34-problem-catalogue-cli.md`. Transcript: `docs/kiro-log/2026-11-14T2249-34-problem-catalogue-spec.log`. Exit 0.
 - Credits used (from /usage): 7.25 (credits used now 3112.87/4000).

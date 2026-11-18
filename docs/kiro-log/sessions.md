@@ -168,6 +168,11 @@
  docs/KIRO_USAGE.md        |  8 ++++++++
  docs/kiro-log/sessions.md | 12 ++++++++++++
  2 files changed, 20 insertions(+)
+- 2026-11-14T20:43:15Z | model: not reported | last commit: 59824d8 efficiency-familiar T27: mood styling and effect planner
+ | diff stat:
+ docs/KIRO_USAGE.md        | 4 ++++
+ docs/kiro-log/sessions.md | 2 ++
+ 2 files changed, 6 insertions(+)
 - 2026-11-14T22:05:00Z | model: not reported | last commit: d74705c judge-sandbox T20: bollard create, read-back and image check (code; sbx test blocked, not ticked)
  | diff stat:
  docs/KIRO_USAGE.md                      |  4 ++++
@@ -376,3 +381,174 @@
  deploy/vps/tests/compose_shape.sh | 43 +++++++++++++++++++++++-------
  docs/kiro-log/sessions.md         |  2 ++
  5 files changed, 107 insertions(+), 27 deletions(-)
+- 2026-11-17T08:33:43Z | model: not reported | last commit: 335968e chore: add renovate.json with weekly grouped updates
+ | diff stat:
+ crates/grimoire/src/lib.rs | 7 +------
+ docs/kiro-log/sessions.md  | 2 ++
+ 2 files changed, 3 insertions(+), 6 deletions(-)
+- 2026-11-17T09:10:29Z | model: not reported | last commit: eb3bda0 grimoire: apply rustfmt to validate_sandbox
+ | diff stat:
+ .kiro/agents/deployer.json | 32 +++++++++++++++++++++++++++++---
+ docs/kiro-log/sessions.md  |  7 +++++++
+ 2 files changed, 36 insertions(+), 3 deletions(-)
+- 2026-11-18T10:35:44Z | model: not reported | last commit: d8acc26 ide-workspace T24: real Axum browser harness and test data path
+ | diff stat:
+ .gitignore                                     |  35 +++
+ .kiro/agents/deployer.json                     |  32 ++-
+ AGENTS.md                                      |   1 +
+ crates/judge/src/catalogue/testkit.rs          |   2 +-
+ crates/judge/src/problem_store.rs              | 132 ++++++++++-
+ crates/judge/src/sandbox/mod.rs                |   1 +
+ crates/judge/src/sandbox/problem.rs            |  12 +-
+ crates/judge/src/sandbox/sandbox_executor.rs   |  91 +++++++-
+ crates/judge/src/sandbox/testkit.rs            |  12 +
+ crates/judge/tests/model_logs.rs               |   3 +
+ crates/judge/tests/model_sandbox_executor.rs   | 312 +++++++++++++++++++++++++
+ crates/judge/tests/pg_catalogue_judge_reads.rs |  27 ++-
+ crates/judge/tests/pg_problem_tests.rs         |  29 +++
+ docs/kiro-log/sessions.md                      |  12 +
+ docs/kiro-log/spec-driver-runs.md              |   1 +
+ web/src/lib/ghost/types.test.ts                |   8 +
+ web/src/lib/ghost/types.ts                     |   2 +-
+ 17 files changed, 692 insertions(+), 20 deletions(-)
+- 2026-11-18T10:38:18Z | model: not reported | last commit: d8acc26 ide-workspace T24: real Axum browser harness and test data path
+ | diff stat:
+ .gitignore                                     |  29 +++
+ .kiro/agents/deployer.json                     |  32 ++-
+ AGENTS.md                                      |   1 +
+ crates/judge/src/catalogue/testkit.rs          |   2 +-
+ crates/judge/src/problem_store.rs              | 132 ++++++++++-
+ crates/judge/src/sandbox/mod.rs                |   1 +
+ crates/judge/src/sandbox/problem.rs            |  12 +-
+ crates/judge/src/sandbox/sandbox_executor.rs   |  91 +++++++-
+ crates/judge/src/sandbox/testkit.rs            |  12 +
+ crates/judge/tests/model_logs.rs               |   3 +
+ crates/judge/tests/model_sandbox_executor.rs   | 312 +++++++++++++++++++++++++
+ crates/judge/tests/pg_catalogue_judge_reads.rs |  27 ++-
+ crates/judge/tests/pg_problem_tests.rs         |  29 +++
+ docs/kiro-log/sessions.md                      |  32 +++
+ docs/kiro-log/spec-driver-runs.md              |   1 +
+ web/src/lib/ghost/types.test.ts                |   8 +
+ web/src/lib/ghost/types.ts                     |   2 +-
+ 17 files changed, 706 insertions(+), 20 deletions(-)
+- 2026-11-18T10:43:37Z | model: not reported | last commit: d8acc26 ide-workspace T24: real Axum browser harness and test data path
+ | diff stat:
+ .gitignore                                     |  29 +++
+ .kiro/agents/deployer.json                     |  32 ++-
+ AGENTS.md                                      |   1 +
+ crates/judge/src/catalogue/testkit.rs          |   2 +-
+ crates/judge/src/problem_store.rs              | 132 ++++++++++-
+ crates/judge/src/sandbox/mod.rs                |   1 +
+ crates/judge/src/sandbox/problem.rs            |  12 +-
+ crates/judge/src/sandbox/sandbox_executor.rs   |  91 +++++++-
+ crates/judge/src/sandbox/testkit.rs            |  12 +
+ crates/judge/tests/model_logs.rs               |   3 +
+ crates/judge/tests/model_sandbox_executor.rs   | 312 +++++++++++++++++++++++++
+ crates/judge/tests/pg_catalogue_judge_reads.rs |  27 ++-
+ crates/judge/tests/pg_problem_tests.rs         |  29 +++
+ docs/kiro-log/sessions.md                      |  52 +++++
+ docs/kiro-log/spec-driver-runs.md              |   1 +
+ web/src/lib/ghost/types.test.ts                |   8 +
+ web/src/lib/ghost/types.ts                     |   2 +-
+ 17 files changed, 726 insertions(+), 20 deletions(-)
+- 2026-11-18T10:49:32Z | model: not reported | last commit: d8acc26 ide-workspace T24: real Axum browser harness and test data path
+ | diff stat:
+ .gitignore                                     |  29 +++
+ .kiro/agents/deployer.json                     |  32 ++-
+ AGENTS.md                                      |   1 +
+ crates/judge/src/catalogue/testkit.rs          |   2 +-
+ crates/judge/src/problem_store.rs              | 132 ++++++++++-
+ crates/judge/src/sandbox/mod.rs                |   1 +
+ crates/judge/src/sandbox/problem.rs            |  12 +-
+ crates/judge/src/sandbox/sandbox_executor.rs   |  91 +++++++-
+ crates/judge/src/sandbox/testkit.rs            |  12 +
+ crates/judge/tests/model_logs.rs               |   3 +
+ crates/judge/tests/model_sandbox_executor.rs   | 312 +++++++++++++++++++++++++
+ crates/judge/tests/pg_catalogue_judge_reads.rs |  27 ++-
+ crates/judge/tests/pg_problem_tests.rs         |  29 +++
+ docs/kiro-log/sessions.md                      |  72 ++++++
+ docs/kiro-log/spec-driver-runs.md              |   1 +
+ web/src/lib/ghost/types.test.ts                |   8 +
+ web/src/lib/ghost/types.ts                     |   2 +-
+ 17 files changed, 746 insertions(+), 20 deletions(-)
+- 2026-11-18T11:03:53Z | model: not reported | last commit: d8acc26 ide-workspace T24: real Axum browser harness and test data path
+ | diff stat:
+ .gitignore                                     |  29 +++
+ .kiro/agents/deployer.json                     |  32 ++-
+ AGENTS.md                                      |   1 +
+ crates/judge/src/catalogue/testkit.rs          |   2 +-
+ crates/judge/src/problem_store.rs              | 132 ++++++++++-
+ crates/judge/src/sandbox/mod.rs                |   1 +
+ crates/judge/src/sandbox/problem.rs            |  12 +-
+ crates/judge/src/sandbox/sandbox_executor.rs   |  91 +++++++-
+ crates/judge/src/sandbox/testkit.rs            |  12 +
+ crates/judge/tests/model_logs.rs               |   3 +
+ crates/judge/tests/model_sandbox_executor.rs   | 312 +++++++++++++++++++++++++
+ crates/judge/tests/pg_catalogue_judge_reads.rs |  27 ++-
+ crates/judge/tests/pg_problem_tests.rs         |  29 +++
+ docs/kiro-log/sessions.md                      |  92 ++++++++
+ docs/kiro-log/spec-driver-runs.md              |   1 +
+ web/src/lib/ghost/autopsy.test.ts              |   2 +-
+ web/src/lib/ghost/types.test.ts                |  27 ++-
+ web/src/lib/ghost/types.ts                     |  28 ++-
+ web/tests/real-api/real-api-check.mjs          |  55 +++++
+ 19 files changed, 863 insertions(+), 25 deletions(-)
+- 2026-11-18T11:39:18Z | model: not reported | last commit: 8165451 ide-workspace T25: hunt ghosts in the judge on failing submits
+ | diff stat:
+ .gitignore                        |  29 ++++++++++
+ .kiro/agents/deployer.json        |  32 ++++++++++-
+ AGENTS.md                         |   1 +
+ docs/kiro-log/sessions.md         | 114 ++++++++++++++++++++++++++++++++++++++
+ docs/kiro-log/spec-driver-runs.md |   1 +
+ 5 files changed, 174 insertions(+), 3 deletions(-)
+- 2026-11-18T12:16:10Z | model: not reported | last commit: 8165451 ide-workspace T25: hunt ghosts in the judge on failing submits
+ | diff stat:
+ .gitignore                        |  29 +++++++++
+ .kiro/agents/deployer.json        |  32 +++++++++-
+ AGENTS.md                         |   1 +
+ docs/kiro-log/sessions.md         | 122 ++++++++++++++++++++++++++++++++++++++
+ docs/kiro-log/spec-driver-runs.md |   2 +
+ 5 files changed, 183 insertions(+), 3 deletions(-)
+- 2026-11-18T13:01:01Z | model: not reported | last commit: f2202a54 Merge brighton/kiro-setup into main
+ | diff stat:
+ .gitignore                                     |  29 +++++
+ .kiro/agents/deployer.json                     |  32 ++++-
+ AGENTS.md                                      |   1 +
+ docs/KIRO_USAGE.md                             |   8 ++
+ docs/kiro-log/ide-workspace-blockers.md        |   8 ++
+ docs/kiro-log/sessions.md                      | 135 +++++++++++++++++++++
+ docs/kiro-log/spec-driver-runs.md              |   2 +
+ web/e2e-shell-check.mjs                        | 162 ++++++++++++++++++++-----
+ web/eslint.config.js                           |  16 ++-
+ web/src/lib/ghost/types.test.ts                |   6 +-
+ web/src/lib/ghost/types.ts                     |   6 +-
+ web/src/lib/workspace/RunControls.test.ts      |   4 +-
+ web/src/lib/workspace/WorkspaceShell.svelte    |  20 ++-
+ web/src/lib/workspace/WorkspaceShell.test.ts   |  12 +-
+ web/src/lib/workspace/run-session.axum.test.ts |  29 ++---
+ web/src/lib/workspace/safety-a11y.test.ts      |  27 ++---
+ web/tests/real-api/README.md                   |  16 +--
+ web/tests/real-api/packs/add-two/problem.md    |   5 +
+ web/tests/real-api/real-api-check.mjs          |  16 ++-
+ 19 files changed, 427 insertions(+), 107 deletions(-)
+- 2026-11-18T13:06:09Z | model: not reported | last commit: 442687bd ide-workspace: verify and tick T02, T23
+ | diff stat:
+ .gitignore                                     |  29 +++++
+ .kiro/agents/deployer.json                     |  32 ++++-
+ AGENTS.md                                      |   1 +
+ docs/KIRO_USAGE.md                             |   8 ++
+ docs/kiro-log/sessions.md                      | 157 ++++++++++++++++++++++++
+ docs/kiro-log/spec-driver-runs.md              |   2 +
+ web/e2e-shell-check.mjs                        | 162 ++++++++++++++++++++-----
+ web/eslint.config.js                           |  16 ++-
+ web/src/lib/ghost/types.test.ts                |   6 +-
+ web/src/lib/ghost/types.ts                     |   6 +-
+ web/src/lib/workspace/RunControls.test.ts      |   4 +-
+ web/src/lib/workspace/WorkspaceShell.svelte    |  20 ++-
+ web/src/lib/workspace/WorkspaceShell.test.ts   |  12 +-
+ web/src/lib/workspace/run-session.axum.test.ts |  29 ++---
+ web/src/lib/workspace/safety-a11y.test.ts      |  27 ++---
+ web/tests/real-api/README.md                   |  16 +--
+ web/tests/real-api/packs/add-two/problem.md    |   5 +
+ web/tests/real-api/real-api-check.mjs          |  16 ++-
+ 18 files changed, 441 insertions(+), 107 deletions(-)
