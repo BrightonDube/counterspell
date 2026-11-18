@@ -320,3 +320,20 @@
   transient sandbox contention, clean on rerun. Judge stdout logging is off
   (judge.log empty; RUST_LOG unset), so attempt errors leave only restarted
   markers — worth a tracing line if it recurs.
+
+## Verified (spec-driver `verify all`, 19 Nov 2026)
+
+Baseline run first. `cargo fmt --check` and `clippy --workspace --all-targets -D warnings` are clean. `cargo test --workspace --no-fail-fast`: 1508 passed, 0 failed, 501 ignored. `COUNTERSPELL_PACKS_PRIVATE_ROOT` in the local env file points at the old scaffold checkout, so without an override two grimoire `sandbox_fake` tests fail (LAY-01/REF-01). With the populated sibling checkout (`../counterspell-packs-private`, commit 42467cd) they pass. That is an environment fix for Brighton, not a code defect. `web`: `npm run check` 0/0, `npm run build` clean, `npm run test` 487 passed, 1 failed, 4 skipped.
+
+| Task | Result |
+|---|---|
+| T02 | ticked. `cargo test -p counterspell-server --test ghost_runs -- --include-ignored` 9/9 (validation table, 401, missing/foreign source, atomic persist, replay and key reuse, active cap). Judge: `model_sandbox_executor` ghost cases 5/5 plus `pg_claim_loads_the_ghost_input` 1/1. Note: the task text's literal command `cargo test -p counterspell-server custom` matches 0 tests; use `--test ghost_runs`. |
+| T23 | ticked. `safety-a11y.test.ts` 10/10 (no unsafe HTML sinks, plain-text output, verdict text labels, hidden-row redaction, all shrink steps listed, static under reduced motion, accessible names and 44px targets, WCAG AA pairs, focus ring). |
+| T09 | NOT ticked. Vitest part passes, but the named check (desktop/tablet/portrait screenshots, 200% zoom, 44px targets in a browser) needs `e2e-shell-check.mjs` and Chrome. No browser is installed on this machine. |
+| T13 | NOT ticked. `run-session.axum.test.ts` against `counterspell-testserver` passed 4/4 on 5 of 7 runs. On 2 runs "shows a successful sample run from real responses" hit the 5000 ms vitest timeout (the test has no explicit timeout; its own wait is 15 s). An intermittent suite is not a pass. |
+| T15 | NOT ticked. Ghost card renders recorded steps (WorkspaceShell test), but no test I could find asserts "no percentages or fake steps" or the fixture-route banner. |
+| T18 | NOT ticked. FAILING: `WorkspaceShell > reruns the stored ghost with the editor source through the ghost action`. T25 (8165451) made the client send `ghost.submission_id` (the T02 endpoint requires it) and updated one test, but this one still expects `ghost: { input: [0, 0] }`. Received `ghost: { submission_id: 'run-ghost', input: [0, 0] }`. Reproduced 3 times. |
+| T20 | NOT ticked. One-request-per-run, failure fallback and same-origin credentials are tested. Reconnect/remount and the daily-cap fallback have no test I could find. |
+| T21 | NOT ticked. Shortcuts, polite announcements and no focus steal are tested. The keyboard-only round trip (problem, editor, Run, Ghost, Hint, Rerun, back) needs the browser harness. |
+| T22 | NOT ticked. Its own notes say media-query emulation is not covered; the task requires browser media-query tests. |
+| T24, T25 | NOT ticked. The real-stack harness (`web/tests/real-api/real-api-check.mjs`, 21/21 recorded) needs Chrome via Playwright `channel: 'chrome'`. Not installed here, so I could not re-run it. T25 also depends on the T18 fix. |
