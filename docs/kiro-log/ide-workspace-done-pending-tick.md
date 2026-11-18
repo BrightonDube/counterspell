@@ -100,3 +100,26 @@
   check` 0/0, axum suite 4/4 twice, `boundary` 6/6.
 - Not covered here by design: full browser journey on real envelopes (T24/T25)
   and reconnect storms (T26).
+
+## T15 — Ghost Hunting + Ghost card (done pending tick)
+
+- GhostPanel and AutopsyCard existed but were mounted nowhere; the stream
+  reducer already carried ghost/shrink_step data that never reached the DOM.
+- WorkspaceShell now mounts both cards inside the Results region, fed from
+  `runs.stream` (status, ghost, shrinkSteps). Ghost data persists after the
+  stream finishes because the terminal stream state is retained.
+- New seams: `sessionDeps` prop (injects RunSessionDeps for tests, defaults to
+  browserRunSessionDeps) and `reducedMotion` prop feeding
+  `reduced-motion.svelte.ts`, a live prefers-reduced-motion tracker.
+- Both prop reads are one-time captures wrapped in `untrack` — keeps
+  svelte-check at zero warnings without svelte-ignore comments.
+- Tests: WorkspaceShell.test.ts gained a shell-level test that runs the real
+  createRunSession against fake deps replaying a ghost-carrying stream and
+  asserts the card + recorded steps inside the Results region. GhostPanel.test.ts
+  already covered hunting text (no percentages), minimized wording, timeout not
+  minimized, all actual steps in order, reduced-motion static mode,
+  disagreeing steps hidden, cut-off, malformed and no-ghost states.
+- Prototype banner: /prototype/ide-workspace already renders PROTOTYPE_BANNER
+  in a visible bordered block above the fixture layout.
+- Gates: `npm run check` 0 errors / 0 warnings; workspace vitest 96 passed
+  (4 skipped = axum suite without env); GhostPanel 11/11; shell 8/8.

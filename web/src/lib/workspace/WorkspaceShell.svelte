@@ -5,35 +5,45 @@
   // reading order with the problem first and collapsible. The results region shows the
   // live run, or the last finished run until its replacement finishes. The shell never
   // invents a result.
-  import { onDestroy } from 'svelte';
+  import { onDestroy, untrack } from 'svelte';
   import type { LanguageSummary, ProblemDetail } from '../api/types';
   import { statusLabel } from './test-rows';
+  import AutopsyCard from './AutopsyCard.svelte';
   import EditorPanel from './EditorPanel.svelte';
+  import GhostPanel from './GhostPanel.svelte';
   import ProblemPanel from './ProblemPanel.svelte';
   import TestPanel from './TestPanel.svelte';
   import {
     createLayoutMode,
     type LayoutMode
   } from './layout-mode.svelte.js';
+  import { createReducedMotion } from './reduced-motion.svelte.js';
   import {
     browserRunSessionDeps,
     createRunSession,
     type RunRequest,
+    type RunSessionDeps,
     type RunSessionSnapshot
   } from './run-session';
 
   let {
     problem,
     languages,
-    layout
+    layout,
+    reducedMotion,
+    sessionDeps = browserRunSessionDeps
   }: {
     problem: ProblemDetail;
     languages: LanguageSummary[];
     layout?: LayoutMode;
+    reducedMotion?: boolean;
+    sessionDeps?: RunSessionDeps;
   } = $props();
 
   const detected = createLayoutMode();
   const mode = $derived(layout ?? detected.mode);
+  // The injected pins only seed the detectors; live values come from the media query.
+  const motion = createReducedMotion(untrack(() => reducedMotion));
 
   let problemOpen = $state(true);
   let drawer = $state<'problem' | 'results' | null>(null);
@@ -43,7 +53,8 @@
   let resultsDrawerEl = $state<HTMLElement>();
 
   let runs = $state<RunSessionSnapshot>({ phase: 'idle' });
-  const session = createRunSession(browserRunSessionDeps, (next) => {
+  // Session deps are injected once at mount; swapping them mid-run is not supported.
+  const session = createRunSession(untrack(() => sessionDeps), (next) => {
     runs = next;
   });
   const inProgress = $derived(
@@ -148,6 +159,15 @@
     <p class="text-sm text-text-muted">
       No run yet. Run samples or submit to see results here.
     </p>
+  {/if}
+  {#if runs.stream}
+    <GhostPanel
+      status={runs.stream.status}
+      ghost={runs.stream.ghost ?? null}
+      shrinkSteps={runs.stream.shrinkSteps}
+      reducedMotion={motion.value}
+    />
+    <AutopsyCard ghost={runs.stream.ghost ?? null} />
   {/if}
 {/snippet}
 

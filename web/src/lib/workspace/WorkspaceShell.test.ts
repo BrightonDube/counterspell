@@ -1,5 +1,11 @@
 // Component tests for the responsive workspace shell (ide-workspace T09). Each test names the layout break it catches.
-import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within
+} from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { LanguageSummary, ProblemDetail } from '../api/types';
 
@@ -21,11 +27,64 @@ vi.mock('../runs/api', async (importOriginal) => {
 });
 
 import { startRunAction } from '../runs/api';
+import { initialRunState, type RunStreamState } from '../runs/reducer';
+import type { GhostView } from '../ghost/types';
+import type { RunSessionDeps } from './run-session';
 import WorkspaceShell from './WorkspaceShell.svelte';
 
 afterEach(() => {
   cleanup();
 });
+
+/** A minimal wrong-answer ghost, as the trusted judge's stream payload parses it. */
+function ghostFixture(): GhostView {
+  return {
+    kind: 'wrong',
+    input: [0, 0],
+    expected: 1,
+    got: 0,
+    explanation: 'You returned 0; expected 1 for [0, 0].',
+    budgetExhausted: false,
+    shrink: {
+      steps: [
+        { index: 0, input: [3, 5, 0], evaluations: 1 },
+        { index: 1, input: [0, 0], evaluations: 4 }
+      ],
+      totalSteps: 2,
+      omittedSteps: 0,
+      stop: 'no_smaller_input'
+    },
+    provenance: {
+      seed: 7,
+      generatorVersion: 'gen-1',
+      engineVersion: 'eng-1',
+      problemVersion: 2,
+      imageDigest: 'sha256:abc'
+    },
+    autopsy: {
+      explanation: 'You returned 0; expected 1 for [0, 0].',
+      differences: [],
+      differencesTruncated: false,
+      conceptTags: [],
+      authoredMistake: null
+    }
+  };
+}
+
+/** Session deps whose watch replays a finished stream that carries a ghost. */
+function ghostSessionDeps(stream: RunStreamState): RunSessionDeps {
+  return {
+    startAction: () => ({
+      key: 'ghost-key',
+      send: () => Promise.resolve('run-ghost')
+    }),
+    fetchRun: () => new Promise(() => {}),
+    watch: (options) => {
+      options.onState(stream);
+      return { close() {} };
+    }
+  };
+}
 
 const problem: ProblemDetail = {
   slug: 'two-sum',
@@ -163,5 +222,42 @@ describe('WorkspaceShell', () => {
       editorRegion.compareDocumentPosition(resultsRegion) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBeTruthy();
+  });
+
+  // Breaks if the ghost stream data the judge already sends never reaches the ghost
+  // card: the learner would see verdicts but never the minimized counterexample.
+  it('renders the ghost card when the live stream carries a ghost', async () => {
+    const stream: RunStreamState = {
+      ...initialRunState('run-ghost'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream)
+      }
+    });
+
+    const runButton = await screen.findByRole('button', {
+      name: 'Run samples'
+    });
+    await fireEvent.click(runButton);
+
+    const results = screen.getByRole('region', { name: 'Results' });
+    await vi.waitFor(() => {
+      expect(
+        within(results).getByRole('region', { name: 'Ghost input' })
+      ).toBeTruthy();
+    });
+    const ghostCard = within(results).getByRole('region', {
+      name: 'Ghost input'
+    });
+    expect(
+      within(ghostCard).getByText(/Minimized counterexample/)
+    ).toBeTruthy();
+    expect(within(ghostCard).getByText('Step 1: [3,5,0]')).toBeTruthy();
   });
 });
