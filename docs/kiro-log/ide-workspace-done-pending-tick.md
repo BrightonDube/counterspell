@@ -201,3 +201,25 @@
   0/0.
 - Not covered here: full keyboard-only journey in a real browser (T24/T25
   harness scope).
+
+## T22 — Reduced-motion and animation lifecycle (done pending tick)
+
+- Audit showed the machinery was already correct; this task adds the missing
+  shell-level lifecycle proof.
+- Reduced motion: `reduced-motion.svelte.ts` live tracker feeds GhostPanel
+  (replay `plan.mode` -> 'static', steps listed, `motion-safe:` classes gate
+  the crossfades) and Familiar/Mascot (no GSAP import, no burst, no
+  crossfade; static badge stays). Existing Mascot tests: never starts GSAP
+  under reduced motion, removes a running burst when motion is switched off,
+  badge text replaces particles. No CSS transition outside `motion-safe:`.
+- Lifecycle: Mascot `$effect` cleanups call `playback.dispose()` (kills
+  timelines, restores styles, removes spawned nodes; double-dispose safe;
+  dispose-before-load creates nothing — timelines.test.ts). No ambient
+  loops: no `repeat: -1` or `setInterval` anywhere in familiar/ghost.
+- New shell test: unmounting `WorkspaceShell` mid-run closes the watch via
+  `session.cancel()` — route changes leave no stream, timer or timeline.
+- No GSAP in the ghost card (CSS transitions only, all behind
+  `prefers-reduced-motion`).
+- Gates: WorkspaceShell vitest 12/12; `npm run check` 0/0.
+- Not covered here: real-browser media-query emulation (needs the T24
+  harness; happy-dom can't emulate prefers-reduced-motion end-to-end).

@@ -398,4 +398,39 @@ describe('WorkspaceShell', () => {
     });
     expect(document.activeElement).toBe(runButton);
   });
+
+  // Breaks if leaving the page keeps a run watch or a pending request alive
+  // behind the learner's back.
+  it('closes the run watch and drops late results when the shell unmounts', async () => {
+    const close = vi.fn();
+    const fetchRun: RunSessionDeps['fetchRun'] = () =>
+      new Promise(() => {});
+    const sessionDeps: RunSessionDeps = {
+      startAction: () => ({
+        key: 'k',
+        send: () => Promise.resolve('run-late')
+      }),
+      fetchRun,
+      watch: (options) => {
+        options.onState(initialRunState('run-late'));
+        return { close };
+      }
+    };
+    const { unmount } = render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps
+      }
+    });
+
+    const runButton = await screen.findByRole('button', {
+      name: 'Run samples'
+    });
+    await fireEvent.click(runButton);
+    unmount();
+
+    expect(close).toHaveBeenCalled();
+  });
 });
