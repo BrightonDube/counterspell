@@ -223,3 +223,28 @@
 - Gates: WorkspaceShell vitest 12/12; `npm run check` 0/0.
 - Not covered here: real-browser media-query emulation (needs the T24
   harness; happy-dom can't emulate prefers-reduced-motion end-to-end).
+
+## T23 output safety, accessibility and contrast acceptance tests (18 Nov)
+
+- `web/src/lib/workspace/safety-a11y.test.ts` — 10 acceptance tests; each names
+  the regression it catches.
+- Output safety: a source scan over workspace/ghost/familiar/runs fails on any
+  `{@html`, `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write` or
+  `eval(`. A live render proves markup-looking ghost text lands as text.
+- Hidden canary: `rowView` builds a hidden row from ordinal, verdict and time
+  only; the rendered Tests region never sees `input`/`expected`/`got`.
+- Status: every `TestVerdict` carries a non-empty text label AND icon — a
+  colour-only row fails.
+- A11y: shrink list renders every recorded step in recorded order and keeps all
+  3 under `reducedMotion` (`data-motion="static"`); Familiar keeps an
+  `aria-live="polite"` region; every shell control has an accessible name and a
+  44px class; the language select is `min-h-11`.
+- Contrast: real luminance math on the app.css palette — 15 text pairs all pass
+  WCAG AA (min 4.77:1, danger on danger-bg); the global `:focus-visible`
+  outline rule is asserted.
+- Zoom/keyboard coverage already exists: e2e-shell-check.mjs checks 720 CSS px
+  (the 200%-zoom layout at 1440), 44px targets at every breakpoint, landmarks,
+  Escape and focus return; keyboard.test.ts/RunControls.test.ts cover
+  Ctrl/Cmd+Enter, Ctrl+Shift+Enter, field-ignore and shortcut help.
+- Gates: new file 10/10; full vitest 65 files, 486 passed, 4 skipped;
+  `npm run check` 0 errors/0 warnings.
