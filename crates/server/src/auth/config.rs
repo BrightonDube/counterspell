@@ -147,8 +147,9 @@ pub struct AuthConfig {
     pub github: Option<OAuthClient>,
     /// Google sign-in, when both of its variables are set.
     pub google: Option<OAuthClient>,
-    /// Outgoing mail settings.
-    pub mail: MailConfig,
+    /// Outgoing mail settings. `None` means email sign-in is off and only OAuth (and password
+    /// sign-in for existing accounts) is offered.
+    pub mail: Option<MailConfig>,
     /// Sign-in emails allowed across the whole service each UTC day.
     pub email_daily_cap: u32,
     /// The demo account, when its variables are set.
@@ -292,37 +293,55 @@ fn oauth_client(
     }
 }
 
-/// Chooses the mail transport and checks what it needs. Production defaults to Resend, and
-/// the log transport is refused there.
-fn parse_mail(vars: &HashMap<String, String>, app_env: AppEnv) -> Result<MailConfig, ConfigError> {
-    let transport = match (optional(vars, "MAIL_TRANSPORT"), app_env) {
+/// Chooses the mail transport and checks what it needs. Email sign-in is optional: `None` means
+/// it is off, either by `MAIL_TRANSPORT=none` or, in production, by setting no mail variable at
+/// all. When any mail variable is set, production still defaults to Resend and the log transport
+/// is refused there.
+fn parse_mail(
+    vars: &HashMap<String, String>,
+    app_env: AppEnv,
+) -> Result<Option<MailConfig>, ConfigError> {
+    let transport = optional(vars, "MAIL_TRANSPORT");
+    if transport == Some("none") {
+        return Ok(None);
+    }
+    let mail_vars_set = transport.is_some()
+        || optional(vars, "RESEND_API_KEY").is_some()
+        || optional(vars, "MAIL_FROM").is_some();
+    let transport = match (transport, app_env) {
+        (None, AppEnv::Production) if !mail_vars_set => return Ok(None),
         (None, AppEnv::Production) | (Some("resend"), _) => MailTransport::Resend,
         (None, AppEnv::Development) | (Some("log"), _) => MailTransport::Log,
-        (Some(_), _) => return Err(invalid("MAIL_TRANSPORT", "must be resend or log")),
+        (Some(_), _) => {
+            return Err(invalid("MAIL_TRANSPORT", "must be resend, log or none"));
+        }
     };
-    match transport {
-        MailTransport::Log if app_env == AppEnv::Production => Err(invalid(
-            "MAIL_TRANSPORT",
-            "the log transport is for development only",
-        )),
-        MailTransport::Log => Ok(MailConfig {
+    let config = match transport {
+        MailTransport::Log if app_env == AppEnv::Production => {
+            return Err(invalid(
+                "MAIL_TRANSPORT",
+                "the log transport is for development only",
+            ));
+        }
+        MailTransport::Log => MailConfig {
             transport,
             resend_api_key: None,
             mail_from: optional(vars, "MAIL_FROM").map(str::to_owned),
-        }),
+        },
         MailTransport::Resend => {
             let key = required(vars, "RESEND_API_KEY")?;
             let from = required(vars, "MAIL_FROM")?;
             if !from.contains('@') {
                 return Err(invalid("MAIL_FROM", "must contain an email address"));
             }
-            Ok(MailConfig {
+            MailConfig {
                 transport,
                 resend_api_key: Some(Redacted::new(key.to_owned())),
                 mail_from: Some(from.to_owned()),
-            })
+            }
         }
-    }
+    };
+    Ok(Some(config))
 }
 
 fn parse_email_cap(raw: Option<&str>) -> Result<u32, ConfigError> {
@@ -436,7 +455,10 @@ mod tests {
         let config = AuthConfig::from_map(&valid()).expect("valid production map");
         assert_eq!(config.app_env, AppEnv::Production);
         assert_eq!(config.public_base_url, "https://counterspell.example");
-        assert_eq!(config.mail.transport, MailTransport::Resend);
+        assert_eq!(
+            config.mail.as_ref().map(|mail| mail.transport),
+            Some(MailTransport::Resend)
+        );
         assert_eq!(config.email_daily_cap, DEFAULT_EMAIL_DAILY_CAP);
         assert_eq!(config.demo_reset_hour_utc, 0);
         assert!(config.github.is_none() && config.google.is_none() && config.demo.is_none());
@@ -496,7 +518,10 @@ mod tests {
         ]);
         let config = AuthConfig::from_map(&local).expect("localhost in development");
         assert_eq!(config.public_base_url, "http://localhost:8080");
-        assert_eq!(config.mail.transport, MailTransport::Log);
+        assert_eq!(
+            config.mail.as_ref().map(|mail| mail.transport),
+            Some(MailTransport::Log)
+        );
 
         let remote = with(&[
             ("APP_ENV", "development"),
@@ -556,8 +581,51 @@ mod tests {
         .map(|(name, value)| (name.to_owned(), value.to_owned()))
         .collect();
         let config = AuthConfig::from_map(&vars).expect("development defaults");
-        assert_eq!(config.mail.transport, MailTransport::Log);
-        assert!(config.mail.resend_api_key.is_none());
+        assert_eq!(
+            config.mail.as_ref().map(|mail| mail.transport),
+            Some(MailTransport::Log)
+        );
+        assert!(config
+            .mail
+            .as_ref()
+            .is_some_and(|mail| mail.resend_api_key.is_none()));
+    }
+
+    #[test]
+    fn production_without_a_mail_provider_disables_email_sign_in() {
+        let mut vars = valid();
+        vars.remove("RESEND_API_KEY");
+        vars.remove("MAIL_FROM");
+        let config = AuthConfig::from_map(&vars).expect("production without mail");
+        assert!(
+            config.mail.is_none(),
+            "no mail provider means no mail config"
+        );
+    }
+
+    #[test]
+    fn mail_transport_none_disables_email_sign_in_in_every_environment() {
+        for app_env in ["production", "development"] {
+            let vars = with(&[("APP_ENV", app_env), ("MAIL_TRANSPORT", "none")]);
+            let config = AuthConfig::from_map(&vars).expect("the none transport is accepted");
+            assert!(config.mail.is_none(), "{app_env} with MAIL_TRANSPORT=none");
+        }
+    }
+
+    #[test]
+    fn a_partial_mail_configuration_is_still_an_error() {
+        // One of RESEND_API_KEY or MAIL_FROM without the other must not silently disable mail.
+        assert_eq!(
+            AuthConfig::from_map(&without("MAIL_FROM")),
+            Err(ConfigError::Missing("MAIL_FROM"))
+        );
+        assert_eq!(
+            AuthConfig::from_map(&with(&[
+                ("MAIL_TRANSPORT", "resend"),
+                ("RESEND_API_KEY", "")
+            ])),
+            Err(ConfigError::Missing("RESEND_API_KEY"))
+        );
     }
 
     #[test]

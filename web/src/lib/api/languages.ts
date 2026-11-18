@@ -1,25 +1,28 @@
-// Loads the language catalogue from `GET /api/languages`. The server's `enabled` flags are authoritative.
-import { ContractError } from '../contract';
+// Loads the language catalogue from `GET /api/languages`. Every language in the
+// list is enabled; disabled stretch languages are never listed.
+import { ContractError, asRecord } from '../contract';
 import { getJson, type RequestOptions } from './client';
 import { parseLanguageSummary, type LanguageSummary } from './types';
 
 const MAX_LANGUAGES = 50;
 
-/** The response is a JSON array of language summaries. Anything else is refused. */
+/** The response is `{languages: [...]}`. Anything else is refused. */
 function parseLanguageList(raw: unknown): LanguageSummary[] {
-  if (!Array.isArray(raw)) {
-    throw new ContractError('languages', 'expected an array');
+  const record = asRecord(raw, 'languages');
+  const list = record.languages;
+  if (!Array.isArray(list)) {
+    throw new ContractError('languages', 'expected a languages array');
   }
-  if (raw.length > MAX_LANGUAGES) {
+  if (list.length > MAX_LANGUAGES) {
     throw new ContractError(
       'languages',
       `expected at most ${MAX_LANGUAGES} entries`
     );
   }
-  return raw.map((entry) => parseLanguageSummary(entry));
+  return list.map((entry) => parseLanguageSummary(entry));
 }
 
-/** Fetches the languages the server knows about, including disabled ones. */
+/** Fetches the languages the server lists. Each is enabled and supports both verbs. */
 export function loadLanguages(
   options: RequestOptions = {}
 ): Promise<LanguageSummary[]> {

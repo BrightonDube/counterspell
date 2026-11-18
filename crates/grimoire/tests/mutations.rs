@@ -17,6 +17,22 @@ use std::path::{Path, PathBuf};
 /// The starter pack every mutation starts from.
 const BASE_PACK: &str = "../../packs/count-pairs";
 
+/// The private pack-tree checkout: `COUNTERSPELL_PACKS_PRIVATE_ROOT`, or a
+/// `counterspell-packs-private` checkout beside this repository. `reference/`,
+/// `incorrect/` and `known_ghosts.toml` live there since the split.
+fn private_pack_dir() -> Option<PathBuf> {
+    std::env::var("COUNTERSPELL_PACKS_PRIVATE_ROOT")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(|| {
+            let sibling =
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../counterspell-packs-private");
+            sibling.is_dir().then_some(sibling)
+        })
+        .map(|root| root.join("packs/count-pairs"))
+        .filter(|dir| dir.is_dir())
+}
+
 /// Codes with no textual trigger. GEN-02 guards the engine's own candidate stream, so
 /// no pack text can reach it. The engine's property tests cover it instead.
 const NOT_TEXT_REACHABLE: [&str; 1] = ["GEN-02"];
@@ -323,8 +339,12 @@ fn cases() -> Vec<Case> {
 struct Workspace(PathBuf);
 
 impl Workspace {
-    /// Copies the starter pack under a temporary root, keeping the directory name the slug needs.
-    fn copy_of_base(label: &str) -> Self {
+    /// Copies the starter pack under a temporary root, keeping the directory name
+    /// the slug needs. `reference/`, `incorrect/` and `known_ghosts.toml` are
+    /// overlaid from the private checkout so the copy is a complete pack again.
+    /// `None` means no private checkout — the case skips.
+    fn copy_of_base(label: &str) -> Option<Self> {
+        let private_dir = private_pack_dir()?;
         let root =
             std::env::temp_dir().join(format!("grimoire-mutation-{label}-{}", std::process::id()));
         let _ = fs::remove_dir_all(&root);
@@ -333,7 +353,15 @@ impl Workspace {
             &Path::new(env!("CARGO_MANIFEST_DIR")).join(BASE_PACK),
             &pack,
         );
-        Self(pack)
+        for name in ["reference", "incorrect"] {
+            copy_dir(&private_dir.join(name), &pack.join(name));
+        }
+        let ghosts = private_dir.join("known_ghosts.toml");
+        if !ghosts.is_file() {
+            return None;
+        }
+        fs::copy(ghosts, pack.join("known_ghosts.toml")).expect("copy known_ghosts.toml");
+        Some(Self(pack))
     }
 
     fn pack(&self) -> &Path {
@@ -394,8 +422,9 @@ fn apply(pack: &Path, edit: &Edit) {
 }
 
 /// Runs every edit of `case` on a fresh copy and returns the sorted error codes.
-fn mutated_codes(index: usize, case: &Case) -> Vec<&'static str> {
-    let workspace = Workspace::copy_of_base(&index.to_string());
+/// `None` means no private checkout is available; the case skips.
+fn mutated_codes(index: usize, case: &Case) -> Option<Vec<&'static str>> {
+    let workspace = Workspace::copy_of_base(&index.to_string())?;
     for edit in &case.edits {
         apply(workspace.pack(), edit);
     }
@@ -407,7 +436,7 @@ fn mutated_codes(index: usize, case: &Case) -> Vec<&'static str> {
         .map(|diagnostic| diagnostic.code)
         .collect();
     found.sort_unstable();
-    found
+    Some(found)
 }
 
 #[test]
@@ -423,7 +452,10 @@ fn each_mutation_reports_exactly_its_expected_codes() {
             case.code
         );
 
-        let found = mutated_codes(index, case);
+        let Some(found) = mutated_codes(index, case) else {
+            eprintln!("skipping mutations: no counterspell-packs-private checkout");
+            return;
+        };
         if found != expected {
             mismatches.push(format!(
                 "{} ({}): expected {:?}, found {:?}",

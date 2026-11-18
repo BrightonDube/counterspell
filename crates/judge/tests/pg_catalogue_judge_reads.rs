@@ -6,7 +6,9 @@
 //! Run with `cargo test -p counterspell-judge --test pg_catalogue_judge_reads -- --ignored`.
 
 use counterspell_judge::catalogue::testkit::{insert_published_fixture, CANARY_HIDDEN};
-use counterspell_judge::problem_store::{load, LoadMode, StoreError};
+use counterspell_judge::problem_store::{
+    concept_tags_for, known_ghosts_for, load, LoadMode, StoreError,
+};
 use sqlx::{PgConnection, PgPool};
 
 const JUDGE_ROLE: &str = "counterspell_judge";
@@ -100,6 +102,29 @@ async fn pg_catalogue_judge_reads_judge_role_cannot_write(pool: PgPool) {
             .execute(&mut conn)
             .await;
     assert!(write.is_err(), "the judge role has no write grant");
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_catalogue_judge_reads_submit_hunt_data_under_the_judge_role(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("fixture");
+    let mut conn = judge_connection(&pool).await;
+
+    // The submit hunt reads authored ghosts and the problem's concept tags with
+    // the judge role's grants — `problem_concepts` is public-level data the
+    // judge needs for the autopsy (ide-workspace T25).
+    let ghosts = known_ghosts_for(&mut conn, "two-sum", 1)
+        .await
+        .expect("known ghosts load under the judge role");
+    assert_eq!(ghosts.len(), 1);
+    assert_eq!(ghosts[0].ghost_id, "ghost-1");
+    assert_eq!(ghosts[0].kind, "wrong");
+    let tags = concept_tags_for(&mut conn, "two-sum")
+        .await
+        .expect("concept tags load under the judge role");
+    assert_eq!(tags, ["hash-maps"]);
 }
 
 #[ignore = "needs DATABASE_URL"]

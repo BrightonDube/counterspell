@@ -249,3 +249,8 @@ Results are in `docs/kiro-log/auth-dod.md` (attempt 11 section). Summary:
 - `docker compose config -q`: pass.
 - `web`: `npm run check` (0 errors, 0 warnings), `npm run build` (pass), `npx vitest run` (60 files, 411 tests pass).
 - Still deferred (needs VPS and real provider and Resend accounts, rule 7): the manual checklist in T37. T37 stays unchecked until it is run.
+
+### verify all, 16 Nov 2026: auth T33, T34, T37 stay open
+- T33: Caddy log filter (needs Brighton's approval for the shared `Caddyfile`) and the running-stack checks are not done.
+- T34: **unblocked.** run-lifecycle T29 (SSE endpoint core) is now done (39/39). The remaining work is the `SessionService::is_valid` check on each SSE heartbeat, its test, and the logout-all heartbeat test.
+- T37: the manual checklist needs the VPS and real providers. The recorded failure `sbx_create_readback_matches` now passes at `36d6064` (judge-sandbox T20 verified).

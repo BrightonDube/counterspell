@@ -3,6 +3,7 @@
 import {
   asRecord,
   ContractError,
+  readArray,
   readEnum,
   readInt,
   readString
@@ -33,6 +34,7 @@ export interface BenchPoint {
 }
 
 const MAX_SIZE = 2 ** 40;
+const MAX_SIZES = 64;
 
 /** Parses a `familiar` event. Only the `measured` layer is accepted. */
 export function parseMeasuredFamiliar(
@@ -69,6 +71,14 @@ export function parseComplexityFact(
     reference: readString(record, 'reference', path, 64),
     ratioVsBaseline
   };
+}
+
+/** Parses one `bench_start` event: the sizes the bench will time, in increasing order. */
+export function parseBenchStart(raw: unknown, path = 'bench_start'): number[] {
+  const record = asRecord(raw, path);
+  return readArray(record, 'sizes', path, MAX_SIZES, (value, itemPath) =>
+    readInt({ n: value }, 'n', itemPath, 1, MAX_SIZE)
+  );
 }
 
 /** Parses one `bench_point` event: a size and its median time in nanoseconds. */

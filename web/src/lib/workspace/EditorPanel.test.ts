@@ -19,7 +19,7 @@ const problem: ProblemDetail = {
   title: 'Two Sum',
   track: { slug: 'arrays', name: 'Crypt of Arrays' },
   concepts: [],
-  difficulty: 'intro',
+  difficulty: 'easy',
   statementMarkdown: 'Return indices.',
   constraints: [],
   signature: {
@@ -32,44 +32,32 @@ const problem: ProblemDetail = {
   enabledLanguages: ['python']
 };
 
-function language(
-  id: string,
-  displayName: string,
-  enabled: boolean
-): LanguageSummary {
-  return {
-    id,
-    displayName,
-    enabled,
-    fileName: `solution.${id === 'python' ? 'py' : 'js'}`,
-    maxSourceBytes: 65536,
-    supportsRun: enabled,
-    supportsSubmit: enabled
-  };
+function language(id: string, displayName: string): LanguageSummary {
+  return { id, displayName, maxSourceBytes: 65536 };
 }
 
 describe('EditorPanel', () => {
-  // Breaks if a disabled language is offered, so a learner picks a language the server then refuses.
-  it('offers only the languages the server enables', () => {
+  // Breaks if a listed language is hidden; the catalogue only lists enabled ones.
+  it('offers every language the server lists', () => {
     render(EditorPanel, {
       props: {
         problem,
         languages: [
-          language('python', 'Python', true),
-          language('javascript', 'JavaScript', false)
+          language('python', 'Python'),
+          language('javascript', 'JavaScript')
         ]
       }
     });
     const options = screen
       .getAllByRole('option')
       .map((option) => option.textContent);
-    expect(options).toEqual(['Python']);
+    expect(options).toEqual(['Python', 'JavaScript']);
   });
 
   // Breaks if the panel shows a save message before anything was edited, which would look like a saved draft.
   it('shows no draft status before the learner edits', () => {
     const { container } = render(EditorPanel, {
-      props: { problem, languages: [language('python', 'Python', true)] }
+      props: { problem, languages: [language('python', 'Python')] }
     });
     const status = container.querySelector('p[aria-live="polite"]');
     expect(status?.textContent?.trim()).toBe('');

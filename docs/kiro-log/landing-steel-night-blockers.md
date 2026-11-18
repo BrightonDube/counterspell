@@ -14,3 +14,5 @@ Tasks left unchecked on purpose. Each one needs a browser, a running stack or a 
 ## Decision for Brighton: decorative overlays on the title screen (not a blocker)
 - The living loop already paints bats and fog. The planner still adds the `bat-swarm` and `fog-layer-cold` overlays (T16 tests cover them). They may duplicate the painting. I kept them to avoid changing tests the spec does not require me to change.
 - **Question:** after a visual check, should the bat-swarm overlay be removed? If yes, the T16 Hero and scene tests change in the same commit with a `test-change` marker.
+
+### verify all, 16 Nov 2026: T13 stays open: no Lighthouse median recorded (docs/kiro-log/landing-steel-night-lighthouse.md is required).

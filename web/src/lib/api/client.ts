@@ -48,7 +48,7 @@ const TIMEOUT_MESSAGE = 'The server took too long to answer. Try again.';
 const ABORTED_MESSAGE = 'The request was cancelled.';
 
 const FALLBACK_CODES: Record<number, { code: string; message: string }> = {
-  401: { code: 'unauthorized', message: 'Sign in to continue.' },
+  401: { code: 'unauthenticated', message: 'Sign in to continue.' },
   403: { code: 'forbidden', message: 'You cannot open this.' },
   404: { code: 'not_found', message: 'That item was not found.' },
   429: {

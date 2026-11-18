@@ -1,0 +1,8 @@
+[[ghost]]
+id = "times"
+program = "incorrect/times.py"
+kind = "wrong"
+input = [2, 3]
+got = 6
+concepts = ["arithmetic", "edge-cases"]
+explanation = "You multiplied instead of adding. Multiplication and addition agree on inputs like (0, 0) and (2, 2), so the samples can pass while the operator is still wrong."

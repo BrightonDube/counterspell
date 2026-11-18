@@ -1,0 +1,48 @@
+slug = "add-two"
+title = "Add Two"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arithmetic", "edge-cases"]
+origin = "original"
+author = "Counterspell test harness"
+licence = "MIT"
+pack_version = 1
+function = "add_two"
+returns = "int"
+comparator = "exact"
+
+[[params]]
+name = "a"
+type = "int"
+
+[[params]]
+name = "b"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = -1000, max = 1000 },
+  { type = "int", min = -1000, max = 1000 },
+]
+
+[generator]
+seed = 4242
+hidden_count = 8
+
+[[samples]]
+input = [2, 3]
+expected = 5
+
+[[samples]]
+input = [-1, 1]
+expected = 0
+
+[[samples]]
+input = [0, 0]
+expected = 0

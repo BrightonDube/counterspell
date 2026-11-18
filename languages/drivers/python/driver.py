@@ -22,6 +22,7 @@ SOLUTION_PATH = "/box/solution.py"
 MAX_SAFE_INTEGER = 2**53 - 1
 KINDS = frozenset({"int", "float", "bool", "string", "list", "tuple", "null"})
 EXIT_PROTOCOL = 2
+EXIT_USER = 1
 
 
 class DriverFailure(Exception):
@@ -207,8 +208,11 @@ def load_function(signature):
         with quiet():
             exec(compile(source, SOLUTION_PATH, "exec"), namespace)
     except BaseException:
+        # The driver line goes first: the judge reads the last stderr line as
+        # `ExceptionClass: message`, so the traceback tail must stay last.
+        diagnose("the solution failed while loading")
         traceback.print_exc()
-        raise DriverFailure("the solution failed while loading") from None
+        sys.exit(EXIT_PROTOCOL)
     function = namespace.get(signature.function)
     if not callable(function):
         raise DriverFailure(f"the solution does not define {signature.function}")
@@ -221,8 +225,10 @@ def call_solution(function, args):
         with quiet():
             return function(*args)
     except BaseException:
+        # Same ordering: `driver:` diagnostic first, traceback tail last.
+        diagnose("the solution raised an exception")
         traceback.print_exc()
-        raise DriverFailure("the solution raised an exception", exit_code=1) from None
+        sys.exit(EXIT_USER)
 
 
 def write_answer(stream, call_id, out):

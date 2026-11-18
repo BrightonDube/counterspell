@@ -6,7 +6,7 @@
   ansible.builtin.user:
     name: "{{ sandbox_user }}"
     uid: "{{ sandbox_uid }}"
-    shell: /bin/bash
+    shell: "{{ sandbox_shell }}"
     password: "!"
     create_home: true
 
@@ -24,7 +24,9 @@
 
 - name: Install the rootless Docker and sandbox prerequisites
   ansible.builtin.apt:
-    name: "{{ sandbox_packages + ['docker-ce-rootless-extras=' ~ docker_ce_version] }}"
+    name: >-
+      {{ sandbox_packages + ['docker-ce-rootless-extras=' ~ docker_ce_version
+         if sandbox_pin_rootless_extras | bool else 'docker-ce-rootless-extras'] }}
     state: present
 
 - name: Give the sandbox user subordinate UID and GID ranges (rootless needs them)
@@ -95,20 +97,51 @@
     quiet: true
   loop: "{{ sandbox_required_controllers }}"
 
-- name: Read the AppArmor setting that blocks unprivileged user namespaces, if present (R3.8, Q12)
-  ansible.builtin.slurp:
-    src: /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-  register: sandbox_apparmor
-  failed_when: false
+- name: Check that the scoped rootlesskit AppArmor profile is installed (R3.8, Q12)
+  # The apparmor package ships /etc/apparmor.d/rootlesskit for /usr/bin/rootlesskit. It grants
+  # userns creation only; the host-wide sysctl stays untouched.
+  ansible.builtin.stat:
+    path: /etc/apparmor.d/rootlesskit
+  register: sandbox_apparmor_profile_file
 
-- name: Stop with a message when AppArmor blocks rootless Docker (R3.8, Q12)
+- name: Stop when the rootlesskit AppArmor profile is missing
   ansible.builtin.assert:
     that:
-      - sandbox_apparmor.failed or (sandbox_apparmor.content | b64decode | trim) != '1'
+      - sandbox_apparmor_profile_file.stat.exists
     fail_msg: >-
-      AppArmor restricts unprivileged user namespaces, so rootless Docker cannot start. This role does not change
-      a host-wide sysctl (R3.8). Brighton decides the AppArmor change (Q12).
+      /etc/apparmor.d/rootlesskit is missing, so rootless Docker cannot create user namespaces while
+      kernel.apparmor_restrict_unprivileged_userns is 1. Install the apparmor package or write the
+      profile by hand (R3.8, Q12).
     quiet: true
+
+- name: Check whether the rootlesskit AppArmor profile is already loaded
+  ansible.builtin.command: grep -qw rootlesskit /sys/kernel/security/apparmor/profiles
+  register: sandbox_apparmor_profile_loaded
+  failed_when: false
+  changed_when: false
+
+- name: Load the rootlesskit AppArmor profile so rootless Docker can start (R3.8, Q12)
+  # Command tasks are skipped in check mode, so the profile load is only verified on a real run.
+  ansible.builtin.command: apparmor_parser -r /etc/apparmor.d/rootlesskit
+  when: not ansible_check_mode and (sandbox_apparmor_profile_loaded.rc | default(1)) != 0
+  changed_when: true
+
+- name: Check that the rootlesskit AppArmor profile stayed loaded (R3.8)
+  ansible.builtin.command: grep -qw rootlesskit /sys/kernel/security/apparmor/profiles
+  when: not ansible_check_mode
+  changed_when: false
+  failed_when: false
+  register: sandbox_apparmor_profile_verify
+
+- name: Refuse to continue when the profile did not load
+  ansible.builtin.assert:
+    that:
+      - sandbox_apparmor_profile_verify.rc | default(0) == 0
+    fail_msg: >-
+      The rootlesskit AppArmor profile is not loaded, so rootless Docker cannot create user
+      namespaces (R3.8). Check `aa-status` and apparmor_parser output on the host.
+    quiet: true
+  when: not ansible_check_mode
 
 - name: Install the rootless Docker daemon for the sandbox user (once)
   ansible.builtin.command: dockerd-rootless-setuptool.sh install
@@ -148,20 +181,18 @@
   environment:
     XDG_RUNTIME_DIR: "{{ sandbox_runtime_dir }}"
 
-- name: Install the pre-pull script and the language catalogue
+- name: Install the language catalogue (the pre-pull reads the pinned digests from it)
   ansible.builtin.copy:
-    src: "{{ repo_root }}/{{ item.src }}"
-    dest: "{{ item.dest }}"
+    src: "{{ repo_root }}/languages/languages.toml"
+    dest: "{{ sandbox_languages_toml }}"
     owner: root
     group: root
-    mode: "{{ item.mode }}"
-  loop:
-    - { src: deploy/vps/prepull.sh, dest: /usr/local/sbin/counterspell-prepull, mode: "0755" }
-    - { src: languages/languages.toml, dest: /usr/local/share/counterspell/languages.toml, mode: "0644" }
+    mode: "0644"
 
 - name: Pull each enabled sandbox image by digest and check it (R3.6, R3.7)
-  ansible.builtin.command: /usr/local/sbin/counterspell-prepull
+  # The script is copied, run and removed by Ansible, so no root-run file is left in a user-writable place.
+  ansible.builtin.script: "{{ repo_root }}/deploy/vps/prepull.sh"
   environment:
     SANDBOX_DOCKER_SOCKET: "{{ sandbox_socket }}"
-    LANGUAGES_TOML: /usr/local/share/counterspell/languages.toml
+    LANGUAGES_TOML: "{{ sandbox_languages_toml }}"
   changed_when: false

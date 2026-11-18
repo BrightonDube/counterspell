@@ -5,6 +5,7 @@
 //! outcome. It has no way to write a verdict, a status or a job state. The worker
 //! turns the outcome into the one terminal write.
 
+use crate::familiar::store::{insert_run_timings, TimingRow};
 use crate::queue::emit::emit;
 use crate::queue::finish::FinalResult;
 use crate::queue::{ClaimToken, QueueError};
@@ -20,10 +21,17 @@ pub struct RunInput {
     pub run_id: RunId,
     /// The problem to load.
     pub problem_slug: String,
+    /// The version the submission was pinned to when it was enqueued. `0` names no
+    /// version, so a run that arrives without a pin loads nothing and reports
+    /// `problem_unavailable` instead of guessing a latest version.
+    pub problem_version: u32,
     /// The language of the source.
     pub lang: String,
     /// Sample run or hidden-test submission.
     pub mode: RunMode,
+    /// For a custom ghost run: the one input to judge, instead of the problem's
+    /// stored tests. `None` for ordinary runs.
+    pub ghost_input: Option<serde_json::Value>,
     /// The user's source text.
     pub code: String,
     /// The attempt number, starting at 1.
@@ -71,7 +79,18 @@ enum Sink {
     Queue { pool: PgPool, token: ClaimToken },
     /// An in-memory list for unit tests.
     #[cfg(feature = "testkit")]
-    Recording(std::sync::Arc<std::sync::Mutex<Vec<PublicEvent>>>),
+    Recording(std::sync::Arc<std::sync::Mutex<Recorded>>),
+}
+
+/// What the in-memory context recorded for a test: every public event plus the
+/// raw bench samples that would have gone to `run_timings`.
+#[cfg(feature = "testkit")]
+#[derive(Debug, Default)]
+pub struct Recorded {
+    /// The events emitted for the run, in order.
+    pub events: Vec<PublicEvent>,
+    /// The raw bench samples recorded for the attempt.
+    pub timings: Vec<TimingRow>,
 }
 
 /// The only things an executor may do to its run: emit a public event and watch the stop signal.
@@ -101,10 +120,10 @@ impl RunContext {
         }
     }
 
-    /// Builds a context that stores events in memory, for tests.
+    /// Builds a context that stores events and timings in memory, for tests.
     #[cfg(feature = "testkit")]
     pub(crate) fn recording(
-        log: std::sync::Arc<std::sync::Mutex<Vec<PublicEvent>>>,
+        log: std::sync::Arc<std::sync::Mutex<Recorded>>,
         run: RunId,
         attempt: u16,
         stop: watch::Receiver<bool>,
@@ -148,11 +167,50 @@ impl RunContext {
             },
             #[cfg(feature = "testkit")]
             Sink::Recording(log) => {
-                if let Ok(mut events) = log.lock() {
-                    events.push(event.clone());
+                if let Ok(mut recorded) = log.lock() {
+                    recorded.events.push(event.clone());
                 }
                 Ok(())
             }
+        }
+    }
+
+    /// Stores the raw bench samples for the attempt, fenced by `attempt` so a retry can
+    /// never collide. The queue path inserts into `run_timings` under the judge role;
+    /// a lost lease is `Stopped`, as with event writes.
+    ///
+    /// # Errors
+    ///
+    /// Returns `ExecError::Stopped` when the claim is no longer held, or
+    /// `ExecError::Infrastructure` when the rows cannot be stored.
+    pub async fn record_timings(&self, rows: &[TimingRow]) -> Result<(), ExecError> {
+        if rows.is_empty() {
+            return Ok(());
+        }
+        match &self.sink {
+            Sink::Queue { pool, token } => {
+                insert_run_timings(pool, token.run_id().as_uuid(), self.attempt, rows)
+                    .await
+                    .map(|_| ())
+                    .map_err(|error| ExecError::Infrastructure(error.to_string()))
+            }
+            #[cfg(feature = "testkit")]
+            Sink::Recording(log) => {
+                if let Ok(mut recorded) = log.lock() {
+                    recorded.timings.extend_from_slice(rows);
+                }
+                Ok(())
+            }
+        }
+    }
+
+    /// The queue's database pool, when this context writes to one. Baseline reads
+    /// need it; a recording context has none.
+    pub(crate) fn pool(&self) -> Option<&PgPool> {
+        match &self.sink {
+            Sink::Queue { pool, .. } => Some(pool),
+            #[cfg(feature = "testkit")]
+            Sink::Recording(_) => None,
         }
     }
 

@@ -1,0 +1,6 @@
+# Managed by Ansible (app role). Used only when the app owner is the deploy user (the shared
+# host): the forced command runs the deploy script directly, with no sudo and no shell. The
+# options remove the PTY and every forwarding channel (deploy-ops R2.9, R7.12).
+{% for key in deploy_public_keys %}
+no-pty,no-port-forwarding,no-agent-forwarding,no-X11-forwarding,command="{{ app_bin_dir }}/counterspell-deploy" {{ key }}
+{% endfor %}

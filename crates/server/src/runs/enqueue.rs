@@ -33,6 +33,18 @@ pub struct NewRun {
     pub code_sha256: [u8; 32],
     /// The client's `Idempotency-Key`, if it sent one.
     pub idempotency_key: Option<String>,
+    /// For a custom ghost run: the single input to judge and the submission it came
+    /// from. `None` for normal sample runs and submissions.
+    pub ghost: Option<GhostRef>,
+}
+
+/// The custom input and provenance of a ghost run (ide-workspace T02).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GhostRef {
+    /// The stored ghost input the code is judged on.
+    pub input: serde_json::Value,
+    /// The earlier submission the ghost belongs to.
+    pub source_id: RunId,
 }
 
 impl NewRun {
@@ -57,6 +69,7 @@ impl NewRun {
             code: code.to_owned(),
             code_sha256,
             idempotency_key,
+            ghost: None,
         }
     }
 }
@@ -178,13 +191,24 @@ pub async fn existing_replay(
     })
 }
 
+/// The columns `find_replay` reads to decide whether an idempotency key repeats.
+type ReplayRow = (
+    uuid::Uuid,
+    String,
+    String,
+    String,
+    Vec<u8>,
+    Option<serde_json::Value>,
+    Option<uuid::Uuid>,
+);
+
 async fn find_replay(conn: &mut PgConnection, run: &NewRun) -> Result<Replay, sqlx::Error> {
     let Some(key) = run.idempotency_key.as_deref() else {
         return Ok(Replay::NoneFound);
     };
-    let earlier: Option<(uuid::Uuid, String, String, String, Vec<u8>)> = sqlx::query_as(
-        "SELECT id, problem_slug, lang, mode, code_sha256 FROM submissions \
-         WHERE user_id = $1 AND idempotency_key = $2",
+    let earlier: Option<ReplayRow> = sqlx::query_as(
+        "SELECT id, problem_slug, lang, mode, code_sha256, ghost_input, ghost_source_id \
+         FROM submissions WHERE user_id = $1 AND idempotency_key = $2",
     )
     .bind(run.user_id.as_uuid())
     .bind(key)
@@ -193,11 +217,13 @@ async fn find_replay(conn: &mut PgConnection, run: &NewRun) -> Result<Replay, sq
 
     Ok(match earlier {
         None => Replay::NoneFound,
-        Some((id, problem, lang, mode, digest))
+        Some((id, problem, lang, mode, digest, ghost_input, ghost_source))
             if problem == run.problem_slug
                 && lang == run.lang
                 && mode == run.mode.as_str()
-                && digest == run.code_sha256 =>
+                && digest == run.code_sha256
+                && ghost_input == run.ghost.as_ref().map(|ghost| ghost.input.clone())
+                && ghost_source == run.ghost.as_ref().map(|ghost| ghost.source_id.as_uuid()) =>
         {
             Replay::Same(RunId::from_uuid(id))
         }
@@ -228,10 +254,11 @@ async fn count_queued(conn: &mut PgConnection) -> Result<i64, sqlx::Error> {
 async fn insert_run_and_job(conn: &mut PgConnection, run: &NewRun) -> Result<bool, sqlx::Error> {
     let pinned: Option<uuid::Uuid> = sqlx::query_scalar(
         "INSERT INTO submissions \
-         (id, user_id, problem_slug, problem_version, lang, mode, code, code_sha256, idempotency_key) \
-         SELECT $1, $2, p.slug, p.published_version, $3, $4, $5, $6, $7 \
+         (id, user_id, problem_slug, problem_version, lang, mode, code, code_sha256, \
+          idempotency_key, ghost_input, ghost_source_id) \
+         SELECT $1, $2, p.slug, p.published_version, $3, $4, $5, $6, $7, $8, $9 \
          FROM problems p \
-         WHERE p.slug = $8 AND p.publication_state = 'published' \
+         WHERE p.slug = $10 AND p.publication_state = 'published' \
          RETURNING id",
     )
     .bind(run.run_id.as_uuid())
@@ -241,6 +268,8 @@ async fn insert_run_and_job(conn: &mut PgConnection, run: &NewRun) -> Result<boo
     .bind(&run.code)
     .bind(run.code_sha256.as_slice())
     .bind(run.idempotency_key.as_deref())
+    .bind(run.ghost.as_ref().map(|ghost| ghost.input.clone()))
+    .bind(run.ghost.as_ref().map(|ghost| ghost.source_id.as_uuid()))
     .bind(&run.problem_slug)
     .fetch_optional(&mut *conn)
     .await?;

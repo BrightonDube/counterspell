@@ -6,6 +6,7 @@
 //! the tool handlers receive.
 
 use crate::errors::{ErrorCategory, ToolError};
+use crate::paths::private_pack_dir;
 use counterspell_engine::{HuntIdentity, HuntRequest};
 use counterspell_grimoire::ghosts::{sandbox_ghosts, SandboxGhost};
 use counterspell_grimoire::meta::{self, Meta};
@@ -43,8 +44,13 @@ pub fn load_pack(pack_dir: &Path, root: &Path) -> Result<PackContext, ToolError>
         .and_then(|name| name.to_str())
         .unwrap_or_default();
     let mut report = Report::new(dir_name);
-    let pack = pack::load(pack_dir, &mut report)
-        .map_err(|_| ToolError::new(ErrorCategory::Internal, "the pack could not be read", root))?;
+    // `reference/` and `incorrect/` live in the private pack tree, so the merged
+    // view is used whenever a private checkout is available.
+    let pack = match private_pack_dir(pack_dir) {
+        Some(private_dir) => pack::load_pair(pack_dir, &private_dir, &mut report),
+        None => pack::load(pack_dir, &mut report),
+    }
+    .map_err(|_| ToolError::new(ErrorCategory::Internal, "the pack could not be read", root))?;
     let text = pack.text("meta.toml").ok_or_else(|| {
         ToolError::new(
             ErrorCategory::InvalidRequest,

@@ -30,6 +30,8 @@ export interface RunStreamState {
   readonly tests: readonly PublicTest[];
   readonly shrinkSteps: readonly ShrinkStepView[];
   readonly ghost: GhostView | undefined;
+  /** The sizes the declared bench will time, once `bench_start` announces them. */
+  readonly benchSizes: readonly number[];
   readonly benchPoints: readonly BenchPoint[];
   readonly complexity: ComplexityFact | undefined;
   readonly familiar: MeasuredFamiliar | undefined;
@@ -48,6 +50,7 @@ export function initialRunState(runId: string): RunStreamState {
     tests: [],
     shrinkSteps: [],
     ghost: undefined,
+    benchSizes: [],
     benchPoints: [],
     complexity: undefined,
     familiar: undefined,
@@ -94,6 +97,7 @@ function applyPayload(
         tests: [],
         shrinkSteps: [],
         ghost: undefined,
+        benchSizes: [],
         benchPoints: [],
         complexity: undefined,
         familiar: undefined
@@ -108,6 +112,8 @@ function applyPayload(
       return { ...state, shrinkSteps: [...state.shrinkSteps, payload.step] };
     case 'ghost':
       return { ...state, ghost: payload.ghost };
+    case 'bench_start':
+      return { ...state, benchSizes: payload.sizes };
     case 'bench_point':
       return { ...state, benchPoints: [...state.benchPoints, payload.point] };
     case 'complexity':

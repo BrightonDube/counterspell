@@ -14,6 +14,39 @@ use sqlx::{PgConnection, PgPool};
 use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
+/// Which authored or produced case a refusal names.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CaseSource {
+    /// A public `[[samples]]` example.
+    Sample,
+    /// A curated hidden case from `hidden.toml`.
+    Curated,
+    /// A generated hidden case from `CandidateStream`.
+    Generated,
+}
+
+/// One hidden case the fill produced: the input and the expected value the reference
+/// computed inside the sandbox.
+#[derive(Debug, Clone, PartialEq)]
+pub struct HiddenFill {
+    /// `curated` (authored input, verified expected) or `generated`.
+    pub source: CaseSource,
+    /// The case input.
+    pub input: Value,
+    /// The reference's own answer. For a curated case it equals the authored value,
+    /// or the case was refused instead.
+    pub expected: Value,
+}
+
+/// The hidden data one sandbox import writes, minus anything already static.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SandboxFill {
+    /// Hidden cases in write order: curated first, then generated.
+    pub hidden: Vec<HiddenFill>,
+    /// The sandbox image digest that computed the expected values.
+    pub digest: String,
+}
+
 /// A known ghost: a failing input that the pack documents, with its authored explanation.
 #[derive(Debug, Clone, PartialEq)]
 pub struct KnownGhost {
@@ -244,6 +277,273 @@ pub fn diff_files(stored: &[(String, String)], incoming: &[(String, String)]) ->
         }
     }
     diff
+}
+
+/// Everything the one-time sandbox write stores (C17, CAT-I14, CAT-S2, CAT-S3).
+///
+/// The hidden cases come from [`crate::catalogue::sandbox_fill::sandbox_fill`]; they
+/// live only in this struct until the write commits. Nothing else may carry them.
+#[derive(Debug, Clone, PartialEq)]
+pub struct SandboxImport {
+    /// The problem slug.
+    pub slug: String,
+    /// The version this fill validates.
+    pub version: i32,
+    /// The produced hidden cases and the image digest that computed them.
+    pub fill: SandboxFill,
+    /// The generator seed recorded in `hidden_generation`.
+    pub generator_seed: i64,
+    /// The generator version recorded in `hidden_generation`.
+    pub generator_version: String,
+    /// Private-tree file hashes as `(private/<path>, sha256)`, for `hidden_sources`.
+    pub sources: Vec<(String, [u8; 32])>,
+}
+
+/// What a sandbox write did.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SandboxOutcome {
+    /// The hidden data and the sandbox stamp were written.
+    Stamped {
+        /// The stamped version number.
+        version: i32,
+    },
+    /// The version was already sandbox-validated; nothing was written (CAT-S2).
+    Unchanged {
+        /// The stored version number.
+        version: i32,
+    },
+    /// No such `(slug, version)` row exists; nothing was written.
+    Missing {
+        /// The requested version number.
+        version: i32,
+    },
+}
+
+/// Writes one sandbox fill in a single transaction (CAT-I14).
+///
+/// The order inside the transaction is fixed: `hidden_tests` (curated rows keep
+/// their lead over generated ones), `hidden_generation`, `hidden_sources`, then the
+/// sandbox stamp. The version guard refuses the stamp unless hidden tests exist,
+/// so the stamp can never name an empty fill. A second call for an already-stamped
+/// version returns [`SandboxOutcome::Unchanged`] without touching a row (CAT-S2).
+///
+/// # Errors
+///
+/// Returns [`WriteError::Database`] when any statement fails, with nothing written.
+pub async fn write_sandbox(
+    pool: &PgPool,
+    import: &SandboxImport,
+    operator: &str,
+) -> Result<SandboxOutcome, WriteError> {
+    let mut tx = pool.begin().await?;
+    // The problem row lock serializes this write against every other catalogue
+    // write for the slug, so two sandbox fills cannot race the stamp (CAT-I12).
+    let locked: Option<(String,)> =
+        sqlx::query_as("SELECT slug FROM problems WHERE slug = $1 FOR UPDATE")
+            .bind(&import.slug)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let validated: Option<bool> = sqlx::query_scalar(
+        "SELECT sandbox_validated_at IS NOT NULL FROM problem_versions \
+         WHERE problem_slug = $1 AND version = $2",
+    )
+    .bind(&import.slug)
+    .bind(import.version)
+    .fetch_optional(&mut *tx)
+    .await?;
+    let outcome = match (locked, validated) {
+        (None, _) | (_, None) => SandboxOutcome::Missing {
+            version: import.version,
+        },
+        (_, Some(true)) => SandboxOutcome::Unchanged {
+            version: import.version,
+        },
+        (_, Some(false)) => {
+            insert_sandbox(&mut tx, import, operator).await?;
+            SandboxOutcome::Stamped {
+                version: import.version,
+            }
+        }
+    };
+    match outcome {
+        SandboxOutcome::Stamped { version } => {
+            tx.commit().await?;
+            Ok(SandboxOutcome::Stamped { version })
+        }
+        unchanged_or_missing => {
+            tx.rollback().await?;
+            Ok(unchanged_or_missing)
+        }
+    }
+}
+
+/// Inserts the hidden rows, stamps the version and appends the audit event.
+///
+/// `hidden_tests` ordinals continue after the version's samples so one ordinal
+/// space covers the whole test list ("samples first, then curated, then
+/// generated"). The event carries counts only (CAT-S6).
+async fn insert_sandbox(
+    conn: &mut PgConnection,
+    import: &SandboxImport,
+    operator: &str,
+) -> Result<(), WriteError> {
+    let samples: i64 = sqlx::query_scalar(
+        "SELECT count(*) FROM problem_examples WHERE problem_slug = $1 AND version = $2",
+    )
+    .bind(&import.slug)
+    .bind(import.version)
+    .fetch_one(&mut *conn)
+    .await?;
+    let base = usize::try_from(samples).unwrap_or(usize::MAX);
+    let mut curated = 0_usize;
+    let mut generated = 0_usize;
+    for (index, case) in import.fill.hidden.iter().enumerate() {
+        let source = match case.source {
+            CaseSource::Curated => {
+                curated += 1;
+                "curated"
+            }
+            CaseSource::Generated => {
+                generated += 1;
+                "generated"
+            }
+            // The fill never produces a sample case; if a caller built one the
+            // hidden_tests CHECK refuses the insert and rolls the write back.
+            CaseSource::Sample => "sample",
+        };
+        sqlx::query(
+            "INSERT INTO hidden_tests (problem_slug, version, ordinal, source, input, expected) \
+             VALUES ($1, $2, $3, $4, $5, $6)",
+        )
+        .bind(&import.slug)
+        .bind(import.version)
+        .bind(ordinal(base.saturating_add(index)))
+        .bind(source)
+        .bind(&case.input)
+        .bind(&case.expected)
+        .execute(&mut *conn)
+        .await?;
+    }
+    sqlx::query(
+        "INSERT INTO hidden_generation (problem_slug, version, generator_seed, generator_version) \
+         VALUES ($1, $2, $3, $4)",
+    )
+    .bind(&import.slug)
+    .bind(import.version)
+    .bind(import.generator_seed)
+    .bind(&import.generator_version)
+    .execute(&mut *conn)
+    .await?;
+    for (path, sha256) in &import.sources {
+        sqlx::query(
+            "INSERT INTO hidden_sources (problem_slug, version, path, sha256) \
+             VALUES ($1, $2, $3, $4)",
+        )
+        .bind(&import.slug)
+        .bind(import.version)
+        .bind(path)
+        .bind(sha256.as_slice())
+        .execute(&mut *conn)
+        .await?;
+    }
+    sqlx::query(
+        "UPDATE problem_versions SET sandbox_validated_at = now(), sandbox_image_digest = $3 \
+         WHERE problem_slug = $1 AND version = $2",
+    )
+    .bind(&import.slug)
+    .bind(import.version)
+    .bind(&import.fill.digest)
+    .execute(&mut *conn)
+    .await?;
+    let detail = serde_json::json!({
+        "hidden_curated": curated,
+        "hidden_generated": generated,
+        "hidden_sources": import.sources.len(),
+    });
+    sqlx::query(
+        "INSERT INTO catalogue_events (problem_slug, action, version, operator, detail) \
+         VALUES ($1, 'sandbox_validate', $2, $3, $4)",
+    )
+    .bind(&import.slug)
+    .bind(import.version)
+    .bind(operator)
+    .bind(detail)
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+/// The gate's verdict for a `validate-sandbox` run (C18, CAT-I16, CAT-PT10).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum GateOutcome {
+    /// The latest stored version has no sandbox stamp; carry its number to the
+    /// fill and the write.
+    Ready {
+        /// The latest stored version number.
+        version: i32,
+    },
+    /// The latest stored version is already sandbox-validated; refuse.
+    AlreadyValidated {
+        /// The stamped version number.
+        version: i32,
+    },
+    /// The slug has no stored version at all.
+    Missing,
+    /// The recomputed pack hash does not match the stored `content_sha256`
+    /// (CAT-PT10): the private tree changed since the static import.
+    PrivateTreeChanged {
+        /// The latest stored version number.
+        version: i32,
+    },
+}
+
+/// Checks whether `slug`'s latest version may take a sandbox fill, under the
+/// problem row lock.
+///
+/// `content_sha256` is the hash the caller recomputed from the private tree. The
+/// transaction is read only and rolls back after the verdict; the sandbox run and
+/// the write happen later so the lock is not held across code execution.
+///
+/// # Errors
+///
+/// Returns [`WriteError`] when the latest row cannot be read.
+pub async fn sandbox_gate(
+    pool: &PgPool,
+    slug: &str,
+    content_sha256: &[u8; 32],
+) -> Result<GateOutcome, WriteError> {
+    let mut tx = pool.begin().await?;
+    let locked: Option<(String,)> =
+        sqlx::query_as("SELECT slug FROM problems WHERE slug = $1 FOR UPDATE")
+            .bind(slug)
+            .fetch_optional(&mut *tx)
+            .await?;
+    let latest: Option<(i32, Vec<u8>, bool)> = sqlx::query_as(
+        "SELECT version, content_sha256, sandbox_validated_at IS NOT NULL FROM problem_versions \
+         WHERE problem_slug = $1 ORDER BY version DESC LIMIT 1",
+    )
+    .bind(slug)
+    .fetch_optional(&mut *tx)
+    .await?;
+    tx.rollback().await?;
+    Ok(match (locked, latest) {
+        (None, _) | (_, None) => GateOutcome::Missing,
+        (_, Some((version, _, true))) => GateOutcome::AlreadyValidated { version },
+        (_, Some((version, stored, false))) => {
+            let stored_hash: [u8; 32] =
+                stored
+                    .try_into()
+                    .map_err(|_| WriteError::CorruptStoredVersion {
+                        version,
+                        reason: "content hash is not 32 bytes",
+                    })?;
+            if &stored_hash == content_sha256 {
+                GateOutcome::Ready { version }
+            } else {
+                GateOutcome::PrivateTreeChanged { version }
+            }
+        }
+    })
 }
 
 /// Reads the generator version of the newest stored version, if there is one.

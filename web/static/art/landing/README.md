@@ -5,11 +5,11 @@ hero** background (variant B).
 
 ## Files
 
-| File | Use |
-|---|---|
-| `hero-moon-living-poster.jpg` | First paint and reduced-motion still (1920×1080). |
-| `hero-moon-living-1920.{webm,mp4}` | Desktop loop, loaded after first paint. |
-| `hero-moon-living-960.{webm,mp4}` | Narrow viewports (900 px CSS width or less). |
+| File                               | Use                                               |
+| ---------------------------------- | ------------------------------------------------- |
+| `hero-moon-living-poster.jpg`      | First paint and reduced-motion still (1920×1080). |
+| `hero-moon-living-1920.{webm,mp4}` | Desktop loop, loaded after first paint.           |
+| `hero-moon-living-960.{webm,mp4}`  | Narrow viewports (900 px CSS width or less).      |
 
 The earlier `moon-graveyard-loop-*` and `moon-graveyard-poster-*` files stay in
 this folder and must not be deleted. They are no longer the title-screen source.

@@ -493,3 +493,72 @@ async fn pg_baseline_digest_mismatch_finds_nothing(pool: PgPool) {
         "a baseline from another image is not usable"
     );
 }
+
+// language-drivers T09: the bench collector persists raw samples through
+// `insert_run_timings`, one row per (attempt, n, repeat).
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_run_timings_insert_and_read_back(pool: PgPool) {
+    use counterspell_judge::familiar::store::{insert_run_timings, TimingRow};
+    let run = seed_running(&pool).await;
+
+    let rows = [
+        TimingRow {
+            n: 8,
+            repeat: 1,
+            ns: 41_000,
+        },
+        TimingRow {
+            n: 8,
+            repeat: 2,
+            ns: 39_500,
+        },
+        TimingRow {
+            n: 16,
+            repeat: 1,
+            ns: 82_300,
+        },
+    ];
+    let inserted = insert_run_timings(&pool, run, 1, &rows).await.unwrap();
+    assert_eq!(inserted, 3);
+
+    let stored: Vec<(i16, i32, i16, i64)> = sqlx::query_as(
+        "SELECT attempt, n, repeat, ns FROM run_timings WHERE submission_id = $1 \
+         ORDER BY n, repeat",
+    )
+    .bind(run)
+    .fetch_all(&pool)
+    .await
+    .unwrap();
+    assert_eq!(
+        stored,
+        vec![(1, 8, 1, 41_000), (1, 8, 2, 39_500), (1, 16, 1, 82_300),]
+    );
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_run_timings_attempt_fences_retries(pool: PgPool) {
+    use counterspell_judge::familiar::store::{insert_run_timings, TimingRow};
+    let run = seed_running(&pool).await;
+    let rows = [TimingRow {
+        n: 8,
+        repeat: 1,
+        ns: 1_000,
+    }];
+
+    insert_run_timings(&pool, run, 1, &rows).await.unwrap();
+    // The same point on a retry is a different row entirely.
+    insert_run_timings(&pool, run, 2, &rows).await.unwrap();
+    // Inside one attempt the primary key refuses a double write: the judge
+    // cannot delete, so a duplicate is an error, not an overwrite.
+    assert!(insert_run_timings(&pool, run, 1, &rows).await.is_err());
+
+    let count: (i64,) = sqlx::query_as("SELECT count(*) FROM run_timings WHERE submission_id = $1")
+        .bind(run)
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(count.0, 2, "only attempts 1 and 2 are stored");
+}

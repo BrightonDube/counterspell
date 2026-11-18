@@ -183,7 +183,7 @@ Conventions:
   - Depends on: T01, T02.
   - Rust lesson: validating inputs at a trust boundary and keeping the one `unsafe`-free network entry point small.
 
-- [ ] **T20 [S] [SUPERVISED] (30 min) Bollard backend: create, read-back, image check**
+- [x] **T20 [S] [SUPERVISED] (30 min) Bollard backend: create, read-back, image check**
   - Files: `crates/judge/src/sandbox/bollard_backend.rs` (part 1).
   - Convert `ContainerPolicy` to the bollard create request; before create, inspect the image and compare the digest (never pull); after create, `inspect` the container, convert to the pure policy type, and run `hardening_violations`. Mismatch removes the container.
   - Tests: unit tests of the conversion (fields present, no extra fields); a mutation test that corrupts each converted field and expects the read-back check to fail; `sbx_create_readback_matches` (ignored) on a real daemon.
@@ -199,7 +199,7 @@ Conventions:
   - Depends on: T20.
   - Rust lesson: async streams, `AsyncWrite` shutdown (half-close) and why EOF must be explicit.
 
-- [ ] **T22 [S] [SUPERVISED] (30 min) Probe, preflight state and the `preflight` command**
+- [x] **T22 [S] [SUPERVISED] (30 min) Probe, preflight state and the `preflight` command**
   - Files: `crates/judge/src/sandbox/preflight.rs`, `crates/judge/src/main.rs` (subcommand only).
   - Parse `/proc/self/status`, `net/dev`, cgroup limit files and `/proc/mounts` into a `KernelReport`; compare with the policy; produce the JSON report. `PreflightState` keeps the latest result, refreshed at start-up and every 60 s. `counterspell-judge preflight` prints the report and exits non-zero on failure. There is no skip flag.
   - Tests: parsing against recorded outputs from T02 and mutated copies (each missing control is reported); `sbx_preflight_passes` and `sbx_preflight_fails_when_policy_weakened` (the weakened policy constructor is `testkit`-only).
@@ -207,7 +207,7 @@ Conventions:
   - Depends on: T21.
   - Rust lesson: parsing text safely and returning structured reports instead of booleans.
 
-- [ ] **T23 [P] [SUPERVISED] (25 min) Sweeper**
+- [x] **T23 [P] [SUPERVISED] (25 min) Sweeper**
   - Files: `crates/judge/src/sandbox/reaper.rs`.
   - `sweep_once(backend, cfg)` lists containers with label `counterspell.managed=true` in any state and force-removes those older than `SANDBOX_ORPHAN_AGE`. `run_sweeper(...)` runs at start-up and every `SANDBOX_REAPER_INTERVAL` until shutdown. It never touches containers without the label.
   - Tests: fake-backend tests (old labelled removed, young kept, unlabelled untouched, errors do not stop the loop); `sbx_sweeper_removes_orphan` (ignored).
@@ -215,7 +215,7 @@ Conventions:
   - Depends on: T14, T20.
   - Rust lesson: periodic tasks with `tokio::time::interval` and shutdown signals.
 
-- [ ] **T24 [S] [SUPERVISED] (30 min) `ProblemTests`, `SandboxExecutor` and judge wiring**
+- [x] **T24 [S] [SUPERVISED] (30 min) `ProblemTests`, `SandboxExecutor` and judge wiring**
   - Files: `crates/judge/src/sandbox/{problem,sandbox_executor,mod}.rs`, `crates/judge/src/main.rs`.
   - Implement `ProblemTests`, `EmptyProblemTests`, and `SandboxExecutor` per `design.md` section 14: language lookup, problem load, preflight gate, container permit, `compiling` first, source re-check, run, per-test events, `decide`, cleanup on every path. Replace run-lifecycle's placeholder `NoExecutor` in `main.rs` with `SandboxExecutor` + `EmptyProblemTests`. `testkit`: `StaticProblemTests` and `DirProblemTests` reading `tests/fixtures/problems/`.
   - Tests (fake backend): `compiling` is always the first event; a returned `Completed` always follows it; stop signal ends in `Stopped` with cleanup; infra error returns `Infrastructure`; disabled language and unknown problem return the right `Failed` reasons; production wiring returns `problem_unavailable`.
@@ -225,62 +225,62 @@ Conventions:
 
 ## Wave 4: hostile corpus and real-sandbox scenarios (run on the VPS)
 
-- [ ] **T25 [S] [SUPERVISED] (30 min) Sandbox test harness, fixtures and corpus layout**
+- [x] **T25 [S] [SUPERVISED] (30 min) Sandbox test harness, fixtures and corpus layout**
   - Files: `crates/judge/tests/sbx/mod.rs`, `crates/judge/tests/fixtures/problems/*`, `crates/judge/tests/hostile/README.md`.
   - Harness: reads `SANDBOX_DOCKER_SOCKET`, runs the daemon-identity checks and refuses otherwise; helpers to run a source against a fixture problem and return verdicts, events, timings; helper to list containers by label from the daemon; a host-side TCP/UDP listener helper for S12. Fixture problems (tiny, original): `add` (sum of two integers) and `sort_list`, each with samples, hidden tests, a correct and a wrong Python solution. A test (`hostile_files_are_data`) asserts no test source calls process-spawning APIs on corpus files.
   - Requirements: R16.2, R16.3.
   - Depends on: T24.
   - Rust lesson: integration test helpers and `#[ignore]` with environment guards.
 
-- [ ] **T26 [P] [SUPERVISED] (30 min) Functional and forgery scenarios: S01 to S04, S14, S15, S27, S28**
+- [x] **T26 [P] [SUPERVISED] (30 min) Functional and forgery scenarios: S01 to S04, S14, S15, S27, S28**
   - Files: `crates/judge/tests/sbx/{functional,forgery}.rs`, `crates/judge/tests/hostile/{fake_verdict,forged_lines,early_exit,self_kill,stdout_close,import_all,remember_replay}.py`.
   - Correct solution accepted with `compiling` first; wrong solution fails with sample detail and redacted hidden tests; syntax error and disabled language; exception class; fake verdict JSON printed with `print` and with raw `os.write`; forged and early answer lines; premature exit; harmless program that imports `os`, `subprocess`, `socket`, `ctypes` is accepted (S27). S28 (remember-and-replay, A1): the program keeps each input and prints earlier ones during later calls; visible tests run first, the public events after the first hidden test carry no output text and no hidden input, and the run is not `accepted`.
   - Requirements: R8.4, R13.7, R13.8, R14.7, R15.1, R16.3.
   - Depends on: T25.
 
-- [ ] **T27 [P] [SUPERVISED] (30 min) Time, memory and process scenarios: S05 to S08**
+- [x] **T27 [P] [SUPERVISED] (30 min) Time, memory and process scenarios: S05 to S08**
   - Files: `crates/judge/tests/sbx/limits.rs`, `crates/judge/tests/hostile/{infinite_loop,import_loop,sleep_forever,sigstop_self,memory_list,memory_alloc,fork_bomb,thread_bomb}.py`.
   - Assert verdict sets and the wall bound (limit + 1 s on the worker clock), container removal, `oom_kill` evidence for memory cases (read through the facts path and cross-checked with the daemon), and that the PID limit contains the bombs.
   - Requirements: R5, R9.3, R3.9, R3.10.
   - Depends on: T25.
 
-- [ ] **T28 [P] [SUPERVISED] (25 min) Output scenarios: S09 to S11**
+- [x] **T28 [P] [SUPERVISED] (25 min) Output scenarios: S09 to S11**
   - Files: `crates/judge/tests/sbx/output.rs`, `crates/judge/tests/hostile/{stdout_flood,stdout_flood_raw,stderr_flood,long_line}.py`.
   - S09 and S11: `output_limit` for stdout (print and raw `os.write`) and for one long stdout line. S10 (A2): an endless stderr flood with no answer gives `time_limit` from the missed deadline, not `output_limit`. The stored stderr is truncated with the marker, the container is not killed for stderr alone, and the last stderr line is still available for exception-class extraction when the program then exits with an exception. The worker's resident memory stays bounded during every flood (sample before and after). No flood produces `accepted`.
   - Requirements: R6, R6.3, R6.5.
   - Depends on: T25.
 
-- [ ] **T29 [P] [SUPERVISED] (30 min) Network scenario: S12**
+- [x] **T29 [P] [SUPERVISED] (30 min) Network scenario: S12**
   - Files: `crates/judge/tests/sbx/network.rs`, `crates/judge/tests/hostile/{net_tcp,net_udp,net_dns,net_ipv6,net_raw,net_metadata}.py`, a trusted control script `crates/judge/tests/probes/net_control.py`.
   - Attempt TCP, UDP, DNS, IPv6, raw sockets, link-local and metadata addresses, the bridge gateway and the host's loopback. The pass condition is zero connections at the host listeners. The control run (our own trusted script, networking deliberately enabled through a `testkit`-only policy) shows whether the listener can see a connection on this host; if it cannot, the test reports "control inconclusive" rather than passing silently.
   - Requirements: R3.1, R16.4.
   - Depends on: T25.
 
-- [ ] **T30 [P] [SUPERVISED] (30 min) Filesystem and host-visibility scenarios: S13, S26**
+- [x] **T30 [P] [SUPERVISED] (30 min) Filesystem and host-visibility scenarios: S13, S26**
   - Files: `crates/judge/tests/sbx/filesystem.rs`, `crates/judge/tests/hostile/{write_root,write_proc,write_sys,fill_box,big_file,read_host,syscalls_blocked}.py`.
   - After each run, ask the daemon for the container's filesystem changes: it must be empty. Fill tests stop at the tmpfs size and do not produce `accepted`. Read attempts for `/var/run/docker.sock`, `/proc/1/environ`, secrets paths find nothing useful. `mount`, `unshare`, `ptrace` fail. Mount list contains only the expected mounts.
   - Requirements: R3.2, R3.3, R3.5, R3.6, R1.9, R16.4.
   - Depends on: T25.
 
-- [ ] **T31 [S] [SUPERVISED] (30 min) Cleanup and crash scenarios: S16, S17, S24**
+- [x] **T31 [S] [SUPERVISED] (30 min) Cleanup and crash scenarios: S16, S17, S24**
   - Files: `crates/judge/tests/sbx/recovery.rs`, `crates/judge/examples/sbx_victim.rs` (a trusted helper binary that starts a hostile run and waits).
   - S16: spawn the trusted helper as a child process, SIGKILL it mid-run (`Child::kill`), then poll the daemon until no labelled container remains; assert gone within 60 s of the container's creation. Repeat with a test-only policy whose PID 1 outlives the orphan age so only the sweeper can remove it. S17: after timeout and cancel, the daemon lists no container for the run. S24: stop signal during a call kills and removes.
   - Requirements: R10, R5.9.
   - Depends on: T25, T23.
 
-- [ ] **T32 [S] [SUPERVISED] (30 min) Concurrency scenarios: S18, S19**
+- [x] **T32 [S] [SUPERVISED] (30 min) Concurrency scenarios: S18, S19**
   - Files: `crates/judge/tests/sbx/concurrency.rs`.
   - Two runs at once with `JUDGE_CONCURRENCY=2`: a fork bomb in one and a correct solution in the other; the good run is accepted within its limits. Submit more runs than slots and sample the daemon's container list: never more than `SANDBOX_MAX_CONTAINERS`. Record timing for the report.
   - Requirements: R11.
   - Depends on: T27, T31.
 
-- [ ] **T33 [P] [SUPERVISED] (30 min) Infrastructure and runtime scenarios: S20 to S23, S25**
+- [x] **T33 [P] [SUPERVISED] (30 min) Infrastructure and runtime scenarios: S20 to S23, S25**
   - Files: `crates/judge/tests/sbx/infra.rs`.
   - S20 (probe passes; probe fails for a weakened policy), S21 (wrong socket, stopped daemon: `Infrastructure`, never a verdict), S22 (unknown digest: `Infrastructure`, no pull attempted), S23 (only when `SANDBOX_RUNTIME=runsc`: record TESTED or NOT TESTED), S25 (write the probe report to a file for the verification report).
   - Requirements: R4, R9.4, R12.4, R12.5.
   - Depends on: T25, T22.
 
-- [ ] **T34 [S] [SUPERVISED] (30 min) `SandboxOracle`**
+- [x] **T34 [S] [SUPERVISED] (30 min) `SandboxOracle`**
   - Files: `crates/judge/src/sandbox/oracle.rs`, `crates/judge/tests/sbx/oracle.rs`, `crates/judge/tests/model_oracle.rs`.
   - Implement `counterspell_engine::Oracle` with a Tokio `Handle`, a user session and a reference session in **separate containers**. Map outcomes to `Returned`, `Garbled`, `Crashed { exception_class, message }`, `TimedOut`, or `OracleError`. Reject being called from inside an async context.
   - Tests: fake-backend mapping tests; `sbx_oracle_hostile_user` (hostile corpus as the user side returns only `TimedOut`, `Crashed` or `Garbled`, within limit + slack); `sbx_oracle_good_pair`; hidden inputs cannot be passed (type-level: only a public input type is accepted).
@@ -288,7 +288,7 @@ Conventions:
   - Depends on: T17, T24, T25.
   - Rust lesson: bridging sync and async with `Handle::block_on` and why it needs `spawn_blocking`.
 
-- [ ] **T35 [P] (20 min) Log hygiene test**
+- [x] **T35 [P] (20 min) Log hygiene test**
   - Files: `crates/judge/tests/model_logs.rs`, `crates/judge/tests/sbx/logs.rs`.
   - Capture `tracing` output while the fake backend runs a program that prints a canary in stdout, stderr and the exception message; assert the canary never appears in logs. Repeat once against the real sandbox.
   - Requirements: R13.5.
@@ -296,7 +296,7 @@ Conventions:
 
 ## Wave 5: boundary, documentation, evidence, review
 
-- [ ] **T36 [P] (30 min) Boundary tests**
+- [x] **T36 [P] (30 min) Boundary tests**
   - Files: `crates/judge/tests/boundary.rs`.
   - (1) Parse `Cargo.lock` and assert `counterspell-server`'s transitive dependencies contain neither `bollard` nor `counterspell-judge`. (2) Assert `bollard` is imported only in `sandbox/bollard_backend.rs` and `sandbox/daemon.rs`. (3) Assert no `Command::new` or `std::process` / `tokio::process` use in `crates/judge/src` and `crates/mcp/src`. (4) Assert the container-facing modules (`call.rs`, `session.rs`, `spec.rs`) do not import the expected-output type. (5) Parse `docker-compose.yml` (YAML dev-dependency) and assert: `server` has no Docker socket mount; `judge` mounts at most the sandbox socket path and never `/var/run/docker.sock`; `judge` has no published ports and no Valkey URL. (6) Assert `counterspell-mcp` depends on the judge library only through the sandbox types.
   - Requirements: R1.4 to R1.8, R2.6, R15.7, R7.

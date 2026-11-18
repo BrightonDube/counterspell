@@ -144,3 +144,61 @@ stub_calls() {
   [[ "$output" != *"CADDY_SITE_ADDRESS"* ]]
   [[ "$output" != *"counterspell.example"* ]]
 }
+
+@test "on the shared host every compose call includes compose.shared.yml, and tampering with it is refused (R7.13)" {
+  printf 'services: {}\n' > "$COUNTERSPELL_DIR/compose.shared.yml"
+  (cd "$COUNTERSPELL_DIR" && sha256sum docker-compose.yml compose.prod.yml compose.shared.yml Caddyfile > compose.sha256)
+  write_current_release
+  run_request "$(deploy_request)"
+  [ "$status" -eq 0 ]
+  grep "^docker compose" "$STUB_LOG" | grep -q "compose.prod.yml -f $COUNTERSPELL_DIR/compose.shared.yml"
+  : > "$STUB_LOG"
+  printf 'services: { caddy: {} }\n' > "$COUNTERSPELL_DIR/compose.shared.yml"
+  run_request "$(deploy_request)"
+  [ "$status" -eq 2 ]
+  ! grep -q " pull" "$STUB_LOG"
+}
+
+# Runs the script the way a forced command does: no argv, the request in SSH_ORIGINAL_COMMAND.
+run_forced() {
+  export SSH_ORIGINAL_COMMAND="$1"
+  run bash "$SCRIPT"
+}
+
+@test "a forced-command deploy request is parsed from SSH_ORIGINAL_COMMAND (R2.9, R7.12)" {
+  write_current_release
+  run_forced "$(deploy_request)"
+  [ "$status" -eq 0 ]
+  grep -q "^COUNTERSPELL_SHA=$HEX_SHA$" "$COUNTERSPELL_DIR/deploy.env"
+}
+
+@test "forced-command rollback and status work with no argv" {
+  write_current_release
+  printf 'COUNTERSPELL_SHA=%s\n' "$HEX_SHA" > "$COUNTERSPELL_DIR/deploy.env.previous"
+  run_forced "rollback"
+  [ "$status" -eq 0 ]
+  grep -q "^COUNTERSPELL_SHA=$HEX_SHA$" "$COUNTERSPELL_DIR/deploy.env"
+  run_forced "status"
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"COUNTERSPELL_SHA=$HEX_SHA"* ]]
+}
+
+@test "a forced-command request with a shell suffix is refused before any tool runs" {
+  run_forced "status; id"
+  [ "$status" -eq 2 ]
+  run_forced "deploy $HEX_SHA $DIG_SERVER $DIG_JUDGE $DIG_MIGRATE; id"
+  [ "$status" -eq 2 ]
+  [ -z "$(stub_calls)" ]
+}
+
+@test "a forced-command request with a malformed digest is refused before any tool runs" {
+  run_forced "deploy $HEX_SHA latest $DIG_JUDGE $DIG_MIGRATE"
+  [ "$status" -eq 2 ]
+  [ -z "$(stub_calls)" ]
+}
+
+@test "an empty forced-command request is refused" {
+  run_forced ""
+  [ "$status" -eq 2 ]
+  [ -z "$(stub_calls)" ]
+}

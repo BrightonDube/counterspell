@@ -82,10 +82,10 @@ impl ApiError {
 
     /// A `401` error for a request with no valid session.
     #[must_use]
-    pub fn unauthorized() -> Self {
+    pub fn unauthenticated() -> Self {
         Self::new(
             StatusCode::UNAUTHORIZED,
-            "unauthorized",
+            "unauthenticated",
             "Sign in to continue",
         )
     }

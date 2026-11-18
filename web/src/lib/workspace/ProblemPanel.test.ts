@@ -14,7 +14,7 @@ function problem(overrides: Partial<ProblemDetail> = {}): ProblemDetail {
     title: 'Two Sum',
     track: { slug: 'arrays', name: 'Crypt of Arrays' },
     concepts: [{ slug: 'hash-maps', name: 'Hash maps' }],
-    difficulty: 'intro',
+    difficulty: 'easy',
     statementMarkdown: 'Return the indices of `two` numbers.',
     constraints: ['2 <= nums.length <= 10'],
     signature: {
@@ -40,7 +40,7 @@ describe('ProblemPanel', () => {
       screen.getByRole('heading', { level: 2, name: 'Two Sum' })
     ).toBeTruthy();
     expect(screen.getByText('Crypt of Arrays')).toBeTruthy();
-    expect(screen.getByText('intro')).toBeTruthy();
+    expect(screen.getByText('easy')).toBeTruthy();
     const concepts = screen.getByRole('list', { name: 'Concepts' });
     expect(concepts.textContent).toContain('Hash maps');
   });

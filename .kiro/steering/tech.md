@@ -10,7 +10,7 @@ Use the source documents below for implementation detail. These decisions are fi
 - Postgres is truth, including the job queue with `FOR UPDATE SKIP LOCKED` and leases, and persisted `run_events`.
 - Valkey is for cache and rate limits only. It is not the queue or event bus.
 - Docker is controlled through bollard on a separate rootless daemon used only for sandboxes. The server cannot access a Docker daemon.
-- Canonical Cargo packages: `counterspell-{server,judge,engine,grimoire,mcp,common}`.
+- Canonical Cargo packages: `counterspell-{server,judge,engine,grimoire,mcp,common,catalogue-cli}`. The judge never depends on grimoire; `catalogue-cli` holds the operator binary and pack-loading code (15 Nov decision).
 - Python and JavaScript launch first. Java and C++ are stretch goals.
 - SvelteKit with the static adapter; Bits UI; Tailwind 4; Monaco.
 - GSAP is limited to the landing page and Familiar; keep the IDE calm and use reduced-motion alternatives.

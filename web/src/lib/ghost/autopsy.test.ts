@@ -21,7 +21,7 @@ function rawGhost(
       stop: 'no_smaller_failure'
     },
     provenance: {
-      seed: 42,
+      seed: '42',
       generator_version: 'gen-1',
       engine_version: 'engine-1',
       problem_version: 2,

@@ -1481,3 +1481,66 @@ The builder is a plain function from stored values to sections, so its tests nee
 - A source-scanning test meets its own strings: `Command::new` appears as data in scanner tests, so the corpus guard checks that no *line* holds a spawn token and a corpus marker together, rather than banning the token outright.
 - `clippy::case_sensitive_file_extension_comparisons` (pedantic) wants `Path::extension()` + `eq_ignore_ascii_case`, not `str::ends_with(".py")`.
 - tokio `TcpListener`/`UdpSocket` bound on `127.0.0.1:0` hand out free ports for the S12 listener helper; spawned accept tasks live as long as the test runtime.
+
+## judge-sandbox T26: the driver's stdout sink decides which forge channel exists (16 Nov 2026)
+
+- `languages/drivers/python/driver.py` replaces `sys.stdout`/`sys.stdin` with a `_Sink` while user code runs, so `print`/`sys.stdout.write` never reach the protocol pipe. Only raw `os.write(1, …)` bypasses the sink — a forgery test must use the raw channel to prove the protocol still rejects it, and keep the `print` copy to document the sink.
+- Killed containers can outlive the verdict by a beat: `session.abort` is best-effort kill-then-remove, so a cleanup assertion should poll `list_managed` (seconds bound, not the orphan age) rather than asserting emptiness immediately.
+- Integration asserts on run.rs semantics: there is no fail-fast break — every scheduled test executes, so sample/hidden event counts are exact only when the corpus program's answer pattern is known.
+
+## judge-sandbox T27: container death and removal are not the same bound (16 Nov 2026)
+
+- `docker kill` lands inside the kill slack, but the *removal* is asynchronous — under load a corpse sits `Exited` for tens of seconds. Assert `!running` (containment) promptly and reap corpses (sweeper's role); asserting absence conflates the two bounds.
+- A fork bomb can make a daemon call on that container exceed the API timeout, so the honest outcome is sometimes `ExecError::Infrastructure`, not a verdict. Both satisfy "never accepted, always bounded" — but the test must accept both or flake.
+- `clippy::unnested_or_patterns` wants `A(x) | B(x)` collapsed into `A | B` under one constructor; `clippy::manual_contains` wants `.contains(&v)` over `.iter().any(|v| *v == x)`.
+
+## judge-sandbox T28: drop the attach stream before the kill (16 Nov 2026)
+
+- `docker rm -f` on a detached flooding container takes ~0.5 s, but >10 s while the client's attach stream stays open — the daemon waits on stream teardown. `abnormal()` aborted with the `Driver` still alive, so floods always became `KillFailed` → `Infrastructure` instead of the recorded verdict. `Opened.driver` is `Option` now; both abort paths drop it first.
+- Borrow shape for the fix: keep `&mut Opened` whole and scope driver borrows into tiny `write_call`/`next_event` fns so `abnormal` can take the full struct — destructuring `Opened { session, driver }` once pins the borrow for the whole loop.
+- Flood corpus design: `print`/`sys.stdout` are sunk by the driver's `quiet()`; only `sys.__stdout__` or `os.write(1)` reach the pipe, and floods must carry no newline or the first bad line ends the call as `ExtraOutput`, not `OutputLimit`.
+
+## judge-sandbox T29: the host from inside a rootless bridge (16 Nov 2026)
+
+- A `bridge`-networked container on rootless Docker sees `172.17.0.1` (the rootlesskit netns) — it answers TCP RST but does NOT forward to host listeners. The host is reachable only through its LAN IP; slirp's `10.0.2.2` does not exist on this stack.
+- Host-side listeners must bind `0.0.0.0` (not `127.0.0.1`) to see container traffic NATed to the host LAN IP. `host_ip()` discovers it with the UDP-connect route probe — no traffic sent.
+- A network-isolation test without a reachability control proves nothing: 'zero connections' could mean an invisible listener. The trusted control script runs inside a `testkit`-only weakened (`Network`) container and asserts observability first.
+
+## judge-sandbox T30: out-of-band evidence has expected noise (16 Nov 2026)
+
+- `docker diff` on a read-only container is not empty — it lists tmpfs mountpoints and docker's `/etc` bind mounts. Assert against an exact allow-list, not emptiness.
+- `/proc/<pid>/environ` is readable when the exec user shares PID 1's UID — the leak surface is the *container's own* env, so image-level env hygiene matters more than the read path.
+- `clippy::items_after_statements` rejects `const` blocks mid-function; hoist them to file scope.
+- `LIBC.keyctl` does not exist in glibc — `AttributeError`, not `OSError`; probe helpers must catch broadly and prefer raw `libc.syscall(n)` for symbols libc may not wrap.
+
+## judge-sandbox T31: spawned helpers and process kills (16 Nov 2026)
+
+- A `cargo run`-spawned child is `cargo`'s, not the binary's — SIGKILL reaches the wrapper. Build with `cargo build --example` and spawn the artifact path directly.
+- `tokio::process` needs a feature the lib shouldn't gain for tests; `std::process` inside `spawn_blocking` works — `Child::kill` is synchronous anyway.
+- `required-features` on `[[example]]` keeps the victim out of default builds but still lets `--all-targets --all-features` gates compile it.
+- The repo clippy bans `std::process` in judge code — test-side helpers that the spec itself mandates get a scoped `#[allow(clippy::disallowed_methods)]`, not a lint waiver.
+- `RunOutcome` is not `PartialEq` (FinalResult isn't) — assert with `matches!`.
+
+## judge-sandbox T32: sampling a moving target (16 Nov 2026)
+
+- A `docker ps`-style list counts corpses; a kill's container can report `running` for tens of seconds after the verdict. Peak-concurrency assertions must count `running` state and start from a drained daemon, or leftovers convict the new batch.
+- Inspecting containers between list and inspect races with removal — 404 means "gone", not "fail".
+- A permit semaphore bounds *runs*, not daemon-visible containers: session replacement within one run can transiently show two containers for one run. Assert on running state with the batch's own window.
+- `tokio::spawn` needs owned args (`'static`) — pass `docker.clone()`/`cfg.clone()`, not borrows.
+
+## judge-sandbox T33: dead daemons and honest records (16 Nov 2026)
+
+- `Docker::connect_with_unix` checks the socket exists eagerly — "wrong socket" fails at connect, while "stopped daemon" needs a socket that exists but never answers (accept-and-drop `UnixListener`).
+- Bollard 0.21's `list_images` takes `Option<ListImagesOptions>` — call it with `None::<ListImagesOptions>`, no turbofish on the method.
+- `BollardSession` has no `Debug` — format the error, not the `Result`.
+- "NOT TESTED" is a valid recorded outcome (S23) — a status line that never claims what it didn't measure.
+
+## 2026-11-16 — Handle::try_current() lies on spawn_blocking threads
+
+`Handle::try_current()` returns `Ok` inside `tokio::task::spawn_blocking` closures because blocking threads carry the runtime's thread-local context — but `handle.block_on()` is *legal* there (it is the documented sync→async bridge). It only panics on async worker threads ('can call blocking only when running on the multi-threaded runtime' — actually panics with 'Cannot block_on within a runtime context'). So a sync-trait bridge (like `Oracle::evaluate`) cannot distinguish legal from illegal callers via `try_current`. The correct probe is `catch_unwind(|| handle.block_on(...))`: convert the panic into an error value. Model test must verify both sides: rejected from a worker thread, accepted from `spawn_blocking`.
+
+## language-drivers T08: fake Line events hide the real backend's Chunks (16 Nov 2026)
+
+- `BollardDriver::next_event` emits raw stdout `Chunk`s; line splitting lives in `LineReader` (`sandbox/stream.rs`), fed by `call.rs`. `FakeDriver` emits whole `Line` events, so a consumer greened only against the fake compiles and passes model tests but never sees a complete line on the real daemon. New driver consumers must handle `Line | Chunk` through `LineReader` with the `STDOUT_BUDGET` cap, exactly as `call.rs` does — and a real-daemon test is the first gate, not the last.
+- Dropping a driver channel closes the exec attach stdin; a well-behaved driver's serve loop then ends and the process exits by itself — no kill primitive needed for a cooperative stop.
+- A whole-bench deadline is a `tokio::time::Instant` shared across calls; `call_deadline.min(budget_deadline)` per call makes a budget that runs out mid-call distinguishable from a driver that is actually slow, so the cutoff maps to `Incomplete`, not `Failed`.

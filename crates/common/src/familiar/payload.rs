@@ -80,6 +80,46 @@ pub fn capped_points(points: &[PointSummary]) -> Vec<PointSummary> {
     kept
 }
 
+/// The `bench_start` event. Sent once before the bench times anything.
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BenchStartPayload {
+    /// The sizes the bench will time, in increasing order. Public by definition.
+    pub sizes: Vec<u64>,
+}
+
+impl BenchStartPayload {
+    /// Turns the payload into an event object, refusing anything over the event cap.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the payload is over the event size cap.
+    pub fn to_bounded_json(&self) -> Result<BoundedJson, BoundedJsonError> {
+        BoundedJson::from_serialize(self)
+    }
+}
+
+/// The `bench_point` event. Sent as each size's median is measured.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BenchPointPayload {
+    /// The input size that was timed.
+    pub n: u64,
+    /// The median of the timed repeats at `n`, in nanoseconds.
+    pub median_ns: u64,
+}
+
+impl BenchPointPayload {
+    /// Turns the payload into an event object, refusing anything over the event cap.
+    ///
+    /// # Errors
+    ///
+    /// Returns an error when the payload is over the event size cap.
+    pub fn to_bounded_json(&self) -> Result<BoundedJson, BoundedJsonError> {
+        BoundedJson::from_serialize(self)
+    }
+}
+
 /// The `complexity` event. Sent only when a bench was fitted.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -454,6 +494,40 @@ mod tests {
                 "bench_status": "host_busy",
                 "reference": "n"
             })
+        );
+    }
+
+    #[test]
+    fn bench_start_event_carries_only_the_public_sizes() {
+        // The bench announces its sizes before it times them. The wire shape
+        // is exactly `{"sizes": [...]}` — no inputs, expected values or seeds
+        // may ever ride along (design section 8b).
+        let payload = BenchStartPayload {
+            sizes: vec![4, 8, 16, 32],
+        };
+        let value = serde_json::to_value(&payload).expect("serialise");
+        assert_eq!(value, json!({"sizes": [4, 8, 16, 32]}));
+        assert_eq!(
+            value.as_object().unwrap().keys().collect::<Vec<_>>(),
+            vec!["sizes"],
+            "the only key is sizes"
+        );
+    }
+
+    #[test]
+    fn bench_point_event_carries_only_n_and_the_median() {
+        // A measured point is `{n, median_ns}` and nothing else — the input
+        // that produced it stays hidden in the judge.
+        let payload = BenchPointPayload {
+            n: 16,
+            median_ns: 41_200,
+        };
+        let value = serde_json::to_value(payload).expect("serialise");
+        assert_eq!(value, json!({"n": 16, "median_ns": 41_200}));
+        assert_eq!(
+            value.as_object().unwrap().keys().collect::<Vec<_>>(),
+            vec!["median_ns", "n"],
+            "the only keys are n and median_ns"
         );
     }
 

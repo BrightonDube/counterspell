@@ -118,3 +118,67 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `tests/sbx/mod.rs` (daemon connect+verify, `test_config`, `catalogue`, `run_source` → `RunObservation{outcome, events}`, `managed_containers`, `listeners` TCP/UDP helper), `tests/model_corpus.rs` (`hostile_files_are_data`), `tests/fixtures/problems/{add,sort_list}.json`, `tests/fixtures/solutions/*.py` (correct + wrong per problem), `tests/hostile/README.md`.
 - Brighton to check: (1) `run_source` probes the language for real on each call (preflight gate sees the true report) — slower but honest; a cached state was considered and rejected so scenario tests cannot accidentally bypass the gate. (2) The executor needs an owned backend, so `run_source` builds a `BollardBackend` from `&Docker` rather than sharing one. (3) The corpus guard checks "spawn token + corpus marker on the same line" because scanner tests legitimately hold `Command::new` as string data. (4) `test_config` caps runs at 20 s wall; scenario tests needing other caps will mutate the returned `SandboxConfig`.
 - Verified: harness smoke run (temp file, since deleted) ran `add` + `add_correct.py` on the rootless daemon: `Accepted`, 5/5 tests, events `[compiling, test×5]`.
+
+## T26 (SUPERVISED, judge-sandbox) functional + forgery scenarios on the daemon
+- Code: `tests/sbx_functional.rs`, `tests/sbx_forgery.rs`, seven hostile corpus programs, `sbx::cleared_within`.
+- Brighton to check: (1) `fake_verdict.py` writes the fake doc via BOTH `print` (sunk by the driver's `_hidden` wrapper) and `os.write(1,…)` (protocol violation) — the two S14 channels are exercised by one program since the corpus list is fixed at seven files. (2) `cleared_within` waits ≤15 s for post-verdict removal; abnormal-end kill+remove is best-effort and can lag — if the sweeper is the intended backstop, a stricter bound should be decided. (3) `remember_replay.py` must pass samples to reach hidden tests, so it is a valid `add` for the first three calls — the assertion guards the ordering/redaction invariant, not that every hostile program be wrong on every call.
+- Verified: 12/12 ignored scenarios pass on the rootless daemon (`add` accepted with compiling-first; wrong → WrongAnswer with 2 samples detailed + 3 hidden redacted; syntax → CompileError; java → LanguageUnavailable; ValueError → RuntimeError; fake verdict / forged lines → WrongAnswer; early exit / self-kill / stdout-close → RuntimeError; import-all → Accepted; replay → not Accepted, post-hidden records verdict-and-time only; no container survives any scenario).
+
+## T27 (SUPERVISED, judge-sandbox) limit scenarios on the daemon
+- Code: `tests/sbx_limits.rs`, eight hostile corpus programs, `sbx::drain_dead`, `RunObservation::run_wall`.
+- Brighton to check: (1) `cleared_within`-style "no containers at all" is too strict for kill-heavy runs — Docker removal lags tens of seconds under load, so `drain_dead` asserts **not running** then reaps corpses as the sweeper would. A leftover `Exited` container without a sweeper is expected (T31 will exercise the sweeper). (2) `sbx_s08a` accepts `Err(Infrastructure)` as well as a completed non-accepted verdict: a daemon call on a fork-bombed container can exceed `api_timeout`, and the worker reports infra rather than guessing — observed nondeterministically across runs. (3) The `oom_kill` cross-check proves the *channel* (`cat memory.events` parses on this daemon) rather than re-inspecting the dead container, which is already removed by then. (4) Per-call bound asserted as `time_ms <= limit + 2000` on emitted records — looser than the spec's `limit + KILL_SLACK` (1 s) because `time_ms` includes kill confirmation and daemon latency on a loaded dev host.
+- Verified: 9/9 pass on the rootless daemon over repeated runs.
+
+## T28 (SUPERVISED, judge-sandbox) output scenarios + a production fix
+- Code: `tests/sbx_output.rs`, four hostile corpus files, `Opened.driver: Option`, both abort paths drop the attach stream first.
+- Brighton to check: (1) The `call.rs`/`session.rs` change is the first scenario-test-driven fix to the security path — `Opened.driver` is now `Option<Driver>`; `write_call`/`next_event` scope the borrow so `abnormal` can `take()`+drop the stream before kill+remove. A missed drop would only cost kill latency, not safety. (2) `cfg.kill_slack = 2 s` in `sbx_output` is a dev-daemon margin; R5.5's 1 s bound is re-verified on the VPS (T37). (3) `print`-floods cannot reach the pipe through `quiet()`'s sink — the corpus uses `sys.__stdout__` (the retained real stream) and `os.write(1)`; both hit the byte cap. (4) The RSS bound (256 MB) is a dev-host tolerance, not the spec number.
+- Verified: 26/26 sbx scenarios pass on the rootless daemon after the fix.
+
+## T29 (SUPERVISED, judge-sandbox) network isolation on the daemon
+- Code: `tests/sbx_network.rs`, six hostile net programs, `tests/probes/net_control.py`, harness `host_ip`/`listeners(0.0.0.0)`/`probes_dir`.
+- Brighton to check: (1) Hostile sources carry `__PORT__`/`__HOST__` templates the test fills — the corpus stays data. (2) `net_raw` relies on the dropped `CAP_NET_RAW` (socket() raises `PermissionError`); its connect path is defence-in-depth. (3) If the control cannot reach the listeners the test prints "control inconclusive" and returns rather than passing silently — observed once before `0.0.0.0` binding and LAN-IP candidates were added; now conclusive on this host. (4) `host.docker.internal` resolved and reached the listener through rootlesskit NAT — expected on this stack, not portable.
+- Verified: conclusive pass — control proved observability, six hostile runs added zero attempts.
+
+## T30 (SUPERVISED, judge-sandbox) filesystem + host-visibility on the daemon
+- Code: `tests/sbx_filesystem.rs`, seven hostile corpus files.
+- Brighton to check: (1) `docker diff` is never literally empty — it lists tmpfs *mountpoints* (`/box`, `/tmp`, `/dev/shm`) and docker's `/etc` binds; the assertion is an allow-list of exactly those. (2) `/proc/1/environ` is readable (same UID as PID 1 `sleep`) and contains the image's public env — including a variable literally named `GPG_KEY`, the public python release fingerprint, not a secret; allowed explicitly with the content verified. (3) `syscalls_blocked.py` also tries raw `libc.syscall(SYS_keyctl)` — the symbol-free path seccomp must still refuse; report stays empty. (4) The mounts assertion is the exact observed table — a daemon that adds a mount will fail the test for review, not be silently allowed.
+- Verified: 4/4 pass on the rootless daemon.
+
+## T31 (SUPERVISED, judge-sandbox) cleanup + crash on the daemon
+- Code: `tests/sbx_recovery.rs`, `examples/sbx_victim.rs`.
+- Brighton to check: (1) the test spawns `cargo build` + the example binary via `std::process::Command` — needed for `Child::kill` (spec-literal) and scoped-allowed against the judge's no-host-process lint; `tokio::process` feature was deliberately not added to the lib. (2) The 60 s bound is measured from the daemon's `created_at`, not wall time. (3) The sweeper-alone proof is arithmetic: `sleep 125` > removal at ≤60 s, so self-expiry could not have fired — no inspection needed. (4) `spawn_source` runs preflight inside the spawned task; run-id name filtering keeps probe containers out of the wait.
+- Verified: 3/3 pass on the rootless daemon.
+
+## T32 (SUPERVISED, judge-sandbox) concurrency on the daemon
+- Code: `tests/sbx_concurrency.rs`.
+- Brighton to check: (1) `list_managed` counts dead corpses too — the first S19 run saw `peak_listed=6/running=5` from an S18 bomb corpse still tearing down; the test now drains leftovers first and asserts on `running` while still reporting `listed`. (2) `peak_running >= 2` proves the runs actually overlapped (serial execution would also satisfy the bound vacuously). (3) Six-run walls are printed for T37's report.
+- Verified: 2/2 pass on the rootless daemon.
+
+## T33 (SUPERVISED, judge-sandbox) infra + runtime on the daemon
+- Code: `tests/sbx_infra.rs`, generated `probe-report.json`.
+- Brighton to check: (1) S21's two halves are deliberately different layers — `connect` refuses a missing path outright (no backend exists), while an existing-but-silent socket fails the probe closed; both are "Infrastructure, never a verdict". (2) S22's no-pull proof is the image list being identical, plus sub-second refusal. (3) S23 is env-gated: it will print TESTED + the real outcome only when `SANDBOX_RUNTIME=runsc` is set — on this host it records NOT TESTED. (4) `probe-report.json` is generated evidence for T37's verification report; it is committed so the report has material to embed.
+- Verified: 4/4 pass on the rootless daemon.
+
+## T34 (SUPERVISED, judge-sandbox) SandboxOracle
+- Code: `src/sandbox/oracle.rs`, `tests/model_oracle.rs`, `tests/sbx_oracle.rs`.
+- Brighton to check: (1) `exception_class` strings ('driver', 'Exit137', 'OutOfMemory') are synthesized from the `CallFailure` variant, not parsed from user stderr — keeps oracle diagnostics bounded and host-derived; confirm the engine's classifier accepts these classes. (2) The sync`evaluate` deliberately `catch_unwind`s `Handle::block_on`: worker-thread invocation becomes `OracleError` instead of a panic, `spawn_blocking` works — panic-as-control-flow is documented and tested both directions. (3) Two backend instances per oracle keeps fake-backend scripting side-deterministic; on the real daemon each side still gets its own container/session.
+- Verified: 8/8 model + 2/2 real-daemon on the rootless daemon.
+
+## T35 (SUPERVISED, judge-sandbox) log hygiene
+- Code: `tests/model_logs.rs`, `tests/sbx_logs.rs`, `LogCapture` in `tests/support/mod.rs`.
+- Brighton to check: (1) one test per binary because `set_global_default` is process-wide — deliberate. (2) The assert is "canary absent at TRACE", so any future log line carrying user bytes fails immediately. (3) `log_canary_fd.py` writes to fd1 raw, so the run is `WrongAnswer` by design — the canary still transits worker memory.
+
+## T36 (SUPERVISED, judge-sandbox) boundary tests
+- Code: `tests/boundary.rs`.
+- Brighton to check: (1) check 1 asserts the server's *non-dev* dependency closure via `cargo metadata`; the dev-dep on the judge test kit is deliberate per the Cargo.toml comment — if the spec meant "no dep at all" this needs a bigger refactor, flag it. (2) check 3 allows `std::process::ExitCode` in `main.rs` — a return type, not a spawn. (3) check 5 currently finds judge has *no* volumes — correct today; when T38 adds the rootless socket mount the test's "not /var/run/docker.sock" arm starts discriminating.
+- Verified: 6/6 pass.
+
+## T38 (judge-sandbox) deployment notes, CI, compose, renovate
+- Code: `deploy/rootless-sandbox-daemon.md`, `.github/workflows/ci.yml`, `docker-compose.yml`, `renovate.json`.
+- Brighton to check: (1) the compose socket mount defaults to `/run/user/1000/docker.sock` — a WSL-style path; `SANDBOX_DOCKER_SOCKET_HOST` must be set to the sandbox user's socket at real deploys, and `/dev/null` is the documented safe fallback. (2) `sandbox-integration` is advisory (`continue-on-error`, not in `ci-ok`'s needs) per open question 14 — flip to blocking if a rootless-daemon runner ever exists. (3) The Renovate regex anchors on `enabled = true` directly above `image`, so it only refreshes enabled languages; confirm that's the intent vs refreshing disabled pins too. (4) Renovate itself must be installed/enabled for the repo (GitHub App or self-hosted) — confirm current plan terms when installing, as the task notes.
+- Verified: config files parse, `docker compose config` clean, boundary 6/6.
+
+## T39 (SUPERVISED, judge-sandbox) security review pass
+- Code: `.kiro/specs/judge-sandbox/verification-report.md`.
+- Brighton to check: (1) the review was done by the implementing agent in a fresh pass — the task text asks for "a reviewer other than the author"; if an independent review (separate Kiro session or the sandbox-auditor agent) is required for sign-off, this report is the code-state record to review against, not the independent judgment itself. (2) `import_all.py` accepted by design (S27) — confirm that's still the intent. (3) The report honestly scopes all `sbx_*` evidence to the local WSL rootless daemon; T37's VPS rerun is the gate.
+- Verified: checklist table complete, no findings, boundary+model reruns green.

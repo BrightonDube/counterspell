@@ -82,13 +82,15 @@ fn invalid(message: &str) -> ApiError {
     ApiError::bad_request("invalid_filter", message.to_owned())
 }
 
-/// The signature as the importer stores it, with grimoire's field names. Every field is required, so a
-/// malformed stored value is an error rather than a silently empty signature.
+/// The signature as the importer stores it: the driver-protocol descriptor
+/// (protocol version, `function`, `parameters`, `returns` — see
+/// `languages/protocol.md`). Every field is required, so a malformed stored
+/// value is an error rather than a silently empty signature.
 #[derive(Deserialize)]
 struct StoredSignature {
     function: String,
-    params: Vec<StoredParam>,
-    returns: String,
+    parameters: Vec<StoredParam>,
+    returns: StoredType,
 }
 
 /// One stored parameter.
@@ -96,7 +98,27 @@ struct StoredSignature {
 struct StoredParam {
     name: String,
     #[serde(rename = "type")]
-    kind: String,
+    kind: StoredType,
+}
+
+/// A type descriptor in the stored wire signature.
+#[derive(Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum StoredType {
+    Int,
+    String,
+    List { items: Box<StoredType> },
+}
+
+impl StoredType {
+    /// The launch type name the detail endpoint reports (grimoire vocabulary).
+    fn name(&self) -> String {
+        match self {
+            Self::Int => "int".to_string(),
+            Self::String => "str".to_string(),
+            Self::List { items } => format!("list[{}]", items.name()),
+        }
+    }
 }
 
 type DetailRow = (
@@ -210,14 +232,14 @@ pub async fn published_detail(
         signature: SignatureView {
             function_name: signature.function,
             parameters: signature
-                .params
+                .parameters
                 .into_iter()
                 .map(|param| ParameterView {
                     name: param.name,
-                    kind: param.kind,
+                    kind: param.kind.name(),
                 })
                 .collect(),
-            return_type: signature.returns,
+            return_type: signature.returns.name(),
         },
         starters,
         enabled_languages,

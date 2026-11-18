@@ -18,6 +18,7 @@ pub fn status_after_event(current: RunStatus, event: &PublicEvent) -> Option<Run
         PublicEvent::Restarted { .. }
         | PublicEvent::ShrinkStep(_)
         | PublicEvent::Ghost(_)
+        | PublicEvent::BenchStart(_)
         | PublicEvent::BenchPoint(_)
         | PublicEvent::Complexity(_)
         | PublicEvent::Familiar(_) => current,

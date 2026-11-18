@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
-# Root-only deploy script. Installed as /usr/local/sbin/counterspell-deploy (root:root, 0755).
-# It is called only by counterspell-deploy-entry through `sudo -n` with fixed arguments, and it
-# validates them again. Accepted verbs:
+# Deploy script. Installed as <app bin dir>/counterspell-deploy. It runs as the deploy user: the
+# app owner on the shared host (docker group, no sudo), root through sudo on a dedicated host.
+# authorized_keys points the forced command here with no argv, so the request arrives in
+# SSH_ORIGINAL_COMMAND and is parsed below; local runs pass the same verbs as argv. It validates
+# the request again either way. Accepted verbs:
 #   deploy <40-hex sha> <server digest> <judge digest> <migrate digest>
 #   rollback
 #   status
@@ -13,11 +15,16 @@ set -euo pipefail
 umask 027
 
 APP_DIR="${COUNTERSPELL_DIR:-/opt/counterspell}"
-HOST_ENV="${COUNTERSPELL_HOST_ENV:-/etc/counterspell/host.env}"
+HOST_ENV="${COUNTERSPELL_HOST_ENV:-$APP_DIR/host.env}"
 CURRENT="$APP_DIR/deploy.env"
 PREVIOUS="$APP_DIR/deploy.env.previous"
 CANDIDATE="$APP_DIR/deploy.env.new"
 COMPOSE=(docker compose --project-directory "$APP_DIR" -f "$APP_DIR/docker-compose.yml" -f "$APP_DIR/compose.prod.yml")
+# On the shared host the app role installs compose.shared.yml (no Caddy of its own, shared proxy network).
+# It is covered by compose.sha256, so a changed or removed file is refused before any pull.
+if [[ -f "$APP_DIR/compose.shared.yml" ]]; then
+  COMPOSE+=(-f "$APP_DIR/compose.shared.yml")
+fi
 
 refuse() { echo "refused: $*" >&2; exit 2; }
 fail() { echo "failed: $*" >&2; exit 1; }
@@ -186,5 +193,29 @@ main() {
     rollback) rollback_release ;;
   esac
 }
+
+# Forced-command mode: authorized_keys runs this script with no argv and puts the client's
+# request in SSH_ORIGINAL_COMMAND. Parse it into the argv the verbs expect. Explicit argv always
+# wins, so local runs are unaffected. The verb grammar is the same one counterspell-deploy-entry
+# enforced for the dedicated host's sudo path.
+if [[ $# -eq 0 ]]; then
+  request_re='^deploy ([0-9a-f]{40}) (sha256:[0-9a-f]{64}) (sha256:[0-9a-f]{64}) (sha256:[0-9a-f]{64})$'
+  req="${SSH_ORIGINAL_COMMAND:-}"
+  case "$req" in
+    status | rollback)
+      set -- "$req"
+      ;;
+    deploy*)
+      if [[ "$req" =~ $request_re ]]; then
+        set -- deploy "${BASH_REMATCH[1]}" "${BASH_REMATCH[2]}" "${BASH_REMATCH[3]}" "${BASH_REMATCH[4]}"
+      else
+        refuse "expected 'deploy <sha> <digest> <digest> <digest>', 'rollback' or 'status'"
+      fi
+      ;;
+    *)
+      refuse "expected 'deploy <sha> <digest> <digest> <digest>', 'rollback' or 'status'"
+      ;;
+  esac
+fi
 
 main "$@"

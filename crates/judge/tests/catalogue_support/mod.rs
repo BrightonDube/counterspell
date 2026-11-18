@@ -55,7 +55,7 @@ pub async fn version(pool: &PgPool, slug: &str, version: i32) -> Step {
     )
     .bind(slug)
     .bind(version)
-    .bind(vec![7u8; 32])
+    .bind(vec![u8::try_from(version).unwrap_or(7); 32])
     .bind(json!({}))
     .bind(json!([]))
     .bind(json!({"name": "two_sum"}))

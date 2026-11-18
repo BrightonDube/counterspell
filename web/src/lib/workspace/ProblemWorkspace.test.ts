@@ -23,7 +23,7 @@ const problem: ProblemDetail = {
   title: 'Two Sum',
   track: { slug: 'arrays', name: 'Crypt of Arrays' },
   concepts: [],
-  difficulty: 'intro',
+  difficulty: 'easy',
   statementMarkdown: 'Return indices.',
   constraints: [],
   signature: {
@@ -40,17 +40,20 @@ const languages: LanguageSummary[] = [
   {
     id: 'python',
     displayName: 'Python',
-    enabled: true,
-    fileName: 'solution.py',
-    maxSourceBytes: 65536,
-    supportsRun: true,
-    supportsSubmit: true
+    maxSourceBytes: 65536
   }
 ];
 
 beforeEach(() => {
   api.loadProblem.mockReset();
   api.loadLanguages.mockReset();
+  // happy-dom defaults to a 1024px viewport, which resolves to the shell's tablet
+  // mode; these tests assert the desktop shell, so emulate a wide viewport.
+  (
+    window as unknown as {
+      happyDOM?: { setViewport(v: { width: number; height: number }): void };
+    }
+  ).happyDOM?.setViewport({ width: 1440, height: 900 });
 });
 
 afterEach(() => {

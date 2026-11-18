@@ -68,6 +68,8 @@ impl ProblemLookup for EmptyCatalogue {
 pub struct Language {
     /// The name the client sends, for example `python`. Case sensitive.
     pub name: String,
+    /// The human-facing label, for example `Python`.
+    pub display_name: String,
     /// The largest accepted source for this language, in bytes.
     pub max_source_bytes: u64,
 }
@@ -82,10 +84,11 @@ impl LanguageCatalog {
     /// The launch catalogue: `python` and `javascript`, each with the same source limit.
     #[must_use]
     pub fn launch(max_source_bytes: u64) -> Self {
-        let languages = ["python", "javascript"]
+        let languages = [("python", "Python"), ("javascript", "JavaScript")]
             .into_iter()
-            .map(|name| Language {
+            .map(|(name, display_name)| Language {
                 name: name.to_owned(),
+                display_name: display_name.to_owned(),
                 max_source_bytes,
             })
             .collect();
@@ -96,6 +99,13 @@ impl LanguageCatalog {
     #[must_use]
     pub fn find(&self, name: &str) -> Option<&Language> {
         self.languages.iter().find(|language| language.name == name)
+    }
+
+    /// Every accepted language, in catalogue order. Disabled stretch languages
+    /// are never in the catalogue, so they cannot be listed.
+    #[must_use]
+    pub fn entries(&self) -> &[Language] {
+        &self.languages
     }
 }
 
@@ -115,6 +125,6 @@ impl FromRequestParts<AppState> for CurrentUser {
             .resolve(&parts.headers)
             .await
             .map(CurrentUser)
-            .ok_or_else(ApiError::unauthorized)
+            .ok_or_else(ApiError::unauthenticated)
     }
 }

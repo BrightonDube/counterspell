@@ -150,8 +150,13 @@ impl<E: RunExecutor> Worker<E> {
         let input = RunInput {
             run_id: token.run_id(),
             problem_slug: claimed.problem_slug,
+            // A submission that has no pinned version names version 0, which no problem
+            // store can satisfy; the run reports `problem_unavailable` instead of the
+            // judge picking a version the submitter never saw.
+            problem_version: claimed.problem_version.unwrap_or(0),
             lang: claimed.lang,
             mode: claimed.mode,
+            ghost_input: claimed.ghost_input,
             code: claimed.code,
             attempt,
         };

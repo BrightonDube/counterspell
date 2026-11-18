@@ -384,7 +384,7 @@ async fn hints_without_a_session_is_401_and_an_unknown_api_path_is_a_json_404() 
     .await;
 
     assert_eq!(anonymous.status, 401);
-    assert_eq!(parse(&anonymous)["code"], "unauthorized");
+    assert_eq!(parse(&anonymous)["code"], "unauthenticated");
     assert_eq!(unknown.status, 404);
     assert_eq!(parse(&unknown)["code"], "not_found");
 }

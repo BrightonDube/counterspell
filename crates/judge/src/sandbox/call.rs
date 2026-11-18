@@ -15,7 +15,7 @@ use tokio::time::{sleep_until, Instant};
 
 use super::backend::{BackendSession, DriverChannel, DriverEvent, InfraError};
 use super::driver_protocol::encode_call;
-use super::session::{Opened, Session};
+use super::session::Opened;
 use super::stream::{LineReader, StderrBuffer};
 
 /// Stdout one call may produce, in bytes (requirement R6.2). Also the longest allowed line.
@@ -122,6 +122,8 @@ pub async fn run_call<S: BackendSession + 'static>(
     let result = call_once(opened, io, id, args, limits, stop).await;
     if result.is_err() {
         // Best effort: the daemon may be the thing that failed. The sweeper is the backstop.
+        // The attach stream closes first — an open one stalls the daemon's removal.
+        drop(opened.driver.take());
         let _ = opened.session.abort(limits.kill_slack).await;
     }
     result
@@ -136,8 +138,6 @@ async fn call_once<S: BackendSession + 'static>(
     stop: &mut watch::Receiver<bool>,
 ) -> Result<CallFacts, InfraError> {
     let started = Instant::now();
-    let Opened { session, driver } = opened;
-
     let deadline = min(started + limits.time, limits.run_deadline);
     let line = encode_call(id, args)
         .map_err(|error| InfraError::Unexpected(format!("encoding call {id}: {error:?}")))?;
@@ -146,27 +146,27 @@ async fn call_once<S: BackendSession + 'static>(
     tokio::select! {
         biased;
         () = sleep_until(deadline) => {
-            return abnormal(session, limits, CallFacts::Deadline).await;
+            return abnormal(opened, limits, CallFacts::Deadline).await;
         }
         () = stopped(stop) => {
-            return abnormal(session, limits, CallFacts::Stopped).await;
+            return abnormal(opened, limits, CallFacts::Stopped).await;
         }
-        written = driver.write_line(&line) => written?,
+        written = write_call(opened, &line) => written?,
     }
 
     loop {
         tokio::select! {
             biased;
             () = sleep_until(deadline) => {
-                return abnormal(session, limits, CallFacts::Deadline).await;
+                return abnormal(opened, limits, CallFacts::Deadline).await;
             }
             () = stopped(stop) => {
-                return abnormal(session, limits, CallFacts::Stopped).await;
+                return abnormal(opened, limits, CallFacts::Stopped).await;
             }
-            event = driver.next_event() => match event? {
+            event = next_event(opened) => match event? {
                 DriverEvent::Line(bytes) | DriverEvent::Chunk(bytes) => {
                     let Ok(lines) = io.stdout.push(&bytes) else {
-                        return abnormal(session, limits, CallFacts::OutputLimit).await;
+                        return abnormal(opened, limits, CallFacts::OutputLimit).await;
                     };
                     // One answer line and nothing after it. Any further line, or a partial
                     // line after the answer, is data the protocol does not allow.
@@ -175,7 +175,7 @@ async fn call_once<S: BackendSession + 'static>(
                         [line] if io.stdout.held() == 0 => {
                             return Ok(answer(line.clone(), started));
                         }
-                        _ => return abnormal(session, limits, CallFacts::ExtraOutput).await,
+                        _ => return abnormal(opened, limits, CallFacts::ExtraOutput).await,
                     }
                 }
                 DriverEvent::Stderr(bytes) => io.stderr.push(&bytes),
@@ -185,11 +185,37 @@ async fn call_once<S: BackendSession + 'static>(
                         oom_kill,
                         last_stderr_line: io.stderr.last_line().map(<[u8]>::to_vec),
                     };
-                    return abnormal(session, limits, facts).await;
+                    return abnormal(opened, limits, facts).await;
                 }
             },
         }
     }
+}
+
+/// Borrows the live driver for one operation, so the borrow ends with the select arm
+/// and `abnormal` can take the whole `Opened`.
+async fn write_call<S: BackendSession + 'static>(
+    opened: &mut Opened<S>,
+    line: &[u8],
+) -> Result<(), InfraError> {
+    opened
+        .driver
+        .as_mut()
+        .ok_or_else(|| InfraError::Unexpected("call on a session with no driver".to_owned()))?
+        .write_line(line)
+        .await
+}
+
+/// The driver's next event. Same borrow scoping as [`write_call`].
+async fn next_event<S: BackendSession + 'static>(
+    opened: &mut Opened<S>,
+) -> Result<DriverEvent, InfraError> {
+    opened
+        .driver
+        .as_mut()
+        .ok_or_else(|| InfraError::Unexpected("call on a session with no driver".to_owned()))?
+        .next_event()
+        .await
 }
 
 fn answer(line: Vec<u8>, started: Instant) -> CallFacts {
@@ -200,12 +226,15 @@ fn answer(line: Vec<u8>, started: Instant) -> CallFacts {
 }
 
 /// Kills and removes the container, confirms it is gone within the kill slack, and then
-/// returns the facts that ended the call.
+/// returns the facts that ended the call. The driver — the open attach stream — is
+/// dropped first: a daemon's removal waits on stream teardown, so a program still
+/// flooding it would stall the kill past the slack.
 async fn abnormal<S: BackendSession + 'static>(
-    session: &mut Session<S>,
+    opened: &mut Opened<S>,
     limits: CallLimits,
     facts: CallFacts,
 ) -> Result<CallFacts, InfraError> {
-    session.abort(limits.kill_slack).await?;
+    drop(opened.driver.take());
+    opened.session.abort(limits.kill_slack).await?;
     Ok(facts)
 }

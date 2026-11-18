@@ -13,6 +13,15 @@ export interface StartRunInput {
   mode: RunMode;
 }
 
+/** A ghost rerun carries the stored ghost input verbatim. The judge decides what it means. */
+export interface GhostRunInput {
+  problem: string;
+  lang: string;
+  code: string;
+  /** The earlier submission (run id) that produced the ghost; the server checks ownership. */
+  ghost: { submission_id: string; input: unknown };
+}
+
 /** Parses the `202` body of `POST /api/runs`, which carries the new run id. */
 function parseStartedRun(raw: unknown): string {
   const record = asRecord(raw, 'started');
@@ -49,6 +58,28 @@ export function startRunAction(input: StartRunInput): StartRunAction {
   return {
     key,
     send: (options = {}) => startRun(input, key, options)
+  };
+}
+
+/** Queues one custom ghost run. Retries share the key, so a double send cannot queue two. */
+export function startGhostRun(
+  input: GhostRunInput,
+  idempotencyKey: string,
+  options: RequestOptions = {}
+): Promise<string> {
+  return requestJson('POST', '/api/runs/ghost', parseStartedRun, {
+    ...options,
+    body: input,
+    headers: { 'Idempotency-Key': idempotencyKey }
+  });
+}
+
+/** Creates one Rerun-ghost click with a single idempotency key. */
+export function startGhostRunAction(input: GhostRunInput): StartRunAction {
+  const key = crypto.randomUUID();
+  return {
+    key,
+    send: (options = {}) => startGhostRun(input, key, options)
   };
 }
 

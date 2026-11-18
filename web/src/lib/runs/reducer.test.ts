@@ -157,7 +157,11 @@ describe('applyEvent', () => {
         envelope(1, { kind: 'error', code, message: 'Stopped.' })
       );
       expect(state.status).toBe('failed');
-      expect(state.terminal).toEqual({ kind: 'error', code, message: 'Stopped.' });
+      expect(state.terminal).toEqual({
+        kind: 'error',
+        code,
+        message: 'Stopped.'
+      });
     }
   );
 

@@ -46,6 +46,19 @@ for you to check by hand.
 | `rollback` | Swaps the current and previous release records, starts the previous digests, runs the same checks. Never runs migrations. |
 | `status` | Prints the SHA and the three digests of the current release. |
 
+## Shared host (the OVH VPS)
+
+On the shared host there is no sudo step: `deploy-counterspell` owns `/opt/counterspell` and is in
+the `docker` group, so the `app` role points the CI key's forced command straight at the script:
+
+```
+no-pty,no-port-forwarding,no-agent-forwarding,no-X11-forwarding,command="/opt/counterspell/bin/counterspell-deploy" ssh-ed25519 AAAA... counterspell-ci
+```
+
+With no argv the script parses the request from `SSH_ORIGINAL_COMMAND` itself; the verb grammar is
+identical. `deploy-counterspell`'s `authorized_keys` is templated by the `app` role from
+`deploy_public_keys`.
+
 ## On GitHub
 
 1. Settings → Environments → **production**: required reviewer = you; deployment branches = `main` and tags

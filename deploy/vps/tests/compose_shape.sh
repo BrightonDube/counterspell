@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Shape test for the production Compose stack (deploy-ops T14, R4.1 to R4.10, R12.4, P1, P2, P8).
+# Shape test for the production Compose stack on the shared host (deploy-ops T14/T15, R4.1 to R4.10,
+# R12.4, P1, P2, P8). The shared host already runs a reverse proxy, so Counterspell runs no Caddy of its
+# own: compose.shared.yml removes it and joins the server to the existing counterspell_edge network, which is external.
 #
 # It renders the stack with `docker compose config` (no containers start, nothing is pulled), then asserts
-# on the JSON with jq. The overlay's /etc/counterspell/ paths are pointed at placeholder fixtures in a
+# on the JSON with jq. COUNTERSPELL_SECRETS_DIR (host.env) is pointed at placeholder fixtures in a
 # temporary copy, so no host file is read.
 set -euo pipefail
 
@@ -21,7 +23,9 @@ for service in postgres migrate server judge; do
   cp "$FIXTURES/$service.env.example" "$TMP/env/$service.env"
 done
 cp "$FIXTURES/host.env.example" "$TMP/env/host.env"
-sed "s#/etc/counterspell/#$TMP/env/#g" "$ROOT/deploy/vps/compose.prod.yml" > "$TMP/compose.prod.yml"
+sed -i "s#^COUNTERSPELL_SECRETS_DIR=.*#COUNTERSPELL_SECRETS_DIR=$TMP/env#" "$TMP/env/host.env"
+cp "$ROOT/deploy/vps/compose.prod.yml" "$TMP/compose.prod.yml"
+cp "$ROOT/deploy/vps/compose.shared.yml" "$TMP/compose.shared.yml"
 
 cat > "$TMP/deploy.env" <<'EOF'
 COUNTERSPELL_SHA=0000000000000000000000000000000000000000
@@ -31,9 +35,9 @@ COUNTERSPELL_MIGRATE_IMAGE=ghcr.io/brightondube/counterspell-migrate@sha256:3333
 EOF
 
 docker compose --project-directory "$ROOT" \
-  -f "$ROOT/docker-compose.yml" -f "$TMP/compose.prod.yml" \
+  -f "$ROOT/docker-compose.yml" -f "$TMP/compose.prod.yml" -f "$TMP/compose.shared.yml" \
   --env-file "$TMP/deploy.env" --env-file "$TMP/env/host.env" \
-  config --format json > "$TMP/config.json"
+  config --no-env-resolution --format json > "$TMP/config.json"
 
 # Asserts that a jq expression is true for the rendered stack.
 check() {
@@ -51,21 +55,41 @@ check "P1 only judge mounts a Docker socket" \
 check "P1 no service mounts /var/run/docker.sock" \
   '[.services[] | (.volumes // [])[] | .source // ""] | any(. == "/var/run/docker.sock") | not'
 
-# P2: only caddy publishes ports, on 80 and 443 only.
-check "P2 only caddy publishes ports" \
-  '[.services | to_entries[] | select((.value.ports // []) | length > 0) | .key] == ["caddy"]'
-check "P2 caddy publishes exactly 80 and 443" \
-  '[.services.caddy.ports[].published | tostring] | sort == ["443", "80"]'
-check "P2 judge, postgres, valkey and migrate are not on edge" \
-  '[.services.judge, .services.postgres, .services.valkey, .services.migrate] | all((.networks // {}) | keys | index("edge") == null)'
+# P2 (shared host): Counterspell runs no Caddy and publishes no port. The shared proxy is the only edge.
+check "P2 there is no caddy service" \
+  '.services | has("caddy") | not'
+check "P2 no service publishes a port" \
+  '[.services[] | (.ports // []) | length] | all(. == 0)'
+check "P2 only server joins the shared edge network" \
+  '[.services | to_entries[] | select((.value.networks // {}) | has("edge")) | .key] == ["server"]'
+check "P2 the edge network is the existing external counterspell_edge" \
+  '.networks.edge.external == true and .networks.edge.name == "counterspell_edge"'
+check "P2 judge, postgres, valkey and migrate are on data only" \
+  '[.services.judge, .services.postgres, .services.valkey, .services.migrate] | all((.networks // {}) | keys == ["data"])'
 check "P2 the data network is internal" \
   '.networks.data.internal == true'
 
+# R4.9: the server trusts forwarded addresses only from the proxy subnet in host.env.
+check "R4.9 server takes TRUSTED_PROXIES from host.env" \
+  '.services.server.environment.TRUSTED_PROXIES != null'
+
 # P8: judge reads only judge.env, with only the allow-listed keys.
 check "P8 judge reads judge.env" \
-  '(.services.judge.env_file // []) | any(test("judge.env$"))'
+  '(.services.judge.env_file // []) | map(.path) | any(test("judge.env$"))'
 check "P8 judge environment holds only allow-listed keys" \
-  '((.services.judge.environment // {}) | keys) - ["DATABASE_URL","JUDGE_CONCURRENCY","LEASE_SECS","RENEW_SECS","LOG_FORMAT"] == []'
+  '((.services.judge.environment // {}) | keys) - ["DATABASE_URL","JUDGE_CONCURRENCY","LEASE_SECS","RENEW_SECS","LOG_FORMAT","SANDBOX_DOCKER_SOCKET"] == []'
+
+# P1 detail: the judge gets the socket at a fixed path and is told about it.
+check "P1 judge mounts the sandbox socket read-write at /run/sandbox/docker.sock and sets SANDBOX_DOCKER_SOCKET" \
+  '.services.judge | ((.volumes // []) | any(.target == "/run/sandbox/docker.sock")) and (.environment.SANDBOX_DOCKER_SOCKET == "/run/sandbox/docker.sock")'
+
+# R4.5: agreed memory limits (bytes) for postgres and valkey.
+check "R4.5 postgres 1024m and valkey 160m" \
+  '(.services.postgres.mem_limit | tonumber) == 1073741824 and (.services.valkey.mem_limit | tonumber) == 167772160'
+
+# R5.1: each service reads only its own env file.
+check "R5.1 postgres, server and migrate read their own env files" \
+  '([.services.postgres.env_file[].path] | any(test("postgres.env$"))) and ([.services.server.env_file[].path] | any(test("server.env$"))) and ([.services.migrate.env_file[].path] | any(test("migrate.env$")))'
 
 # R4.6: Postgres never uses trust, anywhere in the rendered stack.
 check "R4.6 POSTGRES_HOST_AUTH_METHOD is absent" \

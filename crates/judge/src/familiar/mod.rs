@@ -19,6 +19,7 @@ use counterspell_common::status::{RunMode, Verdict};
 
 use crate::executor::{ExecError, RunContext};
 use assess::{assess, AssessInput, Assessment, BenchPoint, BenchState};
+use counterspell_common::familiar::payload::MeasuredColumns;
 use gate::BenchGate;
 use load::{quiet, sample, LoadSource};
 
@@ -81,11 +82,13 @@ pub struct MeasureInput<'a> {
 
 /// Runs the bench for one run and emits its events.
 ///
-/// The bench runs only for an accepted run with a plan. The order is: take the bench gate,
-/// read the load, run the collector, read the load again, assess, then emit `complexity`
-/// (only when it was fitted) and `familiar`. A collector error is returned unchanged, so
-/// the caller retries the run. A failed or short bench is not an error: it gives a missing
-/// measurement and the run still completes.
+/// The bench runs only for an accepted run with a plan and a live collector. The
+/// order is: take the bench gate, read the load, run the collector, read the load
+/// again, assess, then emit `complexity` (only when it was fitted) and `familiar`.
+/// A collector error is returned unchanged, so the caller retries the run. A
+/// failed or short bench is not an error: it gives a missing measurement and the
+/// run still completes. The assessment's measured columns are returned so the
+/// terminal write can store them.
 ///
 /// # Errors
 ///
@@ -95,11 +98,15 @@ pub async fn measure_run<C: BenchCollector>(
     ctx: &RunContext,
     gate: &BenchGate,
     load: &impl LoadSource,
-    collector: &mut C,
+    collector: Option<&mut C>,
     input: &MeasureInput<'_>,
-) -> Result<(), ExecError> {
-    let assessment = match (input.verdict == Some(Verdict::Accepted), input.plan) {
-        (true, Some(plan)) => {
+) -> Result<MeasuredColumns, ExecError> {
+    let assessment = match (
+        input.verdict == Some(Verdict::Accepted),
+        input.plan,
+        collector,
+    ) {
+        (true, Some(plan), Some(collector)) => {
             let _permit = gate
                 .acquire()
                 .await
@@ -110,13 +117,20 @@ pub async fn measure_run<C: BenchCollector>(
             let state = bench_state(&outcome, quiet(before, after, input.max_load));
             assess(&assess_input(input, state))
         }
-        (true, None) => assess(&assess_input(input, BenchState::NotSpecified)),
-        (false, _) => assess(&AssessInput {
+        (true, Some(_), None) => {
+            // A bench was declared but there is no live session to run it in.
+            return Err(ExecError::Infrastructure(
+                "bench_declared_without_session".to_owned(),
+            ));
+        }
+        (true, None, _) => assess(&assess_input(input, BenchState::NotSpecified)),
+        (false, _, _) => assess(&AssessInput {
             baseline: None,
             ..assess_input(input, BenchState::NotSpecified)
         }),
     };
-    emit_assessment(ctx, assessment).await
+    emit_assessment(ctx, &assessment).await?;
+    Ok(assessment.columns)
 }
 
 /// Builds the assessment input for one run from its measured state.
@@ -144,7 +158,7 @@ fn bench_state(outcome: &BenchOutcome, quiet_host: bool) -> BenchState<'_> {
 }
 
 /// Emits the `complexity` event (when fitted) and the `familiar` event, in that order.
-async fn emit_assessment(ctx: &RunContext, assessment: Assessment) -> Result<(), ExecError> {
+async fn emit_assessment(ctx: &RunContext, assessment: &Assessment) -> Result<(), ExecError> {
     if let Some(complexity) = &assessment.complexity {
         let data = complexity
             .to_bounded_json()

@@ -226,6 +226,8 @@ pub enum PublicEvent {
     ShrinkStep(BoundedJson),
     /// The ghost input.
     Ghost(BoundedJson),
+    /// The bench is starting; the sizes it will time.
+    BenchStart(BoundedJson),
     /// One timing point from bench mode.
     BenchPoint(BoundedJson),
     /// The measured complexity class.
@@ -239,7 +241,7 @@ pub enum PublicEvent {
 }
 
 impl PublicEvent {
-    /// The SSE event name. These eleven names are the whole public contract.
+    /// The SSE event name. These twelve names are the whole public contract.
     #[must_use]
     pub fn event_type(&self) -> &'static str {
         match self {
@@ -249,6 +251,7 @@ impl PublicEvent {
             Self::GhostHunting => "ghost_hunting",
             Self::ShrinkStep(_) => "shrink_step",
             Self::Ghost(_) => "ghost",
+            Self::BenchStart(_) => "bench_start",
             Self::BenchPoint(_) => "bench_point",
             Self::Complexity(_) => "complexity",
             Self::Familiar(_) => "familiar",
@@ -266,6 +269,7 @@ impl PublicEvent {
             Self::Test(test) => test.to_json(),
             Self::ShrinkStep(data)
             | Self::Ghost(data)
+            | Self::BenchStart(data)
             | Self::BenchPoint(data)
             | Self::Complexity(data)
             | Self::Familiar(data) => data.0.clone(),
@@ -487,6 +491,7 @@ mod tests {
             PublicEvent::GhostHunting,
             PublicEvent::ShrinkStep(some_bounded()),
             PublicEvent::Ghost(some_bounded()),
+            PublicEvent::BenchStart(some_bounded()),
             PublicEvent::BenchPoint(some_bounded()),
             PublicEvent::Complexity(some_bounded()),
             PublicEvent::Familiar(some_bounded()),
@@ -502,6 +507,7 @@ mod tests {
                 "ghost_hunting",
                 "shrink_step",
                 "ghost",
+                "bench_start",
                 "bench_point",
                 "complexity",
                 "familiar",

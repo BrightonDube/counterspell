@@ -192,8 +192,11 @@ async function loadFunction(signature) {
     try {
       return require(SOLUTION_PATH);
     } catch (error) {
+      // The driver line goes first: the judge reads the last stderr line as
+      // the exception diagnostic, so the stack tail must stay last.
+      process.stderr.write('driver: the solution failed while loading\n');
       reportError(error);
-      throw new DriverFailure('the solution failed while loading', EXIT_PROTOCOL);
+      process.exit(EXIT_PROTOCOL);
     }
   });
   return resolveFunction(loaded, signature.functionName);
@@ -207,8 +210,10 @@ async function callSolution(fn, args) {
     if (error instanceof DriverFailure) {
       throw error;
     }
+    // Same ordering: `driver:` diagnostic first, stack tail last.
+    process.stderr.write('driver: the solution raised an exception\n');
     reportError(error);
-    throw new DriverFailure('the solution raised an exception', EXIT_USER);
+    process.exit(EXIT_USER);
   }
 }
 

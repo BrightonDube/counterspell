@@ -12,7 +12,7 @@ const problem = {
   title: 'Two Sum',
   track: { slug: 'arrays', name: 'Crypt of Arrays' },
   concepts: [{ slug: 'hash-maps', name: 'Hash maps' }],
-  difficulty: 'intro',
+  difficulty: 'easy',
   statement_markdown: 'Find two indexes.',
   constraints: ['2 <= n <= 10'],
   signature: {
@@ -20,7 +20,7 @@ const problem = {
     parameters: [{ name: 'nums', type: 'list<int>' }],
     return_type: 'list<int>'
   },
-  samples: [{ input: { nums: [2, 7] }, expected: [0, 1] }],
+  examples: [{ input: { nums: [2, 7] }, expected: [0, 1] }],
   starters: { python: 'def two_sum(nums):\n    pass\n' },
   enabled_languages: ['python', 'javascript']
 };
@@ -60,18 +60,15 @@ describe('parseProblemDetail', () => {
 });
 
 describe('parseLanguageSummary', () => {
-  // Breaks if a language the server has disabled is shown as selectable.
-  it('keeps the server enabled flag as given', () => {
+  // Breaks if the real wire shape (id, display name, byte cap) loses a field.
+  it('maps the listed language to the view model', () => {
     const parsed = parseLanguageSummary({
-      id: 'cpp',
-      display_name: 'C++',
-      enabled: false,
-      file_name: 'solution.cpp',
-      max_source_bytes: 65536,
-      supports_run: false,
-      supports_submit: false
+      id: 'python',
+      display_name: 'Python',
+      max_source_bytes: 65536
     });
-    expect(parsed.enabled).toBe(false);
+    expect(parsed.id).toBe('python');
+    expect(parsed.displayName).toBe('Python');
     expect(parsed.maxSourceBytes).toBe(65536);
   });
 
@@ -81,11 +78,7 @@ describe('parseLanguageSummary', () => {
       parseLanguageSummary({
         id: 'python',
         display_name: 'Python',
-        enabled: true,
-        file_name: 'solution.py',
-        max_source_bytes: 0,
-        supports_run: true,
-        supports_submit: true
+        max_source_bytes: 0
       })
     ).toThrow(ContractError);
   });

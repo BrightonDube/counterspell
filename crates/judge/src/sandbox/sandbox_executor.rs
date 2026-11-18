@@ -13,22 +13,34 @@ use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use counterspell_common::events::{PublicEvent, PublicTest, SampleDetail};
-use counterspell_common::status::{FailureReason, TestVerdict, Verdict};
+use counterspell_common::familiar::class::ClassId;
+use counterspell_common::familiar::payload::MeasuredColumns;
+use counterspell_common::status::{FailureReason, RunMode, TestVerdict, Verdict};
+use counterspell_engine::{classify, Classification, FailureKind, HuntOutcome, Oracle};
+use tokio::runtime::Handle;
 use tokio::sync::{watch, Semaphore};
 use tokio::time::Instant;
 
 use super::backend::{Backend, InfraError};
+use super::bench::{SandboxBenchCollector, RUN_BENCH_BUDGET, SUBMIT_BENCH_BUDGET};
 use super::compare::Expected;
 use super::config::SandboxConfig;
 use super::driver_protocol::parse_answer;
+use super::hunt;
+use super::oracle::SandboxOracle;
 use super::precheck::precheck;
 use super::preflight::PreflightState;
 use super::problem::{ProblemSpec, ProblemTests, TestCase};
-use super::run::{execute_run, PlannedTest, RunResult, RunSettings};
+use super::run::{execute_run_and_keep, PlannedTest, RunResult, RunSettings};
 use super::sanitize::{sanitize_display, DETAIL_CAP};
+use super::session::Opened;
 use super::spec::{build_tar, driver_file_name, SandboxFiles, SessionSpec};
 use super::verdict::FinalVerdict;
 use crate::executor::{ExecError, RunContext, RunExecutor, RunInput, RunOutcome};
+use crate::familiar::gate::{BenchGate, BenchSettings};
+use crate::familiar::load::ProcLoadAvg;
+use crate::familiar::store::find_baseline;
+use crate::familiar::{measure_run, BenchPlan, MeasureInput};
 use crate::languages::{LanguageCatalog, LanguageDefinition};
 use crate::queue::finish::{FinalResult, TestRecord};
 
@@ -55,6 +67,10 @@ pub struct SandboxExecutor<P: ProblemTests, B: Backend> {
     worker: String,
     /// The directory the catalogue's driver paths resolve against.
     driver_root: PathBuf,
+    /// The bench permit gate (serialised benches by default).
+    gate: BenchGate,
+    /// The bench settings (serialise, max load).
+    bench: BenchSettings,
 }
 
 impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
@@ -73,6 +89,7 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
             .languages_file
             .parent()
             .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+        let bench = BenchSettings::default();
         Self {
             languages,
             problems,
@@ -82,7 +99,17 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
             preflights,
             worker: worker.into(),
             driver_root,
+            gate: BenchGate::new(bench.serialise),
+            bench,
         }
+    }
+
+    /// Overrides the bench settings, for tests and deployment tuning.
+    #[must_use]
+    pub fn with_bench_settings(mut self, settings: BenchSettings) -> Self {
+        self.gate = BenchGate::new(settings.serialise);
+        self.bench = settings;
+        self
     }
 
     /// Builds the tar archive the sandbox unpacks: the source, the driver file the
@@ -112,6 +139,23 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
         )
         .map_err(|error| ExecError::Infrastructure(error.to_string()))?;
         build_tar(&files).map_err(|error| ExecError::Infrastructure(error.to_string()))
+    }
+
+    /// Loads the pinned problem spec. `Ok(None)` means no store holds that version —
+    /// the run reports `problem_unavailable`; `Err` is a broken store, which is
+    /// infrastructure and never the user's fault.
+    async fn load_problem(&self, run: &RunInput) -> Result<Option<ProblemSpec>, ExecError> {
+        match self
+            .problems
+            .load(&run.problem_slug, run.problem_version, run.mode)
+            .await
+        {
+            Ok(spec) => Ok(spec),
+            Err(error) => {
+                tracing::warn!(%error, "the problem store failed");
+                Err(ExecError::Infrastructure("problem_store".to_owned()))
+            }
+        }
     }
 
     /// Emits one public event per executed test and builds the stored result, honouring
@@ -193,9 +237,154 @@ impl<P: ProblemTests, B: Backend> SandboxExecutor<P, B> {
             tests: records,
         })
     }
+
+    /// Runs the bench and the familiar assessment for one completed run, then
+    /// returns the measured columns the terminal write stores. Whatever this
+    /// returns, the kept session — when there is one — is closed first.
+    async fn measure(&self, call: MeasureCall<'_, B>) -> Result<MeasuredColumns, ExecError> {
+        let MeasureCall {
+            mut session,
+            spec,
+            lang,
+            run,
+            verdict,
+            ctx,
+            stop,
+        } = call;
+        // A bench needs all three declarations; a partial one is a broken store.
+        let bench_plan = match (
+            &spec.bench,
+            &spec.generator_schema,
+            spec.reference_complexity,
+        ) {
+            (None, None, None) => None,
+            (Some(bench), Some(_), Some(_)) => Some(BenchPlan {
+                mode: run.mode,
+                sizes: bench.sizes.clone(),
+                size_param: bench.size_param,
+                problem_slug: spec.slug.clone(),
+                problem_version: spec.version,
+                budget: match run.mode {
+                    RunMode::Run => RUN_BENCH_BUDGET,
+                    RunMode::Submit => SUBMIT_BENCH_BUDGET,
+                },
+            }),
+            _ => {
+                return Err(ExecError::Infrastructure(
+                    "bench_declaration_incomplete".to_owned(),
+                ));
+            }
+        };
+        // Baseline points exist only on the queue path; a bench without them still fits.
+        let baseline = if bench_plan.is_some() && verdict == Verdict::Accepted {
+            match ctx.pool() {
+                Some(pool) => find_baseline(
+                    pool,
+                    &spec.slug,
+                    spec.version,
+                    &run.lang,
+                    lang.image().as_str(),
+                )
+                .await
+                .map_err(|error| ExecError::Infrastructure(error.to_string()))?,
+                None => Vec::new(),
+            }
+        } else {
+            Vec::new()
+        };
+        let input = MeasureInput {
+            verdict: Some(verdict),
+            mode: run.mode,
+            reference: spec.reference_complexity.unwrap_or(ClassId::Linear),
+            baseline: Some(&baseline),
+            plan: bench_plan.as_ref(),
+            max_load: self.bench.max_load,
+        };
+        let call_deadline = Duration::from_millis(
+            spec.time_limit_ms
+                .map_or_else(|| lang.time_ms_per_test(), u64::from),
+        );
+        let mut collector =
+            match (verdict, session.as_mut(), spec.generator_schema.clone()) {
+                (Verdict::Accepted, Some(opened), Some(schema)) => Some(
+                    SandboxBenchCollector::new(opened, lang, schema, call_deadline, ctx, stop),
+                ),
+                _ => None,
+            };
+        let columns = measure_run::<SandboxBenchCollector<B::Session>>(
+            ctx,
+            &self.gate,
+            &ProcLoadAvg,
+            collector.as_mut(),
+            &input,
+        )
+        .await;
+        drop(collector);
+        if let Some(opened) = session {
+            if let Err(error) = opened.session.close().await {
+                tracing::warn!(%error, "closing the run's container did not confirm removal");
+            }
+        }
+        columns
+    }
+
+    /// The precheck outcome for the judge's own source re-check (VAL-1, VAL-3): `None`
+    /// when the source may run, or the completed compile-error result — with its
+    /// familiar verdict, though never a bench — when the judge refuses it and no
+    /// container is ever created.
+    async fn rejected_before_sandbox(
+        &self,
+        spec: &ProblemSpec,
+        lang: &LanguageDefinition,
+        run: &RunInput,
+        ctx: &RunContext,
+        stop: &mut watch::Receiver<bool>,
+    ) -> Result<Option<FinalResult>, ExecError> {
+        let Err(rejection) = precheck(run.code.as_bytes(), lang.max_source_bytes()) else {
+            return Ok(None);
+        };
+        tracing::info!(%rejection, "the judge refused the source before the sandbox");
+        let total = u32::try_from(spec.tests.len()).unwrap_or(u32::MAX);
+        let mut rejected = rejected_result(total);
+        // A refused source is still a completed run: it gets the same familiar
+        // verdict a compile error in the sandbox would, but never a bench.
+        rejected.measured = Some(Box::new(
+            self.measure(MeasureCall {
+                session: None,
+                spec,
+                lang,
+                run,
+                verdict: Verdict::CompileError,
+                ctx,
+                stop,
+            })
+            .await?,
+        ));
+        Ok(Some(rejected))
+    }
 }
 
-impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for SandboxExecutor<P, B> {
+/// The pieces [`SandboxExecutor::measure`] needs, packed so the call sites stay small.
+struct MeasureCall<'a, B: Backend> {
+    /// The run's kept session, which `measure` closes at the end whatever happens.
+    session: Option<Opened<B::Session>>,
+    /// The problem the run measured against.
+    spec: &'a ProblemSpec,
+    /// The language the run used.
+    lang: &'a LanguageDefinition,
+    /// The run's input; its mode sizes the bench budget.
+    run: &'a RunInput,
+    /// The verdict the correctness tests produced.
+    verdict: Verdict,
+    /// The run's event and store sink.
+    ctx: &'a RunContext,
+    /// The run's stop signal.
+    stop: &'a mut watch::Receiver<bool>,
+}
+
+impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> RunExecutor
+    for SandboxExecutor<P, B>
+{
     async fn execute(&self, run: RunInput, ctx: RunContext) -> Result<RunOutcome, ExecError> {
         // 1. The language must be known and enabled.
         let Some(lang) = self
@@ -207,13 +396,8 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
         };
         // 2. The problem must load. An absent problem fails the run; a broken store
         //    is infrastructure.
-        let spec = match self.problems.load(&run.problem_slug, run.mode).await {
-            Ok(Some(spec)) => spec,
-            Ok(None) => return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable)),
-            Err(error) => {
-                tracing::warn!(%error, "the problem store failed");
-                return Err(ExecError::Infrastructure("problem_store".to_owned()));
-            }
+        let Some(spec) = self.load_problem(&run).await? else {
+            return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable));
         };
         // 3. Every probed language's preflight must pass. No report counts as failing.
         if !self.preflights.iter().all(|state| state.passed()) {
@@ -237,10 +421,19 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
         ctx.emit(&PublicEvent::Compiling).await?;
         // 6. The judge re-checks the source (VAL-1, VAL-3). A refusal is a compile
         //    error, and no container is ever created for it.
-        if let Err(rejection) = precheck(run.code.as_bytes(), lang.max_source_bytes()) {
-            tracing::info!(%rejection, "the judge refused the source before the sandbox");
-            let total = u32::try_from(spec.tests.len()).unwrap_or(u32::MAX);
-            return Ok(RunOutcome::Completed(rejected_result(total)));
+        if let Some(rejected) = self
+            .rejected_before_sandbox(&spec, lang, &run, &ctx, &mut stop)
+            .await?
+        {
+            return Ok(RunOutcome::Completed(rejected));
+        }
+        // 6b. A custom ghost run skips the stored suite entirely: its one input is
+        //     judged against the trusted reference by the sandbox oracle, in the
+        //     same containers under the same caps (ide-workspace T02).
+        if let Some(input) = run.ghost_input.clone() {
+            return self
+                .execute_ghost(&run, &spec, lang, &input, &ctx, &mut stop)
+                .await;
         }
         // 7. Build the archive and the plan, then run it.
         let archive = self.archive(&run.code, lang, &spec)?;
@@ -266,7 +459,7 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
             )
             .map_err(|error| InfraError::Unexpected(error.to_string()))
         };
-        let result = execute_run(
+        let (result, session) = execute_run_and_keep(
             &self.backend,
             lang,
             &archive,
@@ -289,7 +482,28 @@ impl<P: ProblemTests, B: Backend + Send + Sync + 'static> RunExecutor for Sandbo
             }
             verdict => final_verdict(verdict),
         };
-        let finished = self.report(&result, &spec, &ctx, verdict).await?;
+        let mut finished = self.report(&result, &spec, &ctx, verdict).await?;
+        // 9. Measure: every completed run gets its familiar verdict; an accepted
+        //    run with a declared bench also gets timed points, still in the run's
+        //    own container. `measure` closes the kept session, whatever it returns.
+        finished.measured = Some(Box::new(
+            self.measure(MeasureCall {
+                session,
+                spec: &spec,
+                lang,
+                run: &run,
+                verdict,
+                ctx: &ctx,
+                stop: &mut stop,
+            })
+            .await?,
+        ));
+        // 10. A failing submit hunts for its ghost (ide-workspace T25): the
+        //     `ghost_hunting`, `shrink_step` and `ghost` events go out after
+        //     `familiar` and before `done`. The verdict is already decided — a
+        //     hunt can only add events, never change it.
+        self.hunt_ghost(&run, &spec, lang, verdict, &ctx, &mut stop)
+            .await?;
         Ok(RunOutcome::Completed(finished))
     }
 }
@@ -306,6 +520,205 @@ fn rejected_result(total: u32) -> FinalResult {
         compile_output: Some(COMPILE_MESSAGE.to_owned()),
         measured: None,
         tests: Vec::new(),
+    }
+}
+
+impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> SandboxExecutor<P, B> {
+    /// A custom ghost run (ide-workspace T02): the user's source and the trusted
+    /// reference run in separate containers through the sandbox oracle, and the
+    /// engine's classifier produces the verdict. The problem's stored tests are
+    /// never loaded for this path — the oracle holds the signature only.
+    async fn execute_ghost(
+        &self,
+        run: &RunInput,
+        spec: &ProblemSpec,
+        lang: &LanguageDefinition,
+        input: &serde_json::Value,
+        ctx: &RunContext,
+        stop: &mut watch::Receiver<bool>,
+    ) -> Result<RunOutcome, ExecError> {
+        let Some(reference) = spec.reference_python.as_deref() else {
+            return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable));
+        };
+        // Authored references are always Python. A disabled or unknown Python
+        // makes the ghost run unjudgeable, never a wrong answer.
+        let Some(reference_lang) = self
+            .languages
+            .get("python")
+            .filter(|language| language.is_enabled())
+        else {
+            return Ok(RunOutcome::Failed(FailureReason::LanguageUnavailable));
+        };
+        let mut oracle = SandboxOracle::new(
+            Handle::current(),
+            self.backend.clone(),
+            self.backend.clone(),
+            lang.clone(),
+            reference_lang.clone(),
+            &spec.signature,
+            &run.code,
+            reference,
+            &self.config,
+        )
+        .map_err(|error| ExecError::Infrastructure(error.to_string()))?;
+        let limit = spec.time_limit_ms.map_or_else(
+            || Duration::from_millis(lang.time_ms_per_test()),
+            |ms| Duration::from_millis(u64::from(ms)),
+        );
+        let custom = input.clone();
+        let started = Instant::now();
+        let observation = tokio::task::spawn_blocking(move || oracle.evaluate(&custom, limit))
+            .await
+            .map_err(|_| ExecError::Infrastructure("oracle_join".to_owned()))?
+            .map_err(|error| ExecError::Infrastructure(error.to_string()))?;
+        let time_ms = u32::try_from(started.elapsed().as_millis()).unwrap_or(u32::MAX);
+        if *stop.borrow() {
+            return Err(ExecError::Stopped);
+        }
+
+        let (verdict, test_verdict) = match classify(&observation, &spec.comparator) {
+            Classification::Pass => (Verdict::Accepted, TestVerdict::Pass),
+            Classification::Fail(predicate) => match predicate.kind {
+                FailureKind::WrongAnswer => (Verdict::WrongAnswer, TestVerdict::WrongAnswer),
+                FailureKind::RuntimeError => (Verdict::RuntimeError, TestVerdict::RuntimeError),
+                FailureKind::Timeout => (Verdict::TimeLimit, TestVerdict::TimeLimit),
+            },
+            // The trusted reference failing is a problem defect, not a verdict and
+            // not a transient error worth a retry.
+            Classification::ReferenceFailed => {
+                return Ok(RunOutcome::Failed(FailureReason::ProblemUnavailable));
+            }
+        };
+
+        // The ghost input is already the user's own data, so the one test shows
+        // input, expected and got exactly like a sample. `sanitised` bounds any
+        // untrusted exception text before it becomes display detail.
+        let user = observation.user.sanitised();
+        let reference_result = observation.reference.sanitised();
+        let detail = SampleDetail::new(
+            &input.to_string(),
+            &result_text(&reference_result),
+            &result_text(&user),
+        );
+        ctx.emit(&PublicEvent::Test(PublicTest::Sample {
+            ordinal: 1,
+            verdict: test_verdict,
+            time_ms,
+            detail: detail.clone(),
+        }))
+        .await?;
+        let passed = u32::from(test_verdict == TestVerdict::Pass);
+        Ok(RunOutcome::Completed(FinalResult {
+            verdict,
+            passed,
+            total: 1,
+            score: passed * 100,
+            runtime_ms: time_ms,
+            compile_output: None,
+            measured: None,
+            tests: vec![TestRecord::Sample {
+                ordinal: 1,
+                verdict: test_verdict,
+                time_ms,
+                detail,
+            }],
+        }))
+    }
+
+    /// The submit ghost hunt (ide-workspace T25): a failing submission searches
+    /// for the minimal failing input through the sandbox oracle and emits the
+    /// ghost events before `done`. The verdict is already decided by the stored
+    /// suite — a hunt can only add events, never change it. A hunt that cannot
+    /// run, finds nothing, or aborts leaves the run exactly as it was: an event
+    /// store failure still propagates as infrastructure, and a stop as `Stopped`.
+    async fn hunt_ghost(
+        &self,
+        run: &RunInput,
+        spec: &ProblemSpec,
+        lang: &LanguageDefinition,
+        verdict: Verdict,
+        ctx: &RunContext,
+        stop: &mut watch::Receiver<bool>,
+    ) -> Result<(), ExecError> {
+        // Nothing trusted to compare against means no hunt, as in `execute_ghost`.
+        let Some(reference) = spec.reference_python.as_deref() else {
+            return Ok(());
+        };
+        let Some(request) = hunt::request(run, spec, lang.image().as_str(), verdict) else {
+            return Ok(());
+        };
+        // Authored references are always Python; a disabled or unknown Python
+        // skips the hunt rather than failing a run whose verdict already stands.
+        let Some(reference_lang) = self
+            .languages
+            .get("python")
+            .filter(|language| language.is_enabled())
+        else {
+            tracing::info!(slug = %spec.slug, "the ghost hunt is skipped: no python for the reference");
+            return Ok(());
+        };
+        ctx.emit(&PublicEvent::GhostHunting).await?;
+        let mut oracle = match SandboxOracle::new(
+            Handle::current(),
+            self.backend.clone(),
+            self.backend.clone(),
+            lang.clone(),
+            reference_lang.clone(),
+            &spec.signature,
+            &run.code,
+            reference,
+            &self.config,
+        ) {
+            Ok(oracle) => oracle,
+            Err(error) => {
+                tracing::warn!(%error, "the ghost hunt could not start; the verdict stands");
+                return Ok(());
+            }
+        };
+        // The engine is synchronous and the oracle blocks on the runtime handle,
+        // exactly like the one-shot evaluate in `execute_ghost`.
+        let joined = tokio::task::spawn_blocking(move || {
+            let clock = counterspell_engine::SystemClock::new();
+            counterspell_engine::hunt(&request, &mut oracle, &clock)
+        })
+        .await;
+        if *stop.borrow() {
+            return Err(ExecError::Stopped);
+        }
+        let report = match joined {
+            Ok(report) => report,
+            Err(error) => {
+                tracing::warn!(%error, "the ghost hunt task failed; the verdict stands");
+                return Ok(());
+            }
+        };
+        match &report.outcome {
+            HuntOutcome::Found(_) => {}
+            HuntOutcome::NotFound(reason) => {
+                tracing::info!(%reason, "the ghost hunt found nothing within its budget");
+            }
+            HuntOutcome::Aborted(reason) => {
+                tracing::warn!(?reason, "the ghost hunt aborted; the verdict stands");
+            }
+        }
+        for event in hunt::events(&report) {
+            ctx.emit(&event).await?;
+        }
+        Ok(())
+    }
+}
+
+/// The short display text of one side's program result for the ghost test detail.
+fn result_text(result: &counterspell_engine::ProgramResult) -> String {
+    use counterspell_engine::ProgramResult;
+    match result {
+        ProgramResult::Returned(value) => value.to_string(),
+        ProgramResult::Crashed {
+            exception_class,
+            message,
+        } => format!("{exception_class}: {message}"),
+        ProgramResult::TimedOut => String::new(),
+        ProgramResult::Garbled { snippet } => snippet.clone(),
     }
 }
 
