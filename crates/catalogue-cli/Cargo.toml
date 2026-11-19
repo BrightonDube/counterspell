@@ -22,7 +22,7 @@ sha2 = "0.10"
 sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "json", "migrate", "macros"] }
 thiserror = "2"
 tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "signal", "sync", "time", "io-util"] }
-toml = "0.8"
+toml = "1.2"
 
 [dev-dependencies]
 bollard = "0.21"
