@@ -159,7 +159,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: measured-only state tests, no-bench correctness state, low-confidence observational copy, hide/mute preference state, aria-live text, and reduced-motion static badge.
   - Preserve: never use “optimal”; top condition says “Matches reference complexity”.
 
-- [ ] **T20 [S] (25 min) Wire Familiar preferences and one speech request per run**
+- [x] **T20 [S] (25 min) Wire Familiar preferences and one speech request per run**
   - Files: `web/src/lib/api/familiar.ts`, workspace orchestration, Familiar tests.
   - Persist mute/hide through `PATCH /api/me/familiar`, request `POST /api/runs/{id}/familiar-hint` once after terminal data is fetched, guard remount/reconnect duplicates, and display returned AI/template fallback without changing verdict or mood.
   - Depends on: T19 and the Familiar API seam.

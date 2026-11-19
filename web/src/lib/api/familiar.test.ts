@@ -67,6 +67,39 @@ describe('requestSpeech', () => {
   });
 });
 
+describe('requestSpeech at the daily cap', () => {
+  // Breaks if a templated line built from measured facts (the server's answer when the daily AI cap
+  // is reached) is shown as an "AI hint", which would tell the learner an AI wrote it.
+  it('labels the server template as a measured summary, never as an AI hint', async () => {
+    const fetchImpl = async () =>
+      jsonResponse(200, {
+        source: 'template',
+        body: 'Looks quadratic (medium confidence); the reference is linear.',
+        sent_to_provider: false
+      });
+    const speech = await requestSpeech('run-cap', { fetchImpl });
+    expect(speech).toEqual({
+      kind: 'ready',
+      label: 'Measured summary',
+      text: 'Looks quadratic (medium confidence); the reference is linear.',
+      sentToProvider: false
+    });
+  });
+
+  // Breaks if a 429 from the cap shows the server's message or leaves the bubble empty.
+  it('shows the fixed unavailable line when the server refuses with 429', async () => {
+    const fetchImpl = async () =>
+      jsonResponse(429, {
+        code: 'ai_cap',
+        message: 'daily cap of 10 reached for user 42'
+      });
+    const speech = await requestSpeech('run-cap', { fetchImpl });
+    expect(speech.kind).toBe('unavailable');
+    expect(speech.text).toContain('unavailable');
+    expect(JSON.stringify(speech)).not.toContain('user 42');
+  });
+});
+
 describe('savePreferences', () => {
   // Breaks if the mute and hide choices are sent with the wrong method or body, so they never persist.
   it('patches the mute and hide preferences as JSON', async () => {

@@ -73,16 +73,19 @@ function ghostFixture(): GhostView {
 }
 
 /** Session deps whose watch replays a finished stream that carries a ghost. */
-function ghostSessionDeps(stream: RunStreamState): RunSessionDeps {
+function ghostSessionDeps(
+  stream: RunStreamState,
+  runId = 'run-ghost'
+): RunSessionDeps {
   return {
     startAction: () => ({
       key: 'ghost-key',
-      send: () => Promise.resolve('run-ghost')
+      send: () => Promise.resolve(runId)
     }),
     fetchRun: () =>
       Promise.resolve(
         parseRunView({
-          run_id: 'run-ghost',
+          run_id: runId,
           problem: 'two-sum',
           lang: 'python',
           mode: 'run',
@@ -393,6 +396,57 @@ describe('WorkspaceShell', () => {
     });
     expect(requestSpeech).toHaveBeenCalledTimes(1);
     expect(await screen.findByText(/Looks linear\./)).toBeTruthy();
+  });
+
+  // Breaks if leaving the page and coming back to the same finished run sends a second
+  // speech request (FAM-6: at most one bubble per run, whatever the page does).
+  it('sends one speech request for a run across a remount', async () => {
+    const posts: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST' && url.includes('/familiar-hint')) {
+          posts.push(url);
+          return new Response(
+            JSON.stringify({
+              source: 'template',
+              body: 'Looks linear.',
+              sent_to_provider: false
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          );
+        }
+        // Preferences load and save: answer with a failure, which the page tolerates.
+        return new Response('{}', { status: 500 });
+      })
+    );
+    try {
+      const stream: RunStreamState = {
+        ...initialRunState('run-remount'),
+        status: 'completed',
+        ghost: ghostFixture()
+      };
+      for (let mount = 0; mount < 2; mount += 1) {
+        render(WorkspaceShell, {
+          props: {
+            problem,
+            languages,
+            layout: 'desktop',
+            sessionDeps: ghostSessionDeps(stream, 'run-remount')
+          }
+        });
+        await fireEvent.click(
+          await screen.findByRole('button', { name: 'Run samples' })
+        );
+        await vi.waitFor(() => {
+          expect(screen.getByText(/Looks linear\./)).toBeTruthy();
+        });
+        cleanup();
+      }
+      expect(posts).toEqual(['/api/runs/run-remount/familiar-hint']);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   // Breaks if a screen-reader user never hears the run finish, or if a stream
