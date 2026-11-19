@@ -144,7 +144,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: out-of-order requests do not reveal later rungs, failed requests do not fabricate text, cap fallback is honest, and unsafe hint strings remain inert.
   - Preserve: no full solution is generated client-side.
 
-- [ ] **T18 [UI] [S] (30 min) Wire Rerun ghost as a real custom run**
+- [x] **T18 [UI] [S] (30 min) Wire Rerun ghost as a real custom run**
   - Files: `web/src/lib/workspace/RunControls.svelte`, `web/src/lib/api/runs.ts`, custom result integration tests.
   - Add a labelled `Rerun ghost` action that sends the current source and stored ghost through `POST /api/runs/ghost`, creates a new run id, and displays one public custom-ghost test. Keep the failed run/autopsy intact.
   - Depends on: T02, T13, T16.

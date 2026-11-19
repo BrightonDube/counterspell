@@ -1569,3 +1569,8 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 - **`const` is checked at compile time.** `TEST_USERS: u32 = 4096` is a constant; the seeding loop `for number in 1..=TEST_USERS` runs once per value, and `1..=` includes the end value.
 - **`u32` to `u128` with `u128::from`.** The user id is built from a 128-bit number. `u128::from(number)` widens safely and can never fail, unlike `as`, which can silently truncate in other directions.
 - **Why a doc comment on a constant.** `///` above the `const` becomes part of the generated docs and explains the "why" (the 600 s rate window) next to the number, so nobody shrinks it again by mistake.
+
+## 20 Nov 2026: ide-workspace T18, the ghost rate-limit test
+- **A test can share state with the call it checks.** The limiter counts hits per user, so the plain source run spends the one allowed hit and the ghost rerun is the second. `RUN_RATE_USER=1` makes that deterministic.
+- **`is_some_and` on an `Option`.** `json_body(..)["message"].as_str()` is an `Option<&str>`; `.is_some_and(|m| m.contains("seconds"))` returns false for `None` and runs the check for `Some`, so there is no `unwrap` in the test.
+- **Count before and after.** Reading the job and submission counts around the refused call proves nothing was written, which is the real promise behind a 429.

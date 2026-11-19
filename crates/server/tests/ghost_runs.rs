@@ -399,6 +399,46 @@ async fn pg_ghost_run_replays_and_rejects_key_reuse(pool: PgPool) {
     assert_eq!(count_submissions(&pool).await, 2);
 }
 
+/// IDE-3 / VAL-4: a ghost rerun spends the same per-user run budget as a normal run. With a
+/// budget of one run per window, the source run uses it, so the rerun is refused with 429
+/// `rate_limited`, a wait time, and nothing queued.
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_ghost_run_shares_the_per_user_rate_limit(pool: PgPool) {
+    seed_users(&pool).await;
+    let fixture = Fixture::new();
+    let config = config_with(&fixture.dir, &[("RUN_RATE_USER", "1")]);
+    let address = serve(build_router(app_state(pool.clone(), config))).await;
+
+    let source = post_plain_run(address, USER, "rate-source").await;
+    let jobs_before = count_jobs(&pool).await;
+    let submissions_before = count_submissions(&pool).await;
+
+    let rerun = submit(
+        address,
+        USER,
+        Some("rate-ghost"),
+        &ghost_body("two-sum", "python", code(), &source, &json!([1])),
+    )
+    .await;
+
+    assert_eq!(rerun.status, 429, "the window is spent: {}", rerun.body);
+    assert_eq!(error_code(&rerun), "rate_limited");
+    assert!(
+        json_body(&rerun)["message"]
+            .as_str()
+            .is_some_and(|message| message.contains("seconds")),
+        "the message states the wait: {}",
+        rerun.body
+    );
+    assert_eq!(count_jobs(&pool).await, jobs_before, "no job was queued");
+    assert_eq!(
+        count_submissions(&pool).await,
+        submissions_before,
+        "no submission was stored"
+    );
+}
+
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
 async fn pg_ghost_run_counts_against_the_active_cap(pool: PgPool) {

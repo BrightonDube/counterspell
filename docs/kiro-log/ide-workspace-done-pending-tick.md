@@ -369,3 +369,7 @@ Baseline run first. `cargo fmt --check` and `clippy --workspace --all-targets -D
 - New tests in `GhostPanel.test.ts` (+5): stagger delays 0/250/500 ms for three steps; one reveal under motion; no reveal, no step class and no delays under reduced motion; only recorded steps listed (no invented entries, no `%`) when the engine summarised 5 steps; the live hunt list shows exactly the streamed steps.
 - Fixture-route visual check: `web/e2e-prototype-check.mjs` (self-serves `build/` with the 200.html fallback) — banner visible and on the first screen at 1440x900 and 390x844, 4/4 PASS; screenshot reviewed.
 - Gate: svelte-check 0/0, build ok, vitest 503 passed (was 498).
+
+## Verified (spec-driver `drive queue`, 20 Nov 2026)
+- T18 ticked. Fresh checks: `web/tests/real-api/real-api-check.mjs` 18/18 on my own stack (server 8099, one judge, rootless daemon, `cs-dev-pg`), including "ghost: rerun reaches a real verdict" (verdict wrong_answer, 3 runs) and the autopsy staying on the page; `ghost_runs` 10/10 with `--include-ignored` (signed-in check, validation without side effects, missing or foreign source, atomic persist, idempotent replay and key reuse, active cap, and the new per-user rate limit 429 `rate_limited` with nothing queued); vitest workspace+runs 166 passed; svelte-check 0/0; fmt and clippy clean.
+- Added `pg_ghost_run_shares_the_per_user_rate_limit` (the rate-limit leg of T18's verify line had no test).
