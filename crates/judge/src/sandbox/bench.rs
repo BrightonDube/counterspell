@@ -8,6 +8,8 @@
 //! the worker clock — the driver only executes calls, exactly as in the
 //! correctness path.
 
+use std::collections::BTreeMap;
+use std::future::Future;
 use std::time::Duration;
 
 use counterspell_common::events::PublicEvent;
@@ -45,6 +47,61 @@ pub const RUN_BENCH_BUDGET: Duration = Duration::from_millis(1500);
 /// six sizes.
 pub const SUBMIT_BENCH_BUDGET: Duration = Duration::from_secs(4);
 
+/// Where the bench reports what it measured: the public `bench_start` and `bench_point`
+/// events and the raw timing rows. A run's [`RunContext`] stores them for the learner; pack
+/// validation uses [`DiscardBench`], because there is no run to report to.
+pub trait BenchSink: Sync {
+    /// Publishes the public `bench_start` or `bench_point` event.
+    fn bench_event(
+        &self,
+        event: &PublicEvent,
+    ) -> impl Future<Output = Result<(), ExecError>> + Send;
+    /// Stores the raw timed samples.
+    fn bench_timings(
+        &self,
+        rows: &[TimingRow],
+    ) -> impl Future<Output = Result<(), ExecError>> + Send;
+}
+
+impl BenchSink for RunContext {
+    async fn bench_event(&self, event: &PublicEvent) -> Result<(), ExecError> {
+        self.emit(event).await
+    }
+
+    async fn bench_timings(&self, rows: &[TimingRow]) -> Result<(), ExecError> {
+        self.record_timings(rows).await
+    }
+}
+
+/// A sink that keeps nothing: pack validation and baselines time the reference through the
+/// same collector as a learner's run, but publish no run event and store no run timing.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct DiscardBench;
+
+impl BenchSink for DiscardBench {
+    fn bench_event(
+        &self,
+        _event: &PublicEvent,
+    ) -> impl Future<Output = Result<(), ExecError>> + Send {
+        std::future::ready(Ok(()))
+    }
+
+    fn bench_timings(
+        &self,
+        _rows: &[TimingRow],
+    ) -> impl Future<Output = Result<(), ExecError>> + Send {
+        std::future::ready(Ok(()))
+    }
+}
+
+/// Where each size's call arguments come from.
+enum BenchInputs {
+    /// Built from the plan with the engine's seeded generator, as for a learner's run.
+    Generated(Schema),
+    /// Given by the caller, one argument tuple per size, as for pack validation.
+    Prepared(BTreeMap<u64, Vec<Value>>),
+}
+
 /// Why a bench call had to stop.
 #[derive(Debug, Error)]
 enum BenchStop {
@@ -64,26 +121,26 @@ enum BenchStop {
 /// The collector borrows the still-open [`Opened`] session. On drop-in it ends
 /// the normal driver and opens a bench-mode driver; on the way out the bench
 /// driver is put back so the caller's normal close path stays valid.
-pub struct SandboxBenchCollector<'a, S: BackendSession + 'static> {
+pub struct SandboxBenchCollector<'a, S: BackendSession + 'static, K: BenchSink = RunContext> {
     opened: &'a mut Opened<S>,
     lang: &'a LanguageDefinition,
-    /// The parameters tuple schema, used to size inputs.
-    schema: Schema,
+    /// The generated or prepared inputs for each size.
+    inputs: BenchInputs,
     /// The per-call deadline, enforced with the worker clock.
     call_deadline: Duration,
     /// Splits driver stdout into protocol lines, with the same per-call byte
     /// budget the correctness call enforces.
     stdout: LineReader,
-    /// The run context: `bench_start`/`bench_point` events and the `run_timings`
-    /// rows go through it, fenced by the attempt it carries.
-    ctx: &'a RunContext,
+    /// The sink: for a run, its context, which stores `bench_start`/`bench_point`
+    /// events and the `run_timings` rows, fenced by the attempt it carries.
+    ctx: &'a K,
     /// The raw timed samples for `run_timings`, one row per timed call.
     timings: Vec<TimingRow>,
     /// The run's stop signal: cancel, lost lease, shutdown.
     stop: &'a mut watch::Receiver<bool>,
 }
 
-impl<'a, S: BackendSession + 'static> SandboxBenchCollector<'a, S> {
+impl<'a, S: BackendSession + 'static, K: BenchSink> SandboxBenchCollector<'a, S, K> {
     /// Wraps the run's still-open session. `schema` is the signature's parameter
     /// tuple (`Schema::Tuple`), `call_deadline` the per-call limit, `ctx` the run's
     /// event and store sink.
@@ -92,16 +149,48 @@ impl<'a, S: BackendSession + 'static> SandboxBenchCollector<'a, S> {
         lang: &'a LanguageDefinition,
         schema: Schema,
         call_deadline: Duration,
-        ctx: &'a RunContext,
+        ctx: &'a K,
         stop: &'a mut watch::Receiver<bool>,
     ) -> Self {
         Self {
             opened,
             lang,
-            schema,
+            inputs: BenchInputs::Generated(schema),
             call_deadline,
             stdout: LineReader::with_budget(STDOUT_BUDGET, STDOUT_BUDGET),
             ctx,
+            timings: Vec::new(),
+            stop,
+        }
+    }
+
+    /// Wraps a still-open session to time prepared inputs: one argument tuple per size, as the
+    /// caller built it. The timing loop, budgets and protocol checks are the same as for a run.
+    pub fn for_inputs(
+        opened: &'a mut Opened<S>,
+        lang: &'a LanguageDefinition,
+        inputs: &[(u64, Value)],
+        call_deadline: Duration,
+        sink: &'a K,
+        stop: &'a mut watch::Receiver<bool>,
+    ) -> Self {
+        let prepared = inputs
+            .iter()
+            .map(|(n, value)| {
+                let args = match value {
+                    Value::Array(items) => items.clone(),
+                    single => vec![single.clone()],
+                };
+                (*n, args)
+            })
+            .collect();
+        Self {
+            opened,
+            lang,
+            inputs: BenchInputs::Prepared(prepared),
+            call_deadline,
+            stdout: LineReader::with_budget(STDOUT_BUDGET, STDOUT_BUDGET),
+            ctx: sink,
             timings: Vec::new(),
             stop,
         }
@@ -111,8 +200,16 @@ impl<'a, S: BackendSession + 'static> SandboxBenchCollector<'a, S> {
     /// same seeded input, so warm-ups and timed calls are comparable; the call
     /// id is still fresh for every call, as the protocol requires.
     fn call_args(&self, plan: &BenchPlan, n: u64) -> Result<Vec<Value>, BenchStop> {
+        let schema = match &self.inputs {
+            BenchInputs::Prepared(prepared) => {
+                return prepared.get(&n).cloned().ok_or_else(|| {
+                    BenchStop::Failed(format!("no prepared bench input for size {n}"))
+                });
+            }
+            BenchInputs::Generated(schema) => schema,
+        };
         let input = sized_input(
-            &self.schema,
+            schema,
             plan.size_param,
             n,
             bench_seed(&plan.problem_slug, plan.problem_version, n),
@@ -196,7 +293,7 @@ impl<'a, S: BackendSession + 'static> SandboxBenchCollector<'a, S> {
     }
 }
 
-impl<S: BackendSession + 'static> BenchCollector for SandboxBenchCollector<'_, S> {
+impl<S: BackendSession + 'static, K: BenchSink> BenchCollector for SandboxBenchCollector<'_, S, K> {
     async fn collect(&mut self, plan: &BenchPlan) -> Result<BenchOutcome, ExecError> {
         {
             // End the normal driver: its stdin closes, the process exits itself.
@@ -218,7 +315,7 @@ impl<S: BackendSession + 'static> BenchCollector for SandboxBenchCollector<'_, S
     }
 }
 
-impl<S: BackendSession + 'static> SandboxBenchCollector<'_, S> {
+impl<S: BackendSession + 'static, K: BenchSink> SandboxBenchCollector<'_, S, K> {
     async fn bench_loop(&mut self, plan: &BenchPlan) -> Result<BenchOutcome, BenchStop> {
         if *self.stop.borrow() {
             return Err(BenchStop::Stopped);
@@ -235,7 +332,7 @@ impl<S: BackendSession + 'static> SandboxBenchCollector<'_, S> {
         .to_bounded_json()
         .map_err(|e| BenchStop::Infrastructure(InfraError::Unexpected(e.to_string())))?;
         self.ctx
-            .emit(&PublicEvent::BenchStart(start))
+            .bench_event(&PublicEvent::BenchStart(start))
             .await
             .map_err(exec_stop)?;
 
@@ -292,7 +389,7 @@ impl<S: BackendSession + 'static> SandboxBenchCollector<'_, S> {
             .to_bounded_json()
             .map_err(|e| BenchStop::Infrastructure(InfraError::Unexpected(e.to_string())))?;
             self.ctx
-                .emit(&PublicEvent::BenchPoint(payload))
+                .bench_event(&PublicEvent::BenchPoint(payload))
                 .await
                 .map_err(exec_stop)?;
         }
@@ -302,7 +399,7 @@ impl<S: BackendSession + 'static> SandboxBenchCollector<'_, S> {
         // caller's close path sees a coherent Opened.
         if result.is_ok() {
             self.ctx
-                .record_timings(&self.timings)
+                .bench_timings(&self.timings)
                 .await
                 .map_err(exec_stop)?;
         }

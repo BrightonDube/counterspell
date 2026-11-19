@@ -1585,3 +1585,6 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 - **`Option` and `?` in a small helper.** `narrow_span` returns `Option<Diagnostic>`. `inputs.iter().map(..).min()?` returns `None` early when there are no inputs, so the caller only pushes a warning when there is one.
 - **`checked_div` instead of `/`.** Dividing by zero panics in Rust. `largest.checked_div(lowest)` gives `None` for a zero divisor, and `.unwrap_or(0)` turns that into a plain number with no panic.
 - **A test inside the module.** `#[cfg(test)] mod attempt_namer_tests` in `sandbox_executor.rs` can call the private `attempt_namer`, because a child module sees its parent's private items.
+
+## efficiency-familiar T25: one bench path
+`PackSandboxRunner::bench` is a trait method that must be sync, but the shared bench collector is `async`. It hands the async call to a scoped thread and blocks on it with the tokio `Handle`. The win is one measurement path: pack validation now times the reference exactly as a learner's Submit does (two warm-ups, five timed calls, same budget). `match` on `BenchOutcome` forces every outcome (complete, incomplete, failed) to be handled, so none can be silently dropped.

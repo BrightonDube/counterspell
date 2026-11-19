@@ -11,7 +11,7 @@
 
 use std::collections::BTreeMap;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use counterspell_engine::ProgramResult;
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
@@ -21,11 +21,13 @@ use tokio::sync::watch;
 
 use counterspell_judge::languages::{LanguageCatalog, LanguageDefinition};
 
+use counterspell_judge::familiar::BenchOutcome;
 use counterspell_judge::sandbox::backend::Backend;
+use counterspell_judge::sandbox::bench::SUBMIT_BENCH_BUDGET;
 use counterspell_judge::sandbox::bollard_backend::BollardBackend;
 use counterspell_judge::sandbox::config::SandboxConfig;
 use counterspell_judge::sandbox::daemon::connect;
-use counterspell_judge::sandbox::oracle::{evaluate_side, side, Role, Side};
+use counterspell_judge::sandbox::oracle::{bench_side, evaluate_side, side, Role, Side};
 
 /// The source-map key for the pack's trusted reference.
 pub const REFERENCE_SOURCE: &str = "reference";
@@ -152,34 +154,56 @@ impl<B: Backend + Clone + Send> PackRunner for PackSandboxRunner<B> {
         }
     }
 
-    /// Times the reference with the worker clock, one call per supplied input.
-    /// A non-`Returned` reference means the pack's limit is wrong for its own
-    /// reference — surfaced as infrastructure so the caller refuses the pack.
+    /// Times the reference through the same bench collector a learner's Submit uses: two
+    /// warm-ups and five timed calls per size, the worker clock and the Submit budget. Returns
+    /// one `(n, median_ns)` pair per size. A reference that fails, or a bench that runs out of
+    /// budget, means the pack's bench is wrong for its own reference, so it is reported as
+    /// infrastructure and the caller refuses the pack.
     fn bench(
         &mut self,
         sized_inputs: &[(u64, Value)],
         limit: Duration,
     ) -> Result<Vec<(u64, u64)>, RunnerError> {
-        let mut timings = Vec::with_capacity(sized_inputs.len());
-        for (size, input) in sized_inputs {
-            let start = Instant::now();
-            let result = self.run(Target::Reference, input, limit)?;
-            let elapsed = start.elapsed();
-            match result {
-                ProgramResult::Returned(_) => {
-                    let nanos = u64::try_from(elapsed.as_nanos()).map_err(|_| {
-                        RunnerError::Infrastructure("the bench timing overflowed".to_owned())
-                    })?;
-                    timings.push((*size, nanos));
-                }
-                other => {
-                    return Err(RunnerError::Infrastructure(format!(
-                        "the reference did not return during the bench (size {size}): {other:?}"
-                    )));
-                }
+        let handle = self.handle.clone();
+        let stop = self.stop.subscribe();
+        let side = self.side_for(REFERENCE_SOURCE, Role::Reference)?;
+        // `bench` is sync but its callers are `async`; drive it from a scoped plain thread,
+        // exactly like `run`.
+        let call = std::thread::scope(|scope| {
+            scope
+                .spawn(|| {
+                    handle.block_on(bench_side(
+                        side,
+                        sized_inputs,
+                        limit,
+                        SUBMIT_BENCH_BUDGET,
+                        stop,
+                    ))
+                })
+                .join()
+        });
+        let outcome = match call {
+            Ok(result) => result.map_err(|error| RunnerError::Infrastructure(error.to_string()))?,
+            Err(_panic) => {
+                return Err(RunnerError::Infrastructure(
+                    "the pack runner's bench panicked".to_owned(),
+                ))
             }
+        };
+        match outcome {
+            BenchOutcome::Complete(points) => Ok(points
+                .iter()
+                .map(|point| (point.n, point.median_ns))
+                .collect()),
+            BenchOutcome::Incomplete(points) => Err(RunnerError::Infrastructure(format!(
+                "the bench budget ran out after {} of {} sizes",
+                points.len(),
+                sized_inputs.len()
+            ))),
+            BenchOutcome::Failed => Err(RunnerError::Infrastructure(
+                "the reference failed during the bench".to_owned(),
+            )),
         }
-        Ok(timings)
     }
 }
 

@@ -262,7 +262,7 @@ Conventions for every web task:
   - Preserve: the grimoire crate still executes nothing and does not depend on the judge.
   - Rust lesson: trait objects versus generics for a fake runner in tests.
 
-- [ ] **T25 [S] [BLOCKED? judge-sandbox, language-drivers] (30 min) Implement `PackRunner::bench` in the judge's runner**
+- [x] **T25 [S] (30 min) Implement `PackRunner::bench` in the judge's runner**
   - Files: `crates/judge/src/` (the module that implements `PackRunner`, expected from judge-sandbox), tests.
   - Implement `bench(sized_inputs, limit)` by delegating to the same `BenchCollector` code path the production run uses (so the admission test measures what users are measured by), returning `(n, median_ns)` pairs.
   - Tests: scripted collector returns the points unchanged; a timeout gives `RunnerError`/incomplete as designed; no host execution.
