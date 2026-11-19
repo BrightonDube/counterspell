@@ -132,7 +132,7 @@ async fn speak_once(
     };
     let speech = Speech {
         pool,
-        ai: &ai,
+        ai: Some(&ai),
         marker,
     };
     speak(&speech, user, facts, speech_off, OffsetDateTime::now_utc())

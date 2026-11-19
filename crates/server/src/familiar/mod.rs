@@ -4,6 +4,7 @@
 pub mod api;
 pub mod attempt;
 pub mod claims;
+pub mod hint;
 pub mod prefs;
 pub mod prompt;
 pub mod sections;

@@ -129,8 +129,8 @@ impl From<sqlx::Error> for SpeechError {
 pub struct Speech<'a, T: ChatTransport> {
     /// Postgres, for the stored bubble and the run's ghost.
     pub pool: &'a PgPool,
-    /// The AI pipeline's settings, quota and transport.
-    pub ai: &'a Deps<'a, T>,
+    /// The AI pipeline's settings, quota and transport. `None` means AI is off at the server.
+    pub ai: Option<&'a Deps<'a, T>>,
     /// The one-attempt marker.
     pub marker: &'a AttemptMarker,
 }
@@ -185,6 +185,11 @@ pub async fn speak<T: ChatTransport>(
     if facts.code.len() > CODE_LIMIT_BYTES {
         return Ok(template(TemplateReason::CodeTooLarge, false, None));
     }
+    // AI off at the server must not use up the run's one attempt, so this is checked first.
+    let ai = match speech.ai {
+        Some(ai) if !ai.config.providers.is_empty() => ai,
+        _ => return Ok(template(TemplateReason::AiDisabled, false, None)),
+    };
     match speech.marker.claim(facts.run).await {
         Ok(true) => {}
         Ok(false) => return Ok(template(TemplateReason::AlreadyAttempted, false, None)),
@@ -197,7 +202,7 @@ pub async fn speak<T: ChatTransport>(
         return Ok(template(TemplateReason::CodeTooLarge, false, None));
     };
 
-    let generated = match generate_from_prompt(speech.ai, user, now, &prompt).await {
+    let generated = match generate_from_prompt(ai, user, now, &prompt).await {
         Ok(generated) => generated,
         Err(error) => return Ok(template_for_ai_error(&error, &template)),
     };

@@ -1553,3 +1553,9 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 - `speak` returns `Result<Bubble, SpeechError>`, but provider, quota and guard failures are not errors: they are a `Bubble` with a template and a `reason`. Reserve `Err` for things the learner can do nothing about, such as a database fault.
 - A closure that builds a template can be passed to a helper as `&impl Fn(...) -> Bubble`. It borrows what it needs, so the helper does not repeat the fields.
 - `generate` became `generate_from_prompt` plus a thin wrapper. Splitting a function at its natural seam lets a second caller reuse the quota and guard code without copying it.
+
+## efficiency-familiar T38: the familiar-hint route (19 Nov 2026)
+- An Axum handler's arguments are extractors. `CurrentUser(user)` runs first and turns a missing session into `401` before the handler body starts, so the body never sees an anonymous caller.
+- `Option<&Deps>` models "AI is off at the server" in the type. The compiler forces every caller to say what happens in the `None` case, instead of a flag someone can forget to check.
+- `bubble.reason.map(TemplateReason::code)` passes a method as a function. `Option::map` then calls it only when there is a value.
+- The `404` for a stranger, an unknown id and a malformed id is built by one closure, so the three bodies cannot drift apart.

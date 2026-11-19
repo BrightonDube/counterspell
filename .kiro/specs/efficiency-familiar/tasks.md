@@ -404,7 +404,7 @@ Conventions for every web task:
   - Preserve: this module has no write access to mood columns and cannot call `decide`.
   - Rust lesson: `async` functions, early returns with `?`, and why one place owns each side effect.
 
-- [ ] **T38 [S] (30 min) `POST /api/runs/{id}/familiar-hint` route (P21)**
+- [x] **T38 [S] (30 min) `POST /api/runs/{id}/familiar-hint` route (P21)**
   - Files: `crates/server/src/familiar/mod.rs`, `crates/server/tests/familiar_hint.rs`.
   - Handler: `AuthUser`, window limit, parse the run id, owner-checked read, `404`/`409`/`422` rules from R11, then `speech`. Response has no mood field. Errors use the shared envelope.
   - Tests: P21 (non-owner, unknown and malformed id give byte-identical `404`); `409` for an unfinished run of the caller; `422` for a run without a mood (cancelled, internal error); success shapes for `ai` and `template`; the response never contains a mood; the label is `"AI hint"` only for `ai`.
