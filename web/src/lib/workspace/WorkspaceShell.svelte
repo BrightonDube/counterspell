@@ -22,12 +22,21 @@
     initialFamiliarState,
     type FamiliarState
   } from '../familiar/familiar-state';
+  import { requestAuthoredHint, type AuthoredHint } from '../api/hints';
   import { requestSpeechOnce } from '../familiar/bubble/request';
   import Familiar from '../familiar/Familiar.svelte';
   import { runOutcomeLabel, statusLabel } from './test-rows';
   import AutopsyCard from './AutopsyCard.svelte';
   import EditorPanel from './EditorPanel.svelte';
   import GhostPanel from './GhostPanel.svelte';
+  import HintPanel from './HintPanel.svelte';
+  import {
+    failRung,
+    initialLadder,
+    receiveRung,
+    requestNext,
+    type LadderState
+  } from './hint-ladder';
   import ProblemPanel from './ProblemPanel.svelte';
   import StatusAnnouncer from './StatusAnnouncer.svelte';
   import TestPanel from './TestPanel.svelte';
@@ -51,7 +60,8 @@
       loadPreferences,
       savePreferences,
       requestSpeech: requestSpeechOnce
-    }
+    },
+    requestHint = requestAuthoredHint
   }: {
     problem: ProblemDetail;
     languages: LanguageSummary[];
@@ -59,6 +69,8 @@
     reducedMotion?: boolean;
     sessionDeps?: RunSessionDeps;
     familiarDeps?: FamiliarDeps;
+    /** Asks for one authored hint rung. Tests inject a fake. */
+    requestHint?: (submissionId: string, rung: number) => Promise<AuthoredHint>;
   } = $props();
 
   const detected = createLayoutMode();
@@ -176,6 +188,39 @@
       .catch(() => {});
   });
 
+  // The authored ladder belongs to one finished run. A new run starts a new ladder; the server
+  // keeps what was already revealed, so asking again for a rung is safe.
+  const HINT_RUNGS = 4;
+  let ladder = $state<LadderState>(initialLadder(HINT_RUNGS));
+  let ladderRunId = '';
+  $effect(() => {
+    const runId = runs.phase === 'finished' ? runs.runId : undefined;
+    if (runId === undefined || runId === ladderRunId) return;
+    ladderRunId = runId;
+    ladder = initialLadder(HINT_RUNGS);
+  });
+
+  async function onNextHint(): Promise<void> {
+    const runId = ladderRunId;
+    const next = requestNext(ladder);
+    ladder = next.state;
+    if (next.rung === null || runId === '') return;
+    const rung = next.rung;
+    try {
+      const hint = await requestHint(runId, rung);
+      if (runId === ladderRunId) ladder = receiveRung(ladder, rung, hint.text);
+    } catch {
+      // A fixed line: the server's own message is never shown here.
+      if (runId === ladderRunId) {
+        ladder = failRung(
+          ladder,
+          rung,
+          'This hint could not be loaded. Try again.'
+        );
+      }
+    }
+  }
+
   function requestRun(request: RunRequest): void {
     const ghost = request.ghost ? runs.stream?.ghost : undefined;
     session.start({
@@ -276,6 +321,9 @@
       reducedMotion={motion.value}
     />
     <AutopsyCard ghost={runs.stream.ghost ?? null} />
+  {/if}
+  {#if runs.phase === 'finished' && runs.runId !== undefined}
+    <HintPanel {ladder} onNext={onNextHint} />
   {/if}
   <Familiar
     measured={familiar}

@@ -105,6 +105,17 @@ function ghostSessionDeps(
   };
 }
 
+/** Familiar deps that never touch the network and ask for no speech. */
+function familiarOff() {
+  return {
+    loadPreferences: () =>
+      Promise.resolve({ muted: false, hidden: false, speech: 'off' as const }),
+    savePreferences: () => Promise.resolve({ synced: true }),
+    requestSpeech: () =>
+      Promise.resolve({ kind: 'unavailable' as const, text: '' })
+  };
+}
+
 const problem: ProblemDetail = {
   slug: 'two-sum',
   title: 'Two Sum',
@@ -396,6 +407,85 @@ describe('WorkspaceShell', () => {
     });
     expect(requestSpeech).toHaveBeenCalledTimes(1);
     expect(await screen.findByText(/Looks linear\./)).toBeTruthy();
+  });
+
+  // Breaks if the authored ladder is not reachable from the workspace, so a learner who fails
+  // a run has no way to ask for the next rung (HNT-1: one level at a time, in order).
+  it('reveals authored hints one rung at a time after a run finishes', async () => {
+    const requestHint = vi.fn(async (_run: string, rung: number) => ({
+      rung,
+      text: `Authored rung ${rung}.`
+    }));
+    const stream: RunStreamState = {
+      ...initialRunState('run-hints'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream, 'run-hints'),
+        familiarDeps: familiarOff(),
+        requestHint
+      }
+    });
+    expect(screen.queryByRole('button', { name: 'Show hint 1' })).toBeNull();
+
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 1' })
+    );
+    expect(await screen.findByText('Authored rung 1.')).toBeTruthy();
+    expect(requestHint).toHaveBeenCalledWith('run-hints', 1);
+
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 2' })
+    );
+    expect(await screen.findByText('Authored rung 2.')).toBeTruthy();
+    expect(requestHint.mock.calls.map((call) => call[1])).toEqual([1, 2]);
+  });
+
+  // Breaks if a failed hint request shows invented text or drops the hints already revealed.
+  it('keeps revealed hints and invents nothing when a hint request fails', async () => {
+    const requestHint = vi
+      .fn()
+      .mockResolvedValueOnce({ rung: 1, text: 'Authored rung 1.' })
+      .mockRejectedValueOnce(new Error('upstream secret detail'));
+    const stream: RunStreamState = {
+      ...initialRunState('run-hints-fail'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream, 'run-hints-fail'),
+        familiarDeps: familiarOff(),
+        requestHint
+      }
+    });
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 1' })
+    );
+    await screen.findByText('Authored rung 1.');
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 2' })
+    );
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Authored rung 1.')).toBeTruthy();
+    expect(screen.queryByText(/Authored rung 2/)).toBeNull();
+    expect(document.body.textContent).not.toContain('upstream secret');
+    // The failed rung can be asked for again.
+    expect(screen.getByRole('button', { name: 'Show hint 2' })).toBeTruthy();
   });
 
   // Breaks if leaving the page and coming back to the same finished run sends a second

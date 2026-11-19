@@ -30,7 +30,7 @@ export function requestAuthoredHint(
       }
       return {
         rung: replied,
-        text: readString(record, 'text', 'hint', MAX_HINT_BYTES)
+        text: readString(record, 'body', 'hint', MAX_HINT_BYTES)
       };
     },
     { ...options, body: { submission_id: submissionId, rung } }

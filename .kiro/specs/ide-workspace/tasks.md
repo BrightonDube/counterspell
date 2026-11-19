@@ -189,14 +189,14 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: tests fail if output uses unsafe HTML, a status relies only on colour, or a reduced-motion user loses trace information.
   - Preserve: do not weaken tests to accommodate visual shortcuts.
 
-- [ ] **T24 [S] (30 min) Add real Axum browser harness and test data path**
+- [x] **T24 [S] (30 min) Add real Axum browser harness and test data path**
   - Files: `web/tests/real-api/` or the agreed browser harness, `docker-compose.yml`/CI only if required for test services, test-pack wiring.
   - Start or connect to the built SvelteKit output served by Axum with authenticated test user, Postgres, trusted judge, rootless sandbox, and a small original pack. Do not intercept successful run responses. If Playwright is used, add it only after a licence check and document browser installation.
   - Depends on: T02, T03, T13, T18, T20, and upstream queue/sandbox/pack specs.
   - Verify: the harness reaches the app through Axum, not a frontend dev server, and can observe persisted events and terminal reads.
   - Preserve: any local fixture route is excluded from this harness.
 
-- [ ] **T25 [S] (30 min) Prove the judge journey without reload**
+- [x] **T25 [S] (30 min) Prove the judge journey without reload**
   - Files: `web/tests/real-api/ide-workspace.spec.*`, test support only.
   - Against the actual API/judge stack: open a published problem, restore drafts, Run samples, Submit a deliberately wrong solution, observe real events, watch real shrink steps, read the real Bug Autopsy, reveal hints, rerun the ghost, fix the source, resubmit, reach Accepted, and observe measured Familiar plus one speech request.
   - Assert no hidden canary appears, no result is fabricated, and the browser never reloads or requires manual intervention between failure and success.
