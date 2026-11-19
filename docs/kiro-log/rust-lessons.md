@@ -1547,3 +1547,9 @@ The builder is a plain function from stored values to sections, so its tests nee
 
 ## problem-catalogue C36 (privilege matrix)
 Rust lesson: `[&str; 10]` is an array whose length is part of its type, so adding one table name forced the type to change from `[&str; 9]`. That makes the compiler catch a list that silently grew or shrank. Also, `cargo test` stops after the first failing test binary unless you pass `--no-fail-fast`, so one red binary can hide failures in later crates.
+
+## efficiency-familiar T37: the speech bubble pipeline (17-19 Nov 2026)
+- `SET key 1 NX EX 86400` is one atomic Valkey command. `Some` back means "you were first", `None` means someone else was. That is how two clicks at once make one provider call.
+- `speak` returns `Result<Bubble, SpeechError>`, but provider, quota and guard failures are not errors: they are a `Bubble` with a template and a `reason`. Reserve `Err` for things the learner can do nothing about, such as a database fault.
+- A closure that builds a template can be passed to a helper as `&impl Fn(...) -> Bubble`. It borrows what it needs, so the helper does not repeat the fields.
+- `generate` became `generate_from_prompt` plus a thin wrapper. Splitting a function at its natural seam lets a second caller reuse the quota and guard code without copying it.

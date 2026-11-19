@@ -394,7 +394,7 @@ Conventions for every web task:
   - Preserve: false positives fall back to the template and are acceptable.
   - Rust lesson: string matching without a regex crate, and the cost of being strict.
 
-- [ ] **T37 [S] (30 min) Speech orchestration, one-attempt marker and template fallback (P20)**
+- [x] **T37 [S] (30 min) Speech orchestration, one-attempt marker and template fallback (P20)**
   - Files: `crates/server/src/familiar/{attempt.rs,speech.rs,store.rs}`.
   - `attempt.rs`: Valkey `SET NX EX 86400` marker for the run. `speech.rs`: stored hint row first; speech `off`; code size; marker; `hints::ai::generate(Kind::Familiar, …)`; claim guard; insert the `hints` row (`source = 'familiar'`, `ON CONFLICT DO NOTHING`); otherwise the template with the right `reason`. `store.rs` reads the stored result with the owner predicate.
   - Tests with the scripted transport and Valkey: P20 (N concurrent calls, one provider call, identical bodies); cap reached, both providers failing, speech off, oversized code, guard rejection and marker already set each return a template with the right reason; the stored row is returned without quota use; Valkey down returns a template.
