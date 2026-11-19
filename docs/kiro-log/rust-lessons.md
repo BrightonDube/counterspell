@@ -1594,3 +1594,6 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 
 ## efficiency-familiar T22: subcommands, exit codes and `Result` at a program's edge
 `main` reads `std::env::args()` and hands the rest to `parse_args`, which returns `Result<BaselineArgs, String>`: a bad flag is a value, not a panic. Deep inside, every step returns `Result` and `?` passes failures up unchanged. Only at the very edge (`baseline()` in `main.rs`) are those results turned into words for the operator and into `ExitCode::from(0 | 1 | 2)`, so scripts can tell "stored", "refused" (a finding about the fixture) and "the judge itself failed" apart. Keeping that translation in one place means no inner function needs to know about the process at all.
+
+## efficiency-familiar T43: a test double that remembers (`Mutex` behind `&self`)
+`ScriptedTransport::prompts()` needs to record every request, but the trait method only gets `&self` (a shared borrow), so the recorder is a `Mutex<Vec<String>>`: `lock()` hands out one mutable borrow at a time, checked at run time instead of compile time. We use `if let Ok(..)` and `unwrap_or_default()` instead of `unwrap()`, because a poisoned lock should degrade a test helper, not panic. The helper is only built with the `testkit` feature, so production code never carries it.

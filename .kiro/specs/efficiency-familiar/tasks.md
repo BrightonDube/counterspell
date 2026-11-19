@@ -449,7 +449,7 @@ Conventions for every web task:
   - Verify: every item has a recorded pass or a bug filed in the log.
   - Preserve: no fabricated results; fixtures are not used for this pass.
 
-- [ ] **T43 [P] (30 min) Privacy and security tests across surfaces**
+- [x] **T43 [P] (30 min) Privacy and security tests across surfaces**
   - Files: `crates/judge/tests/familiar_privacy.rs`, `crates/server/tests/familiar_privacy.rs`, `web/src/lib/familiar/privacy.test.ts`.
   - Seed a canary in a hidden test's expected output and input, in stderr, and in the problem statement. Assert it never appears in any `complexity` or `familiar` event, the `fit` column, the read model, the speech prompt, the bubble response or logs. Confirm the server role cannot write the new columns or tables (extends P16), and that web components never use `innerHTML`.
   - Requirements: R7.9, R11.4, R12.

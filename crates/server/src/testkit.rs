@@ -107,6 +107,7 @@ pub enum Step {
 pub struct ScriptedTransport {
     steps: std::sync::Mutex<std::collections::VecDeque<Step>>,
     calls: std::sync::atomic::AtomicUsize,
+    prompts: std::sync::Mutex<Vec<String>>,
 }
 
 impl ScriptedTransport {
@@ -116,7 +117,18 @@ impl ScriptedTransport {
         Self {
             steps: std::sync::Mutex::new(steps.into()),
             calls: std::sync::atomic::AtomicUsize::new(0),
+            prompts: std::sync::Mutex::new(Vec::new()),
         }
+    }
+
+    /// Every prompt received so far, in order: the system rules, a blank line, then the user
+    /// message. Tests use it to check what would have been sent to a provider.
+    #[must_use]
+    pub fn prompts(&self) -> Vec<String> {
+        self.prompts
+            .lock()
+            .map(|prompts| prompts.clone())
+            .unwrap_or_default()
     }
 
     /// How many calls the transport has received.
@@ -129,7 +141,7 @@ impl ScriptedTransport {
 impl crate::hints::provider::ChatTransport for ScriptedTransport {
     fn chat(
         &self,
-        _request: crate::hints::provider::ChatRequest<'_>,
+        request: crate::hints::provider::ChatRequest<'_>,
     ) -> impl std::future::Future<
         Output = Result<
             crate::hints::provider::ChatResponse,
@@ -137,6 +149,9 @@ impl crate::hints::provider::ChatTransport for ScriptedTransport {
         >,
     > + Send {
         self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if let Ok(mut prompts) = self.prompts.lock() {
+            prompts.push(format!("{}\n\n{}", request.system, request.user));
+        }
         let step = self
             .steps
             .lock()
