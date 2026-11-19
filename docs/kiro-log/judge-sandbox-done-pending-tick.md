@@ -215,3 +215,6 @@ Fresh gate at `36d6064`:
 | T37 | NOT ticked. Blocked: VPS. |
 
 Corrections to the T39 record: it says `model_sandbox_executor` 12/12 and `model_run` 10/10. The real counts are 10 and 12. Nothing was removed (`model_sandbox_executor.rs` has one commit and 10 tests).
+
+## Verified (spec-driver `drive queue`, 19 Nov 2026)
+- T38 ticked. T02 is now ticked, clearing its only dependency. Fresh checks: `docker compose config -q` ok; `ci.yml` parses and `sandbox-integration` has `continue-on-error: true`; `server` has no volumes or ports; `judge` mounts only the sandbox socket and publishes no ports; Renovate regex manager is digest-only with auto-merge off; the deploy doc covers delegation, socket group, slice limits, digest pull, preflight and 0600 secrets; `boundary` 6/6.
