@@ -283,6 +283,7 @@ mod tests {
     }
 
     fn pack_dir() -> PackDir {
+        // nosemgrep: rust.lang.security.temp-dir.temp-dir
         let dir = std::env::temp_dir().join(format!(
             "grimoire-main-{}-{:?}",
             std::process::id(),

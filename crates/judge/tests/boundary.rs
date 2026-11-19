@@ -231,7 +231,7 @@ fn container_facing_modules_see_no_expected_outputs() {
 fn compose_keeps_the_boundaries() {
     let compose = std::fs::read_to_string(root().join("docker-compose.yml"))
         .expect("docker-compose.yml exists");
-    let doc: serde_yml::Value = serde_yml::from_str(&compose).expect("compose parses");
+    let doc: serde_norway::Value = serde_norway::from_str(&compose).expect("compose parses");
     let services = &doc["services"];
 
     let volumes = |service: &str| -> Vec<String> {

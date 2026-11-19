@@ -32,6 +32,7 @@ use tokio::sync::watch;
 const POOL_SIZE: u32 = 8;
 
 fn main() -> ExitCode {
+    // nosemgrep: rust.lang.security.args.args
     match std::env::args().nth(1).as_deref() {
         Some("healthcheck") => return healthcheck(),
         #[cfg(feature = "sandbox")]
@@ -111,7 +112,7 @@ async fn baseline() -> ExitCode {
         execute, exit_code, parse_args, BaselineError, BaselineOutcome, CommandError,
     };
 
-    let raw: Vec<String> = std::env::args().skip(2).collect();
+    let raw: Vec<String> = std::env::args().skip(2).collect(); // nosemgrep: rust.lang.security.args.args
     let args = match parse_args(&raw) {
         Ok(args) => args,
         Err(message) => {

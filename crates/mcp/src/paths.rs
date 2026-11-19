@@ -108,7 +108,7 @@ mod tests {
             .duration_since(UNIX_EPOCH)
             .map(|d| d.as_nanos())
             .unwrap_or_default();
-        let dir = std::env::temp_dir().join(format!("cs-mcp-{name}-{nanos}"));
+        let dir = std::env::temp_dir().join(format!("cs-mcp-{name}-{nanos}")); // nosemgrep: rust.lang.security.temp-dir.temp-dir
         fs::create_dir_all(dir.join("packs/demo")).expect("create scratch tree");
         fs::write(dir.join("packs/demo/meta.toml"), "x = 1").expect("write file");
         dir

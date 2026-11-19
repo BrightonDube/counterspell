@@ -1166,6 +1166,7 @@ mod tests {
             let nanos = std::time::SystemTime::now()
                 .duration_since(std::time::UNIX_EPOCH)
                 .map_or(0, |elapsed| elapsed.as_nanos());
+            // nosemgrep: rust.lang.security.temp-dir.temp-dir
             let root = std::env::temp_dir().join(format!(
                 "counterspell-mcp-job-{nanos}-{}",
                 NEXT.fetch_add(1, std::sync::atomic::Ordering::SeqCst)

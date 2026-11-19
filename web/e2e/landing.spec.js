@@ -73,7 +73,9 @@ test('Enter on a focused control does not hijack the page', async ({
   );
   await page.keyboard.press('Enter');
   if (target) {
-    await expect(page).toHaveURL(new RegExp(`${target.replace('/', '\\/')}$`));
+    await expect(page).toHaveURL(
+      new RegExp(`${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+    );
   } else {
     await expect(page).toHaveURL(/\/$/);
   }

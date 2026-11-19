@@ -44,7 +44,9 @@ function axumFetch(user: number): FetchLike {
       // the real cause visible when this suite fails.
       const cause = (error as { cause?: unknown }).cause;
       console.error(
-        `fetch ${init?.method ?? 'GET'} ${input} failed:`,
+        'fetch %s %s failed:',
+        init?.method ?? 'GET',
+        String(input),
         error,
         cause
       );

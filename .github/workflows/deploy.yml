@@ -124,7 +124,7 @@ jobs:
           HEALTH_URL: ${{ env.HEALTH_URL }}
         run: |
           set -euo pipefail
-          for i in $(seq 1 30); do
+          for i in $(seq 1 30); do echo "health attempt $i";
             body="$(curl -fsS --max-time 5 "$HEALTH_URL" || true)"
             if [[ "$body" == *'"ok"'* ]]; then
               echo "health: $body"

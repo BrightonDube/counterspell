@@ -261,7 +261,9 @@ describe('palette contrast', () => {
   }
 
   function token(name: string): string {
-    const match = appCss.match(new RegExp(`--${name}:\\s*(#[0-9a-fA-F]{6})`));
+    const match = appCss.match(
+      new RegExp(`--${name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}:\\s*(#[0-9a-fA-F]{6})`)
+    );
     expect(match, `--${name} is missing from app.css`).not.toBeNull();
     const value = match?.[1];
     if (value === undefined) {
