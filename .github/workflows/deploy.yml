@@ -34,7 +34,7 @@ concurrency:
   cancel-in-progress: false # never interrupt a deploy halfway
 
 env:
-  HEALTH_URL: https://15-204-92-66.sslip.io/api/health
+  HEALTH_URL: https://counterspell.online/api/health
 
 jobs:
   disabled:

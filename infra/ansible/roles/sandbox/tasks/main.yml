@@ -88,6 +88,7 @@
   ansible.builtin.slurp:
     src: "/sys/fs/cgroup/user.slice/user-{{ sandbox_uid }}.slice/user@{{ sandbox_uid }}.service/cgroup.controllers"
   register: sandbox_controllers
+  when: not ansible_check_mode
 
 - name: Stop unless every required controller is delegated before any pull (R3.2)
   ansible.builtin.assert:
@@ -96,6 +97,7 @@
     fail_msg: "Controller {{ item }} is not delegated to user@{{ sandbox_uid }}. Check delegate.conf and reboot if needed."
     quiet: true
   loop: "{{ sandbox_required_controllers }}"
+  when: not ansible_check_mode
 
 - name: Check that the scoped rootlesskit AppArmor profile is installed (R3.8, Q12)
   # The apparmor package ships /etc/apparmor.d/rootlesskit for /usr/bin/rootlesskit. It grants
@@ -180,6 +182,7 @@
   become_user: "{{ sandbox_user }}"
   environment:
     XDG_RUNTIME_DIR: "{{ sandbox_runtime_dir }}"
+  when: not ansible_check_mode
 
 - name: Install the language catalogue (the pre-pull reads the pinned digests from it)
   ansible.builtin.copy:
@@ -191,7 +194,8 @@
 
 - name: Pull each enabled sandbox image by digest and check it (R3.6, R3.7)
   # The script is copied, run and removed by Ansible, so no root-run file is left in a user-writable place.
-  ansible.builtin.script: "{{ repo_root }}/deploy/vps/prepull.sh"
+  ansible.builtin.script:
+    cmd: "'{{ repo_root }}/deploy/vps/prepull.sh'"
   environment:
     SANDBOX_DOCKER_SOCKET: "{{ sandbox_socket }}"
     LANGUAGES_TOML: "{{ sandbox_languages_toml }}"
