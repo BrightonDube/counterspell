@@ -121,10 +121,24 @@ step clippy cargo clippy --workspace --all-targets --all-features --locked -- -D
 # fallback, so local tests can never pass on content CI cannot see.
 step cargo-test env COUNTERSPELL_PACKS_PRIVATE_ROOT=/nonexistent cargo test --workspace --all-features --locked
 
-# Ignored pg_/valkey_ tests need the throwaway services CI provides. Run them
-# only when the dev has pointed the env vars at reachable services.
+# Ignored pg_/valkey_ tests need the throwaway services CI provides, and some of
+# them TRUNCATE tables. They may only auto-run against a local service; a remote
+# URL needs the explicit PRE_PUSH_DB_TESTS=1 opt-in.
+url_is_local() {
+  local rest=${1#*://} host
+  rest=${rest##*@}
+  host=${rest%%[:/]*}
+  case "$host" in
+    localhost|127.*|"") return 0 ;;
+    *) return 1 ;;
+  esac
+}
 if [ -n "${DATABASE_URL:-}" ] && [ -n "${VALKEY_URL:-}" ]; then
-  extra db-tests cargo test --workspace --all-features --locked -- --ignored pg_ valkey_
+  if [ "${PRE_PUSH_DB_TESTS:-0}" = "1" ] || { url_is_local "$DATABASE_URL" && url_is_local "$VALKEY_URL"; }; then
+    extra db-tests cargo test --workspace --all-features --locked -- --ignored pg_ valkey_
+  else
+    note_skip db-tests "URLs are not localhost; ignored tests TRUNCATE data — use throwaway services or PRE_PUSH_DB_TESTS=1"
+  fi
 else
   note_skip db-tests "DATABASE_URL/VALKEY_URL unset; ignored pg_/valkey_ tests run in CI"
 fi
@@ -147,7 +161,14 @@ extra release-build release_no_testkit
 # guard refusing a rootful daemon (mirrors the sandbox CI job).
 sandbox_feature() {
   cargo build -p counterspell-judge --features sandbox --locked
-  if SANDBOX_DOCKER_SOCKET=/var/run/docker.sock ./target/debug/counterspell-judge preflight; then
+  local target bin
+  target=$(cargo metadata --format-version 1 --no-deps --locked | sed -n 's/.*"target_directory":"\([^"]*\)".*/\1/p')
+  bin="$target/debug/counterspell-judge"
+  if [ ! -x "$bin" ]; then
+    echo "pre-push: $bin not found after build" >&2
+    return 1
+  fi
+  if SANDBOX_DOCKER_SOCKET=/var/run/docker.sock "$bin" preflight; then
     echo "pre-push: preflight accepted a rootful Docker daemon" >&2
     return 1
   fi
