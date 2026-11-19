@@ -350,7 +350,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit test with the launch catalogue lists exactly `python` and `javascript`; a disabled entry is absent; the key allow-list passes.
   - Rust lesson: `Vec<Language>` is cloned into the response, so the request cannot change the server's catalogue. Explain why a shared reference would be a different design.
 
-- [ ] **C33 [BLOCKED on D16 (ghosts table owner)] [S] [SUPERVISED] (30 min) `GhostLookup` for the custom ghost run**
+- [x] **C33 [UNBLOCKED 19 Nov: reads submissions.ghost_input] [S] [SUPERVISED] (30 min) `GhostLookup` for the custom ghost run**
   - Files: `crates/server/src/catalogue/ghosts.rs`, `crates/server/tests/pg_catalogue_ghosts.rs`.
   - `stored_for(user, submission_id)` returns the stored ghost input only when the submission belongs to the caller. Blocked until the `ghosts` table exists and its owner is decided (open question 1).
   - Requirements: CAT-L6. ide-workspace T02 depends on this.

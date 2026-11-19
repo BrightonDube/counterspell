@@ -2,6 +2,7 @@
 //! own role (CAT-R3, CAT-A9).
 
 pub mod dto;
+pub mod ghosts;
 pub mod handlers;
 pub mod languages;
 pub mod lookup;
