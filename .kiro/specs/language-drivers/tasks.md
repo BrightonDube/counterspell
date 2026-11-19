@@ -85,7 +85,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: no hostile fixture can declare a verdict; infrastructure failures are not reported as Wrong Answer; stale containers are reaped by the existing boundary.
   - Preserve: no keyword blocklist is added as a security control.
 
-- [ ] **T12 [S] (20 min) Run the core freeze-safe gate**
+- [x] **T12 [S] (20 min) Run the core freeze-safe gate**
   - Files: no planned files; fixes only where a preceding core task fails verification.
   - Confirm Python and JavaScript launch judging, generated-input properties for every published problem, bench-mode timing/events, cleanup, and existing workspace checks are green on the target test environment.
   - Depends on: T06, T09, T10, and T11.
