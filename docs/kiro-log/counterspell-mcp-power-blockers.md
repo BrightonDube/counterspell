@@ -90,3 +90,34 @@
 - Not written by this run: the private checkout is a separate repo outside this workspace, hidden and reference code must live only there, and new pack content goes through `pack-author` then `pack-reviewer`.
 - **Unblock (Brighton):** run `pack-author` for `_demo/mcp-dogfood` to write `reference/solution.py` (correct) and `incorrect/<file>.py` (one deliberate bug that a tiny input exposes, for example an off-by-one that drops the last window, or k > len returning a partial sum), with an optional `known_ghosts.toml`, in the private checkout. Commit there. T15 then verifies with `validate_pack`.
 - T16, T17, T18, T19 depend on T15 (T17 also on the T11 import test). Nothing else in this spec can move.
+
+## 19 Nov — Devin takeover: T14, T15 done; Kiro legs still open
+
+- **T14 ticked.** `.kiro/settings/mcp.json` exists (committed in `e8e15c55`) and
+  `workspace_settings.rs` covers all guards: only `validate_pack`,
+  `explain_verdict`, `fit_complexity` auto-approved, workspace-relative `cwd`,
+  same command as `kiro-power/mcp.json`, no env/secrets.
+- **T15 ticked.** Public `packs/_demo/mcp-dogfood/` (problem.md, meta.toml,
+  hints.toml) plus private `packs/mcp-dogfood/` in
+  `counterspell-packs-private`: `reference/solution.py` (correct),
+  `incorrect/never-negative.py` (floors the running best at zero — the
+  all-negative-window ghost), `known_ghosts.toml` (`dogfood = true`).
+  `crates/mcp/tests/dogfood_pack.rs` proves: public tree carries no hidden
+  files, public-only validation fails only on missing private parts, and the
+  merged pair validates with `validate_pack` reporting `passed: true`.
+  `counterspell-catalogue import --slug _mcp-dogfood` → `refused:underscore_pack`.
+- **grimoire fix:** KNG-06 now honours the `_` mark on the container
+  (`packs/_demo/<slug>`) as well as the leaf — the leaf must stay a valid slug,
+  so the container carries the dogfood mark (`crates/grimoire/src/lib.rs`
+  `dogfood_scope`). Without it `dogfood = true` was unreachable.
+- **Real-sandbox evidence (T10/T19 legs):** all 4 `sbx_tools` tests pass on the
+  local rootless daemon (`SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock`):
+  code runs only in a container, hostile loop → timeout, find+shrink leaves no
+  container, unstartable sandbox → infrastructure error, never a wrong answer.
+- **T18 static checks all pass** (boundary greps: no bollard in mcp, main
+  socket refused via `MainDaemonSocket`, 8 workspace crates — testserver and
+  catalogue-cli added by other specs after this spec was written).
+- **Still blocked on Kiro:** T11 (real-client Power import is its only verify),
+  T16 (scripted Kiro session), T17 (scrubbed evidence). T18/T19 left unticked
+  because they depend on T17; every agent-runnable check for them passes and is
+  recorded here.

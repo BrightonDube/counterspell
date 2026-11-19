@@ -103,7 +103,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T10 and T11.
   - Verify: a reviewer can follow the skill without inventing an unsupported tool or execution path.
 
-- [ ] **T14 [S] (20 min) Register the workspace MCP server**
+- [x] **T14 [S] (20 min) Register the workspace MCP server**
   - Files: `.kiro/settings/mcp.json`.
   - Register `counterspell-mcp` with the same command and working-directory strategy as the Power. Auto-approve only `validate_pack`, `explain_verdict`, and `fit_complexity`.
   - Preserve: no secrets and no execution tool in `autoApprove`.
@@ -112,7 +112,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 5: dogfood pack and evidence
 
-- [ ] **T15 [P] (30 min) Create the private dogfood pack**
+- [x] **T15 [P] (30 min) Create the private dogfood pack**
   - Files: `packs/_demo/mcp-dogfood/**` and pack tests/fixtures only where the approved Grimoire layout requires them.
   - Add original problem text, metadata with `dogfood = true`, correct reference, deliberately buggy implementation, hints, and optional known ghost. Keep `packs/_test/` unchanged and ensure public import skips this directory.
   - Preserve: no host execution of the Python files; no hidden data in the pack or diagnostics.
