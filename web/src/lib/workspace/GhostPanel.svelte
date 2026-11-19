@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { onDestroy } from 'svelte';
   import { planPlayback } from '../ghost/shrink-playback';
+  import { playbackDurationMs, scheduleGhostMarks } from '../performance';
   import type { GhostView, ShrinkStepView } from '../ghost/types';
 
   let {
@@ -30,6 +32,28 @@
   const plan = $derived(
     ghost ? planPlayback(ghost.shrink, ghost.input, reducedMotion) : null
   );
+
+  // Timing marks for the replay, once per distinct ghost. The stream hands the panel a fresh copy
+  // of the same ghost on every event, so the ghost is keyed by its content, and a pending end mark
+  // is cancelled only for a different ghost or when the panel goes away.
+  let markedKey = '';
+  let cancelMarks: () => void = () => {};
+  $effect(() => {
+    const current = plan;
+    if (ghost === null || current === null) return;
+    const key = JSON.stringify([ghost.kind, ghost.input, ghost.provenance]);
+    if (key === markedKey) return;
+    markedKey = key;
+    cancelMarks();
+    cancelMarks = scheduleGhostMarks(
+      playbackDurationMs({
+        mode: current.mode,
+        stepCount: current.steps.length,
+        stepDelayMs: current.stepDelayMs
+      })
+    );
+  });
+  onDestroy(() => cancelMarks());
 
   /** Shows a JSON value as plain text. Nothing is inserted as HTML. */
   function show(value: unknown): string {

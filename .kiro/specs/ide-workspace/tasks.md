@@ -211,7 +211,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: no duplicate rows, no stale run updates a new problem, no hidden data leaks, and an infrastructure failure is never shown as Wrong Answer.
   - Preserve: the stream is replayed from Postgres, not a client cache.
 
-- [ ] **T27 [S] (25 min) Measure workspace performance and lazy loading**
+- [x] **T27 [S] (25 min) Measure workspace performance and lazy loading**
   - Files: browser performance test/support, `web/src/lib/performance.ts` if needed, no user data in marks.
   - Add shell/editor/first-event/terminal/ghost-playback marks, check Monaco and Familiar-GSAP lazy loading, exercise a tablet viewport, and confirm the shell stays responsive while heavy assets load.
   - Depends on: T09, T15, T19, T25.

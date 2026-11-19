@@ -5,7 +5,8 @@
   // reading order with the problem first and collapsible. The results region shows the
   // live run, or the last finished run until its replacement finishes. The shell never
   // invents a result.
-  import { onDestroy, untrack } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
+  import { createRunMarks, markWorkspace } from '../performance';
   import type { LanguageSummary, ProblemDetail } from '../api/types';
   import {
     createSpeechGuard,
@@ -128,6 +129,16 @@
   });
 
   onDestroy(() => session.cancel());
+
+  // Timing marks for the browser performance check. Fixed names only; no run id or source.
+  onMount(() => markWorkspace('workspace-shell-interactive'));
+  const runMarks = createRunMarks();
+  $effect(() => {
+    const runId = runs.runId;
+    if (runId === undefined) return;
+    if ((runs.stream?.lastSeq ?? 0) > 0) runMarks.event(runId);
+    if (runs.phase === 'finished') runMarks.terminal(runId);
+  });
 
   const canRerunGhost = $derived(runs.stream?.ghost !== undefined);
 

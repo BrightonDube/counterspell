@@ -571,6 +571,43 @@ describe('WorkspaceShell', () => {
     expect(screen.getByRole('button', { name: 'Show hint 2' })).toBeTruthy();
   });
 
+  // Breaks if the browser performance check cannot see the workspace phases, or if a mark
+  // carries the run id (R15.5).
+  it('marks shell, first event and terminal once, with fixed names only', async () => {
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      const stream: RunStreamState = {
+        ...initialRunState('run-marks-91c2'),
+        lastSeq: 3,
+        status: 'completed',
+        ghost: ghostFixture()
+      };
+      render(WorkspaceShell, {
+        props: {
+          problem,
+          languages,
+          layout: 'desktop',
+          sessionDeps: ghostSessionDeps(stream, 'run-marks-91c2'),
+          familiarDeps: familiarOff()
+        }
+      });
+      await fireEvent.click(
+        await screen.findByRole('button', { name: 'Run samples' })
+      );
+      await screen.findByRole('button', { name: 'Show hint 1' });
+      const names = mark.mock.calls.map((call) => call[0]);
+      expect(
+        names.filter((n) => n === 'workspace-shell-interactive')
+      ).toHaveLength(1);
+      expect(names.filter((n) => n === 'run-first-event')).toHaveLength(1);
+      expect(names.filter((n) => n === 'run-terminal')).toHaveLength(1);
+      expect(mark.mock.calls.every((call) => call.length === 1)).toBe(true);
+      expect(JSON.stringify(mark.mock.calls)).not.toContain('91c2');
+    } finally {
+      mark.mockRestore();
+    }
+  });
+
   // Breaks if leaving the page and coming back to the same finished run sends a second
   // speech request (FAM-6: at most one bubble per run, whatever the page does).
   it('sends one speech request for a run across a remount', async () => {

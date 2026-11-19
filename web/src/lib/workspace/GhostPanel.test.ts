@@ -1,7 +1,7 @@
 // Component tests for the ghost hunting state and the ghost card (ide-workspace T15).
 // Each test names the break it catches.
 import { cleanup, render, screen } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Json } from '../contract';
 import type { GhostView } from '../ghost/types';
 import GhostPanel from './GhostPanel.svelte';
@@ -77,6 +77,72 @@ describe('GhostPanel hunting state', () => {
 });
 
 describe('GhostPanel ghost card', () => {
+  // Breaks if the replay is not measurable, or if a static replay leaves its end mark pending (R15.5).
+  it('marks the ghost playback start and end, at once under reduced motion', () => {
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      render(GhostPanel, {
+        props: {
+          status: 'completed',
+          ghost: wrongGhost(),
+          shrinkSteps: [],
+          reducedMotion: true
+        }
+      });
+      const names = mark.mock.calls.map((c) => c[0]);
+      expect(names).toEqual(['ghost-playback-start', 'ghost-playback-end']);
+    } finally {
+      mark.mockRestore();
+    }
+  });
+
+  // Breaks if every stream update, which hands the panel a fresh copy of the same ghost,
+  // restarts the replay marks and cancels the pending end mark (R15.5).
+  it('marks one playback for the same ghost across updates', async () => {
+    vi.useFakeTimers();
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      const view = render(GhostPanel, {
+        props: {
+          status: 'ghost_hunting',
+          ghost: wrongGhost(),
+          shrinkSteps: [],
+          reducedMotion: false
+        }
+      });
+      await view.rerender({
+        status: 'completed',
+        ghost: wrongGhost(),
+        shrinkSteps: [],
+        reducedMotion: false
+      });
+      vi.advanceTimersByTime(5000);
+      const names = mark.mock.calls.map((c) => c[0]);
+      expect(names).toEqual(['ghost-playback-start', 'ghost-playback-end']);
+    } finally {
+      mark.mockRestore();
+      vi.useRealTimers();
+    }
+  });
+
+  // Breaks if a panel without a ghost writes playback marks for a replay that never happens.
+  it('writes no playback mark without a ghost', () => {
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      render(GhostPanel, {
+        props: {
+          status: 'completed',
+          ghost: null,
+          shrinkSteps: [],
+          reducedMotion: false
+        }
+      });
+      expect(mark).not.toHaveBeenCalled();
+    } finally {
+      mark.mockRestore();
+    }
+  });
+
   // Breaks if a wrong-answer ghost loses its input, expected or got values.
   it('shows the input, expected and got values as text', () => {
     render(GhostPanel, {
