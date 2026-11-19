@@ -1603,3 +1603,6 @@ A trait is a contract, so where it is declared decides who may implement it. `Pa
 
 ## counterspell-mcp-power T10: a value that cleans up in `Drop`, and the order fields drop in
 `PackSandboxRunner` owns sandbox containers, and its `Drop` spawns a kill-and-remove on the runtime that is current at that moment. Two Rust rules decide whether that cleanup happens. First, a value is dropped when its owner lets go, so the MCP slot calls `release()` after every tool call (`*built = None` drops the old runner at once) instead of holding the runner until the next call. Second, a struct drops its fields in the order they are declared, so `built` is declared before `factory`: the runner goes first, while the factory's runtime is still alive to run the cleanup. The test `dropping_a_slot_drops_the_runner_before_the_factory` writes each drop into a shared `Vec` to prove that order.
+
+## judge-sandbox: regression test for a closed-stream program
+A test that passes the first time it runs is not "red", so say so plainly: here it showed the suspected bug does not exist. `inspect_exec` returns `Option<i64>` for the exit code, and the judge turns `None` into an `InfraError` with `ok_or_else`, so a missing code can never become a user verdict. The deadline kill from outside is what ends the run, and that path already yields `time_limit`.
