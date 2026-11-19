@@ -1606,3 +1606,6 @@ A trait is a contract, so where it is declared decides who may implement it. `Pa
 
 ## judge-sandbox: regression test for a closed-stream program
 A test that passes the first time it runs is not "red", so say so plainly: here it showed the suspected bug does not exist. `inspect_exec` returns `Option<i64>` for the exit code, and the judge turns `None` into an `InfraError` with `ok_or_else`, so a missing code can never become a user verdict. The deadline kill from outside is what ends the run, and that path already yields `time_limit`.
+
+## counterspell-mcp: tests that read config files
+A Rust integration test in `tests/` is its own small program. `env!("CARGO_MANIFEST_DIR")` is filled in by the compiler with the crate's folder, so the test can find `../../.kiro/settings/mcp.json` from any machine. `serde_json::Value` lets you read JSON you do not have a struct for. The test reads files only and never starts the server.

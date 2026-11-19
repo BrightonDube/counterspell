@@ -78,3 +78,8 @@
 - Also fixed: `RunContext::pool` lint under `--features sandbox` without `testkit` (a latent `unnecessary_wraps`, exposed because `counterspell-mcp` now enables the judge's `sandbox` feature on its own).
 - **For Brighton to review (security):** `counterspell-mcp` now links the judge's `sandbox` feature (bollard) and opens containers on the rootless daemon from the developer machine. It refuses a rootful or main daemon through the same identity check as the worker, and it builds no runner when the daemon fails it. `PackRunnerFactory::from_env` (used by the catalogue importer) still does not run the identity check; `verified` is the safe constructor, and moving the importer to it is a follow-up.
 - Still open in this spec: T11 (Kiro Power import test), T14 (registration), T15 (private dogfood pack), T16 to T19.
+
+## drive queue run (kiro/drive-queue): T14 verified, left unticked
+- Added `crates/mcp/tests/workspace_settings.rs` (5 tests): the workspace server uses the same command and args as `kiro-power/mcp.json`, a workspace-relative cwd whose `../Cargo.toml` is the root manifest, exactly the three pure tools in `autoApprove` (none of `run_reference`, `find_ghost_input`, `shrink_input`), no `env`, no socket or key text, and the Power itself approves nothing. The settings file already existed (19 Nov), so these pass on first run: guards, not a fix.
+- T14 stays `[ ]` only because its dependency T11 is open. T11 needs the Kiro custom-Power import test, which only the Kiro IDE can run. **HUMAN:** import `kiro-power/` as a custom Power in Kiro, confirm the six tools list, then T11 and T14 can be ticked.
+- T15 needs the private pack repo checkout; see below.
