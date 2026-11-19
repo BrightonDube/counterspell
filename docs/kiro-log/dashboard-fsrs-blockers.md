@@ -120,3 +120,13 @@ No [stretch] task (T11 to T18) was started, as the instructions require.
   `pg_` tests. Brighton's 12 Nov rule excludes the browser sign-in and the rendered-page check.
 - T11 to T18 are [stretch] and were not started, as instructed. Nothing new is blocked.
 - Open Minor findings are unchanged (listed under the final state of attempt 3).
+
+## drive queue run (kiro/drive-queue): T10 is actionable but needs the E2E harness first
+- Brighton lifted the "no browser E2E" limit on 16 Nov, so T10 is no longer deferred for policy. It is still open because **no Playwright harness exists in the repo yet**: `~/.cache/ms-playwright` holds chromium-1255, but `@playwright/test` is not in `web/package.json`, and there is no `web/playwright.config.ts`, `web/e2e/` or `e2e` npm script. (`web/package-lock.json` has an unrelated uncommitted local diff of 3 insertions and 164 deletions; it was not touched.)
+- What T10 needs, in order:
+  1. Add `@playwright/test` as a `web/` dev dependency (approved 16 Nov), with its THIRD-PARTY-NOTICES entry and a `deny`/licence check. `npm ci` must still pass.
+  2. `web/playwright.config.ts` with a `webServer` that starts `counterspell-testserver` (`cargo run -p counterspell-testserver`, feature `testkit`) against the throwaway `cs-dev-pg`, and serves the built static site. The browser identity is `Authorization: Bearer test-user-N` through `use.extraHTTPHeaders`. The database URL comes from the runner's env file and is never written to a file.
+  3. `web/e2e/dashboard.spec.ts`: user 1 with owned submissions sees real counts and suggestions; user 2 never sees user 1's canary (slug, code or title); a forced database failure shows the designed retry state, and the page loads from the Axum static path with no npm dev server.
+  4. Seeding the canary rows needs the test server's `ensure_user` plus direct inserts as the database owner.
+- The non-browser half of T10 is already covered by the HTTP and `pg_` tests (28 server dashboard tests).
+- Not started this run: it is a self-contained piece of work (new dev dependency, launcher, seeding) and is better done in a fresh run than at the end of this one.
