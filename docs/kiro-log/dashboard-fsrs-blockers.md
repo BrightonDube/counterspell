@@ -130,3 +130,13 @@ No [stretch] task (T11 to T18) was started, as the instructions require.
   4. Seeding the canary rows needs the test server's `ensure_user` plus direct inserts as the database owner.
 - The non-browser half of T10 is already covered by the HTTP and `pg_` tests (28 server dashboard tests).
 - Not started this run: it is a self-contained piece of work (new dev dependency, launcher, seeding) and is better done in a fresh run than at the end of this one.
+
+## drive queue run (kiro/drive-queue): T10 done
+- Added the Playwright harness: `@playwright/test` 1.57.0 (exact, dev only, notice added), `web/playwright.config.js` (starts `counterspell-testserver` on 5198, serves the built site from Axum, `DATABASE_URL` read from the caller's environment and never written), `npm run e2e`, and `web/e2e/dashboard.spec.js` (3 tests).
+- Evidence (this session): `playwright test` 3/3. An owner submits through `POST /api/runs`, the run ends `accepted`, and `/dashboard` shows "1 problems" and "Your newest run was accepted." A second user sees "No practice yet" and neither page contains the code canary. A 503 for `/api/dashboard` shows the retry message and "Try again" recovers. Signed out shows the Sign in link. No npm dev server is involved.
+- Honest limits: the judge in the test server is scripted (every run passes), so this checks the dashboard read path, not judging. The 503 is produced at the network edge by `page.route`; the server-side database-failure 503 is covered by the Rust test `a_failed_database_read_returns_503_without_sql_or_connection_detail`. The fixture has one problem (`two-sum`), so cross-user checks use a code canary rather than a second slug.
+- Web gate: `svelte-check` 0 errors, build ok, vitest 533 passed (4 skipped), `npm ci` from the lockfile ok.
+- **Run the e2e on this machine:** the cached chromium is build 1255 but Playwright 1.57 wants 1200. Either run `npx playwright install chromium`, or set `E2E_EXECUTABLE=$HOME/.cache/ms-playwright/chromium_headless_shell-1255/chrome-headless-shell-linux64/chrome-headless-shell`. Then `npm run build && DATABASE_URL=... npm run e2e`.
+- Pre-existing, not touched: `npm run lint` error in `web/tests/real-api/keyboard-motion.mjs` (unused `BASE`) and prettier warnings in `src/lib/familiar/privacy.test.ts` and `tests/real-api/.scratch/*.json`.
+- Note for next runs: `npm ci --dry-run` is not a dry run on this npm. It removed `node_modules`; I restored it with `npm ci --ignore-scripts`.
+- Rust: no Rust file changed, so no Rust lesson.
