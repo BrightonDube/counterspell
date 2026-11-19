@@ -168,14 +168,14 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 4: accessibility, resilience, and real integration proof
 
-- [ ] **T21 [UI] [P] (25 min) Add keyboard navigation and focus management**
+- [x] **T21 [UI] [P] (25 min) Add keyboard navigation and focus management**
   - Files: `web/src/lib/workspace/keyboard.ts`, drawers/tabs/popovers, `StatusAnnouncer.svelte`, tests.
   - Implement landmarks, tab order, shortcuts, Escape close/focus return, editor/results focus, hint/ghost actions, and throttled polite announcements for meaningful phase changes.
   - Depends on: T09, T10, T12, T15, T17, T19.
   - Verify: keyboard-only path from problem to editor to Run/Submit to Ghost/Autopsy/Hint/Rerun and back to editor; async events never steal focus; shortcut help is discoverable.
   - Preserve: Monaco's own editing commands remain usable.
 
-- [ ] **T22 [UI] [P] (25 min) Add reduced-motion and animation lifecycle tests**
+- [x] **T22 [UI] [P] (25 min) Add reduced-motion and animation lifecycle tests**
   - Files: animation boundary components, `shrink-playback.ts`, Familiar, tests.
   - Honour `prefers-reduced-motion`, disable CSS transitions and Familiar GSAP timelines/bursts/shakes/blur transitions, retain static trace and status badges, and dispose lazy animation resources on unmount and route change.
   - Depends on: T14, T15, T19.
