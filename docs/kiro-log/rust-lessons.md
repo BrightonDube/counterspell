@@ -1574,3 +1574,8 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 - **A test can share state with the call it checks.** The limiter counts hits per user, so the plain source run spends the one allowed hit and the ghost rerun is the second. `RUN_RATE_USER=1` makes that deterministic.
 - **`is_some_and` on an `Option`.** `json_body(..)["message"].as_str()` is an `Option<&str>`; `.is_some_and(|m| m.contains("seconds"))` returns false for `None` and runs the check for `Some`, so there is no `unwrap` in the test.
 - **Count before and after.** Reading the job and submission counts around the refused call proves nothing was written, which is the real promise behind a 429.
+
+## 20 Nov 2026: the attempt in the sandbox container name
+- **A closure that returns a closure.** `attempt_namer` returns `impl Fn(u32) -> Result<SessionSpec, InfraError> + 'a`. The `move` keyword copies `attempt`, `run` and the limits into the closure, and `'a` says it may keep borrowing `lang` and `worker` for as long as the caller holds them.
+- **Keep the old door open.** `SessionSpec::new` still exists and builds the old name; `for_attempt` is a second constructor. Both call one private `named`, so the policy and labels cannot drift apart, and no existing caller had to change.
+- **Why a 409 matters.** The daemon refuses a second container with the same name. Putting the attempt number in the name means a crashed attempt's leftover container can never block its own retry.

@@ -443,22 +443,13 @@ impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> RunExecutor
             kill_slack: self.config.kill_slack,
             max_consecutive_abnormal: self.config.max_consecutive_abnormal,
         };
-        let worker = self.worker.clone();
-        let expires = expiry(self.config.orphan_age);
-        let run_cap = self.config.run_wall_cap;
-        let runtime = self.config.runtime;
-        let session_spec = |ordinal: u32| {
-            SessionSpec::new(
-                lang,
-                run_cap,
-                runtime,
-                run.run_id.as_uuid(),
-                &worker,
-                ordinal,
-                expires,
-            )
-            .map_err(|error| InfraError::Unexpected(error.to_string()))
-        };
+        let session_spec = attempt_namer(
+            lang,
+            &self.config,
+            &self.worker,
+            run.run_id.as_uuid(),
+            ctx.attempt(),
+        );
         let (result, session) = execute_run_and_keep(
             &self.backend,
             lang,
@@ -755,6 +746,26 @@ fn plan_of(spec: &ProblemSpec, lang: &LanguageDefinition) -> Vec<PlannedTest> {
 
 /// The unix time after which a container counts as an orphan: now plus the orphan age,
 /// matching the sweeper's `created_at + orphan_age` rule.
+/// Names the sessions of one attempt of a run. The attempt is in the name, so a retry never
+/// collides with a container that a crashed earlier attempt left on the daemon.
+fn attempt_namer<'a>(
+    lang: &'a LanguageDefinition,
+    config: &SandboxConfig,
+    worker: &'a str,
+    run: uuid::Uuid,
+    attempt: u16,
+) -> impl Fn(u32) -> Result<SessionSpec, InfraError> + 'a {
+    let expires = expiry(config.orphan_age);
+    let run_cap = config.run_wall_cap;
+    let runtime = config.runtime;
+    move |ordinal: u32| {
+        SessionSpec::for_attempt(
+            lang, run_cap, runtime, run, worker, attempt, ordinal, expires,
+        )
+        .map_err(|error| InfraError::Unexpected(error.to_string()))
+    }
+}
+
 fn expiry(orphan_age: Duration) -> i64 {
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
