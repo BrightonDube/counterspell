@@ -1,65 +1,16 @@
-# problem-catalogue verification
+# problem-catalogue verification (kiro/drive-queue run)
 
-## C36 — full database and API pass (16 Nov 2026)
+## C36: full database and API test pass (CAT-Q2)
+Run: `cargo test --workspace --no-fail-fast -- --ignored pg_ --test-threads=1` against `cs-dev-pg`.
+Result: 373 passed, 3 failed. All three failures are `VersionMismatch(20261118100000)` from the shared dev database, which holds an older draft of the `custom_ghost_runs` migration (stored checksum 8b69d9dd..., file cf324f2f...). They are not code faults:
+- `pg_model_interleavings` (judge), `pg_session_model_matches_database` and `pg_consume_agrees_with_the_reference_rule` (server) migrate the shared database directly.
+- Each passed on a throwaway database created and dropped for the check (1, 1 and 8 tests).
+The shared dev database was not modified. To clear: recreate the `cs-dev-pg` database.
 
-Throwaway Postgres on `localhost:5432` (`counterspell` container), `DATABASE_URL`
-set, every `pg_*` catalogue suite run with `--ignored`.
+Fixed in this run: `pg_catalogue_privileges_match_matrix_for_each_role` failed because the matrix predated the additive judge `SELECT` grant on `problem_concepts` (migration 20261119090000, needed for the Bug Autopsy concept tags, GHO-6). Test matrix and `design.md` row updated; the test now passes (3/3).
 
-Command: `cargo test -p counterspell-judge --test "pg_*" -- --ignored` plus the
-server catalogue suites below.
+## C19b
+`pg_catalogue_approval_gate` 3/3 and `pg_catalogue_private_tree_required` 2/2 pass.
 
-### Judge — 65/65 passed
-
-| Suite | Tests | Result |
-|---|---|---|
-| pg_catalogue_dry_run | 2 | pass |
-| pg_catalogue_fks | 4 | pass |
-| pg_catalogue_immutability | 7 | pass |
-| pg_catalogue_import | 4 | pass |
-| pg_catalogue_judge_ghosts | 2 | pass |
-| pg_catalogue_judge_reads | 5 | pass |
-| pg_catalogue_privileges | 3 | pass |
-| pg_catalogue_publish | 5 | pass |
-| pg_catalogue_publish_gate | 6 | pass |
-| pg_catalogue_sandbox_import | 4 | pass |
-| pg_catalogue_schema | 6 | pass |
-| pg_catalogue_seed | 4 | pass |
-| pg_catalogue_taxonomy | 2 | pass |
-| pg_catalogue_testkit | 3 | pass |
-| pg_catalogue_validate_sandbox | 4 | pass |
-| pg_problem_tests | 3 | pass |
-| catalogue_cli (pg_cli_dry_run_writes_nothing) | 1 | pass |
-
-### Server — 29/29 passed
-
-| Suite | Tests | Result |
-|---|---|---|
-| catalogue_api | 12 | pass |
-| catalogue_no_leak | 2 | pass |
-| pg_catalogue_api | 7 | pass |
-| pg_catalogue_lookup | 5 | pass |
-| pg_catalogue_pin | 3 | pass |
-
-### Failure found and fixed during this pass
-
-`catalogue_no_leak` failed 2/2 with `GET /api/problems/two-sum` returning 500.
-Cause: `problem_versions.signature` stores the driver-protocol descriptor
-(`parameters`/`returns` type descriptors) since C19, but `read.rs` decoded the
-earlier meta shape (`params`/`returns` strings). Fixed in `0788e1e`: the detail
-read now decodes the wire shape and maps descriptors back to launch type names.
-Re-run: all suites green.
-
-
-## C37 — repo-wide gates (16 Nov 2026)
-
-| Gate | Result |
-|---|---|
-| `cargo fmt --all -- --check` | pass |
-| `cargo clippy --workspace --all-targets -- -D warnings` | pass |
-| `cargo test --workspace` | **1469 passed, 0 failed** across 195 test binaries |
-| `cargo deny check licenses` | ok (one non-blocking note: `MIT-0` allowance not encountered — an unused allowance, not a rejected licence) |
-
-Environment note: `target/` on the Windows-mounted repo path had grown to
-~205 GiB and filled C:, failing the linker with `No space left on device`.
-`cargo clean` reclaimed it; the workspace now builds under
-`CARGO_TARGET_DIR=/home/brighton/target-counterspell` (the WSL ext4 disk).
+## C37: repo-wide gates (CAT-Q3)
+`cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok; `cargo test --workspace` 1508 passed, 0 failed; `cargo deny check licenses` ok.

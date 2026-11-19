@@ -229,7 +229,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests for argument parsing, exit mapping and a missing `--private-root` (exit 2, no connection attempted); `cargo run -q -p counterspell-judge --bin counterspell-catalogue -- import --dry-run --packs packs --private-root <path>` exits 0 or 1 with a report and never panics.
   - Rust lesson: `std::process::ExitCode` lets `main` return the code after all output has been printed. Explain why helper functions return an outcome and `main` alone calls the exit.
 
-- [ ] **C19b [S] [SUPERVISED] (30 min) Refused public-only import and approval-gate tests**
+- [x] **C19b [S] [SUPERVISED] (30 min) Refused public-only import and approval-gate tests**
   - Files: `crates/judge/tests/pg_catalogue_private_tree_required.rs`, `crates/judge/tests/pg_catalogue_approval_gate.rs`, and synthetic fixtures under `crates/judge/tests/fixtures/private/` (canary strings only).
   - `pg_catalogue_private_tree_required`: a run with no `--private-root` exits 2 and leaves every catalogue table and `catalogue_events` at zero rows. A run whose private root lacks one slug's part refuses that slug, imports the others, and writes nothing for the refused slug.
   - `pg_catalogue_approval_gate`: a missing approval, a wrong `pack_version` and a hash mismatch each refuse before the sandbox, with zero writes. A fake `PackRunner` counts its calls, and the test asserts zero calls.
@@ -378,7 +378,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `cargo test -p counterspell-server -- --ignored pg_` and `cargo test -p counterspell-judge -- --ignored pg_`; the test counts before and after are recorded and equal.
   - Rust lesson: a test helper is ordinary code, so a shared fixture function removes the same setup from each test without hiding it.
 
-- [ ] **C36 [S] (30 min) Full database and API test pass**
+- [x] **C36 [S] (30 min) Full database and API test pass**
   - Files: none new. Fix only catalogue files.
   - Run every `pg_catalogue_*` test against a throwaway Postgres 17 with `DATABASE_URL` set (the existing `cs-dev-pg` container, not a new one). Record the results in `docs/kiro-log/problem-catalogue-verify.md`.
   - Requirements: CAT-Q2.
@@ -386,7 +386,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: every test in the list passes; any failure is recorded with the test name in the blockers file, never removed.
   - Rust lesson: `--ignored` runs only the database tests, so the normal `cargo test` stays fast and needs no database.
 
-- [ ] **C37 [S] (25 min) Repo-wide gates**
+- [x] **C37 [S] (25 min) Repo-wide gates**
   - Files: none new.
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, and `cargo deny check licenses`. If `cargo deny` rejects a licence, stop and ask Brighton before editing `deny.toml`.
   - Requirements: CAT-Q3.
