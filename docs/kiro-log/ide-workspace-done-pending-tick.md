@@ -358,3 +358,8 @@ Baseline run first. `cargo fmt --check` and `clippy --workspace --all-targets -D
 - Stack: Axum on 127.0.0.1:8088, real judge + rootless daemon + cs-dev-pg,
   all restarted post-crash with the README env (dev-test.env + explicit
   PUBLIC_BASE_URL/SESSION_SECRET/SANDBOX_DOCKER_SOCKET).
+
+## T13 ticked (kiro/drive-queue, 19 Nov 2026)
+- Root cause of the 2-in-7 flake: it was not a cold start. The failing session ended `failed` with `429 Too many requests`. The fixture allows one run per user per 600 s window (`RUN_RATE_USER=1`), but the suite chose users with `9 + (now_secs % 200)`, which repeats every 200 s, so reruns within 10 minutes reused spent users. A heavy loop also hit the loopback IP cap (100 per window).
+- Fix: `crates/testserver` seeds 4096 users (was 256); the suite draws 5 users from one of 817 slots that advances every second (a slot repeats after 817 s, longer than the window); the documented start command adds `RUN_RATE_IP=10000`. The success test has an explicit 20 s timeout above its own 15 s wait. Timeout errors now include the session error, and the test fetch logs the transport cause on failure.
+- Evidence: 113 consecutive suite runs 4/4 against the live fixture (30 + 40 + 70 loops minus earlier batches, plus 3 runs straight after restarts), after one unexplained `network` failure in the first 30-run batch that did not recur in 113 runs; the diagnostic logging will show its cause if it does. Rust gate 1521 passed / 0 failed, clippy clean (testserver forced), web check 0/0, build ok, vitest 498 passed.

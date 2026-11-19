@@ -1564,3 +1564,8 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 - **Ownership in the SQL.** `stored_for` puts `user_id = $2` inside the `WHERE`, so the database never returns another learner's row. If the check lived in Rust after the query, one forgotten `if` would leak data.
 - **`Option` inside `Result`.** The function returns `Result<Option<_>, sqlx::Error>`. `Err` means the database failed; `Ok(None)` means "nothing for you". Callers must handle both, and the compiler enforces it.
 - **`query_scalar` + `fetch_optional`.** This asks for one column from zero or one row, so "no row" is `None`, not an error.
+
+## 19 Nov 2026: ide-workspace T13, a larger fixture user pool
+- **`const` is checked at compile time.** `TEST_USERS: u32 = 4096` is a constant; the seeding loop `for number in 1..=TEST_USERS` runs once per value, and `1..=` includes the end value.
+- **`u32` to `u128` with `u128::from`.** The user id is built from a 128-bit number. `u128::from(number)` widens safely and can never fail, unlike `as`, which can silently truncate in other directions.
+- **Why a doc comment on a constant.** `///` above the `const` becomes part of the generated docs and explains the "why" (the 600 s rate window) next to the number, so nobody shrinks it again by mistake.

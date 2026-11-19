@@ -106,7 +106,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: sample detail is visible, hidden detail is structurally impossible from the view model, output containing `<script>` stays text, compile/runtime/TLE/MLE/OLE/internal states are distinct, and `restarted` clears transient rows.
   - Preserve: never display hidden input, expected output, or hidden stdout/stderr.
 
-- [ ] **T13 [S] (25 min) Connect Run and Submit to the production route**
+- [x] **T13 [S] (25 min) Connect Run and Submit to the production route**
   - Files: workspace page orchestration, `web/src/lib/api/runs.ts`, integration tests.
   - Wire current Monaco source to `POST /api/runs`, set the active run id, stream events, preserve the draft, keep the prior completed run visible until the replacement has a terminal result, and handle navigation cancellation.
   - Depends on: T09, T11, T12, and the real run-lifecycle API.
