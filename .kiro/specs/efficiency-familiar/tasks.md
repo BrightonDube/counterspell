@@ -233,7 +233,7 @@ Conventions for every web task:
   - Preserve: SQL appears only in `store.rs`.
   - Rust lesson: parameterised queries and why string-built SQL is never used.
 
-- [ ] **T22 [S] [BLOCKED? judge-sandbox, language-drivers] (30 min) `counterspell-judge baseline` subcommand and the admission test**
+- [x] **T22 [S] [BLOCKED? judge-sandbox, language-drivers] (30 min) `counterspell-judge baseline` subcommand and the admission test**
   - Files: `crates/judge/src/familiar/baseline_cmd.rs`, `crates/judge/src/main.rs` (subcommand dispatch only).
   - `baseline --problem <slug> --lang <lang>`: load the pack's known-correct fixture for that language, run bench mode through the normal sandbox path at the pack's sizes (Submit budget), fit it, and **refuse to store** unless the fit is the declared reference class at `medium` or better; print why when refusing. Otherwise insert rows with problem version, image digest, engine and fit versions. Exit code 2 for infrastructure problems.
   - Tests: with a scripted collector and fake store: accepts a matching fixture, refuses a mismatching or `Low` one, is idempotent; no code runs outside the collector.

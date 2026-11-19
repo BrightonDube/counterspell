@@ -1591,3 +1591,6 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 
 ## efficiency-familiar T22: a trait as a seam
 `run_baseline` takes a `BenchCollector` and a `BaselineStore` as generic parameters instead of a database and a Docker client. Tests pass a scripted collector and an in-memory store, so the admission rules run in microseconds with no daemon. `Result<Outcome, Error>` separates a finding (the fixture is refused, exit 1) from a fault (the judge broke, exit 2), so a broken daemon can never look like a bad fixture.
+
+## efficiency-familiar T22: subcommands, exit codes and `Result` at a program's edge
+`main` reads `std::env::args()` and hands the rest to `parse_args`, which returns `Result<BaselineArgs, String>`: a bad flag is a value, not a panic. Deep inside, every step returns `Result` and `?` passes failures up unchanged. Only at the very edge (`baseline()` in `main.rs`) are those results turned into words for the operator and into `ExitCode::from(0 | 1 | 2)`, so scripts can tell "stored", "refused" (a finding about the fixture) and "the judge itself failed" apart. Keeping that translation in one place means no inner function needs to know about the process at all.

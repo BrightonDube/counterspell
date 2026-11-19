@@ -224,3 +224,7 @@ No code change this run. The grimoire test suite passes at 16 of 16.
 ## T22 partial (kiro/drive-queue run)
 - Done and tested: `familiar::baseline_cmd` (`run_baseline`, `admit`, `Refusal`, `BaselineStore`, `exit_code`): admits only a full-mode fit at `Medium` or better that equals the declared class; refuses mismatch, `Low`, incomplete and failed benches; idempotent through the store's `ON CONFLICT DO NOTHING`; faults are errors (exit 2). 6 unit tests.
 - Still open, so T22 stays `[ ]`: the `baseline --problem --lang` dispatch in `main.rs`. It must load the pack's signature, bench spec and known-correct fixture, build the sandbox session and `SandboxBenchCollector`, resolve the image digest, and call `run_baseline` with the `PgPool`. It needs a real rootless daemon to prove and a published pack with a `[bench]` (none declares one yet, see T40).
+
+## T22 done (kiro/drive-queue run)
+- `baseline --problem <slug> --lang <lang> [--fixture <path>]` dispatch landed and T22 is ticked. Evidence: unit 9/9 (`baseline_cmd`), `pg_published_version_is_the_served_version_or_nothing` and `pg_baseline_*` 5/5, `sbx_baseline` 2/2 on the rootless daemon, 12 of 12 repeat runs.
+- Note for T40 (real admission run): on this WSL host, noisy linear fixtures come back `Low` (plausible linear and n log n) even across a 32x span. The admission correctly refuses them. Launch problems with a linear reference may need wider bench sizes, or the operator may re-run on the quiet VPS. This is a pack/bench-size question for T40, not a code fault.

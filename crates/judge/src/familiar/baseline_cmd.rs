@@ -9,8 +9,12 @@
 use std::future::Future;
 
 use counterspell_common::familiar::ClassId;
-use counterspell_engine::complexity::{fit, Class, Confidence, FitConfig, FitError, Mode, Point};
-use counterspell_engine::ENGINE_VERSION;
+use counterspell_engine::complexity::{
+    bench_seed, fit, sized_input, BenchInputError, Class, Confidence, FitConfig, FitError, Mode,
+    Point,
+};
+use counterspell_engine::{Schema, ENGINE_VERSION};
+use serde_json::Value;
 use sqlx::PgPool;
 
 use super::assess::{to_common_class, BenchPoint};
@@ -208,6 +212,258 @@ pub async fn run_baseline<C: BenchCollector, S: BaselineStore>(
     Ok(BaselineOutcome::Stored { inserted })
 }
 
+/// What the command line asked for.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct BaselineArgs {
+    /// The problem slug.
+    pub problem: String,
+    /// The fixture's language name, as in `languages.toml`.
+    pub lang: String,
+    /// A file holding the known-correct fixture. Without it the stored Python reference is used.
+    pub fixture: Option<std::path::PathBuf>,
+}
+
+/// Parses `--problem <slug> --lang <lang> [--fixture <path>]`, in any order.
+///
+/// # Errors
+///
+/// Returns a message when a flag is unknown, repeated or missing its value, or when
+/// `--problem` or `--lang` is absent.
+pub fn parse_args(args: &[String]) -> Result<BaselineArgs, String> {
+    let mut problem = None;
+    let mut lang = None;
+    let mut fixture = None;
+    let mut iter = args.iter();
+    while let Some(flag) = iter.next() {
+        let slot = match flag.as_str() {
+            "--problem" => &mut problem,
+            "--lang" => &mut lang,
+            "--fixture" => &mut fixture,
+            other => return Err(format!("unknown argument {other}")),
+        };
+        let value = iter.next().ok_or_else(|| format!("{flag} needs a value"))?;
+        if slot.replace(value.clone()).is_some() {
+            return Err(format!("{flag} was given twice"));
+        }
+    }
+    Ok(BaselineArgs {
+        problem: problem.ok_or("--problem is required")?,
+        lang: lang.ok_or("--lang is required")?,
+        fixture: fixture.map(std::path::PathBuf::from),
+    })
+}
+
+/// Builds one argument tuple per size with the seed a learner's bench uses, so the baseline
+/// and a learner's timings are taken on identical inputs.
+///
+/// # Errors
+///
+/// Returns [`BenchInputError`] when a size cannot be built from the schema.
+pub fn fixture_inputs(
+    schema: &Schema,
+    size_param: usize,
+    slug: &str,
+    version: u32,
+    sizes: &[u64],
+) -> Result<Vec<(u64, Value)>, BenchInputError> {
+    sizes
+        .iter()
+        .map(|&n| sized_input(schema, size_param, n, bench_seed(slug, version, n)).map(|v| (n, v)))
+        .collect()
+}
+
+/// Times a known-correct fixture inside a sandbox container, on inputs prepared up front.
+///
+/// This is the collector the `baseline` command hands to [`run_baseline`]. It runs nothing on
+/// the host: the fixture goes through the same driver, limits and bench loop a learner's
+/// Submit uses.
+#[cfg(feature = "sandbox")]
+pub struct FixtureCollector<B: crate::sandbox::backend::Backend> {
+    side: crate::sandbox::oracle::Side<B>,
+    inputs: Vec<(u64, Value)>,
+    call_limit: std::time::Duration,
+    stop: tokio::sync::watch::Receiver<bool>,
+}
+
+#[cfg(feature = "sandbox")]
+impl<B: crate::sandbox::backend::Backend> FixtureCollector<B> {
+    /// Wraps a fixture's sandbox side with the inputs to time and the per-call limit.
+    pub fn new(
+        side: crate::sandbox::oracle::Side<B>,
+        inputs: Vec<(u64, Value)>,
+        call_limit: std::time::Duration,
+        stop: tokio::sync::watch::Receiver<bool>,
+    ) -> Self {
+        Self {
+            side,
+            inputs,
+            call_limit,
+            stop,
+        }
+    }
+}
+
+#[cfg(feature = "sandbox")]
+impl<B> BenchCollector for FixtureCollector<B>
+where
+    B: crate::sandbox::backend::Backend + Send + Sync,
+    B::Session: Send,
+{
+    async fn collect(&mut self, plan: &BenchPlan) -> Result<BenchOutcome, ExecError> {
+        crate::sandbox::oracle::bench_side(
+            &mut self.side,
+            &self.inputs,
+            self.call_limit,
+            plan.budget,
+            self.stop.clone(),
+        )
+        .await
+        .map_err(|error| ExecError::Infrastructure(error.to_string()))
+    }
+}
+
+/// Why `baseline` could not run at all. Both kinds exit with code 2.
+#[cfg(feature = "sandbox")]
+#[derive(Debug)]
+pub enum CommandError {
+    /// Something the command needs is missing or unusable (config, daemon, problem, fixture).
+    Setup(String),
+    /// The bench or the store failed while running.
+    Run(BaselineError),
+}
+
+/// Picks the fixture's source: the `--fixture` file when given, otherwise the stored Python
+/// reference. Any other language needs a file, because only Python references are stored.
+#[cfg(feature = "sandbox")]
+fn fixture_source(
+    args: &BaselineArgs,
+    stored_python: Option<&str>,
+) -> Result<String, CommandError> {
+    let setup = |what: String| CommandError::Setup(what);
+    match (&args.fixture, args.lang.as_str()) {
+        (Some(path), _) => std::fs::read_to_string(path)
+            .map_err(|e| setup(format!("fixture {}: {e}", path.display()))),
+        (None, "python") => stored_python
+            .map(str::to_owned)
+            .ok_or_else(|| setup("the problem has no stored Python reference".to_owned())),
+        (None, other) => Err(setup(format!(
+            "no stored fixture for {other}; pass --fixture <path>"
+        ))),
+    }
+}
+
+/// Runs the whole `baseline` command: loads the published problem, reads the fixture, times it
+/// in the sandbox and admits or refuses it.
+///
+/// # Errors
+///
+/// Returns [`CommandError`] for anything that is not a finding about the fixture itself.
+#[cfg(feature = "sandbox")]
+pub async fn execute(args: &BaselineArgs, pool: &PgPool) -> Result<BaselineOutcome, CommandError> {
+    use crate::languages::LanguageCatalog;
+    use crate::problem_store::PgProblemTests;
+    use crate::sandbox::bench::SUBMIT_BENCH_BUDGET;
+    use crate::sandbox::bollard_backend::BollardBackend;
+    use crate::sandbox::config::SandboxConfig;
+    use crate::sandbox::daemon::{connect, verify};
+    use crate::sandbox::oracle::{side, Role};
+    use crate::sandbox::problem::ProblemTests;
+    use counterspell_common::status::RunMode;
+
+    let setup = |what: String| CommandError::Setup(what);
+    let cfg = SandboxConfig::from_env().map_err(|e| setup(format!("sandbox config: {e}")))?;
+    let docker = connect(&cfg.docker_socket, cfg.api_timeout)
+        .map_err(|e| setup(format!("sandbox daemon: {e}")))?;
+    // The identity guard: a rootful or main daemon is refused before anything starts.
+    verify(&docker, cfg.runtime, cfg.api_timeout)
+        .await
+        .map_err(|e| setup(format!("sandbox daemon: {e}")))?;
+    let catalog = LanguageCatalog::load(&cfg.languages_file)
+        .map_err(|e| setup(format!("language catalogue: {e}")))?;
+    let lang = catalog
+        .get(&args.lang)
+        .filter(|lang| lang.is_enabled())
+        .ok_or_else(|| setup(format!("language {} is not enabled", args.lang)))?
+        .clone();
+
+    let version = super::store::published_version(pool, &args.problem)
+        .await
+        .map_err(|e| setup(format!("published version: {e}")))?
+        .ok_or_else(|| setup(format!("{} has no published version", args.problem)))?;
+    let spec = PgProblemTests::new(pool.clone())
+        .load(&args.problem, version, RunMode::Run)
+        .await
+        .map_err(|e| setup(e.to_string()))?
+        .ok_or_else(|| {
+            setup(format!(
+                "{} v{version} is not in the catalogue",
+                args.problem
+            ))
+        })?;
+    let (Some(bench), Some(schema), Some(reference)) = (
+        spec.bench.as_ref(),
+        spec.generator_schema.as_ref(),
+        spec.reference_complexity,
+    ) else {
+        return Err(setup(format!(
+            "{} v{version} declares no bench, so it has no baseline to take",
+            args.problem
+        )));
+    };
+
+    let source = fixture_source(args, spec.reference_python.as_deref())?;
+    let inputs = fixture_inputs(
+        schema,
+        bench.size_param,
+        &args.problem,
+        version,
+        &bench.sizes,
+    )
+    .map_err(|e| setup(format!("bench inputs: {e}")))?;
+    let signature =
+        serde_json::to_vec(&spec.signature).map_err(|e| setup(format!("signature: {e}")))?;
+    let driver_root = cfg.languages_file.parent().map_or_else(
+        || std::path::PathBuf::from("."),
+        std::path::Path::to_path_buf,
+    );
+    let backend = BollardBackend::new(docker, cfg.api_timeout);
+    let fixture_side = side(
+        backend,
+        lang.clone(),
+        &driver_root,
+        &signature,
+        &source,
+        &cfg,
+        Role::Reference,
+    )
+    .map_err(|e| setup(e.to_string()))?;
+
+    let (_stop, stop_rx) = tokio::sync::watch::channel(false);
+    let call_limit = std::time::Duration::from_millis(
+        spec.time_limit_ms
+            .map_or_else(|| lang.time_ms_per_test(), u64::from),
+    );
+    let mut collector = FixtureCollector::new(fixture_side, inputs, call_limit, stop_rx);
+    let request = BaselineRequest {
+        problem_slug: args.problem.clone(),
+        problem_version: version,
+        lang: args.lang.clone(),
+        image_digest: lang.image().as_str().to_owned(),
+        reference,
+        plan: BenchPlan {
+            mode: RunMode::Submit,
+            sizes: bench.sizes.clone(),
+            size_param: bench.size_param,
+            problem_slug: args.problem.clone(),
+            problem_version: version,
+            budget: SUBMIT_BENCH_BUDGET,
+        },
+    };
+    run_baseline(&mut collector, pool, &request)
+        .await
+        .map_err(CommandError::Run)
+}
+
 /// The process exit code: 0 stored, 1 refused (a finding), 2 infrastructure fault.
 #[must_use]
 pub fn exit_code(result: &Result<BaselineOutcome, BaselineError>) -> u8 {
@@ -402,5 +658,76 @@ mod tests {
             1
         );
         assert!(store.rows.lock().expect("lock").is_empty());
+    }
+
+    fn argv(parts: &[&str]) -> Vec<String> {
+        parts.iter().map(|part| (*part).to_owned()).collect()
+    }
+
+    /// R8: the command names one problem and one language, nothing else is guessed.
+    #[test]
+    fn the_command_line_needs_a_problem_and_a_language() {
+        let args = parse_args(&argv(&["--problem", "count-pairs", "--lang", "python"]))
+            .expect("a complete command line parses");
+        assert_eq!(args.problem, "count-pairs");
+        assert_eq!(args.lang, "python");
+        assert_eq!(args.fixture, None);
+
+        let with_fixture = parse_args(&argv(&[
+            "--lang",
+            "javascript",
+            "--problem",
+            "count-pairs",
+            "--fixture",
+            "/tmp/solution.js",
+        ]))
+        .expect("flags may come in any order");
+        assert_eq!(
+            with_fixture.fixture.as_deref(),
+            Some(std::path::Path::new("/tmp/solution.js"))
+        );
+
+        for bad in [
+            argv(&["--problem", "count-pairs"]),
+            argv(&["--lang", "python"]),
+            argv(&["--problem", "count-pairs", "--lang"]),
+            argv(&["--problem", "a", "--lang", "python", "--force"]),
+            argv(&["--problem", "a", "--problem", "b", "--lang", "python"]),
+        ] {
+            assert!(parse_args(&bad).is_err(), "{bad:?} must be refused");
+        }
+    }
+
+    /// R8.2: the baseline sees the same inputs a learner's bench sees, so the two timings
+    /// compare like with like.
+    #[test]
+    fn fixture_inputs_are_the_ones_a_learners_bench_generates() {
+        let schema = Schema::Tuple {
+            items: vec![Schema::IntArray {
+                min_len: 0,
+                max_len: 10,
+                min: -5,
+                max: 5,
+                sorted: false,
+                unique: false,
+            }],
+        };
+        let inputs = fixture_inputs(&schema, 0, "count-pairs", 3, &[8, 16]).expect("sized");
+        assert_eq!(inputs.len(), 2);
+        assert_eq!(inputs[0].0, 8);
+        assert_eq!(inputs[1].0, 16);
+        assert_eq!(inputs[0].1[0].as_array().map(Vec::len), Some(8));
+        assert_eq!(inputs[1].1[0].as_array().map(Vec::len), Some(16));
+        let learner = sized_input(&schema, 0, 16, bench_seed("count-pairs", 3, 16)).expect("ok");
+        assert_eq!(inputs[1].1, learner);
+    }
+
+    /// R13.2: a bench that cannot be sized is a finding about the pack, not a silent skip.
+    #[test]
+    fn a_size_parameter_outside_the_tuple_is_an_error() {
+        let schema = Schema::Tuple {
+            items: vec![Schema::Int { min: 0, max: 9 }],
+        };
+        assert!(fixture_inputs(&schema, 4, "p", 1, &[8]).is_err());
     }
 }
