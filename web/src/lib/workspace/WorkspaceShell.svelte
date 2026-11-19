@@ -201,10 +201,13 @@
   });
 
   async function onNextHint(): Promise<void> {
-    const runId = ladderRunId;
+    // Only ask for the ladder the page is showing. A click before the ladder has switched to a
+    // newly finished run does nothing, so no rung is left pending without a request.
+    const runId = runs.phase === 'finished' ? runs.runId : undefined;
+    if (runId === undefined || runId !== ladderRunId) return;
     const next = requestNext(ladder);
     ladder = next.state;
-    if (next.rung === null || runId === '') return;
+    if (next.rung === null) return;
     const rung = next.rung;
     try {
       const hint = await requestHint(runId, rung);

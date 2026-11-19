@@ -449,6 +449,89 @@ describe('WorkspaceShell', () => {
     expect(requestHint.mock.calls.map((call) => call[1])).toEqual([1, 2]);
   });
 
+  // Breaks if a hint that answers late for an earlier run lands on the ladder of the next run,
+  // or if a new run keeps the previous run's revealed hints (HNT-1: the ladder belongs to one run).
+  it('starts a fresh ladder per run and drops a late reply for the old run', async () => {
+    type Hint = { rung: number; text: string };
+    const pending = new Map<string, (hint: Hint) => void>();
+    const requestHint = vi.fn(
+      (run: string) =>
+        new Promise<Hint>((resolve) => {
+          pending.set(run, resolve);
+        })
+    );
+    const ids = ['run-a', 'run-b'];
+    let started = 0;
+    const deps: RunSessionDeps = {
+      startAction: () => {
+        const id = ids[Math.min(started, ids.length - 1)];
+        started += 1;
+        return { key: `key-${id}`, send: () => Promise.resolve(id) };
+      },
+      fetchRun: (id: string) =>
+        Promise.resolve(
+          parseRunView({
+            run_id: id,
+            problem: 'two-sum',
+            lang: 'python',
+            mode: 'run',
+            status: 'completed',
+            terminal: true,
+            verdict: 'wrong_answer',
+            attempt: 1,
+            created_at: '2026-11-15T10:00:00Z',
+            last_seq: 3,
+            tests: []
+          })
+        ),
+      watch: (options) => {
+        options.onDone({
+          ...initialRunState(ids[started - 1]),
+          status: 'completed',
+          ghost: ghostFixture()
+        });
+        return { close() {} };
+      }
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: deps,
+        familiarDeps: familiarOff(),
+        requestHint
+      }
+    });
+    const run = await screen.findByRole('button', { name: 'Run samples' });
+    await fireEvent.click(run);
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 1' })
+    );
+    expect(requestHint).toHaveBeenLastCalledWith('run-a', 1);
+
+    // A second run finishes while run A's hint is still in flight.
+    await fireEvent.click(run);
+    await vi.waitFor(() => {
+      expect(
+        (
+          screen.getByRole('button', {
+            name: 'Show hint 1'
+          }) as HTMLButtonElement
+        ).disabled
+      ).toBe(false);
+    });
+    // Run B asks for its own rung 1, then run A's old reply for rung 1 arrives first.
+    await fireEvent.click(screen.getByRole('button', { name: 'Show hint 1' }));
+    expect(requestHint).toHaveBeenLastCalledWith('run-b', 1);
+    pending.get('run-a')?.({ rung: 1, text: 'Stale rung 1.' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByText('Stale rung 1.')).toBeNull();
+
+    pending.get('run-b')?.({ rung: 1, text: 'Fresh rung 1.' });
+    expect(await screen.findByText('Fresh rung 1.')).toBeTruthy();
+  });
+
   // Breaks if a failed hint request shows invented text or drops the hints already revealed.
   it('keeps revealed hints and invents nothing when a hint request fails', async () => {
     const requestHint = vi
