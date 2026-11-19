@@ -482,6 +482,7 @@ mod tests {
     use crate::schemas::{BudgetArgs, ShrinkTargetArg};
     use counterspell_engine::Oracle;
     use counterspell_grimoire::runner::PackRunner;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     /// The repository root, two levels above this crate.
     fn repo_root() -> PathBuf {
@@ -490,6 +491,67 @@ mod tests {
             .canonicalize()
             .expect("repository root exists")
     }
+
+    /// A complete count-pairs pack under a fresh directory: the checked-in
+    /// public tree plus the `reference/`, `incorrect/` and `known_ghosts.toml`
+    /// entries the private checkout would contribute. CI has no private
+    /// checkout, so the tests build their own instead of depending on a
+    /// sibling directory that may not exist.
+    fn pack_root() -> PathBuf {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or_default();
+        let root = std::env::temp_dir().join(format!("cs-mcp-tools-{nanos}"));
+        let pack = root.join("packs/count-pairs");
+        copy_dir(&repo_root().join("packs/count-pairs"), &pack);
+        fs::create_dir_all(pack.join("reference")).expect("create reference dir");
+        fs::create_dir_all(pack.join("incorrect")).expect("create incorrect dir");
+        fs::write(pack.join("reference/solution.py"), REFERENCE).expect("write reference");
+        fs::write(pack.join("incorrect/same-index.py"), PROGRAM).expect("write same-index");
+        fs::write(pack.join("incorrect/empty-min.py"), PROGRAM).expect("write empty-min");
+        fs::write(pack.join("known_ghosts.toml"), KNOWN_GHOSTS).expect("write ghosts");
+        root
+    }
+
+    /// Recursively copies a directory tree.
+    fn copy_dir(from: &Path, to: &Path) {
+        fs::create_dir_all(to).expect("create pack dir");
+        for entry in fs::read_dir(from).expect("read public pack") {
+            let entry = entry.expect("readable entry");
+            let target = to.join(entry.file_name());
+            if entry.file_type().expect("file type").is_dir() {
+                copy_dir(&entry.path(), &target);
+            } else {
+                fs::copy(entry.path(), &target).expect("copy pack file");
+            }
+        }
+    }
+
+    /// A stand-in program for `reference/` and `incorrect/` files. The scripted
+    /// runner never executes it; the grimoire only checks the file exists.
+    const PROGRAM: &str = "def count_pairs(values, target):\n    return 0\n";
+
+    /// A minimal correct program for `reference/solution.py`.
+    const REFERENCE: &str = "def count_pairs(values, target):\n    count = 0\n    for i in range(len(values)):\n        for j in range(i + 1, len(values)):\n            if values[i] + values[j] == target:\n                count += 1\n    return count\n";
+
+    /// The ghosts the tests rely on, in the same shape the private pack ships.
+    const KNOWN_GHOSTS: &str = r#"[[ghost]]
+id = "same-index"
+program = "incorrect/same-index.py"
+kind = "wrong"
+input = [[0], 0]
+got = 1
+explanation = "The inner loop pairs a value with itself."
+
+[[ghost]]
+id = "empty-min"
+program = "incorrect/empty-min.py"
+kind = "crash"
+input = [[], 0]
+exception_class = "ValueError"
+explanation = "min() on an empty list raises."
+"#;
 
     /// What the fake says the named program does on every input.
     #[derive(Clone, Copy)]
@@ -631,7 +693,7 @@ mod tests {
 
     #[test]
     fn validate_pack_matches_the_grimoire_report_for_the_same_pack() {
-        let root = repo_root();
+        let root = pack_root();
         let output =
             validate_pack(&root, &validate_args("packs/count-pairs")).expect("tool result");
         // The tool validates the merged pair when a private checkout is
@@ -662,7 +724,7 @@ mod tests {
             kind: "wrong".to_string(),
             exception_class: None,
         };
-        let output = explain_verdict(&repo_root(), &args).expect("tool result");
+        let output = explain_verdict(&pack_root(), &args).expect("tool result");
         assert_eq!(output["authored_mistake"]["known_ghost_id"], "same-index");
     }
 
@@ -676,7 +738,7 @@ mod tests {
             kind: "wrong".to_string(),
             exception_class: None,
         };
-        let output = explain_verdict(&repo_root(), &args).expect("tool result");
+        let output = explain_verdict(&pack_root(), &args).expect("tool result");
         let differences = output["differences"].as_array().expect("array");
         assert_eq!(differences.len(), 1);
         assert_eq!(differences[0]["expected"], json!(0));
@@ -693,7 +755,7 @@ mod tests {
             kind: "maybe".to_string(),
             exception_class: None,
         };
-        let error = explain_verdict(&repo_root(), &args).expect_err("refused");
+        let error = explain_verdict(&pack_root(), &args).expect_err("refused");
         assert_eq!(error.category, ErrorCategory::InvalidRequest);
     }
 
@@ -730,7 +792,7 @@ mod tests {
             input: json!([[1, 2, 3, 2], 4]),
         };
         let mut slot = RunnerSlot::unconfigured();
-        let error = run_reference(&repo_root(), &mut slot, &args).expect_err("fails closed");
+        let error = run_reference(&pack_root(), &mut slot, &args).expect_err("fails closed");
         assert_eq!(error.category, ErrorCategory::SandboxNotConfigured);
     }
 
@@ -740,7 +802,7 @@ mod tests {
             pack_path: "packs/count-pairs".to_string(),
             input: json!([[1, 2, 3, 2], 4]),
         };
-        let output = run_reference(&repo_root(), &mut fake_slot(), &args).expect("tool result");
+        let output = run_reference(&pack_root(), &mut fake_slot(), &args).expect("tool result");
         assert_eq!(output, json!({ "outcome": "returned", "value": 2 }));
     }
 
@@ -750,7 +812,7 @@ mod tests {
             pack_path: "packs/count-pairs".to_string(),
             input: json!(["not a list", 4]),
         };
-        let error = run_reference(&repo_root(), &mut fake_slot(), &args).expect_err("refused");
+        let error = run_reference(&pack_root(), &mut fake_slot(), &args).expect_err("refused");
         assert_eq!(error.category, ErrorCategory::InvalidRequest);
     }
 
@@ -762,7 +824,7 @@ mod tests {
             seed_override: None,
             budget: None,
         };
-        let error = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+        let error = find_ghost_input(&pack_root(), &mut fake_slot(), FAKE_DIGEST, &args)
             .expect_err("aborted");
         assert_eq!(error.category, ErrorCategory::SandboxInfrastructure);
     }
@@ -775,7 +837,7 @@ mod tests {
             seed_override: Some(1),
             budget: Some(BudgetArgs::default()),
         };
-        let output = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+        let output = find_ghost_input(&pack_root(), &mut fake_slot(), FAKE_DIGEST, &args)
             .expect("tool result");
         assert!(output["outcome"].get("Found").is_some());
     }
@@ -789,7 +851,7 @@ mod tests {
             budget: None,
         };
         let error = find_ghost_input(
-            &repo_root(),
+            &pack_root(),
             &mut RunnerSlot::unconfigured(),
             FAKE_DIGEST,
             &args,
@@ -806,7 +868,7 @@ mod tests {
             seed_override: None,
             budget: None,
         };
-        let error = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+        let error = find_ghost_input(&pack_root(), &mut fake_slot(), FAKE_DIGEST, &args)
             .expect_err("refused");
         assert_eq!(error.category, ErrorCategory::InvalidRequest);
     }
@@ -823,7 +885,7 @@ mod tests {
             max_evals: 300,
             wall_ms: 3000,
         };
-        let output = shrink_input(&repo_root(), &mut fake_slot(), &args).expect("tool result");
+        let output = shrink_input(&pack_root(), &mut fake_slot(), &args).expect("tool result");
         let shrunk = output["value"].clone();
         let mut fake = ScriptedRunner::new("incorrect/same-index.py", ProgramBehaviour::CountsSelf);
         let mut oracle = ProgramOracle::new(&mut fake, "incorrect/same-index.py");
@@ -848,7 +910,7 @@ mod tests {
             max_evals: 10,
             wall_ms: 100,
         };
-        let error = shrink_input(&repo_root(), &mut fake_slot(), &args).expect_err("refused");
+        let error = shrink_input(&pack_root(), &mut fake_slot(), &args).expect_err("refused");
         assert_eq!(error.category, ErrorCategory::InvalidRequest);
     }
 
@@ -863,7 +925,7 @@ mod tests {
     fn a_crashing_program_gives_a_crash_ghost() {
         let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Crashes);
         let output = find_ghost_input(
-            &repo_root(),
+            &pack_root(),
             &mut slot,
             FAKE_DIGEST,
             &hunt_args("incorrect/empty-min.py"),
@@ -884,7 +946,7 @@ mod tests {
     fn a_timeout_is_not_a_default_ghost_because_the_engine_hunts_timeouts_only_when_targeted() {
         let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::TimesOut);
         let output = find_ghost_input(
-            &repo_root(),
+            &pack_root(),
             &mut slot,
             FAKE_DIGEST,
             &hunt_args("incorrect/empty-min.py"),
@@ -900,7 +962,7 @@ mod tests {
     fn a_garbled_answer_is_reported_as_a_wrong_answer() {
         let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Garbles);
         let output = find_ghost_input(
-            &repo_root(),
+            &pack_root(),
             &mut slot,
             FAKE_DIGEST,
             &hunt_args("incorrect/empty-min.py"),
@@ -933,7 +995,7 @@ mod tests {
         };
         let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Correct);
         let output =
-            find_ghost_input(&repo_root(), &mut slot, FAKE_DIGEST, &args).expect("tool result");
+            find_ghost_input(&pack_root(), &mut slot, FAKE_DIGEST, &args).expect("tool result");
         assert!(matches!(
             decode(output).outcome,
             counterspell_engine::HuntOutcome::NotFound(_)
@@ -947,7 +1009,7 @@ mod tests {
         runner.reference_crashes = true;
         let mut slot = RunnerSlot::injected(Box::new(runner));
         let error = find_ghost_input(
-            &repo_root(),
+            &pack_root(),
             &mut slot,
             FAKE_DIGEST,
             &hunt_args("incorrect/same-index.py"),
@@ -967,7 +1029,7 @@ mod tests {
                 ..BudgetArgs::default()
             }),
         };
-        let error = find_ghost_input(&repo_root(), &mut fake_slot(), FAKE_DIGEST, &args)
+        let error = find_ghost_input(&pack_root(), &mut fake_slot(), FAKE_DIGEST, &args)
             .expect_err("refused");
         assert_eq!(error.category, ErrorCategory::InvalidRequest);
     }

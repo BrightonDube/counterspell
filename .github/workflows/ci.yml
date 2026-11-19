@@ -280,6 +280,12 @@ jobs:
           components: rustfmt, clippy
           cache-key: debug
 
+      # The boundary test runs `cargo metadata --offline` for the whole
+      # workspace; a package-scoped build leaves some lockfile crates
+      # unfetched, so fetch them all first.
+      - name: Fetch the whole workspace dependency set
+        run: cargo fetch --locked
+
       - name: Build the sandbox feature
         run: cargo build -p counterspell-judge --features sandbox --locked
 
