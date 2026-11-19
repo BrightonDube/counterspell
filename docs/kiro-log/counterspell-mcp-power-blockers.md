@@ -61,3 +61,11 @@
   3. Copy a thin runner into `crates/mcp`. Rejected: duplicates security-sensitive code.
 - Assumed choice if Brighton does not overrule: option 2, because it keeps the crate rules. Not started, because it touches three crates and the boundary test in `crates/judge/tests/boundary.rs`.
 - `RunnerSlot` also holds one runner, while `PackRunnerFactory::build` needs a pack's sources and signature, so the slot must become a factory per pack.
+
+## drive queue run (kiro/drive-queue): T05 step 1 and 2 (Option 2) done; harness note
+- Brighton's 19 Nov Option 2 decision, parts 1 and 2:
+  - `PackRunner`, `Target` and `RunnerError` moved to `counterspell_engine::runner` (engine manifest unchanged: still only `serde` and `serde_json`). `counterspell_grimoire::runner` re-exports them, so every existing import still works. New tests: `crates/grimoire/tests/runner_engine_seam.rs`.
+  - `PackSandboxRunner`, `PackRunnerFactory` and `REFERENCE_SOURCE` moved to `counterspell_judge::sandbox::pack_runner` (the factory sits behind the judge's `sandbox` feature; the generic runner does not). `counterspell_catalogue_cli::pack_runner` re-exports them. The judge still does not depend on grimoire.
+- Verified: grimoire and engine suites pass, `boundary` 6/6, `pack_runner_bench` 2/2, `sbx_pack_runner` 6/6 on the rootless daemon when serialised.
+- **Pre-existing harness issue (not caused by this move):** `cargo test -p counterspell-catalogue-cli --test sbx_pack_runner -- --ignored` run in parallel fails 3 of 6 at `tests/sbx/mod.rs:125` ("containers still running"), because each test inspects every managed container on the shared daemon, including its siblings'. The same 3 fail on pristine HEAD (checked in a throwaway worktree). Run it with `-- --test-threads=1` until the harness scopes its check to its own containers or takes a lock.
+- Still open: T05's remaining part (MCP uses the judge runner) and T10 (`RunnerSlot` must become a per-pack factory; the production slot is still `unconfigured`).

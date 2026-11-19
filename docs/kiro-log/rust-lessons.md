@@ -1597,3 +1597,6 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 
 ## efficiency-familiar T43: a test double that remembers (`Mutex` behind `&self`)
 `ScriptedTransport::prompts()` needs to record every request, but the trait method only gets `&self` (a shared borrow), so the recorder is a `Mutex<Vec<String>>`: `lock()` hands out one mutable borrow at a time, checked at run time instead of compile time. We use `if let Ok(..)` and `unwrap_or_default()` instead of `unwrap()`, because a poisoned lock should degrade a test helper, not panic. The helper is only built with the `testkit` feature, so production code never carries it.
+
+## counterspell-mcp-power T05 (part): moving a trait so two crates can share it without a cycle
+A trait is a contract, so where it is declared decides who may implement it. `PackRunner` sat in `counterspell-grimoire`, which meant the judge (the only crate that really runs code) would have had to depend on grimoire. Moving the trait to `counterspell-engine`, which both already depend on, lets the judge implement it and grimoire re-export it with `pub use`. Because the re-export is the same type (not a copy), old `use counterspell_grimoire::runner::PackRunner` lines still compile, and the new seam test would stop compiling if the two ever drifted apart.

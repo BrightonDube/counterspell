@@ -99,6 +99,8 @@ pub mod classify;
 pub mod complexity;
 /// Candidate generation is a public part of the engine.
 pub mod generate;
+/// The seam between pack tooling and whatever executes pack programs.
+pub mod runner;
 /// Failure shrinking is a public part of the engine.
 pub mod shrink;
 
