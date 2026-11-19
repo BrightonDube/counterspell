@@ -252,7 +252,7 @@ Conventions for every web task:
   - Preserve: the owner predicate is in the query; the server role performs no writes.
   - Rust lesson: building a response from stored data, and `Option` with `skip_serializing_if`.
 
-- [ ] **T24 [P] (30 min) Grimoire: SBX-05 through the fit and the BEN-01 static check**
+- [x] **T24 [P] (30 min) Grimoire: SBX-05 through the fit and the BEN-01 static check**
   - Files: `crates/grimoire/src/sandbox.rs`, `crates/grimoire/src/codes.rs`, `crates/grimoire/src/limits.rs`, focused tests.
   - When the runner's `bench` returns `(n, median_ns)` pairs, call `engine::complexity::fit` (`Mode::Full`, spread unknown) and emit SBX-05 when the class differs from `reference_complexity` or is not confirmed (`Low`), with the plausible classes in the message. Stop emitting SBX-08 once the runner implements `bench`. Add `BEN-01` (error): for every declared size, `engine::complexity::sized_input` succeeds with the pack's schema. Add a warning when sizes span less than 32×.
   - Tests with a fake runner: matching class passes; a quadratic reference declared as linear warns; `Low` warns; infrastructure error stays exit 2 (SBX-06); an infeasible `unique` bench size gives BEN-01.

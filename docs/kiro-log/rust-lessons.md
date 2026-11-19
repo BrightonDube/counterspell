@@ -1579,3 +1579,9 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 - **A closure that returns a closure.** `attempt_namer` returns `impl Fn(u32) -> Result<SessionSpec, InfraError> + 'a`. The `move` keyword copies `attempt`, `run` and the limits into the closure, and `'a` says it may keep borrowing `lang` and `worker` for as long as the caller holds them.
 - **Keep the old door open.** `SessionSpec::new` still exists and builds the old name; `for_attempt` is a second constructor. Both call one private `named`, so the policy and labels cannot drift apart, and no existing caller had to change.
 - **Why a 409 matters.** The daemon refuses a second container with the same name. Putting the attempt number in the name means a crashed attempt's leftover container can never block its own retry.
+
+## 20 Nov 2026: efficiency-familiar T24, the bench-span warning
+- **Trait objects for a fake runner.** `check_bench` takes `runner: &mut dyn PackRunner`. `dyn` means "any type that implements the trait, chosen at run time", so a test can hand in `ScriptedBench` without the function being generic. Generics would compile one copy per type; for a validator that runs once, the trait object is simpler.
+- **`Option` and `?` in a small helper.** `narrow_span` returns `Option<Diagnostic>`. `inputs.iter().map(..).min()?` returns `None` early when there are no inputs, so the caller only pushes a warning when there is one.
+- **`checked_div` instead of `/`.** Dividing by zero panics in Rust. `largest.checked_div(lowest)` gives `None` for a zero divisor, and `.unwrap_or(0)` turns that into a plain number with no panic.
+- **A test inside the module.** `#[cfg(test)] mod attempt_namer_tests` in `sandbox_executor.rs` can call the private `attempt_namer`, because a child module sees its parent's private items.

@@ -215,3 +215,8 @@ Open non-stretch tasks and the reason each stays open:
 No code change this run. The grimoire test suite passes at 16 of 16.
 
 ### verify all, 16 Nov 2026: T24 stays open: the 'sizes span less than 32x' warning and the BEN-01 unique-size case are still missing in crates/grimoire (only the BEN_01 code constant exists). Also, the main tree holds uncommitted judge bench work (crates/judge/src/sandbox/bench.rs, tests/sbx_bench.rs, model_bench.rs) that fails 'cargo fmt --check' and clippy (manual_async_fn, cast_precision_loss in bench.rs:276). Not touched by verify; fix before it is committed under T25.
+
+## kiro/drive-queue run (20 Nov 2026)
+- **Decision (routine, under the standing "decide and record" rule; Brighton may overrule):** R13.4's bench-span warning is `BEN-02` (warning), emitted by `check_bench` when the largest bench size is less than 32 times the lowest. The bench still runs. The codes test now lists four warnings (`test-change: PCK-2`). No pack in `packs/` declares a `[bench]` yet, so no import changes.
+- T24 ticked: the BEN-01 `unique` case and the `Low` ("not confirmed") case were already tested by an earlier run; BEN-02 adds the span warning. SBX-08 is no longer emitted anywhere.
+- T22 and T25: the judge-sandbox runner and language-drivers bench (T08, T09) are now done, so these are no longer blocked on them. Next run.
