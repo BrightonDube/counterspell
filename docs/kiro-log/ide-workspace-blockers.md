@@ -160,3 +160,7 @@ Upstream state checked this pass: run-lifecycle 54 of 56 done (the SSE route `GE
 - T15, T20: add tests for the missing assertions listed in the Verified table.
 - T09, T21, T22, T24, T25: install Chrome (or `npx playwright install chromium`, with a licence check) and re-run `web/e2e-shell-check.mjs` and `real-api-check.mjs`.
 - Env: point `COUNTERSPELL_PACKS_PRIVATE_ROOT` in `~/.config/counterspell/dev-test.env` at `/mnt/c/Users/Brighton/Downloads/Personal Projects/counterspell-packs-private`, or fast-forward `~/code/counterspell-packs-private` to 42467cd.
+
+## kiro/drive-queue run (19 Nov 2026)
+- T18 stale-test follow-up is already applied (`test-change: GHO-3` is in `WorkspaceShell.test.ts`); `WorkspaceShell.test.ts` passes 12/12. T18 stays `[ ]`: its verify line needs real-queue, ownership and rate-limit checks in a browser.
+- Still blocked: no Chrome or Playwright browsers on this machine (`~/.cache/ms-playwright` missing, no system chrome). Unblock: Brighton runs `npx playwright install chromium` (check its licence first) so T09, T21, T22, T24, T25 can be re-run. Everything else open in ide-workspace (T13, T15, T20, T26 to T28) depends on those or on the missing-assertion follow-ups already listed above.
