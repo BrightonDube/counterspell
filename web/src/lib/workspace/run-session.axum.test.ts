@@ -26,8 +26,7 @@ const describeAxum = BASE ? describe : describe.skip;
 // than one second, so back-to-back reruns never reuse a spent user.
 const USERS_PER_RUN = 5;
 const SLOTS = 817;
-const firstUser =
-  9 + (Math.floor(Date.now() / 1000) % SLOTS) * USERS_PER_RUN;
+const firstUser = 9 + (Math.floor(Date.now() / 1000) % SLOTS) * USERS_PER_RUN;
 let nextUser = firstUser;
 const freshUser = () => nextUser++;
 
@@ -44,7 +43,11 @@ function axumFetch(user: number): FetchLike {
       // The client maps every transport failure to one friendly message; keep
       // the real cause visible when this suite fails.
       const cause = (error as { cause?: unknown }).cause;
-      console.error(`fetch ${init?.method ?? 'GET'} ${input} failed:`, error, cause);
+      console.error(
+        `fetch ${init?.method ?? 'GET'} ${input} failed:`,
+        error,
+        cause
+      );
       throw error;
     });
 }
