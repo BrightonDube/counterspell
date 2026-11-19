@@ -63,18 +63,19 @@ function pgScalar(sql) {
 
 // Runs a shell script on the machine that hosts the stack: directly on Linux, through WSL when
 // this script runs Windows-side.
-function hostShell(script) {
-  const [command, args] =
+function hostShell(script, args = []) {
+  const [command, argv] =
     process.platform === 'win32'
-      ? ['wsl', ['-e', 'bash', '-lc', script]]
-      : ['bash', ['-c', script]];
-  return execFileSync(command, args, {
+      ? ['wsl', ['-e', 'bash', '-c', script, 'host-shell', ...args]]
+      : ['bash', ['-c', script, 'host-shell', ...args]];
+  return execFileSync(command, argv, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe']
   }).trim();
 }
 
-// Kills only the judge named in JUDGE_PID_FILE.
+// Kills only the judge named in JUDGE_PID_FILE, and only if that PID really is a
+// counterspell-judge process. Paths reach the shell as arguments, never inside the script text.
 function killJudge() {
   if (!JUDGE_PID_FILE) {
     console.error(
@@ -82,7 +83,17 @@ function killJudge() {
     );
     process.exit(2);
   }
-  hostShell(`kill -9 "$(cat '${JUDGE_PID_FILE}')"`);
+  const text = readFileSync(JUDGE_PID_FILE, 'utf8').trim();
+  if (!/^[1-9][0-9]*$/.test(text) || Number(text) <= 1) {
+    console.error(
+      `JUDGE_PID_FILE does not hold a usable PID: ${JSON.stringify(text)}`
+    );
+    process.exit(2);
+  }
+  hostShell(
+    'case "$(readlink /proc/"$1"/exe 2>/dev/null)" in */counterspell-judge | *"/counterspell-judge (deleted)") kill -9 "$1" ;; esac',
+    [text]
+  );
 }
 
 // Starts a fresh judge from this repository. The whole start runs detached with every stream
@@ -90,10 +101,11 @@ function killJudge() {
 // judge, so the file names the judge.
 function startJudge() {
   hostShell(
-    `( cd '${REPO}' && set -a && . ~/.config/counterspell/dev-test.env && set +a && ` +
-      `LANGUAGES_FILE=languages/languages.toml RUST_LOG=info ` +
-      `exec setsid nohup sh -c 'echo $$ > "$0"; exec ./target/debug/counterspell-judge' '${JUDGE_PID_FILE}' ` +
-      `>> web/tests/real-api/.scratch/judge.log 2>&1 < /dev/null ) > /dev/null 2>&1 < /dev/null &`
+    '( cd "$1" && set -a && . ~/.config/counterspell/dev-test.env && set +a && ' +
+      'LANGUAGES_FILE=languages/languages.toml RUST_LOG=info ' +
+      `exec setsid nohup sh -c 'echo $$ > "$0"; exec ./target/debug/counterspell-judge' "$2" ` +
+      '>> web/tests/real-api/.scratch/judge.log 2>&1 < /dev/null ) > /dev/null 2>&1 < /dev/null &',
+    [REPO, JUDGE_PID_FILE]
   );
 }
 

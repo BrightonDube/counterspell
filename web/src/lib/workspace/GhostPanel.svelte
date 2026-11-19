@@ -40,7 +40,10 @@
   let cancelMarks: () => void = () => {};
   $effect(() => {
     const current = plan;
-    if (ghost === null || current === null) return;
+    if (ghost === null || current === null) {
+      markedKey = '';
+      return;
+    }
     const key = JSON.stringify([ghost.kind, ghost.input, ghost.provenance]);
     if (key === markedKey) return;
     markedKey = key;

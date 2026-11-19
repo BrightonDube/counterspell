@@ -125,6 +125,29 @@ describe('GhostPanel ghost card', () => {
     }
   });
 
+  // Breaks if a later run that finds the same ghost again after a run with none is not measured.
+  it('marks the replay again when the same ghost returns after a run without one', async () => {
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      const props = {
+        status: 'completed',
+        shrinkSteps: [],
+        reducedMotion: true
+      };
+      const view = render(GhostPanel, {
+        props: { ...props, ghost: wrongGhost() }
+      });
+      await view.rerender({ ...props, ghost: null });
+      await view.rerender({ ...props, ghost: wrongGhost() });
+      const starts = mark.mock.calls.filter(
+        (c) => c[0] === 'ghost-playback-start'
+      );
+      expect(starts).toHaveLength(2);
+    } finally {
+      mark.mockRestore();
+    }
+  });
+
   // Breaks if a panel without a ghost writes playback marks for a replay that never happens.
   it('writes no playback mark without a ghost', () => {
     const mark = vi.spyOn(performance, 'mark');
