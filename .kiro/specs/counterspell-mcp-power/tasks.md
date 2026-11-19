@@ -36,7 +36,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 2: judge runner library and boundary
 
-- [ ] **T05 [S] (30 min) Add a reusable library target to `counterspell-judge`**
+- [x] **T05 [S] (30 min) Add a reusable library target to `counterspell-judge`**
   - Files: `crates/judge/Cargo.toml`, `crates/judge/src/lib.rs`, `crates/judge/src/runner/**`, `crates/judge/src/main.rs` only as needed.
   - Share the production sandbox runner between the worker binary and MCP. Keep the sandbox Docker client in judge code and connect only to the separate rootless sandbox daemon.
   - Preserve: no main Docker socket, no public port, no host interpreter, no Docker CLI, and no weakening of production limits.
@@ -73,7 +73,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T03, T04, T07, and T08.
   - Verify: tool outputs match Grimoire/engine reports and can be safely auto-approved.
 
-- [ ] **T10 [S] (30 min) Implement code-running tools through the judge**
+- [x] **T10 [S] (30 min) Implement code-running tools through the judge**
   - Files: `crates/mcp/src/tools.rs`, `crates/mcp/src/judge_adapter.rs`, judge runner integration only as needed.
   - Implement `run_reference`, `find_ghost_input`, and `shrink_input` with explicit sandbox-backed descriptions, production-compatible budgets, trusted comparator, cleanup, and error mapping.
   - Preserve: no host Python/Node/shell, no direct Docker access from MCP, same production images/limits, and no auto-approval.
