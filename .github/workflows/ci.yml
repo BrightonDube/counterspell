@@ -323,7 +323,9 @@ jobs:
     name: Publish
     needs: ci-ok
     # Production publish: main and version tags only, never brighton/kiro-setup.
-    if: github.event_name == 'push' && needs.ci-ok.result == 'success' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    # A failed ci-ok already skips this job through the implicit success() guard;
+    # needs.* is not resolved for `uses:` job conditions, so it must not appear here.
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
     permissions:
       contents: read
       packages: write
