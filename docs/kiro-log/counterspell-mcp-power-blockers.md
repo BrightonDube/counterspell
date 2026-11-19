@@ -83,3 +83,10 @@
 - Added `crates/mcp/tests/workspace_settings.rs` (5 tests): the workspace server uses the same command and args as `kiro-power/mcp.json`, a workspace-relative cwd whose `../Cargo.toml` is the root manifest, exactly the three pure tools in `autoApprove` (none of `run_reference`, `find_ghost_input`, `shrink_input`), no `env`, no socket or key text, and the Power itself approves nothing. The settings file already existed (19 Nov), so these pass on first run: guards, not a fix.
 - T14 stays `[ ]` only because its dependency T11 is open. T11 needs the Kiro custom-Power import test, which only the Kiro IDE can run. **HUMAN:** import `kiro-power/` as a custom Power in Kiro, confirm the six tools list, then T11 and T14 can be ticked.
 - T15 needs the private pack repo checkout; see below.
+
+## T15 blocked (kiro/drive-queue run): private half of the dogfood pack is missing
+- Public half exists: `packs/_demo/mcp-dogfood/{problem.md,meta.toml,hints.toml}` ("Best Window Sum", `status = "draft"`, `function = "best_window_sum"`, params `values: list[int]`, `k: int`, returns int, k larger than the list gives 0).
+- The 19 Nov note says `reference/` and `incorrect/` were moved to `counterspell-packs-private/packs/_demo/mcp-dogfood/`. They are not there: `~/code/counterspell-packs-private/packs/` holds only `count-pairs`, `diagonal-total`, `longest-run-length`. Nothing was lost from public git (the files were never committed under `packs/_demo/mcp-dogfood/`).
+- Not written by this run: the private checkout is a separate repo outside this workspace, hidden and reference code must live only there, and new pack content goes through `pack-author` then `pack-reviewer`.
+- **Unblock (Brighton):** run `pack-author` for `_demo/mcp-dogfood` to write `reference/solution.py` (correct) and `incorrect/<file>.py` (one deliberate bug that a tiny input exposes, for example an off-by-one that drops the last window, or k > len returning a partial sum), with an optional `known_ghosts.toml`, in the private checkout. Commit there. T15 then verifies with `validate_pack`.
+- T16, T17, T18, T19 depend on T15 (T17 also on the T11 import test). Nothing else in this spec can move.
