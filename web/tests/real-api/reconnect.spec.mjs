@@ -415,7 +415,8 @@ check(
   'retry: killed run is reclaimed and terminated',
   retryEvents.includes('restarted') &&
     (retryVerdict === 'wrong_answer' ||
-      (retryTerminal === 'internal_error' && retryError === 'retries_exhausted')),
+      (retryTerminal === 'internal_error' &&
+        retryError === 'retries_exhausted')),
   `status=${retryTerminal} verdict=${retryVerdict} error=${retryError} events=${retryEvents.join(',')}`
 );
 
