@@ -122,7 +122,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: no invented values, duplicate/out-of-order handling, final-step equality, omitted-step rendering, deterministic timing decisions, and reduced-motion static-list tests.
   - Preserve: the controller cannot manufacture intermediate inputs or outputs.
 
-- [ ] **T15 [UI] [S] (30 min) Build Ghost Hunting and Ghost card**
+- [x] **T15 [UI] [S] (30 min) Build Ghost Hunting and Ghost card**
   - Files: `web/src/lib/workspace/GhostPanel.svelte`, `GhostHunting.svelte`, `ShrinkTrace.svelte`, animation boundary.
   - Transition only on server `ghost_hunting`, show honest indeterminate search text, replay actual `shrink_step` values, show final minimized-counterexample wording, and handle no-ghost, aborted, malformed, timeout, and reduced-motion states.
   - Use one 400ms calm reveal and 150–250ms per-step CSS crossfades only when motion is allowed. Keep GSAP out of the ghost card; GSAP belongs to the Familiar boundary.

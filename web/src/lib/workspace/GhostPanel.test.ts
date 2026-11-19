@@ -217,3 +217,109 @@ describe('GhostPanel ghost card', () => {
     ).toBeTruthy();
   });
 });
+
+describe('GhostPanel replay motion and honesty', () => {
+  // Breaks if the replay claims to animate but every step appears at once: with three steps the
+  // 3 s budget gives each step the 250 ms cap, so step n starts n * 250 ms after the first.
+  it('staggers each recorded step by the planned delay when motion is allowed', () => {
+    render(GhostPanel, {
+      props: {
+        status: 'completed',
+        ghost: wrongGhost(),
+        shrinkSteps: [],
+        reducedMotion: false
+      }
+    });
+    const items = screen.getAllByRole('listitem');
+    expect(items.map((item) => item.classList.contains('ghost-step'))).toEqual([
+      true,
+      true,
+      true
+    ]);
+    expect(items.map((item) => item.style.animationDelay)).toEqual([
+      '0ms',
+      '250ms',
+      '500ms'
+    ]);
+  });
+
+  // Breaks if the card skips its single calm reveal when motion is allowed.
+  it('reveals the ghost card once when motion is allowed', () => {
+    const { container } = render(GhostPanel, {
+      props: {
+        status: 'completed',
+        ghost: wrongGhost(),
+        shrinkSteps: [],
+        reducedMotion: false
+      }
+    });
+    expect(container.querySelectorAll('.ghost-reveal')).toHaveLength(1);
+  });
+
+  // Breaks if reduced motion still gets the reveal or the staggered steps.
+  it('uses no reveal and no step animation under reduced motion', () => {
+    const { container } = render(GhostPanel, {
+      props: {
+        status: 'completed',
+        ghost: wrongGhost(),
+        shrinkSteps: [],
+        reducedMotion: true
+      }
+    });
+    expect(container.querySelector('.ghost-reveal')).toBeNull();
+    expect(container.querySelector('.ghost-step')).toBeNull();
+    expect(
+      screen.getAllByRole('listitem').map((item) => item.style.animationDelay)
+    ).toEqual(['', '', '']);
+  });
+
+  // Breaks if summarised steps are filled in with invented inputs, or progress shows as a percentage.
+  it('lists only the recorded steps when the engine summarised the rest', () => {
+    const { container } = render(GhostPanel, {
+      props: {
+        status: 'completed',
+        ghost: wrongGhost({
+          shrink: {
+            steps: [
+              { index: 0, input: [3, 5, 0], evaluations: 1 },
+              { index: 6, input: [0, 0], evaluations: 30 }
+            ],
+            totalSteps: 7,
+            omittedSteps: 5,
+            stop: 'no_smaller_input'
+          }
+        }),
+        shrinkSteps: [],
+        reducedMotion: false
+      }
+    });
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((item) => item.textContent?.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Step 1: [3,5,0]', 'Step 7: [0,0]']);
+    expect(screen.getByText(/summarised 5 more steps/)).toBeTruthy();
+    expect(container.textContent).not.toContain('%');
+  });
+
+  // Breaks if the live hunt list adds, drops or reorders steps the server streamed.
+  it('lists exactly the streamed steps while the server is hunting', () => {
+    const { container } = render(GhostPanel, {
+      props: {
+        status: 'ghost_hunting',
+        ghost: null,
+        shrinkSteps: [
+          { index: 0, input: [4, 1], evaluations: 2 },
+          { index: 1, input: [1], evaluations: 5 }
+        ],
+        reducedMotion: false
+      }
+    });
+    expect(
+      screen
+        .getAllByRole('listitem')
+        .map((item) => item.textContent?.replace(/\s+/g, ' ').trim())
+    ).toEqual(['Step 1: [4,1]', 'Step 2: [1]']);
+    expect(container.textContent).not.toContain('%');
+  });
+});
