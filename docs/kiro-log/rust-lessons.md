@@ -1588,3 +1588,6 @@ Rust lesson: `[&str; 10]` is an array whose length is part of its type, so addin
 
 ## efficiency-familiar T25: one bench path
 `PackSandboxRunner::bench` is a trait method that must be sync, but the shared bench collector is `async`. It hands the async call to a scoped thread and blocks on it with the tokio `Handle`. The win is one measurement path: pack validation now times the reference exactly as a learner's Submit does (two warm-ups, five timed calls, same budget). `match` on `BenchOutcome` forces every outcome (complete, incomplete, failed) to be handled, so none can be silently dropped.
+
+## efficiency-familiar T22: a trait as a seam
+`run_baseline` takes a `BenchCollector` and a `BaselineStore` as generic parameters instead of a database and a Docker client. Tests pass a scripted collector and an in-memory store, so the admission rules run in microseconds with no daemon. `Result<Outcome, Error>` separates a finding (the fixture is refused, exit 1) from a fault (the judge broke, exit 2), so a broken daemon can never look like a bad fixture.
