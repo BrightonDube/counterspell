@@ -76,7 +76,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: language isolation, reload restoration, multibyte byte counts, storage quota failure, corrupted entry recovery, and source copy fallback tests.
   - Preserve: client checks are advisory; server VAL-1–VAL-3 remain authoritative.
 
-- [ ] **T09 [UI] [S] (30 min) Compose the responsive WorkspaceShell**
+- [x] **T09 [UI] [S] (30 min) Compose the responsive WorkspaceShell**
   - Files: `web/src/routes/problems/[slug]/+page.svelte`, `web/src/lib/workspace/WorkspaceShell.svelte`, `EditorPanel.svelte`, responsive CSS.
   - Compose problem, editor, controls, tests, ghost/autopsy, hints, and Familiar regions. Implement wide desktop columns, tablet drawers/tabs, narrow single-column order, collapse state, landmarks, and focus return.
   - Depends on: T05, T06, T07, T08.
