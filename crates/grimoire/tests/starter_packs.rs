@@ -26,6 +26,7 @@ fn private_packs_root() -> Option<PathBuf> {
             let sibling = packs_root().join("../../counterspell-packs-private");
             sibling.is_dir().then_some(sibling)
         })
+        .filter(|root| root.join("packs").is_dir())
 }
 
 /// The non-underscore pack directories under `root`, sorted by name.

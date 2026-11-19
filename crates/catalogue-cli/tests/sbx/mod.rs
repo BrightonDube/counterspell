@@ -47,7 +47,9 @@ pub fn private_packs_root() -> Option<PathBuf> {
 
 /// One pack's private tree inside the checkout (`packs/<slug>/`).
 pub fn private_pack_dir(slug: &str) -> Option<PathBuf> {
-    private_packs_root().map(|root| root.join("packs").join(slug))
+    private_packs_root()
+        .map(|root| root.join("packs").join(slug))
+        .filter(|dir| dir.is_dir())
 }
 
 /// A scenario config: like production's, but with the socket from the environment and

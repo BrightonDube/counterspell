@@ -346,6 +346,9 @@ fn run_sandbox_pair(root: &Path, runner: &mut ModelRunner) -> Option<Report> {
         })?;
     let slug = root.file_name()?.to_str()?;
     let private_dir = private_root.join("packs").join(slug);
+    if !private_dir.is_dir() {
+        return None;
+    }
     Some(
         counterspell_grimoire::validate_sandbox_pair(root, &private_dir, runner)
             .unwrap_or_else(|fault| panic!("sandbox fault: {fault:?}")),
