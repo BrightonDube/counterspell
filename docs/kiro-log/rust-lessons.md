@@ -1609,3 +1609,6 @@ A test that passes the first time it runs is not "red", so say so plainly: here 
 
 ## counterspell-mcp: tests that read config files
 A Rust integration test in `tests/` is its own small program. `env!("CARGO_MANIFEST_DIR")` is filled in by the compiler with the crate's folder, so the test can find `../../.kiro/settings/mcp.json` from any machine. `serde_json::Value` lets you read JSON you do not have a struct for. The test reads files only and never starts the server.
+
+## auth T34: a default method on a trait
+A trait can give a method a default body, so existing types keep working and only the one that needs different behaviour overrides it. `still_signed_in` defaults to "resolve again and compare", and `SessionUserResolver` replaces it with a read-only database check. The stream stores the resolver as `Arc<dyn UserResolver>`: `Arc` lets several tasks share one value, and `dyn` means "any type that implements the trait". `unwrap_or(false)` turns a database error into "signed out", so the failure closes the stream instead of leaving it open.
