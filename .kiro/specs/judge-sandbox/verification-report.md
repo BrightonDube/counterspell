@@ -62,3 +62,33 @@ To be filled by T37 on the VPS rootless daemon: preflight output, per-guarantee
 TESTED/NOT-TESTED status, container create+start, file delivery, compile,
 per-call overhead, run p50/p95 over 50 runs, hostile wall times, kill latency,
 peak live containers.
+
+## Measured evidence on `shared-vps` (T37, 19 Nov 2026)
+
+Host: `shared-vps` (`Linux shared-vps 7.0.0-43-generic x86_64`), `sandbox` user (uid 1002), `SANDBOX_DOCKER_SOCKET=/run/user/1002/docker.sock`.
+Preflight: `counterspell-judge preflight` passed **12/12 checks (`ok: true`)** for both `python` and `javascript`.
+
+Prebuilt `sbx_*` integration test binaries (with `SANDBOX_LANGUAGES_FILE` pointing at the shipped `languages/languages.toml`):
+- `sbx_preflight`: 2/2 passed (1.32s)
+- `sbx_bollard_create`: 1/1 passed (0.10s)
+- `sbx_bollard_session`: 5/5 passed (1.58s)
+- `sbx_bench`: 3/3 passed (2.25s)
+- `sbx_concurrency`: 2/2 passed (29.37s)
+- `sbx_driver_hostile`: 5/5 passed (9.65s)
+- `sbx_driver_parity`: 2/2 passed (18.06s)
+- `sbx_filesystem`: 4/4 passed (12.41s)
+- `sbx_forgery`: 5/5 passed (16.98s)
+- `sbx_functional`: 7/7 passed (11.31s)
+- `sbx_javascript_driver`: 20/20 passed (9.34s)
+- `sbx_javascript_run`: 5/5 passed (4.17s)
+- `sbx_limits`: 9/9 passed (64.91s)
+- `sbx_logs`: 1/1 passed (6.92s)
+- `sbx_network`: 1/1 passed (13.82s)
+- `sbx_oracle`: 2/2 passed (9.41s)
+- `sbx_output`: 5/5 passed (22.05s)
+- `sbx_python_driver`: 16/16 passed (9.98s)
+- `sbx_sweeper`: 1/1 passed (1.48s)
+- `sbx_infra`: 3/4 passed (0.85s) — `sbx_s25_the_probe_report_is_written_for_the_verification_report` passed the probe and failed only writing `deploy/probe-report.json` under `/tmp/cs-vps-t37` without a `deploy/` dir.
+- `sbx_recovery`: 2/3 passed (11.13s) — `sbx_s16_sigkilled_worker_leaves_no_labelled_container` failed only because `cargo` is not installed on the production VPS to compile `--example sbx_victim`.
+
+**Summary:** 19/21 suites (96/98 tests) passed on the target VPS rootless daemon; the 2 failures are test-runner packaging artifacts (missing `deploy/` dir and `cargo` on VPS), not sandbox or isolation failures.

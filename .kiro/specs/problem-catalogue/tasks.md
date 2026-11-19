@@ -43,7 +43,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Depends on: none.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records each approval or change. Until then, no wave below starts.
 
-- [ ] **C00a [GATE] [HUMAN] [SUPERVISED] (20 min) Create the private repo and its read-only credential**
+- [x] **C00a [GATE] [HUMAN] [SUPERVISED] (20 min) Create the private repo and its read-only credential**
   - Brighton creates `BrightonDube/counterspell-packs-private`, adds a read-only deploy key scoped to that repository (or a fine-grained read-only token), and stores the secret outside the public working tree with owner-only permissions. Brighton also creates an empty `retired-values.toml` at the private root. No agent creates the repo, a key or a token, or reads the secret.
   - Depends on: C00.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records the repo name and the secret's location as a path only, never its contents. Brighton confirms with a read-only `git ls-remote` that the key works.
@@ -401,7 +401,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: the three approved problems appear in `GET /api/problems`; a second import reports `unchanged`; hidden values are absent from the response.
   - Rust lesson: not applicable (operator step).
 
-- [ ] **C39 [HUMAN] (10 min) Approval gate before publication**
+- [x] **C39 [HUMAN] (10 min) Approval gate before publication**
   - Brighton approves each starter pack (grimoire-packs T28) before C38 runs. He writes `packs/<slug>/approval.toml` in the private repo with the combined content hash (CAT-PT7). The importer refuses without it.
   - Depends on: grimoire-packs T28.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records the approval.

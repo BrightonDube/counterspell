@@ -153,3 +153,8 @@ Working tree at the start of this run: only automation log files and `docs/KIRO_
 ## 17 Nov 2026 - grimoire-packs T20 verify-line amendment
 
 T20's verify line named `counterspell-grimoire validate packs/count-pairs --sandbox`. After the pack-tree split (0330f58/176cf9a, purged history), `reference/`, `incorrect/` and `known_ghosts.toml` live only in the private checkout, so the single-tree `validate` can no longer load a starter pack. The verify line now reads `counterspell-catalogue validate-sandbox <slug> --private-root <checkout>`, which runs `validate_sandbox_pair` over the merged pair - the same checks, on the production path. Evidence: `sbx_pack_runner::starter_packs_pass_sandbox_checks_with_the_real_runner` (114 s, real daemon) passes all three packs through `validate_sandbox_pair`.
+
+## 19 Nov 2026 (Brighton): C00a, C39, C33 updates
+- **C00a ticked:** `BrightonDube/counterspell-packs-private` and deploy key `~/.config/counterspell/packs-private-deploy-key` already verified (15 Nov 2026).
+- **C39 ticked:** Brighton approved `count-pairs`, `diagonal-total`, `longest-run-length`; `packs/<slug>/approval.toml` written in `counterspell-packs-private` and verified via `counterspell-catalogue import --static-only --dry-run` (all 3 accepted: `6117438e8c95`, `075a3ea68459`, `a2188cd18387`).
+- **C33 unblocked:** `GhostLookup` uses `submissions.ghost_source_id` / `submissions.ghost_input` (established by `ide-workspace` T02/T25).

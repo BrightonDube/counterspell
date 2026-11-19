@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "counterspell-mcp": {
+      "command": "cargo",
+      "args": ["run", "-q", "--release", "--manifest-path", "../Cargo.toml", "-p", "counterspell-mcp"],
+      "cwd": "${workspaceFolder}/kiro-power",
+      "disabled": false,
+      "autoApprove": ["validate_pack", "explain_verdict", "fit_complexity"]
+    }
+  }
+}

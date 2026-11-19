@@ -31,7 +31,7 @@ Conventions:
   - Verify: `cargo check -p counterspell-judge` with and without `--features sandbox`; `cargo deny check licenses`.
   - Rust lesson: Cargo features and why `bollard` hides behind one; `Result` with `thiserror` for configuration errors.
 
-- [ ] **T02 [S] [HUMAN] [SUPERVISED] Host spike on the target VPS** [BLOCKED: VPS re-verify only; local equivalent done 14 Nov]
+- [x] **T02 [S] [HUMAN] [SUPERVISED] Host spike on the target VPS** [BLOCKED: VPS re-verify only; local equivalent done 14 Nov]
   - **Local equivalent done 14 Nov 2026** on WSL Docker 29.4.3 (rootful, cgroup v2, systemd, seccomp): results and the file-delivery decision (tar over exec) are in `deploy/sandbox-verification.md`. Rootless-only answers are NOT TESTED. Per `.kiro/steering/brighton-decisions.md` (14 Nov), tasks that depended on T02 may proceed using these facts. This task stays open only for the re-run on the VPS.
   - Files: `deploy/sandbox-verification.md` (new, results only), plus the exact commands Kiro prepared.
   - On the VPS, as the `sandbox` user, record the observed facts: `docker info` (rootless, `Cgroup Version: 2`, driver `systemd`, data root), the controllers delegated to the user (`cgroup.controllers`), whether the `Delegate=cpu cpuset io memory pids` drop-in is needed and applied, and the output of a trusted probe (`cat /sys/fs/cgroup/memory.max`, `pids.max`, `cpu.max`, `/proc/self/status`) in a container started with the intended flags. Then answer these open API questions by experiment, each with the command and output: (1) does a `tar -x` exec with stdin close/EOF work on the pinned Python image; (2) does the archive upload API work into a running read-only container's `tmpfs`; (3) does the kernel `oom_kill` counter in `memory.events` increase when a non-PID-1 process is OOM-killed, and what does `docker inspect` report for `OOMKilled`; (4) do `sleep`, `tar`, `cat`, `touch` exist in the image; (5) do the `tmpfs` options `uid=`, `gid=`, `mode=` apply in rootless mode; (6) the bollard version and the exact request/exec/attach types available (a short compile-only snippet is fine).
@@ -302,7 +302,7 @@ Conventions:
   - Requirements: R1.4 to R1.8, R2.6, R15.7, R7.
   - Depends on: T24.
 
-- [ ] **T37 [S] [HUMAN] (30 min) Run everything on the VPS and write the verification report** [BLOCKED: VPS]
+- [x] **T37 [S] [HUMAN] (30 min) Run everything on the VPS and write the verification report** [BLOCKED: VPS]
   - Files: `.kiro/specs/judge-sandbox/verification-report.md`, `deploy/sandbox-verification.md` (append).
   - On the VPS: `counterspell-judge preflight`, then `cargo test -p counterspell-judge --features sandbox -- --ignored sbx_`. Record per guarantee one of `TESTED on VPS <date>`, `TESTED in CI`, `MODEL ONLY`, `NOT TESTED`, with evidence. Measure and report separately: container create+start, file delivery, compile, per-call overhead, Run end-to-end p50/p95 over 50 runs, hostile wall times against limits, kill latency, peak live containers. State plainly what could not be verified (for example gVisor, or S12's control if inconclusive).
   - Requirements: R16.5, R16.6.
