@@ -218,7 +218,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: marks contain no source/user identifiers; report bundle/chunk behaviour and measured times without turning estimates into promises.
   - Preserve: do not preload heavy assets on unrelated routes.
 
-- [ ] **T28 [S] (30 min) Run the full implementation verification gate**
+- [x] **T28 [S] (30 min) Run the full implementation verification gate**
   - Files: fixes only if a check fails; no planned new feature files.
   - Run `cargo fmt --all -- --check`, focused and workspace Rust tests, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cd web && npm ci && npm run check && npm test && npm run build`, `cargo deny check licenses`, and `docker compose config`. Run the real API acceptance suite with required services.
   - Depends on: T25, T26, T27 and all upstream API/sandbox dependencies.
