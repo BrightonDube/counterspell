@@ -144,7 +144,7 @@ T13 and T14 stay open and must run **after Wave 5** (the title-screen hero), not
   - Verify: `cd web && npm run check && npm test -- landing && npm run build`.
   - Requirements: R3, R4, R16, R27. Preserve: no test fixtures presented as real results.
 
-- [ ] **T13 [S] (30 min) Measure Lighthouse mobile and record the result**
+- [x] **T13 [S] (30 min) Measure Lighthouse mobile and record the result**
   - Files: `docs/kiro-log/landing-steel-night-lighthouse.md` (new), and fixes in `web/` only if the score is below 90.
   - Serve the production build through `counterspell-server` on localhost. Run `npx lighthouse http://localhost:8080/ --preset=mobile --only-categories=performance` three times and record each score, the median, LCP, CLS, TBT and the JavaScript transferred before GSAP.
   - If the median is below 90, cut in this order: the far layer, the bats, the smoke, then the parallax. Do not cut the headline, beats or CTA.

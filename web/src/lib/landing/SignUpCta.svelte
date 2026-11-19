@@ -22,6 +22,8 @@
   <img
     class="h-24 w-24 object-contain"
     src="/art/objects/candle-flame.webp"
+    srcset="/art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w"
+    sizes="96px"
     width="96"
     height="96"
     alt=""
@@ -32,6 +34,8 @@
   <img
     class="h-24 w-24 object-contain"
     src="/art/familiar/jack-o-lantern-orange.webp"
+    srcset="/art/familiar/jack-o-lantern-orange-192.webp 192w, /art/familiar/jack-o-lantern-orange.webp 512w"
+    sizes="96px"
     width="96"
     height="96"
     alt=""
