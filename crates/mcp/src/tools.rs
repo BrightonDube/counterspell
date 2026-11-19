@@ -8,7 +8,7 @@ use crate::config::ConfigError;
 use crate::errors::{bounded, ErrorCategory, ToolError};
 use crate::judge_adapter::{load_pack, PackContext};
 use crate::paths::{private_pack_dir, resolve_inside, PathError};
-use crate::runner::RunnerSlot;
+use crate::runner::{PackJob, RunnerSlot, SlotError};
 use crate::schemas::{
     ExplainVerdictArgs, FindGhostArgs, FitComplexityArgs, RunReferenceArgs, ShrinkInputArgs,
     ValidatePackArgs, MAX_FIT_POINTS,
@@ -18,9 +18,12 @@ use counterspell_engine::{
     build_autopsy, classify, hunt, AbortReason, Budget, Classification, FailureKind,
     FailurePredicate, HuntOutcome, ProgramResult, SystemClock,
 };
+use counterspell_grimoire::record::{self, signature_descriptor};
 use counterspell_grimoire::runner::{ProgramOracle, RunnerError, Target};
 use counterspell_grimoire::{validate_static, validate_static_pair};
+use counterspell_judge::sandbox::pack_runner::REFERENCE_SOURCE;
 use serde_json::{json, Value};
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -288,7 +291,79 @@ fn runner_fault(error: &RunnerError, root: &Path) -> ToolError {
     ToolError::new(ErrorCategory::SandboxInfrastructure, message, root)
 }
 
-/// `run_reference`: runs the trusted reference on one input through the sandbox runner.
+/// Maps a slot failure to the tool error category. A factory fault is infrastructure, never a
+/// verdict, and a missing sandbox fails closed.
+fn slot_error(error: SlotError, root: &Path) -> ToolError {
+    match error {
+        SlotError::Config(error) => config_error(&error, root),
+        SlotError::Job(error) => error,
+        SlotError::Runner(error) => runner_fault(&error, root),
+    }
+}
+
+/// The path of the trusted reference inside a pack.
+const REFERENCE_FILE: &str = "reference/solution.py";
+
+/// Builds what a factory slot needs for one call: the reference, the one program under test (if
+/// any) and the driver-protocol signature. Nothing else from the pack goes to the sandbox side.
+fn pack_job(
+    pack_dir: &Path,
+    root: &Path,
+    context: &PackContext,
+    program: Option<(&str, &[u8])>,
+) -> Result<PackJob, ToolError> {
+    let mut sources = BTreeMap::new();
+    let reference = context.pack.text(REFERENCE_FILE).ok_or_else(|| {
+        ToolError::new(
+            ErrorCategory::NotFound,
+            "the pack has no readable reference solution",
+            root,
+        )
+    })?;
+    sources.insert(REFERENCE_SOURCE.to_owned(), reference.to_owned());
+    if let Some((path, bytes)) = program {
+        let text = String::from_utf8(bytes.to_vec()).map_err(|_| {
+            ToolError::new(
+                ErrorCategory::InvalidRequest,
+                "the program is not valid UTF-8 text",
+                root,
+            )
+        })?;
+        sources.insert(path.to_owned(), text);
+    }
+    let record = match private_pack_dir(pack_dir) {
+        Some(private_dir) => record::build_pair(pack_dir, &private_dir),
+        None => record::build(pack_dir),
+    }
+    .map_err(|error| {
+        let detail = match &error {
+            record::RecordError::Invalid(report) => report
+                .diagnostics()
+                .iter()
+                .take(3)
+                .map(counterspell_grimoire::report::Diagnostic::to_text_line)
+                .collect::<Vec<_>>()
+                .join("; "),
+            record::RecordError::Unreadable(_) => "the pack could not be read".to_owned(),
+        };
+        ToolError::new(
+            ErrorCategory::InvalidRequest,
+            &format!("the pack does not pass static validation: {detail}"),
+            root,
+        )
+    })?;
+    let signature = signature_descriptor(&record.signature).map_err(|kind| {
+        ToolError::new(
+            ErrorCategory::InvalidRequest,
+            &format!("the signature uses an unsupported type: {kind}"),
+            root,
+        )
+    })?;
+    Ok(PackJob { sources, signature })
+}
+
+/// `run_reference`: runs the trusted reference on one input through the sandbox runner, then
+/// releases the runner so no sandbox container stays open after the call.
 ///
 /// # Errors
 ///
@@ -299,10 +374,28 @@ pub fn run_reference(
     slot: &mut RunnerSlot,
     args: &RunReferenceArgs,
 ) -> Result<Value, ToolError> {
-    let (_, context) = pack_from(root, &args.pack_path)?;
+    let result = run_reference_inner(root, slot, args);
+    slot.release();
+    result
+}
+
+/// `run_reference`: runs the trusted reference on one input through the sandbox runner.
+///
+/// # Errors
+///
+/// Returns `SandboxNotConfigured` without a runner, `SandboxInfrastructure` on a runner fault,
+/// and `InvalidRequest` for an input outside the schema.
+fn run_reference_inner(
+    root: &Path,
+    slot: &mut RunnerSlot,
+    args: &RunReferenceArgs,
+) -> Result<Value, ToolError> {
+    let (pack_dir, context) = pack_from(root, &args.pack_path)?;
     check_input(&context, &args.input, root)?;
     let limit = limit_of(&context, root)?;
-    let runner = slot.get().map_err(|error| config_error(&error, root))?;
+    let runner = slot
+        .get_for(|| pack_job(&pack_dir, root, &context, None))
+        .map_err(|error| slot_error(error, root))?;
     let result = runner
         .run(Target::Reference, &args.input, limit)
         .map_err(|error| runner_fault(&error, root))?;
@@ -350,9 +443,8 @@ fn budget_from(
     Ok(budget)
 }
 
-/// `find_ghost_input`: the engine hunt, with every evaluation run through the sandbox runner.
-///
-/// `image_digest` is the pinned Python image, resolved once at start-up from the language catalogue.
+/// `find_ghost_input`: the engine hunt, with every evaluation run through the sandbox runner. The
+/// runner is released when the hunt ends, whatever the result.
 ///
 /// # Errors
 ///
@@ -365,10 +457,39 @@ pub fn find_ghost_input(
     image_digest: &str,
     args: &FindGhostArgs,
 ) -> Result<Value, ToolError> {
+    let result = find_ghost_input_inner(root, slot, image_digest, args);
+    slot.release();
+    result
+}
+
+/// `find_ghost_input`: the engine hunt, with every evaluation run through the sandbox runner.
+///
+/// `image_digest` is the pinned Python image, resolved once at start-up from the language catalogue.
+///
+/// # Errors
+///
+/// Returns `SandboxNotConfigured` without a runner, `SandboxInfrastructure` when the
+/// runner fails, `EngineAborted` for other aborts, and `InvalidRequest` for bad arguments.
+/// A search that finds nothing within budget is a normal result.
+fn find_ghost_input_inner(
+    root: &Path,
+    slot: &mut RunnerSlot,
+    image_digest: &str,
+    args: &FindGhostArgs,
+) -> Result<Value, ToolError> {
     let (pack_dir, context) = pack_from(root, &args.pack_path)?;
     let program_bytes = program_from(&pack_dir, root, &args.program)?;
     let budget = budget_from(args.budget.as_ref(), root)?;
-    let runner = slot.get().map_err(|error| config_error(&error, root))?;
+    let runner = slot
+        .get_for(|| {
+            pack_job(
+                &pack_dir,
+                root,
+                &context,
+                Some((&args.program, &program_bytes)),
+            )
+        })
+        .map_err(|error| slot_error(error, root))?;
     let mut request = context.hunt_request(&program_bytes, image_digest);
     request.budget = budget;
     request.seed_override = args.seed_override;
@@ -405,7 +526,8 @@ fn abort_error(reason: &AbortReason, root: &Path) -> ToolError {
     }
 }
 
-/// `shrink_input`: the engine shrinker, where every probe is judged by the sandbox runner.
+/// `shrink_input`: the engine shrinker, where every probe is judged by the sandbox runner. The
+/// runner is released when the shrink ends, whatever the result.
 ///
 /// # Errors
 ///
@@ -417,8 +539,25 @@ pub fn shrink_input(
     slot: &mut RunnerSlot,
     args: &ShrinkInputArgs,
 ) -> Result<Value, ToolError> {
+    let result = shrink_input_inner(root, slot, args);
+    slot.release();
+    result
+}
+
+/// `shrink_input`: the engine shrinker, where every probe is judged by the sandbox runner.
+///
+/// # Errors
+///
+/// Returns `InvalidRequest` for a timeout target, a bad input or a bad path,
+/// `SandboxNotConfigured` without a runner, `SandboxInfrastructure` on a runner fault, and
+/// `EngineAborted` when the shrunk input does not reproduce the failure.
+fn shrink_input_inner(
+    root: &Path,
+    slot: &mut RunnerSlot,
+    args: &ShrinkInputArgs,
+) -> Result<Value, ToolError> {
     let (pack_dir, context) = pack_from(root, &args.pack_path)?;
-    program_from(&pack_dir, root, &args.program)?;
+    let program_bytes = program_from(&pack_dir, root, &args.program)?;
     check_input(&context, &args.input, root)?;
     let kind = match args.target.kind.as_str() {
         "wrong" => FailureKind::WrongAnswer,
@@ -433,7 +572,16 @@ pub fn shrink_input(
     };
     let limit = limit_of(&context, root)?;
     let comparator = context.meta.engine_comparator();
-    let runner = slot.get().map_err(|error| config_error(&error, root))?;
+    let runner = slot
+        .get_for(|| {
+            pack_job(
+                &pack_dir,
+                root,
+                &context,
+                Some((&args.program, &program_bytes)),
+            )
+        })
+        .map_err(|error| slot_error(error, root))?;
     let mut oracle = ProgramOracle::new(runner, &args.program);
     let deadline = Instant::now() + Duration::from_millis(args.wall_ms);
     let mut fault: Option<ToolError> = None;
@@ -999,6 +1147,258 @@ mod tests {
         assert_eq!(
             output["report"],
             serde_json::to_value(&direct).expect("encodes")
+        );
+    }
+
+    // ---- the job a factory slot receives (counterspell-mcp-power T05, T10) ----
+
+    use crate::runner::{PackJob, RunnerFactory};
+    use std::sync::{Arc, Mutex};
+
+    /// A throwaway workspace holding one complete public pack named `job-demo`. No private tree
+    /// carries that name, so the public files are all the tool can see.
+    struct Workspace(PathBuf);
+
+    impl Workspace {
+        fn new() -> Self {
+            // A counter plus the clock keeps parallel tests apart without naming the process.
+            static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+            let nanos = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map_or(0, |elapsed| elapsed.as_nanos());
+            let root = std::env::temp_dir().join(format!(
+                "counterspell-mcp-job-{nanos}-{}",
+                NEXT.fetch_add(1, std::sync::atomic::Ordering::SeqCst)
+            ));
+            let pack = root.join("packs/job-demo");
+            std::fs::create_dir_all(pack.join("reference")).expect("reference dir");
+            std::fs::create_dir_all(pack.join("incorrect")).expect("incorrect dir");
+            std::fs::write(root.join("Cargo.toml"), "[workspace]\n").expect("marker");
+            std::fs::write(pack.join("problem.md"), JOB_PROBLEM).expect("problem");
+            std::fs::write(pack.join("meta.toml"), JOB_META).expect("meta");
+            std::fs::write(pack.join("hints.toml"), JOB_HINTS).expect("hints");
+            std::fs::write(pack.join("reference/solution.py"), JOB_REFERENCE).expect("reference");
+            std::fs::write(pack.join("incorrect/same-index.py"), JOB_PROGRAM).expect("program");
+            std::fs::write(pack.join("known_ghosts.toml"), JOB_GHOSTS).expect("ghosts");
+            Self(root)
+        }
+    }
+
+    impl Drop for Workspace {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    const JOB_REFERENCE: &str = "def count_pairs(values, target):\n    return 2\n";
+    const JOB_PROGRAM: &str = "def count_pairs(values, target):\n    return 3\n";
+    const JOB_GHOSTS: &str = "[[ghost]]\nid = \"same-index\"\nprogram = \"incorrect/same-index.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 3\nconcepts = [\"pairs\"]\nexplanation = \"A value cannot pair with itself, so the single item must not be counted.\"\n";
+    const JOB_PROBLEM: &str = "# Count the Pairs\n\n## Task\nCount.\n\n## Input\nA.\n\n## Output\nB.\n\n## Examples\nC.\n\n## Constraints\nD.\n";
+    const JOB_HINTS: &str = "[[hint]]\nrung = 1\ntext = \"One.\"\n\n[[hint]]\nrung = 2\ntext = \"Two.\"\n\n[[hint]]\nrung = 3\ntext = \"Three.\"\n\n[[hint]]\nrung = 4\ntext = \"Four.\"\n";
+    const JOB_META: &str = "slug = \"job-demo\"\ntitle = \"Count the Pairs\"\nstatus = \"draft\"\ndifficulty = \"easy\"\ntrack = \"arrays\"\nconcepts = [\"arrays\", \"pairs\"]\norigin = \"original\"\nauthor = \"Brighton\"\nlicence = \"MIT\"\npack_version = 1\nfunction = \"count_pairs\"\nreturns = \"int\"\ncomparator = \"exact\"\n\n[[params]]\nname = \"values\"\ntype = \"list[int]\"\n\n[[params]]\nname = \"target\"\ntype = \"int\"\n\n[limits]\ntime_ms = 2000\nmem_mb = 256\n\n[input_schema]\ntype = \"tuple\"\nitems = [\n  { type = \"int_array\", min_len = 0, max_len = 30, min = -50, max = 50 },\n  { type = \"int\", min = -100, max = 100 },\n]\n\n[generator]\nseed = 1729\nhidden_count = 12\n\n[[samples]]\ninput = [[1, 2, 3, 2], 4]\nexpected = 2\n\n[[samples]]\ninput = [[5, 5], 10]\nexpected = 1\n";
+
+    /// Records the job it was given and hands out the scripted fake.
+    struct JobRecorder(Arc<Mutex<Vec<PackJob>>>);
+
+    impl RunnerFactory for JobRecorder {
+        fn build(
+            &self,
+            job: &PackJob,
+        ) -> Result<Box<dyn counterspell_grimoire::runner::PackRunner + Send>, RunnerError>
+        {
+            self.0.lock().expect("lock").push(job.clone());
+            Ok(Box::new(ScriptedRunner::new(
+                "incorrect/same-index.py",
+                ProgramBehaviour::CountsSelf,
+            )))
+        }
+    }
+
+    fn recording_slot() -> (RunnerSlot, Arc<Mutex<Vec<PackJob>>>) {
+        let jobs = Arc::new(Mutex::new(Vec::new()));
+        (
+            RunnerSlot::with_factory(Box::new(JobRecorder(jobs.clone()))),
+            jobs,
+        )
+    }
+
+    /// Breaks if the sandbox side gets anything but the reference and the wire-format signature.
+    #[test]
+    fn run_reference_gives_the_factory_only_the_reference_and_the_wire_signature() {
+        let workspace = Workspace::new();
+        let (mut slot, jobs) = recording_slot();
+        let args = RunReferenceArgs {
+            pack_path: "packs/job-demo".to_string(),
+            input: json!([[1, 2, 3], 4]),
+        };
+
+        run_reference(&workspace.0, &mut slot, &args).expect("the fake answers");
+
+        let jobs = jobs.lock().expect("lock");
+        assert_eq!(jobs.len(), 1);
+        assert_eq!(
+            jobs[0]
+                .sources
+                .keys()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            vec!["reference"]
+        );
+        assert_eq!(jobs[0].sources["reference"], JOB_REFERENCE);
+        assert_eq!(
+            jobs[0].signature,
+            json!({
+                "protocol_version": 1,
+                "function": "count_pairs",
+                "parameters": [
+                    {"name": "values", "type": {"kind": "list", "items": {"kind": "int"}}},
+                    {"name": "target", "type": {"kind": "int"}}
+                ],
+                "returns": {"kind": "int"}
+            })
+        );
+    }
+
+    /// Breaks if a hunt hands the sandbox side files other than the reference and the one program
+    /// under test (hints, the statement and sibling programs stay out).
+    #[test]
+    fn find_ghost_input_adds_only_the_named_program() {
+        let workspace = Workspace::new();
+        let (mut slot, jobs) = recording_slot();
+        let mut args = hunt_args("incorrect/same-index.py");
+        args.pack_path = "packs/job-demo".to_string();
+
+        find_ghost_input(&workspace.0, &mut slot, FAKE_DIGEST, &args).expect("a hunt result");
+
+        let jobs = jobs.lock().expect("lock");
+        let keys: Vec<&str> = jobs[0].sources.keys().map(String::as_str).collect();
+        assert_eq!(keys, vec!["incorrect/same-index.py", "reference"]);
+        assert_eq!(jobs[0].sources["incorrect/same-index.py"], JOB_PROGRAM);
+    }
+
+    /// Breaks if shrinking probes a program the sandbox side was never given.
+    #[test]
+    fn shrink_input_gets_the_same_job_as_a_hunt() {
+        let workspace = Workspace::new();
+        let (mut slot, jobs) = recording_slot();
+        let args = ShrinkInputArgs {
+            pack_path: "packs/job-demo".to_string(),
+            program: "incorrect/same-index.py".to_string(),
+            input: json!([[0, 0, 0], 0]),
+            target: ShrinkTargetArg {
+                kind: "wrong".to_string(),
+            },
+            max_evals: 50,
+            wall_ms: 2000,
+        };
+
+        shrink_input(&workspace.0, &mut slot, &args).expect("a shrink result");
+
+        let jobs = jobs.lock().expect("lock");
+        let keys: Vec<&str> = jobs[0].sources.keys().map(String::as_str).collect();
+        assert_eq!(keys, vec!["incorrect/same-index.py", "reference"]);
+    }
+
+    /// Wraps the scripted fake and flips a flag when the runner is dropped.
+    struct DropProbe {
+        inner: ScriptedRunner,
+        dropped: Arc<std::sync::atomic::AtomicUsize>,
+    }
+
+    impl Drop for DropProbe {
+        fn drop(&mut self) {
+            self.dropped
+                .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        }
+    }
+
+    impl counterspell_grimoire::runner::PackRunner for DropProbe {
+        fn run(
+            &mut self,
+            target: Target<'_>,
+            input: &Value,
+            limit: Duration,
+        ) -> Result<ProgramResult, RunnerError> {
+            self.inner.run(target, input, limit)
+        }
+
+        fn bench(
+            &mut self,
+            sized_inputs: &[(u64, Value)],
+            limit: Duration,
+        ) -> Result<Vec<(u64, u64)>, RunnerError> {
+            self.inner.bench(sized_inputs, limit)
+        }
+    }
+
+    struct ProbeFactory(Arc<std::sync::atomic::AtomicUsize>);
+
+    impl RunnerFactory for ProbeFactory {
+        fn build(
+            &self,
+            _job: &PackJob,
+        ) -> Result<Box<dyn counterspell_grimoire::runner::PackRunner + Send>, RunnerError>
+        {
+            Ok(Box::new(DropProbe {
+                inner: ScriptedRunner::new("incorrect/same-index.py", ProgramBehaviour::CountsSelf),
+                dropped: self.0.clone(),
+            }))
+        }
+    }
+
+    /// Breaks if a finished tool call leaves its runner, and so its sandbox container, open until
+    /// the next call. Every code-running tool must release the runner it used.
+    #[test]
+    fn every_code_running_tool_releases_its_runner_when_it_finishes() {
+        let workspace = Workspace::new();
+        let dropped = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let mut slot = RunnerSlot::with_factory(Box::new(ProbeFactory(dropped.clone())));
+        let count = || dropped.load(std::sync::atomic::Ordering::SeqCst);
+
+        let reference = RunReferenceArgs {
+            pack_path: "packs/job-demo".to_string(),
+            input: json!([[1, 2, 3], 4]),
+        };
+        run_reference(&workspace.0, &mut slot, &reference).expect("run_reference");
+        assert_eq!(count(), 1, "run_reference kept its runner");
+
+        let mut hunt = hunt_args("incorrect/same-index.py");
+        hunt.pack_path = "packs/job-demo".to_string();
+        find_ghost_input(&workspace.0, &mut slot, FAKE_DIGEST, &hunt).expect("find_ghost_input");
+        assert_eq!(count(), 2, "find_ghost_input kept its runner");
+
+        let shrink = ShrinkInputArgs {
+            pack_path: "packs/job-demo".to_string(),
+            program: "incorrect/same-index.py".to_string(),
+            input: json!([[0, 0, 0], 0]),
+            target: ShrinkTargetArg {
+                kind: "wrong".to_string(),
+            },
+            max_evals: 50,
+            wall_ms: 2000,
+        };
+        shrink_input(&workspace.0, &mut slot, &shrink).expect("shrink_input");
+        assert_eq!(count(), 3, "shrink_input kept its runner");
+    }
+
+    /// Breaks if a refused request (a bad input) still leaves a runner open.
+    #[test]
+    fn a_refused_tool_call_does_not_leave_a_runner_open_either() {
+        let workspace = Workspace::new();
+        let dropped = Arc::new(std::sync::atomic::AtomicUsize::new(0));
+        let mut slot = RunnerSlot::with_factory(Box::new(ProbeFactory(dropped.clone())));
+        let outside_schema = RunReferenceArgs {
+            pack_path: "packs/job-demo".to_string(),
+            input: json!([[1000], 4]),
+        };
+
+        let error = run_reference(&workspace.0, &mut slot, &outside_schema).expect_err("refused");
+
+        assert_eq!(error.category, ErrorCategory::InvalidRequest);
+        assert_eq!(
+            dropped.load(std::sync::atomic::Ordering::SeqCst),
+            0,
+            "no runner was ever built for a refused request"
         );
     }
 }

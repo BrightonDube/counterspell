@@ -236,7 +236,16 @@ impl PackRunnerFactory {
     /// disabled `python` entry means `None` — the commands report `SBX-07`.
     #[must_use]
     pub fn from_env() -> Option<Self> {
-        let config = SandboxConfig::from_env().ok()?;
+        Self::from_config(SandboxConfig::from_env().ok()?)
+    }
+
+    /// Builds the factory from an explicit configuration. Any unusable socket, an unreadable
+    /// language catalogue, or a disabled `python` entry means `None`.
+    ///
+    /// This does not check which daemon is behind the socket. Callers that run code for a tool
+    /// or a service should use [`PackRunnerFactory::verified`].
+    #[must_use]
+    pub fn from_config(config: SandboxConfig) -> Option<Self> {
         let docker = connect(&config.docker_socket, config.api_timeout).ok()?;
         let backend = BollardBackend::new(docker, config.api_timeout);
         let catalog = LanguageCatalog::load(&config.languages_file).ok()?;
@@ -257,6 +266,25 @@ impl PackRunnerFactory {
             config,
             backend,
             lang,
+        })
+    }
+
+    /// Like [`PackRunnerFactory::from_config`], but first checks that the daemon behind the
+    /// socket is the rootless sandbox daemon, with the same identity check the worker runs.
+    /// A rootful or main daemon, or one that does not answer, is refused.
+    ///
+    /// # Errors
+    ///
+    /// Returns a message naming the failed step. It never includes a secret.
+    pub async fn verified(config: SandboxConfig) -> Result<Self, String> {
+        let docker = connect(&config.docker_socket, config.api_timeout)
+            .map_err(|error| format!("sandbox daemon refused: {error}"))?;
+        super::daemon::verify(&docker, config.runtime, config.api_timeout)
+            .await
+            .map_err(|error| format!("sandbox daemon identity check failed: {error}"))?;
+        Self::from_config(config).ok_or_else(|| {
+            "sandbox daemon is fine, but the language catalogue or the python entry is unusable"
+                .to_owned()
         })
     }
 
@@ -295,5 +323,53 @@ impl Drop for PackRunnerFactory {
         if let Some(runtime) = self.runtime.take() {
             runtime.shutdown_background();
         }
+    }
+}
+
+#[cfg(all(test, feature = "sandbox"))]
+mod factory_tests {
+    use std::path::PathBuf;
+    use std::time::Duration;
+
+    use super::PackRunnerFactory;
+    use crate::sandbox::config::{OciRuntime, SandboxConfig};
+
+    fn config(socket: &str) -> SandboxConfig {
+        SandboxConfig {
+            docker_socket: PathBuf::from(socket),
+            runtime: OciRuntime::Runc,
+            max_containers: 4,
+            reaper_interval: Duration::from_secs(10),
+            orphan_age: Duration::from_secs(40),
+            kill_slack: Duration::from_millis(500),
+            run_wall_cap: Duration::from_secs(20),
+            max_consecutive_abnormal: 3,
+            cleanup_budget: Duration::from_secs(5),
+            // Short, so an unreachable daemon fails the identity check quickly.
+            api_timeout: Duration::from_secs(1),
+            languages_file: PathBuf::from("languages/languages.toml"),
+        }
+    }
+
+    /// Breaks if a pack runner can be built on the main Docker daemon, which would put sandbox
+    /// code beside the application, the database and the secrets.
+    #[tokio::test]
+    async fn a_verified_factory_refuses_the_main_daemon_socket() {
+        let error = PackRunnerFactory::verified(config("/var/run/docker.sock"))
+            .await
+            .err()
+            .expect("the main daemon socket is refused");
+        assert!(error.contains("sandbox daemon"), "{error}");
+    }
+
+    /// Breaks if a socket path alone is trusted: the daemon behind it must answer the identity
+    /// check, and an absent daemon is a refusal, never a pass.
+    #[tokio::test]
+    async fn a_verified_factory_refuses_a_daemon_that_does_not_answer() {
+        let error = PackRunnerFactory::verified(config("/run/user/1/counterspell-no-such.sock"))
+            .await
+            .err()
+            .expect("an unreachable daemon is refused");
+        assert!(error.contains("sandbox daemon"), "{error}");
     }
 }
