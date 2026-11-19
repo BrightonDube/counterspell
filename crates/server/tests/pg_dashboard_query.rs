@@ -50,6 +50,24 @@ async fn save_completed(pool: &PgPool, user: UserId, problem_slug: &str, verdict
     .expect("completed submission row");
 }
 
+/// Saves a completed sample-only Run (`mode = 'run'`) with the given verdict.
+async fn save_completed_run_mode(pool: &PgPool, user: UserId, problem_slug: &str, verdict: &str) {
+    sqlx::query(
+        "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256, status, \
+         verdict, passed, total, score, created_at, finished_at) \
+         VALUES ($1, $2, $3, 'python', 'run', 'pass', $4, 'completed', $5, 1, 1, 1, \
+                 '2026-11-14T10:00:00Z'::timestamptz, '2026-11-14T10:00:00Z'::timestamptz)",
+    )
+    .bind(Uuid::new_v4())
+    .bind(user.as_uuid())
+    .bind(problem_slug)
+    .bind(vec![9u8; 32])
+    .bind(verdict)
+    .execute(pool)
+    .await
+    .expect("completed run row");
+}
+
 fn to_json(response: &DashboardResponse) -> Value {
     serde_json::to_value(response).expect("response serialises")
 }
@@ -186,4 +204,23 @@ async fn pg_repeated_accepted_runs_count_one_solved_problem(pool: PgPool) {
         "one problem, however many accepted runs"
     );
     assert_eq!(response.solved.by_difficulty.easy, 1);
+}
+
+/// T39 finding 1: a sample-only Run that passes proves nothing about the hidden tests, so it must
+/// not count as solved. Only an accepted Submit does (DASH-4, judge-sandbox T39).
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_an_accepted_sample_run_is_not_a_solved_problem(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("two-sum");
+    let learner = make_user(&pool, 302).await;
+    save_completed_run_mode(&pool, learner, "two-sum", "accepted").await;
+
+    let response = read_dashboard(&pool, learner, today())
+        .await
+        .expect("dashboard reads");
+
+    assert_eq!(response.solved.total, 0, "a sample Run is not a solve");
+    assert_eq!(response.solved.by_difficulty.easy, 0);
 }
