@@ -24,7 +24,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: the crate remains the only pack parser; no second parser in the server.
   - Rust lesson: `enum` and `match` for "exactly these cases"; why `Result` beats a panic for bad author input.
 
-- [ ] **G2 [S] (25 min) Validate authored hint text**
+- [x] **G2 [S] (25 min) Validate authored hint text**
   - Files: `crates/grimoire/src/hints.rs`.
   - Enforce: each rung is 1 to 1,200 characters; no fenced or indented code block longer than 3 lines in any rung; no empty rung. Return a list of author-readable errors that name the problem slug and the rung.
   - Requirements: R1.1, R4.2 (authored text obeys the same no-full-solution rule).
