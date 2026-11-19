@@ -314,6 +314,43 @@ describe('WorkspaceShell', () => {
     );
   });
 
+  // Breaks if "speech off" still sends the learner's code to the server for a bubble (R11.9).
+  it('does not ask for the Familiar speech when the learner turned speech off', async () => {
+    const requestSpeech = vi.fn(() =>
+      Promise.resolve({
+        kind: 'ready' as const,
+        label: 'Measured summary' as const,
+        text: 'Looks linear.'
+      })
+    );
+    const loadPreferences = vi.fn(() =>
+      Promise.resolve({ muted: false, hidden: false, speech: 'off' as const })
+    );
+    const savePreferences = vi.fn(() => Promise.resolve({ synced: true }));
+    const stream: RunStreamState = {
+      ...initialRunState('run-quiet'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream),
+        familiarDeps: { loadPreferences, savePreferences, requestSpeech }
+      }
+    });
+    await vi.waitFor(() => expect(loadPreferences).toHaveBeenCalled());
+
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    await screen.findByRole('button', { name: /rerun ghost/i });
+
+    expect(requestSpeech).not.toHaveBeenCalled();
+  });
+
   // Breaks if the speech request fires before the terminal read, or fires more
   // than once for the same run across republished stream states.
   it('asks for the Familiar speech once, after the run finishes', async () => {

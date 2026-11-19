@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SpeechResult } from '../api/familiar';
   import { familiarView, type FamiliarState } from './familiar-state';
+  import SpeechBubble from './bubble/SpeechBubble.svelte';
   import Mascot from './mascot/Mascot.svelte';
 
   let {
@@ -108,12 +109,7 @@
   {/if}
 
   {#if speech !== null}
-    <p role="status" class="w-full rounded bg-bg px-3 py-2 text-sm text-text">
-      {#if speech.kind === 'ready'}
-        <span class="font-semibold">{speech.label}:</span>
-      {/if}
-      {speech.text}
-    </p>
+    <SpeechBubble {speech} />
   {/if}
 
   <details class="w-full text-sm text-text-muted">

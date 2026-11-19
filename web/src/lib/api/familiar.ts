@@ -1,17 +1,34 @@
 // Familiar requests: saving mute and hide, and asking for one speech bubble per finished run.
 // Speech is words only. Nothing here can set a verdict or a mood.
-import { asRecord, ContractError, readEnum, readString } from '../contract';
+import {
+  asRecord,
+  ContractError,
+  readBool,
+  readEnum,
+  readString
+} from '../contract';
 import { requestJson, type RequestOptions } from './client';
+
+/** Whether the learner wants a speech bubble. `off` stops the page asking the server for one. */
+export type SpeechPreference = 'auto' | 'off';
 
 /** The learner's Familiar choices. They are kept locally even when saving them fails. */
 export interface FamiliarPrefs {
   muted: boolean;
   hidden: boolean;
+  /** Read from the server. The page never sends it back with a mute or hide change. */
+  speech?: SpeechPreference;
 }
 
 /** The result of a speech request. Unavailable means a fixed line, never a server message. */
 export type SpeechResult =
-  | { kind: 'ready'; label: 'AI hint' | 'Measured summary'; text: string }
+  | {
+      kind: 'ready';
+      label: 'AI hint' | 'Measured summary';
+      text: string;
+      /** True when the learner's code went to an AI provider to write this text. */
+      sentToProvider?: boolean;
+    }
   | { kind: 'unavailable'; text: string };
 
 /** The Familiar's own API calls. The workspace injects fakes in tests. */
@@ -47,11 +64,13 @@ function parseSpeech(raw: unknown): SpeechResult {
     'ai',
     'template'
   ] as const);
-  const text = readString(record, 'text', 'speech', MAX_SPEECH_BYTES);
+  const text = readString(record, 'body', 'speech', MAX_SPEECH_BYTES);
+  const sentToProvider = readBool(record, 'sent_to_provider', 'speech');
   return {
     kind: 'ready',
     label: source === 'ai' ? 'AI hint' : 'Measured summary',
-    text
+    text,
+    sentToProvider
   };
 }
 
@@ -112,7 +131,14 @@ export async function loadPreferences(
             'expected muted and hidden to be booleans'
           );
         }
-        return { muted: record.muted, hidden: record.hidden };
+        const prefs: FamiliarPrefs = {
+          muted: record.muted,
+          hidden: record.hidden
+        };
+        if (record.speech === 'auto' || record.speech === 'off') {
+          prefs.speech = record.speech;
+        }
+        return prefs;
       },
       options
     );

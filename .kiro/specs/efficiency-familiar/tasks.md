@@ -414,7 +414,7 @@ Conventions for every web task:
   - Preserve: ownership predicate in the query; no new write privileges.
   - Rust lesson: Axum extractors and returning typed JSON errors.
 
-- [ ] **T39 [S] (30 min) Speech bubble component and the once-per-run request**
+- [x] **T39 [S] (30 min) Speech bubble component and the once-per-run request**
   - Files: `web/src/lib/familiar/bubble/{SpeechBubble.svelte,request.ts}`, tests.
   - The component shows the body as text, the "AI hint" label for `source: "ai"`, a small "From your measured results" caption for templates, and a one-time notice that the code was sent to a third-party provider. `request.ts` calls the endpoint at most once per run id (in-memory map survives remounts and SSE reconnects) and respects `speech: "off"`. Extend `ide-workspace`'s existing call if present.
   - Tests: second call for the same run returns the same promise; reconnect and remount do not repeat the request; failure shows a safe message and leaves mood and verdict untouched; HTML in the body renders as text (P25); no label for templates.

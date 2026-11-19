@@ -37,9 +37,12 @@ describe('requestSpeech', () => {
     const calls: { url: string; method: string | undefined }[] = [];
     const fetchImpl = async (url: string, init?: RequestInit) => {
       calls.push({ url, method: init?.method });
+      // test-change: FAM-6. The route answers with `body` and `sent_to_provider`
+      // (efficiency-familiar design, bubble body). The old fixture used `text`, a field the server never sends.
       return jsonResponse(200, {
         source: 'ai',
-        text: 'The nested scan drives the growth.'
+        body: 'The nested scan drives the growth.',
+        sent_to_provider: true
       });
     };
     const speech = await requestSpeech('run-1', { fetchImpl });
@@ -49,7 +52,8 @@ describe('requestSpeech', () => {
     expect(speech).toEqual({
       kind: 'ready',
       label: 'AI hint',
-      text: 'The nested scan drives the growth.'
+      text: 'The nested scan drives the growth.',
+      sentToProvider: true
     });
   });
 
@@ -112,7 +116,8 @@ describe('loadPreferences', () => {
     const prefs = await loadPreferences({ fetchImpl });
     expect(seen.url).toBe('/api/me/familiar');
     expect(seen.method ?? 'GET').toBe('GET');
-    expect(prefs).toEqual({ muted: true, hidden: true });
+    // test-change: FAM-6. The page now reads the saved speech choice so it can stop asking for a bubble.
+    expect(prefs).toEqual({ muted: true, hidden: true, speech: 'off' });
   });
 
   // Breaks if a failed load throws into the page, so the figure never appears at all when the network is down.

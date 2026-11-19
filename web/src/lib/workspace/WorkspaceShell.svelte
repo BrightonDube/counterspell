@@ -10,7 +10,6 @@
   import {
     createSpeechGuard,
     loadPreferences,
-    requestSpeech,
     savePreferences,
     type FamiliarDeps,
     type FamiliarPrefs,
@@ -23,6 +22,7 @@
     initialFamiliarState,
     type FamiliarState
   } from '../familiar/familiar-state';
+  import { requestSpeechOnce } from '../familiar/bubble/request';
   import Familiar from '../familiar/Familiar.svelte';
   import { runOutcomeLabel, statusLabel } from './test-rows';
   import AutopsyCard from './AutopsyCard.svelte';
@@ -47,7 +47,11 @@
     layout,
     reducedMotion,
     sessionDeps = browserRunSessionDeps,
-    familiarDeps = { loadPreferences, savePreferences, requestSpeech }
+    familiarDeps = {
+      loadPreferences,
+      savePreferences,
+      requestSpeech: requestSpeechOnce
+    }
   }: {
     problem: ProblemDetail;
     languages: LanguageSummary[];
@@ -145,7 +149,8 @@
   });
 
   function onPrefsChange(next: FamiliarPrefs): void {
-    prefs = next;
+    // Keep the speech choice the server sent. The Familiar panel only changes mute and hide.
+    prefs = { ...prefs, ...next };
     prefsTouched = true;
     familiarDeps.savePreferences(next).catch(() => {});
   }
@@ -156,6 +161,8 @@
   let speechRunId = '';
   $effect(() => {
     if (runs.phase !== 'finished' || runs.runId === undefined) return;
+    // Speech off means the page never asks, so the code is not sent anywhere.
+    if (prefs.speech === 'off') return;
     const runId = runs.runId;
     if (runId === speechRunId) return;
     if (!speechGuard.claim(runId)) return;
