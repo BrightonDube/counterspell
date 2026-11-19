@@ -43,8 +43,11 @@ const SERVER_READS: [&str; 8] = [
 ];
 
 /// Tables the judge may read (matrix: judge SELECT on the run inputs and hidden data).
-const JUDGE_READS: [&str; 9] = [
+/// `problem_concepts` joined the matrix with the T25 ghost hunt: the judge copies a
+/// problem's concept tags into a found ghost's autopsy.
+const JUDGE_READS: [&str; 10] = [
     "problems",
+    "problem_concepts",
     "problem_versions",
     "problem_examples",
     "problem_starters",
