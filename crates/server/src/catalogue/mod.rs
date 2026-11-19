@@ -3,5 +3,6 @@
 
 pub mod dto;
 pub mod handlers;
+pub mod languages;
 pub mod lookup;
 pub mod read;

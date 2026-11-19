@@ -8,9 +8,9 @@ const MAX_DELAY_MS = 1500;
  * Where idle callbacks are missing (older browsers), it falls back to a timer of MAX_DELAY_MS.
  */
 export function afterPaint(callback: () => void): void {
-	if (typeof requestIdleCallback === 'function') {
-		requestIdleCallback(() => callback(), { timeout: MAX_DELAY_MS });
-	} else {
-		setTimeout(callback, MAX_DELAY_MS);
-	}
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(() => callback(), { timeout: MAX_DELAY_MS });
+  } else {
+    setTimeout(callback, MAX_DELAY_MS);
+  }
 }

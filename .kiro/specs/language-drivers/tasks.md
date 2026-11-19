@@ -57,28 +57,28 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: a passing and failing JavaScript run produce worker-owned comparison results; malformed answers, exceptions, and process failures never become Accepted.
   - Preserve: the server has no Docker access; the judge uses only the separate rootless sandbox daemon.
 
-- [ ] **T08 [S] (30 min) Add generic bench-mode process handoff**
+- [x] **T08 [S] (30 min) Add generic bench-mode process handoff**
   - Files: `crates/judge/src/bench.rs` or the existing judge lifecycle module, plus focused tests.
   - After correctness passes, stop the normal driver and start a clean driver with `bench_args` in the same sandbox container. Send two untimed warm-ups, five timed calls per generated size, and enforce Run/Submit budgets and per-call deadlines using the worker clock.
   - Depends on: T07 and the problem bench interface.
   - Verify: a JavaScript bench run records raw samples, computes medians for points, stops within 1.5 seconds/three sizes for Run and 4 seconds/five-to-six sizes for Submit, and cleans up on timeout.
   - Preserve: the driver emits no timing; expected outputs and complexity classification remain outside the driver.
 
-- [ ] **T09 [P] (25 min) Persist and publish bench measurements safely**
+- [x] **T09 [P] (25 min) Persist and publish bench measurements safely**
   - Files: the existing judge run-timing/event integration modules and tests; only the migrations already owned by the run-lifecycle design if required.
   - Persist `run_timings` rows and emit `bench_start`, `bench_point`, `complexity`, and `familiar` through the existing Postgres `run_events` path, with only public fields.
   - Depends on: T08 and run-lifecycle event persistence.
   - Verify: public events contain no hidden input, expected output, source, or raw answer; event sequence and terminal-write behavior remain compatible with SSE replay.
   - Preserve: Postgres is truth and event storage; Valkey is not used for queueing or events.
 
-- [ ] **T10 [P] (30 min) Add generated-input driver properties for every published problem**
+- [x] **T10 [P] (30 min) Add generated-input driver properties for every published problem**
   - Files: `packs/<slug>/fixtures/<lang>/known_correct.*`, property/integration harness files in the existing judge or Grimoire test locations, and no production reference rows.
   - Add a known-correct Python and JavaScript fixture for every published problem. Run generated schema-valid inputs through each fixture, assert exact canonical JSON round trips, compare each language fixture to the Python reference with the pack comparator, and include deterministic seeds in failures.
   - Depends on: T03, T04, T07, and the available pack generator/reference interfaces.
   - Verify: the property suite covers every published pack, repeated calls are deterministic, and all fixture/reference execution occurs through the trusted sandbox path.
   - Preserve: Python is the only authoritative reference; fixtures are test-only and do not become user-visible or production expected-output sources.
 
-- [ ] **T11 [S] (25 min) Verify hostile protocol and cleanup behavior**
+- [x] **T11 [S] (25 min) Verify hostile protocol and cleanup behavior**
   - Files: focused judge/driver integration tests and only implementation fixes required by those tests.
   - Exercise infinite loops, huge output, exceptions, malformed JSON, mismatched call IDs, invalid JSON values, fake verdict-shaped prints, and direct protocol corruption. Confirm external deadlines, output limits, non-Accepted outcomes, and container cleanup.
   - Depends on: T07, T08, and T10.

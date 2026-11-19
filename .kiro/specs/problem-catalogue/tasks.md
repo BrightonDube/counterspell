@@ -197,7 +197,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_dry_run_no_writes` (P5: row counts and `catalogue_events` unchanged); unit tests for the diff output.
   - Rust lesson: a read-only transaction is a database-level promise. Explain why it is stronger than an `if dry_run` check around each insert.
 
-- [ ] **C16 [S] [SUPERVISED] (30 min) Sandbox checks through `PackRunner`**
+- [x] **C16 [S] [SUPERVISED] (30 min) Sandbox checks through `PackRunner`**
   - Files: `crates/judge/src/catalogue/sandbox_fill.rs`, `crates/judge/tests/catalogue_sandbox_fill.rs`.
   - Use `counterspell_grimoire::PackRunner` (trait from grimoire T17). Implement SBX-01 (examples), SBX-02 (hidden inputs from `CandidateStream`, expected from the reference), SBX-03 (known ghosts reproduce). Return `SandboxFill { hidden: Vec<(input, expected)>, digest }` or a refusal. Hidden values stay in memory.
   - Requirements: CAT-I14, CAT-I21 (SBX codes), CAT-X1, CAT-PT8, CAT-PT9.
@@ -205,7 +205,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests with the grimoire model runner (labelled in the file header as not sandbox evidence, the same convention as grimoire T18). Cases: reference matches, reference disagrees (refused), reference times out (refused), ghost not reproduced (refused), `RunnerError` (exit 2, no write), and a retired hidden value (refused, hash prefix only).
   - Rust lesson: `&mut dyn PackRunner` lets the tests pass a fake and the production code pass the judge's real runner, with the same function. Explain why a trait object keeps the importer independent of the sandbox type.
 
-- [ ] **C17 [S] [SUPERVISED] (30 min) Sandbox import writes hidden data in the same transaction**
+- [x] **C17 [S] [SUPERVISED] (30 min) Sandbox import writes hidden data in the same transaction**
   - Files: `crates/judge/src/catalogue/write.rs` (sandbox branch), `crates/judge/tests/pg_catalogue_sandbox_import.rs`.
   - Insert `hidden_tests` (while `sandbox_validated_at` is NULL), then `hidden_generation` (seed and generator version) and `hidden_sources` (private file hashes), then set `sandbox_validated_at` and `sandbox_image_digest` in the same transaction. Log only the counts.
   - Requirements: CAT-I14, CAT-S3, CAT-S2 (one-time fill).
@@ -213,7 +213,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_sandbox_import_writes_hidden` (hidden row count equals `hidden_count`; the sandbox fields are set; a second sandbox import is `Unchanged`); a fake runner that fails SBX-02 leaves zero rows.
   - Rust lesson: the whole fill is one transaction, so either the version has hidden data and the sandbox stamp, or it has neither. Explain why half a state would break the publish gate.
 
-- [ ] **C18 [S] [SUPERVISED] (25 min) `validate-sandbox <slug>`**
+- [x] **C18 [S] [SUPERVISED] (25 min) `validate-sandbox <slug>`**
   - Files: `crates/judge/src/catalogue/write.rs`, `crates/judge/tests/pg_catalogue_validate_sandbox.rs`.
   - Runs C16 and C17 for the latest version only, and only when its sandbox columns are NULL. Before running, it recomputes the combined hash and refuses `private_tree_changed` on a mismatch with the stored `content_sha256` (CAT-PT10). Refuses when already validated. Writes a `sandbox_validate` event.
   - Requirements: CAT-I16, CAT-P5, CAT-PT10.
@@ -221,7 +221,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_validate_sandbox` (static-only version becomes publishable after validation; a second call refuses with no write).
   - Rust lesson: the refusal is a value in the report, not a panic, so the operator sees the reason in the same output format as every other command.
 
-- [ ] **C19 [S] (30 min) CLI binary and exit codes**
+- [x] **C19 [S] (30 min) CLI binary and exit codes**
   - Files: `crates/judge/src/bin/counterspell-catalogue.rs`, `crates/judge/src/catalogue/mod.rs`, `crates/judge/Cargo.toml` (`[[bin]]` entry and the `counterspell-grimoire` dependency, X9).
   - Parse arguments with `std::env::args` only (no clap, as in grimoire). `--private-root <path>` is required for every command that reads packs. Run the preflight (C08a) before any database connection, so a missing or unreadable root exits 2 without connecting. Map outcomes to exit codes: 0 all created or unchanged; 1 any refusal or failure; 2 usage, missing runner (`SBX-07`) or infrastructure. Read `CATALOGUE_DATABASE_URL` only here.
   - Requirements: CAT-I1, CAT-I21, CAT-R5, CAT-PT2, CAT-PT4.
@@ -246,7 +246,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_taxonomy` (a renamed concept updates its name; a removed entry stays in the table; a pack referring to an unknown concept is refused).
   - Rust lesson: `INSERT … ON CONFLICT DO UPDATE` is one statement, so two syncs running at once cannot both insert the same slug.
 
-- [ ] **C21 [S] [SUPERVISED] (30 min) Publish and unpublish**
+- [x] **C21 [S] [SUPERVISED] (30 min) Publish and unpublish**
   - Files: `crates/judge/src/catalogue/publish.rs`, `crates/judge/tests/pg_catalogue_publish.rs`.
   - `publish <slug> [--version n]` sets `publication_state`, `published_version`, `published_at`, and writes an event. Default version: latest sandbox-validated. Report the failed check text when the trigger refuses. `unpublish <slug>` sets the state and `unpublished_at`, keeps `published_version`, and is idempotent.
   - Requirements: CAT-P1 to CAT-P5.
@@ -254,7 +254,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_publish_gate` (CLI and trigger agree); `pg_catalogue_unpublish_keeps_history` (versions and submissions unchanged; a second unpublish is a no-op with an event only on the first change).
   - Rust lesson: `Option<u32>` for "use the default version" makes the default a visible decision at the call site.
 
-- [ ] **C22 [S] (25 min) List, seed-dev and seed-demo commands**
+- [x] **C22 [S] (25 min) List, seed-dev and seed-demo commands**
   - Files: `crates/judge/src/catalogue/seed.rs`, `crates/judge/src/bin/counterspell-catalogue.rs`, `crates/judge/tests/pg_catalogue_seed.rs`.
   - `list` prints slugs, state and version. `seed-dev --static-only` and `seed-demo` import eligible packs (C19), skip drafts, and print `no eligible packs` when there are none. Both require `--private-root` (CAT-PT2). `seed-demo` publishes the latest validated version of each imported problem.
   - Requirements: CAT-D1, CAT-D2, CAT-D3.
@@ -290,7 +290,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_judge_ghosts` (rows load for the pinned version only; the server role cannot run the same SQL: `permission denied`).
   - Rust lesson: the server's denied query is a test, so a future change that gives the server access fails a test instead of shipping.
 
-- [ ] **C26 [BLOCKED on judge-sandbox T24] [S] (20 min) Version parameter in `ProblemTests`**
+- [x] **C26 [S] (20 min) Version parameter in `ProblemTests`**
   - Files: change agreed with judge-sandbox owner (X1). This spec's file: `crates/judge/src/problem_store.rs` (impl only).
   - `ProblemTests::load(slug, version, mode)`. Update `EmptyProblemTests`, `StaticProblemTests` and `DirProblemTests` in judge-sandbox testkit in the same change. Assertions unchanged.
   - Requirements: CAT-L4, CAT-L7.
@@ -342,7 +342,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `pg_catalogue_api` (detail fields and key set equal the allow-list exactly); `catalogue_no_leak` (the canary strings from the fixture, including one planted in the synthetic private fixture, are absent from every list and detail response body, and from every error body); the 404 bodies for unknown and unpublished are byte-identical.
   - Rust lesson: the allow-list test compares sets of keys, not individual values, so a new field fails the test until someone decides it is public.
 
-- [ ] **C32 [P] (25 min) `GET /api/languages` from the language seam**
+- [x] **C32 [P] (25 min) `GET /api/languages` from the language seam**
   - Files: `crates/server/src/catalogue/languages.rs`, `crates/server/tests/catalogue_api.rs`.
   - Return enabled languages with `id`, `display_name` and `max_source_bytes` from the language catalogue accessor (X10). Disabled stretch languages are not listed.
   - Requirements: CAT-A7, CAT-A8.
@@ -362,7 +362,7 @@ Conventions for every task (same as `run-lifecycle`):
 
 ## Wave 6: integration, documentation and gates
 
-- [ ] **C34 [S] [SUPERVISED] (25 min) Operator runbook and seeding documentation**
+- [x] **C34 [S] [SUPERVISED] (25 min) Operator runbook and seeding documentation**
   - Files: `docs/catalogue-operations.md` (new), a link added to `packs/README.md`.
   - Explain the commands, the environment variable names (never values), the draft gate, the bump rule, what dry run shows, and how to publish and unpublish. State that seeding imports nothing until the starter packs are approved. Also explain the private checkout (CAT-PT14: a read-only deploy key or token kept outside the repo, given to git by the operator, and deleted after import), the approval file, the retired-values file and rotation (C40).
   - Requirements: CAT-D4, CAT-PT14.

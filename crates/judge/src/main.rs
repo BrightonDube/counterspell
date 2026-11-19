@@ -121,19 +121,20 @@ const PREFLIGHT_INTERVAL: std::time::Duration = std::time::Duration::from_secs(6
 #[cfg(feature = "sandbox")]
 async fn sandbox_executor(
     stop: &watch::Sender<bool>,
+    pool: sqlx::PgPool,
 ) -> Result<
     counterspell_judge::sandbox::sandbox_executor::SandboxExecutor<
-        counterspell_judge::sandbox::problem::EmptyProblemTests,
+        counterspell_judge::problem_store::PgProblemTests,
         counterspell_judge::sandbox::bollard_backend::BollardBackend,
     >,
     Box<dyn std::error::Error>,
 > {
     use counterspell_judge::languages::LanguageCatalog;
+    use counterspell_judge::problem_store::PgProblemTests;
     use counterspell_judge::sandbox::bollard_backend::BollardBackend;
     use counterspell_judge::sandbox::config::SandboxConfig;
     use counterspell_judge::sandbox::daemon::{connect, verify};
     use counterspell_judge::sandbox::preflight::{self, PreflightState};
-    use counterspell_judge::sandbox::problem::EmptyProblemTests;
     use counterspell_judge::sandbox::reaper;
     use counterspell_judge::sandbox::sandbox_executor::SandboxExecutor;
     use std::sync::Arc;
@@ -172,7 +173,7 @@ async fn sandbox_executor(
 
     Ok(SandboxExecutor::new(
         catalog,
-        EmptyProblemTests,
+        PgProblemTests::new(pool),
         BollardBackend::new(docker, cfg.api_timeout),
         cfg,
         preflights,
@@ -191,7 +192,12 @@ async fn run_worker() -> Result<(), Box<dyn std::error::Error>> {
 
     let (stop, shutdown) = watch::channel(false);
     #[cfg(feature = "sandbox")]
-    let serving = tokio::spawn(serve(pool, cfg, sandbox_executor(&stop).await?, shutdown));
+    let serving = tokio::spawn(serve(
+        pool.clone(),
+        cfg,
+        sandbox_executor(&stop, pool).await?,
+        shutdown,
+    ));
     #[cfg(not(feature = "sandbox"))]
     let serving = tokio::spawn(serve(pool, cfg, NoExecutor, shutdown));
     wait_for_stop_signal().await?;

@@ -1,0 +1,27 @@
+# Renders the app role's four service env templates with fixture vault values, for
+# check-app-env.sh. Fixture values only: nothing here is a real secret.
+- name: Render the service env files from fixture vault values
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  vars:
+    caddy_site_address: counterspell.example
+    vault_postgres_password: fixture-postgres-pw
+    vault_cs_server_password: fixture-server-pw
+    vault_cs_judge_password: fixture-judge-pw
+    vault_session_secret: fixture-session-secret-0123456789
+    vault_github_oauth_client_id: fixture-gh-id
+    vault_github_oauth_client_secret: fixture-gh-secret
+    vault_google_oauth_client_id: fixture-google-id
+    vault_google_oauth_client_secret: fixture-google-secret
+  tasks:
+    - name: Render each service env file
+      ansible.builtin.template:
+        src: "{{ playbook_dir }}/../roles/app/templates/{{ item }}.env.j2"
+        dest: "{{ render_dir }}/{{ item }}.env"
+        mode: "0600"
+      loop:
+        - postgres
+        - migrate
+        - server
+        - judge

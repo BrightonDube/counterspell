@@ -88,7 +88,9 @@ describe('observational text', () => {
 
   // Breaks if a failed or unmeasured run shows a stale sentence from an earlier result.
   it('has no result sentence before a measured mood exists', () => {
-    expect(familiarView(initialFamiliarState(), noPrefs, false).headline).toBe('');
+    expect(familiarView(initialFamiliarState(), noPrefs, false).headline).toBe(
+      ''
+    );
   });
 
   // Breaks if a low-confidence reading is worded as a firm verdict.
@@ -155,7 +157,10 @@ describe('preferences and motion', () => {
 describe('reducer discipline (efficiency-familiar T33)', () => {
   // Breaks if a restarted attempt keeps the old result, so a retry shows a mood from the attempt it replaced.
   it('clears the mood and complexity when a restarted event arrives', () => {
-    const measured = applyComplexity(applyMeasuredFamiliar(initialFamiliarState(), mood(2)), fact());
+    const measured = applyComplexity(
+      applyMeasuredFamiliar(initialFamiliarState(), mood(2)),
+      fact()
+    );
     const cleared = applyRestarted(measured);
     expect(cleared.mood).toBeNull();
     expect(cleared.complexity).toBeNull();
@@ -177,7 +182,10 @@ describe('reducer discipline (efficiency-familiar T33)', () => {
   // Breaks if an unrelated event (a terminal verdict or a complexity fact) changes the mood on its own.
   it('leaves the mood unchanged on unrelated events', () => {
     const measured = applyMeasuredFamiliar(initialFamiliarState(), mood(3));
-    const after = applyComplexity(applyTerminal(measured, { verdict: 'accepted', hasBench: true }), fact());
+    const after = applyComplexity(
+      applyTerminal(measured, { verdict: 'accepted', hasBench: true }),
+      fact()
+    );
     expect(after.mood).toBe(3);
   });
 });

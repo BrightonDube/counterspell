@@ -1,7 +1,9 @@
-//! Purity guard for the pack importer (problem-catalogue C23, requirements CAT-Q4 and CAT-PT4).
+//! Purity guard for the catalogue row model (problem-catalogue C23, CAT-Q4, CAT-PT4).
 //!
-//! The importer must not start processes, open network sockets, call git or read credentials.
-//! Only `sandbox_fill.rs` may name `PackRunner`, so the static path cannot reach the sandbox.
+//! The importer's static path must not start processes, open network sockets, call git or read
+//! credentials. Since the authoring split (the `counterspell-catalogue` CLI and its readers live
+//! in `crates/catalogue-cli`), no catalogue file may name `PackRunner` at all — the judge no
+//! longer depends on `counterspell-grimoire`.
 //! A source-text scan is a cheap guard for this architecture rule. It does not replace the type
 //! system, which already keeps the static path from calling into the sandbox.
 //!
@@ -23,9 +25,6 @@ const FORBIDDEN: [&str; 9] = [
     "GIT_SSH",
 ];
 
-/// The only file allowed to name the sandbox runner trait.
-const SANDBOX_FILE: &str = "sandbox_fill.rs";
-
 /// Returns the forbidden tokens that appear in one source file's text.
 fn forbidden_in(source: &str) -> Vec<&'static str> {
     FORBIDDEN
@@ -35,9 +34,10 @@ fn forbidden_in(source: &str) -> Vec<&'static str> {
         .collect()
 }
 
-/// Returns true when `file_name` is outside the sandbox path and names `PackRunner`.
-fn names_pack_runner_outside_sandbox(file_name: &str, source: &str) -> bool {
-    file_name != SANDBOX_FILE && source.contains("PackRunner")
+/// Returns true when the source names `PackRunner` — authoring machinery that
+/// must stay in `crates/catalogue-cli`, never in the judge's catalogue model.
+fn names_pack_runner(source: &str) -> bool {
+    source.contains("PackRunner")
 }
 
 fn catalogue_sources() -> Vec<PathBuf> {
@@ -71,7 +71,7 @@ fn the_importer_source_has_no_forbidden_tokens() {
 }
 
 #[test]
-fn only_the_sandbox_file_names_pack_runner() {
+fn no_catalogue_file_names_pack_runner() {
     for file in catalogue_sources() {
         let name = file
             .file_name()
@@ -80,8 +80,8 @@ fn only_the_sandbox_file_names_pack_runner() {
             .to_owned();
         let source = fs::read_to_string(&file).expect("readable source");
         assert!(
-            !names_pack_runner_outside_sandbox(&name, &source),
-            "{name} names PackRunner outside the sandbox file"
+            !names_pack_runner(&source),
+            "{name} names PackRunner — authoring machinery belongs in catalogue-cli"
         );
     }
 }
@@ -105,17 +105,7 @@ fn a_scratch_copy_that_reads_a_credential_is_flagged() {
 }
 
 #[test]
-fn pack_runner_is_flagged_outside_the_sandbox_file_only() {
-    assert!(names_pack_runner_outside_sandbox(
-        "static_import.rs",
-        "use x::PackRunner;"
-    ));
-    assert!(!names_pack_runner_outside_sandbox(
-        SANDBOX_FILE,
-        "use x::PackRunner;"
-    ));
-    assert!(!names_pack_runner_outside_sandbox(
-        "write.rs",
-        "no runner here"
-    ));
+fn pack_runner_is_flagged_wherever_it_appears() {
+    assert!(names_pack_runner("use x::PackRunner;"));
+    assert!(!names_pack_runner("no runner here"));
 }

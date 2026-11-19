@@ -205,4 +205,62 @@ describe('createRunSession', () => {
     expect(session.snapshot().view).toBeUndefined();
     expect(session.snapshot().phase).toBe('idle');
   });
+
+  // Breaks if a ghost rerun is posted to the public endpoint, where the stored
+  // ghost input is silently ignored and a fresh hunt runs instead.
+  it('starts a ghost rerun through the ghost action with the stored input', async () => {
+    const ghostSend = vi.fn(() => Promise.resolve('run-ghost'));
+    const ghostAction = vi.fn(() => ({ key: 'gk', send: ghostSend }));
+    const h = harness({ ghostAction });
+    const session = createRunSession(h.deps, (s) => h.snapshots.push(s));
+    const started = session.start({
+      ...input,
+      ghostInput: [0, 0],
+      ghostSourceId: 'run-src'
+    });
+    await settle();
+
+    expect(started).toBe(true);
+    expect(ghostAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        problem: 'two-sum',
+        lang: 'python',
+        ghost: { submission_id: 'run-src', input: [0, 0] }
+      })
+    );
+    expect(h.startSend).not.toHaveBeenCalled();
+    expect(h.watches[0]?.runId).toBe('run-ghost');
+  });
+
+  // Breaks if a refused ghost rerun throws away the failed run's autopsy, which
+  // is the whole reason the learner asked to rerun the ghost.
+  it('keeps the stream and finished view when the ghost start is refused', async () => {
+    const failed = new ApiRequestError(
+      422,
+      'validation_failed',
+      'The stored ghost is no longer valid.'
+    );
+    const ghostAction = vi.fn(() => ({
+      key: 'gk',
+      send: () => Promise.reject(failed)
+    }));
+    const h = harness({ ghostAction });
+    const session = createRunSession(h.deps, (s) => h.snapshots.push(s));
+    session.start(input);
+    await settle();
+    const finishedStream = terminalStream(RUN_ID);
+    h.watches[0]?.onDone(finishedStream);
+    await settle();
+    const priorView = session.snapshot().view;
+
+    session.start({ ...input, ghostInput: [0, 0] });
+    await settle();
+
+    expect(session.snapshot().phase).toBe('failed');
+    expect(session.snapshot().error).toBe(
+      'The stored ghost is no longer valid.'
+    );
+    expect(session.snapshot().view).toBe(priorView);
+    expect(session.snapshot().stream).toBe(finishedStream);
+  });
 });

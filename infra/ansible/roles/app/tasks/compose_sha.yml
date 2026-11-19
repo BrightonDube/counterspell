@@ -6,8 +6,8 @@
   ansible.builtin.copy:
     src: "{{ repo_root }}/{{ item.src }}"
     dest: "{{ app_dir }}/{{ item.dest }}"
-    owner: root
-    group: root
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0644"
   loop: "{{ app_compose_files }}"
 
@@ -23,6 +23,6 @@
   ansible.builtin.template:
     src: compose.sha256.j2
     dest: "{{ app_dir }}/compose.sha256"
-    owner: root
-    group: root
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0644"

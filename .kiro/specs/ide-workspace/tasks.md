@@ -23,7 +23,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: unit tests reject a hidden test carrying input/expected, reject missing ghost provenance, reject unbounded output, and accept documented public shapes; `cd web && npm run check`.
   - Preserve: exact event names from `api-conventions.md`; no raw JSON-to-UI escape hatch.
 
-- [ ] **T02 [P] (30 min) Add the custom ghost-run Axum seam**
+- [x] **T02 [P] (30 min) Add the custom ghost-run Axum seam**
   - Files: `crates/server/src/runs/custom.rs` or the existing run module, `crates/server/src/lib.rs`, `crates/common/` only if a shared request type is needed, API tests.
   - Implement `POST /api/runs/ghost` as designed: authenticated ownership check for the source submission, problem/schema validation, language/source validation, queue-cap/rate-limit checks, and atomic enqueue through the same Postgres job path. The request contains current source and a stored ghost reference/input; the server never executes it.
   - Keep the judge responsible for comparator and verdict. Return `202 {run_id,status:"queued",mode:"run",custom:true}` so the existing run state machine remains compatible, and use stable JSON errors. Do not reveal hidden data or bypass run leases.
@@ -182,7 +182,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: browser media-query tests assert no timeline is created under reduced motion; ordinary mode plays once; no ambient loop exists; route changes do not leave timers or timelines.
   - Preserve: reduced motion removes motion, not information.
 
-- [ ] **T23 [UI] [P] (30 min) Add output safety, accessibility, and contrast acceptance tests**
+- [x] **T23 [UI] [P] (30 min) Add output safety, accessibility, and contrast acceptance tests**
   - Files: focused component tests and browser test support under `web/tests/`.
   - Cover `<script>`/HTML output, hidden canary absence, accessible names, landmarks, focus rings, ordered shrink list, aria-live Familiar, status text/icons, keyboard operations, 200% zoom layout, 44px targets, and palette contrast targets.
   - Depends on: T12, T16, T19, T21, and the chosen test tooling.

@@ -49,6 +49,26 @@ pub fn resolve_inside(root: &Path, relative: &str) -> Result<PathBuf, PathError>
     Ok(resolved)
 }
 
+/// The private tree for `pack_dir`, when `COUNTERSPELL_PACKS_PRIVATE_ROOT`
+/// (or a `counterspell-packs-private` checkout beside the repository) has this
+/// slug. `reference/` and `incorrect/` live there since the tree split.
+#[must_use]
+pub fn private_pack_dir(pack_dir: &Path) -> Option<PathBuf> {
+    let slug = pack_dir.file_name()?.to_str()?;
+    std::env::var("COUNTERSPELL_PACKS_PRIVATE_ROOT")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(|| {
+            let sibling = pack_dir
+                .parent()
+                .and_then(Path::parent)
+                .map(|repo| repo.join("../counterspell-packs-private"));
+            sibling.filter(|path| path.is_dir())
+        })
+        .map(|root| root.join("packs").join(slug))
+        .filter(|dir| dir.is_dir())
+}
+
 /// Checks the text of a relative path before anything touches the disk.
 fn check_text(relative: &str) -> Result<(), PathError> {
     if relative.is_empty() {

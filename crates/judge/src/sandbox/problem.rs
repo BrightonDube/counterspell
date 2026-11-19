@@ -9,10 +9,21 @@
 
 use std::future::Future;
 
+use counterspell_common::familiar::class::ClassId;
 use counterspell_common::status::RunMode;
-use counterspell_engine::Comparator;
+use counterspell_engine::{Comparator, KnownGhost, Schema};
 use serde_json::Value;
 use thiserror::Error;
+
+/// A problem's bench declaration: the sizes to time and which parameter grows.
+#[derive(Debug, Clone, PartialEq, serde::Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct BenchDecl {
+    /// The input sizes the bench runs, in increasing order.
+    pub sizes: Vec<u64>,
+    /// The index of the signature parameter that grows with `n`.
+    pub size_param: usize,
+}
 
 /// One test of a problem, as a loader reports it. `expected` never leaves the judge.
 #[derive(Debug, Clone, PartialEq)]
@@ -45,6 +56,22 @@ pub struct ProblemSpec {
     /// The reference Python source. Only `SandboxOracle` uses it; it is never sent to
     /// the user's container.
     pub reference_python: Option<String>,
+    /// The declared bench, when the problem publishes one.
+    pub bench: Option<BenchDecl>,
+    /// The generator schema the bench sizes inputs with. Required with `bench`.
+    pub generator_schema: Option<Schema>,
+    /// The complexity class the problem author declared. Required with `bench`.
+    pub reference_complexity: Option<ClassId>,
+    /// The input schema a submit ghost hunt generates candidates from (ide-workspace
+    /// T25). Unlike `generator_schema` it is loaded for every problem, bench or not:
+    /// a failing submission hunts whenever the schema parses.
+    pub input_schema: Option<Schema>,
+    /// The authored known ghosts of the pinned version, for the hunt's seed list
+    /// and autopsy matching. Loaded for submits only.
+    pub known_ghosts: Vec<KnownGhost>,
+    /// The problem's concept tags, copied into the ghost's autopsy. Loaded for
+    /// submits only.
+    pub concept_tags: Vec<String>,
 }
 
 /// Why a problem could not be loaded. Always infrastructure, never the user's fault.
@@ -57,10 +84,12 @@ pub enum ProblemError {
 
 /// Loads a problem's tests for one run.
 ///
+/// `version` is the version the submission was pinned to when it was enqueued — a
+/// submission keeps its pinned version even after the problem is unpublished (P9).
 /// `mode` picks the slice: `Run` returns only the sample tests, `Submit` the whole
 /// suite.
 pub trait ProblemTests: Send + Sync + 'static {
-    /// Loads `slug` for `mode`.
+    /// Loads `slug` at `version` for `mode`.
     ///
     /// # Errors
     ///
@@ -69,6 +98,7 @@ pub trait ProblemTests: Send + Sync + 'static {
     fn load(
         &self,
         slug: &str,
+        version: u32,
         mode: RunMode,
     ) -> impl Future<Output = Result<Option<ProblemSpec>, ProblemError>> + Send;
 }
@@ -92,6 +122,7 @@ impl ProblemTests for EmptyProblemTests {
     fn load(
         &self,
         _slug: &str,
+        _version: u32,
         _mode: RunMode,
     ) -> impl Future<Output = Result<Option<ProblemSpec>, ProblemError>> + Send {
         std::future::ready(Ok(None))

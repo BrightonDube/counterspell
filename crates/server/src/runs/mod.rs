@@ -2,6 +2,7 @@
 
 pub mod cancel;
 pub mod create;
+pub mod custom;
 pub mod enqueue;
 pub mod read;
 pub mod sse;

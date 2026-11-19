@@ -17,5 +17,17 @@
     {"ordinal": 2, "is_sample": false, "args": [[3, 4], 7],  "expected": [0, 1]},
     {"ordinal": 3, "is_sample": false, "args": [[3, 3], 6],  "expected": [0, 1]}
   ],
-  "reference_python": "def two_sum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        if target - n in seen:\n            return [seen[target - n], i]\n        seen[n] = i\n"
+  "reference_python": "def two_sum(nums, target):\n    seen = {}\n    for i, n in enumerate(nums):\n        if target - n in seen:\n            return [seen[target - n], i]\n        seen[n] = i\n",
+  "bench": {
+    "sizes": [16, 64, 256, 1024, 2048, 4096],
+    "size_param": 0,
+    "reference": "n",
+    "schema": {
+      "type": "tuple",
+      "items": [
+        {"type": "int_array", "min_len": 0, "max_len": 16, "min": 0, "max": 10000},
+        {"type": "int", "min": 0, "max": 20000}
+      ]
+    }
+  }
 }

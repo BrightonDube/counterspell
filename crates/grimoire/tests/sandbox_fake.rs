@@ -333,6 +333,25 @@ fn run_sandbox(root: &Path, runner: &mut ModelRunner) -> Report {
     validate_sandbox(root, runner).expect("model runner and pack files are readable")
 }
 
+/// `run_sandbox` for a starter pack, which is split across the public tree and
+/// the private checkout. `None` means no private checkout is available.
+fn run_sandbox_pair(root: &Path, runner: &mut ModelRunner) -> Option<Report> {
+    let private_root = std::env::var("COUNTERSPELL_PACKS_PRIVATE_ROOT")
+        .ok()
+        .map(PathBuf::from)
+        .or_else(|| {
+            let sibling =
+                Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../counterspell-packs-private");
+            sibling.is_dir().then_some(sibling)
+        })?;
+    let slug = root.file_name()?.to_str()?;
+    let private_dir = private_root.join("packs").join(slug);
+    Some(
+        counterspell_grimoire::validate_sandbox_pair(root, &private_dir, runner)
+            .unwrap_or_else(|fault| panic!("sandbox fault: {fault:?}")),
+    )
+}
+
 /// The diagnostic codes in the report, in the order they were emitted.
 fn codes(report: &Report) -> Vec<&'static str> {
     report.diagnostics().iter().map(|d| d.code).collect()
@@ -685,7 +704,10 @@ fn starter_packs_pass_every_sandbox_check_with_the_model_runner() {
         let (reference, programs) = starter_models(slug);
         let mut runner = ModelRunner::new(reference, &programs);
 
-        let report = run_sandbox(&starter_dir(slug), &mut runner);
+        let Some(report) = run_sandbox_pair(&starter_dir(slug), &mut runner) else {
+            eprintln!("skipping {slug}: no counterspell-packs-private checkout");
+            continue;
+        };
 
         assert_eq!(codes(&report), Vec::<&str>::new(), "{slug}");
     }
@@ -703,7 +725,10 @@ fn starter_ghosts_stop_reproducing_when_their_program_is_correct() {
             .collect();
         let mut runner = ModelRunner::new(reference, &correct);
 
-        let report = run_sandbox(&starter_dir(slug), &mut runner);
+        let Some(report) = run_sandbox_pair(&starter_dir(slug), &mut runner) else {
+            eprintln!("skipping {slug}: no counterspell-packs-private checkout");
+            continue;
+        };
 
         assert_eq!(codes(&report), ["SBX-03", "SBX-03"], "{slug}");
     }

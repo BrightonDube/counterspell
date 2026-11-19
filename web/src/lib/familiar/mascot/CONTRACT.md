@@ -6,20 +6,20 @@ caller passes the measured mood and the text. The menu (mute and hide buttons) b
 
 ## Props
 
-| Prop | Type | Who sets it | Meaning |
-|---|---|---|---|
-| `mood` | `1`–`5` | the page, from the `familiar` event | the measured mood |
-| `reason` | string | the page | the reason code, kept as a `data-reason` attribute |
-| `headline` | string | the page | the result sentence; rendered as text only |
-| `badge` | string | the page | short label, for example "Matches reference!" |
-| `failed` | boolean (default false) | the page | true for a failed run; sets the danger text colour |
-| `effect` | `none`, `crack_burst`, `laugh_burst` | the page, from the event | the burst the result asks for |
-| `live` | boolean | the page | true only for a live result, never for a result loaded from history |
-| `muted` | boolean | the parent's menu | no GSAP, no bursts; the headline stays visible |
-| `hidden` | boolean | the parent's menu | shows a 16 px dot button instead of the face |
-| `reducedMotion` | boolean | the page, from `prefers-reduced-motion` | no GSAP, no bursts, no crossfade |
-| `seed` | number | the page (the run id, hashed) | seeds the burst particles so a replay looks the same |
-| `onToggleHidden` | function | the parent | called when the hidden dot is pressed |
+| Prop             | Type                                 | Who sets it                             | Meaning                                                             |
+| ---------------- | ------------------------------------ | --------------------------------------- | ------------------------------------------------------------------- |
+| `mood`           | `1`–`5`                              | the page, from the `familiar` event     | the measured mood                                                   |
+| `reason`         | string                               | the page                                | the reason code, kept as a `data-reason` attribute                  |
+| `headline`       | string                               | the page                                | the result sentence; rendered as text only                          |
+| `badge`          | string                               | the page                                | short label, for example "Matches reference!"                       |
+| `failed`         | boolean (default false)              | the page                                | true for a failed run; sets the danger text colour                  |
+| `effect`         | `none`, `crack_burst`, `laugh_burst` | the page, from the event                | the burst the result asks for                                       |
+| `live`           | boolean                              | the page                                | true only for a live result, never for a result loaded from history |
+| `muted`          | boolean                              | the parent's menu                       | no GSAP, no bursts; the headline stays visible                      |
+| `hidden`         | boolean                              | the parent's menu                       | shows a 16 px dot button instead of the face                        |
+| `reducedMotion`  | boolean                              | the page, from `prefers-reduced-motion` | no GSAP, no bursts, no crossfade                                    |
+| `seed`           | number                               | the page (the run id, hashed)           | seeds the burst particles so a replay looks the same                |
+| `onToggleHidden` | function                             | the parent                              | called when the hidden dot is pressed                               |
 
 ## Events the parent must pass back
 

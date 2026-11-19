@@ -71,7 +71,7 @@ pub async fn post_run(
         .user_resolver
         .resolve(&headers)
         .await
-        .ok_or_else(ApiError::unauthorized)?;
+        .ok_or_else(ApiError::unauthenticated)?;
     let key = idempotency_key(&headers)?;
     let mode = RunMode::parse(&request.mode)
         .ok_or_else(|| ApiError::bad_request("invalid_request", "mode must be run or submit."))?;
@@ -148,7 +148,7 @@ pub async fn post_run(
     }
 }
 
-fn body_error(rejection: BytesRejection) -> ApiError {
+pub(crate) fn body_error(rejection: BytesRejection) -> ApiError {
     if rejection.into_response().status() == StatusCode::PAYLOAD_TOO_LARGE {
         ApiError::new(
             StatusCode::PAYLOAD_TOO_LARGE,
@@ -178,7 +178,7 @@ pub(crate) fn require_json(headers: &HeaderMap) -> Result<(), ApiError> {
 }
 
 /// Reads the optional `Idempotency-Key`: 1 to 128 letters, digits, dots, underscores or hyphens.
-fn idempotency_key(headers: &HeaderMap) -> Result<Option<String>, ApiError> {
+pub(crate) fn idempotency_key(headers: &HeaderMap) -> Result<Option<String>, ApiError> {
     let Some(value) = headers.get("idempotency-key") else {
         return Ok(None);
     };
@@ -211,7 +211,7 @@ pub(crate) fn enforce(decision: &Decision) -> Result<(), ApiError> {
     }
 }
 
-fn reuse_error() -> ApiError {
+pub(crate) fn reuse_error() -> ApiError {
     ApiError::new(
         StatusCode::UNPROCESSABLE_ENTITY,
         "idempotency_key_reuse",

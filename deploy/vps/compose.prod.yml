@@ -1,12 +1,120 @@
-# Production override: run the signed GHCR images (pinned by digest) instead of building on the server.
-# Values come from deploy.env, written by counterspell-deploy. Requires Docker Compose >= 2.24 (!reset).
+# Production override (deploy-ops T15, R4.1 to R4.10, R5.1 to R5.3). Run the signed GHCR images, pinned by
+# digest, instead of building on the server. Release digests come from deploy.env (counterspell-deploy).
+# Requires Docker Compose >= 2.24 (!reset, !override).
+#
+# Rules this file enforces:
+#   - No secret reaches a service through ${...} interpolation. Each service reads only its own env file
+#     under COUNTERSPELL_SECRETS_DIR (host.env), and `environment: !override` drops the base file's host-variable entries.
+#   - Only judge mounts a Docker socket, and only the sandbox daemon's. No port is published here.
+#   - Third-party images are pinned by digest. Digests read from the registry on 2026-11-16.
+#     Renovate refreshes them as reviewed pull requests, never auto-merged (deploy-ops Q20).
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-hardening: &hardening
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: ["no-new-privileges:true"]
+  user: "10001:10001"
+  tmpfs: ["/tmp:rw,noexec,nosuid,size=16m"]
+
 services:
   server:
+    <<: *hardening
     image: ${COUNTERSPELL_SERVER_IMAGE:?set by counterspell-deploy}
     build: !reset null
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/server.env"]
+    # Non-secret values only. TRUSTED_PROXIES comes from host.env (R4.9).
+    environment: !override
+      HOST: 0.0.0.0
+      PORT: "8080"
+      STATIC_DIR: /app/web/build
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:?set in host.env}
+    depends_on: !override
+      migrate:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+      valkey:
+        condition: service_healthy
+    pids_limit: 128
+    mem_limit: 256m
+    cpus: 1.0
+    logging: *logging
+
   judge:
+    <<: *hardening
     image: ${COUNTERSPELL_JUDGE_IMAGE:?set by counterspell-deploy}
     build: !reset null
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/judge.env"]
+    # DATABASE_URL and the limits come from judge.env only (R5.2, R4.10).
+    environment: !override
+      SANDBOX_DOCKER_SOCKET: /run/sandbox/docker.sock
+    volumes: !override
+      # The rootless sandbox daemon's socket only. SANDBOX_SOCKET_HOST_PATH is a non-secret path in host.env.
+      - type: bind
+        source: ${SANDBOX_SOCKET_HOST_PATH:?set in host.env}
+        target: /run/sandbox/docker.sock
+    depends_on: !override
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "counterspell-judge", "healthcheck"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1.0
+    logging: *logging
+
   migrate:
+    <<: *hardening
     image: ${COUNTERSPELL_MIGRATE_IMAGE:?set by counterspell-deploy}
     build: !reset null
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/migrate.env"]
+    environment: !override {}
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1.0
+    logging: *logging
+
+  postgres:
+    image: postgres:17-alpine@sha256:a77aa70e641402a21411b92b721c58d10f23b50ae5fdd2333efd22d166e1e5f7
+    # POSTGRES_PASSWORD is read from postgres.env at first initdb. The base file's
+    # POSTGRES_HOST_AUTH_METHOD=trust is dropped, so TCP logins use scram-sha-256 only (R4.6).
+    env_file: !override ["${COUNTERSPELL_SECRETS_DIR:?set in host.env}/postgres.env"]
+    environment: !override {}
+    volumes: !override
+      - pgdata:/var/lib/postgresql/data
+      # First-initdb only: creates the NOLOGIN group roles plus the cs_server/cs_judge LOGIN roles
+      # and memberships, so services can connect before the first migration. Ignored once pgdata
+      # exists; password rotation is manual (RUNBOOK).
+      - ./postgres-initdb.sh:/docker-entrypoint-initdb.d/00-roles.sh:ro
+    command: ["postgres", "-c", "shared_buffers=256MB", "-c", "password_encryption=scram-sha-256"]
+    mem_limit: 1024m
+    pids_limit: 256
+    logging: *logging
+
+  valkey:
+    image: valkey/valkey:8-alpine@sha256:2602ace2be6569bc2bbb06f873776516ab9089821525be34f4305c67eb9db02a
+    command: !override
+      - valkey-server
+      - --save
+      - ""
+      - --maxmemory
+      - 100mb
+      - --maxmemory-policy
+      - allkeys-lru
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    mem_limit: 160m
+    pids_limit: 64
+    logging: *logging

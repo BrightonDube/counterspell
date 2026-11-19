@@ -1,6 +1,6 @@
 slug = "longest-run-length"
 title = "The Longest Run"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "strings"
 concepts = ["strings", "scanning", "edge-cases"]

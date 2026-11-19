@@ -3,6 +3,7 @@
 //! no sandbox, database or host load is involved.
 
 use counterspell_common::events::PublicEvent;
+use counterspell_common::familiar::payload::MeasuredColumns;
 use counterspell_common::familiar::ClassId;
 use counterspell_common::status::{RunMode, Verdict};
 use counterspell_judge::executor::ExecError;
@@ -61,7 +62,7 @@ async fn measure(
     answer: Result<BenchOutcome, ExecError>,
     load: f64,
     plan: Option<&BenchPlan>,
-) -> (Result<(), ExecError>, EventLog, usize) {
+) -> (Result<MeasuredColumns, ExecError>, EventLog, usize) {
     let (ctx, log) = RecordingContext::without_stop(1);
     let gate = BenchGate::new(true);
     let mut collector = ScriptedCollector::new(answer);
@@ -73,7 +74,7 @@ async fn measure(
         plan,
         max_load: 3.0,
     };
-    let outcome = measure_run(&ctx, &gate, &FixedLoad(load), &mut collector, &input).await;
+    let outcome = measure_run(&ctx, &gate, &FixedLoad(load), Some(&mut collector), &input).await;
     (outcome, log, collector.calls())
 }
 
@@ -222,14 +223,28 @@ async fn a_restarted_attempt_gets_a_fresh_result_and_the_gate_is_released() {
     // Attempt 1 fails inside the sandbox. It must show no mood and must not keep the gate.
     let (first_ctx, first_log) = RecordingContext::without_stop(1);
     let mut failing = ScriptedCollector::new(Err(ExecError::Infrastructure("daemon".to_owned())));
-    let first = measure_run(&first_ctx, &gate, &FixedLoad(0.5), &mut failing, &input).await;
+    let first = measure_run(
+        &first_ctx,
+        &gate,
+        &FixedLoad(0.5),
+        Some(&mut failing),
+        &input,
+    )
+    .await;
     assert!(first.is_err());
     assert_eq!(first_log.events().len(), 0);
 
     // Attempt 2 is a new run context. It must emit exactly one fresh familiar event.
     let (second_ctx, second_log) = RecordingContext::without_stop(2);
     let mut working = ScriptedCollector::new(Ok(BenchOutcome::Complete(linear_points())));
-    let second = measure_run(&second_ctx, &gate, &FixedLoad(0.5), &mut working, &input).await;
+    let second = measure_run(
+        &second_ctx,
+        &gate,
+        &FixedLoad(0.5),
+        Some(&mut working),
+        &input,
+    )
+    .await;
     assert!(second.is_ok());
     let events = second_log.events();
     let familiar_count = events
@@ -256,7 +271,7 @@ async fn a_fitted_bench_without_a_usable_baseline_is_capped_at_pleased() {
         max_load: 3.0,
     };
 
-    let outcome = measure_run(&ctx, &gate, &FixedLoad(0.5), &mut collector, &input).await;
+    let outcome = measure_run(&ctx, &gate, &FixedLoad(0.5), Some(&mut collector), &input).await;
 
     assert!(outcome.is_ok());
     let payload = familiar_payload(&log.events());

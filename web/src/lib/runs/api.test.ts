@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import { ApiRequestError } from '../api/client';
 import type { FetchLike } from '../api/client';
-import { getRun, startRun, startRunAction } from './api';
+import {
+  getRun,
+  startGhostRun,
+  startGhostRunAction,
+  startRun,
+  startRunAction
+} from './api';
 
 function fakeFetch(
   status: number,
@@ -169,5 +175,52 @@ describe('startRunAction', () => {
     const first = startRunAction(input);
     const second = startRunAction(input);
     expect(first.key).not.toBe(second.key);
+  });
+});
+
+describe('startGhostRun', () => {
+  // Breaks if the rerun request goes to the public run endpoint, where the
+  // stored ghost input would be ignored and a fresh hunt queued instead.
+  it('posts the source and ghost input to the ghost-run endpoint', async () => {
+    const calls: Array<{ path: string; init?: RequestInit }> = [];
+    const runId = await startGhostRun(
+      {
+        problem: 'two-sum',
+        lang: 'python',
+        code: 'print(1)',
+        ghost: { submission_id: 'run-src', input: [0, 0] }
+      },
+      'key-9',
+      { fetchImpl: fakeFetch(202, { run_id: 'run-ghost' }, calls) }
+    );
+
+    expect(runId).toBe('run-ghost');
+    expect(calls[0].path).toBe('/api/runs/ghost');
+    expect(calls[0].init?.method).toBe('POST');
+    expect(new Headers(calls[0].init?.headers).get('Idempotency-Key')).toBe(
+      'key-9'
+    );
+    expect(calls[0].init?.body).toBe(
+      '{"problem":"two-sum","lang":"python","code":"print(1)","ghost":{"submission_id":"run-src","input":[0,0]}}'
+    );
+  });
+
+  // Breaks if a retried ghost rerun creates a second run instead of one.
+  it('reuses one idempotency key for every retry of the same ghost action', async () => {
+    const calls: Array<{ path: string; init?: RequestInit }> = [];
+    const action = startGhostRunAction({
+      problem: 'two-sum',
+      lang: 'python',
+      code: 'x',
+      ghost: { submission_id: 'run-src', input: 7 }
+    });
+    await action.send({ fetchImpl: fakeFetch(202, { run_id: 'r1' }, calls) });
+    await action.send({ fetchImpl: fakeFetch(202, { run_id: 'r1' }, calls) });
+    const keys = calls.map((call) =>
+      new Headers(call.init?.headers).get('Idempotency-Key')
+    );
+    expect(keys).toHaveLength(2);
+    expect(keys[0]).toBeTruthy();
+    expect(keys[1]).toBe(keys[0]);
   });
 });

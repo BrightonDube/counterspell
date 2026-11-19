@@ -1,5 +1,5 @@
 # Managed by Ansible (app role). `sha256sum --check` in counterspell-deploy compares these lines
 # before any image is pulled (deploy-ops R7.13). Format: "<sha256>  <file name>".
 {% for result in app_compose_stat.results %}
-{{ result.stat.checksum }}  {{ result.item.dest }}
+{{ result.stat.checksum | default("0000-not-copied-yet-check-mode") }}  {{ result.item.dest }}
 {% endfor %}

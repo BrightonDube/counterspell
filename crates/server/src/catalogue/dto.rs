@@ -40,6 +40,26 @@ pub struct ProblemDetail {
     pub hint_count: i64,
 }
 
+/// The body of `GET /api/languages` (problem-catalogue C32, CAT-A7): every
+/// language the server currently accepts. Disabled stretch languages are never
+/// in the catalogue, so they cannot appear here.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct LanguageListResponse {
+    /// The enabled languages, in catalogue order.
+    pub languages: Vec<LanguageSummary>,
+}
+
+/// One accepted language as `GET /api/languages` reports it.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct LanguageSummary {
+    /// The name the client sends, for example `python`.
+    pub id: String,
+    /// The human-facing label, for example `Python`.
+    pub display_name: String,
+    /// The largest accepted source for this language, in bytes.
+    pub max_source_bytes: u64,
+}
+
 /// One public sample test.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct Example {

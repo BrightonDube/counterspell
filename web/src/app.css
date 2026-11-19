@@ -7,7 +7,8 @@
 /* Geist (OFL-1.1) is self-hosted from the pinned `geist` package. */
 @font-face {
   font-family: 'Geist';
-  src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2') format('woff2');
+  src: url('../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2')
+    format('woff2');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;

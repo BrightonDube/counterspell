@@ -17,7 +17,7 @@ const ghost = {
     stop: 'no_smaller_failure'
   },
   provenance: {
-    seed: 42,
+    seed: '18446744073709551615',
     generator_version: 'gen-1',
     engine_version: 'engine-1',
     problem_version: 2,
@@ -63,8 +63,23 @@ describe('parseGhost', () => {
     expect(parsed.kind).toBe('wrong');
     expect(parsed.expected).toEqual([0, 1]);
     expect(parsed.got).toEqual([0, 0]);
-    expect(parsed.provenance.seed).toBe(42);
+    expect(parsed.provenance.seed).toBe('18446744073709551615');
     expect(parsed.autopsy.authoredMistake).toBeNull();
+  });
+
+  // Breaks if a u64 seed the wire carries as a decimal string is rejected or rounded.
+  it('keeps a full-range seed exact and refuses an unsafe integer', () => {
+    const legacy = parseGhost({
+      ...ghost,
+      provenance: { ...ghost.provenance, seed: 42 }
+    });
+    expect(legacy.provenance.seed).toBe('42');
+    expect(() =>
+      parseGhost({
+        ...ghost,
+        provenance: { ...ghost.provenance, seed: Number.MAX_SAFE_INTEGER + 1 }
+      })
+    ).toThrow(ContractError);
   });
 
   // Breaks if an oversized ghost explanation reaches the card without the display cap.
@@ -81,5 +96,17 @@ describe('parseShrinkStep', () => {
     expect(() => parseShrinkStep({ index: 1, evaluations: 3 })).toThrow(
       ContractError
     );
+  });
+
+  // Breaks if the engine's first recorded step is dropped: its index is
+  // zero-based ("zero is the first failing input"), so index 0 must parse.
+  it('accepts index 0, the first failing input', () => {
+    const parsed = parseShrinkStep({
+      index: 0,
+      input: [3, 3, 0],
+      evaluations: 0
+    });
+    expect(parsed.index).toBe(0);
+    expect(parsed.input).toEqual([3, 3, 0]);
   });
 });

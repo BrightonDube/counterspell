@@ -112,3 +112,51 @@ Upstream state checked this pass: run-lifecycle 54 of 56 done (the SSE route `GE
 - **T18 still blocked** on T02. **T20 partly blocked:** the Familiar preference route exists, but `POST /api/runs/{id}/familiar-hint` is not routed (efficiency-familiar and hints are not done).
 - **T09, T15, T21, T22, T23 unchanged:** unchecked because their remaining checks are browser or layout checks (deferred: E2E).
 - **T24 to T27 deferred: E2E.** T28 waits on judge-sandbox, language-drivers and hints, and on `cargo deny`, `docker compose config` and the real acceptance suite.
+
+### verify all, 16 Nov 2026: T09, T13, T15, T20 stay open: commits are marked partial or not ticked. Web gate at 36d6064: npm run check 0 errors, build ok, 461 tests pass, but browser checks and the Axum browser harness (T24) are not done. T13/T20 depend on the real run API and Familiar seam; run-lifecycle is now complete.
+
+## Attempt: T24 real-API harness bring-up (18 Nov 2026)
+
+- **Judge problem store was unwired — fixed, in scope.** `counterspell-judge`
+  hard-coded `EmptyProblemTests` ("until the problem catalogue exists"), so
+  every real run ended `problem_unavailable`. `PgProblemTests` (the documented
+  production loader, problem-catalogue C24) was already built but never wired.
+  `crates/judge/src/main.rs` now passes the worker pool into
+  `sandbox_executor` and constructs `PgProblemTests`.
+- **Queue contamination hazard, documented.** A leftover
+  `counterspell-testserver` (scripted judge fixture) shares the dev `jobs`
+  table and claimed real runs, returning scripted all-pass results. The README
+  now says: exactly one judge, no other queue consumer.
+- **Magic-link limits.** The dev mail transport is real, but
+  `Action::Magic` allows 3 links/address/hour and 10/IP/hour (Valkey). The
+  harness uses a unique address per run; verify auto-creates the user.
+- **Client/server contract divergences found and fixed by real traffic.** The
+  production build failed envelope parsing in four places: `/api/languages`
+  wraps the list in `{languages: [...]}`; problem examples arrive as
+  `examples`, not `samples`; difficulty/lang fields differed from the client
+  fixtures. `web/src/lib/api/languages.ts` + `types.ts` now parse the real
+  wire shape; client fixtures updated to match.
+- ~~**T25 blocker — ghost hunting is not wired in the judge.**~~ Resolved
+  2026-11-19: `SandboxExecutor::execute` now hunts after `measure` on failing
+  submits via `sandbox/hunt.rs` + `engine::hunt` + `SandboxOracle`; the ghost
+  event row is the durable record (no `ghosts` table needed — D16's rerun
+  owner is `submissions.ghost_source_id` on the custom run). See the
+  done-pending-tick entry for evidence.
+- **T20 note:** `POST /api/runs/{id}/familiar-hint` is still 404 — expected;
+  it is efficiency-familiar T38, and the client falls back to the fixed
+  unavailable line by design.
+- **Retry wedge (found by reconnect.spec.mjs, 19 Nov).** A judge killed
+  mid-compile is reclaimed correctly (`restarted` per attempt), but every
+  retry dies at `compiling` again until `retries_exhausted` ->
+  `internal_error` — deterministic across two kills, while concurrent runs on
+  the same judge pass. No orphan containers remain, so the likely seam is
+  sandbox-session state keyed by the run surviving the kill. Judge logs
+  nothing at `info` (judge.log only shows startup guards), so the attempt
+  error is invisible — a `tracing` line on worker error would expose it.
+
+## Follow-ups from `verify all` (19 Nov 2026)
+- T18 test is stale, not the code. In `web/src/lib/workspace/WorkspaceShell.test.ts` ("reruns the stored ghost with the editor source through the ghost action") change the expected `ghost` to `{ submission_id: 'run-ghost', input: [0, 0] }`. The requirement changed in T25: the T02 endpoint answers 400 without `submission_id`. Add a `// test-change: GHO-3` marker. Not done in verify, which must not rewrite another tool's code.
+- T13 flake: give the "successful sample run" test an explicit timeout above its 15 s wait, or find why the first run after a cold testserver start is slow. Passed 5 of 7 runs.
+- T15, T20: add tests for the missing assertions listed in the Verified table.
+- T09, T21, T22, T24, T25: install Chrome (or `npx playwright install chromium`, with a licence check) and re-run `web/e2e-shell-check.mjs` and `real-api-check.mjs`.
+- Env: point `COUNTERSPELL_PACKS_PRIVATE_ROOT` in `~/.config/counterspell/dev-test.env` at `/mnt/c/Users/Brighton/Downloads/Personal Projects/counterspell-packs-private`, or fast-forward `~/code/counterspell-packs-private` to 42467cd.

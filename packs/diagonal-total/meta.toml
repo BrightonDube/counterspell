@@ -1,6 +1,6 @@
 slug = "diagonal-total"
 title = "The Diagonal Total"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "matrices"
 concepts = ["matrices", "indexing", "edge-cases"]

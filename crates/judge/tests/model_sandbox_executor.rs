@@ -10,16 +10,17 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use counterspell_common::events::PublicEvent;
+use counterspell_common::familiar::ClassId;
 use counterspell_common::ids::RunId;
 use counterspell_common::status::{FailureReason, RunMode, Verdict};
-use counterspell_engine::Comparator;
+use counterspell_engine::{Comparator, Schema};
 use counterspell_judge::executor::{ExecError, RunExecutor, RunInput, RunOutcome};
 use counterspell_judge::languages::LanguageCatalog;
 use counterspell_judge::sandbox::backend::InfraError;
 use counterspell_judge::sandbox::config::{OciRuntime, SandboxConfig};
 use counterspell_judge::sandbox::preflight::{PreflightCheck, PreflightReport, PreflightState};
 use counterspell_judge::sandbox::problem::{
-    EmptyProblemTests, ProblemSpec, ProblemTests, TestCase,
+    BenchDecl, EmptyProblemTests, ProblemSpec, ProblemTests, TestCase,
 };
 use counterspell_judge::sandbox::sandbox_executor::SandboxExecutor;
 use counterspell_judge::sandbox::testkit::{
@@ -92,6 +93,40 @@ fn problem() -> ProblemSpec {
             },
         ],
         reference_python: None,
+        bench: None,
+        generator_schema: None,
+        reference_complexity: None,
+        input_schema: None,
+        known_ghosts: Vec::new(),
+        concept_tags: Vec::new(),
+    }
+}
+
+/// The same problem with a full bench declaration: the `nums` parameter grows.
+fn benched_problem() -> ProblemSpec {
+    ProblemSpec {
+        bench: Some(BenchDecl {
+            sizes: vec![16, 64, 256],
+            size_param: 0,
+        }),
+        generator_schema: Some(Schema::Tuple {
+            items: vec![
+                Schema::IntArray {
+                    min_len: 0,
+                    max_len: 16,
+                    min: 0,
+                    max: 10_000,
+                    sorted: false,
+                    unique: false,
+                },
+                Schema::Int {
+                    min: 0,
+                    max: 20_000,
+                },
+            ],
+        }),
+        reference_complexity: Some(ClassId::Linear),
+        ..problem()
     }
 }
 
@@ -104,8 +139,10 @@ fn input(mode: RunMode) -> RunInput {
     RunInput {
         run_id: RunId::new(),
         problem_slug: "two-sum".to_owned(),
+        problem_version: 1,
         lang: "python".to_owned(),
         mode,
+        ghost_input: None,
         code: "def two_sum(nums, target):\n    return [0, 1]\n".to_owned(),
         attempt: 1,
     }
@@ -116,9 +153,18 @@ fn executor(
     backend: &FakeBackend,
     languages_file: PathBuf,
 ) -> SandboxExecutor<StaticProblemTests, FakeBackend> {
+    executor_with(catalog, backend, languages_file, problem())
+}
+
+fn executor_with(
+    catalog: LanguageCatalog,
+    backend: &FakeBackend,
+    languages_file: PathBuf,
+    spec: ProblemSpec,
+) -> SandboxExecutor<StaticProblemTests, FakeBackend> {
     SandboxExecutor::new(
         catalog,
-        StaticProblemTests::new([problem()]),
+        StaticProblemTests::new([spec]),
         backend.clone(),
         config(languages_file),
         vec![passing()],
@@ -142,8 +188,8 @@ async fn compiling_is_the_first_event_of_every_completed_run() {
     let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
     assert_eq!(
         names,
-        ["compiling", "test", "test"],
-        "compiling is first, then one event per executed test"
+        ["compiling", "test", "test", "familiar"],
+        "compiling is first, then one event per executed test, then the familiar"
     );
     let RunOutcome::Completed(result) = outcome else {
         panic!("a passing run must complete: {outcome:?}");
@@ -334,7 +380,7 @@ async fn dir_problem_tests_loads_a_fixture_and_filters_by_mode() {
     let problems = DirProblemTests::new(dir);
 
     let run = problems
-        .load("two-sum", RunMode::Run)
+        .load("two-sum", 1, RunMode::Run)
         .await
         .expect("the fixture parses")
         .expect("two-sum exists");
@@ -343,7 +389,7 @@ async fn dir_problem_tests_loads_a_fixture_and_filters_by_mode() {
         "mode Run loads only the sample tests"
     );
     let submit = problems
-        .load("two-sum", RunMode::Submit)
+        .load("two-sum", 1, RunMode::Submit)
         .await
         .expect("the fixture parses")
         .expect("two-sum exists");
@@ -353,10 +399,608 @@ async fn dir_problem_tests_loads_a_fixture_and_filters_by_mode() {
     );
     assert!(
         problems
-            .load("no-such-problem", RunMode::Submit)
+            .load("no-such-problem", 1, RunMode::Submit)
             .await
             .expect("a missing file is not an error")
             .is_none(),
         "an absent fixture is problem_unavailable"
     );
+    assert!(
+        problems
+            .load("two-sum", 2, RunMode::Submit)
+            .await
+            .expect("an unpinned version is not an error")
+            .is_none(),
+        "a version the store does not hold is problem_unavailable"
+    );
+}
+
+#[tokio::test]
+async fn dir_problem_tests_loads_the_bench_declaration() {
+    let dir = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/problems");
+    let problems = DirProblemTests::new(dir);
+
+    let spec = problems
+        .load("two-sum", 1, RunMode::Submit)
+        .await
+        .expect("the fixture parses")
+        .expect("two-sum exists");
+    let bench = spec.bench.expect("two-sum declares a bench");
+    assert_eq!(bench.sizes, vec![16, 64, 256, 1024, 2048, 4096]);
+    assert_eq!(bench.size_param, 0, "the nums parameter grows");
+    assert_eq!(spec.reference_complexity, Some(ClassId::Linear));
+    match spec.generator_schema {
+        Some(Schema::Tuple { items }) => assert_eq!(items.len(), 2),
+        other => panic!("the generator schema must be the parameter tuple: {other:?}"),
+    }
+}
+
+#[tokio::test]
+async fn an_accepted_benched_run_measures_and_records_timings() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // Two correctness calls (ids 1 and 2), then 3 sizes x 7 bench calls (ids 0..=20).
+    let mut script = vec![answer(1, &json!([0, 1])), answer(2, &json!([0, 1]))];
+    script.extend((0..21u32).map(|id| answer(id, &json!([0, 1]))));
+    backend.script_program(script);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        benched_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names[..7],
+        [
+            "compiling",
+            "test",
+            "test",
+            "bench_start",
+            "bench_point",
+            "bench_point",
+            "bench_point"
+        ],
+        "the bench runs after the tests"
+    );
+    // The fit may or may not settle a class on scripted timings; when it does, the
+    // complexity event precedes the mood, which always ends the run.
+    let tail = &names[7..];
+    assert!(
+        tail == ["familiar"] || tail == ["complexity", "familiar"],
+        "the mood always ends the run: {tail:?}"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a passing run must complete: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::Accepted);
+    let measured = result.measured.expect("a measured run stores its columns");
+    assert!(measured.fit.is_some(), "a fitted bench stores its fit");
+    assert!(measured.familiar_mood.is_some());
+
+    let timings = log.timings();
+    assert_eq!(timings.len(), 15, "three sizes, five timed repeats each");
+    for size in [16_u64, 64, 256] {
+        let rows: Vec<_> = timings.iter().filter(|row| row.n == size).collect();
+        assert_eq!(rows.len(), 5, "one row per timed repeat at n={size}");
+        assert!(
+            rows.iter().map(|row| row.repeat).eq(1..=5),
+            "repeats count from 1"
+        );
+        assert!(rows.iter().all(|row| row.ns > 0));
+    }
+    assert_eq!(backend.ledger().live(), 0, "the container is removed");
+}
+
+#[tokio::test]
+async fn a_wrong_answer_on_a_benched_problem_never_runs_the_bench() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([0, 1])), answer(2, &json!([9, 9]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        benched_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names,
+        ["compiling", "test", "test", "familiar"],
+        "no bench runs for a failed verdict"
+    );
+    assert!(log.timings().is_empty(), "no samples are stored");
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a completed run: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+    let measured = result.measured.expect("the mood is still measured");
+    assert!(measured.measured_complexity.is_none());
+    assert!(measured.familiar_mood.is_some());
+}
+
+#[tokio::test]
+async fn a_partial_bench_declaration_is_infrastructure() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([0, 1])), answer(2, &json!([0, 1]))]);
+    // The sizes are declared but the schema and reference are missing: a broken store.
+    let mut spec = problem();
+    spec.bench = Some(BenchDecl {
+        sizes: vec![16, 64],
+        size_param: 0,
+    });
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor.execute(input(RunMode::Submit), ctx).await;
+    assert!(
+        matches!(outcome, Err(ExecError::Infrastructure(_))),
+        "a half-declared bench is a store fault, not a verdict: {outcome:?}"
+    );
+}
+
+/// A problem with a trusted reference, for custom ghost runs (ide-workspace T02).
+fn problem_with_reference() -> ProblemSpec {
+    ProblemSpec {
+        reference_python: Some("def two_sum(nums, target):\n    return [0, 1]\n".to_owned()),
+        ..problem()
+    }
+}
+
+/// A problem a failed submit can hunt on: an input schema and a trusted
+/// reference (ide-workspace T25).
+fn huntable_problem() -> ProblemSpec {
+    ProblemSpec {
+        reference_python: Some("def two_sum(nums, target):\n    return [0, 1]\n".to_owned()),
+        input_schema: Some(Schema::Tuple {
+            items: vec![
+                Schema::IntArray {
+                    min_len: 0,
+                    max_len: 16,
+                    min: 0,
+                    max: 10_000,
+                    sorted: false,
+                    unique: false,
+                },
+                Schema::Int {
+                    min: 0,
+                    max: 20_000,
+                },
+            ],
+        }),
+        concept_tags: vec!["arrays".to_owned()],
+        ..problem()
+    }
+}
+
+/// The (user, reference) answer pair for one oracle evaluation. Both sides call
+/// with the same per-side id, so pair `i` echoes `t = i` on each side.
+fn oracle_pair(call: u32, user: &Value, reference: &Value) -> [Behaviour; 2] {
+    [answer(call, user), answer(call, reference)]
+}
+
+/// An oracle script where the user always returns `user` and the trusted
+/// reference always returns `reference`, for `pairs` evaluations in a row.
+fn oracle_script(pairs: u32, user: &Value, reference: &Value) -> Vec<Behaviour> {
+    (1..=pairs)
+        .flat_map(|call| oracle_pair(call, user, reference))
+        .collect()
+}
+
+/// A run carrying one ghost input instead of the stored suite.
+fn ghost_input(input_value: Value) -> RunInput {
+    let mut run = input(RunMode::Run);
+    run.ghost_input = Some(input_value);
+    run
+}
+
+#[tokio::test]
+async fn a_ghost_run_passes_when_the_answers_match() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // One call per side: first the user answer, then the reference answer.
+    backend.script_program([answer(1, &json!([0, 1])), answer(1, &json!([0, 1]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        problem_with_reference(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(names, ["compiling", "test"], "one custom test, no familiar");
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a passing ghost run must complete: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::Accepted);
+    assert_eq!((result.passed, result.total), (1, 1));
+    assert!(result.measured.is_none(), "a ghost run is never benched");
+}
+
+#[tokio::test]
+async fn a_ghost_run_is_a_wrong_answer_when_the_sides_differ() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([9, 9])), answer(1, &json!([0, 1]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        problem_with_reference(),
+    );
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a wrong ghost run still completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+    assert_eq!((result.passed, result.total), (0, 1));
+}
+
+#[tokio::test]
+async fn a_ghost_run_is_a_runtime_error_when_the_program_crashes() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([
+        Behaviour::Stderr(b"ValueError: boom\n".to_vec()),
+        Behaviour::Exit {
+            code: 1,
+            oom_kill: 0,
+        },
+        answer(1, &json!([0, 1])),
+    ]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        problem_with_reference(),
+    );
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a crashed ghost run still completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::RuntimeError);
+}
+
+#[tokio::test]
+async fn a_ghost_run_times_out_when_the_program_hangs() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([Behaviour::Hang, answer(1, &json!([0, 1]))]);
+    let mut spec = problem_with_reference();
+    spec.time_limit_ms = Some(50);
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run completes");
+
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a timed-out ghost run still completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::TimeLimit);
+}
+
+#[tokio::test]
+async fn a_ghost_run_without_a_reference_is_problem_unavailable() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    let executor = executor(catalog, &backend, dir.path().join("languages.toml"));
+    let (ctx, _log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(ghost_input(json!([[2, 7], 9])), ctx)
+        .await
+        .expect("the ghost run resolves");
+
+    assert!(
+        matches!(
+            outcome,
+            RunOutcome::Failed(FailureReason::ProblemUnavailable)
+        ),
+        "no reference means unjudgeable, never a verdict: {outcome:?}"
+    );
+}
+
+// -- The submit ghost hunt (ide-workspace T25) --------------------------------
+//
+// A failing submission hunts for the minimal failing input through the real
+// engine and the sandbox oracle. The fake backend plays both sides of every
+// oracle call: the user answers first, then the reference, because
+// `tokio::join!` polls the user call before the reference call. `ORACLE_PAIRS`
+// over-scripts the hunt so a scripted read never pends.
+const ORACLE_PAIRS: u32 = 900;
+
+#[tokio::test]
+async fn a_wrong_submit_hunts_and_emits_a_ghost() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // The stored suite: the sample passes, the hidden test fails — wrong answer.
+    // The hunt's oracle: the user returns [9, 9], the reference [0, 1], always.
+    let mut script = vec![answer(1, &json!([0, 1])), answer(2, &json!([9, 9]))];
+    script.extend(oracle_script(ORACLE_PAIRS, &json!([9, 9]), &json!([0, 1])));
+    backend.script_program(script);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        huntable_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let events = log.events();
+    let names: Vec<_> = events.iter().map(PublicEvent::event_type).collect();
+    let prefix = ["compiling", "test", "test", "familiar", "ghost_hunting"];
+    assert_eq!(
+        &names[..prefix.len()],
+        prefix,
+        "the hunt starts after the familiar verdict"
+    );
+    assert_eq!(
+        names.last().copied(),
+        Some("ghost"),
+        "the ghost event ends the stream"
+    );
+    let steps = names.iter().filter(|name| **name == "shrink_step").count();
+    assert!(steps >= 1, "a found ghost always carries its shrink trace");
+
+    let ghost = events
+        .iter()
+        .find(|event| event.event_type() == "ghost")
+        .expect("a found ghost is emitted")
+        .payload();
+    assert_eq!(ghost["kind"], json!("wrong"));
+    assert_eq!(ghost["expected"], json!([0, 1]));
+    assert_eq!(ghost["got"], json!([9, 9]));
+    assert!(ghost["input"].is_array(), "the ghost carries its input");
+    assert_eq!(
+        ghost["shrink"]["steps"][0]["index"],
+        json!(0),
+        "the first failing input is step 0"
+    );
+    assert_eq!(
+        ghost["provenance"]["problem_version"],
+        json!(1),
+        "provenance echoes the pinned version"
+    );
+    assert!(ghost["autopsy"].is_object(), "the autopsy rides the ghost");
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("the hunt does not change the verdict: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+}
+
+#[tokio::test]
+async fn a_submit_that_cannot_reproduce_its_failure_emits_no_ghost() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // The suite says wrong answer, but the oracle sees the user match the
+    // reference on every candidate — nothing to shrink, nothing to report.
+    let mut script = vec![answer(1, &json!([0, 1])), answer(2, &json!([9, 9]))];
+    script.extend(oracle_script(600, &json!([0, 1]), &json!([0, 1])));
+    backend.script_program(script);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        huntable_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names.last().copied(),
+        Some("ghost_hunting"),
+        "a fruitless hunt emits nothing after its start event"
+    );
+    assert!(
+        !names.contains(&"ghost") && !names.contains(&"shrink_step"),
+        "no ghost without a found failure"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("the verdict stands: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+}
+
+#[tokio::test]
+async fn an_unreliable_reference_aborts_the_hunt_but_the_verdict_stands() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // The reference crashes on every evaluation. Three in a row and the engine
+    // refuses to trust it — but the verdict the suite produced still stands.
+    let mut script = vec![answer(1, &json!([0, 1])), answer(2, &json!([9, 9]))];
+    for call in 1..=3 {
+        script.push(answer(call, &json!([0, 1])));
+        script.push(Behaviour::Exit {
+            code: 1,
+            oom_kill: 0,
+        });
+    }
+    backend.script_program(script);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        huntable_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names.last().copied(),
+        Some("ghost_hunting"),
+        "an aborted hunt emits nothing after its start event"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("an aborted hunt keeps the verdict: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+}
+
+#[tokio::test]
+async fn a_failing_sample_run_never_hunts() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    // The sample run fails, but hunts are submit-only: `Run` never emits
+    // `ghost_hunting`, even with schema and reference present.
+    backend.script_program([answer(1, &json!([9, 9]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        huntable_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Run), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names,
+        ["compiling", "test", "familiar"],
+        "a sample run stops after the familiar"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("a failing sample run still completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+}
+
+#[tokio::test]
+async fn an_accepted_submit_never_hunts() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([0, 1])), answer(2, &json!([0, 1]))]);
+    let executor = executor_with(
+        catalog,
+        &backend,
+        dir.path().join("languages.toml"),
+        huntable_problem(),
+    );
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert_eq!(
+        names,
+        ["compiling", "test", "test", "familiar"],
+        "an accepted submit never hunts"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("the run completes: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::Accepted);
+}
+
+#[tokio::test]
+async fn a_submit_without_a_reference_never_hunts() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([0, 1])), answer(2, &json!([9, 9]))]);
+    let spec = ProblemSpec {
+        reference_python: None,
+        ..huntable_problem()
+    };
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert!(
+        !names.contains(&"ghost_hunting"),
+        "no reference means nothing trusted to compare against"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("the verdict stands: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
+}
+
+#[tokio::test]
+async fn a_submit_without_an_input_schema_never_hunts() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([answer(1, &json!([0, 1])), answer(2, &json!([9, 9]))]);
+    let spec = ProblemSpec {
+        input_schema: None,
+        ..huntable_problem()
+    };
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    let outcome = executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let names: Vec<_> = log.events().iter().map(PublicEvent::event_type).collect();
+    assert!(
+        !names.contains(&"ghost_hunting"),
+        "no input schema means no candidates to try"
+    );
+    let RunOutcome::Completed(result) = outcome else {
+        panic!("the verdict stands: {outcome:?}");
+    };
+    assert_eq!(result.verdict, Verdict::WrongAnswer);
 }

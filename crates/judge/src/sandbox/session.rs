@@ -138,8 +138,10 @@ fn spawn_cleanup<S: BackendSession + 'static>(mut container: S) {
 pub struct Opened<S: BackendSession + 'static> {
     /// The container. The caller closes it when the run ends.
     pub session: Session<S>,
-    /// The driver's stdin and stdout.
-    pub driver: S::Driver,
+    /// The driver's stdin and stdout. `None` once the abnormal path has closed it:
+    /// an open attach stream makes the daemon's removal wait on stream teardown,
+    /// so it is always dropped before a kill-and-remove.
+    pub driver: Option<S::Driver>,
 }
 
 /// Creates a container and brings it to the state where the driver can take calls.
@@ -165,7 +167,10 @@ pub async fn open_session<B: Backend>(
     }
     let mut session = Session::new(backend.create(spec).await?);
     match prepare(&mut session, lang, archive).await {
-        Ok(driver) => Ok(Opened { session, driver }),
+        Ok(driver) => Ok(Opened {
+            session,
+            driver: Some(driver),
+        }),
         Err(error) => {
             if let Err(close_error) = session.close().await {
                 tracing::warn!(%close_error, "closing a failed session did not confirm removal");

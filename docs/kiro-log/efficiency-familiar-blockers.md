@@ -213,3 +213,5 @@ Open non-stretch tasks and the reason each stays open:
 | T46 to T48 | Stretch. Skipped. | Stretch. |
 
 No code change this run. The grimoire test suite passes at 16 of 16.
+
+### verify all, 16 Nov 2026: T24 stays open: the 'sizes span less than 32x' warning and the BEN-01 unique-size case are still missing in crates/grimoire (only the BEN_01 code constant exists). Also, the main tree holds uncommitted judge bench work (crates/judge/src/sandbox/bench.rs, tests/sbx_bench.rs, model_bench.rs) that fails 'cargo fmt --check' and clippy (manual_async_fn, cast_precision_loss in bench.rs:276). Not touched by verify; fix before it is committed under T25.

@@ -63,6 +63,25 @@ if grep -Fq 'flush_interval -1' "$site"; then pass "SSE route is unbuffered"; el
 if grep -Eq '^\s*-Server' "$site"; then pass "Server header removed"; else fail "Server header not removed"; fi
 if grep -Eq 'import|admin|auto_https|acme' "$site"; then fail "site file contains global or import directives"; else pass "site file holds a single site block only"; fi
 
+# The sandbox role must use the scoped rootlesskit AppArmor profile, never the host-wide sysctl (R3.8, Q12).
+sandbox_tasks="$ANSIBLE_DIR/roles/sandbox/tasks/main.yml"
+sandbox_defaults="$ANSIBLE_DIR/roles/sandbox/defaults/main.yml"
+if grep -qF 'apparmor_parser -r /etc/apparmor.d/rootlesskit' "$sandbox_tasks"; then
+  pass "sandbox role loads the scoped rootlesskit AppArmor profile"
+else
+  fail "sandbox role does not load /etc/apparmor.d/rootlesskit"
+fi
+if grep -qF '/etc/apparmor.d/rootlesskit' "$sandbox_tasks" && grep -q 'apparmor' "$sandbox_defaults"; then
+  pass "sandbox role installs apparmor and checks the profile file"
+else
+  fail "sandbox role does not ensure the apparmor package and profile file"
+fi
+if grep -q '/proc/sys/kernel/apparmor_restrict_unprivileged_userns' "$sandbox_tasks"; then
+  fail "sandbox role still reads the host-wide AppArmor userns sysctl"
+else
+  pass "sandbox role leaves kernel.apparmor_restrict_unprivileged_userns alone"
+fi
+
 if [ "$failures" -gt 0 ]; then
   echo "$failures check(s) failed" >&2
   exit 1

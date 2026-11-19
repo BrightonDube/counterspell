@@ -1,6 +1,6 @@
 services:
   caddy:
-    image: caddy:2.10.2-alpine
+    image: caddy:2.11.8-alpine
     ports:
       - "80:80"
       - "443:443"
@@ -13,7 +13,7 @@ services:
         condition: service_started
     networks:
       - edge
-      - internal
+      - data
     restart: unless-stopped
 
   server:
@@ -57,7 +57,7 @@ services:
         condition: service_healthy
     networks:
       - edge
-      - internal
+      - data
     restart: unless-stopped
 
   judge:
@@ -70,11 +70,20 @@ services:
       JUDGE_CONCURRENCY: "2"
       LEASE_SECS: "30"
       RENEW_SECS: "10"
+      # Rootless sandbox daemon socket inside the container. The host path comes from
+      # SANDBOX_DOCKER_SOCKET_HOST at deploy time — see deploy/rootless-sandbox-daemon.md.
+      # /dev/null starts the judge with the sandbox unreachable (safe, every run fails
+      # as infrastructure; nothing executes on the host).
+      SANDBOX_DOCKER_SOCKET: /sandbox/docker.sock
+    volumes:
+      # The rootless sandbox socket only — never the main daemon socket. Only this
+      # service may mount it; the boundary test fails if another service tries.
+      - ${SANDBOX_DOCKER_SOCKET_HOST:-/run/user/1000/docker.sock}:/sandbox/docker.sock
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - internal
+      - data
     restart: unless-stopped
 
   postgres:
@@ -91,7 +100,7 @@ services:
       timeout: 5s
       retries: 12
     networks:
-      - internal
+      - data
 
   valkey:
     image: valkey/valkey:8-alpine
@@ -103,7 +112,7 @@ services:
       timeout: 5s
       retries: 12
     networks:
-      - internal
+      - data
 
   migrate:
     build:
@@ -116,7 +125,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - internal
+      - data
     restart: "no"
 
 volumes:
@@ -126,5 +135,5 @@ volumes:
 
 networks:
   edge:
-  internal:
+  data:
     internal: true

@@ -3,10 +3,12 @@ resolver = "2"
 members = [
     "crates/server",
     "crates/judge",
+    "crates/catalogue-cli",
     "crates/engine",
     "crates/grimoire",
     "crates/mcp",
     "crates/common",
+    "crates/testserver",
 ]
 
 [workspace.package]

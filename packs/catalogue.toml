@@ -1,0 +1,47 @@
+# Tracks and concepts for the problem catalogue (D13, CAT-T1).
+# Every pack's meta.toml `track` and `concepts` must name an entry here,
+# or the importer refuses the pack with `unknown_taxonomy`.
+
+[[tracks]]
+slug = "arrays"
+name = "Arrays"
+
+[[tracks]]
+slug = "matrices"
+name = "Matrices"
+
+[[tracks]]
+slug = "strings"
+name = "Strings"
+
+[[concepts]]
+slug = "arrays"
+name = "Arrays"
+
+[[concepts]]
+slug = "pairs"
+name = "Pairs"
+
+[[concepts]]
+slug = "nested-loops"
+name = "Nested Loops"
+
+[[concepts]]
+slug = "matrices"
+name = "Matrices"
+
+[[concepts]]
+slug = "indexing"
+name = "Indexing"
+
+[[concepts]]
+slug = "edge-cases"
+name = "Edge Cases"
+
+[[concepts]]
+slug = "strings"
+name = "Strings"
+
+[[concepts]]
+slug = "scanning"
+name = "Scanning"

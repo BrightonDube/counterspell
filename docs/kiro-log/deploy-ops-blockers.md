@@ -68,3 +68,13 @@ Items that need Brighton, another spec, or a decision Kiro may not take alone. E
 - T01, T23 to T32 and T34 are `[HUMAN]` and stay unchecked.
 - T33 (verification report) depends on T31 and T32, which are host work, so it stays unchecked.
 - Unblock path: tick auth T33 and judge-sandbox T38, then run T08 (access log), T15 (Compose green), T07 tick, T19 and T20.
+
+### verify all, 16 Nov 2026: T07 stays open until T15 (compose healthcheck listing). T08 stays open: the OAuth callback/verify access-log query filter is not in the Caddyfile (waits on auth T33 and Brighton's Caddyfile approval).
+
+## Blocked: SSH port 22 unreachable (17 Nov 2026)
+
+- `ansible-playbook -i inventory/hosts.yml counterspell-shared.yml --check --diff` cannot connect: `ssh: connect to host 15.204.92.66 port 22: Connection timed out`, from both WSL and Windows.
+- The host is up: ping replies, port 443 open (the TLS alert for `15-204-92-66.sslip.io` is expected — no Caddy site exists for it yet). `api.evorayn.com` resolves to the same IP and returns 200.
+- Outbound SSH works in general (`github.com:22` open) but BOTH `15.204.92.66:22` and the Bizpilot EC2 `22` are filtered — consistent with our egress IP being blocked host-side (fail2ban ban, or an SSH allowlist tied to an older home IP).
+- Needs Brighton: check fail2ban/`aa-status` from the OVH console or another network, unban or allowlist the current IP, or confirm a different SSH port. Steps 2 and 3 (check-mode plan and first deploy) wait on this.
+- All four `production` environment secrets exist: DEPLOY_HOST, DEPLOY_PORT, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS. `DEPLOY_ENABLED` repository variable is not set.

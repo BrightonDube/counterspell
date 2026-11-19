@@ -3,6 +3,7 @@
 import {
   asRecord,
   asString,
+  ContractError,
   readArray,
   readBool,
   readEnum,
@@ -34,7 +35,8 @@ export interface ShrinkTraceView {
 }
 
 export interface Provenance {
-  seed: number;
+  /** A u64 seed as a decimal string — a JS number cannot hold every value. */
+  seed: string;
   generatorVersion: string;
   engineVersion: string;
   problemVersion: number;
@@ -89,7 +91,7 @@ export function parseShrinkStep(
 ): ShrinkStepView {
   const record = asRecord(raw, path);
   return {
-    index: readInt(record, 'index', path, 1, MAX_STEPS),
+    index: readInt(record, 'index', path, 0, MAX_STEPS),
     input: readJson(record, 'input', path),
     evaluations: readInt(record, 'evaluations', path, 0, MAX_SAFE)
   };
@@ -108,10 +110,26 @@ function parseTrace(raw: unknown, path: string): ShrinkTraceView {
   };
 }
 
+/** A provenance seed is a u64, which the wire carries as a decimal string because a JS number cannot hold every value. A legacy integer still parses when it is a safe integer. */
+function readSeed(record: RawRecord, key: string, path: string): string {
+  const value = record[key];
+  if (typeof value === 'number') {
+    if (!Number.isSafeInteger(value) || value < 0) {
+      throw new ContractError(
+        `${path}.${key}`,
+        'expected a safe non-negative integer seed'
+      );
+    }
+    return String(value);
+  }
+  if (typeof value === 'string' && /^[0-9]{1,20}$/.test(value)) return value;
+  throw new ContractError(`${path}.${key}`, 'expected a decimal seed string');
+}
+
 function parseProvenance(raw: unknown, path: string): Provenance {
   const record = asRecord(raw, path);
   return {
-    seed: readInt(record, 'seed', path, 0, MAX_SAFE),
+    seed: readSeed(record, 'seed', path),
     generatorVersion: readString(record, 'generator_version', path, 128),
     engineVersion: readString(record, 'engine_version', path, 128),
     problemVersion: readInt(record, 'problem_version', path, 1, MAX_SAFE),

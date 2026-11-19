@@ -188,3 +188,36 @@ async fn pg_claim_after_retry_appends_restarted(pool: PgPool) {
     assert_eq!(payload, serde_json::json!({ "attempt": 2 }));
     assert_invariants(&pool).await.unwrap();
 }
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_claim_loads_the_ghost_input(pool: PgPool) {
+    let source = seed_run(&pool).await.unwrap();
+    let run = seed_run(&pool).await.unwrap();
+    let input = serde_json::json!([3, 1, 4]);
+    sqlx::query("UPDATE submissions SET ghost_input = $1, ghost_source_id = $2 WHERE id = $3")
+        .bind(&input)
+        .bind(source.as_uuid())
+        .bind(run.as_uuid())
+        .execute(&pool)
+        .await
+        .unwrap();
+
+    let first = claim_next(&pool, "worker-ghost", LEASE)
+        .await
+        .unwrap()
+        .expect("the first job claims");
+    assert_eq!(
+        first.token.run_id(),
+        source,
+        "the source job was queued first"
+    );
+    assert_eq!(first.ghost_input, None);
+
+    let second = claim_next(&pool, "worker-ghost", LEASE)
+        .await
+        .unwrap()
+        .expect("the ghost job claims");
+    assert_eq!(second.token.run_id(), run);
+    assert_eq!(second.ghost_input, Some(input));
+}

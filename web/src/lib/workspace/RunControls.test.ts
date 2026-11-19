@@ -156,4 +156,41 @@ describe('RunControls', () => {
     expect(status.textContent).toBe('Draft saved');
     expect(status.getAttribute('aria-live')).toBe('polite');
   });
+
+  // Breaks if the ghost rerun action shows when no ghost exists, inviting a
+  // request that can never be valid.
+  it('hides the ghost rerun when there is no ghost to rerun', () => {
+    render(RunControls, {
+      props: {
+        busy: false,
+        sourceBytes: 10,
+        limitBytes: 65536,
+        onRun: () => {},
+        onSubmit: () => {},
+        canRerunGhost: false,
+        onRerunGhost: () => {}
+      }
+    });
+    expect(screen.queryByRole('button', { name: /rerun ghost/i })).toBeNull();
+  });
+
+  // Breaks if the labelled ghost action never reaches the click handler.
+  it('offers a labelled Rerun ghost action when a ghost exists', async () => {
+    let reruns = 0;
+    render(RunControls, {
+      props: {
+        busy: false,
+        sourceBytes: 10,
+        limitBytes: 65536,
+        onRun: () => {},
+        onSubmit: () => {},
+        canRerunGhost: true,
+        onRerunGhost: () => (reruns += 1)
+      }
+    });
+    const button = screen.getByRole('button', { name: /rerun ghost/i });
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+    await fireEvent.click(button);
+    expect(reruns).toBe(1);
+  });
 });

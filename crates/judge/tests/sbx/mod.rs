@@ -23,6 +23,7 @@ use counterspell_common::events::PublicEvent;
 use counterspell_common::ids::RunId;
 use counterspell_common::status::RunMode;
 use counterspell_judge::executor::{ExecError, RunExecutor, RunInput, RunOutcome};
+use counterspell_judge::familiar::store::TimingRow;
 use counterspell_judge::languages::LanguageCatalog;
 use counterspell_judge::sandbox::backend::{Backend, ManagedContainer};
 use counterspell_judge::sandbox::bollard_backend::BollardBackend;
@@ -40,13 +41,18 @@ pub const API_TIMEOUT: Duration = Duration::from_secs(30);
 pub const RUN_CAP: Duration = Duration::from_secs(20);
 
 /// The repository root, from this crate's manifest directory.
-fn repo_root() -> PathBuf {
+pub fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
 /// The fixture problems directory (`tests/fixtures/problems`).
 pub fn fixture_dir() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/problems")
+}
+
+/// The trusted probe scripts directory (`tests/probes`).
+pub fn probes_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/probes")
 }
 
 /// Reads one fixture solution file (`tests/fixtures/solutions/<name>`) as text.
@@ -116,6 +122,68 @@ pub async fn managed_containers(backend: &BollardBackend) -> Vec<ManagedContaine
         .expect("the daemon lists containers")
 }
 
+/// Polls `list_managed` until it is empty or `within` passes, then returns the last
+/// list. Abnormal-end containers are killed and removed on the call path, but a removal
+/// can lag the verdict by a moment — the sweep-free bound is seconds, not the orphan age.
+pub async fn cleared_within(
+    docker: &Docker,
+    cfg: &SandboxConfig,
+    within: Duration,
+) -> Vec<ManagedContainer> {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let deadline = tokio::time::Instant::now() + within;
+    let mut last = managed_containers(&backend).await;
+    while !last.is_empty() && tokio::time::Instant::now() < deadline {
+        tokio::time::sleep(Duration::from_millis(400)).await;
+        last = managed_containers(&backend).await;
+    }
+    last
+}
+
+/// Asserts no managed container is still *running* within `within`, then reaps
+/// any corpses — the role the sweeper plays in production (no sweeper runs
+/// during scenario tests). Docker's removal of a killed container can lag the
+/// verdict by tens of seconds under load, so absence is not the bound; "not
+/// running" is. Returns how many corpses were reaped.
+pub async fn drain_dead(docker: &Docker, cfg: &SandboxConfig, within: Duration) -> usize {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let deadline = tokio::time::Instant::now() + within;
+    let mut leftovers = managed_containers(&backend).await;
+    loop {
+        let mut survivors = Vec::new();
+        for container in &leftovers {
+            // A container can vanish between listing and inspection when the
+            // daemon finishes a removal — that is the clean outcome.
+            let Ok(inspected) = docker.inspect_container(&container.id, None).await else {
+                continue;
+            };
+            if inspected
+                .state
+                .and_then(|state| state.running)
+                .unwrap_or(false)
+            {
+                survivors.push(container.name.clone());
+            }
+        }
+        if survivors.is_empty() || tokio::time::Instant::now() >= deadline {
+            assert!(
+                survivors.is_empty(),
+                "containers still running — the program was not contained: {survivors:?}"
+            );
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(400)).await;
+        leftovers = managed_containers(&backend).await;
+    }
+    let mut reaped = 0;
+    for container in &leftovers {
+        if backend.remove_managed(&container.id).await.is_ok() {
+            reaped += 1;
+        }
+    }
+    reaped
+}
+
 /// What one real run produced: the executor's outcome and every public event it
 /// emitted, in order.
 pub struct RunObservation {
@@ -123,6 +191,11 @@ pub struct RunObservation {
     pub outcome: Result<RunOutcome, ExecError>,
     /// The public events the executor emitted, in emission order.
     pub events: Vec<PublicEvent>,
+    /// The raw bench samples the run recorded for `run_timings`.
+    pub timings: Vec<TimingRow>,
+    /// Wall time of `executor.execute` alone — the preflight probe before it is not
+    /// part of the run cap.
+    pub run_wall: Duration,
 }
 
 impl RunObservation {
@@ -171,16 +244,201 @@ pub async fn run_source(
     let run = RunInput {
         run_id: RunId::new(),
         problem_slug: slug.to_owned(),
+        problem_version: 1,
         lang: lang.to_owned(),
         mode,
+        ghost_input: None,
         code: source.to_owned(),
         attempt: 1,
     };
+    let started = std::time::Instant::now();
     let outcome = executor.execute(run, ctx).await;
     RunObservation {
         outcome,
         events: log.events(),
+        timings: log.timings(),
+        run_wall: started.elapsed(),
     }
+}
+
+/// One executor shared by several runs — concurrency scenarios need a single
+/// container semaphore, so two `run_source` calls (two executors) would not do.
+/// Preflight runs once for every enabled language before the executor is built.
+pub async fn shared_executor(
+    docker: &Docker,
+    cfg: &SandboxConfig,
+    catalog: &LanguageCatalog,
+) -> Arc<SandboxExecutor<DirProblemTests, BollardBackend>> {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let mut states = Vec::new();
+    for name in ["python", "javascript"] {
+        if let Some(lang_def) = catalog.get(name).filter(|lang| lang.is_enabled()) {
+            let state = Arc::new(PreflightState::new());
+            let spec =
+                preflight::probe_spec(lang_def, cfg.run_wall_cap, cfg.runtime).expect("probe spec");
+            preflight::refresh(&state, &backend, &spec)
+                .await
+                .expect("the preflight probe runs");
+            assert!(state.passed(), "preflight must pass for {name}");
+            states.push(state);
+        }
+    }
+    Arc::new(SandboxExecutor::new(
+        catalog.clone(),
+        DirProblemTests::new(fixture_dir()),
+        backend,
+        cfg.clone(),
+        states,
+        "sbx-scenario",
+    ))
+}
+
+/// Runs `source` through an already-built executor — for S18/S19 where the
+/// container semaphore must be shared between concurrent runs.
+pub async fn execute_on(
+    executor: &SandboxExecutor<DirProblemTests, BollardBackend>,
+    lang: &str,
+    slug: &str,
+    source: &str,
+    mode: RunMode,
+) -> RunObservation {
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+    let run = RunInput {
+        run_id: RunId::new(),
+        problem_slug: slug.to_owned(),
+        problem_version: 1,
+        lang: lang.to_owned(),
+        mode,
+        ghost_input: None,
+        code: source.to_owned(),
+        attempt: 1,
+    };
+    let started = std::time::Instant::now();
+    let outcome = executor.execute(run, ctx).await;
+    RunObservation {
+        outcome,
+        events: log.events(),
+        timings: log.timings(),
+        run_wall: started.elapsed(),
+    }
+}
+
+/// Peak container counts the sampler observed.
+#[derive(Debug, Clone, Copy)]
+pub struct ManagedPeak {
+    /// The most managed containers the daemon ever listed in one sample —
+    /// dead corpses included, since Docker's removal can lag a kill.
+    pub listed: usize,
+    /// The most containers still `running` in one sample — the count the
+    /// container semaphore is actually bound to.
+    pub running: usize,
+}
+
+/// Samples the daemon's managed-container list every `every` until `stop`
+/// fires, reporting the largest listed and running counts seen. Sampling is
+/// out-of-band evidence: it watches the daemon, not anything the runs report.
+pub async fn sample_managed_peak(
+    docker: Docker,
+    cfg: SandboxConfig,
+    every: Duration,
+    mut stop: tokio::sync::watch::Receiver<bool>,
+) -> ManagedPeak {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let mut peak = ManagedPeak {
+        listed: 0,
+        running: 0,
+    };
+    loop {
+        let containers = managed_containers(&backend).await;
+        peak.listed = peak.listed.max(containers.len());
+        let mut running = 0_usize;
+        for container in &containers {
+            // A container removed between the list and the inspect no longer
+            // counts — it cannot be running any more.
+            let inspected = docker.inspect_container(&container.id, None).await;
+            let running_state = inspected
+                .ok()
+                .and_then(|container| container.state)
+                .and_then(|state| state.running)
+                .unwrap_or(false);
+            if running_state {
+                running += 1;
+            }
+        }
+        peak.running = peak.running.max(running);
+        tokio::select! {
+            () = tokio::time::sleep(every) => {}
+            _ = stop.changed() => return peak,
+        }
+    }
+}
+
+/// Starts [`run_source`] on a spawned task and returns its stop sender with the
+/// task handle. Firing `stop` mid-call is how S17's cancel path and S24's stop
+/// scenario reach a live call — the daemon's container list is the out-of-band
+/// proof that the run was mid-call when the signal landed.
+pub fn spawn_source(
+    docker: &Docker,
+    cfg: &SandboxConfig,
+    catalog: &LanguageCatalog,
+    lang: &str,
+    slug: &str,
+    source: &str,
+    mode: RunMode,
+) -> (
+    tokio::task::JoinHandle<RunObservation>,
+    tokio::sync::watch::Sender<bool>,
+    String,
+) {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let state = Arc::new(PreflightState::new());
+    let probe = catalog
+        .get(lang)
+        .filter(|lang| lang.is_enabled())
+        .map(|lang_def| {
+            preflight::probe_spec(lang_def, cfg.run_wall_cap, cfg.runtime).expect("probe spec")
+        });
+    let executor = SandboxExecutor::new(
+        catalog.clone(),
+        DirProblemTests::new(fixture_dir()),
+        backend.clone(),
+        cfg.clone(),
+        vec![state.clone()],
+        "sbx-scenario",
+    );
+    let (ctx, log, stop) = RecordingContext::with_stop(1);
+    let run_id = RunId::new();
+    let run_id_text = run_id.to_string();
+    let run = RunInput {
+        run_id,
+        problem_slug: slug.to_owned(),
+        problem_version: 1,
+        lang: lang.to_owned(),
+        mode,
+        ghost_input: None,
+        code: source.to_owned(),
+        attempt: 1,
+    };
+    let handle = tokio::spawn(async move {
+        if let Some(spec) = probe {
+            preflight::refresh(&state, &backend, &spec)
+                .await
+                .expect("the preflight probe runs");
+            assert!(
+                state.passed(),
+                "sandbox preflight must pass before a scenario run"
+            );
+        }
+        let started = std::time::Instant::now();
+        let outcome = executor.execute(run, ctx).await;
+        RunObservation {
+            outcome,
+            events: log.events(),
+            timings: log.timings(),
+            run_wall: started.elapsed(),
+        }
+    });
+    (handle, stop, run_id_text)
 }
 
 /// A host-side listener set for the network scenario (S12): one TCP and one UDP socket
@@ -200,14 +458,30 @@ impl ListenerSet {
     }
 }
 
-/// Binds a TCP and a UDP socket on the loopback and records every connection or
-/// datagram until the returned set is dropped.
+/// The host's primary LAN IP, found by asking the OS which interface a packet
+/// to a public address would leave on. A rootless bridge container reaches the
+/// host through this address — the bridge gateway and `host.docker.internal`
+/// answer locally but do not forward.
+pub fn host_ip() -> std::net::IpAddr {
+    let socket = std::net::UdpSocket::bind("0.0.0.0:0").expect("a UDP socket binds");
+    socket
+        .connect("192.0.2.1:53")
+        .expect("connect only picks a route");
+    socket
+        .local_addr()
+        .expect("the socket has a local address")
+        .ip()
+}
+
+/// Binds a TCP and a UDP socket on every interface and records every connection
+/// or datagram until the returned set is dropped. `0.0.0.0` is required: the
+/// sandbox reaches this host through its LAN IP, not its loopback.
 pub async fn listeners() -> ListenerSet {
     let attempts: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
-    let tcp = TcpListener::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+    let tcp = TcpListener::bind(SocketAddr::from(([0, 0, 0, 0], 0)))
         .await
         .expect("the TCP listener binds");
-    let udp = UdpSocket::bind(SocketAddr::from(([127, 0, 0, 1], 0)))
+    let udp = UdpSocket::bind(SocketAddr::from(([0, 0, 0, 0], 0)))
         .await
         .expect("the UDP socket binds");
     let tcp_port = tcp.local_addr().expect("TCP address").port();

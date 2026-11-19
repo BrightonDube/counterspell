@@ -18,6 +18,56 @@ pub enum StoreError {
     OutOfRange,
 }
 
+/// One raw bench sample for `run_timings`: a single timed call at one size.
+/// `repeat` counts the timed repeats at that size, starting at 1.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct TimingRow {
+    /// The input size that was timed.
+    pub n: u64,
+    /// The repeat index at that size, starting at 1.
+    pub repeat: u32,
+    /// The measured call time in nanoseconds.
+    pub ns: u64,
+}
+
+/// Inserts raw bench samples for one attempt, fenced by `attempt` so a retry can
+/// never collide with another attempt's rows. A duplicate inside one attempt is a
+/// primary-key error, which is honest: the judge cannot delete, so it must not double-write.
+///
+/// # Errors
+///
+/// Returns `OutOfRange` when a value does not fit the column, or `Database` on a database
+/// error. Any error rolls the whole batch back.
+pub async fn insert_run_timings(
+    pool: &PgPool,
+    submission_id: uuid::Uuid,
+    attempt: u16,
+    rows: &[TimingRow],
+) -> Result<u64, StoreError> {
+    let attempt = i16::try_from(attempt).map_err(|_| StoreError::OutOfRange)?;
+    let mut tx = pool.begin().await?;
+    let mut inserted = 0_u64;
+    for row in rows {
+        let n = i32::try_from(row.n).map_err(|_| StoreError::OutOfRange)?;
+        let repeat = i16::try_from(row.repeat).map_err(|_| StoreError::OutOfRange)?;
+        let ns = i64::try_from(row.ns).map_err(|_| StoreError::OutOfRange)?;
+        let result = sqlx::query(
+            "INSERT INTO run_timings (submission_id, attempt, n, repeat, ns) \
+             VALUES ($1, $2, $3, $4, $5)",
+        )
+        .bind(submission_id)
+        .bind(attempt)
+        .bind(n)
+        .bind(repeat)
+        .bind(ns)
+        .execute(&mut *tx)
+        .await?;
+        inserted += result.rows_affected();
+    }
+    tx.commit().await?;
+    Ok(inserted)
+}
+
 /// One reference timing for a problem version, language and runtime image.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BaselineRow {

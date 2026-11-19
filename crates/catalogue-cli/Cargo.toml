@@ -1,0 +1,40 @@
+[package]
+name = "counterspell-catalogue-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[features]
+default = ["sandbox"]
+# Docker support through the judge's bollard backend, used only on the separate
+# rootless sandbox daemon. The pack runner and the CLI need it.
+sandbox = ["counterspell-judge/sandbox"]
+
+[dependencies]
+counterspell-common = { path = "../common" }
+counterspell-engine = { path = "../engine" }
+counterspell-grimoire = { path = "../grimoire" }
+counterspell-judge = { path = "../judge" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+sha2 = "0.10"
+sqlx = { version = "0.8", default-features = false, features = ["runtime-tokio", "postgres", "uuid", "json", "migrate", "macros"] }
+thiserror = "2"
+tokio = { version = "1.48.0", features = ["macros", "rt-multi-thread", "signal", "sync", "time", "io-util"] }
+toml = "0.8"
+
+[dev-dependencies]
+bollard = "0.21"
+counterspell-judge = { path = "../judge", features = ["testkit"] }
+tempfile = "3"
+
+[[bin]]
+# The catalogue importer CLI (problem-catalogue C19). Runs on the operator's
+# machine; untrusted pack code only ever runs inside the sandbox daemon.
+name = "counterspell-catalogue"
+path = "src/bin/counterspell-catalogue.rs"
+required-features = ["sandbox"]
+
+[lints]
+workspace = true

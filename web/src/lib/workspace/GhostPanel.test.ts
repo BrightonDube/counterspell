@@ -30,7 +30,7 @@ function wrongGhost(overrides: Partial<GhostView> = {}): GhostView {
       stop: 'no_smaller_input'
     },
     provenance: {
-      seed: 7,
+      seed: '7',
       generatorVersion: 'gen-1',
       engineVersion: 'eng-1',
       problemVersion: 2,
@@ -179,9 +179,7 @@ describe('GhostPanel ghost card', () => {
         reducedMotion: false
       }
     });
-    expect(
-      screen.getByText(/The ghost search did not finish/)
-    ).toBeTruthy();
+    expect(screen.getByText(/The ghost search did not finish/)).toBeTruthy();
     expect(
       screen.queryByText(/No ghost input was found within the search budget/)
     ).toBeNull();

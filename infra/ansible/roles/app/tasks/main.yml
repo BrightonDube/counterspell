@@ -1,6 +1,7 @@
 ---
-# App directories, host values, deploy scripts and the compose checksum record (deploy-ops R5.1,
-# R5.4, R7.13). Secrets are never written here: Brighton writes the env files by hand (T27).
+# App directories, host values, service env files, deploy scripts and the compose checksum record
+# (deploy-ops R5.1, R5.4, R7.13). Env files are templated from the vault, never written by hand.
+# Ownership comes from app_owner: root on a dedicated host, the deploy user on the shared host.
 
 - name: Refuse to run without the public site address
   ansible.builtin.assert:
@@ -9,54 +10,79 @@
     fail_msg: "Set caddy_site_address in inventory/group_vars/all.yml (the public hostname, no secrets)."
     quiet: true
 
-- name: Create the app directory (root only)
+- name: Create the app directory
   ansible.builtin.file:
     path: "{{ app_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0750"
 
-- name: Create the env directory (root only)
+- name: Create the env directory (owner only)
   ansible.builtin.file:
     path: "{{ app_env_dir }}"
     state: directory
-    owner: root
-    group: root
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0700"
+
+- name: Create the script directory when it lives under the app directory
+  ansible.builtin.file:
+    path: "{{ app_bin_dir }}"
+    state: directory
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
+    mode: "0750"
+  when: app_bin_dir is match(app_dir)
 
 - name: Write the non-secret host values (R5.4)
   ansible.builtin.template:
     src: host.env.j2
-    dest: "{{ app_env_dir }}/host.env"
-    owner: root
-    group: root
+    dest: "{{ app_host_env }}"
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0644"
 
-- name: Check that Brighton has written each service env file with mode 0600 (R5.1)
-  ansible.builtin.stat:
-    path: "{{ app_env_dir }}/{{ item }}.env"
+- name: Write the service env files from the vault, owner-only (R5.1)
+  # no_log: the rendered content holds every service secret.
+  ansible.builtin.template:
+    src: "{{ item }}.env.j2"
+    dest: "{{ app_env_dir }}/{{ item }}.env"
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
+    mode: "0600"
   loop: "{{ app_env_services }}"
-  register: app_env_stat
-  tags: [env-check]
-
-- name: Stop until every service env file exists, is root-owned and is mode 0600
-  ansible.builtin.assert:
-    that:
-      - item.stat.exists and item.stat.mode == '0600' and item.stat.pw_name == 'root'
-    fail_msg: "Missing or wrongly permissioned {{ item.stat.path }}. Write it by hand as root with mode 0600 (T27)."
-    quiet: true
-  loop: "{{ app_env_stat.results }}"
-  tags: [env-check]
+  no_log: true
 
 - name: Copy the compose files and write the checksum record
   ansible.builtin.include_tasks: compose_sha.yml
 
-- name: Install the root-only deploy scripts (mode 0755)
+- name: Install the deploy scripts (mode 0755)
   ansible.builtin.copy:
     src: "{{ repo_root }}/{{ item.src }}"
-    dest: "/usr/local/sbin/{{ item.dest }}"
-    owner: root
-    group: root
+    dest: "{{ app_bin_dir }}/{{ item.dest }}"
+    owner: "{{ app_owner }}"
+    group: "{{ app_group }}"
     mode: "0755"
   loop: "{{ app_scripts }}"
+
+# On the shared host the app owner is the deploy user, so the forced command runs the deploy
+# script directly with no sudo. On a dedicated host app_owner is root and the base role owns the
+# deploy user's authorized_keys (sudo path), so nothing here applies.
+- name: Create the deploy account's .ssh directory on the shared host
+  ansible.builtin.file:
+    path: "/home/{{ deploy_user }}/.ssh"
+    state: directory
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0700"
+  when: app_owner == deploy_user
+
+- name: Authorize the CI deploy key with the forced command only (R2.9, R7.12)
+  ansible.builtin.template:
+    src: authorized_keys_deploy.j2
+    dest: "/home/{{ deploy_user }}/.ssh/authorized_keys"
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+    mode: "0600"
+  when: app_owner == deploy_user

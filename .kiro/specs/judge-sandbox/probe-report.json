@@ -1,0 +1,76 @@
+{
+  "checks": [
+    {
+      "name": "no_new_privs",
+      "expected": "1",
+      "observed": "1",
+      "ok": true
+    },
+    {
+      "name": "seccomp_filter",
+      "expected": "2",
+      "observed": "2",
+      "ok": true
+    },
+    {
+      "name": "capabilities_empty",
+      "expected": "every set 0000000000000000",
+      "observed": "CapInh=0000000000000000 CapPrm=0000000000000000 CapEff=0000000000000000 CapBnd=0000000000000000 CapAmb=0000000000000000",
+      "ok": true
+    },
+    {
+      "name": "sandbox_uid",
+      "expected": "65534",
+      "observed": "65534",
+      "ok": true
+    },
+    {
+      "name": "network_interfaces",
+      "expected": "lo only",
+      "observed": "lo",
+      "ok": true
+    },
+    {
+      "name": "memory_limit",
+      "expected": "268435456",
+      "observed": "268435456",
+      "ok": true
+    },
+    {
+      "name": "swap_disabled",
+      "expected": "0",
+      "observed": "0",
+      "ok": true
+    },
+    {
+      "name": "pids_limit",
+      "expected": "64",
+      "observed": "64",
+      "ok": true
+    },
+    {
+      "name": "cpu_quota",
+      "expected": "100000 100000",
+      "observed": "100000 100000",
+      "ok": true
+    },
+    {
+      "name": "root_read_only",
+      "expected": "/ mounted ro",
+      "observed": "ro,relatime,lowerdir=/home/brighton/.local/share/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1468/fs:/home/brighton/.local/share/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/6/fs:/home/brighton/.local/share/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/5/fs:/home/brighton/.local/share/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/4/fs:/home/brighton/.local/share/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/3/fs,upperdir=/home/brighton/.local/share/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1469/fs,workdir=/home/brighton/.local/share/docker/containerd/daemon/io.containerd.snapshotter.v1.overlayfs/snapshots/1469/work,redirect_dir=nofollow,userxattr",
+      "ok": true
+    },
+    {
+      "name": "scratch_tmpfs",
+      "expected": "/box and /tmp tmpfs, nosuid,nodev; /box sized by policy",
+      "observed": "/box: rw,nosuid,nodev,noexec,relatime,size=65536k,mode=700,uid=165533,gid=165533 | /tmp: rw,nosuid,nodev,noexec,relatime,size=16384k,uid=1000,gid=1000",
+      "ok": true
+    },
+    {
+      "name": "read_only_write_refused",
+      "expected": "non-zero exit",
+      "observed": "1",
+      "ok": true
+    }
+  ]
+}

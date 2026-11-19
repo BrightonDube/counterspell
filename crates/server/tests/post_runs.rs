@@ -271,7 +271,7 @@ async fn pg_post_requires_session(pool: PgPool) {
     .await;
 
     assert_eq!(reply.status, 401);
-    assert_eq!(error_code(&reply), "unauthorized");
+    assert_eq!(error_code(&reply), "unauthenticated");
     assert_eq!(count_submissions(&pool).await, 0);
 }
 

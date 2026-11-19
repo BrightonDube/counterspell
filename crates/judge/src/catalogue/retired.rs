@@ -98,7 +98,11 @@ pub fn canonical_hash(input: &Value, expected: &Value) -> [u8; 32] {
 }
 
 /// Writes a JSON value in canonical form: sorted object keys, no whitespace.
-fn canonical_json(value: &Value) -> String {
+///
+/// The sandbox fill also uses this to compare inputs across sources, so a curated
+/// case and a generated case that carry the same value canonicalise identically.
+#[must_use]
+pub fn canonical_json(value: &Value) -> String {
     match value {
         Value::Object(map) => {
             let mut keys: Vec<&String> = map.keys().collect();
