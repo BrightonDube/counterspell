@@ -51,3 +51,13 @@
 
 ## 17 Nov 2026 verify all: 12 `counterspell-mcp` tests fail at `335968e`
 `cargo test -p counterspell-mcp` fails 12 `tools::tests::*` (for example `a_crashing_program_gives_a_crash_ghost`, `find_ghost_input_finds_a_failing_input_for_the_same_index_bug`) with `ToolError NotFound: the path does not exist`. Cause: `program_from` in `crates/mcp/src/tools.rs` resolves `incorrect/<file>.py` only inside the public pack directory, but the pack-tree split moved `incorrect/` to the private tree. Reproduced with `COUNTERSPELL_PACKS_PRIVATE_ROOT` set to the populated private checkout. These passed at `36d6064`. Unblock: resolve the program through the private pack dir (as `validate_pack` already does), then re-run. T11 also still needs the Kiro import test.
+
+## drive queue run (kiro/drive-queue): T05 and T10 are no longer blocked on judge-sandbox, but need a crate-graph decision
+- judge-sandbox T20 to T24 are done. A production `PackRunner` now exists: `PackSandboxRunner` and `PackRunnerFactory` in `crates/catalogue-cli/src/pack_runner.rs`, built on the judge's `sandbox::oracle::{side, evaluate_side}`.
+- The MCP spec assumed the runner would live in `counterspell-judge` (T05). That is not possible as written: `PackRunner` is defined in `counterspell-grimoire`, and the fixed decision says the judge never depends on grimoire.
+- Options, smallest first:
+  1. `counterspell-mcp` depends on `counterspell-catalogue-cli` as a library and reuses `PackRunnerFactory`. It pulls sqlx into the MCP binary, and it makes MCP a second consumer of catalogue-cli, which the 15 Nov decision describes as the only judge-plus-grimoire consumer.
+  2. Move the `PackRunner` trait (and `Target`, `RunnerError`) into `counterspell-common` or `counterspell-engine`, re-export it from grimoire, and move `PackSandboxRunner` into the judge. Wider change, no new edges between crates.
+  3. Copy a thin runner into `crates/mcp`. Rejected: duplicates security-sensitive code.
+- Assumed choice if Brighton does not overrule: option 2, because it keeps the crate rules. Not started, because it touches three crates and the boundary test in `crates/judge/tests/boundary.rs`.
+- `RunnerSlot` also holds one runner, while `PackRunnerFactory::build` needs a pack's sources and signature, so the slot must become a factory per pack.
