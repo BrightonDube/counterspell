@@ -158,8 +158,10 @@ step vitest npm --prefix web run test
 
 step web-build npm --prefix web run build
 
+# Dependency advisories are reported but do not block: security.yml enforces
+# them, and pre-existing findings on main would otherwise stop every push.
 if command -v npm >/dev/null 2>&1; then
-  extra npm-audit npm --prefix web audit --audit-level=high
+  extra npm-audit bash -c 'npm --prefix web audit --audit-level=high || echo "pre-push: WARNING npm audit found advisories (non-blocking here; security.yml gates them)"'
 fi
 
 # Terraform: fmt is always cheap; init+validate+tflint need the tools and may
@@ -185,7 +187,7 @@ else
 fi
 
 if command -v cargo-deny >/dev/null 2>&1; then
-  extra cargo-deny cargo deny --locked check advisories bans sources
+  extra cargo-deny bash -c 'cargo deny --locked check advisories bans sources || echo "pre-push: WARNING cargo deny findings (non-blocking here; security.yml gates them)"'
 else
   note_skip cargo-deny "binary not found; security.yml runs it"
 fi
