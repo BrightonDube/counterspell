@@ -170,3 +170,6 @@ Upstream state checked this pass: run-lifecycle 54 of 56 done (the SSE route `GE
 - `web/e2e-stub.mjs` fixtures were stale against the parsers: `examples` (not `samples`), `difficulty: easy`, and `/api/languages` returns `{ languages: [...] }`. Fixed, and the proxy now forces `accept-encoding: identity`.
 - `node e2e-shell-check.mjs`: 30/30 PASS (desktop, tablet, portrait, 200% zoom, 44px targets, drawers and focus return, route change). Web gate: svelte-check 0 errors, build ok, vitest 498 passed.
 - Still open: T21, T22, T24, T25 can now be re-run with the same override; T13/T15/T20 still need the missing assertions listed under "Follow-ups from verify all".
+
+## kiro/drive-queue run (20 Nov 2026): retry wedge fixed
+- The "Retry wedge" above is fixed (`25aeaaac`). Cause: sandbox container names did not include the attempt, so the retry's first create hit `409 Conflict` on the killed attempt's leftover container. A killed run now completes with its real verdict and ghost.

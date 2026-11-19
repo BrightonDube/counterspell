@@ -204,7 +204,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: record event ids, run ids, terminal read model, ghost provenance, shrink trace equality, and final Familiar data in the test report.
   - Preserve: a passing test must be caused by the sandbox-backed judge, not a mocked success response.
 
-- [ ] **T26 [S] (30 min) Prove reconnect, retry, ownership, and failure paths**
+- [x] **T26 [S] (30 min) Prove reconnect, retry, ownership, and failure paths**
   - Files: `web/tests/real-api/reconnect.spec.*`, server integration tests if required.
   - Drop the SSE connection at multiple sequence positions, resume with `Last-Event-ID`, assert de-duplication and gap recovery, simulate worker retry/restarted, reload after terminal, and test foreign/missing runs, rate limits, source validation, internal error, timeout, compile error, and no-ghost outcomes.
   - Depends on: T24 and T25.
