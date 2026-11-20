@@ -1,8 +1,9 @@
 # Deploy to the production VPS.
 #
-# Routine deploys: a push to main that finishes a green CI run (which also publishes the signed
-# images) triggers this workflow through workflow_run. Manual deploys: Actions > Deploy > Run
-# workflow, optionally with the full SHA of a green main commit.
+# Routine deploys: a push to main that finishes a green "Publish images" run triggers this workflow
+# through workflow_run. Triggering on Publish (not CI) guarantees the signed images exist before any
+# deploy step looks for them; CI finishing alone is not enough. Manual deploys: Actions > Deploy >
+# Run workflow, optionally with the full SHA of a published main commit.
 #
 # Setup (one-time, see deploy/vps/README.md):
 #   1. Settings > Environments > "production": deployment branches = main (+ tags v*).
@@ -17,7 +18,7 @@ name: Deploy
 
 on:
   workflow_run:
-    workflows: [CI]
+    workflows: ["Publish images"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
