@@ -101,6 +101,8 @@ services:
 
   valkey:
     image: valkey/valkey:8-alpine@sha256:2602ace2be6569bc2bbb06f873776516ab9089821525be34f4305c67eb9db02a
+    # Start as the image's service user; the root entrypoint cannot switch users with all capabilities dropped.
+    user: "valkey:valkey"
     command: !override
       - valkey-server
       - --save

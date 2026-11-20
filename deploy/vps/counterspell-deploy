@@ -129,8 +129,13 @@ promote() {
 # Restores the current release after a failed check, without touching migrations.
 restore_current() {
   if [[ -f "$CURRENT" ]]; then
-    dc "$CURRENT" up -d --no-build --remove-orphans || true
-    log "restored $(grep '^COUNTERSPELL_SHA=' "$CURRENT" | cut -d= -f2)"
+    local previous_sha
+    previous_sha="$(grep '^COUNTERSPELL_SHA=' "$CURRENT" | cut -d= -f2)"
+    if dc "$CURRENT" up -d --no-build --remove-orphans; then
+      log "restored $previous_sha"
+    else
+      log "failed to restore $previous_sha"
+    fi
   fi
   rm -f "$CANDIDATE"
 }
@@ -144,8 +149,8 @@ deploy_release() {
   dc "$CANDIDATE" run --rm judge preflight || abort_unchanged "judge preflight failed"
   dc "$CANDIDATE" run --rm migrate || abort_unchanged "migration failed"
 
-  dc "$CANDIDATE" up -d --no-build --remove-orphans
-  if server_ready "$CANDIDATE" && public_healthy; then
+  if dc "$CANDIDATE" up -d --no-build --remove-orphans \
+    && server_ready "$CANDIDATE" && public_healthy; then
     promote
     log "deployed $sha"
     exit 0

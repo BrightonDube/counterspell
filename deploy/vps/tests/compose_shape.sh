@@ -86,6 +86,8 @@ check "P1 judge mounts the sandbox socket read-write at /run/sandbox/docker.sock
 # R4.5: agreed memory limits (bytes) for postgres and valkey.
 check "R4.5 postgres 1024m and valkey 160m" \
   '(.services.postgres.mem_limit | tonumber) == 1073741824 and (.services.valkey.mem_limit | tonumber) == 167772160'
+check "Valkey starts as its service user without capabilities" \
+  '.services.valkey | .user == "valkey:valkey" and (.cap_drop | index("ALL") != null)'
 
 # R5.1: each service reads only its own env file.
 check "R5.1 postgres, server and migrate read their own env files" \
