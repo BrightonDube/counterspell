@@ -7,12 +7,14 @@
 use counterspell_grimoire::codes;
 use counterspell_grimoire::report::{Diagnostic, Report};
 use counterspell_grimoire::runner::PackRunner;
-use counterspell_grimoire::{validate_sandbox, validate_static, SandboxFault};
+use counterspell_grimoire::{
+    validate_sandbox, validate_static, validate_static_public, SandboxFault,
+};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 /// The usage text printed on a bad command line.
-const USAGE: &str = "usage: validate <pack-dir> [--json] [--deny-warnings] [--sandbox]\n       validate --all <packs-root> [--include-underscore] [--json] [--deny-warnings] [--sandbox]";
+const USAGE: &str = "usage: validate <pack-dir> [--json] [--deny-warnings] [--sandbox]\n       validate --all <packs-root> [--include-underscore] [--json] [--deny-warnings] [--sandbox] [--public]";
 
 /// What the command validates.
 #[derive(Debug, PartialEq, Eq)]
@@ -35,6 +37,8 @@ struct Options {
     deny_warnings: bool,
     sandbox: bool,
     include_underscore: bool,
+    /// Validate the public tree alone; private-resident stages skip.
+    public_only: bool,
 }
 
 /// Reads the arguments after the program name. Only the standard library is used.
@@ -49,6 +53,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
         deny_warnings: false,
         sandbox: false,
         include_underscore: false,
+        public_only: false,
     };
     let mut positional = Vec::new();
     for arg in &args[1..] {
@@ -58,6 +63,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
             "--deny-warnings" => options.deny_warnings = true,
             "--sandbox" => options.sandbox = true,
             "--include-underscore" => options.include_underscore = true,
+            "--public" => options.public_only = true,
             flag if flag.starts_with("--") => {
                 return Err(format!("unknown option {flag}\n{USAGE}"));
             }
@@ -89,7 +95,7 @@ fn pack_paths(options: &Options) -> Result<Vec<PathBuf>, String> {
 fn reports_for(options: &Options) -> Result<Vec<Report>, String> {
     pack_paths(options)?
         .iter()
-        .map(|path| read_pack(path))
+        .map(|path| read_pack(path, options.public_only))
         .collect()
 }
 
@@ -146,8 +152,13 @@ fn run_sandbox_stage(options: &Options, runner: Option<&mut dyn PackRunner>) -> 
 }
 
 /// Validates one pack directory, turning an I/O failure into a message.
-fn read_pack(path: &Path) -> Result<Report, String> {
-    validate_static(path).map_err(|error| format!("cannot read {}: {error}", path.display()))
+fn read_pack(path: &Path, public_only: bool) -> Result<Report, String> {
+    let validate = if public_only {
+        validate_static_public
+    } else {
+        validate_static
+    };
+    validate(path).map_err(|error| format!("cannot read {}: {error}", path.display()))
 }
 
 /// The pack directories directly under `root`, skipping `_` packs unless asked.
@@ -308,6 +319,48 @@ mod tests {
         )
         .expect("reference");
         PackDir(dir)
+    }
+
+    /// The pack without its private-side  — the shape a public
+    /// checkout has after the tree split.
+    fn public_pack_dir() -> PackDir {
+        let dir = pack_dir();
+        std::fs::remove_dir_all(dir.0.join("reference")).expect("drop reference");
+        dir
+    }
+
+    #[test]
+    fn public_flag_is_parsed() {
+        let options = parse(&args(&["validate", "packs/x", "--public"])).expect("options");
+        assert!(options.public_only);
+    }
+
+    #[test]
+    fn a_public_tree_needs_the_public_flag_to_validate() {
+        let dir = public_pack_dir();
+        assert!(
+            read_pack(&dir.0, false).expect("report").has_errors(),
+            "missing private reference must fail a full validation"
+        );
+        let report = read_pack(&dir.0, true).expect("public report");
+        assert!(
+            !report.has_errors(),
+            "public validation skips the absent reference stage: {report:?}"
+        );
+    }
+
+    #[test]
+    fn a_public_tree_with_a_reference_is_still_checked() {
+        let dir = pack_dir();
+        std::fs::write(
+            dir.0.join("reference/solution.py"),
+            "def count_pairs(values, target):
+    return 0
+",
+        )
+        .expect("reference");
+        let report = read_pack(&dir.0, true).expect("public report");
+        assert!(!report.has_errors());
     }
 
     #[test]

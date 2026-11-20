@@ -64,7 +64,27 @@ pub fn validate_static(root: &Path) -> io::Result<Report> {
         .to_owned();
     let mut report = Report::new(pack_name.clone());
     let pack = pack::load(root, &mut report)?;
-    validate_pack(&pack_name, dogfood_scope(root), &pack, &mut report);
+    validate_pack(&pack_name, dogfood_scope(root), false, &pack, &mut report);
+    Ok(report)
+}
+
+/// [] for a public tree checked on its own ().
+///  and  are private-resident by policy, so a missing
+/// reference skips that stage instead of failing it; every other check stays
+/// strict. Used by CI, which never sees the private checkout.
+///
+/// # Errors
+///
+/// Returns an I/O error only when the pack directory itself cannot be read.
+pub fn validate_static_public(root: &Path) -> io::Result<Report> {
+    let pack_name = root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_owned();
+    let mut report = Report::new(pack_name.clone());
+    let pack = pack::load_public(root, &mut report)?;
+    validate_pack(&pack_name, dogfood_scope(root), true, &pack, &mut report);
     Ok(report)
 }
 
@@ -83,7 +103,13 @@ pub fn validate_static_pair(public_root: &Path, private_root: &Path) -> io::Resu
         .to_owned();
     let mut report = Report::new(pack_name.clone());
     let pack = pack::load_pair(public_root, private_root, &mut report)?;
-    validate_pack(&pack_name, dogfood_scope(public_root), &pack, &mut report);
+    validate_pack(
+        &pack_name,
+        dogfood_scope(public_root),
+        false,
+        &pack,
+        &mut report,
+    );
     Ok(report)
 }
 
@@ -105,7 +131,13 @@ fn dogfood_scope(root: &Path) -> &str {
 }
 
 /// The shared check body behind [`validate_static`] and [`validate_static_pair`].
-fn validate_pack(pack_name: &str, dogfood_scope: &str, pack: &pack::Pack, report: &mut Report) {
+fn validate_pack(
+    pack_name: &str,
+    dogfood_scope: &str,
+    public_only: bool,
+    pack: &pack::Pack,
+    report: &mut Report,
+) {
     report.mark_checked("layout");
 
     match pack.text("hints.toml") {
@@ -153,8 +185,12 @@ fn validate_pack(pack_name: &str, dogfood_scope: &str, pack: &pack::Pack, report
         None => report.mark_skipped("ghosts"),
     }
 
-    reference::check(pack.text("reference/solution.py"), &meta.function, report);
-    report.mark_checked("reference");
+    if public_only && pack.text("reference/solution.py").is_none() {
+        report.mark_skipped("reference");
+    } else {
+        reference::check(pack.text("reference/solution.py"), &meta.function, report);
+        report.mark_checked("reference");
+    }
 }
 
 /// Runs the static checks, then the sandbox checks through `runner`.

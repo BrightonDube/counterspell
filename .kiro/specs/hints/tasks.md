@@ -196,7 +196,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: no `.env` file is created, read or written. Keys are passed by the operator at deploy time.
   - Rust lesson: not a Rust change. Skip.
 
-- [ ] **H-ci [P] (25 min) Secret and log checks in CI**
+- [x] **H-ci [P] (25 min) Secret and log checks in CI**
   - Files: `.github/workflows/ci.yml` (one added step), `scripts/check-no-hint-secrets.sh` (only if the repo already has a `scripts/` convention).
   - A CI step fails if a configured key pattern (`sk-…`, `gsk_…`) appears in tracked files, and the P9 log test runs as part of `cargo test`.
   - Requirements: R8.1, R8.3.

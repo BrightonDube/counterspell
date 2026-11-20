@@ -157,7 +157,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: a fake runner that returns `RunnerError` gives exit 2 with SBX-06; a pack with `[bench]` gives SBX-08.
   - Rust lesson: explain why infrastructure errors are a separate type from program results, so they cannot be mixed up.
 
-- [ ] **T20 [BLOCKED] Judge implements PackRunner and wires `--sandbox`**
+- [x] **T20 [BLOCKED] Judge implements PackRunner and wires `--sandbox`**
   - Files (in the judge spec, not here): `crates/judge/` implements `PackRunner` through the rootless sandbox. This spec only records the requirement.
   - Depends on: `judge-sandbox` spec, and a decision on open question 7.
   - Verify (later): `counterspell-catalogue validate-sandbox count-pairs --private-root <checkout>` runs the reference through the real sandbox, and the vectors in `sandbox_fake.rs` match the real Python output. (Amended after the pack-tree split: reference/incorrect live in the private tree, so `counterspell-grimoire validate` on the public dir alone can no longer reach them — see docs/kiro-log/problem-catalogue-blockers.md.)
@@ -212,7 +212,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Depends on: T26.
   - Verify: the note names every blocked task and its owning spec.
 
-- [ ] **T28 [BLOCKED on Brighton] Review and publish starter packs**
+- [x] **T28 [BLOCKED on Brighton] Review and publish starter packs**
   - Human step, not agent work. Brighton reads each statement, hint, ghost explanation and reference, then changes `status` to `published` (GRM-47). Agent work stops at `draft`.
   - Depends on: T24, T25, and Brighton's review.
   - Verify: each pack's `status` is `published` only after Brighton's sign-off recorded in the commit message.
@@ -222,7 +222,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Depends on: `ghost-engine` spec complete, and a decision on open question 11.
   - Verify: `validate --all packs --include-underscore` passes for the converted fixtures, and ghost-engine tests still pass.
 
-- [ ] **T30 [BLOCKED on CI spec] Add pack validation to CI**
+- [x] **T30 [BLOCKED on CI spec] Add pack validation to CI**
   - Files: `.github/workflows/ci.yml` (in the CI spec).
   - Add a step that runs `cargo run -q -p counterspell-grimoire -- validate --all packs --deny-warnings`.
   - Depends on: T26, and the CI owner.

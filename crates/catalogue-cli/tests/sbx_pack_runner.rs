@@ -152,6 +152,7 @@ impl Daemon {
 #[test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_reference_returns() {
+    let _guard = sbx::ONE_RUN_AT_A_TIME.blocking_lock();
     let daemon = Daemon::connect();
     let mut runner = daemon.runner(
         sources(&pack_dir()),
@@ -171,6 +172,7 @@ fn pack_runner_reference_returns() {
 #[test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_program_gets_own_session() {
+    let _guard = sbx::ONE_RUN_AT_A_TIME.blocking_lock();
     let daemon = Daemon::connect();
     let mut runner = daemon.runner(
         sources(&pack_dir()),
@@ -194,6 +196,7 @@ fn pack_runner_program_gets_own_session() {
 #[test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_timeout_is_a_program_result() {
+    let _guard = sbx::ONE_RUN_AT_A_TIME.blocking_lock();
     let daemon = Daemon::connect();
     let mut runner = daemon.runner(
         sources(&pack_dir()),
@@ -213,6 +216,7 @@ fn pack_runner_timeout_is_a_program_result() {
 #[test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_bench_returns_sized_pairs() {
+    let _guard = sbx::ONE_RUN_AT_A_TIME.blocking_lock();
     let daemon = Daemon::connect();
     let mut runner = daemon.runner(
         sources(&pack_dir()),
@@ -240,6 +244,7 @@ fn pack_runner_bench_returns_sized_pairs() {
 #[test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn starter_packs_pass_sandbox_checks_with_the_real_runner() {
+    let _guard = sbx::ONE_RUN_AT_A_TIME.blocking_lock();
     let Some(private_root) = sbx::private_packs_root() else {
         eprintln!("skipping: no counterspell-packs-private checkout is available");
         return;
@@ -266,6 +271,7 @@ fn starter_packs_pass_sandbox_checks_with_the_real_runner() {
 #[test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 fn pack_runner_unknown_program_is_infrastructure() {
+    let _guard = sbx::ONE_RUN_AT_A_TIME.blocking_lock();
     let daemon = Daemon::connect();
     let mut runner = daemon.runner(
         sources(&pack_dir()),

@@ -22,6 +22,10 @@ const REQUIRED: [&str; 4] = [
     "reference/solution.py",
 ];
 
+/// The files a public-tree pack must have when its private side is absent
+/// ( validation):  is private-resident by policy.
+const REQUIRED_PUBLIC: [&str; 3] = ["problem.md", "meta.toml", "hints.toml"];
+
 /// The optional file that lists authored known ghosts.
 const GHOSTS_FILE: &str = "known_ghosts.toml";
 
@@ -64,7 +68,7 @@ struct Scan {
 /// Returns an I/O error only when the pack directory itself cannot be read. A
 /// bad file is a diagnostic, not an error.
 pub fn load(root: &Path, report: &mut Report) -> io::Result<Pack> {
-    load_scan(root, None, report)
+    load_scan(root, None, &REQUIRED, report)
 }
 
 /// Loads the pack split across a public tree and its private tree.
@@ -79,13 +83,25 @@ pub fn load(root: &Path, report: &mut Report) -> io::Result<Pack> {
 ///
 /// Returns an I/O error only when a tree directory itself cannot be read.
 pub fn load_pair(public_root: &Path, private_root: &Path, report: &mut Report) -> io::Result<Pack> {
-    load_scan(public_root, Some(private_root), report)
+    load_scan(public_root, Some(private_root), &REQUIRED, report)
+}
+
+/// [] for a public tree checked on its own.  is
+/// private-resident by policy, so it is not required here; a public copy is
+/// still checked when present.
+///
+/// # Errors
+///
+/// Returns an I/O error only when the tree directory itself cannot be read.
+pub fn load_public(root: &Path, report: &mut Report) -> io::Result<Pack> {
+    load_scan(root, None, &REQUIRED_PUBLIC, report)
 }
 
 /// The shared walk behind [`load`] and [`load_pair`].
 fn load_scan(
     public_root: &Path,
     private_root: Option<&Path>,
+    required: &[&str],
     report: &mut Report,
 ) -> io::Result<Pack> {
     let mut scan = Scan::default();
@@ -116,7 +132,7 @@ fn load_scan(
         }
     }
 
-    for name in REQUIRED {
+    for &name in required {
         if !scan.seen.contains(name) {
             report.push(Diagnostic::new(
                 codes::LAY_01,

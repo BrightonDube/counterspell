@@ -349,7 +349,7 @@ Conventions for every Rust task:
 
 ## Wave 9: integration, hardening and finish
 
-- [ ] **T33 [S] (30 min) Wire everything into the server, Compose and Caddy** [SUPERVISED]
+- [x] **T33 [S] (30 min) Wire everything into the server, Compose and Caddy** [SUPERVISED]
   - Files: `crates/server/src/main.rs`, `crates/server/src/auth/{mod.rs,cleanup.rs}`, `docker-compose.yml`, `deploy/auth-setup.md`, `Caddyfile` (needs Brighton's approval for this file), `README.md` (one paragraph).
   - Build `AuthState` from `AuthConfig::from_env()`, mount `auth::router`, apply `apply_api_hardening` to the whole `/api` router, run `seed_demo` and the demo reset task, start the cleanup task (hourly delete of expired/used tokens and flows older than a day and expired sessions), choose real or log mail sender, register enabled providers. Compose: pass the variables of R2.1 as `${NAME}` pass-throughs to the `server` service only (never to `judge`), with `APP_ENV=development` and the `log` transport in the local override. `deploy/auth-setup.md`: OAuth app registration steps and the callback URLs `${PUBLIC_BASE_URL}/api/auth/oauth/<provider>/callback`, the Resend domain, and the demo account variables. Caddy: ask Brighton, then add a log filter that drops the query string for the OAuth callback path (open question 16).
   - Requirements: R1.4, R2, R3.9, R13.5, R19.3, R16.1.
@@ -358,7 +358,7 @@ Conventions for every Rust task:
   - Preserve: no `.env` is read or written by the task; `judge` receives no auth variable.
   - Rust lesson: structuring `main` so wiring is separate from logic.
 
-- [ ] **T34 [S] (30 min) Connect to `run-lifecycle`: fixtures, stream revalidation, end-to-end**
+- [x] **T34 [S] (30 min) Connect to `run-lifecycle`: fixtures, stream revalidation, end-to-end**
   - Files: `crates/server/src/testkit.rs` (a `create_user()` helper), `crates/server/tests/pg_auth_runs_integration.rs`, the SSE handler of `run-lifecycle` (small edit), `docs/kiro-log/auth-integration.md`.
   - Give the `run-lifecycle` tests a real-user fixture now that `submissions.user_id` has a foreign key. Make the SSE loop call `SessionService::is_valid` on each heartbeat and close when it is false. Add tests: a session cookie authenticates `POST /api/runs`; a second user's cookie gets `404` for the first user's run and events; after `logout-all` the next request and the next heartbeat are refused; the production `UserResolver` is `SessionUserResolver`, not `Unauthenticated`.
   - Requirements: R11.6, R12.2, R12.5, R18.7.
