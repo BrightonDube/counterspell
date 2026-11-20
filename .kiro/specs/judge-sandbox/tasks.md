@@ -316,7 +316,7 @@ Conventions:
   - Requirements: R1.7, R2.1, R4, R16.
   - Depends on: T02, T36.
 
-- [ ] **T39 [S] [SUPERVISED] (30 min) Security review pass**
+- [x] **T39 [S] [SUPERVISED] (30 min) Security review pass**
   - Files: findings in `verification-report.md`; fixes in the relevant source files.
   - A reviewer other than the author (a separate Kiro session with a reviewer prompt, or the planned sandbox-auditor sub-agent if it exists) walks `design.md` section 4's checklist against the code: the Docker request builder, the only places `Pass` and `Accepted` are built, the import boundaries, every `unwrap`/`expect` (none in production code), and the hostile corpus for programs that could return a correct answer. Fix findings, rerun T36 and the model tests.
   - Depends on: T37.

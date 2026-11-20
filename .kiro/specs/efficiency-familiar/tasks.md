@@ -433,7 +433,7 @@ Conventions for every web task:
   - Verify: the log lists every problem with its admission result; baselines exist for each enabled problem and language; if fewer than three pass, say so in the log and tell Brighton.
   - Preserve: original problems only; no copied statements.
 
-- [ ] **T41 [S] [SUPERVISED] (30 min) Real-stack proof: linear versus quadratic, 30 runs each**
+- [x] **T41 [S] [SUPERVISED] (30 min) Real-stack proof: linear versus quadratic, 30 runs each**
   - Files: `crates/judge/tests/familiar_proof.rs` (ignored, runs against the real sandbox), `docs/kiro-log/efficiency-familiar-proof.md`.
   - Submit a known-correct linear solution and a deliberately quadratic one at least 30 times each through the real server and judge with `JUDGE_CONCURRENCY=2`, alternating, with some overlap. Record the distribution of confidence and mood, host load readings, discarded benches, and latency added by the bench.
   - Requirements: R15.3.

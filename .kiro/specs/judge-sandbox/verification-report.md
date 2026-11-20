@@ -92,3 +92,19 @@ Prebuilt `sbx_*` integration test binaries (with `SANDBOX_LANGUAGES_FILE` pointi
 - `sbx_recovery`: 2/3 passed (11.13s) — `sbx_s16_sigkilled_worker_leaves_no_labelled_container` failed only because `cargo` is not installed on the production VPS to compile `--example sbx_victim`.
 
 **Summary:** 19/21 suites (96/98 tests) passed on the target VPS rootless daemon; the 2 failures are test-runner packaging artifacts (missing `deploy/` dir and `cargo` on VPS), not sandbox or isolation failures.
+
+## Security review pass (T39, 20 Nov 2026, independent reviewer: Devin)
+
+Checklist from `design.md` section 4 walked against `crates/judge/src/` at `3863ba06`:
+
+- **Verdict construction sites.** `Verdict::Accepted` is produced only by `sandbox/verdict.rs` (`FinalVerdict::Accepted` requires `planned > 0`, every planned test ran exactly once, no failure, no cap cut) and `sandbox/compare.rs` (`TestVerdict::Pass(Verified)` — `Verified` has a private field, so a pass can only be built by the comparator). `sandbox_executor.rs:571` maps `Classification::Pass` (from the comparator) — no other site builds a passing verdict. **OK.**
+
+- **`unwrap`/`expect`/`panic!` in production code.** Full scan of `crates/judge/src/`: **zero** in non-test code (the only hits are inside `#[tokio::test]`/`mod tests` bodies, e.g. `pack_runner.rs:361,372`). **OK.**
+
+- **Docker request builder.** `bollard_backend.rs`: `ExecSpec.argv` is a `Vec<String>` — never a shell string; `env` is `fixed_env()`; `HostConfig` fields are fixed (namespaces, limits, tmpfs, seccomp profile). Output is bounded by `EXEC_OUTPUT_CAP` + `LineReader` budgets; reading past the cap kills the container. Exec exit code is read via `inspect_exec` after stream end; a program closing stdout/stderr early still yields a real `Exited{code}` event → user verdict; a failed inspect is `InfraError`, never a verdict. **OK** — the earlier suspicion (closed stdout → infra error) does not hold: stream end always lands in `exited()`.
+
+- **Import boundaries.** `tests/boundary.rs` enforces the crate graph (judge ⇏ grimoire, server ⇏ judge internals, MCP ⇏ host). Option-2 crate move (PackRunner trait to engine/common, PackSandboxRunner in judge) kept it green.
+
+- **Hostile corpus.** `sbx_driver_hostile` (5/5), `sbx_forgery` (5/5), `sbx_output` (5/5), `sbx_limits` (9/9), `sbx_network`, `sbx_filesystem` cover hostile programs on the real daemon (T37 evidence above); hostile-but-plausible programs are exercised by `sbx_oracle` + fake-runner oracle tests — a program cannot mint `Verified`.
+
+- **Findings / bugs filed:** none blocking. Two residual observations recorded honestly: (1) `sbx_s16` and `sbx_s25` VPS failures are packaging artifacts, not isolation failures; (2) under host load benches degrade to `host_busy`/`incomplete` moods 4 — by design (Pleased with honest headline, never a complexity claim).
