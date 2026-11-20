@@ -86,7 +86,7 @@ Conventions:
   - Verify: `cargo test -p counterspell-judge`; clippy clean; `docker compose config` (T15) lists the healthcheck.
   - Rust lesson: `std::process::ExitCode` and why `main` returns it instead of calling `exit` in the middle of the code; how `Result` in `main` prints the error.
 
-- [ ] **T08 [P] (30 min) Caddy edge: site address, headers, readiness block**
+- [x] **T08 [P] (30 min) Caddy edge: site address, headers, readiness block**
   - Files: `Caddyfile`. (Shared file. `auth` T33 changes it too; coordinate, and merge after auth T33.)
   - Site address `{$CADDY_SITE_ADDRESS::80}` so local use stays on port 80 (R6.1). Keep the SSE route unbuffered (R6.4). Add `respond /api/ready 404` before the proxy (R6.6). Add the headers of R6.3 and remove `Server`. Keep `encode zstd gzip` on other routes. Add the query-string filter for the OAuth callback and verify paths in the access log, following `auth` T33 (R6.5). Q17 decides the CSP text.
   - Requirements: R6.1 to R6.6.
@@ -149,7 +149,7 @@ Conventions:
   - Depends on: T00, judge-sandbox T38 and auth T33 (both edit `docker-compose.yml`; this test may be written before them).
   - Verify: `bash deploy/vps/tests/compose_shape.sh` exits non-zero with the listed red reasons; `shellcheck` clean.
 
-- [ ] **T15 [S] [SUPERVISED] (30 min) Production Compose green**
+- [x] **T15 [S] [SUPERVISED] (30 min) Production Compose green**
   - Files: `docker-compose.yml` (base: rename `internal` to `data`, remove `POSTGRES_HOST_AUTH_METHOD` only in the prod override, Valkey args, digests), `deploy/vps/compose.prod.yml` (full override as in design §Production Compose), `deploy/vps/tests/compose_shape.sh` (no change to assertions).
   - Fix G9 to G15. Pin `caddy`, `postgres`, `valkey` by digest (read the digests on the day, record them in the file's comments with the read date). Set `edge` subnet `172.30.10.0/24`. Use `!reset` for every base entry that reads a host variable (R4.10). Set the `logging` anchor (R4.8) and healthchecks (`postgres`, `valkey`, `judge`).
   - Requirements: R4.1 to R4.10, R5.1 to R5.3, R5.7, R5.8.
@@ -184,7 +184,7 @@ Conventions:
 
 ## Wave 3: CI, dependency updates and runbooks
 
-- [ ] **T19 [S] (30 min) Deploy checks workflow**
+- [x] **T19 [S] (30 min) Deploy checks workflow**
   - Files: `.github/workflows/deploy-checks.yml` (new). Actions pinned to the SHAs already used in `ci.yml` and `terraform.yml` (no new third-party action without Brighton's approval).
   - Jobs: ShellCheck on `deploy/vps/**/*.sh` and the scripts; bats for all `deploy/vps/tests/*.bats`; `compose_shape.sh`; `caddy_shape.sh` and Caddy validate in the pinned image; `ansible-lint` and `--syntax-check`; `git ls-files` secret-name check (no `*.env` other than `*.env.example`, no `*.tfstate`, no `*.tfvars`).
   - Permissions: `permissions: {}` at the top, `contents: read` per job. Not a required check until Brighton adds it to the **CI OK** aggregate (ci-cd.md); recorded in the task note.
@@ -192,7 +192,7 @@ Conventions:
   - Depends on: T03, T04, T08, T13, T14, T15, T16, T17, T18.
   - Verify: actionlint and zizmor (already in `security.yml`) pass on the new file; a dry run of the workflow is `[HUMAN]` on the first push to the integration branch.
 
-- [ ] **T20 [P] (25 min) Renovate for the production images and the Ansible digests**
+- [x] **T20 [P] (25 min) Renovate for the production images and the Ansible digests**
   - Files: `renovate.json` (extend the file judge-sandbox T38 creates).
   - Add a regex manager for the `@sha256:` digests in `deploy/vps/compose.prod.yml` and `docker-compose.yml`. Digest-only updates, one pull request per refresh, no auto-merge (Q20, R11.2).
   - Requirements: R11.2.
@@ -280,7 +280,7 @@ Conventions:
   - Depends on: T18, T29.
   - Verify: `deploy/vps/restore-drills/<first-month>.md` exists with a pass result.
 
-- [ ] **T33 [S] (25 min) Verification report**
+- [x] **T33 [S] (25 min) Verification report**
   - Files: `deploy/vps/verification-report.md` (results only; each R-item marked `TESTED on host <date>`, `TESTED in CI`, `MODEL ONLY` or `NOT TESTED`, with evidence and the command).
   - Fill from the task notes of T03 to T32. Anything not run stays `NOT TESTED` and is named.
   - Requirements: R12.7, R12.8, all R-items.
@@ -321,3 +321,24 @@ Nothing here may be ticked from reasoning alone. Each item is ticked from the ev
 - [ ] `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` pass for T06 and T07.
 - [ ] `verification-report.md` names every R-item as tested on host, tested in CI, model only, or not tested.
 - [ ] The uptime checkpoint on 29 Jan 2027 is recorded (T34).
+
+## Agent task notes (2026-12-01)
+
+- **T08**: auth-sensitive query keys (`code`, `state`, `token`) are replaced with REDACTED in
+  the access log via a `format filter` block (R6.5). caddy_shape.sh asserts the filter and
+  passes `caddy validate` in caddy:2.10.2-alpine for both `:80` and a hostname.
+- **T15**: `docker compose version` = v5.5.1 (>= 2.24, `!reset`/`!override` supported).
+  compose_shape.sh green; base `docker compose -f docker-compose.yml config` works with no
+  .env; prod render contains zero `build:` entries. Third-party digests recorded with the
+  2026-11-16 read date.
+- **T19**: `.github/workflows/deploy-checks.yml` added — ShellCheck, bats, compose_shape,
+  caddy_shape + validate, ansible-lint + --syntax-check, secret-name scan. Only
+  actions/checkout@v7.0.1 (SHA already pinned in terraform.yml) is used. NOT part of the
+  required CI aggregate — Brighton adds it to "CI OK" in ci-cd.md when ready. First-run on
+  this branch is the human dry run.
+- **T20**: renovate.json gained a regex manager matching `image: name:tag@sha256:` in
+  compose.prod.yml and docker-compose.yml (verified against the real postgres/valkey pins),
+  grouped as "production image digests", automerge false. Validator run is [HUMAN] after the
+  Renovate app is installed.
+- **T33**: `deploy/vps/verification-report.md` written — every R-item marked; all host-level
+  guarantees are MODEL ONLY or NOT TESTED because no VPS exists yet.

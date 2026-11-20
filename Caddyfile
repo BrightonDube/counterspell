@@ -4,6 +4,22 @@
 {$CADDY_SITE_ADDRESS::80} {
     log
 
+    # OAuth callbacks and mail verify links carry one-time secrets in the query string.
+    # Those paths log with the query stripped so tokens never reach the access log (R6.5).
+    @auth_sensitive path /api/auth/oauth/*/callback /api/auth/email/verify /api/auth/link/email
+    log @auth_sensitive {
+        format filter {
+            wrap console
+            fields {
+                request>uri query {
+                    replace code REDACTED
+                    replace state REDACTED
+                    replace token REDACTED
+                }
+            }
+        }
+    }
+
     # Security headers on every response (R6.3). The Content-Security-Policy is report-only until the
     # Q17 decision: the SvelteKit build inlines a bootstrap script, so an enforced policy needs a
     # hash or nonce strategy first. Violations are reported, not blocked.
