@@ -131,3 +131,23 @@ every CI run. Implementation reconciles the two approvals: in public mode the
 absent reference marks the stage `skipped` in the report (visible, non-fatal);
 in assembled/pair mode a missing reference remains the REF-01 error. If a
 literal public-mode warning is wanted instead, the CI flag must be relaxed.
+
+## PA27 — S10/S11 run on the real rootless sandbox (2026-11-20, Brighton-approved tools)
+
+`crates/catalogue-cli/tests/sbx_pa27.rs` (new, `#[ignore]`d; run with
+`SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo test -p counterspell-catalogue-cli --features sandbox --test sbx_pa27 -- --ignored --test-threads=1`).
+
+Result on the rootless daemon (identity-verified, `python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90`):
+
+| slug | S10 fill (SBX-01/02/03, curated+generated, CAT-PT8) | S11 ghosts | S11 reference |
+|---|---|---|---|
+| count-pairs | Filled | empty-min, same-index found | not-found |
+| diagonal-total | Filled | abs-diagonal, assumes-square found | not-found |
+| longest-run-length | Filled | empty-first-char, forgot-last-run found | not-found |
+
+State files `.kiro/pipeline/state/<slug>.toml` record `status = "sandbox_checked"`.
+One real defect found and fixed during the run: diagonal-total's curated
+`hidden.toml` cases in the private repo were missing the tuple wrapper
+(`input = [[5]]` gave `grid = [5]` and crashed the reference); corrected to the
+one-argument tuple form `[[[5]]]` etc. The pack itself was sound — the defect
+was in the C40 rotation's authored cases.

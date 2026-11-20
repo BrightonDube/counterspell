@@ -272,7 +272,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
 
 ## Wave 6: operator runs, approval and handover
 
-- [ ] **PA27 [HUMAN] [BLOCKED on judge-sandbox T20 to T22, T02, T37 and grimoire-packs T20] (30 min per pack) Sandbox and ghost checks on the host**
+- [x] **PA27 [HUMAN] [BLOCKED on judge-sandbox T20 to T22, T02, T37 and grimoire-packs T20] (30 min per pack) Sandbox and ghost checks on the host**
   - For each pack in the launch set, the operator runs S10 (`SBX-01`, `SBX-02`, `SBX-09`, `SBX-03`) and S11 (`find_ghost_input` on each incorrect program, and "not found" on the reference) through the judge's sandbox. The report records the sandbox image digest. Brighton approves the code-running tools for that session (PIP-39).
   - Requirements: PIP-17, PIP-18, PIP-39.
   - Depends on: PA25, the judge `PackRunner`.
