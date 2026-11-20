@@ -9,7 +9,6 @@
     AuthApiError,
     deleteAccount,
     logoutEverywhere,
-    requestEmailLink,
     startProviderLink
   } from '#lib/auth/client.js';
   import { confirmationMatches } from '#lib/auth/delete-account.js';
@@ -31,8 +30,6 @@
   const errorNote = errorFromQuery(search);
 
   let problem = $state('');
-  let notice = $state('');
-  let email = $state('');
   let confirmText = $state('');
   let busy = $state(false);
 
@@ -69,24 +66,6 @@
       const { authorize_url } = await startProviderLink(provider);
       // The provider's own consent page. The server built the URL and bound it to this session.
       window.location.assign(authorize_url);
-    } catch (failure) {
-      handleFailure(failure);
-    } finally {
-      busy = false;
-    }
-  }
-
-  /** @param {SubmitEvent} event */
-  async function addEmail(event) {
-    event.preventDefault();
-    busy = true;
-    problem = '';
-    notice = '';
-    try {
-      await requestEmailLink(email);
-      // The same sentence whether or not the address belongs to someone, so nothing is revealed.
-      notice =
-        'If that address is free, a confirmation link is on its way. Check your inbox.';
     } catch (failure) {
       handleFailure(failure);
     } finally {
@@ -220,50 +199,6 @@
           </div>
           {#if !can.link_provider}
             <p class="text-text-muted">{reason}</p>
-          {/if}
-        </section>
-
-        <section class="space-y-3" aria-labelledby="email-heading">
-          <h2
-            id="email-heading"
-            class="text-sm font-medium uppercase tracking-wide text-text-subtle"
-          >
-            Add an email address
-          </h2>
-          {#if user.email}
-            <p class="text-text-muted">
-              This account already has an email address.
-            </p>
-          {:else}
-            <form class="space-y-3" onsubmit={addEmail}>
-              <div class="space-y-1">
-                <label class="block text-sm text-text-muted" for="account-email"
-                  >Email address</label
-                >
-                <input
-                  id="account-email"
-                  class={fieldClass}
-                  type="email"
-                  autocomplete="email"
-                  required
-                  disabled={!can.link_email}
-                  bind:value={email}
-                />
-              </div>
-              <button
-                class={buttonClass}
-                type="submit"
-                disabled={!can.link_email || busy}
-              >
-                Send a confirmation link
-              </button>
-              {#if !can.link_email}
-                <p class="text-text-muted">{reason}</p>
-              {/if}
-            </form>
-          {/if}
-          {#if notice}
-            <p class="text-info" role="status">{notice}</p>
           {/if}
         </section>
 

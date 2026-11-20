@@ -125,6 +125,11 @@ async fn auth_wiring_the_public_auth_config_is_served_without_a_session() {
         json.get("demo").is_some(),
         "the config answer describes the demo account"
     );
+    // Email sign-in and the demo account are retired: the page offers providers only, even
+    // when mail and demo credentials are configured.
+    assert_eq!(json["demo"]["enabled"], false);
+    assert_eq!(json["email"]["magic_link"], false);
+    assert_eq!(json["email"]["password"], false);
 }
 
 #[tokio::test]
@@ -159,7 +164,7 @@ async fn auth_wiring_a_cross_site_write_is_refused_before_any_handler() {
 }
 
 #[tokio::test]
-async fn auth_wiring_config_reports_email_disabled_without_a_mail_provider() {
+async fn auth_wiring_config_never_advertises_email_sign_in() {
     let app = app_with_config(&auth_config_without_mail());
     let request = Request::builder()
         .method(Method::GET)
@@ -171,7 +176,7 @@ async fn auth_wiring_config_reports_email_disabled_without_a_mail_provider() {
 
     assert_eq!(status, StatusCode::OK);
     assert_eq!(json["email"]["magic_link"], false);
-    assert_eq!(json["email"]["password"], true);
+    assert_eq!(json["email"]["password"], false);
     assert_eq!(json["providers"]["github"], false);
     assert_eq!(json["providers"]["google"], false);
 }

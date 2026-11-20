@@ -1,5 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
+  import { session } from '../lib/auth/session.svelte.js';
   import { startScenes } from '../lib/landing/scenes';
   import { planLanding, type LandingPlan } from '../lib/landing/motion-plan';
   import GhostBeats from '../lib/landing/GhostBeats.svelte';
@@ -23,6 +26,16 @@
   );
 
   onMount(() => {
+    // The landing page belongs to signed-out visitors: a signed-in user goes to the dashboard.
+    session
+      .load()
+      .then(() => {
+        if (session.status === 'signed_in') return goto(resolve('/dashboard'));
+      })
+      .catch(() => {
+        // A session lookup failure never blocks the public page.
+      });
+
     const reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches;

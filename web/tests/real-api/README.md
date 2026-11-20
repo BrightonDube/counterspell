@@ -3,9 +3,7 @@
 `real-api-check.mjs` drives the **built** Svelte output served by the real Axum
 server, with the trusted judge claiming runs and executing them inside the
 rootless sandbox daemon. Nothing is intercepted: no `page.route`, no fixture
-route, no mocked run responses. The only development stub in the path is the
-log mail transport (`APP_ENV=development`), which prints the magic link to the
-server log instead of sending email.
+route, no mocked run responses.
 
 ## Stack bring-up
 
@@ -25,8 +23,7 @@ Everything runs locally; the sandbox daemon must be the rootless one at
    then seed: `counterspell-catalogue seed-demo --public-root packs
 --private-root <scratch>/private` from the repo root. The importer rejects a
    private root nested inside or adjacent to the public tree.
-5. Start the server with stderr teed to `.scratch/server.log` (the harness
-   scrapes the dev mail link from it):
+5. Start the server with stderr teed to `.scratch/server.log`:
    `HOST=127.0.0.1 PORT=8088 STATIC_DIR=web/build DATABASE_URL=postgres://…
 VALKEY_URL=redis://127.0.0.1:56379 APP_ENV=development
 PUBLIC_BASE_URL=http://127.0.0.1:8088 SESSION_SECRET=<32+ bytes>
@@ -50,10 +47,12 @@ reaches them either way.
 
 ## Run
 
-`node web/tests/real-api/real-api-check.mjs`
+`DATABASE_URL=postgres://… node web/tests/real-api/real-api-check.mjs`
+(or `E2E_DATABASE_URL`) — the sign-in mint needs the same Postgres the stack uses.
 
-The check signs in through the real magic-link flow (the token stays in the URL
-fragment until the user confirms), opens `/problems/add-two`, types a correct
+The check mints a session row straight into the dev Postgres — the SHA-256-keyed
+shape the OAuth verify handler writes — sets the session cookie, then opens
+`/problems/add-two`, types a correct
 solution into the real Monaco editor, runs samples, then submits a wrong
 solution. It asserts real terminal verdicts, reads the authoritative terminal
 model, and verifies in Postgres that events persisted and that hidden-test

@@ -134,7 +134,11 @@ describe('DashboardScreen', () => {
     render(DashboardScreen, { props: { load: async () => emptyView } });
 
     expect(await screen.findByText('No practice yet')).toBeTruthy();
-    expect(screen.queryByRole('link')).toBeNull();
+    // The only link is the break room: real content, never fabricated progress.
+    const hrefs = screen
+      .queryAllByRole('link')
+      .map((link) => link.getAttribute('href'));
+    expect(hrefs).toEqual(['/break']);
   });
 
   // Breaks if the solved count, streak, weak concept or recent run is missing or shows the wrong words.

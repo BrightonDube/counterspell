@@ -1,13 +1,10 @@
-// Shared helpers for the real-stack browser scripts (ide-workspace T21, T22). They sign in through
-// the real magic-link flow and drive the Monaco editor. Nothing here intercepts a request.
+// Shared helpers for the real-stack browser scripts (ide-workspace T21, T22). They sign in by
+// minting a session row in the dev database and drive the Monaco editor. Nothing here intercepts a request.
 import { chromium } from 'playwright-core';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { execFileSync } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
 
-const here = fileURLToPath(new URL('.', import.meta.url));
 export const BASE = process.env.REAL_API_BASE ?? 'http://127.0.0.1:8088';
-const SERVER_LOG = join(here, '.scratch', 'server.log');
 
 export function createReporter() {
   const results = [];
@@ -37,32 +34,55 @@ export function launchBrowser() {
   });
 }
 
-/** Signs a fresh user in on `page` through the dev mail link. Returns true when it worked. */
-export async function signIn(context, page, tag) {
-  const logSize = readFileSync(SERVER_LOG, 'utf8').length;
-  const email = `real-api-${tag}-${Date.now()}@example.test`;
-  await context.request.post(`${BASE}/api/auth/email/magic`, {
-    data: { email }
-  });
-  let token = '';
-  for (let i = 0; i < 40 && !token; i++) {
-    await new Promise((r) => setTimeout(r, 500));
-    const match = readFileSync(SERVER_LOG, 'utf8')
-      .slice(logSize)
-      .match(/verify#token=([A-Za-z0-9_-]+)/);
-    if (match) token = match[1];
+/**
+ * Creates a fresh user and a live session row in the dev database. The session id is the
+ * SHA-256 of the cookie value, the same shape the OAuth verify handler would create, so the
+ * session resolver treats it identically. Returns the raw cookie value, or '' on failure.
+ * Needs DATABASE_URL (or E2E_DATABASE_URL) pointing at the stack's Postgres.
+ * @param {string} tag short unique marker for the handle
+ */
+export function mintSession(tag) {
+  const databaseUrl = process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!databaseUrl) return '';
+  const cookie = `e2e-${tag}-${randomBytes(24).toString('base64url')}`;
+  const hash = createHash('sha256').update(cookie).digest('hex');
+  const handle = `e2e-${tag}-${Date.now().toString(36)}`.slice(0, 32);
+  const sql = `INSERT INTO users (handle, display_name)
+    VALUES ('${handle}', 'E2E ${tag}')
+    ON CONFLICT (handle) DO NOTHING;
+    INSERT INTO sessions (id, user_id, auth_method, created_at, last_renewed_at, expires_at, absolute_expires_at)
+    SELECT '${hash}', id, 'oauth_github', now(), now(), now() + interval '7 days', now() + interval '90 days'
+    FROM users WHERE handle = '${handle}';`;
+  try {
+    execFileSync(
+      'psql',
+      [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-q', '-c', sql],
+      {
+        stdio: 'pipe'
+      }
+    );
+    return cookie;
+  } catch {
+    return '';
   }
-  if (!token) return false;
-  await page.goto(`${BASE}/auth/verify#token=${token}`, {
-    waitUntil: 'networkidle'
-  });
-  await page.getByRole('button', { name: 'Confirm sign-in' }).click();
-  return page
-    .waitForFunction(() => !location.pathname.includes('/auth/verify'), null, {
-      timeout: 15000
-    })
-    .then(() => true)
-    .catch(() => false);
+}
+
+/**
+ * Signs a fresh user in on `page` by minting a session and setting the cookie for BASE's host.
+ * Returns true when the cookie landed and /api/me answers with a user.
+ */
+export async function signIn(context, page, tag) {
+  const cookie = mintSession(tag);
+  if (!cookie) return false;
+  await context.addCookies([
+    {
+      name: 'cs_session',
+      value: cookie,
+      url: BASE
+    }
+  ]);
+  const me = await page.request.get(`${BASE}/api/me`);
+  return me.ok();
 }
 
 /** Opens the problem and waits until Monaco has mounted. */

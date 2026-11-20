@@ -49,66 +49,11 @@ export async function request(path, { method = 'GET', body } = {}) {
 export const getConfig = () => request('/api/auth/config');
 /** `GET /api/me`: the signed-in user and capabilities. */
 export const getMe = () => request('/api/me');
-/** `POST /api/auth/login`: email and password sign-in. */
-/**
- * @param {string} email
- * @param {string} password
- */
-export const login = (email, password) =>
-  request('/api/auth/login', { method: 'POST', body: { email, password } });
 /** `POST /api/auth/logout`: ends this browser's session. */
 export const logout = () => request('/api/auth/logout', { method: 'POST' });
 /** `POST /api/auth/logout-all`: ends every session of the user. */
 export const logoutEverywhere = () =>
   request('/api/auth/logout-all', { method: 'POST' });
-
-/**
- * `POST /api/auth/email/magic`: asks for a sign-in link. The answer is the same for every address.
- * @param {string} email
- * @param {string} returnTo a site path, sanitised again by the server
- */
-export const requestMagicLink = (email, returnTo) =>
-  request('/api/auth/email/magic', {
-    method: 'POST',
-    body: { email, return_to: returnTo }
-  });
-
-/**
- * `POST /api/auth/email/verify`: uses a link token. Called only after the user presses confirm.
- * @param {string} token the single-use token from the link fragment
- */
-export const verifyMagicLink = (token) =>
-  request('/api/auth/email/verify', { method: 'POST', body: { token } });
-
-/**
- * `POST /api/auth/register` (Should): starts a password registration that needs a mailbox check.
- * @param {string} email
- * @param {string} password
- * @param {string} returnTo
- */
-export const register = (email, password, returnTo) =>
-  request('/api/auth/register', {
-    method: 'POST',
-    body: { email, password, return_to: returnTo }
-  });
-
-/**
- * `POST /api/auth/password/reset` (Should): asks for a reset link. The answer is the same for every address.
- * @param {string} email
- */
-export const requestPasswordReset = (email) =>
-  request('/api/auth/password/reset', { method: 'POST', body: { email } });
-
-/**
- * `POST /api/auth/password/reset/confirm` (Should): sets a new password from a reset token.
- * @param {string} token
- * @param {string} password
- */
-export const confirmPasswordReset = (token, password) =>
-  request('/api/auth/password/reset/confirm', {
-    method: 'POST',
-    body: { token, password }
-  });
 
 /**
  * The URL that starts a provider sign-in. The browser follows it with a plain link, not fetch,
@@ -126,13 +71,6 @@ export const providerSignInUrl = (provider, returnTo) =>
  */
 export const startProviderLink = (provider) =>
   request(`/api/auth/link/${provider}/start`, { method: 'POST' });
-
-/**
- * `POST /api/auth/link/email`: sends a verification link to add an email to the account.
- * @param {string} email
- */
-export const requestEmailLink = (email) =>
-  request('/api/auth/link/email', { method: 'POST', body: { email } });
 
 /**
  * `DELETE /api/me` (Could): deletes the account. The handle must be typed again as confirmation.

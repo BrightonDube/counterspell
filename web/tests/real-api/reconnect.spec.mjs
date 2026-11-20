@@ -11,13 +11,13 @@
 // the judge process to prove worker-retry behaviour, so the judge is left
 // running under dev-test.env afterwards.
 import { execFileSync } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const BASE = process.env.REAL_API_BASE ?? 'http://127.0.0.1:8088';
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
-const SERVER_LOG = resolve(REPO, 'web/tests/real-api/.scratch/server.log');
 // The judge this script may kill and restart. Only the PID in this file is touched, never any
 // other judge on the machine. The restarted judge runs from this repository.
 const JUDGE_PID_FILE = process.env.JUDGE_PID_FILE ?? '';
@@ -110,35 +110,34 @@ function startJudge() {
 }
 
 // --- auth ---------------------------------------------------------------
-// Real magic-link sign-in through the dev mail transport; the token is read
-// from the server log and exchanged for the session cookie over HTTP.
+// A session row is minted straight into the dev database. The id is the SHA-256 of the
+// cookie value — the same shape the OAuth verify handler writes — so the resolver treats it
+// identically. Needs DATABASE_URL (or E2E_DATABASE_URL) for the stack's Postgres.
 async function signIn(tag) {
-  const logSize = readFileSync(SERVER_LOG, 'utf8').length;
-  const email = `real-api-reconnect-${tag}-${Date.now()}@example.test`;
-  const magic = await fetch(`${BASE}/api/auth/email/magic`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email })
-  });
-  let token = '';
-  for (let i = 0; i < 40 && !token; i++) {
-    await sleep(500);
-    const match = readFileSync(SERVER_LOG, 'utf8')
-      .slice(logSize)
-      .match(/verify#token=([A-Za-z0-9_-]+)/);
-    if (match) token = match[1];
+  const databaseUrl = process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL;
+  if (!databaseUrl) return { ok: false, cookie: '', status: 'no DATABASE_URL' };
+  const value = `e2e-reconnect-${tag}-${randomBytes(24).toString('base64url')}`;
+  const hash = createHash('sha256').update(value).digest('hex');
+  const handle = `e2e-rec-${tag}-${Date.now().toString(36)}`.slice(0, 32);
+  const sql =
+    `INSERT INTO users (handle, display_name) VALUES ('${handle}', 'E2E ${tag}') ` +
+    `ON CONFLICT (handle) DO NOTHING; ` +
+    `INSERT INTO sessions (id, user_id, auth_method, created_at, last_renewed_at, ` +
+    `expires_at, absolute_expires_at) SELECT '${hash}', id, 'oauth_github', now(), now(), ` +
+    `now() + interval '7 days', now() + interval '90 days' FROM users WHERE handle='${handle}';`;
+  let ok = true;
+  try {
+    execFileSync(
+      'psql',
+      [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-q', '-c', sql],
+      {
+        stdio: 'pipe'
+      }
+    );
+  } catch {
+    ok = false;
   }
-  const verify = await fetch(`${BASE}/api/auth/email/verify`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ token })
-  });
-  const cookie = (verify.headers.get('set-cookie') ?? '').split(';')[0];
-  return {
-    ok: magic.ok && verify.ok && cookie.length > 0,
-    cookie,
-    status: `magic=${magic.status} token=${token.length > 0} verify=${verify.status}`
-  };
+  return { ok, cookie: `cs_session=${value}`, status: `minted=${ok}` };
 }
 
 const WRONG = 'def add_two(a, b):\n    return a * b\n';

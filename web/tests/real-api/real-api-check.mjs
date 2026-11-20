@@ -7,14 +7,14 @@
 // .scratch/server.log, judge running against the same dev Postgres with
 // SANDBOX_DOCKER_SOCKET, and the add-two pack seeded via seed-demo.
 import { chromium } from 'playwright-core';
-import { execSync } from 'node:child_process';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { execFileSync, execSync } from 'node:child_process';
+import { createHash, randomBytes } from 'node:crypto';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = fileURLToPath(new URL('.', import.meta.url));
 const BASE = process.env.REAL_API_BASE ?? 'http://127.0.0.1:8088';
-const SERVER_LOG = join(here, '.scratch', 'server.log');
 const results = [];
 const check = (name, ok, detail = '') => {
   const line = `${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`;
@@ -58,34 +58,50 @@ page.on('request', (r) => {
 // The report records what the real stack produced, for the T25 evidence.
 const report = { runIds: [], events: {}, notes: {} };
 
-// --- Real sign-in through the dev mail transport ---
-const logSize = readFileSync(SERVER_LOG, 'utf8').length;
-// Unique address per run: the magic endpoint limits to 3 links per address per
-// hour, and the verify handler creates the user on first sign-in.
-const email = `real-api-harness-${Date.now()}@example.test`;
-await context.request.post(`${BASE}/api/auth/email/magic`, {
-  data: { email }
-});
-let token = '';
-for (let i = 0; i < 40 && !token; i++) {
-  await new Promise((r) => setTimeout(r, 500));
-  const fresh = readFileSync(SERVER_LOG, 'utf8').slice(logSize);
-  const match = fresh.match(/verify#token=([A-Za-z0-9_-]+)/);
-  if (match) token = match[1];
+// --- Real sign-in: a session row minted in the dev database ---
+// The session id is the SHA-256 of the cookie value, the same shape the OAuth verify
+// handler writes. Needs DATABASE_URL (or E2E_DATABASE_URL) for the stack's Postgres.
+const databaseUrl = process.env.E2E_DATABASE_URL ?? process.env.DATABASE_URL;
+const cookieValue = `e2e-harness-${randomBytes(24).toString('base64url')}`;
+const sessionHash = createHash('sha256').update(cookieValue).digest('hex');
+const handle = `e2e-check-${Date.now().toString(36)}`.slice(0, 32);
+let minted = false;
+if (databaseUrl) {
+  const sql =
+    `INSERT INTO users (handle, display_name) VALUES ('${handle}', 'E2E harness') ` +
+    `ON CONFLICT (handle) DO NOTHING; ` +
+    `INSERT INTO sessions (id, user_id, auth_method, created_at, last_renewed_at, ` +
+    `expires_at, absolute_expires_at) SELECT '${sessionHash}', id, 'oauth_github', ` +
+    `now(), now(), now() + interval '7 days', now() + interval '90 days' ` +
+    `FROM users WHERE handle='${handle}';`;
+  try {
+    execFileSync(
+      'psql',
+      [databaseUrl, '-v', 'ON_ERROR_STOP=1', '-q', '-c', sql],
+      {
+        stdio: 'pipe'
+      }
+    );
+    minted = true;
+  } catch {
+    minted = false;
+  }
 }
-check('auth: dev mail link reaches the server log', token.length > 0);
-await page.goto(`${BASE}/auth/verify#token=${token}`, {
-  waitUntil: 'networkidle'
-});
-// The verify page holds the token in memory only; the user must confirm.
-await page.getByRole('button', { name: 'Confirm sign-in' }).click();
-const leftVerify = await page
-  .waitForFunction(() => !location.pathname.includes('/auth/verify'), null, {
-    timeout: 15000
-  })
-  .then(() => true)
-  .catch(() => false);
-check('auth: magic link signs in and redirects', leftVerify, page.url());
+check('auth: session minted in the dev database', minted);
+await context.addCookies([
+  { name: 'cs_session', value: cookieValue, url: BASE }
+]);
+const me = await page.request.get(`${BASE}/api/me`);
+check('auth: minted session identifies a user', me.ok());
+
+// --- The sign-in contract: providers only, email and demo retired ---
+const cfg = await (await page.request.get(`${BASE}/api/auth/config`)).json();
+check(
+  'auth: config advertises provider sign-in only',
+  cfg.email?.magic_link === false &&
+    cfg.email?.password === false &&
+    cfg.demo?.enabled === false
+);
 
 // --- Real problem page over Axum-served static output ---
 await page.goto(`${BASE}/problems/add-two`, { waitUntil: 'networkidle' });
