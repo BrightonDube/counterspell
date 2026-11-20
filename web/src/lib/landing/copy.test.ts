@@ -39,9 +39,8 @@ describe('landing copy', () => {
     expect(EXAMPLE.got).toBe('[0, 0]');
   });
 
-  it('has the two call to action labels', () => {
+  it('has the call to action label', () => {
     expect(CTA.primary).toBe('Start practising');
-    expect(CTA.secondary).toBe('Log in');
   });
 
   it('has a non-empty supporting line', () => {

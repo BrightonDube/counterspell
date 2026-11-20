@@ -7,6 +7,7 @@
   import { reasonLabel, runStatusLabel } from './labels';
   import type { DashboardView, RecentSubmission } from './types';
   import NavEntry from '../nav/NavEntry.svelte';
+  import AnimatedJacko from '../familiar/AnimatedJacko.svelte';
 
   let { load = loadDashboard }: { load?: () => Promise<DashboardView> } =
     $props();
@@ -68,66 +69,69 @@
     return count === 1 ? '1 failed attempt' : `${count} failed attempts`;
   }
 
+  function verdictTone(run: RecentSubmission): string {
+    if (run.verdict === 'accepted') return 'text-success';
+    if (run.status !== 'completed') return 'text-text-muted';
+    return 'text-danger';
+  }
+
   const LINK_FOCUS =
     'rounded-sm underline-offset-4 hover:underline focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-focus focus-visible:outline-none';
+
+  const PANEL =
+    'rounded-xl border border-border bg-surface/80 p-5 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.7)] backdrop-blur-sm sm:p-6';
 </script>
 
 <section
-  class="mx-auto max-w-4xl space-y-10 text-text"
+  class="mx-auto max-w-4xl space-y-6 text-text"
   aria-labelledby="dashboard-title"
 >
-  <h1 id="dashboard-title" class="text-2xl font-semibold">Dashboard</h1>
+  <div class="flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 id="dashboard-title" class="text-2xl font-semibold tracking-tight">
+        Dashboard
+      </h1>
+      <p class="mt-1 text-sm text-text-muted">Your practice, at a glance.</p>
+    </div>
+    {#if phase.kind === 'ready'}
+      <NavEntry />
+    {/if}
+  </div>
 
   {#if phase.kind === 'loading'}
-    <div class="flex items-center gap-4">
-      <img
-        src="/art/familiar/jack-o-lantern-orange.webp"
-        width="96"
-        height="96"
-        alt=""
-        class="h-24 w-24 shrink-0"
-      />
+    <div class="{PANEL} flex flex-col items-center gap-4 py-8 text-center">
+      <AnimatedJacko mood="orange" size={96} />
       <p role="status" class="text-text-muted">Loading dashboard</p>
     </div>
   {:else if phase.kind === 'signed_out'}
-    <div class="space-y-3">
+    <div class="{PANEL} space-y-3">
       <p class="text-text-muted">
         Sign in to see your progress, recent runs and next problems.
       </p>
       <a
         href={resolve('/login?return_to=/dashboard')}
         class="inline-block rounded-md bg-accent-candle px-4 py-2 font-medium text-bg hover:bg-accent-candle-glow focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-focus focus-visible:outline-none"
+        >Sign in</a
       >
-        Sign in
-      </a>
     </div>
   {:else if phase.kind === 'error'}
-    <div class="space-y-3">
+    <div class="{PANEL} space-y-3">
       <p role="alert" class="text-danger">{phase.message}</p>
       <button
         type="button"
         onclick={refresh}
         class="rounded-md border border-border-strong bg-raised px-4 py-2 hover:bg-surface focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-focus focus-visible:outline-none"
+        >Try again</button
       >
-        Try again
-      </button>
     </div>
   {:else}
     {@const view = phase.view}
 
-    <div class="flex justify-end pb-2">
-      <NavEntry />
-    </div>
-
     {#if hasNoActivity(view)}
-      <div class="flex items-start gap-4 border-t border-border pt-6">
-        <img
-          src="/art/familiar/jack-o-lantern-orange.webp"
-          width="96"
-          height="96"
-          alt=""
-          class="h-24 w-24 shrink-0"
-        />
+      <div
+        class="{PANEL} flex flex-col items-center gap-4 py-8 text-center sm:flex-row sm:items-start sm:text-left"
+      >
+        <AnimatedJacko mood="orange" size={96} />
         <div class="space-y-3">
           <h2 class="text-lg font-semibold">No practice yet</h2>
           <p class="text-text-muted">
@@ -137,114 +141,115 @@
       </div>
     {/if}
 
-    <section
-      class="space-y-4 border-t border-border pt-6"
-      aria-labelledby="solved-title"
-    >
-      <h2 id="solved-title" class="text-lg font-semibold">Solved</h2>
-      {#if view.recentSubmissions[0]?.verdict === 'accepted'}
-        <div class="flex items-center gap-3">
-          <img
-            src="/art/familiar/jack-o-lantern-poison.webp"
-            width="48"
-            height="48"
-            alt=""
-            class="h-12 w-12 shrink-0"
-          />
-          <p class="text-text">Your newest run was accepted.</p>
-        </div>
-      {/if}
-      <p class="text-3xl font-semibold tabular-nums">
+    <section class="{PANEL} space-y-4" aria-labelledby="solved-title">
+      <div class="flex items-center justify-between gap-3">
+        <h2 id="solved-title" class="text-lg font-semibold">Solved</h2>
+        {#if view.recentSubmissions[0]?.verdict === 'accepted'}
+          <div class="flex items-center gap-3">
+            <AnimatedJacko mood="poison" size={40} />
+            <p class="text-sm text-success">Your newest run was accepted.</p>
+          </div>
+        {/if}
+      </div>
+      <p class="text-4xl font-semibold tabular-nums">
         {view.solved.total}
         <span class="text-base font-normal text-text-muted">problems</span>
       </p>
-      <dl class="grid grid-cols-3 gap-4 text-sm">
-        <div>
+      <dl class="grid grid-cols-3 gap-3 text-sm">
+        <div class="rounded-lg border border-border bg-raised px-4 py-3">
           <dt class="text-text-muted">Easy</dt>
-          <dd class="tabular-nums">{view.solved.byDifficulty.easy}</dd>
+          <dd class="mt-1 text-xl font-semibold tabular-nums">
+            {view.solved.byDifficulty.easy}
+          </dd>
         </div>
-        <div>
+        <div class="rounded-lg border border-border bg-raised px-4 py-3">
           <dt class="text-text-muted">Medium</dt>
-          <dd class="tabular-nums">{view.solved.byDifficulty.medium}</dd>
+          <dd class="mt-1 text-xl font-semibold tabular-nums">
+            {view.solved.byDifficulty.medium}
+          </dd>
         </div>
-        <div>
+        <div class="rounded-lg border border-border bg-raised px-4 py-3">
           <dt class="text-text-muted">Hard</dt>
-          <dd class="tabular-nums">{view.solved.byDifficulty.hard}</dd>
+          <dd class="mt-1 text-xl font-semibold tabular-nums">
+            {view.solved.byDifficulty.hard}
+          </dd>
         </div>
       </dl>
-      <p class="text-text-muted">{streakLine(view)}</p>
+      <p class="text-text-muted">
+        <span class="text-accent-candle" aria-hidden="true">●</span>
+        {streakLine(view)}
+      </p>
     </section>
 
-    <section
-      class="space-y-4 border-t border-border pt-6"
-      aria-labelledby="weak-title"
-    >
-      <h2 id="weak-title" class="text-lg font-semibold">Concepts to revisit</h2>
-      {#if view.weakConcepts.length === 0}
-        <p class="text-text-muted">No failed concepts yet.</p>
-      {:else}
-        <ul class="space-y-3">
-          {#each view.weakConcepts as concept (concept.slug)}
-            <li class="flex flex-wrap items-baseline justify-between gap-2">
-              <span class="font-medium">{concept.name}</span>
-              <span class="text-sm text-text-muted">
-                {failureText(concept.failureCount)}
-              </span>
-            </li>
-          {/each}
-        </ul>
-      {/if}
-    </section>
-
-    <section
-      class="space-y-4 border-t border-border pt-6"
-      aria-labelledby="recent-title"
-    >
-      <h2 id="recent-title" class="text-lg font-semibold">Recent runs</h2>
-      {#if view.recentSubmissions.length === 0}
-        <p class="text-text-muted">No runs yet.</p>
-      {:else}
-        <ol class="space-y-4">
-          {#each view.recentSubmissions as run (run.id)}
-            <li class="space-y-1">
-              <a
-                href={resolve('/problems/[slug]', { slug: run.problem.slug })}
-                class="font-medium text-accent-moss {LINK_FOCUS}"
+    <div class="grid gap-6 lg:grid-cols-2">
+      <section class="{PANEL} space-y-4" aria-labelledby="weak-title">
+        <h2 id="weak-title" class="text-lg font-semibold">
+          Concepts to revisit
+        </h2>
+        {#if view.weakConcepts.length === 0}
+          <p class="text-text-muted">No failed concepts yet.</p>
+        {:else}
+          <ul class="space-y-2">
+            {#each view.weakConcepts as concept (concept.slug)}
+              <li
+                class="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border bg-raised px-4 py-3"
               >
-                {run.problem.title}
-              </a>
-              <p class="text-sm text-text-muted">
-                {run.lang} · {run.mode} ·
-                <span class="text-text">
-                  {runStatusLabel(run.status, run.verdict)}
-                </span>
-                {#if resultLine(run)}· {resultLine(run)}{/if}
-              </p>
-            </li>
-          {/each}
-        </ol>
-      {/if}
-    </section>
+                <span class="font-medium">{concept.name}</span>
+                <span class="text-sm text-text-muted"
+                  >{failureText(concept.failureCount)}</span
+                >
+              </li>
+            {/each}
+          </ul>
+        {/if}
+      </section>
 
-    <section
-      class="space-y-4 border-t border-border pt-6"
-      aria-labelledby="next-title"
-    >
+      <section class="{PANEL} space-y-4" aria-labelledby="recent-title">
+        <h2 id="recent-title" class="text-lg font-semibold">Recent runs</h2>
+        {#if view.recentSubmissions.length === 0}
+          <p class="text-text-muted">No runs yet.</p>
+        {:else}
+          <ol class="space-y-2">
+            {#each view.recentSubmissions as run (run.id)}
+              <li
+                class="space-y-1 rounded-lg border border-border bg-raised px-4 py-3 transition-colors hover:border-accent-candle"
+              >
+                <a
+                  href={resolve('/problems/[slug]', { slug: run.problem.slug })}
+                  class="font-medium text-accent-moss {LINK_FOCUS}"
+                  >{run.problem.title}</a
+                >
+                <p class="text-sm text-text-muted">
+                  {run.lang} · {run.mode} ·
+                  <span class={verdictTone(run)}
+                    >{runStatusLabel(run.status, run.verdict)}</span
+                  >
+                  {#if resultLine(run)}· {resultLine(run)}{/if}
+                </p>
+              </li>
+            {/each}
+          </ol>
+        {/if}
+      </section>
+    </div>
+
+    <section class="{PANEL} space-y-4" aria-labelledby="next-title">
       <h2 id="next-title" class="text-lg font-semibold">Try next</h2>
       {#if view.suggestedChallenges.length === 0}
         <p class="text-text-muted">
           No suggestions right now. Browse the catalogue for more.
         </p>
       {:else}
-        <ol class="space-y-4">
+        <ol class="grid gap-3 sm:grid-cols-2">
           {#each view.suggestedChallenges as challenge (challenge.slug)}
-            <li class="space-y-1">
+            <li
+              class="space-y-1 rounded-lg border border-border bg-raised px-4 py-3 transition-colors hover:border-accent-candle"
+            >
               <a
                 href={resolve('/problems/[slug]', { slug: challenge.slug })}
                 class="font-medium text-accent-moss {LINK_FOCUS}"
+                >{challenge.title}</a
               >
-                {challenge.title}
-              </a>
               <p class="text-sm text-text-muted">
                 {challenge.difficulty} ·
                 <span class="text-text">{reasonLabel(challenge.reason)}</span>

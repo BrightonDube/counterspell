@@ -3,18 +3,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   AuthApiError,
-  confirmPasswordReset,
   deleteAccount,
   getMe,
-  login,
   providerSignInUrl,
-  register,
   request,
-  requestEmailLink,
-  requestMagicLink,
-  requestPasswordReset,
-  startProviderLink,
-  verifyMagicLink
+  startProviderLink
 } from './client.js';
 import { SessionStore } from './session.svelte.js';
 import {
@@ -23,7 +16,7 @@ import {
   linkedMessage,
   messageFor
 } from './messages.js';
-import { returnToFromQuery } from './return-to.js';
+import { postAuthTarget, returnToFromQuery } from './return-to.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -57,6 +50,17 @@ describe('returnToFromQuery', () => {
   });
 });
 
+describe('postAuthTarget', () => {
+  it('sends a signed-in user to the dashboard instead of the landing page', () => {
+    expect(postAuthTarget('/')).toBe('/dashboard');
+  });
+
+  it('keeps every other site path', () => {
+    expect(postAuthTarget('/dashboard')).toBe('/dashboard');
+    expect(postAuthTarget('/problems?x=1')).toBe('/problems?x=1');
+  });
+});
+
 describe('messageFor', () => {
   it('gives a plain sentence for every code the server can send', () => {
     for (const code of Object.keys(ERROR_MESSAGES)) {
@@ -85,9 +89,7 @@ describe('request', () => {
           )
       )
     );
-    const failure = await login('a@example.co', 'wrong password here').catch(
-      (error) => error
-    );
+    const failure = await request('/api/me').catch((error) => error);
     expect(failure).toBeInstanceOf(AuthApiError);
     expect(failure.status).toBe(401);
     expect(failure.code).toBe('invalid_credentials');
@@ -134,52 +136,6 @@ describe('endpoint calls (T29)', () => {
     return fetchMock;
   }
 
-  it('posts a magic-link request with the email and the sanitised return path', async () => {
-    const fetchMock = answerWith(null, 202);
-    await requestMagicLink('thandi@example.co', '/problems');
-    const [path, init] = /** @type {any} */ (fetchMock.mock.calls[0]);
-    expect(path).toBe('/api/auth/email/magic');
-    expect(init.method).toBe('POST');
-    expect(JSON.parse(init.body)).toEqual({
-      email: 'thandi@example.co',
-      return_to: '/problems'
-    });
-  });
-
-  it('sends the token from the link to the verify endpoint and nowhere else', async () => {
-    const fetchMock = answerWith({
-      user: { handle: 'thandi' },
-      return_to: '/'
-    });
-    await verifyMagicLink('abc123');
-    const [path, init] = /** @type {any} */ (fetchMock.mock.calls[0]);
-    expect(path).toBe('/api/auth/email/verify');
-    expect(JSON.parse(init.body)).toEqual({ token: 'abc123' });
-  });
-
-  it('posts password login, register and reset calls with their bodies', async () => {
-    const fetchMock = answerWith(null, 202);
-    await register('a@example.co', 'a long passphrase', '/');
-    await requestPasswordReset('a@example.co');
-    await confirmPasswordReset('tok', 'another passphrase');
-    const calls = /** @type {any[]} */ (fetchMock.mock.calls);
-    expect(calls.map((call) => call[0])).toEqual([
-      '/api/auth/register',
-      '/api/auth/password/reset',
-      '/api/auth/password/reset/confirm'
-    ]);
-    expect(JSON.parse(calls[0][1].body)).toEqual({
-      email: 'a@example.co',
-      password: 'a long passphrase',
-      return_to: '/'
-    });
-    expect(JSON.parse(calls[1][1].body)).toEqual({ email: 'a@example.co' });
-    expect(JSON.parse(calls[2][1].body)).toEqual({
-      token: 'tok',
-      password: 'another passphrase'
-    });
-  });
-
   it('starts a provider link and returns the authorize URL the server gives', async () => {
     const fetchMock = answerWith({
       authorize_url: 'https://github.example/authorize?x=1'
@@ -197,16 +153,13 @@ describe('endpoint calls (T29)', () => {
     );
   });
 
-  it('requests an email link for linking and deletes the account with the handle as confirmation', async () => {
+  it('deletes the account with the handle as confirmation', async () => {
     const fetchMock = answerWith(null, 202);
-    await requestEmailLink('new@example.co');
     await deleteAccount('thandi');
     const calls = /** @type {any[]} */ (fetchMock.mock.calls);
-    expect(calls[0][0]).toBe('/api/auth/link/email');
-    expect(JSON.parse(calls[0][1].body)).toEqual({ email: 'new@example.co' });
-    expect(calls[1][0]).toBe('/api/me');
-    expect(calls[1][1].method).toBe('DELETE');
-    expect(JSON.parse(calls[1][1].body)).toEqual({ confirm_handle: 'thandi' });
+    expect(calls[0][0]).toBe('/api/me');
+    expect(calls[0][1].method).toBe('DELETE');
+    expect(JSON.parse(calls[0][1].body)).toEqual({ confirm_handle: 'thandi' });
   });
 });
 

@@ -37,15 +37,16 @@ impl PublicSettings {
         }
     }
 
-    /// Reads the flags from the loaded configuration.
+    /// Reads the flags from the loaded configuration. Email sign-in and the demo account are
+    /// retired: the sign-in page offers provider sign-in only, whatever the configuration holds.
     #[must_use]
     pub fn from_config(config: &AuthConfig) -> Self {
         Self {
             github: config.github.is_some(),
             google: config.google.is_some(),
-            demo: config.demo.is_some(),
-            demo_email: config.demo.as_ref().map(|demo| demo.email.clone()),
-            email_enabled: config.mail.is_some(),
+            demo: false,
+            demo_email: None,
+            email_enabled: false,
         }
     }
 }
@@ -84,9 +85,8 @@ async fn config(State(settings): State<PublicSettings>) -> Json<ConfigView> {
         },
         email: EmailFlags {
             magic_link: settings.email_enabled,
-            // Password sign-in stays available: existing password accounts (the demo account)
-            // can still sign in even when no mail provider is configured.
-            password: true,
+            // Email sign-in is retired, so no email method is ever advertised.
+            password: false,
         },
         demo: DemoFlag {
             enabled: settings.demo,

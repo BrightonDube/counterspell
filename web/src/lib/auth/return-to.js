@@ -37,3 +37,13 @@ function hasControlCharacter(text) {
   }
   return false;
 }
+
+/**
+ * Where a visitor lands after sign-in. The landing page belongs to signed-out visitors, so a
+ * signed-in user's `/` becomes `/dashboard`.
+ * @param {string} returnTo a site-relative path from {@link returnToFromQuery}
+ * @returns {string}
+ */
+export function postAuthTarget(returnTo) {
+  return returnTo === '/' ? '/dashboard' : returnTo;
+}

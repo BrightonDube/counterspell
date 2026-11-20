@@ -40,3 +40,15 @@
 ## Other findings (not changed)
 - Lighthouse reports `cache-insight` (static files have no long-lived cache header) and 48 KiB of unused CSS. Neither moves the score today. A far-future `Cache-Control` for `/_app/immutable/*` would help repeat visits; it is a `crates/server` change and was not made here.
 - T14 is still open: the keyboard walk-through, contrast pairs and the Compose and Caddy smoke test are separate checks.
+
+## 2026-11-20 — feat/signin-redesign re-run
+
+Three mobile runs, Lighthouse 13.6.0, production build served by counterspell-server (chromium headless-shell):
+
+| Run | Perf | A11y | BP | SEO |
+|---|---|---|---|---|
+| 1 | 89 | 100 | 96 | 91 |
+| 2 | 91 | 100 | 96 | 91 |
+| 3 | 91 | 100 | 96 | 91 |
+
+Median perf **91** — above the 90 gate; no fallback cuts needed.

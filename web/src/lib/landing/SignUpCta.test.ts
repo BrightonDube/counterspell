@@ -5,17 +5,15 @@ import SignUpCta from './SignUpCta.svelte';
 describe('SignUpCta', () => {
   afterEach(() => cleanup());
 
-  it('links the primary call to action to /login', () => {
+  it('links the primary call to action to the problems catalogue', () => {
     render(SignUpCta);
     const primary = screen.getByRole('link', { name: 'Start practising' });
-    expect(primary.getAttribute('href')).toBe('/login');
+    expect(primary.getAttribute('href')).toBe('/problems');
   });
 
-  it('links the secondary Log in link to /login in the moss accent', () => {
+  it('offers one call to action — no duplicate sign-in links', () => {
     render(SignUpCta);
-    const secondary = screen.getByRole('link', { name: 'Log in' });
-    expect(secondary.getAttribute('href')).toBe('/login');
-    expect(secondary.className).toContain('text-accent-moss');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 
   it('styles the primary button with the candle accent and a visible focus ring', () => {

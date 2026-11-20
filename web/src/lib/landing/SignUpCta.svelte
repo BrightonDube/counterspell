@@ -1,46 +1,27 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { CTA } from './copy';
+  import AnimatedArt from '../art/AnimatedArt.svelte';
+  import AnimatedJacko from '../familiar/AnimatedJacko.svelte';
 
-  // Both links go to /login. Sign-up happens there through GitHub, Google or email (auth spec).
+  // One call to action: 'Start practising' opens the grimoire. Sign-in lives at ENTER above.
   // The candle is decorative: it is hidden from assistive technology and sized so the layout does not shift.
 </script>
 
 <div class="flex flex-wrap items-center gap-6">
   <a
-    href={resolve('/login')}
+    href={resolve('/problems')}
     class="cta inline-flex items-center rounded bg-accent-candle px-6 py-3 text-base font-semibold text-bg transition-colors duration-200 hover:bg-accent-candle-glow focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg focus-visible:outline-none"
   >
     {CTA.primary}
   </a>
-  <a
-    href={resolve('/login')}
-    class="text-base text-accent-moss underline-offset-4 hover:text-accent-moss-strong hover:underline focus-visible:ring-2 focus-visible:ring-focus focus-visible:outline-none"
-  >
-    {CTA.secondary}
-  </a>
-  <img
-    class="h-24 w-24 object-contain"
+  <AnimatedArt
     src="/art/objects/candle-flame.webp"
     srcset="/art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w"
+    size={96}
     sizes="96px"
-    width="96"
-    height="96"
-    alt=""
-    aria-hidden="true"
-    loading="lazy"
-    decoding="async"
+    motion="flame"
+    bounce
   />
-  <img
-    class="h-24 w-24 object-contain"
-    src="/art/familiar/jack-o-lantern-orange.webp"
-    srcset="/art/familiar/jack-o-lantern-orange-192.webp 192w, /art/familiar/jack-o-lantern-orange.webp 512w"
-    sizes="96px"
-    width="96"
-    height="96"
-    alt=""
-    aria-hidden="true"
-    loading="lazy"
-    decoding="async"
-  />
+  <AnimatedJacko mood="orange" size={96} />
 </div>

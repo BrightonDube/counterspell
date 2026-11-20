@@ -380,8 +380,37 @@
       0 0 32px rgb(var(--hero-ember) / 0.7);
   }
 
+  .enter-link {
+    transition: transform 0.18s ease-out;
+  }
+  .enter-link:hover {
+    animation: enter-bob 0.7s ease-in-out infinite;
+  }
+  .enter-link:hover .enter-label {
+    color: var(--accent-candle);
+    text-shadow:
+      0 0 18px rgb(var(--hero-ember) / 1),
+      0 0 44px rgb(var(--hero-ember) / 0.9),
+      0 0 72px rgb(var(--hero-ember) / 0.5);
+  }
+  .enter-link:hover .enter-hint {
+    color: var(--accent-candle-glow);
+  }
+  @keyframes enter-bob {
+    0%,
+    100% {
+      transform: translateX(-50%) translateY(0);
+    }
+    50% {
+      transform: translateX(-50%) translateY(-6px);
+    }
+  }
+
   .enter-hint {
     margin-top: 0.48rem;
+    /* One line at every size: a wrap leaves the second line without the letter-spacing
+       indent and reads off-centre under ENTER. */
+    white-space: nowrap;
     font-weight: 600;
     font-size: 0.75rem;
     letter-spacing: 0.32em;
@@ -414,7 +443,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .pumpkin-glow,
-    .enter-link {
+    .enter-link,
+    .enter-link:hover {
       animation: none;
     }
   }
