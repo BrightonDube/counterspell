@@ -1,6 +1,18 @@
 # Managed by Ansible (caddy_site role). One site block for Counterspell; nothing global.
 {{ caddy_site_address }} {
-    log
+    # Redact OAuth codes, state and email tokens in access logs (R6.5).
+    log {
+        format filter {
+            wrap console
+            fields {
+                request>uri query {
+                    replace code REDACTED
+                    replace state REDACTED
+                    replace token REDACTED
+                }
+            }
+        }
+    }
 
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
@@ -13,7 +25,9 @@
     }
 
     # Readiness is for the deploy script only (R6.6).
-    respond /api/ready 404
+    handle /api/ready {
+        respond 404
+    }
 
     # Run event streams must reach the browser as each event is written (R6.4).
     @run_events path_regexp run_events ^/api/runs/[^/]+/events$

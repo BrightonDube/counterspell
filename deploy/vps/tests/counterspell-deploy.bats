@@ -105,6 +105,16 @@ stub_calls() {
   ! grep -q "$HEX_SHA" "$COUNTERSPELL_DIR/deploy.env"
 }
 
+@test "a failed stack start restores the previous release and clears the candidate" {
+  write_current_release
+  export FAIL_CANDIDATE_UP=1
+  run_request "$(deploy_request)"
+  [ "$status" -ne 0 ]
+  grep -Fq "$COUNTERSPELL_DIR/deploy.env up -d" "$STUB_LOG"
+  grep -q "^COUNTERSPELL_SHA=$OLD_SHA$" "$COUNTERSPELL_DIR/deploy.env"
+  [ ! -e "$COUNTERSPELL_DIR/deploy.env.new" ]
+}
+
 @test "rollback swaps the release records and runs no migration (R7.9, P4)" {
   write_current_release
   printf 'COUNTERSPELL_SHA=%s\n' "$HEX_SHA" > "$COUNTERSPELL_DIR/deploy.env.previous"

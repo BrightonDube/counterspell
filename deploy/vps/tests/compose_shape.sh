@@ -72,6 +72,8 @@ check "P2 the data network is internal" \
 # R4.9: the server trusts forwarded addresses only from the proxy subnet in host.env.
 check "R4.9 server takes TRUSTED_PROXIES from host.env" \
   '.services.server.environment.TRUSTED_PROXIES != null'
+check "Server can start when optional AI hint keys are absent" \
+  '.services.server.environment.AI_STRICT_CONFIG == "false"'
 
 # P8: judge reads only judge.env, with only the allow-listed keys.
 check "P8 judge reads judge.env" \
@@ -86,6 +88,8 @@ check "P1 judge mounts the sandbox socket read-write at /run/sandbox/docker.sock
 # R4.5: agreed memory limits (bytes) for postgres and valkey.
 check "R4.5 postgres 1024m and valkey 160m" \
   '(.services.postgres.mem_limit | tonumber) == 1073741824 and (.services.valkey.mem_limit | tonumber) == 167772160'
+check "Valkey starts as its service user without capabilities" \
+  '.services.valkey | .user == "valkey:valkey" and (.cap_drop | index("ALL") != null)'
 
 # R5.1: each service reads only its own env file.
 check "R5.1 postgres, server and migrate read their own env files" \
