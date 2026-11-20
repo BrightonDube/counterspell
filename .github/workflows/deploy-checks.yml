@@ -33,6 +33,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: ShellCheck deploy and scripts directories
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
@@ -45,6 +47,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install bats
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq bats
@@ -57,6 +61,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Compose shape test
         run: bash deploy/vps/tests/compose_shape.sh
 
@@ -66,6 +72,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Caddy shape test and validate in the pinned image
         run: bash deploy/vps/tests/caddy_shape.sh
 
@@ -75,6 +83,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install ansible and ansible-lint
         run: pipx install ansible-core ansible-lint
       - name: ansible-lint
@@ -92,6 +102,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: No secret-shaped files are tracked
         run: |
           bad="$(git ls-files | grep -E '(^|/)[^/]*\.env$|\.tfstate$|\.tfvars$' \
