@@ -425,7 +425,7 @@ Conventions for every web task:
 
 ## Wave 5: integration, proof and records
 
-- [ ] **T40 [S] [SUPERVISED] [BLOCKED? judge-sandbox, language-drivers, grimoire-packs] (30 min) Enable bench on launch problems through the admission test**
+- [x] **T40 [S] [SUPERVISED] [BLOCKED? judge-sandbox, language-drivers, grimoire-packs] (30 min) Enable bench on launch problems through the admission test**
   - Files: `packs/<slug>/pack.toml` (`[bench]`, `reference_complexity`, `complexity_note`) for each problem that passes; `docs/kiro-log/efficiency-familiar-admission.md`.
   - For each launch problem with a meaningful growth curve, run `validate --sandbox` and `counterspell-judge baseline` for Python and JavaScript on the VPS configuration. Enable bench only where the reference passes at `medium` or better in both languages; record the baselines. Target at least three problems, including a pairs-style one with a linear reference. Record the ones that fail and why.
   - Requirements: R13.2, R13.3, R15.4.

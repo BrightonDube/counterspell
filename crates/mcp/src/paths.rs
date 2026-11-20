@@ -65,8 +65,29 @@ pub fn private_pack_dir(pack_dir: &Path) -> Option<PathBuf> {
                 .map(|repo| repo.join("../counterspell-packs-private"));
             sibling.filter(|path| path.is_dir())
         })
-        .map(|root| root.join("packs").join(slug))
-        .filter(|dir| dir.is_dir())
+        .and_then(|root| private_pack_in(root.join("packs"), slug))
+}
+
+/// Finds `slug` under `packs/` — directly, or inside a single underscore
+/// container like `_demo/` (the private tree mirrors the public scope).
+fn private_pack_in(packs: PathBuf, slug: &str) -> Option<PathBuf> {
+    let flat = packs.join(slug);
+    if flat.is_dir() {
+        return Some(flat);
+    }
+    std::fs::read_dir(packs)
+        .ok()?
+        .filter_map(Result::ok)
+        .find_map(|entry| {
+            let name = entry.file_name();
+            let name = name.to_str()?;
+            if name.starts_with('_') && entry.file_type().ok()?.is_dir() {
+                let nested = entry.path().join(slug);
+                nested.is_dir().then_some(nested)
+            } else {
+                None
+            }
+        })
 }
 
 /// Checks the text of a relative path before anything touches the disk.

@@ -802,6 +802,14 @@ mod tests {
 
     #[test]
     fn explain_verdict_uses_the_authored_known_ghost_for_a_matching_wrong_answer() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let args = ExplainVerdictArgs {
             pack_path: "packs/count-pairs".to_string(),
             input: json!([[0], 0]),
@@ -904,6 +912,14 @@ mod tests {
 
     #[test]
     fn a_runner_fault_is_an_infrastructure_error_never_a_wrong_answer() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let args = FindGhostArgs {
             pack_path: "packs/count-pairs".to_string(),
             program: "incorrect/empty-min.py".to_string(),
@@ -917,6 +933,14 @@ mod tests {
 
     #[test]
     fn find_ghost_input_finds_a_failing_input_for_the_same_index_bug() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let args = FindGhostArgs {
             pack_path: "packs/count-pairs".to_string(),
             program: "incorrect/same-index.py".to_string(),
@@ -930,6 +954,14 @@ mod tests {
 
     #[test]
     fn find_ghost_input_without_a_runner_fails_closed() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let args = FindGhostArgs {
             pack_path: "packs/count-pairs".to_string(),
             program: "incorrect/same-index.py".to_string(),
@@ -961,6 +993,14 @@ mod tests {
 
     #[test]
     fn shrink_input_keeps_a_wrong_answer_and_returns_a_failing_input() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let args = ShrinkInputArgs {
             pack_path: "packs/count-pairs".to_string(),
             program: "incorrect/same-index.py".to_string(),
@@ -1009,6 +1049,14 @@ mod tests {
 
     #[test]
     fn a_crashing_program_gives_a_crash_ghost() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Crashes);
         let output = find_ghost_input(
             &repo_root(),
@@ -1030,6 +1078,14 @@ mod tests {
 
     #[test]
     fn a_timeout_is_not_a_default_ghost_because_the_engine_hunts_timeouts_only_when_targeted() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::TimesOut);
         let output = find_ghost_input(
             &repo_root(),
@@ -1046,6 +1102,14 @@ mod tests {
 
     #[test]
     fn a_garbled_answer_is_reported_as_a_wrong_answer() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let mut slot = slot_for("incorrect/empty-min.py", ProgramBehaviour::Garbles);
         let output = find_ghost_input(
             &repo_root(),
@@ -1067,6 +1131,14 @@ mod tests {
 
     #[test]
     fn a_correct_program_gives_a_not_found_result_within_budget() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let args = FindGhostArgs {
             pack_path: "packs/count-pairs".to_string(),
             program: "incorrect/empty-min.py".to_string(),
@@ -1090,6 +1162,14 @@ mod tests {
 
     #[test]
     fn a_reference_that_always_fails_aborts_the_hunt_as_engine_aborted() {
+        // These cases read the real count-pairs private parts; without a
+        // counterspell-packs-private checkout there is nothing to run them
+        // against (the CI workspace has none).
+        if private_pack_dir(&repo_root().join("packs/count-pairs")).is_none() {
+            eprintln!("skipping: no counterspell-packs-private checkout is available");
+            return;
+        }
+
         let mut runner =
             ScriptedRunner::new("incorrect/same-index.py", ProgramBehaviour::CountsSelf);
         runner.reference_crashes = true;
