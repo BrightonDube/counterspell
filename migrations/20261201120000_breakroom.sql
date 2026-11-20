@@ -27,3 +27,8 @@ CREATE INDEX game_scores_user_game_created_idx
 CREATE UNIQUE INDEX game_scores_one_puzzle_per_day_idx
     ON game_scores (user_id, (meta->>'date'))
     WHERE game = 'chess_puzzle';
+
+-- The restricted API role can read puzzles and store scores. Puzzle imports are operator-only.
+GRANT SELECT ON puzzles, game_scores TO counterspell_server;
+GRANT INSERT ON game_scores TO counterspell_server;
+GRANT USAGE ON SEQUENCE game_scores_id_seq TO counterspell_server;

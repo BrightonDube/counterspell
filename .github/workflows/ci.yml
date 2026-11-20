@@ -221,8 +221,10 @@ jobs:
       - name: Build
         run: npm run build
       - name: Break-room isolation
+        working-directory: .
         run: bash scripts/check-breakroom-isolation.sh
       - name: Break-room bundle hygiene
+        working-directory: .
         run: bash scripts/check-breakroom-bundle.sh
 
   docker:

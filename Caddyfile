@@ -2,12 +2,8 @@
 # The site address comes from CADDY_SITE_ADDRESS (host.env on the VPS). Locally it stays on :80.
 # Caddy obtains and renews the TLS certificate itself when the address is a real hostname.
 {$CADDY_SITE_ADDRESS::80} {
-    log
-
-    # OAuth callbacks and mail verify links carry one-time secrets in the query string.
-    # Those paths log with the query stripped so tokens never reach the access log (R6.5).
-    @auth_sensitive path /api/auth/oauth/*/callback /api/auth/email/verify /api/auth/link/email
-    log @auth_sensitive {
+    # Redact OAuth codes, state and email tokens wherever they appear in a query (R6.5).
+    log {
         format filter {
             wrap console
             fields {

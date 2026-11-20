@@ -1,7 +1,7 @@
 // Privacy and safety scan for the Familiar (efficiency-familiar T43, R11.4, R12).
 // Speech text, headlines and popover data come from the server and from an AI provider, so
 // no Familiar source file may put them into the page as HTML. Each test names the break it catches.
-import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
@@ -11,11 +11,16 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 /** Every non-test `.svelte` and `.ts` file under `dir`, with its text. */
 function sources(dir: string): { path: string; text: string }[] {
   const found: { path: string; text: string }[] = [];
-  for (const name of readdirSync(dir)) {
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const { name } = entry;
     const full = join(dir, name);
-    if (statSync(full).isDirectory()) {
+    if (entry.isDirectory()) {
       found.push(...sources(full));
-    } else if (/\.(svelte|ts)$/.test(name) && !/\.test\.ts$/.test(name)) {
+    } else if (
+      entry.isFile() &&
+      /\.(svelte|ts)$/.test(name) &&
+      !/\.test\.ts$/.test(name)
+    ) {
       found.push({
         path: relative(HERE, full),
         text: readFileSync(full, 'utf8')

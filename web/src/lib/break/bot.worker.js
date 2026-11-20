@@ -3,6 +3,7 @@
 import { chooseMove, seededRng } from './minimax.js';
 
 self.onmessage = (event) => {
+  if (event.origin !== '' && event.origin !== self.location.origin) return;
   const { fen, seed } = event.data || {};
   try {
     const result = chooseMove(fen, { rng: seededRng(seed ?? '') });

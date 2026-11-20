@@ -37,7 +37,7 @@ pub async fn daily_puzzle(State(state): State<AppState>) -> Result<Json<Value>, 
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM puzzles")
         .fetch_one(&state.pool)
         .await
-        .map_err(|e| internal(&e))?;
+        .map_err(ApiError::internal)?;
     let now = state
         .auth
         .as_ref()
@@ -56,7 +56,7 @@ pub async fn daily_puzzle(State(state): State<AppState>) -> Result<Json<Value>, 
     .bind(index)
     .fetch_one(&state.pool)
     .await
-    .map_err(|e| internal(&e))?;
+    .map_err(ApiError::internal)?;
     let themes: String = row.get("themes");
     Ok(Json(json!({
         "date": today.to_string(),
@@ -111,7 +111,7 @@ pub async fn save_score(
     .bind(&meta)
     .fetch_optional(&state.pool)
     .await
-    .map_err(|e| internal(&e))?;
+    .map_err(ApiError::internal)?;
 
     match inserted {
         Some(id) => Ok((
@@ -141,7 +141,7 @@ pub async fn list_scores(
     .bind(user.as_uuid())
     .fetch_all(&state.pool)
     .await
-    .map_err(|e| internal(&e))?;
+    .map_err(ApiError::internal)?;
     let scores: Vec<Value> = rows
         .iter()
         .map(|r| {
@@ -161,12 +161,4 @@ pub async fn list_scores(
 /// Any other `/api/breakroom/*` path is an API error, never the SPA shell.
 pub async fn breakroom_not_found() -> ApiError {
     ApiError::not_found("API route not found")
-}
-
-fn internal(e: &sqlx::Error) -> ApiError {
-    ApiError::new(
-        StatusCode::INTERNAL_SERVER_ERROR,
-        "internal",
-        format!("Break-room store failed: {e}"),
-    )
 }

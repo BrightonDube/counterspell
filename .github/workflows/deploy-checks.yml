@@ -35,11 +35,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: ShellCheck deploy and scripts directories
+      - name: ShellCheck deploy and ops scripts
         run: |
           sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
-          git ls-files 'deploy/vps/*.sh' 'deploy/vps/**/*.sh' 'scripts/*.sh' 'scripts/**/*.sh' \
-            | xargs -r shellcheck --severity=warning
+          git grep -z -l -E '^#!.*(bash|/sh)( |$)' -- deploy/vps ':(exclude)deploy/vps/tests/*.bats' \
+            | xargs -0 -r shellcheck --severity=warning
 
   bats:
     runs-on: ubuntu-latest
@@ -49,9 +49,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install bats
+      - name: Install bats and jq
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y -qq bats
+          sudo apt-get update -qq && sudo apt-get install -y -qq bats jq
       - name: Run all deploy bats suites
         run: git ls-files 'deploy/vps/tests/*.bats' | xargs -r bats
 
@@ -75,7 +75,9 @@ jobs:
         with:
           persist-credentials: false
       - name: Caddy shape test and validate in the pinned image
-        run: bash deploy/vps/tests/caddy_shape.sh
+        run: |
+          docker pull caddy:2.10.2-alpine
+          bash deploy/vps/tests/caddy_shape.sh
 
   ansible:
     runs-on: ubuntu-latest
@@ -87,6 +89,9 @@ jobs:
           persist-credentials: false
       - name: Install ansible and ansible-lint
         run: pipx install ansible-core ansible-lint
+      - name: Install the pinned Ansible collections
+        working-directory: infra/ansible
+        run: ansible-galaxy collection install -r requirements.yml
       - name: ansible-lint
         working-directory: infra/ansible
         run: ansible-lint site.yml counterspell-shared.yml

@@ -6,7 +6,7 @@ REPO=$(cd "$(dirname "$0")/../.." && pwd)
 TMP=$(mktemp -d)
 trap 'rm -rf "$TMP"' EXIT
 
-mkdir -p "$TMP/packs/ok-pack/reference" "$TMP/bin" "$TMP/.kiro/pipeline/state" "$TMP/docs/kiro-log"
+mkdir -p "$TMP/packs/ok-pack" "$TMP/private/packs/ok-pack/reference" "$TMP/bin" "$TMP/.kiro/pipeline/state" "$TMP/docs/kiro-log"
 cat > "$TMP/packs/ok-pack/meta.toml" <<'TOML'
 slug = "ok-pack"
 title = "Ok Pack"
@@ -17,11 +17,13 @@ pack_version = 1
 status = "draft"
 TOML
 
+printf "fixture\n" > "$TMP/private/packs/ok-pack/reference/solution.py"
 fail=0
 
 # A stub grimoire that always passes: the batch must reach awaiting_approval.
 cat > "$TMP/bin/counterspell-grimoire" <<'SH'
 #!/usr/bin/env bash
+[[ "$1" == validate && "$3" == --deny-warnings && -f "$2/reference/solution.py" ]] || exit 1
 echo "report codes: none"
 exit 0
 SH
@@ -29,6 +31,7 @@ chmod +x "$TMP/bin/counterspell-grimoire"
 
 export PATH="$TMP/bin:$PATH"
 export PACK_BATCH_ROOT="$TMP"
+export COUNTERSPELL_PACKS_PRIVATE_ROOT="$TMP/private"
 bash "$REPO/scripts/pack-batch.sh" ok-pack > /dev/null
 
 state="$TMP/.kiro/pipeline/state/ok-pack.toml"

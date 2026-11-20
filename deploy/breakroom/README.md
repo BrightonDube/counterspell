@@ -16,7 +16,7 @@ one-time operator action.
 
 ```sh
 zstd -d lichess_db_puzzle.csv.zst -c | \
-  psql "$DATABASE_URL" -v source_date=YYYY-MM-DD -f deploy/breakroom/import-puzzles.sql
+  psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -v source_date=YYYY-MM-DD -f deploy/breakroom/import-puzzles.sql
 ```
 
 `source_date` is the Lichess file date you downloaded; it is stored on every
