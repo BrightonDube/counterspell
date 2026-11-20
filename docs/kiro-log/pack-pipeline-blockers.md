@@ -151,3 +151,30 @@ One real defect found and fixed during the run: diagonal-total's curated
 (`input = [[5]]` gave `grid = [5]` and crashed the reference); corrected to the
 one-argument tuple form `[[[5]]]` etc. The pack itself was sound — the defect
 was in the C40 rotation's authored cases.
+
+## MCP T16 — scripted dogfood session (2026-11-20)
+
+The scripted find/fix/re-verify session ran at the protocol level against the
+real release server: JSON-RPC stdio `initialize` → `tools/list` →
+`find_ghost_input` on `packs/_demo/mcp-dogfood` `incorrect/never-negative.py`
+→ wrote `incorrect/fixed-never-negative.py` in the private tree →
+`validate_pack` → `find_ghost_input` on the fixed program.
+
+Results (transcript `docs/kiro-log/chats/counterspell-mcp-dogfood-stdio.log`,
+server stderr alongside):
+
+- First hunt: `Found`, `found_via = "known_ghost"`, minimized to input
+  `[[-1], 1]` in 4 shrink steps (local_minimum, verified twice); the buggy
+  program returns 0 where the reference returns -1. Digest
+  `python:3.13-slim@sha256:e48f59c…` recorded in provenance.
+- `validate_pack`: `passed: true`, 0 errors, 0 warnings.
+- Second hunt on the fixed program: `NotFound: CandidateBudget` after 500
+  candidates — T16's verify leg (no counterexample within budget).
+- All executions ran inside the rootless sandbox; the server stderr confirms
+  no host fallback.
+
+**Blocked leg:** the kiro-cli model-driven UX session could not run —
+`kiro-cli chat` fails with `ServiceQuotaExceededException
+(MONTHLY_REQUEST_COUNT)`. That is an account-quota block, not missing work;
+Brighton decides whether to enable overages or wait for the reset. T17's
+screenshot captures remain his leg.

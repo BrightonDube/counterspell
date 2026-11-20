@@ -503,3 +503,7 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 - Ran bench admission on the launch packs against the local rootless sandbox: count-pairs admitted (n^2 fit confirmed, 4 baseline rows); longest-run-length and diagonal-total refused (fit not confirmed — bench decls removed, pack_version bumped). Log: docs/kiro-log/efficiency-familiar-admission.md.
 - T41 real-stack proof: crates/judge/tests/familiar_proof.rs, 30 linear + 30 quadratic submits, JUDGE_CONCURRENCY=2 — all linear mood 4, quadratic mood 5 only with a confirmed n^2 fit, zero violations. Report: docs/kiro-log/efficiency-familiar-proof.md.
 - T44: docs/efficiency-familiar.md added (moods, confidence, baselines, fit-1, limits); README pointer added.
+### 2026-11-20 12:00 SAST: counterspell-mcp dogfood session (scripted MCP stdio, no model)
+
+- The T16 scripted find/fix/re-verify session ran over JSON-RPC stdio against the release `counterspell-mcp` binary: `find_ghost_input` on `packs/_demo/mcp-dogfood`'s `incorrect/never-negative.py` returned `Found` with a minimized counterexample `[[-1], 1]` (buggy 0 vs reference -1, 4 shrink steps, `found_via = "known_ghost"`); `validate_pack` passed; a second hunt on the fixed `incorrect/fixed-never-negative.py` returned `NotFound: CandidateBudget` after 500 candidates.
+- Transcript: `docs/kiro-log/chats/counterspell-mcp-dogfood-stdio.log`. The kiro-cli model session was blocked by the monthly request quota (`ServiceQuotaExceededException`).
