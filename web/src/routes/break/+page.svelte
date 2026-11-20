@@ -1,5 +1,6 @@
 <script>
   import AppShell from '../../lib/shell/AppShell.svelte';
+  import AnimatedArt from '../../lib/art/AnimatedArt.svelte';
   import { onMount } from 'svelte';
   import { resolve } from '$app/paths';
   import { fetchDaily, fetchScores } from '#lib/break/api.js';
@@ -41,6 +42,12 @@
         href={resolve('/break/puzzle')}
         class="rounded-lg border border-border bg-raised p-4 hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
+        <AnimatedArt
+          src="/art/objects/grimoire.webp"
+          size={64}
+          motion="breathe"
+          bounce
+        />
         <h2 class="font-semibold">Daily chess puzzle</h2>
         <p class="mt-1 text-sm text-text-muted">
           {#if puzzle === 'loading'}Loading today's puzzle…
@@ -54,6 +61,12 @@
         href={resolve('/break/bot')}
         class="rounded-lg border border-border bg-raised p-4 hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
+        <AnimatedArt
+          src="/art/objects/cursed-crt.webp"
+          size={64}
+          motion="breathe"
+          bounce
+        />
         <h2 class="font-semibold">Chess bot</h2>
         <p class="mt-1 text-sm text-text-muted">
           A casual game against a small local engine.
@@ -63,6 +76,12 @@
         href={resolve('/break/memory')}
         class="rounded-lg border border-border bg-raised p-4 hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
       >
+        <AnimatedArt
+          src="/art/objects/lantern-flame.webp"
+          size={64}
+          motion="breathe"
+          bounce
+        />
         <h2 class="font-semibold">Lantern recall</h2>
         <p class="mt-1 text-sm text-text-muted">
           Repeat the growing sequence of nine lanterns.

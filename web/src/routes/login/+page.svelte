@@ -95,7 +95,7 @@
               <!-- eslint-disable svelte/no-navigation-without-resolve -- server sign-in endpoint, not a SvelteKit route -->
               <a
                 href={providerSignInUrl('github', returnTo)}
-                class="group inline-flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-raised px-4 text-sm font-medium text-text transition-colors hover:border-accent-candle hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                class="group inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-border-strong bg-raised px-4 text-sm font-medium text-text transition-colors hover:border-accent-candle hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -115,7 +115,7 @@
               <!-- eslint-disable svelte/no-navigation-without-resolve -- server sign-in endpoint, not a SvelteKit route -->
               <a
                 href={providerSignInUrl('google', returnTo)}
-                class="group inline-flex h-12 w-full items-center justify-center gap-3 rounded-lg border border-border-strong bg-raised px-4 text-sm font-medium text-text transition-colors hover:border-accent-candle hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                class="group inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-border-strong bg-raised px-4 text-sm font-medium text-text transition-colors hover:border-accent-candle hover:bg-surface focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
               >
                 <svg viewBox="0 0 24 24" class="h-5 w-5" aria-hidden="true">
                   <path

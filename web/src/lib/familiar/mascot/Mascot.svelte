@@ -147,7 +147,7 @@
   {:else}
     <div
       bind:this={face}
-      class="h-40 w-40"
+      class="fam-face h-40 w-40"
       style:--fam-glow={glow}
       data-mood={mood}
       data-reason={reason}
@@ -169,3 +169,20 @@
   {/if}
   <p aria-live="polite" class="sr-only">{liveText}</p>
 </section>
+
+<style>
+  .fam-face {
+    animation: art-breathe 3.6s ease-in-out infinite;
+    transform-origin: 50% 90%;
+  }
+  .fam-face:hover {
+    animation: art-bounce 0.6s ease-in-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fam-face,
+    .fam-face:hover {
+      animation: none;
+    }
+  }
+</style>

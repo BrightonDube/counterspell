@@ -136,3 +136,54 @@ body {
 :root {
   --hero-ember: 255 170 60;
 }
+
+/* Shared motion vocabulary for art assets (AnimatedArt, the familiar mascot). */
+@keyframes art-breathe {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-4px) scale(1.02);
+  }
+}
+@keyframes art-bounce {
+  0% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-14px) scale(1.06);
+  }
+  55% {
+    transform: translateY(2px) scale(0.97);
+  }
+  78% {
+    transform: translateY(-5px) scale(1.01);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+@keyframes art-flicker {
+  0%,
+  100% {
+    transform: scale(1) skewX(0deg);
+    opacity: 1;
+  }
+  22% {
+    transform: scale(1.02, 0.97) skewX(1.2deg);
+    opacity: 0.94;
+  }
+  41% {
+    transform: scale(0.98, 1.04) skewX(-1.6deg);
+    opacity: 1;
+  }
+  63% {
+    transform: scale(1.03, 0.96) skewX(0.8deg);
+    opacity: 0.92;
+  }
+  82% {
+    transform: scale(0.99, 1.02) skewX(-0.7deg);
+    opacity: 0.98;
+  }
+}

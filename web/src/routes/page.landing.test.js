@@ -35,7 +35,7 @@ describe('landing route composition (T08)', () => {
       screen
         .getByRole('link', { name: 'Start practising' })
         .getAttribute('href')
-    ).toBe('/login');
+    ).toBe('/problems');
   });
 
   it('preloads the self-hosted Creepster woff2 in the document head (T21)', () => {

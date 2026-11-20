@@ -5,10 +5,10 @@ import SignUpCta from './SignUpCta.svelte';
 describe('SignUpCta', () => {
   afterEach(() => cleanup());
 
-  it('links the primary call to action to /login', () => {
+  it('links the primary call to action to the problems catalogue', () => {
     render(SignUpCta);
     const primary = screen.getByRole('link', { name: 'Start practising' });
-    expect(primary.getAttribute('href')).toBe('/login');
+    expect(primary.getAttribute('href')).toBe('/problems');
   });
 
   it('links the secondary Log in link to /login in the moss accent', () => {

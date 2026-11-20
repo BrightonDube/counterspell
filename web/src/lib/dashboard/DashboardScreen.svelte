@@ -7,6 +7,7 @@
   import { reasonLabel, runStatusLabel } from './labels';
   import type { DashboardView, RecentSubmission } from './types';
   import NavEntry from '../nav/NavEntry.svelte';
+  import AnimatedJacko from '../familiar/AnimatedJacko.svelte';
 
   let { load = loadDashboard }: { load?: () => Promise<DashboardView> } =
     $props();
@@ -98,14 +99,8 @@
   </div>
 
   {#if phase.kind === 'loading'}
-    <div class="{PANEL} flex items-center gap-4">
-      <img
-        src="/art/familiar/jack-o-lantern-orange.webp"
-        width="96"
-        height="96"
-        alt=""
-        class="h-24 w-24 shrink-0"
-      />
+    <div class="{PANEL} flex flex-col items-center gap-4 py-8 text-center">
+      <AnimatedJacko mood="orange" size={96} />
       <p role="status" class="text-text-muted">Loading dashboard</p>
     </div>
   {:else if phase.kind === 'signed_out'}
@@ -133,14 +128,10 @@
     {@const view = phase.view}
 
     {#if hasNoActivity(view)}
-      <div class="{PANEL} flex items-start gap-4">
-        <img
-          src="/art/familiar/jack-o-lantern-orange.webp"
-          width="96"
-          height="96"
-          alt=""
-          class="h-24 w-24 shrink-0"
-        />
+      <div
+        class="{PANEL} flex flex-col items-center gap-4 py-8 text-center sm:flex-row sm:items-start sm:text-left"
+      >
+        <AnimatedJacko mood="orange" size={96} />
         <div class="space-y-3">
           <h2 class="text-lg font-semibold">No practice yet</h2>
           <p class="text-text-muted">
@@ -155,13 +146,7 @@
         <h2 id="solved-title" class="text-lg font-semibold">Solved</h2>
         {#if view.recentSubmissions[0]?.verdict === 'accepted'}
           <div class="flex items-center gap-3">
-            <img
-              src="/art/familiar/jack-o-lantern-poison.webp"
-              width="40"
-              height="40"
-              alt=""
-              class="h-10 w-10 shrink-0"
-            />
+            <AnimatedJacko mood="poison" size={40} />
             <p class="text-sm text-success">Your newest run was accepted.</p>
           </div>
         {/if}
