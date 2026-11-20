@@ -22,9 +22,12 @@ use tokio::runtime::Handle;
 use tokio::sync::watch;
 use uuid::Uuid;
 
+use crate::familiar::{BenchCollector, BenchOutcome, BenchPlan};
 use crate::languages::LanguageDefinition;
+use counterspell_common::status::RunMode;
 
 use super::backend::Backend;
+use super::bench::{DiscardBench, SandboxBenchCollector};
 use super::call::{run_call, CallFacts, CallIo, CallLimits};
 use super::config::SandboxConfig;
 use super::driver_protocol::parse_answer;
@@ -236,35 +239,8 @@ pub async fn evaluate_side<B: Backend>(
     kill_slack: Duration,
     mut stop: watch::Receiver<bool>,
 ) -> Result<ProgramResult, OracleError> {
-    if side.opened.is_none() {
-        side.opens += 1;
-        let spec = SessionSpec::new(
-            &side.lang,
-            side.run_cap,
-            side.runtime,
-            side.run,
-            &side.worker,
-            side.opens,
-            expiry(side.orphan_age),
-        )
-        .map_err(|error| OracleError::new(format!("the session spec: {error}")))?;
-        match open_session(&side.backend, &spec, &side.lang, &side.archive).await {
-            Ok(opened) => {
-                side.opened = Some(opened);
-                // A fresh driver answers a fresh call sequence.
-                side.io = CallIo::new();
-                side.next_id = 1;
-            }
-            // A compile failure of the user's program is the program's own
-            // result, not infrastructure. The reference is trusted code.
-            Err(SessionError::CompileFailed(message)) if side.role == Role::User => {
-                return Ok(ProgramResult::Crashed {
-                    exception_class: "CompileError".to_owned(),
-                    message: bounded(&format!("{message:?}")),
-                });
-            }
-            Err(error) => return Err(OracleError::new(error.to_string())),
-        }
+    if let Some(result) = open_if_needed(side).await? {
+        return Ok(result);
     }
     let Some(opened) = side.opened.as_mut() else {
         return Err(OracleError::new("no open container for the call"));
@@ -288,6 +264,94 @@ pub async fn evaluate_side<B: Backend>(
             Ok(map_facts(facts, id))
         }
     }
+}
+
+/// Opens the side's container when it has none. `Some` is the program's own result when the
+/// user's program does not compile; the reference is trusted, so its compile failure is an error.
+async fn open_if_needed<B: Backend>(
+    side: &mut Side<B>,
+) -> Result<Option<ProgramResult>, OracleError> {
+    if side.opened.is_none() {
+        side.opens += 1;
+        let spec = SessionSpec::new(
+            &side.lang,
+            side.run_cap,
+            side.runtime,
+            side.run,
+            &side.worker,
+            side.opens,
+            expiry(side.orphan_age),
+        )
+        .map_err(|error| OracleError::new(format!("the session spec: {error}")))?;
+        match open_session(&side.backend, &spec, &side.lang, &side.archive).await {
+            Ok(opened) => {
+                side.opened = Some(opened);
+                // A fresh driver answers a fresh call sequence.
+                side.io = CallIo::new();
+                side.next_id = 1;
+            }
+            // A compile failure of the user's program is the program's own
+            // result, not infrastructure. The reference is trusted code.
+            Err(SessionError::CompileFailed(message)) if side.role == Role::User => {
+                return Ok(Some(ProgramResult::Crashed {
+                    exception_class: "CompileError".to_owned(),
+                    message: bounded(&format!("{message:?}")),
+                }));
+            }
+            Err(error) => return Err(OracleError::new(error.to_string())),
+        }
+    }
+    Ok(None)
+}
+
+/// Times one side through the same bench collector a learner's run uses: two warm-ups and five
+/// timed calls per size, the worker clock, the same protocol checks. `inputs` are the prepared
+/// argument tuples, one per size. Nothing is published or stored. Afterwards the session is
+/// closed, because its driver is now the bench driver; the next call opens a fresh container.
+///
+/// # Errors
+///
+/// Returns an [`OracleError`] when the container cannot be opened or the judge fails.
+pub async fn bench_side<B: Backend>(
+    side: &mut Side<B>,
+    inputs: &[(u64, Value)],
+    call_limit: Duration,
+    budget: Duration,
+    mut stop: watch::Receiver<bool>,
+) -> Result<BenchOutcome, OracleError> {
+    if let Some(result) = open_if_needed(side).await? {
+        return Err(OracleError::new(format!(
+            "the program cannot be benched: {result:?}"
+        )));
+    }
+    let plan = BenchPlan {
+        mode: RunMode::Submit,
+        sizes: inputs.iter().map(|(n, _)| *n).collect(),
+        size_param: 0,
+        problem_slug: String::new(),
+        problem_version: 0,
+        budget,
+    };
+    let Some(opened) = side.opened.as_mut() else {
+        return Err(OracleError::new("no open container for the bench"));
+    };
+    let outcome = {
+        let mut collector = SandboxBenchCollector::for_inputs(
+            opened,
+            &side.lang,
+            inputs,
+            call_limit,
+            &DiscardBench,
+            &mut stop,
+        );
+        collector.collect(&plan).await
+    };
+    if let Some(opened) = side.opened.take() {
+        if let Err(error) = opened.session.close().await {
+            tracing::debug!(%error, "closing the bench session failed; the sweeper will remove it");
+        }
+    }
+    outcome.map_err(|error| OracleError::new(format!("the bench could not run: {error:?}")))
 }
 
 /// Maps what a call observed onto the engine's result vocabulary.

@@ -157,7 +157,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Verify: a fake runner that returns `RunnerError` gives exit 2 with SBX-06; a pack with `[bench]` gives SBX-08.
   - Rust lesson: explain why infrastructure errors are a separate type from program results, so they cannot be mixed up.
 
-- [ ] **T20 [BLOCKED] Judge implements PackRunner and wires `--sandbox`**
+- [x] **T20 [BLOCKED] Judge implements PackRunner and wires `--sandbox`**
   - Files (in the judge spec, not here): `crates/judge/` implements `PackRunner` through the rootless sandbox. This spec only records the requirement.
   - Depends on: `judge-sandbox` spec, and a decision on open question 7.
   - Verify (later): `counterspell-catalogue validate-sandbox count-pairs --private-root <checkout>` runs the reference through the real sandbox, and the vectors in `sandbox_fake.rs` match the real Python output. (Amended after the pack-tree split: reference/incorrect live in the private tree, so `counterspell-grimoire validate` on the public dir alone can no longer reach them — see docs/kiro-log/problem-catalogue-blockers.md.)
@@ -212,7 +212,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Depends on: T26.
   - Verify: the note names every blocked task and its owning spec.
 
-- [ ] **T28 [BLOCKED on Brighton] Review and publish starter packs**
+- [x] **T28 [BLOCKED on Brighton] Review and publish starter packs**
   - Human step, not agent work. Brighton reads each statement, hint, ghost explanation and reference, then changes `status` to `published` (GRM-47). Agent work stops at `draft`.
   - Depends on: T24, T25, and Brighton's review.
   - Verify: each pack's `status` is `published` only after Brighton's sign-off recorded in the commit message.
@@ -222,8 +222,65 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Depends on: `ghost-engine` spec complete, and a decision on open question 11.
   - Verify: `validate --all packs --include-underscore` passes for the converted fixtures, and ghost-engine tests still pass.
 
-- [ ] **T30 [BLOCKED on CI spec] Add pack validation to CI**
+- [x] **T30 [BLOCKED on CI spec] Add pack validation to CI**
   - Files: `.github/workflows/ci.yml` (in the CI spec).
   - Add a step that runs `cargo run -q -p counterspell-grimoire -- validate --all packs --deny-warnings`.
   - Depends on: T26, and the CI owner.
   - Verify: the CI run passes on a clean checkout.
+
+## Amendment X1 + X2 (approved by Brighton, 2026-11-20)
+
+Requested by pack-authoring-pipeline (design §14). Approves the assembled two-tree
+layout and the new stage codes the pipeline needs. Task ticks stay with Kiro.
+
+### X1 — assembled two-tree layout
+
+Validation runs against the assembled tree (public `packs/` overlaid with the private
+`packs-private/` tree, as `catalogue-cli import` produces it). In the assembled tree the
+layout allow-list additionally permits the files below. In the public `packs/` tree none
+of them may exist — the reference, the incorrect programs and the review records never
+sit in the public repo. Each public-tree violation is `LAY-07` (severity: error):
+
+- `hidden.toml` — curated hidden cases with `why` (private tree only)
+- `generator.toml` — generation seed and `hidden_count` (private tree only)
+- `known_ghosts.toml` — ghost definitions (private tree only)
+- `incorrect/*.py` — ghost programs (private tree only)
+- `reference/solution.py` — the reference implementation (private tree only)
+- `approval.toml` — the review/approval record (private tree only)
+
+The `[generator]` requirement (GRM-9) moves from `meta.toml` to `generator.toml`
+(severity: error when absent from the assembled tree; a public `meta.toml` carrying
+`[generator]` is `LAY-07`, error). Existing packs are migrated in the same PA08 work:
+their `[generator]` table moves to `generator.toml`, new pack versions stay `status = draft` pending their own approval,
+and a test proves a public `meta.toml` with `[generator]` fails.
+
+A missing `reference/solution.py` in the public-only tree is `REF-01` (severity:
+warning — the reference lives in the private tree by design). In the assembled tree a
+missing reference is `REF-01` (severity: error).
+
+### X2 — new stage codes
+
+Each code lists its rule, its severity and the negative fixture that fails with exactly
+this code (GRM-51), under `crates/grimoire/tests/fixtures/`:
+
+| Code | Rule | Severity | Negative fixture |
+|---|---|---|---|
+| `HID-01` | `hidden.toml` must parse and carry at least 8 cases | error | `pipeline/hid-missing-file` |
+| `HID-02` | every hidden case needs a `why` | error | `pipeline/hid-missing-why` |
+| `HID-03` | no hidden case may duplicate a sample, another case or a retired hash | error | `pipeline/hid-duplicate` |
+| `HID-04` | `generator.toml` `hidden_count` must cover the declared cases | error | `pipeline/hid-count-mismatch` |
+| `STM-03` | the statement must not leak an expected hidden output | error | `pipeline/stm-leaks-hidden` |
+| `HNT-03` | a hint must not reveal a hidden expected value | error | `pipeline/hnt-leaks-hidden` |
+| `ORG-01` | an originality record must exist and parse | error | `pipeline/no-originality-record` (exists) |
+| `ORG-02` | no statement text may match a recorded third-party source | error | `pipeline/copied-marker` (exists) |
+| `GHC-01` | every known ghost must reproduce under the fake-runner replay | error | `pipeline/ghost-not-reproducing` (exists) |
+| `LAY-07` | a private-tree file present in the public tree, or a `[generator]` table in public `meta.toml` | error | `pipeline/lay-private-in-public` |
+| `PUB-01` | a pack may reach `published` only with a matching `approval.toml` | error | `pipeline/publish-without-approval` (exists) |
+| `APR-01` | `approval.toml` hashes must match the manifest contents | error | `pipeline/approval-hash-mismatch` (exists) |
+| `REV-01` | a review round must record its checklist | error | `pipeline/checklist-missing-category` (exists) |
+| `REV-02` | a reviewer may not approve a pack they authored | error | `pipeline/rev-self-approval` |
+| `REV-03` | at most three review rounds before escalation | warning | `pipeline/rev-round-cap` |
+| `SUM-01` | the S13 summary must name every stage outcome | warning | `pipeline/sum-incomplete` |
+| `SLUG-01` | a pack slug must be unique across the catalogue | error | `pipeline/slug-duplicate` |
+| `TAX-01` | a backlog entry must name an existing track and concepts | error | `pipeline/tax-unknown-track` |
+| `BRF-01` | a pack brief must cover slug, track, concepts, difficulty, idea and ghost kinds | warning | `pipeline/brf-incomplete` |

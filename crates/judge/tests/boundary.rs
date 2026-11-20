@@ -231,7 +231,7 @@ fn container_facing_modules_see_no_expected_outputs() {
 fn compose_keeps_the_boundaries() {
     let compose = std::fs::read_to_string(root().join("docker-compose.yml"))
         .expect("docker-compose.yml exists");
-    let doc: serde_yml::Value = serde_yml::from_str(&compose).expect("compose parses");
+    let doc: serde_norway::Value = serde_norway::from_str(&compose).expect("compose parses");
     let services = &doc["services"];
 
     let volumes = |service: &str| -> Vec<String> {
@@ -324,4 +324,55 @@ fn mcp_uses_only_the_sandbox_facing_judge_api() {
         "mcp reaches past the sandbox-facing judge API:\n{}",
         offenders.join("\n")
     );
+}
+
+/// The package names listed under `[dependencies]` in a manifest. Dev and build tables are
+/// ignored, so a test-only edge is not a production edge.
+fn production_dependencies(manifest: &str) -> Vec<String> {
+    let mut in_dependencies = false;
+    let mut names = Vec::new();
+    for line in manifest.lines() {
+        let line = line.trim();
+        if line.starts_with('[') {
+            in_dependencies = line == "[dependencies]";
+        } else if in_dependencies {
+            if let Some((name, _)) = line.split_once('=') {
+                names.push(name.trim().to_owned());
+            }
+        }
+    }
+    names
+}
+
+/// 7. The crate graph keeps the sandbox runner shareable: the judge never depends on Grimoire or
+///    the operator crate, and `counterspell-mcp` never depends on the operator crate (it reuses
+///    the judge's runner instead). Brighton's 15 Nov and 19 Nov decisions.
+#[test]
+fn the_judge_and_mcp_stay_off_the_authoring_crates() {
+    let read =
+        |path: &str| std::fs::read_to_string(root().join(path)).expect("a readable crate manifest");
+    let judge = production_dependencies(&read("crates/judge/Cargo.toml"));
+    let mcp = production_dependencies(&read("crates/mcp/Cargo.toml"));
+    for banned in ["counterspell-grimoire", "counterspell-catalogue-cli"] {
+        assert!(
+            !judge.iter().any(|name| name == banned),
+            "the judge depends on {banned}: {judge:?}"
+        );
+    }
+    assert!(
+        !mcp.iter().any(|name| name == "counterspell-catalogue-cli"),
+        "mcp depends on the operator crate: {mcp:?}"
+    );
+    assert!(
+        mcp.iter().any(|name| name == "counterspell-judge"),
+        "mcp reuses the judge's runner: {mcp:?}"
+    );
+}
+
+/// Breaks if the manifest reader reads dev-only edges as production edges, which would let a
+/// real violation hide or a test-only crate fail the rule above.
+#[test]
+fn the_manifest_reader_sees_only_production_dependencies() {
+    let manifest = "[package]\nname = \"x\"\n\n[dependencies]\na = { path = \"../a\" }\nb = \"1\"\n\n[dev-dependencies]\nc = \"2\"\n\n[features]\nd = []\n";
+    assert_eq!(production_dependencies(manifest), vec!["a", "b"]);
 }

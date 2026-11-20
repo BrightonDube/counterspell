@@ -75,6 +75,22 @@ describe('ProblemWorkspace', () => {
     expect(screen.getByRole('region', { name: 'Editor' })).toBeTruthy();
   });
 
+  // Breaks if the browser performance check cannot see when the problem detail arrived (R15.5).
+  it('marks problem-detail-loaded once the problem is shown', async () => {
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      api.loadProblem.mockResolvedValue(problem);
+      api.loadLanguages.mockResolvedValue(languages);
+      render(ProblemWorkspace, { props: { slug: 'two-sum' } });
+      await waitFor(() =>
+        expect(mark.mock.calls).toContainEqual(['problem-detail-loaded'])
+      );
+      expect(JSON.stringify(mark.mock.calls)).not.toContain('two-sum');
+    } finally {
+      mark.mockRestore();
+    }
+  });
+
   // Breaks if a missing problem shows a blank page or a raw error instead of the server's safe message.
   it('shows the safe message for a problem that does not exist', async () => {
     api.loadProblem.mockRejectedValue(

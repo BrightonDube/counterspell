@@ -1,0 +1,2 @@
+[ERROR] [KRS] HTTP 400 requestId=557b7232-1eef-4c3b-8cbb-6808d569630d body={"__type":"com.amazon.kiro.runtimeservice#ServiceQuotaExceededException","message":"You have reached the limit.","reason":"MONTHLY_REQUEST_COUNT"}
+Error: You've reached your monthly usage limit. Please return next month to continue building. (Request ID: 557b7232-1eef-4c3b-8cbb-6808d569630d) (code -32000): {"errorType":"UsageLimitReachedError","retryErrorType":"CLIENT_ERROR","requestId":"557b7232-1eef-4c3b-8cbb-6808d569630d","actions":["enableOverages","upgradePlan"]}

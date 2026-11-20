@@ -43,7 +43,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Depends on: none.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records each approval or change. Until then, no wave below starts.
 
-- [ ] **C00a [GATE] [HUMAN] [SUPERVISED] (20 min) Create the private repo and its read-only credential**
+- [x] **C00a [GATE] [HUMAN] [SUPERVISED] (20 min) Create the private repo and its read-only credential**
   - Brighton creates `BrightonDube/counterspell-packs-private`, adds a read-only deploy key scoped to that repository (or a fine-grained read-only token), and stores the secret outside the public working tree with owner-only permissions. Brighton also creates an empty `retired-values.toml` at the private root. No agent creates the repo, a key or a token, or reads the secret.
   - Depends on: C00.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records the repo name and the secret's location as a path only, never its contents. Brighton confirms with a read-only `git ls-remote` that the key works.
@@ -229,7 +229,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit tests for argument parsing, exit mapping and a missing `--private-root` (exit 2, no connection attempted); `cargo run -q -p counterspell-judge --bin counterspell-catalogue -- import --dry-run --packs packs --private-root <path>` exits 0 or 1 with a report and never panics.
   - Rust lesson: `std::process::ExitCode` lets `main` return the code after all output has been printed. Explain why helper functions return an outcome and `main` alone calls the exit.
 
-- [ ] **C19b [S] [SUPERVISED] (30 min) Refused public-only import and approval-gate tests**
+- [x] **C19b [S] [SUPERVISED] (30 min) Refused public-only import and approval-gate tests**
   - Files: `crates/judge/tests/pg_catalogue_private_tree_required.rs`, `crates/judge/tests/pg_catalogue_approval_gate.rs`, and synthetic fixtures under `crates/judge/tests/fixtures/private/` (canary strings only).
   - `pg_catalogue_private_tree_required`: a run with no `--private-root` exits 2 and leaves every catalogue table and `catalogue_events` at zero rows. A run whose private root lacks one slug's part refuses that slug, imports the others, and writes nothing for the refused slug.
   - `pg_catalogue_approval_gate`: a missing approval, a wrong `pack_version` and a hash mismatch each refuse before the sandbox, with zero writes. A fake `PackRunner` counts its calls, and the test asserts zero calls.
@@ -350,7 +350,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: unit test with the launch catalogue lists exactly `python` and `javascript`; a disabled entry is absent; the key allow-list passes.
   - Rust lesson: `Vec<Language>` is cloned into the response, so the request cannot change the server's catalogue. Explain why a shared reference would be a different design.
 
-- [ ] **C33 [BLOCKED on D16 (ghosts table owner)] [S] [SUPERVISED] (30 min) `GhostLookup` for the custom ghost run**
+- [x] **C33 [UNBLOCKED 19 Nov: reads submissions.ghost_input] [S] [SUPERVISED] (30 min) `GhostLookup` for the custom ghost run**
   - Files: `crates/server/src/catalogue/ghosts.rs`, `crates/server/tests/pg_catalogue_ghosts.rs`.
   - `stored_for(user, submission_id)` returns the stored ghost input only when the submission belongs to the caller. Blocked until the `ghosts` table exists and its owner is decided (open question 1).
   - Requirements: CAT-L6. ide-workspace T02 depends on this.
@@ -378,7 +378,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: `cargo test -p counterspell-server -- --ignored pg_` and `cargo test -p counterspell-judge -- --ignored pg_`; the test counts before and after are recorded and equal.
   - Rust lesson: a test helper is ordinary code, so a shared fixture function removes the same setup from each test without hiding it.
 
-- [ ] **C36 [S] (30 min) Full database and API test pass**
+- [x] **C36 [S] (30 min) Full database and API test pass**
   - Files: none new. Fix only catalogue files.
   - Run every `pg_catalogue_*` test against a throwaway Postgres 17 with `DATABASE_URL` set (the existing `cs-dev-pg` container, not a new one). Record the results in `docs/kiro-log/problem-catalogue-verify.md`.
   - Requirements: CAT-Q2.
@@ -386,7 +386,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: every test in the list passes; any failure is recorded with the test name in the blockers file, never removed.
   - Rust lesson: `--ignored` runs only the database tests, so the normal `cargo test` stays fast and needs no database.
 
-- [ ] **C37 [S] (25 min) Repo-wide gates**
+- [x] **C37 [S] (25 min) Repo-wide gates**
   - Files: none new.
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, and `cargo deny check licenses`. If `cargo deny` rejects a licence, stop and ask Brighton before editing `deny.toml`.
   - Requirements: CAT-Q3.
@@ -394,14 +394,14 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: all four commands exit 0; the test count is recorded.
   - Rust lesson: `-D warnings` turns Clippy warnings into errors so they cannot be ignored in review.
 
-- [ ] **C38 [HUMAN] [SUPERVISED] (30 min) Sandbox import of the approved starter packs on the host**
+- [x] **C38 [HUMAN] [SUPERVISED] (30 min) Sandbox import of the approved starter packs on the host**
   - Run `counterspell-catalogue import --sandbox --private-root <checkout>` and then `publish` for each approved pack, on the host with the rootless sandbox daemon. The operator makes the checkout (CAT-PT14) and deletes it afterwards. Record the image digest and the report in `docs/kiro-log/problem-catalogue-verify.md`.
   - Requirements: CAT-D2, CAT-I14, CAT-P1.
   - Depends on: C37, judge-sandbox T37 (host verification), grimoire-packs T28 (Brighton's approval), C00a, C40.
   - Verify: the three approved problems appear in `GET /api/problems`; a second import reports `unchanged`; hidden values are absent from the response.
   - Rust lesson: not applicable (operator step).
 
-- [ ] **C39 [HUMAN] (10 min) Approval gate before publication**
+- [x] **C39 [HUMAN] (10 min) Approval gate before publication**
   - Brighton approves each starter pack (grimoire-packs T28) before C38 runs. He writes `packs/<slug>/approval.toml` in the private repo with the combined content hash (CAT-PT7). The importer refuses without it.
   - Depends on: grimoire-packs T28.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records the approval.

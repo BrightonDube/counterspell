@@ -552,3 +552,63 @@
  web/tests/real-api/packs/add-two/problem.md    |   5 +
  web/tests/real-api/real-api-check.mjs          |  16 ++-
  18 files changed, 441 insertions(+), 107 deletions(-)
+- 2026-11-19T01:51:09Z | model: not reported | last commit: 6e945e1b docs(ide-workspace): record browser blocker and T18 status
+ | diff stat:
+ docs/kiro-log/sessions.md         |   2 +
+ docs/kiro-log/spec-driver-runs.md |   4 +
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 9 insertions(+), 164 deletions(-)
+- 2026-11-19T10:01:57Z | model: not reported | last commit: a55cb0a8 docs: record the MCP runner crate-graph decision
+ | diff stat:
+ docs/kiro-log/sessions.md         |   8 ++
+ docs/kiro-log/spec-driver-runs.md |   6 ++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 17 insertions(+), 164 deletions(-)
+- 2026-11-19T11:37:43Z | model: not reported | last commit: 7f4a3756 ide-workspace T09: verify responsive shell in a browser (30/30), fix stale harness fixtures
+ | diff stat:
+ docs/kiro-log/sessions.md         |  14 ++++
+ docs/kiro-log/spec-driver-runs.md |   8 ++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 25 insertions(+), 164 deletions(-)
+- 2026-11-19T12:11:29Z | model: not reported | last commit: 8b7894b8 judge-sandbox: verify and tick T38
+ | diff stat:
+ docs/kiro-log/sessions.md         |  20 +++++
+ docs/kiro-log/spec-driver-runs.md |  10 +++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 33 insertions(+), 164 deletions(-)
+- 2026-11-19T12:18:13Z | model: not reported | last commit: 1c5d4512 problem-catalogue C33: GhostLookup returns a stored ghost input only to its owner (+4 pg tests)
+ | diff stat:
+ docs/kiro-log/sessions.md         |  26 ++++++
+ docs/kiro-log/spec-driver-runs.md |  11 +++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 40 insertions(+), 164 deletions(-)
+- 2026-11-19T13:23:03Z | model: not reported | last commit: 434e7a86 ide-workspace T15: real shrink replay fade and 400 ms ghost reveal, honesty tests, prototype banner browser check
+ | diff stat:
+ docs/kiro-log/sessions.md         |  32 ++++++++
+ docs/kiro-log/spec-driver-runs.md |  13 +++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 48 insertions(+), 164 deletions(-)
+- 2026-11-19T14:23:57Z | model: not reported | last commit: dde26abf ide-workspace T21, T22: capture-phase run shortcuts, real-browser keyboard and reduced-motion checks, tick
+ | diff stat:
+ docs/kiro-log/sessions.md         |  38 +++++++++
+ docs/kiro-log/spec-driver-runs.md |  16 ++++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 57 insertions(+), 164 deletions(-)
+- 2026-11-19T15:59:54Z | model: not reported | last commit: 052a3ee7 ide-workspace T28: full verification gate, tick
+ | diff stat:
+ docs/kiro-log/sessions.md         |  44 ++++++++++
+ docs/kiro-log/spec-driver-runs.md |  17 ++++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 64 insertions(+), 164 deletions(-)
+- 2026-11-19T17:06:42Z | model: not reported | last commit: 72ceb13e efficiency-familiar T22 (partial): baseline admission logic and store seam (+6 tests); CLI dispatch still open
+ | diff stat:
+ docs/kiro-log/sessions.md         |  50 ++++++++++++
+ docs/kiro-log/spec-driver-runs.md |  22 +++++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 75 insertions(+), 164 deletions(-)
+- 2026-11-19T19:05:28Z | model: not reported | last commit: 5e841679 dashboard-fsrs: record what T10 needs before it can run (no Playwright harness exists yet)
+ | diff stat:
+ docs/kiro-log/sessions.md         |  56 +++++++++++++
+ docs/kiro-log/spec-driver-runs.md |  25 ++++++
+ web/package-lock.json             | 167 +-------------------------------------
+ 3 files changed, 84 insertions(+), 164 deletions(-)

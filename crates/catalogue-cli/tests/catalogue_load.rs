@@ -47,10 +47,6 @@ items = [
   { type = "int", min = -10, max = 10 },
 ]
 
-[generator]
-seed = 1729
-hidden_count = 6
-
 [[samples]]
 input = [[2, 7], 9]
 expected = [0, 1]
@@ -103,7 +99,9 @@ expected = [0, 1]
 why = "smallest pair"
 "#;
 
-const GENERATOR: &str = "seed = 42\nhidden_count = 4\n";
+const GENERATOR: &str = "seed = 42
+hidden_count = 6
+";
 
 const APPROVAL: &str = r#"
 slug = "two-sum"
@@ -323,7 +321,7 @@ fn assemble_sandbox_parses_hidden_and_generator() {
     assert_eq!(pack.curated.len(), 1);
     assert_eq!(pack.curated[0].1, json!([0, 1]));
     assert_eq!(pack.seed, 42);
-    assert_eq!(pack.hidden_count, 4);
+    assert_eq!(pack.hidden_count, 6);
     assert_eq!(pack.examples.len(), 2);
     assert_eq!(pack.ghosts.len(), 1);
     assert_eq!(pack.ghosts[0].program, "incorrect/adds-pair.py");
@@ -337,16 +335,16 @@ fn assemble_sandbox_parses_hidden_and_generator() {
 }
 
 #[test]
-fn assemble_sandbox_falls_back_to_meta_generator() {
+fn a_missing_generator_refuses_at_pair_validation() {
+    // X1: generator.toml is required in the assembled tree, so grimoire's pair
+    // validation refuses the pack before any sandbox data is assembled.
     let root = tempfile::tempdir().unwrap();
     let (public, private) = write_pack(root.path());
     fs::remove_file(private.join("generator.toml")).unwrap();
-    let files = read_pack(&public, Some(&private)).unwrap();
-    let manifest = files.manifest().unwrap();
-    let (record, meta) = record_and_meta(&public, &private);
-    let pack = assemble_sandbox(&record, &meta, &files, &manifest).unwrap();
-    assert_eq!(pack.seed, 1729);
-    assert_eq!(pack.hidden_count, 6);
+    match counterspell_grimoire::record::build_pair(&public, &private) {
+        Err(_) => {}
+        Ok(_) => panic!("a missing generator.toml must refuse"),
+    }
 }
 
 #[test]

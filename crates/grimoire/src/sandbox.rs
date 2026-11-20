@@ -118,9 +118,12 @@ fn check_hidden(
     limit: Duration,
     report: &mut Report,
 ) -> Result<(), RunnerError> {
+    let Some(generator) = meta.generator.as_ref() else {
+        return Ok(());
+    };
     let (Ok(seed), Ok(count)) = (
-        u64::try_from(meta.generator.seed),
-        usize::try_from(meta.generator.hidden_count),
+        u64::try_from(generator.seed),
+        usize::try_from(generator.hidden_count),
     ) else {
         return Ok(());
     };
@@ -264,6 +267,9 @@ fn check_bench(
             return Ok(());
         }
     };
+    if let Some(diagnostic) = narrow_span(&inputs) {
+        report.push(diagnostic);
+    }
     let points = runner.bench(&inputs, limit)?;
     if let Some(declared) = &meta.reference_complexity {
         if let Some(diagnostic) = compare_with_declared(declared, &points) {
@@ -296,6 +302,28 @@ fn bench_inputs(meta: &Meta, bench: &Bench) -> Result<Vec<(u64, Value)>, Diagnos
         inputs.push((n, value));
     }
     Ok(inputs)
+}
+
+/// How many times the largest bench size must exceed the lowest for the fit to reach `high`
+/// confidence (R13.4).
+const MIN_BENCH_SPAN: u64 = 32;
+
+/// A BEN-02 warning when the largest bench size is less than 32 times the lowest.
+fn narrow_span(inputs: &[(u64, Value)]) -> Option<Diagnostic> {
+    let lowest = inputs.iter().map(|(n, _)| *n).min()?;
+    let largest = inputs.iter().map(|(n, _)| *n).max()?;
+    if lowest > 0 && largest / lowest >= MIN_BENCH_SPAN {
+        return None;
+    }
+    let span = largest.checked_div(lowest).unwrap_or(0);
+    Some(Diagnostic::new(
+        codes::BEN_02,
+        "meta.toml",
+        Some("/bench/sizes"),
+        format!(
+            "the bench sizes span {span}x; use at least {MIN_BENCH_SPAN}x so the fit can reach high confidence"
+        ),
+    ))
 }
 
 /// A BEN-01 diagnostic for a bench size that cannot become an input.
@@ -494,6 +522,40 @@ mod bench_tests {
 
         assert_eq!(codes(&report), vec!["SBX-05"]);
         assert!(report.diagnostics()[0].message.contains("n^2"));
+    }
+
+    /// Linear timings for the given sizes, so only the span decides what is reported.
+    fn linear(sizes: &[u64]) -> Vec<(u64, u64)> {
+        sizes.iter().map(|&n| (n, 1000 * n)).collect()
+    }
+
+    /// R13.4: sizes spanning only 8 times cannot reach `high` confidence, so the validator warns
+    /// (BEN-02) and still times the bench.
+    #[test]
+    fn bench_sizes_spanning_less_than_32_times_warn_ben02() {
+        let meta = benched_meta("values", "[64, 128, 256, 512]");
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let mut runner = ScriptedBench(Ok(linear(&[64, 128, 256, 512])));
+        let mut report = Report::new("count-pairs");
+
+        check_bench(&meta, &bench, &mut runner, limit(), &mut report).expect("no fault");
+
+        assert_eq!(codes(&report)[0], "BEN-02");
+        assert!(report.diagnostics()[0].message.contains("8x"));
+    }
+
+    /// R13.4: a span of exactly 32 times is enough, so nothing is reported for clean linear data.
+    #[test]
+    fn bench_sizes_spanning_exactly_32_times_do_not_warn() {
+        let sizes = [32_u64, 64, 128, 256, 512, 1024];
+        let meta = benched_meta("values", "[32, 64, 128, 256, 512, 1024]");
+        let bench = meta.bench.clone().expect("the fixture declares a bench");
+        let mut runner = ScriptedBench(Ok(linear(&sizes)));
+        let mut report = Report::new("count-pairs");
+
+        check_bench(&meta, &bench, &mut runner, limit(), &mut report).expect("no fault");
+
+        assert!(report.diagnostics().is_empty(), "{:?}", codes(&report));
     }
 
     #[test]

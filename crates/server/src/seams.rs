@@ -21,6 +21,15 @@ use crate::{error::ApiError, AppState};
 pub trait UserResolver: Send + Sync {
     /// Returns the signed-in user for these headers, or `None`.
     async fn resolve(&self, headers: &HeaderMap) -> Option<UserId>;
+
+    /// Says whether `user` is still signed in for these headers. A long-lived stream calls this on
+    /// each heartbeat and closes when it is `false`, so a logout ends a stream that is already open.
+    ///
+    /// The default asks `resolve` again. A resolver that renews sessions as a side effect should
+    /// override it with a read-only check, so an open stream cannot keep a session alive.
+    async fn still_signed_in(&self, headers: &HeaderMap, user: UserId) -> bool {
+        self.resolve(headers).await == Some(user)
+    }
 }
 
 /// The production resolver until the auth spec lands. It never identifies anyone, so every

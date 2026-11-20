@@ -1,10 +1,13 @@
 //! Shared fixtures for the integration tests.
 //!
 //! No test in this crate runs the Python files in `packs/_test/`. Each file
-//! is mirrored by a Rust model function here, and the hand-traced vectors in
-//! `ghost.json` and `golden.json` tie those models to the Python source. The
-//! test binaries use different parts of this module, so unused items are
-//! allowed.
+//! is mirrored by a Rust model function here. The packs use the Grimoire
+//! two-tree format (grimoire-packs T29), so the engine's view of a pack — the
+//! schema, comparator, samples, authored ghosts, golden vectors and the
+//! per-program descriptors — is a JSON projection in
+//! `tests/fixtures/<slug>.json`, derived from the pack files and kept in sync
+//! by a grimoire-side test. The test binaries use different parts of this
+//! module, so unused items are allowed.
 
 #![allow(dead_code)]
 
@@ -125,21 +128,23 @@ fn parse_vectors(list: &Value) -> Vec<Vector> {
 
 /// Loads one pack and checks that its schema is a valid definition.
 pub fn load_pack(slug: &str) -> Pack {
-    let dir = packs_root().join(slug);
-    let ghost = read_json(&dir.join("ghost.json"));
-    let golden = read_json(&dir.join("golden.json"));
+    let projection = read_json(
+        &PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("tests/fixtures")
+            .join(format!("{slug}.json")),
+    );
 
-    let schema: Schema = serde_json::from_value(ghost["schema"].clone())
+    let schema: Schema = serde_json::from_value(projection["schema"].clone())
         .unwrap_or_else(|error| panic!("{slug}: bad schema: {error}"));
     schema
         .check_definition()
         .unwrap_or_else(|error| panic!("{slug}: schema is not a valid definition: {error}"));
-    let comparator: Comparator = serde_json::from_value(ghost["comparator"].clone())
+    let comparator: Comparator = serde_json::from_value(projection["comparator"].clone())
         .unwrap_or_else(|error| panic!("{slug}: bad comparator: {error}"));
-    let known_ghosts: Vec<KnownGhost> = serde_json::from_value(ghost["known_ghosts"].clone())
+    let known_ghosts: Vec<KnownGhost> = serde_json::from_value(projection["known_ghosts"].clone())
         .unwrap_or_else(|error| panic!("{slug}: bad known ghosts: {error}"));
 
-    let incorrect = ghost["incorrect"]
+    let incorrect = projection["incorrect"]
         .as_array()
         .expect("incorrect is an array")
         .iter()
@@ -164,20 +169,20 @@ pub fn load_pack(slug: &str) -> Pack {
 
     Pack {
         slug: slug.to_owned(),
-        problem_version: u32::try_from(ghost["problem_version"].as_u64().unwrap_or(0))
+        problem_version: u32::try_from(projection["problem_version"].as_u64().unwrap_or(0))
             .expect("problem version fits in u32"),
         schema,
         comparator,
-        concept_tags: ghost["concept_tags"]
+        concept_tags: projection["concept_tags"]
             .as_array()
             .expect("concept tags")
             .iter()
             .filter_map(|tag| tag.as_str().map(str::to_owned))
             .collect(),
-        samples: parse_vectors(&ghost["samples"]),
+        samples: parse_vectors(&projection["samples"]),
         known_ghosts,
         incorrect,
-        golden: parse_vectors(&golden["vectors"]),
+        golden: parse_vectors(&projection["golden"]["vectors"]),
     }
 }
 

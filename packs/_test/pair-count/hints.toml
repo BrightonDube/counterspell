@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Compare every position with every later position; a pair uses two different indices."
+
+[[hint]]
+rung = 2
+text = "The answer is a count, not the pairs themselves. One counter is enough."
+
+[[hint]]
+rung = 3
+text = "```\nfor i in 0..n\n  for j in i+1..n\n    if bones[i] + bones[j] == target: count += 1\n```"
+
+[[hint]]
+rung = 4
+text = "Check the loop bounds: the inner loop must start at i + 1 so an item never pairs with itself, and guard any early exit against an empty list."

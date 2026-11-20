@@ -282,7 +282,7 @@ No role is created (CAT-R1). The migration uses the same `DO` pattern as run-lif
 
 | Table | `counterspell_server` | `counterspell_judge` | Operator (owner login, D4) |
 |---|---|---|---|
-| `tracks`, `concepts`, `problems`, `problem_concepts`, `problem_versions`, `problem_examples`, `problem_starters`, `problem_hints` | `SELECT` | `SELECT` on `problems`, `problem_versions`, `problem_examples`, `problem_starters` only | all |
+| `tracks`, `concepts`, `problems`, `problem_concepts`, `problem_versions`, `problem_examples`, `problem_starters`, `problem_hints` | `SELECT` | `SELECT` on `problems`, `problem_concepts` (added 19 Nov for the Bug Autopsy concept tags), `problem_versions`, `problem_examples`, `problem_starters` only | all |
 | `hidden_tests`, `hidden_generation`, `hidden_sources`, `reference_solutions`, `known_ghosts` | **none** | `SELECT` | all |
 | `catalogue_events` | **none** | **none** | all |
 | `submissions.problem_version` and new FKs | existing grants (run-lifecycle) | existing grants | all |

@@ -16,6 +16,9 @@ pub const CANARY_EXPECTED: &str = "CANARY-EXPECTED-9b1c";
 pub const CANARY_REFERENCE: &str = "CANARY-REFERENCE-4d2e";
 /// Canary written into a known ghost.
 pub const CANARY_GHOST: &str = "CANARY-GHOST-1a8f";
+/// Canary written into the problem statement. The statement is public to learners, but it must
+/// not be copied into measured-run events, columns or speech prompts.
+pub const CANARY_STATEMENT: &str = "CANARY-STATEMENT-62d0";
 
 const TRACK: &str = "arrays";
 const CONCEPT: &str = "hash-maps";
@@ -174,7 +177,7 @@ async fn insert_version_row(pool: &PgPool, slug: &str, version: i32) -> Result<(
         "INSERT INTO problem_versions (problem_slug, version, content_sha256, manifest, title, track_slug, \
          difficulty, statement_markdown, constraints, signature, input_schema, comparator, limits, \
          engine_version, generator_version, hidden_count) \
-         VALUES ($1, $2, $3, $4, 'Two Sum', $5, 'easy', 'Statement', $6, $7, $8, 'exact', $9, \
+         VALUES ($1, $2, $3, $4, 'Two Sum', $5, 'easy', $11, $6, $7, $8, 'exact', $9, \
          'engine-1', 'gen-1', $10)",
     )
     .bind(slug)
@@ -195,6 +198,7 @@ async fn insert_version_row(pool: &PgPool, slug: &str, version: i32) -> Result<(
     .bind(json!({"type": "int", "min": 0, "max": 100}))
     .bind(json!({"time_ms": 2000, "mem_mb": 256}))
     .bind(HIDDEN_COUNT)
+    .bind(CANARY_STATEMENT)
     .execute(pool)
     .await
     .map(|_| ())

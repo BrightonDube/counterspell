@@ -4,6 +4,7 @@
   // memory only, and sends it only after the user presses the confirm button. Scanners that
   // open links therefore cannot use up the token.
   import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { browser } from '$app/env';
   import {
     AuthApiError,
@@ -120,10 +121,12 @@
       </button>
       {#if stage === 'needs_sign_in'}
         <p class="text-text-muted">
-          <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
-          <a class="text-accent-moss underline underline-offset-4" href="/login"
-            >Sign in first</a
-          >, then open this link again.
+          <a
+            class="text-accent-moss underline underline-offset-4"
+            href={resolve('/login')}
+          >
+            Sign in first
+          </a>, then open this link again.
         </p>
       {/if}
     </section>
@@ -139,9 +142,9 @@
       </p>
       <form class="space-y-4" onsubmit={requestNewLink}>
         <div class="space-y-1">
-          <label class="block text-sm text-text-muted" for="new-link-email"
-            >Email address</label
-          >
+          <label class="block text-sm text-text-muted" for="new-link-email">
+            Email address
+          </label>
           <input
             id="new-link-email"
             class={fieldClass}

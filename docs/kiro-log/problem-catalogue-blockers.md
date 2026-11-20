@@ -153,3 +153,107 @@ Working tree at the start of this run: only automation log files and `docs/KIRO_
 ## 17 Nov 2026 - grimoire-packs T20 verify-line amendment
 
 T20's verify line named `counterspell-grimoire validate packs/count-pairs --sandbox`. After the pack-tree split (0330f58/176cf9a, purged history), `reference/`, `incorrect/` and `known_ghosts.toml` live only in the private checkout, so the single-tree `validate` can no longer load a starter pack. The verify line now reads `counterspell-catalogue validate-sandbox <slug> --private-root <checkout>`, which runs `validate_sandbox_pair` over the merged pair - the same checks, on the production path. Evidence: `sbx_pack_runner::starter_packs_pass_sandbox_checks_with_the_real_runner` (114 s, real daemon) passes all three packs through `validate_sandbox_pair`.
+
+## 19 Nov 2026 (Brighton): C00a, C39, C33 updates
+- **C00a ticked:** `BrightonDube/counterspell-packs-private` and deploy key `~/.config/counterspell/packs-private-deploy-key` already verified (15 Nov 2026).
+- **C39 ticked:** Brighton approved `count-pairs`, `diagonal-total`, `longest-run-length`; `packs/<slug>/approval.toml` written in `counterspell-packs-private` and verified via `counterspell-catalogue import --static-only --dry-run` (all 3 accepted: `6117438e8c95`, `075a3ea68459`, `a2188cd18387`).
+- **C33 unblocked:** `GhostLookup` uses `submissions.ghost_source_id` / `submissions.ghost_input` (established by `ide-workspace` T02/T25).
+
+## Unblock decisions, 20 Nov 2026 (Brighton, in chat)
+
+- **PA08 (X1/X2).** Brighton approved the drafted amendment with edits; the approved
+  text is recorded in `.kiro/specs/grimoire-packs/tasks.md` under "Amendment X1 + X2
+  (approved by Brighton, 2026-11-20)". PA08 proceeds.
+- **PA20 open questions.** Brighton confirmed the assumed answers: Q3 = private repo
+  `BrightonDube/counterspell-packs-private` with a read-only deploy key kept outside the
+  repo (already in place since 15 Nov); Q6 = the originality list lives in the private
+  repo (drafted from `docs/licence-rules.md` in this session, Brighton to review);
+  Q7 = authoring agents do not open third-party problem statements.
+- **PA27.** Brighton approved the code-running tools for this session (PIP-39): the
+  agent runs S10 and S11 for the three launch packs through the real rootless sandbox
+  and records the image digests in each pack's state.
+- **PA28.** The launch packs are `published`; the approval commit and `approval.toml`
+  were confirmed by Brighton on 18 Nov and the importer accepts the recorded hashes
+  (verified 20 Nov). The task's verify legs are met.
+- **Grimoire T29.** Brighton's call on design open question 11: convert `packs/_test/`
+  to the two-tree format now (ghost-engine has shipped).
+- **Catalogue C40.** Brighton chose full rotation: every hidden value published in
+  public git history at grimoire T21–T23 (known-ghost inputs/got values, the reference
+  and the incorrect programs) is retired; all three packs get new hidden cases, a new
+  generator seed and a `pack_version` bump. Open question 21: do NOT rewrite public
+  git history — rotation invalidates the leaked values.
+- **MCP T16/T17.** The agent runs the scripted find/fix/re-verify session through
+  kiro-cli and files the transcript under `docs/kiro-log/chats/`; screenshot captures
+  for T17 remain Brighton's leg in the Kiro IDE.
+- **Deploy T23–T32.** The shared-host path superseded the dedicated-VPS order: the host
+  (15.204.92.66, shared with Evorayn) answers SSH with publickey-only auth, Caddy is
+  live, the four `production` environment secrets and `DEPLOY_ENABLED=true` are set, and
+  Deploy runs queue behind the environment's required reviewers. Remote evidence is
+  recorded in `deploy/vps/verification-report.md`; legs that need an on-host session
+  (rootless facts, env file modes, Postgres roles, backup/restore, monitors, rollback
+  rehearsal) stay marked as recorded there — nothing is claimed without evidence.
+
+## C40 rotation mechanics — done by agent, records pending Brighton (2026-11-20)
+
+The rotation's mechanical work is complete; the records and re-approval are
+Brighton's writes per the spec (C40: "Brighton records each retired hidden
+value's SHA-256" and "agents do not write the `[[rotated]]` record").
+
+**Done in the trees**
+
+- Public metas: `[generator]` table removed (X1: it is private-only and would
+  now be LAY-05); `pack_version` bumped 4→5 (count-pairs), 5→6
+  (diagonal-total), 6→7 (longest-run-length); `status` set back to `draft`
+  because the recorded approvals cover the old versions — rotation needs
+  Brighton's re-approval (grimoire T28 / PIP-35).
+- Private repo (uncommitted, in `/home/brighton/code/counterspell-packs-private`):
+  `generator.toml` with new seeds (4815 / 6072 / 8934 — old seeds 1729 / 2718 /
+  3141 leaked at T21–T23) and fresh `hidden.toml` curated sets (4 / 4 / 5
+  cases, hand-derived, all validate clean).
+- `_demo/mcp-dogfood` migrated the same way: `[generator]` moved out of the
+  public meta into the private `generator.toml`.
+
+**Leaked-value audit**
+
+- `hidden.toml` and `generator.toml` were NEVER committed publicly
+  (`git log --diff-filter=A` confirms zero public history).
+- Leaked: the three `[generator]` seeds (1729/2718/3141) and the six
+  known-ghost input/got pairs, at grimoire T21–T23.
+- The leaked seeds let anyone regenerate the old generated cases; the new
+  seeds retire that whole class. The curated `[[case]]` sets are new.
+
+**Proposed `retired-values.toml` content (Brighton writes)**
+
+Each `[[retired]]` sha256 is `canonical_hash(input, expected)` from
+`crates/judge/src/catalogue/retired.rs`. For every leaked ghost the input is
+retired with its true answer (so the leaked input can never return as a
+hidden case); the three wrong-answer ghosts additionally retire the literal
+leaked (input, got) pair.
+
+- count-pairs — `same-index` input `[[0], 0]` (correct 0, leaked got 1):
+  `71b3f088054cd962bfac6c2f6475ad6580947168fa448f6b0411cb769945267c`,
+  `733e1974103028bd96ea470260f9823c7005b0b53ec921c4e35cde1221ca139b`
+- count-pairs — `empty-min` input `[[], 0]` (correct 0):
+  `41ef8b5a8af27e052042d040904325971b62ccc8a020632269c718b0e7c27cec`
+- longest-run-length — `forgot-last-run` input `["a"]` (correct 1, got 0):
+  `c44d245ca0a07a179438471af81c0888e4c541dfbf9b23e741819f87494fbf54`,
+  `efb49a0fef08a0f67fcca6755db13ae0bb3173c80c965704c81dbd4a095897b5`
+- longest-run-length — `empty-first-char` input `[""]` (correct 0):
+  `ea54ac556f1bf03c25620539b9fe37e11ede28ded5a9f23151c6b6c3cac11a50`
+- diagonal-total — `abs-diagonal` input `[[[-1]]]` (correct -1, got 1):
+  `58ee6bc87139911f47ce28ac246c1e806f6846f0cb8820821ee2b4a187d97485`,
+  `8e382855831c8784fb9d58ec93e9ad21f70dca7b95ee04c6c35083a51bb89760`
+- diagonal-total — `assumes-square` input `[[[]]]` (correct 0):
+  `930d6f0b9b402763552c4ff58c9ca658baf3fc7b13042442a1b6e953f91339a6`
+
+`[[rotated]]` records needed (Brighton writes):
+`count-pairs` pack_version 5, `diagonal-total` pack_version 6,
+`longest-run-length` pack_version 7, all `rotated_on = "2026-11-20"`.
+
+**Still Brighton's legs for C40/PA28**
+
+- Paste the `[[retired]]` entries (or authorize me to write them), write the
+  three `[[rotated]]` records, and re-approve the rotated packs (new
+  `approval.toml` content hashes + `status = "published"`).
+- The stale `approval.toml` files (v4/v5/v6 hashes) intentionally remain —
+  they record the approvals that did happen for those versions.

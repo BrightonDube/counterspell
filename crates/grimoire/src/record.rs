@@ -8,8 +8,10 @@ use crate::limits::Limits;
 use crate::meta::{self, Bench, Param};
 use crate::pack;
 use crate::report::Report;
+use crate::signature::LaunchType;
 use crate::validate_static;
 use counterspell_engine::{Comparator, Schema};
+use serde_json::{json, Value};
 use std::io;
 use std::path::Path;
 
@@ -79,6 +81,44 @@ pub struct ProblemRecord {
     pub version: u32,
     /// The concept tags.
     pub concepts: Vec<String>,
+}
+
+/// Maps a `meta.toml` type name to a driver-protocol `{"kind": ...}` descriptor.
+fn type_descriptor(name: &str) -> Result<Value, String> {
+    match LaunchType::parse(name) {
+        Some(LaunchType::Int) => Ok(json!({"kind": "int"})),
+        Some(LaunchType::Str) => Ok(json!({"kind": "string"})),
+        Some(LaunchType::IntArray) => Ok(json!({"kind": "list", "items": {"kind": "int"}})),
+        Some(LaunchType::Matrix) => Ok(json!({
+            "kind": "list",
+            "items": {"kind": "list", "items": {"kind": "int"}}
+        })),
+        None => Err(name.to_owned()),
+    }
+}
+
+/// Builds the driver-protocol signature the judge writes to `signature.json` in the sandbox.
+///
+/// Parameters and the return type carry `{"kind": ...}` descriptors, not `meta.toml` type
+/// strings.
+///
+/// # Errors
+///
+/// Returns the name of the first type that is not a launch type.
+pub fn signature_descriptor(signature: &Signature) -> Result<Value, String> {
+    let parameters = signature
+        .params
+        .iter()
+        .map(|param| {
+            type_descriptor(&param.kind).map(|kind| json!({"name": param.name, "type": kind}))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(json!({
+        "protocol_version": 1,
+        "function": signature.function,
+        "parameters": parameters,
+        "returns": type_descriptor(&signature.returns)?,
+    }))
 }
 
 /// Why a record could not be built.

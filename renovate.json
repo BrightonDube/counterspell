@@ -1,17 +1,38 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "description": "Weekly grouped dependency updates: Cargo, npm, Docker and GitHub Actions, plus the digest refresh for the enabled sandbox images in languages/languages.toml (judge-sandbox T38). Sandbox images get digest-only updates, one pull request per refresh, no auto-merge — a human reviews, merges, then `counterspell-judge preflight` runs on the VPS before user runs resume.",
-  "extends": ["config:recommended"],
-  "schedule": ["before 05:00 on Monday"],
+  "description": "Weekly grouped dependency updates: Cargo, npm, Docker and GitHub Actions, plus the digest refresh for the enabled sandbox images in languages/languages.toml (judge-sandbox T38). Sandbox images get digest-only updates, one pull request per refresh, no auto-merge \u2014 a human reviews, merges, then `counterspell-judge preflight` runs on the VPS before user runs resume.",
+  "extends": [
+    "config:recommended"
+  ],
+  "schedule": [
+    "before 05:00 on Monday"
+  ],
   "automerge": false,
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "customManagers": [
     {
       "customType": "regex",
       "description": "Pinned digests of enabled sandbox images in languages.toml",
-      "managerFilePatterns": ["/^languages\\/languages\\.toml$/"],
+      "managerFilePatterns": [
+        "/^languages\\/languages\\.toml$/"
+      ],
       "matchStrings": [
         "enabled = true\\nimage = \"(?<depName>[a-z0-9][a-z0-9_.\\-/]*):(?<currentValue>[a-zA-Z0-9_.\\-]+)@(?<currentDigest>sha256:[0-9a-f]{64})\""
+      ],
+      "datasourceTemplate": "docker",
+      "versioningTemplate": "docker"
+    },
+    {
+      "customType": "regex",
+      "description": "Pinned @sha256 digests of third-party images in the compose files (deploy-ops T20)",
+      "managerFilePatterns": [
+        "/^deploy\\/vps\\/compose\\.prod\\.yml$/",
+        "/^docker-compose\\.yml$/"
+      ],
+      "matchStrings": [
+        "image:\\s+\\\"?(?<depName>[a-z0-9][a-z0-9_.\\-/]*):(?<currentValue>[a-zA-Z0-9_.\\-]+)@(?<currentDigest>sha256:[0-9a-f]{64})\\\"?"
       ],
       "datasourceTemplate": "docker",
       "versioningTemplate": "docker"
@@ -20,40 +41,76 @@
   "packageRules": [
     {
       "description": "Sandbox images: digest-only updates, never a tag bump, one grouped PR per refresh",
-      "matchDatasources": ["docker"],
-      "matchFileNames": ["languages/**"],
-      "matchUpdateTypes": ["major", "minor", "patch", "pin", "rollback", "replacement"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchFileNames": [
+        "languages/**"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor",
+        "patch",
+        "pin",
+        "rollback",
+        "replacement"
+      ],
       "enabled": false
     },
     {
       "description": "One pull request per weekly digest refresh",
-      "matchDatasources": ["docker"],
-      "matchFileNames": ["languages/**"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchFileNames": [
+        "languages/**"
+      ],
       "groupName": "enabled sandbox image digests"
     },
     {
       "description": "Cargo crates, grouped weekly",
-      "matchManagers": ["cargo"],
+      "matchManagers": [
+        "cargo"
+      ],
       "groupName": "cargo dependencies",
       "groupSlug": "cargo"
     },
     {
       "description": "npm packages (web/), grouped weekly",
-      "matchManagers": ["npm"],
+      "matchManagers": [
+        "npm"
+      ],
       "groupName": "npm dependencies",
       "groupSlug": "npm"
     },
     {
       "description": "Docker image pins in Dockerfiles and compose files, grouped weekly",
-      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchManagers": [
+        "dockerfile",
+        "docker-compose"
+      ],
       "groupName": "Docker images",
       "groupSlug": "docker"
     },
     {
       "description": "GitHub Actions, grouped weekly",
-      "matchManagers": ["github-actions"],
+      "matchManagers": [
+        "github-actions"
+      ],
       "groupName": "GitHub Actions",
       "groupSlug": "github-actions"
+    },
+    {
+      "description": "Production compose digests: digest-only updates, one pull request per refresh, never auto-merged (Q20, R11.2)",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchFileNames": [
+        "deploy/vps/**",
+        "docker-compose.yml"
+      ],
+      "groupName": "production image digests",
+      "automerge": false
     }
   ]
 }

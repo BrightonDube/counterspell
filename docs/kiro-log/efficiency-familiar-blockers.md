@@ -215,3 +215,16 @@ Open non-stretch tasks and the reason each stays open:
 No code change this run. The grimoire test suite passes at 16 of 16.
 
 ### verify all, 16 Nov 2026: T24 stays open: the 'sizes span less than 32x' warning and the BEN-01 unique-size case are still missing in crates/grimoire (only the BEN_01 code constant exists). Also, the main tree holds uncommitted judge bench work (crates/judge/src/sandbox/bench.rs, tests/sbx_bench.rs, model_bench.rs) that fails 'cargo fmt --check' and clippy (manual_async_fn, cast_precision_loss in bench.rs:276). Not touched by verify; fix before it is committed under T25.
+
+## kiro/drive-queue run (20 Nov 2026)
+- **Decision (routine, under the standing "decide and record" rule; Brighton may overrule):** R13.4's bench-span warning is `BEN-02` (warning), emitted by `check_bench` when the largest bench size is less than 32 times the lowest. The bench still runs. The codes test now lists four warnings (`test-change: PCK-2`). No pack in `packs/` declares a `[bench]` yet, so no import changes.
+- T24 ticked: the BEN-01 `unique` case and the `Low` ("not confirmed") case were already tested by an earlier run; BEN-02 adds the span warning. SBX-08 is no longer emitted anywhere.
+- T22 and T25: the judge-sandbox runner and language-drivers bench (T08, T09) are now done, so these are no longer blocked on them. Next run.
+
+## T22 partial (kiro/drive-queue run)
+- Done and tested: `familiar::baseline_cmd` (`run_baseline`, `admit`, `Refusal`, `BaselineStore`, `exit_code`): admits only a full-mode fit at `Medium` or better that equals the declared class; refuses mismatch, `Low`, incomplete and failed benches; idempotent through the store's `ON CONFLICT DO NOTHING`; faults are errors (exit 2). 6 unit tests.
+- Still open, so T22 stays `[ ]`: the `baseline --problem --lang` dispatch in `main.rs`. It must load the pack's signature, bench spec and known-correct fixture, build the sandbox session and `SandboxBenchCollector`, resolve the image digest, and call `run_baseline` with the `PgPool`. It needs a real rootless daemon to prove and a published pack with a `[bench]` (none declares one yet, see T40).
+
+## T22 done (kiro/drive-queue run)
+- `baseline --problem <slug> --lang <lang> [--fixture <path>]` dispatch landed and T22 is ticked. Evidence: unit 9/9 (`baseline_cmd`), `pg_published_version_is_the_served_version_or_nothing` and `pg_baseline_*` 5/5, `sbx_baseline` 2/2 on the rootless daemon, 12 of 12 repeat runs.
+- Note for T40 (real admission run): on this WSL host, noisy linear fixtures come back `Low` (plausible linear and n log n) even across a 32x span. The admission correctly refuses them. Launch problems with a linear reference may need wider bench sizes, or the operator may re-run on the quiet VPS. This is a pack/bench-size question for T40, not a code fault.

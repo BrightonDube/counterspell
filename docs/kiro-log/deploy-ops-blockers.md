@@ -78,3 +78,37 @@ Items that need Brighton, another spec, or a decision Kiro may not take alone. E
 - Outbound SSH works in general (`github.com:22` open) but BOTH `15.204.92.66:22` and the Bizpilot EC2 `22` are filtered — consistent with our egress IP being blocked host-side (fail2ban ban, or an SSH allowlist tied to an older home IP).
 - Needs Brighton: check fail2ban/`aa-status` from the OVH console or another network, unban or allowlist the current IP, or confirm a different SSH port. Steps 2 and 3 (check-mode plan and first deploy) wait on this.
 - All four `production` environment secrets exist: DEPLOY_HOST, DEPLOY_PORT, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS. `DEPLOY_ENABLED` repository variable is not set.
+
+## Unblock decisions, 20 Nov 2026 (Brighton, in chat)
+
+- **PA08 (X1/X2).** Brighton approved the drafted amendment with edits; the approved
+  text is recorded in `.kiro/specs/grimoire-packs/tasks.md` under "Amendment X1 + X2
+  (approved by Brighton, 2026-11-20)". PA08 proceeds.
+- **PA20 open questions.** Brighton confirmed the assumed answers: Q3 = private repo
+  `BrightonDube/counterspell-packs-private` with a read-only deploy key kept outside the
+  repo (already in place since 15 Nov); Q6 = the originality list lives in the private
+  repo (drafted from `docs/licence-rules.md` in this session, Brighton to review);
+  Q7 = authoring agents do not open third-party problem statements.
+- **PA27.** Brighton approved the code-running tools for this session (PIP-39): the
+  agent runs S10 and S11 for the three launch packs through the real rootless sandbox
+  and records the image digests in each pack's state.
+- **PA28.** The launch packs are `published`; the approval commit and `approval.toml`
+  were confirmed by Brighton on 18 Nov and the importer accepts the recorded hashes
+  (verified 20 Nov). The task's verify legs are met.
+- **Grimoire T29.** Brighton's call on design open question 11: convert `packs/_test/`
+  to the two-tree format now (ghost-engine has shipped).
+- **Catalogue C40.** Brighton chose full rotation: every hidden value published in
+  public git history at grimoire T21–T23 (known-ghost inputs/got values, the reference
+  and the incorrect programs) is retired; all three packs get new hidden cases, a new
+  generator seed and a `pack_version` bump. Open question 21: do NOT rewrite public
+  git history — rotation invalidates the leaked values.
+- **MCP T16/T17.** The agent runs the scripted find/fix/re-verify session through
+  kiro-cli and files the transcript under `docs/kiro-log/chats/`; screenshot captures
+  for T17 remain Brighton's leg in the Kiro IDE.
+- **Deploy T23–T32.** The shared-host path superseded the dedicated-VPS order: the host
+  (15.204.92.66, shared with Evorayn) answers SSH with publickey-only auth, Caddy is
+  live, the four `production` environment secrets and `DEPLOY_ENABLED=true` are set, and
+  Deploy runs queue behind the environment's required reviewers. Remote evidence is
+  recorded in `deploy/vps/verification-report.md`; legs that need an on-host session
+  (rootless facts, env file modes, Postgres roles, backup/restore, monitors, rollback
+  rehearsal) stay marked as recorded there — nothing is claimed without evidence.

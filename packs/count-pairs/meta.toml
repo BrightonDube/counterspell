@@ -1,16 +1,18 @@
 slug = "count-pairs"
 title = "Count the Pairs"
-status = "published"
+status = "draft"
 difficulty = "easy"
 track = "arrays"
 concepts = ["arrays", "pairs", "nested-loops"]
 origin = "original"
 author = "Brighton"
 licence = "MIT"
-pack_version = 1
+pack_version = 5
 function = "count_pairs"
 returns = "int"
 comparator = "exact"
+reference_complexity = "n^2"
+complexity_note = "The reference counts pairs with two nested loops; a hash-set solution is linear and benches better."
 
 [[params]]
 name = "values"
@@ -31,10 +33,6 @@ items = [
   { type = "int", min = -100, max = 100 },
 ]
 
-[generator]
-seed = 1729
-hidden_count = 12
-
 [[samples]]
 input = [[1, 2, 3, 2], 4]
 expected = 2
@@ -46,3 +44,7 @@ expected = 1
 [[samples]]
 input = [[-3, 3, 0], 0]
 expected = 1
+
+[bench]
+size_param = "values"
+sizes = [128, 512, 2048, 4096]

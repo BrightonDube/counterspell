@@ -1,0 +1,551 @@
+{
+  "viewport": "1024x768",
+  "marks": {
+    "workspace-shell-interactive": 874,
+    "problem-detail-loaded": 870,
+    "monaco-ready": 22697,
+    "run-first-event": 23932,
+    "run-terminal": 25205,
+    "ghost-playback-start": 25257,
+    "ghost-playback-end": 26007
+  },
+  "durations": {
+    "shellToEditorMs": 21823,
+    "firstEventToTerminalMs": 1273,
+    "ghostPlaybackMs": 750
+  },
+  "scripts": [
+    {
+      "path": "/auth/verify",
+      "file": "payload.DSmR2FwN.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "B5QgHAly.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "DclECHGd.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "D6qSP9jk.js",
+      "kb": 40,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "DkmIG_Z5.js",
+      "kb": 50,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "app.dvhkrMv3.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "t-OqTNiS.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "DcMeFTPS.js",
+      "kb": 4,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "start.BzSo4htp.js",
+      "kb": 1,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "0.DO52BW1T.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "DK3Fl9T5.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "1.B0HyD38A.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "DaytmalI.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "wEh5leA4.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "KaX8viww.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "2vRH4xXG.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "3.BWsvhqnM.js",
+      "kb": 4,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/auth/verify",
+      "file": "BnNOkrXr.js",
+      "kb": 3,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "2.C3mh11HT.js",
+      "kb": 12,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "C2W12wA9.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "start.BzSo4htp.js",
+      "kb": 1,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "payload.DSmR2FwN.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "DclECHGd.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "B5QgHAly.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "D6qSP9jk.js",
+      "kb": 40,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "DkmIG_Z5.js",
+      "kb": 50,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "DcMeFTPS.js",
+      "kb": 4,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "t-OqTNiS.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "app.dvhkrMv3.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "0.DO52BW1T.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "DK3Fl9T5.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "2.C3mh11HT.js",
+      "kb": 12,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "KaX8viww.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "wEh5leA4.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "1.B0HyD38A.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "DaytmalI.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/",
+      "file": "C2W12wA9.js",
+      "kb": 69,
+      "monaco": false,
+      "gsap": true
+    },
+    {
+      "path": "/",
+      "file": "Dg2oAicK.js",
+      "kb": 42,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "start.BzSo4htp.js",
+      "kb": 1,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "payload.DSmR2FwN.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "DclECHGd.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "B5QgHAly.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "D6qSP9jk.js",
+      "kb": 40,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "DkmIG_Z5.js",
+      "kb": 50,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "DcMeFTPS.js",
+      "kb": 4,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "t-OqTNiS.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "app.dvhkrMv3.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "0.DO52BW1T.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "DK3Fl9T5.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "1.B0HyD38A.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "KaX8viww.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "DaytmalI.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems",
+      "file": "wEh5leA4.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "start.BzSo4htp.js",
+      "kb": 1,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "payload.DSmR2FwN.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "DclECHGd.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "B5QgHAly.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "D6qSP9jk.js",
+      "kb": 40,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "DkmIG_Z5.js",
+      "kb": 50,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "DcMeFTPS.js",
+      "kb": 4,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "t-OqTNiS.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "app.dvhkrMv3.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "0.DO52BW1T.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "DK3Fl9T5.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "1.B0HyD38A.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "KaX8viww.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "DaytmalI.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "wEh5leA4.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "B59oQgEZ.js",
+      "kb": 2,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "Bqhih1g-.js",
+      "kb": 5,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "6.gykg444T.js",
+      "kb": 61,
+      "monaco": true,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "bNqQuQVr.js",
+      "kb": 1265,
+      "monaco": true,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "BTOX-zOx.js",
+      "kb": 2671,
+      "monaco": true,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "C8XR7dMF.js",
+      "kb": 3,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "editor.worker-CRz__AKW.js",
+      "kb": 297,
+      "monaco": false,
+      "gsap": false
+    },
+    {
+      "path": "/problems/add-two",
+      "file": "C2W12wA9.js",
+      "kb": 0,
+      "monaco": false,
+      "gsap": false
+    }
+  ]
+}

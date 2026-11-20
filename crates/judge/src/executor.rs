@@ -206,6 +206,9 @@ impl RunContext {
 
     /// The queue's database pool, when this context writes to one. Baseline reads
     /// need it; a recording context has none.
+    // Without `testkit` the only sink is the queue, so the `Option` is always `Some`. It is real
+    // API when `testkit` adds the recording sink, so the lint is allowed only in that build.
+    #[cfg_attr(not(feature = "testkit"), allow(clippy::unnecessary_wraps))]
     pub(crate) fn pool(&self) -> Option<&PgPool> {
         match &self.sink {
             Sink::Queue { pool, .. } => Some(pool),

@@ -36,7 +36,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 2: judge runner library and boundary
 
-- [ ] **T05 [S] (30 min) Add a reusable library target to `counterspell-judge`**
+- [x] **T05 [S] (30 min) Add a reusable library target to `counterspell-judge`**
   - Files: `crates/judge/Cargo.toml`, `crates/judge/src/lib.rs`, `crates/judge/src/runner/**`, `crates/judge/src/main.rs` only as needed.
   - Share the production sandbox runner between the worker binary and MCP. Keep the sandbox Docker client in judge code and connect only to the separate rootless sandbox daemon.
   - Preserve: no main Docker socket, no public port, no host interpreter, no Docker CLI, and no weakening of production limits.
@@ -73,7 +73,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T03, T04, T07, and T08.
   - Verify: tool outputs match Grimoire/engine reports and can be safely auto-approved.
 
-- [ ] **T10 [S] (30 min) Implement code-running tools through the judge**
+- [x] **T10 [S] (30 min) Implement code-running tools through the judge**
   - Files: `crates/mcp/src/tools.rs`, `crates/mcp/src/judge_adapter.rs`, judge runner integration only as needed.
   - Implement `run_reference`, `find_ghost_input`, and `shrink_input` with explicit sandbox-backed descriptions, production-compatible budgets, trusted comparator, cleanup, and error mapping.
   - Preserve: no host Python/Node/shell, no direct Docker access from MCP, same production images/limits, and no auto-approval.
@@ -82,7 +82,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 4: Power packaging and workspace registration
 
-- [ ] **T11 [P] (25 min) Create the Agent Plugins Power manifest**
+- [x] **T11 [P] (25 min) Create the Agent Plugins Power manifest**
   - Files: `kiro-power/plugin.json`, `kiro-power/mcp.json`.
   - Add the Counterspell identity, description, required keywords, repository-relative stdio command, tool registration, and the exact pure-tool auto-approval list.
   - Preserve: no machine-specific absolute paths, credentials, or auto-approved execution tools.
@@ -103,7 +103,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T10 and T11.
   - Verify: a reviewer can follow the skill without inventing an unsupported tool or execution path.
 
-- [ ] **T14 [S] (20 min) Register the workspace MCP server**
+- [x] **T14 [S] (20 min) Register the workspace MCP server**
   - Files: `.kiro/settings/mcp.json`.
   - Register `counterspell-mcp` with the same command and working-directory strategy as the Power. Auto-approve only `validate_pack`, `explain_verdict`, and `fit_complexity`.
   - Preserve: no secrets and no execution tool in `autoApprove`.
@@ -112,7 +112,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 5: dogfood pack and evidence
 
-- [ ] **T15 [P] (30 min) Create the private dogfood pack**
+- [x] **T15 [P] (30 min) Create the private dogfood pack**
   - Files: `packs/_demo/mcp-dogfood/**` and pack tests/fixtures only where the approved Grimoire layout requires them.
   - Add original problem text, metadata with `dogfood = true`, correct reference, deliberately buggy implementation, hints, and optional known ghost. Keep `packs/_test/` unchanged and ensure public import skips this directory.
   - Preserve: no host execution of the Python files; no hidden data in the pack or diagnostics.
@@ -135,14 +135,14 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 6: final verification
 
-- [ ] **T18 [S] (25 min) Validate package/config boundaries**
+- [x] **T18 [S] (25 min) Validate package/config boundaries**
   - Files: tests and validation scripts in the relevant existing packages only.
   - Run Power manifest checks, MCP settings checks, path/security scans, dependency/licence checks, and verify that no execution tool is auto-approved.
   - Preserve: exactly six Cargo packages and no main Docker socket in MCP/server configuration.
   - Depends on: T09, T10, T11, T12, T13, T14, and T17.
   - Verify: all static checks pass and every security invariant in requirements is covered by a test or documented target-host check.
 
-- [ ] **T19 [S] (30 min) Run the complete MCP and sandbox verification**
+- [x] **T19 [S] (30 min) Run the complete MCP and sandbox verification**
   - Files: only implementation fixes required by failing checks; no unrequested refactors.
   - Run fmt, Clippy with warnings denied, workspace/package tests, MCP protocol tests, fake-runner tests, Power/config tests, static pack validation, and the real sandbox smoke test with the separate rootless daemon.
   - Preserve: infrastructure errors remain distinct, no host fallback exists, and the sandbox daemon is not the main Compose daemon.

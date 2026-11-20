@@ -80,6 +80,20 @@ async fn sbx_s15c_killing_itself_is_a_runtime_error() {
     assert_eq!(verdict, Verdict::RuntimeError);
 }
 
+/// S15 — closing both output fds while staying alive ends the exec stream with no exit
+/// code. That must surface as a user verdict at the deadline, not as an infrastructure
+/// error (judge-sandbox T39 review, Important 2).
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
+async fn sbx_s15e_closing_both_fds_and_staying_alive_is_a_time_limit() {
+    let verdict = run_hostile("close_both_fds.py").await;
+    assert_eq!(
+        verdict,
+        Verdict::TimeLimit,
+        "a program that hides its streams is cut at the deadline"
+    );
+}
+
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 async fn sbx_s15d_closing_stdout_is_a_runtime_error_not_a_hang() {

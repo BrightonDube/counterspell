@@ -6,6 +6,10 @@
   import Hero from '../lib/landing/Hero.svelte';
   import SignUpCta from '../lib/landing/SignUpCta.svelte';
   import { HEADLINE, INTRO_BODY, SUPPORT_LINE } from '../lib/landing/copy';
+  import {
+    HERO_POSTER_SIZES,
+    HERO_POSTER_SRCSET
+  } from '../lib/landing/hero-media';
   // Vite fingerprints the font, so this URL matches the one the @font-face rule in app.css uses.
   import creepsterUrl from '../../static/fonts/Creepster-Regular.woff2?url';
 
@@ -56,6 +60,15 @@
     as="font"
     type="font/woff2"
     crossorigin="anonymous"
+  />
+  <!-- The poster is the largest paint. Start it with the CSS, not after it. -->
+  <link
+    rel="preload"
+    as="image"
+    type="image/webp"
+    imagesrcset={HERO_POSTER_SRCSET}
+    imagesizes={HERO_POSTER_SIZES}
+    fetchpriority="high"
   />
 
   <meta

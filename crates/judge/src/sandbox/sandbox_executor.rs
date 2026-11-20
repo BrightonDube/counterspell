@@ -443,22 +443,13 @@ impl<P: ProblemTests, B: Backend + Clone + Send + Sync + 'static> RunExecutor
             kill_slack: self.config.kill_slack,
             max_consecutive_abnormal: self.config.max_consecutive_abnormal,
         };
-        let worker = self.worker.clone();
-        let expires = expiry(self.config.orphan_age);
-        let run_cap = self.config.run_wall_cap;
-        let runtime = self.config.runtime;
-        let session_spec = |ordinal: u32| {
-            SessionSpec::new(
-                lang,
-                run_cap,
-                runtime,
-                run.run_id.as_uuid(),
-                &worker,
-                ordinal,
-                expires,
-            )
-            .map_err(|error| InfraError::Unexpected(error.to_string()))
-        };
+        let session_spec = attempt_namer(
+            lang,
+            &self.config,
+            &self.worker,
+            run.run_id.as_uuid(),
+            ctx.attempt(),
+        );
         let (result, session) = execute_run_and_keep(
             &self.backend,
             lang,
@@ -753,6 +744,26 @@ fn plan_of(spec: &ProblemSpec, lang: &LanguageDefinition) -> Vec<PlannedTest> {
         .collect()
 }
 
+/// Names the sessions of one attempt of a run. The attempt is in the name, so a retry never
+/// collides with a container that a crashed earlier attempt left on the daemon.
+fn attempt_namer<'a>(
+    lang: &'a LanguageDefinition,
+    config: &SandboxConfig,
+    worker: &'a str,
+    run: uuid::Uuid,
+    attempt: u16,
+) -> impl Fn(u32) -> Result<SessionSpec, InfraError> + 'a {
+    let expires = expiry(config.orphan_age);
+    let run_cap = config.run_wall_cap;
+    let runtime = config.runtime;
+    move |ordinal: u32| {
+        SessionSpec::for_attempt(
+            lang, run_cap, runtime, run, worker, attempt, ordinal, expires,
+        )
+        .map_err(|error| InfraError::Unexpected(error.to_string()))
+    }
+}
+
 /// The unix time after which a container counts as an orphan: now plus the orphan age,
 /// matching the sweeper's `created_at + orphan_age` rule.
 fn expiry(orphan_age: Duration) -> i64 {
@@ -818,5 +829,42 @@ fn final_verdict(verdict: FinalVerdict) -> Verdict {
         FinalVerdict::RuntimeError | FinalVerdict::Stopped | FinalVerdict::Incomplete => {
             Verdict::RuntimeError
         }
+    }
+}
+
+#[cfg(test)]
+mod attempt_namer_tests {
+    use std::time::Duration;
+
+    use super::attempt_namer;
+    use crate::languages::LanguageCatalog;
+    use crate::sandbox::config::{OciRuntime, SandboxConfig};
+
+    /// IDE-3 (criterion 7): the executor's namer gives a retried attempt different container
+    /// names from the attempt a crashed worker left behind.
+    #[test]
+    fn two_attempts_of_one_run_get_different_names() {
+        let root =
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../languages/languages.toml");
+        let catalog = LanguageCatalog::load(&root).expect("the shipped catalogue loads");
+        let python = catalog.get("python").expect("python is in the catalogue");
+        let config = SandboxConfig {
+            docker_socket: root.with_file_name("unused.sock"),
+            runtime: OciRuntime::Runc,
+            max_containers: 4,
+            reaper_interval: Duration::from_secs(10),
+            orphan_age: Duration::from_secs(40),
+            kill_slack: Duration::from_millis(500),
+            run_wall_cap: Duration::from_secs(20),
+            max_consecutive_abnormal: 3,
+            cleanup_budget: Duration::from_secs(5),
+            api_timeout: Duration::from_secs(30),
+            languages_file: root.clone(),
+        };
+        let run = uuid::Uuid::from_u128(7);
+        let first = attempt_namer(python, &config, "worker-1", run, 1)(0).expect("spec builds");
+        let retry = attempt_namer(python, &config, "worker-1", run, 2)(0).expect("spec builds");
+        assert_eq!(first.name, format!("cs-sbx-{run}-a1-0"));
+        assert_eq!(retry.name, format!("cs-sbx-{run}-a2-0"));
     }
 }

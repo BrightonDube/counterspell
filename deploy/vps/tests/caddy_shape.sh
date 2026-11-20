@@ -44,6 +44,9 @@ expect 'Content-Security-Policy' "Content-Security-Policy header (report-only un
 expect '-Server' "Server header is removed"
 
 # Compression stays on the normal routes.
+expect 'request>uri query' "auth callback log filter strips secret query values (R6.5)"
+expect 'replace token REDACTED' "verify-link token is redacted in the access log"
+
 expect 'encode zstd gzip' "compression is kept for normal routes"
 
 if ((failures > 0)); then

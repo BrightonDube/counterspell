@@ -31,8 +31,8 @@ pub struct Measured<'a> {
     pub confidence: Option<Confidence>,
     /// The classes the data fits, most likely first.
     pub plausible: &'a [ClassId],
-    /// The class the problem's reference solution has.
-    pub reference: ClassId,
+    /// The class the problem's reference solution has, or `None` when the run was not measured.
+    pub reference: Option<ClassId>,
 }
 
 /// Public ghost fields for a failing run. Hidden data never belongs here.
@@ -127,7 +127,7 @@ fn measured_line(measured: &Measured<'_>) -> String {
     format!(
         "observed={observed} confidence={confidence} plausible=[{}] reference={}",
         plausible.join(", "),
-        measured.reference.id()
+        measured.reference.map_or("none", ClassId::id)
     )
 }
 
@@ -151,7 +151,7 @@ mod tests {
                 observed: Some(ClassId::Linear),
                 confidence: Some(Confidence::Medium),
                 plausible: LINEAR,
-                reference: ClassId::Linear,
+                reference: Some(ClassId::Linear),
             },
             ghost: None,
         }
@@ -185,6 +185,24 @@ mod tests {
             .contains("observed=n confidence=medium plausible=[n] reference=n"));
         assert!(prompt.user.contains("RESULT: 12 of 12 passed"));
         assert!(prompt.user.contains("MODE: submit"));
+    }
+
+    // Breaks if an unmeasured run claims a reference class it does not have.
+    #[test]
+    fn an_unmeasured_run_lists_no_reference() {
+        let mut unmeasured = input("print(1)");
+        unmeasured.measured = Measured {
+            observed: None,
+            confidence: None,
+            plausible: &[],
+            reference: None,
+        };
+
+        let prompt = build_prompt(&unmeasured).expect("prompt");
+
+        assert!(prompt
+            .user
+            .contains("observed=none confidence=none plausible=[] reference=none"));
     }
 
     #[test]

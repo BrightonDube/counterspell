@@ -141,3 +141,8 @@ pub async fn drain_dead(docker: &Docker, cfg: &SandboxConfig, within: Duration) 
     }
     reaped
 }
+
+/// One daemon-backed test at a time within a binary: `drain_dead` counts every
+/// managed container, so two overlapping tests would flag each other's live
+/// containers as leftovers.
+pub static ONE_RUN_AT_A_TIME: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());

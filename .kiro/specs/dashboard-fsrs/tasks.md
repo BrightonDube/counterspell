@@ -105,7 +105,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T05 and T07.
   - Rust lesson: none; in the task reply note that this task has no Rust change and explain how the browser treats the API response as untrusted data.
 
-- [ ] **T10 [S] (25 min) Run the core dashboard smoke path**
+- [x] **T10 [S] (25 min) Run the core dashboard smoke path**
   - Files: only fixes required by the smoke path.
   - Sign in with the existing test/demo path, create or use owned submissions, request the dashboard through the Axum server, and verify the page shows real counts and suggestions. Repeat with a second user and confirm no canaries cross the boundary.
   - Verify: route works through the canonical static server path; the page does not require an npm dev server; a database/API failure produces the designed retry state.

@@ -146,3 +146,13 @@ Added by the run-lifecycle close-out (T39). Both were direct server dependencies
 
 - **axum 0.8.9** — Tokio contributors — MIT — <https://crates.io/crates/axum> (HTTP router, handlers and SSE responses for `counterspell-server`)
 - **tower-http 0.6.11** — Tower contributors — MIT — <https://crates.io/crates/tower-http> (static files, body limit, response headers, compression in `counterspell-server`)
+
+Added by dashboard-fsrs T10 (browser end-to-end tests; approved by Brighton on 16 Nov 2026; `web/` dev dependency only, never shipped):
+
+- **@playwright/test 1.57.0** (with `playwright` and `playwright-core`) — Microsoft Corporation — Apache-2.0 — <https://www.npmjs.com/package/@playwright/test> (runs `web/e2e/*.spec.js` in Chromium against `counterspell-testserver`)
+
+
+Added by break-room T01 (the break-room pages only; both pinned and loaded from first-party code):
+
+- **chess.js 1.4.0** - Jeff Hlywa - BSD-2-Clause - <https://www.npmjs.com/package/chess.js> (move generation and legality for the daily puzzle and the chess bot)
+- **cm-chessboard 8.15.8** - Stefan Haack - MIT - <https://www.npmjs.com/package/cm-chessboard> (the board UI on the break-room pages)

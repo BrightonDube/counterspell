@@ -87,6 +87,47 @@ describe('RunControls', () => {
     expect(calls).toEqual(['run', 'submit']);
   });
 
+  // Breaks if the shortcuts stop working while the caret is in the editor. Monaco binds
+  // Ctrl(+Shift)+Enter to "insert line" and stops the event at its own element, so a listener
+  // that waits for the event to bubble up to the window never hears it (IDE-5).
+  it('still runs and submits when the editor stops the key from bubbling', async () => {
+    const calls: string[] = [];
+    render(RunControls, {
+      props: {
+        busy: false,
+        sourceBytes: 10,
+        limitBytes: 65536,
+        onRun: () => calls.push('run'),
+        onSubmit: () => calls.push('submit')
+      }
+    });
+    const editor = document.createElement('div');
+    editor.className = 'monaco-editor';
+    const surface = document.createElement('div');
+    surface.className = 'native-edit-context';
+    surface.tabIndex = 0;
+    editor.appendChild(surface);
+    document.body.appendChild(editor);
+    const inserted: string[] = [];
+    surface.addEventListener('keydown', (event) => {
+      inserted.push('line');
+      event.stopPropagation();
+    });
+    try {
+      await fireEvent.keyDown(surface, { key: 'Enter', ctrlKey: true });
+      await fireEvent.keyDown(surface, {
+        key: 'Enter',
+        ctrlKey: true,
+        shiftKey: true
+      });
+      expect(calls).toEqual(['run', 'submit']);
+      // The shortcut is consumed, so the editor does not also insert a blank line.
+      expect(inserted).toEqual([]);
+    } finally {
+      editor.remove();
+    }
+  });
+
   // Breaks if a held key repeats a run while one is already in flight.
   it('ignores the shortcuts while a run is in flight', async () => {
     let runs = 0;

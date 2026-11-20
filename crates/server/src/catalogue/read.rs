@@ -277,7 +277,8 @@ pub async fn list_problems(
         "SELECT p.slug, p.title, p.difficulty, t.slug, t.name, \
                 COALESCE(c.concepts, '[]'::jsonb), \
                 CASE WHEN $1::uuid IS NULL THEN NULL \
-                     WHEN bool_or(s.status = 'completed' AND s.verdict = 'accepted') THEN 'solved' \
+                     WHEN bool_or(s.status = 'completed' AND s.verdict = 'accepted' \
+                                   AND s.mode = 'submit' AND s.ghost_input IS NULL) THEN 'solved' \
                      WHEN bool_or(s.id IS NOT NULL) THEN 'attempted' \
                      ELSE 'unattempted' END \
          FROM problems p \

@@ -71,3 +71,111 @@ Checked each unticked task against its dependencies and the blockers above. No t
 - **PA27, PA28, PA30:** `[HUMAN]` or dependent on them. Not run.
 
 Unblock order for Brighton: approve grimoire-packs X1 and X2 (then PA08 runs), answer PA20 (then PA21 and PA22 can be checked), and decide the three open items in "Decisions for Brighton" above.
+
+## Unblock decisions, 20 Nov 2026 (Brighton, in chat)
+
+- **PA08 (X1/X2).** Brighton approved the drafted amendment with edits; the approved
+  text is recorded in `.kiro/specs/grimoire-packs/tasks.md` under "Amendment X1 + X2
+  (approved by Brighton, 2026-11-20)". PA08 proceeds.
+- **PA20 open questions.** Brighton confirmed the assumed answers: Q3 = private repo
+  `BrightonDube/counterspell-packs-private` with a read-only deploy key kept outside the
+  repo (already in place since 15 Nov); Q6 = the originality list lives in the private
+  repo (drafted from `docs/licence-rules.md` in this session, Brighton to review);
+  Q7 = authoring agents do not open third-party problem statements.
+- **PA27.** Brighton approved the code-running tools for this session (PIP-39): the
+  agent runs S10 and S11 for the three launch packs through the real rootless sandbox
+  and records the image digests in each pack's state.
+- **PA28.** The launch packs are `published`; the approval commit and `approval.toml`
+  were confirmed by Brighton on 18 Nov and the importer accepts the recorded hashes
+  (verified 20 Nov). The task's verify legs are met.
+- **Grimoire T29.** Brighton's call on design open question 11: convert `packs/_test/`
+  to the two-tree format now (ghost-engine has shipped).
+- **Catalogue C40.** Brighton chose full rotation: every hidden value published in
+  public git history at grimoire T21–T23 (known-ghost inputs/got values, the reference
+  and the incorrect programs) is retired; all three packs get new hidden cases, a new
+  generator seed and a `pack_version` bump. Open question 21: do NOT rewrite public
+  git history — rotation invalidates the leaked values.
+- **MCP T16/T17.** The agent runs the scripted find/fix/re-verify session through
+  kiro-cli and files the transcript under `docs/kiro-log/chats/`; screenshot captures
+  for T17 remain Brighton's leg in the Kiro IDE.
+- **Deploy T23–T32.** The shared-host path superseded the dedicated-VPS order: the host
+  (15.204.92.66, shared with Evorayn) answers SSH with publickey-only auth, Caddy is
+  live, the four `production` environment secrets and `DEPLOY_ENABLED=true` are set, and
+  Deploy runs queue behind the environment's required reviewers. Remote evidence is
+  recorded in `deploy/vps/verification-report.md`; legs that need an on-host session
+  (rootless facts, env file modes, Postgres roles, backup/restore, monitors, rollback
+  rehearsal) stay marked as recorded there — nothing is claimed without evidence.
+
+## PA20 — open questions confirmed by Brighton (2026-11-20)
+
+Brighton confirmed all three assumed answers:
+
+- **Q3 (private repo name and access).** `BrightonDube/counterspell-packs-private`,
+  created by Brighton, accessed by a read-only deploy key scoped to that repo
+  and stored outside the public working tree. Done 15 Nov.
+- **Q6 (originality list).** A list of synthetic markers and phrases the author
+  must not reuse, kept in the private repo; the list itself contains no
+  third-party problem text. Drafted as `originality-markers.txt` in the private
+  repo — Brighton reviews the contents before the first pipeline run (his
+  approval is the PA20 gate).
+- **Q7 (third-party reading).** Authoring agents never open third-party problem
+  statements; they may read `docs/licence-rules.md` and the spec only.
+
+## PA08 integration reconciliation (2026-11-20)
+
+Public-only validation reports the expected absent private reference as REF-01
+(warning). In public mode, that one warning is exempt from the strict CI exit
+check. Other warnings still fail with --deny-warnings, and assembled validation
+treats an absent reference as an error. LAY-05 retains its existing text-encoding
+meaning. LAY-07 identifies wrong-tree files and inline generator tables.
+
+PA08 creates new draft versions 5, 6 and 7 of the three starter packs. The
+approvals for published versions 4, 5 and 6 cannot approve those drafts. Keep the
+published catalogue versions live. The available checkout pair does not
+reproduce the older approval manifests, so a fresh import needs the exact
+approved source pair or a new approval. Do not republish the drafts or use the draft
+checkout for a fresh catalogue import until the matching private inputs, approval
+records and sandbox evidence have been verified.
+
+## PA27 — S10/S11 run on the real rootless sandbox (2026-11-20, Brighton-approved tools)
+
+`crates/catalogue-cli/tests/sbx_pa27.rs` (new, `#[ignore]`d; run with
+`SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock cargo test -p counterspell-catalogue-cli --features sandbox --test sbx_pa27 -- --ignored --test-threads=1`).
+
+Result on the rootless daemon (identity-verified, `python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90`):
+
+| slug | S10 fill (SBX-01/02/03, curated+generated, CAT-PT8) | S11 ghosts | S11 reference |
+|---|---|---|---|
+| count-pairs | Filled | empty-min, same-index found | not-found |
+| diagonal-total | Filled | abs-diagonal, assumes-square found | not-found |
+| longest-run-length | Filled | empty-first-char, forgot-last-run found | not-found |
+
+State files `.kiro/pipeline/state/<slug>.toml` record `status = "sandbox_checked"`.
+Devin recorded a private input-shape correction during the run. The public log omits the case data. Review the earlier public history for retired values before approving the next pack version.
+
+## MCP T16 — scripted dogfood session (2026-11-20)
+
+The scripted find/fix/re-verify session ran at the protocol level against the
+real release server: JSON-RPC stdio `initialize` → `tools/list` →
+`find_ghost_input` on `packs/_demo/mcp-dogfood` `incorrect/never-negative.py`
+→ wrote `incorrect/fixed-never-negative.py` in the private tree →
+`validate_pack` → `find_ghost_input` on the fixed program.
+
+Results (transcript `docs/kiro-log/chats/counterspell-mcp-dogfood-stdio.log`,
+server stderr alongside):
+
+- First hunt: `Found`, `found_via = "known_ghost"`, minimized to input
+  `[[-1], 1]` in 4 shrink steps (local_minimum, verified twice); the buggy
+  program returns 0 where the reference returns -1. Digest
+  `python:3.13-slim@sha256:e48f59c…` recorded in provenance.
+- `validate_pack`: `passed: true`, 0 errors, 0 warnings.
+- Second hunt on the fixed program: `NotFound: CandidateBudget` after 500
+  candidates — T16's verify leg (no counterexample within budget).
+- All executions ran inside the rootless sandbox; the server stderr confirms
+  no host fallback.
+
+**Blocked leg:** the kiro-cli model-driven UX session could not run —
+`kiro-cli chat` fails with `ServiceQuotaExceededException
+(MONTHLY_REQUEST_COUNT)`. That is an account-quota block, not missing work;
+Brighton decides whether to enable overages or wait for the reset. T17's
+screenshot captures remain his leg.

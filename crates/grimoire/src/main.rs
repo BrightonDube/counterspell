@@ -2,17 +2,20 @@
 //!
 //! Exit codes: 0 when there are no errors (and no warnings under
 //! `--deny-warnings`), 1 for validation errors, 2 for usage, I/O or
-//! infrastructure failures.
+//! infrastructure failures. Public validation reports an absent private reference
+//! without making that expected warning fatal.
 
 use counterspell_grimoire::codes;
-use counterspell_grimoire::report::{Diagnostic, Report};
+use counterspell_grimoire::report::{Diagnostic, Report, Severity};
 use counterspell_grimoire::runner::PackRunner;
-use counterspell_grimoire::{validate_sandbox, validate_static, SandboxFault};
+use counterspell_grimoire::{
+    validate_sandbox, validate_static, validate_static_public, SandboxFault,
+};
 use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 /// The usage text printed on a bad command line.
-const USAGE: &str = "usage: validate <pack-dir> [--json] [--deny-warnings] [--sandbox]\n       validate --all <packs-root> [--include-underscore] [--json] [--deny-warnings] [--sandbox]";
+const USAGE: &str = "usage: validate <pack-dir> [--json] [--deny-warnings] [--sandbox]\n       validate --all <packs-root> [--include-underscore] [--json] [--deny-warnings] [--sandbox] [--public]";
 
 /// What the command validates.
 #[derive(Debug, PartialEq, Eq)]
@@ -35,6 +38,8 @@ struct Options {
     deny_warnings: bool,
     sandbox: bool,
     include_underscore: bool,
+    /// Validate the public tree alone; private-resident stages skip.
+    public_only: bool,
 }
 
 /// Reads the arguments after the program name. Only the standard library is used.
@@ -49,6 +54,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
         deny_warnings: false,
         sandbox: false,
         include_underscore: false,
+        public_only: false,
     };
     let mut positional = Vec::new();
     for arg in &args[1..] {
@@ -58,6 +64,7 @@ fn parse(args: &[String]) -> Result<Options, String> {
             "--deny-warnings" => options.deny_warnings = true,
             "--sandbox" => options.sandbox = true,
             "--include-underscore" => options.include_underscore = true,
+            "--public" => options.public_only = true,
             flag if flag.starts_with("--") => {
                 return Err(format!("unknown option {flag}\n{USAGE}"));
             }
@@ -87,10 +94,17 @@ fn pack_paths(options: &Options) -> Result<Vec<PathBuf>, String> {
 
 /// Validates the target and returns one report per pack.
 fn reports_for(options: &Options) -> Result<Vec<Report>, String> {
-    pack_paths(options)?
-        .iter()
-        .map(|path| read_pack(path))
-        .collect()
+    let paths = pack_paths(options)?;
+    match &options.target {
+        Target::Single(_) => paths
+            .iter()
+            .map(|path| read_pack(path, options.public_only))
+            .collect(),
+        Target::All(_) => paths
+            .iter()
+            .map(|path| read_pack_tree(path, options.public_only))
+            .collect(),
+    }
 }
 
 /// Validates each pack with the runner. The first fault stops the stage and is returned as is.
@@ -146,11 +160,44 @@ fn run_sandbox_stage(options: &Options, runner: Option<&mut dyn PackRunner>) -> 
 }
 
 /// Validates one pack directory, turning an I/O failure into a message.
-fn read_pack(path: &Path) -> Result<Report, String> {
-    validate_static(path).map_err(|error| format!("cannot read {}: {error}", path.display()))
+fn read_pack(path: &Path, public_only: bool) -> Result<Report, String> {
+    let validate = if public_only {
+        validate_static_public
+    } else {
+        validate_static
+    };
+    validate(path).map_err(|error| format!("cannot read {}: {error}", path.display()))
 }
 
-/// The pack directories directly under `root`, skipping `_` packs unless asked.
+/// Validates one pack under --all. A tree that carries private-only files is
+/// an assembled tree and validates as such; a public-only tree validates as
+/// public. --public forces the public checks even when private files sit in
+/// the tree, so wrong-tree placements still surface as LAY-07.
+fn read_pack_tree(path: &Path, public_only: bool) -> Result<Report, String> {
+    if public_only || !has_private_files(path) {
+        return read_pack(path, true);
+    }
+    read_pack(path, false)
+}
+
+/// Whether the pack directory carries any private-resident file. Presence of
+/// one is what makes a single tree an assembled tree (amendment X1).
+fn has_private_files(path: &Path) -> bool {
+    const PRIVATE_FILES: [&str; 4] = [
+        "hidden.toml",
+        "generator.toml",
+        "approval.toml",
+        "known_ghosts.toml",
+    ];
+    PRIVATE_FILES.iter().any(|name| path.join(name).is_file())
+        || path.join("reference").is_dir()
+        || path.join("incorrect").is_dir()
+}
+
+/// The pack directories the --all scan validates: the directories directly
+/// under root, plus every underscore pack and the children of each
+/// underscore-prefixed container directory when --include-underscore is
+/// given. A container (`packs/_test/`) holds packs and is not one itself.
 fn pack_dirs(root: &Path, include_underscore: bool) -> Result<Vec<PathBuf>, String> {
     let entries = std::fs::read_dir(root)
         .map_err(|error| format!("cannot read {}: {error}", root.display()))?;
@@ -158,8 +205,27 @@ fn pack_dirs(root: &Path, include_underscore: bool) -> Result<Vec<PathBuf>, Stri
     for entry in entries {
         let entry = entry.map_err(|error| format!("cannot read {}: {error}", root.display()))?;
         let is_underscore = entry.file_name().to_string_lossy().starts_with('_');
-        if entry.path().is_dir() && (include_underscore || !is_underscore) {
+        if !entry.path().is_dir() {
+            continue;
+        }
+        if !is_underscore {
             dirs.push(entry.path());
+        } else if include_underscore {
+            // A `_` directory holding pack files is a pack; one holding only
+            // directories is a container of packs (`packs/_test/<slug>`).
+            if entry.path().join("meta.toml").is_file() {
+                dirs.push(entry.path());
+            } else {
+                for child in std::fs::read_dir(entry.path())
+                    .map_err(|error| format!("cannot read {}: {error}", entry.path().display()))?
+                {
+                    let child = child
+                        .map_err(|error| format!("cannot read {}: {error}", root.display()))?;
+                    if child.path().is_dir() {
+                        dirs.push(child.path());
+                    }
+                }
+            }
         }
     }
     Ok(dirs)
@@ -188,9 +254,14 @@ fn print_reports(reports: &[Report], options: &Options) -> ExitCode {
             );
         }
     }
-    let failed = reports
-        .iter()
-        .any(|report| report.has_errors() || (options.deny_warnings && report.warning_count() > 0));
+    let failed = reports.iter().any(|report| {
+        report.has_errors()
+            || (options.deny_warnings
+                && report.diagnostics().iter().any(|diagnostic| {
+                    diagnostic.severity == Severity::Warning
+                        && !(options.public_only && diagnostic.code == codes::REF_01.id)
+                }))
+    });
     if failed {
         ExitCode::from(1)
     } else {
@@ -283,6 +354,7 @@ mod tests {
     }
 
     fn pack_dir() -> PackDir {
+        // nosemgrep: rust.lang.security.temp-dir.temp-dir
         let dir = std::env::temp_dir().join(format!(
             "grimoire-main-{}-{:?}",
             std::process::id(),
@@ -293,7 +365,7 @@ mod tests {
         std::fs::write(dir.join("problem.md"), "# Count the Pairs\n\n## Task\nCount.\n\n## Input\nA.\n\n## Output\nB.\n\n## Examples\nC.\n\n## Constraints\nD.\n").expect("problem");
         std::fs::write(
             dir.join("meta.toml"),
-            "slug = \"count-pairs\"\ntitle = \"Count the Pairs\"\nstatus = \"draft\"\ndifficulty = \"easy\"\ntrack = \"arrays\"\nconcepts = [\"arrays\"]\norigin = \"original\"\nauthor = \"Brighton\"\nlicence = \"MIT\"\npack_version = 1\nfunction = \"count_pairs\"\nreturns = \"int\"\ncomparator = \"exact\"\n\n[[params]]\nname = \"values\"\ntype = \"list[int]\"\n\n[[params]]\nname = \"target\"\ntype = \"int\"\n\n[limits]\ntime_ms = 2000\nmem_mb = 256\n\n[input_schema]\ntype = \"tuple\"\nitems = [\n  { type = \"int_array\", min_len = 0, max_len = 30, min = -50, max = 50 },\n  { type = \"int\", min = -100, max = 100 },\n]\n\n[generator]\nseed = 1729\nhidden_count = 12\n\n[[samples]]\ninput = [[1, 2, 3, 2], 4]\nexpected = 2\n\n[[samples]]\ninput = [[5, 5], 10]\nexpected = 1\n",
+            "slug = \"count-pairs\"\ntitle = \"Count the Pairs\"\nstatus = \"draft\"\ndifficulty = \"easy\"\ntrack = \"arrays\"\nconcepts = [\"arrays\"]\norigin = \"original\"\nauthor = \"Brighton\"\nlicence = \"MIT\"\npack_version = 1\nfunction = \"count_pairs\"\nreturns = \"int\"\ncomparator = \"exact\"\n\n[[params]]\nname = \"values\"\ntype = \"list[int]\"\n\n[[params]]\nname = \"target\"\ntype = \"int\"\n\n[limits]\ntime_ms = 2000\nmem_mb = 256\n\n[input_schema]\ntype = \"tuple\"\nitems = [\n  { type = \"int_array\", min_len = 0, max_len = 30, min = -50, max = 50 },\n  { type = \"int\", min = -100, max = 100 },\n]\n\n[[samples]]\ninput = [[1, 2, 3, 2], 4]\nexpected = 2\n\n[[samples]]\ninput = [[5, 5], 10]\nexpected = 1\n",
         )
         .expect("meta");
         std::fs::write(
@@ -306,7 +378,75 @@ mod tests {
             "def count_pairs(values, target):\n    return 0\n",
         )
         .expect("reference");
+        std::fs::write(
+            dir.join("generator.toml"),
+            "seed = 1729
+hidden_count = 12
+",
+        )
+        .expect("generator");
         PackDir(dir)
+    }
+
+    /// The pack without its private-side  — the shape a public
+    /// checkout has after the tree split.
+    fn public_pack_dir() -> PackDir {
+        let dir = pack_dir();
+        std::fs::remove_dir_all(dir.0.join("reference")).expect("drop reference");
+        std::fs::remove_file(dir.0.join("generator.toml")).expect("drop generator");
+        dir
+    }
+
+    #[test]
+    fn public_flag_is_parsed() {
+        let options = parse(&args(&["validate", "packs/x", "--public"])).expect("options");
+        assert!(options.public_only);
+    }
+
+    #[test]
+    fn a_public_tree_needs_the_public_flag_to_validate() {
+        let dir = public_pack_dir();
+        assert!(
+            read_pack(&dir.0, false).expect("report").has_errors(),
+            "missing private reference must fail a full validation"
+        );
+        let report = read_pack(&dir.0, true).expect("public report");
+        assert!(
+            !report.has_errors(),
+            "public validation accepts an absent private reference: {report:?}"
+        );
+        assert!(report.diagnostics().iter().any(|diagnostic| {
+            diagnostic.code == "REF-01" && diagnostic.severity == Severity::Warning
+        }));
+        assert_eq!(
+            run(&args(&[
+                "validate",
+                dir.0.to_str().expect("pack path"),
+                "--public",
+                "--deny-warnings",
+            ])),
+            ExitCode::SUCCESS
+        );
+    }
+
+    #[test]
+    fn a_reference_in_the_public_tree_is_lay_07() {
+        // Amendment X1: the reference is private-only, so a copy under the
+        // public tree is a wrong-tree file even though it parses.
+        let dir = pack_dir();
+        std::fs::write(
+            dir.0.join("reference/solution.py"),
+            "def count_pairs(values, target):
+    return 0
+",
+        )
+        .expect("reference");
+        let report = read_pack(&dir.0, true).expect("public report");
+        assert!(report.has_errors());
+        assert!(report
+            .diagnostics()
+            .iter()
+            .any(|d| d.code == "LAY-07" && d.file == "reference/solution.py"));
     }
 
     #[test]

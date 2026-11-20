@@ -76,7 +76,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: language isolation, reload restoration, multibyte byte counts, storage quota failure, corrupted entry recovery, and source copy fallback tests.
   - Preserve: client checks are advisory; server VAL-1–VAL-3 remain authoritative.
 
-- [ ] **T09 [UI] [S] (30 min) Compose the responsive WorkspaceShell**
+- [x] **T09 [UI] [S] (30 min) Compose the responsive WorkspaceShell**
   - Files: `web/src/routes/problems/[slug]/+page.svelte`, `web/src/lib/workspace/WorkspaceShell.svelte`, `EditorPanel.svelte`, responsive CSS.
   - Compose problem, editor, controls, tests, ghost/autopsy, hints, and Familiar regions. Implement wide desktop columns, tablet drawers/tabs, narrow single-column order, collapse state, landmarks, and focus return.
   - Depends on: T05, T06, T07, T08.
@@ -106,7 +106,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: sample detail is visible, hidden detail is structurally impossible from the view model, output containing `<script>` stays text, compile/runtime/TLE/MLE/OLE/internal states are distinct, and `restarted` clears transient rows.
   - Preserve: never display hidden input, expected output, or hidden stdout/stderr.
 
-- [ ] **T13 [S] (25 min) Connect Run and Submit to the production route**
+- [x] **T13 [S] (25 min) Connect Run and Submit to the production route**
   - Files: workspace page orchestration, `web/src/lib/api/runs.ts`, integration tests.
   - Wire current Monaco source to `POST /api/runs`, set the active run id, stream events, preserve the draft, keep the prior completed run visible until the replacement has a terminal result, and handle navigation cancellation.
   - Depends on: T09, T11, T12, and the real run-lifecycle API.
@@ -122,7 +122,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: no invented values, duplicate/out-of-order handling, final-step equality, omitted-step rendering, deterministic timing decisions, and reduced-motion static-list tests.
   - Preserve: the controller cannot manufacture intermediate inputs or outputs.
 
-- [ ] **T15 [UI] [S] (30 min) Build Ghost Hunting and Ghost card**
+- [x] **T15 [UI] [S] (30 min) Build Ghost Hunting and Ghost card**
   - Files: `web/src/lib/workspace/GhostPanel.svelte`, `GhostHunting.svelte`, `ShrinkTrace.svelte`, animation boundary.
   - Transition only on server `ghost_hunting`, show honest indeterminate search text, replay actual `shrink_step` values, show final minimized-counterexample wording, and handle no-ghost, aborted, malformed, timeout, and reduced-motion states.
   - Use one 400ms calm reveal and 150–250ms per-step CSS crossfades only when motion is allowed. Keep GSAP out of the ghost card; GSAP belongs to the Familiar boundary.
@@ -144,7 +144,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: out-of-order requests do not reveal later rungs, failed requests do not fabricate text, cap fallback is honest, and unsafe hint strings remain inert.
   - Preserve: no full solution is generated client-side.
 
-- [ ] **T18 [UI] [S] (30 min) Wire Rerun ghost as a real custom run**
+- [x] **T18 [UI] [S] (30 min) Wire Rerun ghost as a real custom run**
   - Files: `web/src/lib/workspace/RunControls.svelte`, `web/src/lib/api/runs.ts`, custom result integration tests.
   - Add a labelled `Rerun ghost` action that sends the current source and stored ghost through `POST /api/runs/ghost`, creates a new run id, and displays one public custom-ghost test. Keep the failed run/autopsy intact.
   - Depends on: T02, T13, T16.
@@ -159,7 +159,7 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: measured-only state tests, no-bench correctness state, low-confidence observational copy, hide/mute preference state, aria-live text, and reduced-motion static badge.
   - Preserve: never use “optimal”; top condition says “Matches reference complexity”.
 
-- [ ] **T20 [S] (25 min) Wire Familiar preferences and one speech request per run**
+- [x] **T20 [S] (25 min) Wire Familiar preferences and one speech request per run**
   - Files: `web/src/lib/api/familiar.ts`, workspace orchestration, Familiar tests.
   - Persist mute/hide through `PATCH /api/me/familiar`, request `POST /api/runs/{id}/familiar-hint` once after terminal data is fetched, guard remount/reconnect duplicates, and display returned AI/template fallback without changing verdict or mood.
   - Depends on: T19 and the Familiar API seam.
@@ -168,14 +168,14 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Wave 4: accessibility, resilience, and real integration proof
 
-- [ ] **T21 [UI] [P] (25 min) Add keyboard navigation and focus management**
+- [x] **T21 [UI] [P] (25 min) Add keyboard navigation and focus management**
   - Files: `web/src/lib/workspace/keyboard.ts`, drawers/tabs/popovers, `StatusAnnouncer.svelte`, tests.
   - Implement landmarks, tab order, shortcuts, Escape close/focus return, editor/results focus, hint/ghost actions, and throttled polite announcements for meaningful phase changes.
   - Depends on: T09, T10, T12, T15, T17, T19.
   - Verify: keyboard-only path from problem to editor to Run/Submit to Ghost/Autopsy/Hint/Rerun and back to editor; async events never steal focus; shortcut help is discoverable.
   - Preserve: Monaco's own editing commands remain usable.
 
-- [ ] **T22 [UI] [P] (25 min) Add reduced-motion and animation lifecycle tests**
+- [x] **T22 [UI] [P] (25 min) Add reduced-motion and animation lifecycle tests**
   - Files: animation boundary components, `shrink-playback.ts`, Familiar, tests.
   - Honour `prefers-reduced-motion`, disable CSS transitions and Familiar GSAP timelines/bursts/shakes/blur transitions, retain static trace and status badges, and dispose lazy animation resources on unmount and route change.
   - Depends on: T14, T15, T19.
@@ -189,14 +189,14 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: tests fail if output uses unsafe HTML, a status relies only on colour, or a reduced-motion user loses trace information.
   - Preserve: do not weaken tests to accommodate visual shortcuts.
 
-- [ ] **T24 [S] (30 min) Add real Axum browser harness and test data path**
+- [x] **T24 [S] (30 min) Add real Axum browser harness and test data path**
   - Files: `web/tests/real-api/` or the agreed browser harness, `docker-compose.yml`/CI only if required for test services, test-pack wiring.
   - Start or connect to the built SvelteKit output served by Axum with authenticated test user, Postgres, trusted judge, rootless sandbox, and a small original pack. Do not intercept successful run responses. If Playwright is used, add it only after a licence check and document browser installation.
   - Depends on: T02, T03, T13, T18, T20, and upstream queue/sandbox/pack specs.
   - Verify: the harness reaches the app through Axum, not a frontend dev server, and can observe persisted events and terminal reads.
   - Preserve: any local fixture route is excluded from this harness.
 
-- [ ] **T25 [S] (30 min) Prove the judge journey without reload**
+- [x] **T25 [S] (30 min) Prove the judge journey without reload**
   - Files: `web/tests/real-api/ide-workspace.spec.*`, test support only.
   - Against the actual API/judge stack: open a published problem, restore drafts, Run samples, Submit a deliberately wrong solution, observe real events, watch real shrink steps, read the real Bug Autopsy, reveal hints, rerun the ghost, fix the source, resubmit, reach Accepted, and observe measured Familiar plus one speech request.
   - Assert no hidden canary appears, no result is fabricated, and the browser never reloads or requires manual intervention between failure and success.
@@ -204,21 +204,21 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
   - Verify: record event ids, run ids, terminal read model, ghost provenance, shrink trace equality, and final Familiar data in the test report.
   - Preserve: a passing test must be caused by the sandbox-backed judge, not a mocked success response.
 
-- [ ] **T26 [S] (30 min) Prove reconnect, retry, ownership, and failure paths**
+- [x] **T26 [S] (30 min) Prove reconnect, retry, ownership, and failure paths**
   - Files: `web/tests/real-api/reconnect.spec.*`, server integration tests if required.
   - Drop the SSE connection at multiple sequence positions, resume with `Last-Event-ID`, assert de-duplication and gap recovery, simulate worker retry/restarted, reload after terminal, and test foreign/missing runs, rate limits, source validation, internal error, timeout, compile error, and no-ghost outcomes.
   - Depends on: T24 and T25.
   - Verify: no duplicate rows, no stale run updates a new problem, no hidden data leaks, and an infrastructure failure is never shown as Wrong Answer.
   - Preserve: the stream is replayed from Postgres, not a client cache.
 
-- [ ] **T27 [S] (25 min) Measure workspace performance and lazy loading**
+- [x] **T27 [S] (25 min) Measure workspace performance and lazy loading**
   - Files: browser performance test/support, `web/src/lib/performance.ts` if needed, no user data in marks.
   - Add shell/editor/first-event/terminal/ghost-playback marks, check Monaco and Familiar-GSAP lazy loading, exercise a tablet viewport, and confirm the shell stays responsive while heavy assets load.
   - Depends on: T09, T15, T19, T25.
   - Verify: marks contain no source/user identifiers; report bundle/chunk behaviour and measured times without turning estimates into promises.
   - Preserve: do not preload heavy assets on unrelated routes.
 
-- [ ] **T28 [S] (30 min) Run the full implementation verification gate**
+- [x] **T28 [S] (30 min) Run the full implementation verification gate**
   - Files: fixes only if a check fails; no planned new feature files.
   - Run `cargo fmt --all -- --check`, focused and workspace Rust tests, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cd web && npm ci && npm run check && npm test && npm run build`, `cargo deny check licenses`, and `docker compose config`. Run the real API acceptance suite with required services.
   - Depends on: T25, T26, T27 and all upstream API/sandbox dependencies.

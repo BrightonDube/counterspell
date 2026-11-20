@@ -108,6 +108,75 @@ fn the_session_is_named_from_the_run_and_its_ordinal() {
     assert_eq!(session.name, format!("cs-sbx-{RUN}-3"));
 }
 
+/// IDE-3 (criterion 7): a retried attempt must not reuse the container name of the attempt
+/// a crashed worker left behind, or the daemon refuses the create and every retry fails.
+#[test]
+fn a_session_for_an_attempt_is_named_from_the_run_the_attempt_and_its_ordinal() {
+    let (_dir, catalog) = shipped_catalogue(false);
+    let python = catalog.get("python").unwrap();
+    let name = |attempt: u16, ordinal: u32| {
+        SessionSpec::for_attempt(
+            python,
+            Duration::from_secs(20),
+            OciRuntime::Runc,
+            run_id(),
+            "worker-1",
+            attempt,
+            ordinal,
+            1_800_000_000,
+        )
+        .unwrap()
+        .name
+    };
+    assert_eq!(name(1, 0), format!("cs-sbx-{RUN}-a1-0"));
+    assert_eq!(name(2, 0), format!("cs-sbx-{RUN}-a2-0"));
+    assert_eq!(name(2, 3), format!("cs-sbx-{RUN}-a2-3"));
+}
+
+/// The attempt-aware spec carries the same policy and labels as the plain one; only the name
+/// changes.
+#[test]
+fn a_session_for_an_attempt_keeps_the_plain_policy_and_labels() {
+    let (_dir, catalog) = shipped_catalogue(false);
+    let python = catalog.get("python").unwrap();
+    let plain = SessionSpec::new(
+        python,
+        Duration::from_secs(20),
+        OciRuntime::Runc,
+        run_id(),
+        "worker-1",
+        0,
+        1_800_000_000,
+    )
+    .unwrap();
+    let attempt = SessionSpec::for_attempt(
+        python,
+        Duration::from_secs(20),
+        OciRuntime::Runc,
+        run_id(),
+        "worker-1",
+        2,
+        0,
+        1_800_000_000,
+    )
+    .unwrap();
+    assert_eq!(plain.policy, attempt.policy);
+    assert_ne!(plain.name, attempt.name);
+    assert!(matches!(
+        SessionSpec::for_attempt(
+            python,
+            Duration::from_secs(20),
+            OciRuntime::Runc,
+            run_id(),
+            "bad worker",
+            1,
+            0,
+            1_800_000_000,
+        ),
+        Err(SpecError::BadWorkerId)
+    ));
+}
+
 #[test]
 fn the_session_carries_the_run_worker_and_expiry_labels() {
     let (_dir, catalog) = shipped_catalogue(false);

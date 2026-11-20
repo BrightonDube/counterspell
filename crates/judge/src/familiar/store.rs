@@ -125,6 +125,29 @@ pub async fn insert_baselines(pool: &PgPool, rows: &[BaselineRow]) -> Result<u64
     Ok(inserted)
 }
 
+/// Returns the version of `problem_slug` that learners are served, or `None` when the problem
+/// is absent or was never published.
+///
+/// # Errors
+///
+/// Returns `OutOfRange` when the stored version is negative, or `Database` on a database error.
+pub async fn published_version(
+    pool: &PgPool,
+    problem_slug: &str,
+) -> Result<Option<u32>, StoreError> {
+    let version: Option<Option<i32>> = sqlx::query_scalar(
+        "SELECT published_version FROM problems \
+         WHERE slug = $1 AND publication_state = 'published'",
+    )
+    .bind(problem_slug)
+    .fetch_optional(pool)
+    .await?;
+    version
+        .flatten()
+        .map(|v| u32::try_from(v).map_err(|_| StoreError::OutOfRange))
+        .transpose()
+}
+
 /// Returns the baseline points for one problem version, language and image digest, sorted by
 /// size. A different version or digest finds nothing.
 ///

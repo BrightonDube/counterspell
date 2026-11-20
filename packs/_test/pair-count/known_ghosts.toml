@@ -1,0 +1,17 @@
+[[ghost]]
+id = "same-index-self-pair"
+program = "incorrect/same-index.py"
+kind = "wrong"
+input = [[0], 0]
+got = 1
+concepts = ["pairs", "nested-loops"]
+explanation = "An item cannot pair with itself. Your inner loop starts at i, so the single item 0 pairs with itself and is counted once."
+
+[[ghost]]
+id = "empty-list-min"
+program = "incorrect/empty-min.py"
+kind = "crash"
+input = [[], 0]
+exception_class = "ValueError"
+concepts = ["arrays", "edge-cases"]
+explanation = "min() has no value for an empty list. The early exit calls min() before checking that the list has an item at all."

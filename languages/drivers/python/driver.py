@@ -206,7 +206,7 @@ def load_function(signature):
     namespace = {"__name__": "counterspell_solution"}
     try:
         with quiet():
-            exec(compile(source, SOLUTION_PATH, "exec"), namespace)
+            exec(compile(source, SOLUTION_PATH, "exec"), namespace)  # nosemgrep: python.lang.security.audit.exec-detected.exec-detected
     except BaseException:
         # The driver line goes first: the judge reads the last stderr line as
         # `ExceptionClass: message`, so the traceback tail must stay last.

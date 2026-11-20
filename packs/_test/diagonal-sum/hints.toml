@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The main diagonal uses only the cells where the row index equals the column index."
+
+[[hint]]
+rung = 2
+text = "A rectangular grid may have more rows than columns, or the reverse. The diagonal stops at the shorter side."
+
+[[hint]]
+rung = 3
+text = "```\nfor i in 0..min(rows, cols)\n  total += grid[i][i]\n```"
+
+[[hint]]
+rung = 4
+text = "Do not assume the grid is square and do not change the sign of a cell: index up to min(rows, cols) and add the cells exactly as they are."

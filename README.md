@@ -114,4 +114,6 @@ Counterspell is MIT licensed. Dependency and asset notices are tracked in
 
 Every PR and push runs tests, coverage, linting, image builds and a security gate
 (secrets, SAST, dependency audits, workflow lint). Images are signed and attested.
-See [docs/ci-cd.md](docs/ci-cd.md) and [SECURITY.md](SECURITY.md).
+See [docs/ci-cd.md](docs/ci-cd.md) and [SECURITY.md](SECURITY.md). The
+Efficiency Familiar — measured-only complexity moods and their honest limits —
+is documented in [docs/efficiency-familiar.md](docs/efficiency-familiar.md).

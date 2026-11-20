@@ -163,10 +163,6 @@ items = [
   { type = "int", min = -100, max = 100 },
 ]
 
-[generator]
-seed = 1729
-hidden_count = 12
-
 [[samples]]
 input = [[1, 2, 3, 2], 4]
 expected = 2
@@ -274,6 +270,10 @@ fn default_text(name: &str) -> String {
         "reference/solution.py" => REFERENCE.to_owned(),
         "incorrect/same-index.py" => SAME_INDEX.to_owned(),
         "incorrect/empty-min.py" => EMPTY_MIN.to_owned(),
+        "generator.toml" => "seed = 1729
+hidden_count = 12
+"
+        .to_owned(),
         other => panic!("no default text for {other}"),
     }
 }
@@ -298,6 +298,7 @@ impl TempPack {
             "reference/solution.py",
             "incorrect/same-index.py",
             "incorrect/empty-min.py",
+            "generator.toml",
         ] {
             let text = overrides
                 .iter()

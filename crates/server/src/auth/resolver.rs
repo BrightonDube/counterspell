@@ -7,7 +7,10 @@ use counterspell_common::ids::UserId;
 
 use crate::seams::UserResolver;
 
-use super::{cookies::read_cookie, session::SessionService};
+use super::{
+    cookies::read_cookie,
+    session::{SessionKey, SessionService},
+};
 
 /// Finds the signed-in user from the session cookie. A database failure counts as signed out,
 /// so the run endpoints refuse the request instead of guessing.
@@ -38,5 +41,18 @@ impl UserResolver for SessionUserResolver {
             .ok()
             .flatten()
             .map(|found| found.user_id)
+    }
+
+    /// A read-only check of the stored session: it never renews, so an open stream cannot keep a
+    /// session alive. A database failure counts as signed out, so the stream closes and the client
+    /// reconnects (and is refused if the session is really gone).
+    async fn still_signed_in(&self, headers: &HeaderMap, _user: UserId) -> bool {
+        let Some(raw) = read_cookie(headers, &self.cookie_name) else {
+            return false;
+        };
+        self.sessions
+            .is_valid(&SessionKey::of(raw))
+            .await
+            .unwrap_or(false)
     }
 }

@@ -53,6 +53,25 @@ describe('SignUpCta', () => {
     expect(pumpkin?.getAttribute('decoding')).toBe('async');
   });
 
+  // R24 (landing performance): a 96 px picture must not download the 512 px file.
+  it('offers a 192 px candidate for each 96 px picture and keeps the 512 px file as the fallback', () => {
+    const { container } = render(SignUpCta);
+    const candle = container.querySelector(
+      'img[src="/art/objects/candle-flame.webp"]'
+    );
+    const pumpkin = container.querySelector(
+      'img[src="/art/familiar/jack-o-lantern-orange.webp"]'
+    );
+    expect(candle?.getAttribute('srcset')).toBe(
+      '/art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w'
+    );
+    expect(pumpkin?.getAttribute('srcset')).toBe(
+      '/art/familiar/jack-o-lantern-orange-192.webp 192w, /art/familiar/jack-o-lantern-orange.webp 512w'
+    );
+    expect(candle?.getAttribute('sizes')).toBe('96px');
+    expect(pumpkin?.getAttribute('sizes')).toBe('96px');
+  });
+
   it('does not load the animated pumpkin SVG, so reduced motion and Save-Data get the still (T19)', () => {
     const { container } = render(SignUpCta);
     const sources = Array.from(container.querySelectorAll('img')).map((img) =>

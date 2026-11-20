@@ -8,7 +8,7 @@
 // SANDBOX_DOCKER_SOCKET, and the add-two pack seeded via seed-demo.
 import { chromium } from 'playwright-core';
 import { execSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -22,7 +22,13 @@ const check = (name, ok, detail = '') => {
   console.log(line);
 };
 
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.E2E_CHANNEL ? { channel: process.env.E2E_CHANNEL } : {}),
+  ...(process.env.E2E_EXECUTABLE
+    ? { executablePath: process.env.E2E_EXECUTABLE }
+    : {})
+});
 const context = await browser.newContext();
 const page = await context.newPage();
 page.on('console', (m) => {
@@ -42,6 +48,15 @@ page.on('response', (r) => {
       .then((body) => runIds.push(body.run_id))
       .catch(() => {});
 });
+
+// Every speech-bubble request the page makes. The page may ask once per finished run.
+const speechPosts = [];
+page.on('request', (r) => {
+  if (r.method() === 'POST' && r.url().includes('/familiar-hint'))
+    speechPosts.push(r.url().split('/api/runs/')[1].split('/')[0]);
+});
+// The report records what the real stack produced, for the T25 evidence.
+const report = { runIds: [], events: {}, notes: {} };
 
 // --- Real sign-in through the dev mail transport ---
 const logSize = readFileSync(SERVER_LOG, 'utf8').length;
@@ -88,8 +103,26 @@ async function setSource(src) {
   await page.keyboard.insertText(src);
 }
 
-// --- Correct source: Run samples through the real judge ---
+// --- Correct source: the draft survives a reload, then Run samples ---
 await setSource('def add_two(a, b):\n    return a + b\n');
+await page.waitForTimeout(1500); // the draft saver is debounced
+await page.reload({ waitUntil: 'networkidle' });
+await page.waitForSelector('button:has-text("Run samples")', {
+  timeout: 15000
+});
+const restored = await page
+  .waitForFunction(
+    () =>
+      document
+        .querySelector('.monaco-editor .view-lines')
+        ?.textContent?.replace(/\u00a0/g, ' ')
+        .includes('return a + b'),
+    null,
+    { timeout: 15000 }
+  )
+  .then(() => true)
+  .catch(() => false);
+check('drafts: the saved source is restored after a reload', restored);
 await page.getByRole('button', { name: 'Run samples' }).click();
 const accepted = await page
   .waitForSelector('text=Accepted', { timeout: 90000 })
@@ -209,6 +242,44 @@ check(
   (ghostJson.autopsy?.explanation ?? '').slice(0, 80)
 );
 
+// --- Authored hints reveal in order from the real ladder ---
+await page.getByRole('button', { name: 'Show hint 1' }).click();
+const rung1 = await page
+  .waitForSelector('text=Read the signature: the judge calls add_two', {
+    timeout: 30000
+  })
+  .catch(() => null);
+check('hints: rung 1 is the authored text from the pack', !!rung1);
+const nextAfterOne = await page
+  .getByRole('button', { name: 'Show hint 2' })
+  .isVisible();
+check(
+  'hints: rung 2 is offered only after rung 1',
+  nextAfterOne &&
+    !(await page.getByRole('button', { name: 'Show hint 3' }).isVisible())
+);
+
+// --- The animated shrink list equals the persisted trace, step for step ---
+const shownSteps = (
+  await page.evaluate(() =>
+    [...document.querySelectorAll('li')]
+      .map((li) => li.textContent?.trim() ?? '')
+      .filter((text) => /^Step \d+: /.test(text))
+  )
+).map((text) => text.replace(/^Step \d+: /, ''));
+const recordedSteps = (ghostJson.shrink?.steps ?? []).map((step) =>
+  JSON.stringify(step.input)
+);
+check(
+  'ghost: the shrink list on the page equals the persisted trace',
+  recordedSteps.length > 0 &&
+    JSON.stringify(shownSteps.slice(-recordedSteps.length)) ===
+      JSON.stringify(recordedSteps),
+  `page=${shownSteps.join(' | ')} stored=${recordedSteps.join(' | ')}`
+);
+report.notes.shrink = { shown: shownSteps, stored: recordedSteps };
+report.notes.ghostProvenance = ghostJson.provenance ?? null;
+
 // --- Rerun the found ghost through the custom ghost endpoint (T02) ---
 // The panel's rerun button re-judges the same failing input; the wrong source
 // is still in the editor, so the custom run must reach a real verdict.
@@ -243,6 +314,47 @@ check(
   !/hidden.*(input|expected|got)/i.test(body) &&
     !/\[\[?-?\d+ *, *-?\d+.*\]\]/.test(body.replace(/\[\d+, \d+\]/g, '')),
   'no generated tuples visible'
+);
+
+// --- Measured Familiar and one speech request per finished run ---
+const finalId = runIds[runIds.length - 1] ?? '';
+const familiarEvent = pgScalar(
+  `select payload::text from run_events where submission_id = '${finalId}' and type = 'familiar'`
+);
+let familiarData = {};
+try {
+  familiarData = JSON.parse(familiarEvent);
+} catch {
+  // No familiar event: the check below fails with the empty value.
+}
+check(
+  'familiar: a measured mood was persisted for the accepted run',
+  typeof familiarData.mood === 'number' && familiarData.layer === 'measured',
+  familiarEvent.slice(0, 120)
+);
+for (let i = 0; i < 40 && !speechPosts.includes(finalId); i++)
+  await new Promise((r) => setTimeout(r, 500));
+check(
+  'familiar: one speech request for the final run, none repeated',
+  speechPosts.filter((id) => id === finalId).length === 1 &&
+    new Set(speechPosts).size === speechPosts.length,
+  `requests=${speechPosts.length} runs=${runIds.length}`
+);
+report.runIds = runIds;
+for (const id of runIds) {
+  const seqs = pgScalar(
+    `select string_agg(seq::text || ':' || type, ',' order by seq) from run_events where submission_id = '${id}'`
+  );
+  report.events[id] = seqs;
+}
+report.notes.familiar = familiarData;
+report.notes.speechRequests = speechPosts;
+const finalRead = await context.request.get(`${BASE}/api/runs/${finalId}`);
+report.notes.finalTerminal = await finalRead.json().catch(() => ({}));
+mkdirSync(join(here, '.scratch'), { recursive: true });
+writeFileSync(
+  join(here, '.scratch', 'ide-workspace-report.json'),
+  JSON.stringify(report, null, 2)
 );
 
 await browser.close();

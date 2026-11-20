@@ -15,7 +15,7 @@ use crate::hints::{
     chain::run_chain,
     config::HintConfig,
     cost::{cost_micros, estimate_tokens, worst_case_micros},
-    guard::{build_prompt, sanitise_output, PromptContext, PromptError, PromptKind},
+    guard::{build_prompt, sanitise_output, Prompt, PromptContext, PromptError, PromptKind},
     provider::{complete, ChatTransport},
     quota::{next_utc_midnight, CapReason, QuotaStore, Reservation, Reserve},
 };
@@ -92,10 +92,29 @@ pub async fn generate<T: ChatTransport>(
     kind: PromptKind,
     context: &PromptContext<'_>,
 ) -> Result<Generated, AiError> {
+    if deps.config.providers.is_empty() {
+        return Err(AiError::Disabled);
+    }
+    let prompt = build_prompt(kind, context)?;
+    generate_from_prompt(deps, user, now, &prompt).await
+}
+
+/// Runs the same pipeline as [`generate`] for a prompt the caller already built, such as the
+/// Familiar's speech prompt. Quota, spend, provider order and the output guard are identical.
+///
+/// # Errors
+///
+/// Returns an [`AiError`] describing why no text was produced. [`AiError::Prompt`] is never returned
+/// here, because the caller built the prompt.
+pub async fn generate_from_prompt<T: ChatTransport>(
+    deps: &Deps<'_, T>,
+    user: UserId,
+    now: OffsetDateTime,
+    prompt: &Prompt,
+) -> Result<Generated, AiError> {
     let Some(primary) = deps.config.providers.first() else {
         return Err(AiError::Disabled);
     };
-    let prompt = build_prompt(kind, context)?;
     let worst = worst_case_micros(
         &primary.price,
         prompt.byte_len(),
@@ -118,7 +137,7 @@ pub async fn generate<T: ChatTransport>(
         complete(
             deps.transport,
             &deps.config.providers[index],
-            &prompt,
+            prompt,
             deps.config.max_output_tokens,
             timeout,
         )

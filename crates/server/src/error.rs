@@ -55,6 +55,12 @@ impl ApiError {
         Self::new(StatusCode::NOT_FOUND, "not_found", message)
     }
 
+    /// The stable machine-readable code.
+    #[must_use]
+    pub fn code(&self) -> &'static str {
+        self.code
+    }
+
     /// A `429` error that tells the client how many seconds to wait.
     #[must_use]
     pub fn rate_limited(retry_after_seconds: u64) -> Self {

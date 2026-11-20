@@ -35,7 +35,13 @@ fn private_pack_dir() -> Option<PathBuf> {
 
 /// Codes with no textual trigger. GEN-02 guards the engine's own candidate stream, so
 /// no pack text can reach it. The engine's property tests cover it instead.
-const NOT_TEXT_REACHABLE: [&str; 1] = ["GEN-02"];
+const NOT_TEXT_REACHABLE: [&str; 2] = [
+    "GEN-02",
+    // LAY-07 (wrong-tree file) fires only on the public side of a pair or
+    // public validation; this runner always sees an assembled tree. The
+    // pair-side fixture in tests/layout.rs covers it instead (GRM-51).
+    "LAY-07",
+];
 
 /// One change to the copied pack.
 enum Edit {
@@ -356,11 +362,12 @@ impl Workspace {
         for name in ["reference", "incorrect"] {
             copy_dir(&private_dir.join(name), &pack.join(name));
         }
-        let ghosts = private_dir.join("known_ghosts.toml");
-        if !ghosts.is_file() {
-            return None;
+        for name in ["known_ghosts.toml", "generator.toml", "hidden.toml"] {
+            let source = private_dir.join(name);
+            if source.is_file() {
+                fs::copy(source, pack.join(name)).expect("copy private file");
+            }
         }
-        fs::copy(ghosts, pack.join("known_ghosts.toml")).expect("copy known_ghosts.toml");
         Some(Self(pack))
     }
 

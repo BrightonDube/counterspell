@@ -10,6 +10,10 @@
 //! With the argument `preflight` it runs the sandbox probe against every enabled language, prints
 //! the JSON report and exits non-zero when any check fails. There is no skip flag.
 //!
+//! With the argument `baseline --problem <slug> --lang <lang> [--fixture <path>]` it times a
+//! known-correct fixture in the sandbox and stores it as the same-language baseline, but only when
+//! the fit confirms the problem's declared class. Exit 0 stored, 1 refused, 2 judge fault.
+//!
 //! With the `sandbox` feature the worker runs submissions inside sandbox containers through
 //! `SandboxExecutor`; without it the `NoExecutor` placeholder fails every run as an internal
 //! error, never as a verdict.
@@ -28,10 +32,13 @@ use tokio::sync::watch;
 const POOL_SIZE: u32 = 8;
 
 fn main() -> ExitCode {
+    // nosemgrep: rust.lang.security.args.args
     match std::env::args().nth(1).as_deref() {
         Some("healthcheck") => return healthcheck(),
         #[cfg(feature = "sandbox")]
         Some("preflight") => return preflight(),
+        #[cfg(feature = "sandbox")]
+        Some("baseline") => return baseline(),
         _ => {}
     }
     match run_worker() {
@@ -95,6 +102,58 @@ async fn preflight() -> ExitCode {
             ExitCode::FAILURE
         }
     }
+}
+
+/// Runs the `baseline` admission and maps its result to the documented exit codes.
+#[cfg(feature = "sandbox")]
+#[tokio::main]
+async fn baseline() -> ExitCode {
+    use counterspell_judge::familiar::baseline_cmd::{
+        execute, exit_code, parse_args, BaselineError, BaselineOutcome, CommandError,
+    };
+
+    let raw: Vec<String> = std::env::args().skip(2).collect(); // nosemgrep: rust.lang.security.args.args
+    let args = match parse_args(&raw) {
+        Ok(args) => args,
+        Err(message) => {
+            eprintln!("baseline: {message}");
+            eprintln!("usage: baseline --problem <slug> --lang <lang> [--fixture <path>]");
+            return ExitCode::from(2);
+        }
+    };
+    let pool = match connect_pool().await {
+        Ok(pool) => pool,
+        Err(error) => {
+            eprintln!("baseline could not connect: {error}");
+            return ExitCode::from(2);
+        }
+    };
+    let result = execute(&args, &pool).await;
+    match &result {
+        Ok(BaselineOutcome::Stored { inserted }) => println!("stored {inserted} new baseline rows"),
+        Ok(BaselineOutcome::Refused(why)) => println!("refused: {why}"),
+        Err(CommandError::Setup(message)) => eprintln!("baseline could not run: {message}"),
+        Err(CommandError::Run(error)) => match error {
+            BaselineError::Collector(error) => eprintln!("baseline bench failed: {error:?}"),
+            BaselineError::Store(error) => eprintln!("baseline store failed: {error}"),
+        },
+    }
+    let code = match result {
+        Ok(outcome) => exit_code(&Ok::<_, BaselineError>(outcome)),
+        Err(CommandError::Setup(_)) => 2,
+        Err(CommandError::Run(error)) => exit_code(&Err(error)),
+    };
+    ExitCode::from(code)
+}
+
+/// Opens the judge's Postgres pool from `DATABASE_URL`.
+#[cfg(feature = "sandbox")]
+async fn connect_pool() -> Result<sqlx::PgPool, Box<dyn std::error::Error>> {
+    let database_url = std::env::var("DATABASE_URL")?;
+    Ok(PgPoolOptions::new()
+        .max_connections(2)
+        .connect(&database_url)
+        .await?)
 }
 
 /// Prints one line saying whether the heartbeat is fresh, and returns the matching exit code.

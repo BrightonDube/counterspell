@@ -11,7 +11,13 @@ const check = (name, ok, detail = '') =>
     `${ok ? 'PASS' : 'FAIL'} ${name}${detail ? ` — ${detail}` : ''}`
   );
 
-const browser = await chromium.launch({ channel: 'chrome', headless: true });
+const browser = await chromium.launch({
+  headless: true,
+  ...(process.env.E2E_CHANNEL ? { channel: process.env.E2E_CHANNEL } : {}),
+  ...(process.env.E2E_EXECUTABLE
+    ? { executablePath: process.env.E2E_EXECUTABLE }
+    : {})
+});
 const page = await browser.newPage();
 page.on('console', (m) => {
   if (m.type() === 'error')

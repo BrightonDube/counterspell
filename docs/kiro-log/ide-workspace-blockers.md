@@ -160,3 +160,16 @@ Upstream state checked this pass: run-lifecycle 54 of 56 done (the SSE route `GE
 - T15, T20: add tests for the missing assertions listed in the Verified table.
 - T09, T21, T22, T24, T25: install Chrome (or `npx playwright install chromium`, with a licence check) and re-run `web/e2e-shell-check.mjs` and `real-api-check.mjs`.
 - Env: point `COUNTERSPELL_PACKS_PRIVATE_ROOT` in `~/.config/counterspell/dev-test.env` at `/mnt/c/Users/Brighton/Downloads/Personal Projects/counterspell-packs-private`, or fast-forward `~/code/counterspell-packs-private` to 42467cd.
+
+## kiro/drive-queue run (19 Nov 2026)
+- T18 stale-test follow-up is already applied (`test-change: GHO-3` is in `WorkspaceShell.test.ts`); `WorkspaceShell.test.ts` passes 12/12. T18 stays `[ ]`: its verify line needs real-queue, ownership and rate-limit checks in a browser.
+- Still blocked: no Chrome or Playwright browsers on this machine (`~/.cache/ms-playwright` missing, no system chrome). Unblock: Brighton runs `npx playwright install chromium` (check its licence first) so T09, T21, T22, T24, T25 can be re-run. Everything else open in ide-workspace (T13, T15, T20, T26 to T28) depends on those or on the missing-assertion follow-ups already listed above.
+
+## kiro/drive-queue run (19 Nov 2026, later): browser available, T09 verified and ticked
+- Playwright's Chromium (revision 1255) is now installed. `playwright-core@1.57.0` expects revision 1200, so the harness scripts accept `E2E_EXECUTABLE` (path to the installed chrome) and `E2E_CHANNEL`. `npm i --no-save playwright-core@1.57.0` is needed before running them; nothing is saved to package.json.
+- `web/e2e-stub.mjs` fixtures were stale against the parsers: `examples` (not `samples`), `difficulty: easy`, and `/api/languages` returns `{ languages: [...] }`. Fixed, and the proxy now forces `accept-encoding: identity`.
+- `node e2e-shell-check.mjs`: 30/30 PASS (desktop, tablet, portrait, 200% zoom, 44px targets, drawers and focus return, route change). Web gate: svelte-check 0 errors, build ok, vitest 498 passed.
+- Still open: T21, T22, T24, T25 can now be re-run with the same override; T13/T15/T20 still need the missing assertions listed under "Follow-ups from verify all".
+
+## kiro/drive-queue run (20 Nov 2026): retry wedge fixed
+- The "Retry wedge" above is fixed (`25aeaaac`). Cause: sandbox container names did not include the attempt, so the retry's first create hit `409 Conflict` on the killed attempt's leftover container. A killed run now completes with its real verdict and ghost.

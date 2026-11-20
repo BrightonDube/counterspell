@@ -22,7 +22,7 @@ if grep -Eq -- "${path_field}approval\\.toml\"" <<< "$lower"; then
 fi
 
 if grep -Eq -- "${path_field}(packs|pack-assembly)/[^\"]*(hidden|generator|known_ghosts|retired-values)\\.toml\"" <<< "$lower"; then
-  printf '%s\n' 'LAY-05: a private file must not be written under the public packs folder (PIP-31)' >&2
+  printf '%s\n' 'LAY-07: a private file must not be written under the public packs folder (PIP-31)' >&2
   exit 2
 fi
 

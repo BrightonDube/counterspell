@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { markWorkspace } from '../performance';
   // Loads the problem and its languages for one slug. A new slug or a leave cancels the older request,
   // so a slow response can never replace the page the learner is looking at.
   import { loadLanguages } from '../api/languages';
@@ -26,6 +27,7 @@
       .then(([problem, languages]) => {
         if (!controller.signal.aborted) {
           state = { kind: 'ready', problem, languages };
+          markWorkspace('problem-detail-loaded');
         }
       })
       .catch((error: unknown) => {

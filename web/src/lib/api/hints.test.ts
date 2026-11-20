@@ -27,17 +27,34 @@ describe('requestAuthoredHint', () => {
     let body: unknown;
     const fetchImpl = async (_url: string, init?: RequestInit) => {
       body = JSON.parse(init?.body as string);
-      return jsonResponse({ rung: 2, text: 'Look at the inner loop.' });
+      // test-change: HNT-1. `POST /api/hints` answers with `body` (HintView in counterspell-common),
+      // not `text`. The old fixture used a field the server never sends, so the real ladder
+      // never showed a hint.
+      return jsonResponse({
+        rung: 2,
+        source: 'ladder',
+        body: 'Look at the inner loop.'
+      });
     };
     const hint = await requestAuthoredHint('sub-1', 2, { fetchImpl });
     expect(body).toEqual({ submission_id: 'sub-1', rung: 2 });
     expect(hint).toEqual({ rung: 2, text: 'Look at the inner loop.' });
   });
 
+  // Breaks if a reply without the server's `body` field is shown as a hint, which would put
+  // invented or empty text on the ladder.
+  it('refuses a reply that has no body', async () => {
+    const fetchImpl = async () =>
+      jsonResponse({ rung: 2, source: 'ladder', text: 'Wrong field.' });
+    await expect(
+      requestAuthoredHint('sub-1', 2, { fetchImpl })
+    ).rejects.toBeInstanceOf(ApiRequestError);
+  });
+
   // Breaks if a hint for a different rung is accepted, which would put the wrong text under the wrong number.
   it('refuses a reply for a different rung', async () => {
     const fetchImpl = async () =>
-      jsonResponse({ rung: 3, text: 'Too far ahead.' });
+      jsonResponse({ rung: 3, source: 'ladder', body: 'Too far ahead.' });
     await expect(
       requestAuthoredHint('sub-1', 2, { fetchImpl })
     ).rejects.toBeInstanceOf(ApiRequestError);

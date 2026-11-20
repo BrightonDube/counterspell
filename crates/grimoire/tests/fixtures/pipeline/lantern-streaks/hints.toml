@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Read the lanterns from the last house backwards."
+
+[[hint]]
+rung = 2
+text = "Stop counting at the first dark lantern."
+
+[[hint]]
+rung = 3
+text = "An empty street has no lit lanterns."
+
+[[hint]]
+rung = 4
+text = "Walk from the end while the value is 1 and count the steps."

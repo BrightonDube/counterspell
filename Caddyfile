@@ -2,7 +2,19 @@
 # The site address comes from CADDY_SITE_ADDRESS (host.env on the VPS). Locally it stays on :80.
 # Caddy obtains and renews the TLS certificate itself when the address is a real hostname.
 {$CADDY_SITE_ADDRESS::80} {
-    log
+    # Redact OAuth codes, state and email tokens wherever they appear in a query (R6.5).
+    log {
+        format filter {
+            wrap console
+            fields {
+                request>uri query {
+                    replace code REDACTED
+                    replace state REDACTED
+                    replace token REDACTED
+                }
+            }
+        }
+    }
 
     # Security headers on every response (R6.3). The Content-Security-Policy is report-only until the
     # Q17 decision: the SvelteKit build inlines a bootstrap script, so an enforced policy needs a

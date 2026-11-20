@@ -23,6 +23,12 @@ impl TempPack {
         pack.write("meta.toml", META);
         pack.write("hints.toml", HINTS);
         pack.write("reference/solution.py", REFERENCE);
+        pack.write(
+            "generator.toml",
+            "seed = 1729
+hidden_count = 12
+",
+        );
         pack
     }
 
@@ -71,10 +77,6 @@ items = [
   { type = "int_array", min_len = 0, max_len = 30, min = -50, max = 50 },
   { type = "int", min = -100, max = 100 },
 ]
-
-[generator]
-seed = 1729
-hidden_count = 12
 
 [[samples]]
 input = [[1, 2, 3, 2], 4]

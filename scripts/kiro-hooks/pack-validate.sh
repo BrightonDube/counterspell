@@ -10,11 +10,11 @@ if [[ -z "$file_path" ]]; then
   printf '%s\n' 'skipped: no changed pack path was supplied'
   exit 0
 fi
-# LAY-05: a private file must never be saved under packs/ (its public tree or the working copy).
+# LAY-07: a private file must never be saved under packs/ (its public tree or the working copy).
 case "$file_path" in
   */hidden.toml|hidden.toml|*/generator.toml|generator.toml|*/known_ghosts.toml|known_ghosts.toml|*/approval.toml|approval.toml|*/retired-values.toml|retired-values.toml)
     if [[ "$file_path" == packs/* || "$file_path" == */packs/* ]]; then
-      printf 'LAY-05: private file saved in the public packs tree: %s\n' "$file_path"
+      printf 'LAY-07: private file saved in the public packs tree: %s\n' "$file_path"
       exit 2
     fi
     ;;

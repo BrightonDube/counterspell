@@ -1,0 +1,159 @@
+{
+  "runIds": [
+    "2cada128-3388-4db6-8810-8bc433aa002c",
+    "f7cc6eb0-29ff-4628-8c69-333526959f2c",
+    "ba3aef88-b57b-49b4-a0bf-1edb394a3aa3",
+    "e89fa90b-21d1-4c13-b4ce-77d9ff38c1f5"
+  ],
+  "events": {
+    "2cada128-3388-4db6-8810-8bc433aa002c": "1:compiling,2:test,3:test,4:test,5:familiar,6:done",
+    "f7cc6eb0-29ff-4628-8c69-333526959f2c": "1:compiling,2:test,3:test,4:test,5:test,6:test,7:test,8:test,9:test,10:test,11:test,12:test,13:familiar,14:ghost_hunting,15:shrink_step,16:shrink_step,17:shrink_step,18:ghost,19:done",
+    "ba3aef88-b57b-49b4-a0bf-1edb394a3aa3": "1:compiling,2:test,3:done",
+    "e89fa90b-21d1-4c13-b4ce-77d9ff38c1f5": "1:compiling,2:test,3:test,4:test,5:test,6:test,7:test,8:test,9:test,10:test,11:test,12:test,13:familiar,14:done"
+  },
+  "notes": {
+    "shrink": {
+      "shown": [
+        "[2,3]",
+        "[1,1]",
+        "[0,1]"
+      ],
+      "stored": [
+        "[2,3]",
+        "[1,1]",
+        "[0,1]"
+      ]
+    },
+    "ghostProvenance": {
+      "seed": "12781717547319633454",
+      "image_digest": "python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90",
+      "engine_version": "0.1.0",
+      "problem_version": 1,
+      "generator_version": "gen-1"
+    },
+    "familiar": {
+      "mode": "submit",
+      "mood": 4,
+      "badge": "Passed",
+      "layer": "measured",
+      "effect": "none",
+      "reason": "no_bench_spec",
+      "headline": "Passed. Efficiency was not measured for this problem."
+    },
+    "speechRequests": [
+      "2cada128-3388-4db6-8810-8bc433aa002c",
+      "f7cc6eb0-29ff-4628-8c69-333526959f2c",
+      "ba3aef88-b57b-49b4-a0bf-1edb394a3aa3",
+      "e89fa90b-21d1-4c13-b4ce-77d9ff38c1f5"
+    ],
+    "finalTerminal": {
+      "run_id": "e89fa90b-21d1-4c13-b4ce-77d9ff38c1f5",
+      "problem": "add-two",
+      "lang": "python",
+      "mode": "submit",
+      "status": "completed",
+      "terminal": true,
+      "verdict": "accepted",
+      "failure_reason": null,
+      "attempt": 1,
+      "passed": 11,
+      "total": 11,
+      "score": 100,
+      "runtime_ms": 158,
+      "memory_kb": null,
+      "created_at": "2026-11-19T13:47:40.030Z",
+      "started_at": "2026-11-19T13:47:40.653Z",
+      "finished_at": "2026-11-19T13:47:41.480Z",
+      "last_seq": 14,
+      "tests": [
+        {
+          "ordinal": 1,
+          "sample": true,
+          "verdict": "pass",
+          "time_ms": 158,
+          "detail": {
+            "input": "[2,3]",
+            "expected": "5",
+            "got": "5"
+          }
+        },
+        {
+          "ordinal": 2,
+          "sample": true,
+          "verdict": "pass",
+          "time_ms": 0,
+          "detail": {
+            "input": "[-1,1]",
+            "expected": "0",
+            "got": "0"
+          }
+        },
+        {
+          "ordinal": 3,
+          "sample": true,
+          "verdict": "pass",
+          "time_ms": 0,
+          "detail": {
+            "input": "[0,0]",
+            "expected": "0",
+            "got": "0"
+          }
+        },
+        {
+          "ordinal": 4,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        },
+        {
+          "ordinal": 5,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        },
+        {
+          "ordinal": 6,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        },
+        {
+          "ordinal": 7,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        },
+        {
+          "ordinal": 8,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        },
+        {
+          "ordinal": 9,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        },
+        {
+          "ordinal": 10,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        },
+        {
+          "ordinal": 11,
+          "sample": false,
+          "verdict": "pass",
+          "time_ms": 0
+        }
+      ],
+      "familiar": {
+        "mood": 4,
+        "reason": "no_bench_spec",
+        "headline": "Passed. Efficiency was not measured for this problem.",
+        "badge": "Passed"
+      }
+    }
+  }
+}

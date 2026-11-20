@@ -21,6 +21,7 @@ impl TempPack {
         pack.write("meta.toml", META);
         pack.write("hints.toml", HINTS);
         pack.write("reference/solution.py", REFERENCE);
+        pack.write("generator.toml", GENERATOR);
         pack
     }
 
@@ -72,10 +73,6 @@ items = [
   { type = "int", min = -100, max = 100 },
 ]
 
-[generator]
-seed = 1729
-hidden_count = 12
-
 [[samples]]
 input = [[1, 2, 3, 2], 4]
 expected = 2
@@ -101,6 +98,10 @@ text = "Start the second loop after the first."
 rung = 4
 text = "Change where the inner loop starts."
 "#;
+
+const GENERATOR: &str = "seed = 1729
+hidden_count = 12
+";
 
 const REFERENCE: &str = "def count_pairs(values, target):\n    count = 0\n    for i in range(len(values)):\n        for j in range(i + 1, len(values)):\n            if values[i] + values[j] == target:\n                count += 1\n    return count\n";
 

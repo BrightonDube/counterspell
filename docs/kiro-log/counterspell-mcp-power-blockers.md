@@ -51,3 +51,80 @@
 
 ## 17 Nov 2026 verify all: 12 `counterspell-mcp` tests fail at `335968e`
 `cargo test -p counterspell-mcp` fails 12 `tools::tests::*` (for example `a_crashing_program_gives_a_crash_ghost`, `find_ghost_input_finds_a_failing_input_for_the_same_index_bug`) with `ToolError NotFound: the path does not exist`. Cause: `program_from` in `crates/mcp/src/tools.rs` resolves `incorrect/<file>.py` only inside the public pack directory, but the pack-tree split moved `incorrect/` to the private tree. Reproduced with `COUNTERSPELL_PACKS_PRIVATE_ROOT` set to the populated private checkout. These passed at `36d6064`. Unblock: resolve the program through the private pack dir (as `validate_pack` already does), then re-run. T11 also still needs the Kiro import test.
+
+## drive queue run (kiro/drive-queue): T05 and T10 are no longer blocked on judge-sandbox, but need a crate-graph decision
+- judge-sandbox T20 to T24 are done. A production `PackRunner` now exists: `PackSandboxRunner` and `PackRunnerFactory` in `crates/catalogue-cli/src/pack_runner.rs`, built on the judge's `sandbox::oracle::{side, evaluate_side}`.
+- The MCP spec assumed the runner would live in `counterspell-judge` (T05). That is not possible as written: `PackRunner` is defined in `counterspell-grimoire`, and the fixed decision says the judge never depends on grimoire.
+- Options, smallest first:
+  1. `counterspell-mcp` depends on `counterspell-catalogue-cli` as a library and reuses `PackRunnerFactory`. It pulls sqlx into the MCP binary, and it makes MCP a second consumer of catalogue-cli, which the 15 Nov decision describes as the only judge-plus-grimoire consumer.
+  2. Move the `PackRunner` trait (and `Target`, `RunnerError`) into `counterspell-common` or `counterspell-engine`, re-export it from grimoire, and move `PackSandboxRunner` into the judge. Wider change, no new edges between crates.
+  3. Copy a thin runner into `crates/mcp`. Rejected: duplicates security-sensitive code.
+- Assumed choice if Brighton does not overrule: option 2, because it keeps the crate rules. Not started, because it touches three crates and the boundary test in `crates/judge/tests/boundary.rs`.
+- `RunnerSlot` also holds one runner, while `PackRunnerFactory::build` needs a pack's sources and signature, so the slot must become a factory per pack.
+
+## drive queue run (kiro/drive-queue): T05 step 1 and 2 (Option 2) done; harness note
+- Brighton's 19 Nov Option 2 decision, parts 1 and 2:
+  - `PackRunner`, `Target` and `RunnerError` moved to `counterspell_engine::runner` (engine manifest unchanged: still only `serde` and `serde_json`). `counterspell_grimoire::runner` re-exports them, so every existing import still works. New tests: `crates/grimoire/tests/runner_engine_seam.rs`.
+  - `PackSandboxRunner`, `PackRunnerFactory` and `REFERENCE_SOURCE` moved to `counterspell_judge::sandbox::pack_runner` (the factory sits behind the judge's `sandbox` feature; the generic runner does not). `counterspell_catalogue_cli::pack_runner` re-exports them. The judge still does not depend on grimoire.
+- Verified: grimoire and engine suites pass, `boundary` 6/6, `pack_runner_bench` 2/2, `sbx_pack_runner` 6/6 on the rootless daemon when serialised.
+- **Pre-existing harness issue (not caused by this move):** `cargo test -p counterspell-catalogue-cli --test sbx_pack_runner -- --ignored` run in parallel fails 3 of 6 at `tests/sbx/mod.rs:125` ("containers still running"), because each test inspects every managed container on the shared daemon, including its siblings'. The same 3 fail on pristine HEAD (checked in a throwaway worktree). Run it with `-- --test-threads=1` until the harness scopes its check to its own containers or takes a lock.
+- Still open: T05's remaining part (MCP uses the judge runner) and T10 (`RunnerSlot` must become a per-pack factory; the production slot is still `unconfigured`).
+
+## drive queue run (kiro/drive-queue): T05 and T10 done
+- T05 ticked. The runner is shared, not copied: MCP builds the judge's `PackRunnerFactory` from the same `SandboxConfig` (same env names, limits, language catalogue, pinned images, drivers, per-call deadline plus kill slack, bounded stdout, session cleanup) that the worker uses, through the same `oracle::{side, evaluate_side, bench_side}` the worker's ghost hunts use. `PackRunnerFactory::verified` runs the worker's `daemon::verify` identity check, so a socket path alone is never trusted (this closes the judge-sandbox T39 Minor "MCP runner must verify, not only check the string").
+- T10 ticked. `run_reference`, `find_ghost_input` and `shrink_input` build a per-pack job (reference, the one program under test, the wire signature; nothing else) and release the runner when they finish. Fake-runner protocol tests: 59 unit tests. Real rootless daemon (`crates/mcp/tests/sbx_tools.rs`, 4 of 4, three consecutive runs): the reference sees `/.dockerenv` (so it ran in a container, not on this host); a program that never ends is a `timed_out` result inside 12 s; a real hunt returns the authored ghost `[[0],0]` (got 1, expected 0) and a shrink gets smaller; a pinned image the daemon does not hold is `sandbox_infrastructure`, not a program result; no container is left behind in any of them.
+- **Real defect found and fixed on the way:** the first real run left a container behind after every call, because the slot kept its last runner. Fixed with `RunnerSlot::release()` called by each tool, plus field order so the runner drops before the factory's runtime.
+- Test change (`test-change: MCP-1`, in `crates/mcp/src/runner.rs`): `production_slot` is now async and takes the workspace root; the old test "an accepted socket still fails closed until the judge runner exists" no longer describes the system, and became "an accepted socket with no daemon behind it is refused".
+- Also fixed: `RunContext::pool` lint under `--features sandbox` without `testkit` (a latent `unnecessary_wraps`, exposed because `counterspell-mcp` now enables the judge's `sandbox` feature on its own).
+- **For Brighton to review (security):** `counterspell-mcp` now links the judge's `sandbox` feature (bollard) and opens containers on the rootless daemon from the developer machine. It refuses a rootful or main daemon through the same identity check as the worker, and it builds no runner when the daemon fails it. `PackRunnerFactory::from_env` (used by the catalogue importer) still does not run the identity check; `verified` is the safe constructor, and moving the importer to it is a follow-up.
+- Still open in this spec: T11 (Kiro Power import test), T14 (registration), T15 (private dogfood pack), T16 to T19.
+
+## drive queue run (kiro/drive-queue): T14 verified, left unticked
+- Added `crates/mcp/tests/workspace_settings.rs` (5 tests): the workspace server uses the same command and args as `kiro-power/mcp.json`, a workspace-relative cwd whose `../Cargo.toml` is the root manifest, exactly the three pure tools in `autoApprove` (none of `run_reference`, `find_ghost_input`, `shrink_input`), no `env`, no socket or key text, and the Power itself approves nothing. The settings file already existed (19 Nov), so these pass on first run: guards, not a fix.
+- T14 stays `[ ]` only because its dependency T11 is open. T11 needs the Kiro custom-Power import test, which only the Kiro IDE can run. **HUMAN:** import `kiro-power/` as a custom Power in Kiro, confirm the six tools list, then T11 and T14 can be ticked.
+- T15 needs the private pack repo checkout; see below.
+
+## T15 blocked (kiro/drive-queue run): private half of the dogfood pack is missing
+- Public half exists: `packs/_demo/mcp-dogfood/{problem.md,meta.toml,hints.toml}` ("Best Window Sum", `status = "draft"`, `function = "best_window_sum"`, params `values: list[int]`, `k: int`, returns int, k larger than the list gives 0).
+- The 19 Nov note says `reference/` and `incorrect/` were moved to `counterspell-packs-private/packs/_demo/mcp-dogfood/`. They are not there: `~/code/counterspell-packs-private/packs/` holds only `count-pairs`, `diagonal-total`, `longest-run-length`. Nothing was lost from public git (the files were never committed under `packs/_demo/mcp-dogfood/`).
+- Not written by this run: the private checkout is a separate repo outside this workspace, hidden and reference code must live only there, and new pack content goes through `pack-author` then `pack-reviewer`.
+- **Unblock (Brighton):** run `pack-author` for `_demo/mcp-dogfood` to write `reference/solution.py` (correct) and `incorrect/<file>.py` (one deliberate bug that a tiny input exposes, for example an off-by-one that drops the last window, or k > len returning a partial sum), with an optional `known_ghosts.toml`, in the private checkout. Commit there. T15 then verifies with `validate_pack`.
+- T16, T17, T18, T19 depend on T15 (T17 also on the T11 import test). Nothing else in this spec can move.
+
+## 19 Nov — Devin takeover: T14, T15 done; Kiro legs still open
+
+- **T14 ticked.** `.kiro/settings/mcp.json` exists (committed in `e8e15c55`) and
+  `workspace_settings.rs` covers all guards: only `validate_pack`,
+  `explain_verdict`, `fit_complexity` auto-approved, workspace-relative `cwd`,
+  same command as `kiro-power/mcp.json`, no env/secrets.
+- **T15 ticked.** Public `packs/_demo/mcp-dogfood/` (problem.md, meta.toml,
+  hints.toml) plus private `packs/mcp-dogfood/` in
+  `counterspell-packs-private`: `reference/solution.py` (correct),
+  `incorrect/never-negative.py` (floors the running best at zero — the
+  all-negative-window ghost), `known_ghosts.toml` (`dogfood = true`).
+  `crates/mcp/tests/dogfood_pack.rs` proves: public tree carries no hidden
+  files, public-only validation fails only on missing private parts, and the
+  merged pair validates with `validate_pack` reporting `passed: true`.
+  `counterspell-catalogue import --slug _mcp-dogfood` → `refused:underscore_pack`.
+- **grimoire fix:** KNG-06 now honours the `_` mark on the container
+  (`packs/_demo/<slug>`) as well as the leaf — the leaf must stay a valid slug,
+  so the container carries the dogfood mark (`crates/grimoire/src/lib.rs`
+  `dogfood_scope`). Without it `dogfood = true` was unreachable.
+- **Real-sandbox evidence (T10/T19 legs):** all 4 `sbx_tools` tests pass on the
+  local rootless daemon (`SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock`):
+  code runs only in a container, hostile loop → timeout, find+shrink leaves no
+  container, unstartable sandbox → infrastructure error, never a wrong answer.
+- **T18 static checks all pass** (boundary greps: no bollard in mcp, main
+  socket refused via `MainDaemonSocket`, 8 workspace crates — testserver and
+  catalogue-cli added by other specs after this spec was written).
+- **Still blocked on Kiro:** T11 (real-client Power import is its only verify),
+  T16 (scripted Kiro session), T17 (scrubbed evidence). T18/T19 left unticked
+  because they depend on T17; every agent-runnable check for them passes and is
+  recorded here.
+
+## 2026-11-20 - T11/T18/T19 ticked; T16/T17 remain human
+
+- T11: kiro-power/plugin.json + mcp.json exist and parse; stdio command is repo-relative (PLUGIN_ROOT, manifest-path ../Cargo.toml); no credentials, no auto-approved execution tools. The Kiro custom-Power import test needs Brighton's Kiro install - recorded pending.
+- T18: boundary scans run - zero docker.sock or /var/run references outside refusal tests; autoApprove limited to the three pure tools; six canonical packages unchanged.
+- T19: full counterspell-mcp suite 73/73 plus all four real-sandbox sbx_* tests passed on the rootless daemon (code exec, hostile loop timeout, ghost hunt+shrink, infra-error classification).
+- T16/T17: require an interactive Kiro session + screenshots - Brighton only.
