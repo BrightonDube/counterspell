@@ -1,13 +1,13 @@
 slug = "count-pairs"
 title = "Count the Pairs"
-status = "published"
+status = "draft"
 difficulty = "easy"
 track = "arrays"
 concepts = ["arrays", "pairs", "nested-loops"]
 origin = "original"
 author = "Brighton"
 licence = "MIT"
-pack_version = 4
+pack_version = 5
 function = "count_pairs"
 returns = "int"
 comparator = "exact"
@@ -32,10 +32,6 @@ items = [
   { type = "int_array", min_len = 0, max_len = 30, min = -50, max = 50 },
   { type = "int", min = -100, max = 100 },
 ]
-
-[generator]
-seed = 1729
-hidden_count = 12
 
 [[samples]]
 input = [[1, 2, 3, 2], 4]

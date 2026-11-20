@@ -134,7 +134,10 @@ describe('DashboardScreen', () => {
     render(DashboardScreen, { props: { load: async () => emptyView } });
 
     expect(await screen.findByText('No practice yet')).toBeTruthy();
-    expect(screen.queryByRole('link')).toBeNull();
+    // test-change: BRK-1. The Break Room link is navigation, not fabricated progress.
+    const links = screen.getAllByRole('link');
+    expect(links).toEqual([screen.getByRole('link', { name: 'Break room' })]);
+    expect(links[0]?.getAttribute('href')).toBe('/break');
   });
 
   // Breaks if the solved count, streak, weak concept or recent run is missing or shows the wrong words.

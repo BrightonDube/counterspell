@@ -1,0 +1,17 @@
+[[ghost]]
+id = "single-run-at-end"
+program = "incorrect/forgot-last-run.py"
+kind = "wrong"
+input = ["a"]
+got = 0
+concepts = ["strings", "loops"]
+explanation = "A run that reaches the end of the string is still a run. Your loop only records a run when the next character differs, so the last run is never recorded."
+
+[[ghost]]
+id = "empty-string-first-char"
+program = "incorrect/empty-first-char.py"
+kind = "crash"
+input = [""]
+exception_class = "IndexError"
+concepts = ["strings", "edge-cases"]
+explanation = "An empty string has no first character. Reading s[0] before checking the length raises IndexError."

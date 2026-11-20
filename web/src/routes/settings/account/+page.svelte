@@ -174,9 +174,9 @@
             Your details
           </h2>
           <p>
-            Email: <span class="text-text-muted"
-              >{user.email ?? 'No email address yet'}</span
-            >
+            Email: <span class="text-text-muted">
+              {user.email ?? 'No email address yet'}
+            </span>
           </p>
           <p>
             Linked sign-in:
@@ -237,9 +237,12 @@
           {:else}
             <form class="space-y-3" onsubmit={addEmail}>
               <div class="space-y-1">
-                <label class="block text-sm text-text-muted" for="account-email"
-                  >Email address</label
+                <label
+                  class="block text-sm text-text-muted"
+                  for="account-email"
                 >
+                  Email address
+                </label>
                 <input
                   id="account-email"
                   class={fieldClass}
@@ -299,9 +302,9 @@
             submissions. It cannot be undone.
           </p>
           <div class="space-y-1">
-            <label class="block text-sm text-text-muted" for="delete-confirm"
-              >Type your handle <span class="font-mono">{user.handle}</span> to confirm</label
-            >
+            <label class="block text-sm text-text-muted" for="delete-confirm">
+              Type your handle <span class="font-mono">{user.handle}</span> to confirm
+            </label>
             <input
               id="delete-confirm"
               class={fieldClass}

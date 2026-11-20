@@ -117,8 +117,10 @@
           {phase === 'input'
           ? 'border-border bg-surface'
           : 'border-border bg-raised'}"
-        aria-label={'Tile ' + (i + 1)}>{i + 1}</button
+        aria-label={'Tile ' + (i + 1)}
       >
+        {i + 1}
+      </button>
     {/each}
   </div>
   <div class="flex gap-2">
@@ -126,12 +128,15 @@
       class="rounded-md bg-accent-candle px-4 py-2 text-sm font-medium text-bg"
       onclick={start}
       disabled={phase === 'showing'}
-      >{phase === 'idle' ? 'Start' : 'Restart'}</button
     >
+      {phase === 'idle' ? 'Start' : 'Restart'}
+    </button>
     <a
       class="self-center text-sm text-text-muted underline"
-      href={resolve('/break')}>Back to the break room</a
+      href={resolve('/break')}
     >
+      Back to the break room
+    </a>
   </div>
 </main>
 

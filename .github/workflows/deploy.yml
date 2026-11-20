@@ -103,11 +103,12 @@ jobs:
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           identity="^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/publish-images\.yml@refs/(heads/main|tags/v.+)$"
           for img in server judge migrate; do
-            ref="ghcr.io/${owner}/counterspell-${img}:sha-${SHA}"
-            cosign verify "$ref" --certificate-identity-regexp "$identity" \
-              --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+            image="ghcr.io/${owner}/counterspell-${img}"
+            ref="${image}:sha-${SHA}"
             digest=$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}')
             [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::Bad digest for $ref"; exit 1; }
+            cosign verify "${image}@${digest}" --certificate-identity-regexp "$identity" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
             echo "${img}=${digest}" >> "$GITHUB_OUTPUT"
           done
       - name: Deploy over SSH (pinned host key, forced command)

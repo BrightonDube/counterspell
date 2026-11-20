@@ -120,17 +120,19 @@
     class="break-board max-w-md"
     data-testid="board"
   ></div>
-  <output class="block text-sm text-text-muted" aria-live="polite"
-    >{statusLine}</output
-  >
+  <output class="block text-sm text-text-muted" aria-live="polite">
+    {statusLine}
+  </output>
   <p role="status" class="text-sm">{feedback}</p>
   {#if saveResult}<p role="status" class="text-sm text-text-muted">
       {saveResult}
     </p>{/if}
   {#if signedOut}<a
       class="text-accent underline"
-      href={resolve('/login?return_to=/break/puzzle')}>Sign in</a
-    >{/if}
+      href={resolve('/login?return_to=/break/puzzle')}
+    >
+      Sign in
+    </a>{/if}
   <form
     class="flex gap-2"
     onsubmit={(e) => {
@@ -138,9 +140,9 @@
       submitText();
     }}
   >
-    <label class="sr-only" for="move-input"
-      >Move in UCI (e2e4) or SAN (Nf3)</label
-    >
+    <label class="sr-only" for="move-input">
+      Move in UCI (e2e4) or SAN (Nf3)
+    </label>
     <input
       id="move-input"
       class="w-40 rounded-md border border-border bg-surface px-3 py-2 text-sm"
@@ -151,10 +153,11 @@
     <button
       type="submit"
       class="rounded-md bg-accent-candle px-4 py-2 text-sm font-medium text-bg hover:bg-accent-candle-glow"
-      >Play</button
     >
+      Play
+    </button>
   </form>
-  <a class="text-sm text-text-muted underline" href={resolve('/break')}
-    >Back to the break room</a
-  >
+  <a class="text-sm text-text-muted underline" href={resolve('/break')}>
+    Back to the break room
+  </a>
 </main>

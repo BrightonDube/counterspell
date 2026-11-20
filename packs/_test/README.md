@@ -4,17 +4,22 @@ These three packs exist to test the ghost engine. They are not catalogue problem
 
 ## The `_` prefix
 
-Any directory whose name starts with `_` is for tests only. The pack importer and validator must skip it, so these packs never reach the catalogue.
+Any directory whose name starts with `_` is for tests only. The pack importer must skip it, so these packs never reach the catalogue. `validate --all packs` skips them too; `validate --all packs --include-underscore` validates each pack inside a `_` container (the container itself is not a pack).
 
 ## Layout
 
-Each pack directory holds:
+Each pack is a self-contained Grimoire pack in the two-tree format (grimoire-packs T29, amendment X1). A single tree that carries private-resident files is an assembled tree, so public and private files sit side by side here:
 
-- `problem.md`: the original statement.
-- `ghost.json`: engine data. It has the schema, comparator, concept tags, samples, authored known ghosts, and the list of incorrect programs with their hand-traced vectors.
-- `golden.json`: hand-verified reference vectors.
+- `problem.md`: the statement, in the `## Task` / `## Input` / `## Output` / `## Examples` / `## Constraints` order.
+- `meta.toml`: slug, title, difficulty, track, concepts, function, params, limits, `input_schema` and samples. No `[generator]` table — that lives in `generator.toml`.
+- `hints.toml`: the four-rung ladder.
+- `generator.toml`: the private generation seed and `hidden_count`.
+- `hidden.toml`: the curated hidden cases — the hand-verified golden vectors, each with a `why`.
+- `known_ghosts.toml`: the authored ghosts, each pointing at the `incorrect/` program that shows it.
 - `reference/solution.py`: the trusted reference.
-- `incorrect/*.py`: deliberately wrong programs. Each one is listed in `ghost.json`.
+- `incorrect/*.py`: deliberately wrong programs. Each is referenced by a ghost and has an engine descriptor.
+
+The engine-only descriptors that have no pack-format slot — per-program kind, expected exception class, smallest input, `dogfood` flag and hand-traced vectors — live in `crates/engine/tests/fixtures/<slug>.json`. A grimoire-side test (`crates/grimoire/tests/test_pack_projection.rs`) keeps that projection in sync with these files.
 
 The packs are `pair-count`, `longest-run` and `diagonal-sum`. Each has two incorrect programs. The incorrect programs cover a wrong answer and a crash.
 
@@ -24,7 +29,7 @@ Python files are never run on the host. The Rust test support in `crates/engine/
 
 1. Every reference model reproduces its golden vectors and samples.
 2. Every incorrect model reproduces its hand-traced vectors.
-3. Each incorrect program yields a verified ghost, and that ghost matches the smallest input recorded in `ghost.json`. The check is a regression expectation for the current shrinker, not a claim of minimality.
+3. Each incorrect program yields a verified ghost, and that ghost matches the smallest input recorded in its descriptor. The check is a regression expectation for the current shrinker, not a claim of minimality.
 4. Each reference hunted against itself reports `NotFound`.
 
 **The limit:** the models stand in for the sandbox. A model can drift from its Python file, and the hand-traced vectors are the only control against that. The static checks in `packs.rs` only confirm the file names and function names match.
@@ -33,10 +38,11 @@ Python files are never run on the host. The Rust test support in `crates/engine/
 
 ## Dogfooding candidate
 
-`pair-count/incorrect/same-index.py` is flagged `"dogfood": true` in `ghost.json`. It is the buggy implementation that the Kiro dogfooding demo (MCP-3) can point `find_ghost_input` at.
+`pair-count/incorrect/same-index.py` is flagged `"dogfood": true` in its engine descriptor. It is the buggy implementation that the Kiro dogfooding demo (MCP-3) can point `find_ghost_input` at.
 
 ## Authoring rules
 
 - Write the statement, vectors and known-ghost explanations in your own words. Do not copy text from other sites.
 - Hand-check every vector against the Python source before you commit it.
 - Keep known ghosts in their smallest form, and fill in `got` so that a different bug cannot borrow the explanation.
+- After editing a pack file, keep the engine projection in sync: `crates/grimoire/tests/test_pack_projection.rs` fails when they drift.

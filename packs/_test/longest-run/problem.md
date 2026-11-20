@@ -1,18 +1,16 @@
 # Longest Run
 
-Given a string `s` made only of the letters `a`, `b` and `c`, return the length of the longest run of identical characters that sit next to each other.
+## Task
 
-- A run of one character counts as length 1.
-- An empty string has no runs, so the answer is 0.
+Given a string `s` over the alphabet `a`, `b`, `c`, find the length of the longest run of one repeated character. A run is a maximal stretch where every character is the same.
 
-## Function
+## Input
 
-Write `longest_run(s)`. Return the length as an integer.
+- `s`: a string of 0 to 40 characters, each one `a`, `b` or `c`.
 
-## Constraints
+## Output
 
-- `s` has between 0 and 40 characters.
-- Each character is `a`, `b` or `c`.
+An integer: the length of the longest run. The empty string has no runs, so the answer is 0.
 
 ## Examples
 
@@ -21,5 +19,10 @@ Write `longest_run(s)`. Return the length as an integer.
 | `"aabbb"` | `3` |
 | `""` | `0` |
 | `"abc"` | `1` |
+
+## Constraints
+
+- `s` has between 0 and 40 characters.
+- Every character is `a`, `b` or `c`.
 
 This is a test pack used only by the ghost engine's conformance tests. It is not in the catalogue.

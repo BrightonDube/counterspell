@@ -122,15 +122,15 @@
         </h2>
         {#if options.providers.github}
           <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- server sign-in endpoint, not a SvelteKit route -->
-          <a class={linkClass} href={providerSignInUrl('github', returnTo)}
-            >GitHub</a
-          >
+          <a class={linkClass} href={providerSignInUrl('github', returnTo)}>
+            GitHub
+          </a>
         {/if}
         {#if options.providers.google}
           <!-- eslint-disable-next-line svelte/no-navigation-without-resolve -- server sign-in endpoint, not a SvelteKit route -->
-          <a class={linkClass} href={providerSignInUrl('google', returnTo)}
-            >Google</a
-          >
+          <a class={linkClass} href={providerSignInUrl('google', returnTo)}>
+            Google
+          </a>
         {/if}
       </section>
 
@@ -171,8 +171,10 @@
                   <div class="space-y-1">
                     <label
                       class="block text-sm text-text-muted"
-                      for="magic-email">Email address</label
+                      for="magic-email"
                     >
+                      Email address
+                    </label>
                     <input
                       id="magic-email"
                       class={fieldClass}
@@ -182,9 +184,9 @@
                       bind:value={email}
                     />
                   </div>
-                  <button class={buttonClass} type="submit" disabled={busy}
-                    >Send me a link</button
-                  >
+                  <button class={buttonClass} type="submit" disabled={busy}>
+                    Send me a link
+                  </button>
                 </form>
               </Tabs.Content>
             {/if}
@@ -195,8 +197,10 @@
                   <div class="space-y-1">
                     <label
                       class="block text-sm text-text-muted"
-                      for="password-email">Email address</label
+                      for="password-email"
                     >
+                      Email address
+                    </label>
                     <input
                       id="password-email"
                       class={fieldClass}
@@ -209,8 +213,10 @@
                   <div class="space-y-1">
                     <label
                       class="block text-sm text-text-muted"
-                      for="password-value">Password</label
+                      for="password-value"
                     >
+                      Password
+                    </label>
                     <input
                       id="password-value"
                       class={fieldClass}
@@ -220,9 +226,9 @@
                       bind:value={password}
                     />
                   </div>
-                  <button class={buttonClass} type="submit" disabled={busy}
-                    >Sign in</button
-                  >
+                  <button class={buttonClass} type="submit" disabled={busy}>
+                    Sign in
+                  </button>
                 </form>
               </Tabs.Content>
             {/if}

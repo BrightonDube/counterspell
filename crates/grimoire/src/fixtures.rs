@@ -37,10 +37,6 @@ items = [
   { type = "int", min = -100, max = 100 },
 ]
 
-[generator]
-seed = 1729
-hidden_count = 12
-
 [[samples]]
 input = [[1, 2, 3, 2], 4]
 expected = 2
@@ -52,7 +48,20 @@ expected = 1
     .to_owned()
 }
 
+/// A complete, valid `generator.toml` (amendment X1: it lives in the private tree).
+pub(crate) fn generator_text() -> String {
+    r"seed = 1729
+hidden_count = 12
+"
+    .to_owned()
+}
+
 /// Parses meta text without running the value checks, so a test can exercise one check.
 pub(crate) fn parse(text: &str) -> Meta {
     toml::from_str::<Meta>(text).expect("fixture meta.toml must deserialise")
+}
+
+/// Parses generator.toml text, so a test can mutate one field at a time.
+pub(crate) fn parse_generator(text: &str) -> crate::meta::Generator {
+    toml::from_str::<crate::meta::Generator>(text).expect("fixture generator.toml must deserialise")
 }

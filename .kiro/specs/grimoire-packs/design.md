@@ -291,6 +291,7 @@ Each code appears in `codes.rs` and has a negative fixture (GRM-51).
 | LAY-04 | error | size cap exceeded (file or pack) |
 | LAY-05 | error | text is not UTF-8, or has a forbidden control character |
 | LAY-06 | error | directory name is not a valid slug, or differs from `meta.slug` |
+| LAY-07 | error | a private-only file or a generator table is present in the public pack tree |
 | MET-01 | error | TOML syntax error or unknown key (file, line, column) |
 | MET-02 | error | required field missing, wrong type, or out of range |
 | MET-03 | error | `origin` is not `original`, `licence` is not `MIT`, or a third-party field exists |

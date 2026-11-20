@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk the string once and remember the run you are in and the best run you have seen."
+
+[[hint]]
+rung = 2
+text = "A run that reaches the end of the string still counts; do not wait for a different character to record it."
+
+[[hint]]
+rung = 3
+text = "```\nfor ch in s\n  cur = cur + 1 if ch == prev else 1\n  best = max(best, cur)\n```"
+
+[[hint]]
+rung = 4
+text = "Check the two edge cases before indexing: an empty string has no first character, and the last run must be folded into the answer after the loop."

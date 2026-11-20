@@ -8,7 +8,7 @@
 # $PACK_ASSEMBLY_ROOT/<slug>.manifest (default target/pack-assembly) with one "hash  path" line
 # per file, sorted by path. This script never prints a file's contents, only names and codes.
 #
-# Exit codes: 0 assembled, 2 usage or bad slug, 3 refused (LAY-05 or symbolic link),
+# Exit codes: 0 assembled, 2 usage or bad slug, 3 refused (LAY-07 or symbolic link),
 # 4 private or public tree missing (PIP-34), 5 a copy or hash step failed.
 set -euo pipefail
 
@@ -55,24 +55,24 @@ for tree in "$public_dir" "$private_dir"; do
     fi
 done
 
-# LAY-05: a private file must not sit in the public tree (checked at any depth).
+# LAY-07: a private file must not sit in the public tree (checked at any depth).
 for name in "${PRIVATE_FILE_NAMES[@]}"; do
     if [[ -n "$(find "$public_dir" -type f -name "$name" -print -quit)" ]]; then
-        die 3 "LAY-05: the private file $name is in the public tree"
+        die 3 "LAY-07: the private file $name is in the public tree"
     fi
 done
 for name in "${PRIVATE_DIR_NAMES[@]}"; do
     if [[ -n "$(find "$public_dir" -type d -name "$name" -print -quit)" ]]; then
-        die 3 "LAY-05: the private folder $name is in the public tree"
+        die 3 "LAY-07: the private folder $name is in the public tree"
     fi
 done
 
-# LAY-05: the same relative path must not exist in both trees. Overwriting one with the other is refused.
+# LAY-07: the same relative path must not exist in both trees. Overwriting one with the other is refused.
 collisions="$(cd "$public_dir" && find . -type f | LC_ALL=C sort)"
 private_files="$(cd "$private_dir" && find . -type f | LC_ALL=C sort)"
 shared="$(LC_ALL=C comm -12 <(printf '%s\n' "$collisions") <(printf '%s\n' "$private_files") || true)"
 if [[ -n "$shared" ]]; then
-    die 3 "LAY-05: a path exists in both trees; refusing to overwrite"
+    die 3 "LAY-07: a path exists in both trees; refusing to overwrite"
 fi
 
 # Rebuild the assembled copy from scratch. The slug was checked, so this stays under $assembly_root.

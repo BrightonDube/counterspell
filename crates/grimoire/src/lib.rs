@@ -29,7 +29,7 @@ pub mod statement;
 #[cfg(test)]
 mod fixtures;
 
-use report::Report;
+use report::{Diagnostic, Report};
 use runner::PackRunner;
 pub use sandbox::SandboxFault;
 
@@ -68,10 +68,11 @@ pub fn validate_static(root: &Path) -> io::Result<Report> {
     Ok(report)
 }
 
-/// [] for a public tree checked on its own ().
-///  and  are private-resident by policy, so a missing
-/// reference skips that stage instead of failing it; every other check stays
-/// strict. Used by CI, which never sees the private checkout.
+/// Validates the public tree of a pack on its own (`--public`).
+/// `reference/solution.py` and the other private files are private-resident
+/// by policy, so an absent reference reports a warning and skips that stage;
+/// every other check stays strict. Used by CI, which never sees the private
+/// checkout.
 ///
 /// # Errors
 ///
@@ -165,6 +166,29 @@ fn validate_pack(
     limits::check(&meta, report);
     report.mark_checked("limits");
 
+    // Amendment X1: the generator settings live in private `generator.toml`.
+    // A `[generator]` table inside meta.toml was already flagged LAY-07 by the
+    // meta check; the file form supplies the values instead.
+    let mut meta = meta;
+    match pack.text("generator.toml") {
+        Some(text) => match toml::from_str::<meta::Generator>(text) {
+            Ok(generator) => meta.generator = Some(generator),
+            Err(_) => report.push(Diagnostic::new(
+                codes::GEN_01,
+                "generator.toml",
+                None,
+                "generator.toml does not parse",
+            )),
+        },
+        None if !public_only => report.push(Diagnostic::new(
+            codes::LAY_01,
+            "generator.toml",
+            None,
+            "required file is missing",
+        )),
+        None => {}
+    }
+
     match pack.text("problem.md") {
         Some(text) => {
             statement::check(text, &meta.title, report);
@@ -174,8 +198,12 @@ fn validate_pack(
     }
     samples::check(&meta, report);
     report.mark_checked("samples");
-    generator::check(&meta, report);
-    report.mark_checked("generator");
+    if public_only && meta.generator.is_none() {
+        report.mark_skipped("generator");
+    } else {
+        generator::check(&meta, meta.generator.as_ref(), report);
+        report.mark_checked("generator");
+    }
 
     match pack.text("known_ghosts.toml") {
         Some(text) => {
@@ -186,6 +214,12 @@ fn validate_pack(
     }
 
     if public_only && pack.text("reference/solution.py").is_none() {
+        report.push(Diagnostic::new(
+            codes::REF_01_PUBLIC,
+            "reference/solution.py",
+            None,
+            "reference is expected in the private tree",
+        ));
         report.mark_skipped("reference");
     } else {
         reference::check(pack.text("reference/solution.py"), &meta.function, report);
@@ -244,13 +278,20 @@ fn validate_sandbox_loader(
         .file_name()
         .and_then(|name| name.to_str())
         .unwrap_or_default();
-    let Some(meta) = loaded
+    let Some(mut meta) = loaded
         .text(META_FILE)
         .and_then(|text| meta::check(text, dir_name, &mut scratch))
     else {
         report.mark_skipped("sandbox");
         return Ok(report);
     };
+    // The generator values live in private generator.toml (amendment X1); the
+    // static pass already validated them, so this fill never reports.
+    if let Some(text) = loaded.text("generator.toml") {
+        if let Ok(generator) = toml::from_str::<meta::Generator>(text) {
+            meta.generator = Some(generator);
+        }
+    }
     sandbox::check(&meta, &loaded, runner, &mut report).map_err(SandboxFault::Runner)?;
     report.mark_checked("sandbox");
     Ok(report)

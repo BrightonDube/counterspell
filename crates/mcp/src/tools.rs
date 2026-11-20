@@ -1323,6 +1323,13 @@ explanation = "min() on an empty list raises."
             std::fs::write(pack.join("reference/solution.py"), JOB_REFERENCE).expect("reference");
             std::fs::write(pack.join("incorrect/same-index.py"), JOB_PROGRAM).expect("program");
             std::fs::write(pack.join("known_ghosts.toml"), JOB_GHOSTS).expect("ghosts");
+            std::fs::write(
+                pack.join("generator.toml"),
+                "seed = 1729
+hidden_count = 12
+",
+            )
+            .expect("generator");
             Self(root)
         }
     }
@@ -1338,7 +1345,7 @@ explanation = "min() on an empty list raises."
     const JOB_GHOSTS: &str = "[[ghost]]\nid = \"same-index\"\nprogram = \"incorrect/same-index.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 3\nconcepts = [\"pairs\"]\nexplanation = \"A value cannot pair with itself, so the single item must not be counted.\"\n";
     const JOB_PROBLEM: &str = "# Count the Pairs\n\n## Task\nCount.\n\n## Input\nA.\n\n## Output\nB.\n\n## Examples\nC.\n\n## Constraints\nD.\n";
     const JOB_HINTS: &str = "[[hint]]\nrung = 1\ntext = \"One.\"\n\n[[hint]]\nrung = 2\ntext = \"Two.\"\n\n[[hint]]\nrung = 3\ntext = \"Three.\"\n\n[[hint]]\nrung = 4\ntext = \"Four.\"\n";
-    const JOB_META: &str = "slug = \"job-demo\"\ntitle = \"Count the Pairs\"\nstatus = \"draft\"\ndifficulty = \"easy\"\ntrack = \"arrays\"\nconcepts = [\"arrays\", \"pairs\"]\norigin = \"original\"\nauthor = \"Brighton\"\nlicence = \"MIT\"\npack_version = 1\nfunction = \"count_pairs\"\nreturns = \"int\"\ncomparator = \"exact\"\n\n[[params]]\nname = \"values\"\ntype = \"list[int]\"\n\n[[params]]\nname = \"target\"\ntype = \"int\"\n\n[limits]\ntime_ms = 2000\nmem_mb = 256\n\n[input_schema]\ntype = \"tuple\"\nitems = [\n  { type = \"int_array\", min_len = 0, max_len = 30, min = -50, max = 50 },\n  { type = \"int\", min = -100, max = 100 },\n]\n\n[generator]\nseed = 1729\nhidden_count = 12\n\n[[samples]]\ninput = [[1, 2, 3, 2], 4]\nexpected = 2\n\n[[samples]]\ninput = [[5, 5], 10]\nexpected = 1\n";
+    const JOB_META: &str = "slug = \"job-demo\"\ntitle = \"Count the Pairs\"\nstatus = \"draft\"\ndifficulty = \"easy\"\ntrack = \"arrays\"\nconcepts = [\"arrays\", \"pairs\"]\norigin = \"original\"\nauthor = \"Brighton\"\nlicence = \"MIT\"\npack_version = 1\nfunction = \"count_pairs\"\nreturns = \"int\"\ncomparator = \"exact\"\n\n[[params]]\nname = \"values\"\ntype = \"list[int]\"\n\n[[params]]\nname = \"target\"\ntype = \"int\"\n\n[limits]\ntime_ms = 2000\nmem_mb = 256\n\n[input_schema]\ntype = \"tuple\"\nitems = [\n  { type = \"int_array\", min_len = 0, max_len = 30, min = -50, max = 50 },\n  { type = \"int\", min = -100, max = 100 },\n]\n\n[[samples]]\ninput = [[1, 2, 3, 2], 4]\nexpected = 2\n\n[[samples]]\ninput = [[5, 5], 10]\nexpected = 1\n";
 
     /// Records the job it was given and hands out the scripted fake.
     struct JobRecorder(Arc<Mutex<Vec<PackJob>>>);

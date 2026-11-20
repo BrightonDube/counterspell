@@ -25,7 +25,7 @@ Conventions for every task:
 |---|---|---|
 | Grimoire static validator, `ProblemRecord`, CLI | grimoire-packs T12, T13, T14 | done |
 | Grimoire layout for the two-tree split | grimoire-packs amendment X1 (design §14) | **not yet specified** |
-| New grimoire codes (HID, STM-03, HNT-03, ORG, GHC, PUB, APR, REV, SUM, SLUG, TAX, BRF, LAY-05) | grimoire-packs amendment X2 | **not yet specified** (HID-* are in `33-starter-pack-hardening-v2.md` only) |
+| New grimoire codes (HID, STM-03, HNT-03, ORG, GHC, PUB, APR, REV, SUM, SLUG, TAX, BRF, LAY-07) | grimoire-packs amendment X2 | **not yet specified** (HID-* are in `33-starter-pack-hardening-v2.md` only) |
 | Judge `PackRunner` | judge-sandbox T20 to T22, grimoire-packs T20 | open or blocked |
 | Judge host checks (VPS) | judge-sandbox T02, T37 | `[HUMAN]` on the VPS |
 | Code-running MCP tools | counterspell-mcp-power T10, T16 | open |
@@ -113,10 +113,10 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
 
 - [ ] **PA08 [S] [BLOCKED on grimoire-packs amendment X1 and X2] (30 min) Teach grimoire the assembled layout**
   - Files: `crates/grimoire/src/layout.rs` (existing), `crates/grimoire/tests/layout.rs`.
-  - Allow `hidden.toml`, `generator.toml`, `known_ghosts.toml`, `incorrect/*.py`, `reference/solution.py` and `approval.toml` in the assembled tree. Move the `[generator]` requirement to `generator.toml`. Add `LAY-05` for a file from the wrong tree.
+  - Allow `hidden.toml`, `generator.toml`, `known_ghosts.toml`, `incorrect/*.py`, `reference/solution.py` and `approval.toml` in the assembled tree. Move the `[generator]` requirement to `generator.toml`. Add `LAY-07` for a file from the wrong tree.
   - Requirements: PIP-31, D3, design §4 and §14 X1.
   - Depends on: grimoire-packs amendment X1 and X2 (approved and specified there first). This task must not start on the old text.
-  - Verify: a fixture with a `hidden.toml` in the public path fails with `LAY-05`; the same file in the assembled tree passes the layout check.
+  - Verify: a fixture with a `hidden.toml` in the public path fails with `LAY-07`; the same file in the assembled tree passes the layout check.
   - Rust lesson: a file allow-list is a set. Explain why adding a name to a set can widen what the validator accepts, and why each new name needs its own test.
 
 - [x] **PA09 [P] (30 min) Stage prompt templates S0 to S9**
@@ -272,7 +272,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
 
 ## Wave 6: operator runs, approval and handover
 
-- [ ] **PA27 [HUMAN] [BLOCKED on judge-sandbox T20 to T22, T02, T37 and grimoire-packs T20] (30 min per pack) Sandbox and ghost checks on the host**
+- [x] **PA27 [HUMAN] [BLOCKED on judge-sandbox T20 to T22, T02, T37 and grimoire-packs T20] (30 min per pack) Sandbox and ghost checks on the host**
   - For each pack in the launch set, the operator runs S10 (`SBX-01`, `SBX-02`, `SBX-09`, `SBX-03`) and S11 (`find_ghost_input` on each incorrect program, and "not found" on the reference) through the judge's sandbox. The report records the sandbox image digest. Brighton approves the code-running tools for that session (PIP-39).
   - Requirements: PIP-17, PIP-18, PIP-39.
   - Depends on: PA25, the judge `PackRunner`.
