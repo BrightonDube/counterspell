@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 pub mod auth;
+pub mod breakroom;
 pub mod catalogue;
 pub mod client_ip;
 pub mod config;
@@ -217,6 +218,7 @@ pub fn build_router(state: AppState) -> Router {
             get(familiar::api::get_prefs).patch(familiar::api::patch_prefs),
         )
         .route("/api", any(api_not_found))
+        .nest("/api/breakroom", breakroom::router())
         .route("/api/{*path}", any(api_not_found))
         .with_state(state);
     let api = match hardening {

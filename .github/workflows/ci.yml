@@ -220,6 +220,10 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
+      - name: Break-room isolation
+        run: scripts/check-breakroom-isolation.sh
+      - name: Break-room bundle hygiene
+        run: scripts/check-breakroom-bundle.sh
 
   docker:
     name: Docker build (no push)
