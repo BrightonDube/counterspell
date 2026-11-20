@@ -118,9 +118,12 @@ fn check_hidden(
     limit: Duration,
     report: &mut Report,
 ) -> Result<(), RunnerError> {
+    let Some(generator) = meta.generator.as_ref() else {
+        return Ok(());
+    };
     let (Ok(seed), Ok(count)) = (
-        u64::try_from(meta.generator.seed),
-        usize::try_from(meta.generator.hidden_count),
+        u64::try_from(generator.seed),
+        usize::try_from(generator.hidden_count),
     ) else {
         return Ok(());
     };

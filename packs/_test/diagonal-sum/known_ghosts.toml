@@ -1,0 +1,17 @@
+[[ghost]]
+id = "absolute-diagonal"
+program = "incorrect/abs-diagonal.py"
+kind = "wrong"
+input = [[[-1]]]
+got = 1
+concepts = ["matrices", "arithmetic"]
+explanation = "The sum must keep the sign of each diagonal cell. Taking abs() turns the -1 into 1."
+
+[[ghost]]
+id = "more-rows-than-columns"
+program = "incorrect/assumes-square.py"
+kind = "crash"
+input = [[[]]]
+exception_class = "IndexError"
+concepts = ["matrices", "indexing"]
+explanation = "The loop runs over the row count. A grid with one row and no columns has no cell at row 0, column 0, so the index goes past the end."

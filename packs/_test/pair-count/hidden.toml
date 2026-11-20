@@ -1,0 +1,49 @@
+[[case]]
+input = [[1, 2, 3, 4], 5]
+expected = 2
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[0, 0, 0], 0]
+expected = 3
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[], 0]
+expected = 0
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[2, 2], 4]
+expected = 1
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[1, 1, 1], 2]
+expected = 3
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[5, -5, 0], 0]
+expected = 1
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[3, -3, 3], 0]
+expected = 2
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[-2, 4, 7], 2]
+expected = 1
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[4, 5, 6], 11]
+expected = 1
+why = "hand-verified vector from the ghost-engine fixture"
+
+[[case]]
+input = [[0], 0]
+expected = 0
+why = "hand-verified vector from the ghost-engine fixture"

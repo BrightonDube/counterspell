@@ -47,8 +47,11 @@ pub struct Meta {
     pub limits: Limits,
     /// The engine schema for the argument tuple.
     pub input_schema: Schema,
-    /// The seed and hidden-test count.
-    pub generator: Generator,
+    /// The seed and hidden-test count. Read from `generator.toml` in the
+    /// assembled tree (amendment X1); a `[generator]` table inside `meta.toml`
+    /// is LAY-05, so this stays `Some` only long enough for the check to fire.
+    #[serde(default)]
+    pub generator: Option<Generator>,
     /// The public examples.
     pub samples: Vec<Sample>,
     /// The declared complexity class, when there is a bench.
@@ -153,6 +156,14 @@ pub fn check(text: &str, dir_name: &str, report: &mut Report) -> Option<Meta> {
             return None;
         }
     };
+    if meta.generator.is_some() {
+        report.push(Diagnostic::new(
+            codes::LAY_05,
+            FILE,
+            Some("/generator"),
+            "[generator] belongs in the private generator.toml, not the public meta.toml",
+        ));
+    }
     check_values(&meta, dir_name, report);
     Some(meta)
 }
@@ -322,10 +333,6 @@ items = [
   { type = "int", min = -100, max = 100 },
 ]
 
-[generator]
-seed = 1729
-hidden_count = 12
-
 [[samples]]
 input = [[1, 2, 3, 2], 4]
 expected = 2
@@ -342,6 +349,20 @@ expected = 2
             .map(|diagnostic| diagnostic.code.to_owned())
             .collect();
         (meta, codes)
+    }
+
+    #[test]
+    fn a_generator_table_in_meta_is_lay_05() {
+        // Amendment X1: [generator] lives in the private generator.toml; a
+        // public meta.toml that still carries the table must fail.
+        let text = valid()
+            + "[generator]
+seed = 1
+hidden_count = 5
+";
+        let (_, codes) = codes_for(&text, "count-pairs");
+
+        assert_eq!(codes, ["LAY-05"]);
     }
 
     #[test]

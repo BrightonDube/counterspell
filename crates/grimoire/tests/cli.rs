@@ -41,6 +41,13 @@ fn write_pack(root: &Path, name: &str, meta: Option<&str>) {
         "def count_pairs(values, target):\n    return 0\n",
     )
     .expect("write reference");
+    fs::write(
+        dir.join("generator.toml"),
+        "seed = 1729
+hidden_count = 12
+",
+    )
+    .expect("write generator");
 }
 
 const META: &str = r#"slug = "count-pairs"
@@ -75,10 +82,6 @@ items = [
   { type = "int_array", min_len = 0, max_len = 30, min = -50, max = 50 },
   { type = "int", min = -100, max = 100 },
 ]
-
-[generator]
-seed = 1729
-hidden_count = 12
 
 [[samples]]
 input = [[1, 2, 3, 2], 4]

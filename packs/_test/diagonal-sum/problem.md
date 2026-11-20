@@ -1,25 +1,29 @@
 # Diagonal Sum
 
-Given a grid of whole numbers, add up the cells where the row index equals the column index. Only cells that exist are counted, so a grid that is not square uses the shorter side.
+## Task
 
-- An empty grid has no cells, so the sum is 0.
-- A grid with rows but no columns also sums to 0.
+Given a grid of integers `grid`, sum the cells on the main diagonal: the cells where the row index equals the column index. The grid may be rectangular, so the diagonal stops at the shorter side.
 
-## Function
+## Input
 
-Write `diagonal_sum(grid)`. Return the sum as an integer. The grid is a list of rows, and each row is a list of integers of the same length.
+- `grid`: a list of lists of integers with 0 to 6 rows and 0 to 6 columns; each cell is between -9 and 9.
 
-## Constraints
+## Output
 
-- The grid has between 0 and 6 rows and between 0 and 6 columns.
-- Each cell is between -9 and 9.
+An integer: the sum of the diagonal cells. An empty grid sums to 0.
 
 ## Examples
 
 | grid | result |
 |---|---|
 | `[[1, 2], [3, 4]]` | `5` |
-| `[[1, 2, 3]]` | `1` |
+| `[[-1]]` | `-1` |
 | `[]` | `0` |
+
+## Constraints
+
+- `grid` has between 0 and 6 rows and 0 and 6 columns.
+- Each cell is an integer between -9 and 9.
+- Rows may be empty.
 
 This is a test pack used only by the ghost engine's conformance tests. It is not in the catalogue.

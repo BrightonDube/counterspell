@@ -26,10 +26,6 @@ items = [
   { type = "int", min = -1000, max = 1000 },
 ]
 
-[generator]
-seed = 7
-hidden_count = 5
-
 [[samples]]
 input = [0]
 expected = 0

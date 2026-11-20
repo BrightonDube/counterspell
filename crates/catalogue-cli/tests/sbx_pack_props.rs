@@ -75,8 +75,12 @@ fn published_packs() -> Vec<PathBuf> {
 /// first, then `hidden_count` schema-valid generated values.
 fn generated_inputs(meta: &Meta) -> Vec<Value> {
     let samples = meta.samples.iter().map(|sample| sample.input.clone());
-    let seed = u64::try_from(meta.generator.seed).expect("the seed is in range");
-    let take = usize::try_from(meta.generator.hidden_count).expect("hidden_count is in range");
+    let generator = meta
+        .generator
+        .as_ref()
+        .expect("generator.toml supplies the seed");
+    let seed = u64::try_from(generator.seed).expect("the seed is in range");
+    let take = usize::try_from(generator.hidden_count).expect("hidden_count is in range");
     CandidateStream::new(
         meta.input_schema.clone(),
         seed,
@@ -179,6 +183,7 @@ async fn check_pack(
     let signature =
         signature_descriptor(&record).expect("the signature maps to the protocol shape");
     let reference = read_pack_file(&private_dir.join("reference/solution.py"));
+    let gen_seed = meta.generator.as_ref().map_or(0, |g| g.seed);
     let inputs = generated_inputs(&meta);
     assert!(!inputs.is_empty(), "{slug}: the generator yields inputs");
 
@@ -208,10 +213,7 @@ async fn check_pack(
             let (back, result) = evaluate(oracle, input).await;
             oracle = back;
             let observation = result.unwrap_or_else(|error| {
-                panic!(
-                    "{slug}/{lang} input #{index} (seed {}): {error}",
-                    meta.generator.seed
-                )
+                panic!("{slug}/{lang} input #{index} (seed {gen_seed}): {error}")
             });
             let (ProgramResult::Returned(got), ProgramResult::Returned(expected)) =
                 (&observation.user, &observation.reference)
@@ -219,7 +221,7 @@ async fn check_pack(
                 panic!(
                     "{slug}/{lang} seed {} input #{index} {input}: \
                      user = {:?}, reference = {:?}",
-                    meta.generator.seed, observation.user, observation.reference
+                    gen_seed, observation.user, observation.reference
                 );
             };
             // The answer is a canonical JSON value: decoding, re-encoding and
@@ -229,14 +231,12 @@ async fn check_pack(
                     .expect("the answer re-decodes");
             assert_eq!(
                 &reparsed, got,
-                "{slug}/{lang} seed {} input #{index}: the answer is not canonical JSON",
-                meta.generator.seed
+                "{slug}/{lang} seed {gen_seed} input #{index}: the answer is not canonical JSON"
             );
             assert!(
                 record.comparator.equal(expected, got),
-                "{slug}/{lang} seed {} input #{index} {input}: fixture {got} \
-                 disagrees with reference {expected}",
-                meta.generator.seed
+                "{slug}/{lang} seed {gen_seed} input #{index} {input}: fixture {got} \
+                 disagrees with reference {expected}"
             );
             if index == 0 {
                 first_answer = Some(got.clone());

@@ -15,19 +15,38 @@ use std::path::{Path, PathBuf};
 pub const PACK_BYTE_CAP: u64 = 512 * 1024;
 
 /// Files every pack must have.
-const REQUIRED: [&str; 4] = [
+const REQUIRED: [&str; 5] = [
     "problem.md",
     "meta.toml",
     "hints.toml",
     "reference/solution.py",
+    "generator.toml",
 ];
 
 /// The files a public-tree pack must have when its private side is absent
-/// ( validation):  is private-resident by policy.
+/// (`--public` validation): `reference/solution.py` is private-resident by
+/// policy.
 const REQUIRED_PUBLIC: [&str; 3] = ["problem.md", "meta.toml", "hints.toml"];
 
 /// The optional file that lists authored known ghosts.
 const GHOSTS_FILE: &str = "known_ghosts.toml";
+
+/// Files that may live only in the private tree (amendment X1). Any of these
+/// names seen in the public tree is LAY-05.
+const PRIVATE_ONLY_FILES: [&str; 4] = [
+    "hidden.toml",
+    "generator.toml",
+    "approval.toml",
+    "known_ghosts.toml",
+];
+
+/// Whether `name` is private-tree only: one of [`PRIVATE_ONLY_FILES`], the
+/// reference, or an incorrect program.
+fn is_private_only(name: &str) -> bool {
+    PRIVATE_ONLY_FILES.contains(&name)
+        || name == "reference/solution.py"
+        || is_incorrect_program(name)
+}
 
 /// The text of one pack's allowed files, keyed by path inside the pack.
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
@@ -51,6 +70,8 @@ struct Candidate {
     /// The tree root this file was found under (public or private), for the
     /// symlink-containment check.
     tree_root: PathBuf,
+    /// Found under the private tree (or under a single assembled tree).
+    private: bool,
 }
 
 /// Everything the directory walk found.
@@ -68,7 +89,11 @@ struct Scan {
 /// Returns an I/O error only when the pack directory itself cannot be read. A
 /// bad file is a diagnostic, not an error.
 pub fn load(root: &Path, report: &mut Report) -> io::Result<Pack> {
-    load_scan(root, None, &REQUIRED, report)
+    // A single tree is an assembled tree: public and private files legitimately
+    // sit side by side, so every candidate counts as private-side.
+    let mut scan = Scan::default();
+    scan_dir(root, "", false, root, true, report, &mut scan)?;
+    finish_load(&scan, &REQUIRED, report)
 }
 
 /// Loads the pack split across a public tree and its private tree.
@@ -86,7 +111,7 @@ pub fn load_pair(public_root: &Path, private_root: &Path, report: &mut Report) -
     load_scan(public_root, Some(private_root), &REQUIRED, report)
 }
 
-/// [] for a public tree checked on its own.  is
+/// Loads the public tree of a pack on its own. `reference/solution.py` is
 /// private-resident by policy, so it is not required here; a public copy is
 /// still checked when present.
 ///
@@ -105,11 +130,23 @@ fn load_scan(
     report: &mut Report,
 ) -> io::Result<Pack> {
     let mut scan = Scan::default();
-    scan_dir(public_root, "", false, public_root, report, &mut scan)?;
+    scan_dir(
+        public_root,
+        "",
+        false,
+        public_root,
+        false,
+        report,
+        &mut scan,
+    )?;
     if let Some(private_root) = private_root {
         scan_private_root(private_root, report, &mut scan)?;
     }
+    finish_load(&scan, required, report)
+}
 
+/// Applies the byte cap, checks every candidate and the required-file list.
+fn finish_load(scan: &Scan, required: &[&str], report: &mut Report) -> io::Result<Pack> {
     let total: u64 = scan.candidates.iter().map(|candidate| candidate.size).sum();
     if total > PACK_BYTE_CAP {
         report.push(Diagnostic::new(
@@ -170,15 +207,16 @@ fn scan_private_root(dir: &Path, report: &mut Report, scan: &mut Scan) -> io::Re
         }
         if metadata.is_dir() {
             if name == "reference" || name == "incorrect" {
-                scan_dir(&entry.path(), name, true, dir, report, scan)?;
+                scan_dir(&entry.path(), name, true, dir, true, report, scan)?;
             }
-        } else if metadata.is_file() && name == GHOSTS_FILE {
+        } else if metadata.is_file() && PRIVATE_ONLY_FILES.contains(&name) {
             scan.seen.insert(name.to_owned());
             scan.candidates.push(Candidate {
                 name: name.to_owned(),
                 path: entry.path(),
                 size: metadata.len(),
                 tree_root: dir.to_path_buf(),
+                private: true,
             });
         }
     }
@@ -191,6 +229,7 @@ fn scan_dir(
     prefix: &str,
     nested: bool,
     tree_root: &Path,
+    private: bool,
     report: &mut Report,
     scan: &mut Scan,
 ) -> io::Result<()> {
@@ -233,7 +272,15 @@ fn scan_dir(
             if (!nested && prefix.is_empty() && is_allowed_dir(name))
                 || (nested && prefix == "fixtures")
             {
-                scan_dir(&entry.path(), &relative, true, tree_root, report, scan)?;
+                scan_dir(
+                    &entry.path(),
+                    &relative,
+                    true,
+                    tree_root,
+                    private,
+                    report,
+                    scan,
+                )?;
             } else {
                 report.push(Diagnostic::new(
                     codes::LAY_02,
@@ -248,6 +295,7 @@ fn scan_dir(
                 path: entry.path(),
                 size: metadata.len(),
                 tree_root: tree_root.to_path_buf(),
+                private,
             });
         }
     }
@@ -261,6 +309,15 @@ fn check_candidate(
     report: &mut Report,
 ) -> io::Result<Option<String>> {
     let name = candidate.name.as_str();
+    if !candidate.private && is_private_only(name) {
+        report.push(Diagnostic::new(
+            codes::LAY_05,
+            name,
+            None,
+            "private-tree file must not sit in the public tree",
+        ));
+        return Ok(None);
+    }
     if is_incorrect_program(name) && !has_ghosts {
         report.push(Diagnostic::new(
             codes::LAY_02,
@@ -301,7 +358,7 @@ fn check_candidate(
     match check_text(&bytes) {
         Ok(text) => Ok(Some(text)),
         Err(reason) => {
-            report.push(Diagnostic::new(codes::LAY_05, name, None, reason));
+            report.push(Diagnostic::new(codes::LAY_07, name, None, reason));
             Ok(None)
         }
     }
@@ -310,7 +367,8 @@ fn check_candidate(
 /// The size cap in bytes for an allowed file, or `None` when the file is not allowed.
 fn size_cap(name: &str) -> Option<u64> {
     match name {
-        "problem.md" | "meta.toml" | GHOSTS_FILE => Some(32 * 1024),
+        "problem.md" | "meta.toml" | GHOSTS_FILE | "hidden.toml" | "generator.toml"
+        | "approval.toml" => Some(32 * 1024),
         "hints.toml" => Some(8 * 1024),
         "reference/solution.py" => Some(64 * 1024),
         _ if is_incorrect_program(name) => Some(64 * 1024),

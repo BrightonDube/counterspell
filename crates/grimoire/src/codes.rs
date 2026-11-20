@@ -21,7 +21,7 @@ const fn error(id: &'static str) -> Code {
     }
 }
 
-const fn warning(id: &'static str) -> Code {
+pub(crate) const fn warning(id: &'static str) -> Code {
     Code {
         id,
         severity: Severity::Warning,
@@ -36,8 +36,10 @@ pub const LAY_02: Code = error("LAY-02");
 pub const LAY_03: Code = error("LAY-03");
 /// A file or the whole pack is over its size cap.
 pub const LAY_04: Code = error("LAY-04");
-/// A text file is not UTF-8, or contains a NUL or a forbidden control character.
+/// A private-tree file or a `[generator]` table appears in the public tree.
 pub const LAY_05: Code = error("LAY-05");
+/// A text file is not UTF-8, or contains a NUL or a forbidden control character.
+pub const LAY_07: Code = error("LAY-07");
 /// The directory name is not a valid slug, or differs from `meta.toml` `slug`.
 pub const LAY_06: Code = error("LAY-06");
 
@@ -121,10 +123,10 @@ pub const BEN_02: Code = warning("BEN-02");
 
 /// Every code, in the order the design lists them.
 pub const ALL: &[Code] = &[
-    LAY_01, LAY_02, LAY_03, LAY_04, LAY_05, LAY_06, MET_01, MET_02, MET_03, MET_04, MET_05, MET_06,
-    MET_07, MET_08, MET_09, STM_01, STM_02, SMP_01, SMP_02, SMP_03, GEN_01, GEN_02, HNT_01, HNT_02,
-    KNG_01, KNG_02, KNG_03, KNG_04, KNG_05, KNG_06, REF_01, SBX_01, SBX_02, SBX_03, SBX_04, SBX_05,
-    SBX_06, SBX_07, SBX_08, BEN_01, BEN_02,
+    LAY_01, LAY_02, LAY_03, LAY_04, LAY_05, LAY_06, LAY_07, MET_01, MET_02, MET_03, MET_04, MET_05,
+    MET_06, MET_07, MET_08, MET_09, STM_01, STM_02, SMP_01, SMP_02, SMP_03, GEN_01, GEN_02, HNT_01,
+    HNT_02, KNG_01, KNG_02, KNG_03, KNG_04, KNG_05, KNG_06, REF_01, SBX_01, SBX_02, SBX_03, SBX_04,
+    SBX_05, SBX_06, SBX_07, SBX_08, BEN_01, BEN_02,
 ];
 
 #[cfg(test)]

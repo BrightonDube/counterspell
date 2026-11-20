@@ -1,4 +1,4 @@
-//! Layout and file-safety checks (LAY-01 to LAY-05) on real temporary packs.
+//! Layout and file-safety checks (LAY-01 to LAY-07) on real temporary packs.
 //!
 //! Each case builds a small pack in the system temp directory and asserts the
 //! exact list of codes, so a case proves its own rule and nothing else.
@@ -45,6 +45,10 @@ fn required_files(pack: &TempPack) {
     pack.write("meta.toml", b"slug = \"count\"\n");
     pack.write("hints.toml", b"# hints\n");
     pack.write("reference/solution.py", b"def count(x):\n    return 0\n");
+    pack.write(
+        "generator.toml",
+        b"[generator]\nseed = 1\nhidden_count = 5\n",
+    );
 }
 
 /// Loads the pack and returns the codes it reported, in order.
@@ -179,21 +183,21 @@ fn pack_over_512_kb_in_total_is_lay_04() {
 }
 
 #[test]
-fn nul_byte_in_text_is_lay_05() {
+fn nul_byte_in_text_is_lay_07() {
     let pack = TempPack::new("nul");
     required_files(&pack);
     pack.write("meta.toml", b"slug = \"count\"\0\n");
 
-    assert_eq!(codes_for(&pack), ["LAY-05"]);
+    assert_eq!(codes_for(&pack), ["LAY-07"]);
 }
 
 #[test]
-fn non_utf8_text_is_lay_05() {
+fn non_utf8_text_is_lay_07() {
     let pack = TempPack::new("utf8");
     required_files(&pack);
     pack.write("meta.toml", b"title = \"\xff\"\n");
 
-    assert_eq!(codes_for(&pack), ["LAY-05"]);
+    assert_eq!(codes_for(&pack), ["LAY-07"]);
 }
 
 #[cfg(unix)]
@@ -225,4 +229,85 @@ fn non_utf8_file_name_is_lay_03() {
     fs::write(pack.path().join(name), b"slug = \"x\"\n").expect("write non-UTF-8 name");
 
     assert_eq!(codes_for(&pack), ["LAY-03"]);
+}
+
+/// Writes only the public-side required files (X1: reference and generator are
+/// private-resident, so a public tree never carries them).
+fn public_files(pack: &TempPack) {
+    pack.write("problem.md", b"# Count\n");
+    pack.write("meta.toml", b"slug = \"count\"\n");
+    pack.write("hints.toml", b"# hints\n");
+}
+
+/// Writes the private-side files that complete a pair.
+fn private_files(pack: &TempPack) {
+    pack.write("reference/solution.py", b"def count(x):\n    return 0\n");
+    pack.write("generator.toml", b"seed = 1\nhidden_count = 5\n");
+}
+
+#[test]
+fn a_private_file_in_the_public_tree_is_lay_05() {
+    // Amendment X1/PA08: hidden.toml is private-only, so its appearance in the
+    // public tree must fail with LAY-05 while the same file in the private
+    // tree passes the layout stage.
+    let public = TempPack::new("public-side");
+    let private = TempPack::new("private-side");
+    public_files(&public);
+    private_files(&private);
+    public.write(
+        "hidden.toml",
+        b"[[case]]\ninput = [[1], 1]\nexpected = 1\nwhy = \"x\"\n",
+    );
+
+    let mut report = Report::new("fixture");
+    let _ =
+        pack::load_pair(public.path(), private.path(), &mut report).expect("trees are readable");
+    let codes: Vec<String> = report
+        .diagnostics()
+        .iter()
+        .map(|d| d.code.to_owned())
+        .collect();
+
+    assert_eq!(codes, ["LAY-05"]);
+}
+
+#[test]
+fn a_private_file_in_the_private_tree_passes_layout() {
+    let public = TempPack::new("public-clean");
+    let private = TempPack::new("private-full");
+    public_files(&public);
+    private_files(&private);
+    private.write(
+        "hidden.toml",
+        b"[[case]]\ninput = [[1], 1]\nexpected = 1\nwhy = \"x\"\n",
+    );
+
+    let mut report = Report::new("fixture");
+    let loaded =
+        pack::load_pair(public.path(), private.path(), &mut report).expect("trees are readable");
+
+    assert!(
+        report.diagnostics().is_empty(),
+        "{:?}",
+        report.diagnostics()
+    );
+    assert!(loaded.text("hidden.toml").is_some());
+    assert!(loaded.text("generator.toml").is_some());
+}
+
+#[test]
+fn a_public_tree_alone_rejects_private_files() {
+    let public = TempPack::new("solo");
+    public_files(&public);
+    public.write("approval.toml", b"approved_by = \"x\"\n");
+
+    let mut report = Report::new("fixture");
+    let _ = pack::load_public(public.path(), &mut report).expect("tree readable");
+    let codes: Vec<String> = report
+        .diagnostics()
+        .iter()
+        .map(|d| d.code.to_owned())
+        .collect();
+
+    assert_eq!(codes, ["LAY-05"]);
 }

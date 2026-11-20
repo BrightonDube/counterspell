@@ -1,13 +1,13 @@
 slug = "longest-run-length"
 title = "The Longest Run"
-status = "published"
+status = "draft"
 difficulty = "easy"
 track = "strings"
 concepts = ["strings", "scanning", "edge-cases"]
 origin = "original"
 author = "Brighton"
 licence = "MIT"
-pack_version = 6
+pack_version = 7
 function = "longest_run"
 returns = "int"
 comparator = "exact"
@@ -25,10 +25,6 @@ type = "tuple"
 items = [
   { type = "string", alphabet = "abc", min_len = 0, max_len = 40 },
 ]
-
-[generator]
-seed = 2718
-hidden_count = 12
 
 [[samples]]
 input = ["aabbbc"]

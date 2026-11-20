@@ -1,0 +1,39 @@
+slug = "longest-run"
+title = "Longest Run"
+status = "draft"
+difficulty = "easy"
+track = "strings"
+concepts = ["strings", "run-length", "loops", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "longest_run"
+returns = "int"
+comparator = "exact"
+
+[[params]]
+name = "s"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abc", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["aabbb"]
+expected = 3
+
+[[samples]]
+input = [""]
+expected = 0
+
+[[samples]]
+input = ["abc"]
+expected = 1
