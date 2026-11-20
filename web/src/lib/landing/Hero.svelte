@@ -382,6 +382,9 @@
 
   .enter-hint {
     margin-top: 0.48rem;
+    /* One line at every size: a wrap leaves the second line without the letter-spacing
+       indent and reads off-centre under ENTER. */
+    white-space: nowrap;
     font-weight: 600;
     font-size: 0.75rem;
     letter-spacing: 0.32em;

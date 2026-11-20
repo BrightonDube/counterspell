@@ -1,4 +1,5 @@
 <script>
+  import AppShell from '../../../lib/shell/AppShell.svelte';
   // Account settings (auth T32). The server decides what the account may do. This page shows each
   // action enabled or disabled from the capabilities that GET /api/me returns, and never checks
   // for the demo account itself.
@@ -116,153 +117,166 @@
   <title>Account · Counterspell</title>
 </svelte:head>
 
-<main
-  class="mx-auto flex min-h-screen max-w-2xl flex-col gap-8 bg-bg px-6 py-16 text-text"
->
-  <h1 class="text-3xl font-semibold tracking-tight">Account</h1>
+<AppShell>
+  <div class="mx-auto max-w-3xl space-y-8">
+    <h1 class="text-3xl font-semibold tracking-tight">Account</h1>
 
-  <!-- Confirmations and errors from the redirects of the link flow. Text only. -->
-  {#if linkedNote}
-    <p class="text-success" role="status">{linkedNote}</p>
-  {/if}
-  {#if errorNote}
-    <p class="text-danger" aria-live="polite">{errorNote}</p>
-  {/if}
-  <div
-    aria-live="polite"
-    class="min-h-6 text-danger"
-    data-testid="account-problem"
-  >
-    {problem}
+    <!-- Confirmations and errors from the redirects of the link flow. Text only. -->
+    {#if linkedNote}
+      <p class="text-success" role="status">{linkedNote}</p>
+    {/if}
+    {#if errorNote}
+      <p class="text-danger" aria-live="polite">{errorNote}</p>
+    {/if}
+    <div
+      aria-live="polite"
+      class="min-h-6 text-danger"
+      data-testid="account-problem"
+    >
+      {problem}
+    </div>
+
+    {#if ready}
+      {#await ready then}
+        {#if session.status === 'signed_in' && session.user}
+          {@const user = session.user}
+          {@const can = session.capabilities ?? {}}
+          {@const reason = user.is_demo
+            ? DEMO_REASON
+            : 'This action is not available for your account.'}
+
+          <section
+            class="space-y-2 rounded-xl border border-border bg-surface/80 p-5 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.7)] backdrop-blur-sm sm:p-6"
+            aria-labelledby="details-heading"
+          >
+            <h2
+              id="details-heading"
+              class="text-sm font-medium uppercase tracking-wide text-text-subtle"
+            >
+              Your details
+            </h2>
+            <p>
+              Email: <span class="text-text-muted"
+                >{user.email ?? 'No email address yet'}</span
+              >
+            </p>
+            <p>
+              Linked sign-in:
+              <span class="text-text-muted">
+                {user.providers.length
+                  ? user.providers
+                      .map(
+                        (/** @type {string} */ name) =>
+                          PROVIDER_NAMES[name] ?? name
+                      )
+                      .join(', ')
+                  : 'None'}
+              </span>
+            </p>
+          </section>
+
+          <section
+            class="space-y-3 rounded-xl border border-border bg-surface/80 p-5 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.7)] backdrop-blur-sm sm:p-6"
+            aria-labelledby="link-heading"
+          >
+            <h2
+              id="link-heading"
+              class="text-sm font-medium uppercase tracking-wide text-text-subtle"
+            >
+              Link a sign-in method
+            </h2>
+            <div class="flex flex-wrap gap-3">
+              <button
+                class={buttonClass}
+                type="button"
+                disabled={!can.link_provider || busy}
+                onclick={() => linkProvider('github')}
+              >
+                Link GitHub
+              </button>
+              <button
+                class={buttonClass}
+                type="button"
+                disabled={!can.link_provider || busy}
+                onclick={() => linkProvider('google')}
+              >
+                Link Google
+              </button>
+            </div>
+            {#if !can.link_provider}
+              <p class="text-text-muted">{reason}</p>
+            {/if}
+          </section>
+
+          <section
+            class="space-y-3 rounded-xl border border-border bg-surface/80 p-5 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.7)] backdrop-blur-sm sm:p-6"
+            aria-labelledby="sessions-heading"
+          >
+            <h2
+              id="sessions-heading"
+              class="text-sm font-medium uppercase tracking-wide text-text-subtle"
+            >
+              Sessions
+            </h2>
+            <button
+              class={buttonClass}
+              type="button"
+              disabled={!can.logout_everywhere || busy}
+              onclick={signOutEverywhere}
+            >
+              Sign out everywhere
+            </button>
+            {#if !can.logout_everywhere}
+              <p class="text-text-muted">{reason}</p>
+            {/if}
+          </section>
+
+          <section
+            class="space-y-3 rounded-xl border border-border bg-surface/80 p-5 shadow-[0_18px_44px_-16px_rgba(0,0,0,0.7)] backdrop-blur-sm sm:p-6"
+            aria-labelledby="delete-heading"
+          >
+            <h2
+              id="delete-heading"
+              class="text-sm font-medium uppercase tracking-wide text-text-subtle"
+            >
+              Delete account
+            </h2>
+            <p class="text-text-muted">
+              This removes your account, its sign-in methods, sessions and
+              submissions. It cannot be undone.
+            </p>
+            <div class="space-y-1">
+              <label class="block text-sm text-text-muted" for="delete-confirm"
+                >Type your handle <span class="font-mono">{user.handle}</span> to
+                confirm</label
+              >
+              <input
+                id="delete-confirm"
+                class={fieldClass}
+                type="text"
+                autocomplete="off"
+                disabled={!can.delete_account || busy}
+                bind:value={confirmText}
+              />
+            </div>
+            <button
+              class={dangerButtonClass}
+              type="button"
+              disabled={!can.delete_account ||
+                busy ||
+                !confirmationMatches(confirmText, user.handle)}
+              onclick={removeAccount}
+            >
+              Delete my account
+            </button>
+            {#if !can.delete_account}
+              <p class="text-text-muted">{reason}</p>
+            {/if}
+          </section>
+        {/if}
+      {:catch}
+        <p class="text-danger">{messageFor('internal_error')}</p>
+      {/await}
+    {/if}
   </div>
-
-  {#if ready}
-    {#await ready then}
-      {#if session.status === 'signed_in' && session.user}
-        {@const user = session.user}
-        {@const can = session.capabilities ?? {}}
-        {@const reason = user.is_demo
-          ? DEMO_REASON
-          : 'This action is not available for your account.'}
-
-        <section class="space-y-2" aria-labelledby="details-heading">
-          <h2
-            id="details-heading"
-            class="text-sm font-medium uppercase tracking-wide text-text-subtle"
-          >
-            Your details
-          </h2>
-          <p>
-            Email: <span class="text-text-muted"
-              >{user.email ?? 'No email address yet'}</span
-            >
-          </p>
-          <p>
-            Linked sign-in:
-            <span class="text-text-muted">
-              {user.providers.length
-                ? user.providers
-                    .map(
-                      (/** @type {string} */ name) =>
-                        PROVIDER_NAMES[name] ?? name
-                    )
-                    .join(', ')
-                : 'None'}
-            </span>
-          </p>
-        </section>
-
-        <section class="space-y-3" aria-labelledby="link-heading">
-          <h2
-            id="link-heading"
-            class="text-sm font-medium uppercase tracking-wide text-text-subtle"
-          >
-            Link a sign-in method
-          </h2>
-          <div class="flex flex-wrap gap-3">
-            <button
-              class={buttonClass}
-              type="button"
-              disabled={!can.link_provider || busy}
-              onclick={() => linkProvider('github')}
-            >
-              Link GitHub
-            </button>
-            <button
-              class={buttonClass}
-              type="button"
-              disabled={!can.link_provider || busy}
-              onclick={() => linkProvider('google')}
-            >
-              Link Google
-            </button>
-          </div>
-          {#if !can.link_provider}
-            <p class="text-text-muted">{reason}</p>
-          {/if}
-        </section>
-
-        <section class="space-y-3" aria-labelledby="sessions-heading">
-          <h2
-            id="sessions-heading"
-            class="text-sm font-medium uppercase tracking-wide text-text-subtle"
-          >
-            Sessions
-          </h2>
-          <button
-            class={buttonClass}
-            type="button"
-            disabled={!can.logout_everywhere || busy}
-            onclick={signOutEverywhere}
-          >
-            Sign out everywhere
-          </button>
-          {#if !can.logout_everywhere}
-            <p class="text-text-muted">{reason}</p>
-          {/if}
-        </section>
-
-        <section class="space-y-3" aria-labelledby="delete-heading">
-          <h2
-            id="delete-heading"
-            class="text-sm font-medium uppercase tracking-wide text-text-subtle"
-          >
-            Delete account
-          </h2>
-          <p class="text-text-muted">
-            This removes your account, its sign-in methods, sessions and
-            submissions. It cannot be undone.
-          </p>
-          <div class="space-y-1">
-            <label class="block text-sm text-text-muted" for="delete-confirm"
-              >Type your handle <span class="font-mono">{user.handle}</span> to confirm</label
-            >
-            <input
-              id="delete-confirm"
-              class={fieldClass}
-              type="text"
-              autocomplete="off"
-              disabled={!can.delete_account || busy}
-              bind:value={confirmText}
-            />
-          </div>
-          <button
-            class={dangerButtonClass}
-            type="button"
-            disabled={!can.delete_account ||
-              busy ||
-              !confirmationMatches(confirmText, user.handle)}
-            onclick={removeAccount}
-          >
-            Delete my account
-          </button>
-          {#if !can.delete_account}
-            <p class="text-text-muted">{reason}</p>
-          {/if}
-        </section>
-      {/if}
-    {:catch}
-      <p class="text-danger">{messageFor('internal_error')}</p>
-    {/await}
-  {/if}
-</main>
+</AppShell>
