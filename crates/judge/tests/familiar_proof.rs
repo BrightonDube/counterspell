@@ -12,6 +12,7 @@
 //! `DATABASE_URL=… SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock \
 //!  cargo test -p counterspell-judge --features sandbox --test familiar_proof -- --ignored --nocapture`
 
+use std::fmt::Write as _;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -35,7 +36,7 @@ const RUNS_EACH: usize = 30;
 const PROBLEM: &str = "count-pairs";
 
 /// Hash-set reference shape: one pass, O(n).
-const LINEAR: &str = r#"def count_pairs(values, target):
+const LINEAR: &str = r"def count_pairs(values, target):
     seen = set()
     count = 0
     for v in values:
@@ -43,17 +44,17 @@ const LINEAR: &str = r#"def count_pairs(values, target):
             count += 1
         seen.add(v)
     return count
-"#;
+";
 
 /// Deliberately quadratic: two nested passes over the input.
-const QUADRATIC: &str = r#"def count_pairs(values, target):
+const QUADRATIC: &str = r"def count_pairs(values, target):
     count = 0
     for i in range(len(values)):
         for j in range(i + 1, len(values)):
             if values[i] + values[j] == target:
                 count += 1
     return count
-"#;
+";
 
 fn passing() -> Arc<PreflightState> {
     let state = Arc::new(PreflightState::new());
@@ -93,6 +94,7 @@ async fn insert_run(pool: &PgPool, user: Uuid, source: &str) -> Result<RunId, sq
 
 #[ignore = "real sandbox: needs DATABASE_URL and SANDBOX_DOCKER_SOCKET"]
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[allow(clippy::too_many_lines)]
 async fn linear_never_loses_and_quadratic_never_reaches_mood_five() {
     let database_url = std::env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let pool = PgPool::connect(&database_url)
@@ -197,8 +199,7 @@ async fn linear_never_loses_and_quadratic_never_reaches_mood_five() {
         let linear = runs
             .iter()
             .find(|(rid, _)| rid.as_uuid() == id)
-            .map(|(_, l)| *l)
-            .unwrap_or(false);
+            .is_some_and(|(_, l)| *l);
         let kind = if linear { "linear" } else { "quadratic" };
         if let Some(m) = mood {
             if linear {
@@ -233,7 +234,8 @@ async fn linear_never_loses_and_quadratic_never_reaches_mood_five() {
                 ));
             }
         }
-        report.push_str(&format!(
+        writeln!(
+            report,
             "| {} | {} | {:?} | {:?} | {} | {} |\n",
             index,
             kind,
@@ -241,15 +243,18 @@ async fn linear_never_loses_and_quadratic_never_reaches_mood_five() {
             mood,
             reason.as_deref().unwrap_or("-"),
             fit.as_deref().unwrap_or("-")
-        ));
+        )
+        .expect("write to String");
     }
-    report.push_str(&format!(
+    writeln!(
+        report,
         "\nRuns: {} linear + {} quadratic in {:.1}s wall. Linear moods: {linear_moods:?}\n\
          Quadratic moods: {quad_moods:?}\nViolations: {violations:?}\n",
         linear_moods.len(),
         quad_moods.len(),
         wall_secs
-    ));
+    )
+    .expect("write to String");
     let out = PathBuf::from("../../docs/kiro-log/efficiency-familiar-proof.md");
     if let Some(parent) = out.parent() {
         let _ = std::fs::create_dir_all(parent);

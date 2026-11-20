@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
   import { checkPress, level, newRound } from '#lib/break/memory.js';
   import { saveScore } from '#lib/break/api.js';
@@ -23,7 +24,8 @@
   async function showSequence() {
     phase = 'showing';
     if (reduced) {
-      announce = 'Sequence: ' + sequence.map((t) => `tile ${t + 1}`).join(', ') + '.';
+      announce =
+        'Sequence: ' + sequence.map((t) => `tile ${t + 1}`).join(', ') + '.';
       await new Promise((r) => setTimeout(r, 300));
     } else {
       for (const t of sequence) {
@@ -74,7 +76,7 @@
       ArrowRight: 1,
       ArrowLeft: -1,
       ArrowDown: 3,
-      ArrowUp: -3,
+      ArrowUp: -3
     })[event.key];
     if (move !== undefined) {
       event.preventDefault();
@@ -95,7 +97,9 @@
 
 <main class="mx-auto max-w-md space-y-4 p-6">
   <h1 class="text-2xl font-bold">Lantern recall</h1>
-  <p class="text-sm text-text-muted">Watch the tiles light up, then repeat the order.</p>
+  <p class="text-sm text-text-muted">
+    Watch the tiles light up, then repeat the order.
+  </p>
   <div aria-live="polite" class="min-h-6 text-sm">{announce}</div>
   <div class="grid grid-cols-3 gap-2" role="group" aria-label="Memory tiles">
     {#each Array(TILES) as _, i (i)}
@@ -110,9 +114,10 @@
           {lit === i ? 'tile-lit' : ''}
           {flashTile === i && flashKind === 'correct' ? 'tile-correct' : ''}
           {flashTile === i && flashKind === 'wrong' ? 'tile-wrong' : ''}
-          {phase === 'input' ? 'border-border bg-surface' : 'border-border bg-raised'}"
-        aria-label={'Tile ' + (i + 1)}
-        >{i + 1}</button
+          {phase === 'input'
+          ? 'border-border bg-surface'
+          : 'border-border bg-raised'}"
+        aria-label={'Tile ' + (i + 1)}>{i + 1}</button
       >
     {/each}
   </div>
@@ -120,9 +125,13 @@
     <button
       class="rounded-md bg-accent-candle px-4 py-2 text-sm font-medium text-bg"
       onclick={start}
-      disabled={phase === 'showing'}>{phase === 'idle' ? 'Start' : 'Restart'}</button
+      disabled={phase === 'showing'}
+      >{phase === 'idle' ? 'Start' : 'Restart'}</button
     >
-    <a class="self-center text-sm text-text-muted underline" href="/break">Back to the break room</a>
+    <a
+      class="self-center text-sm text-text-muted underline"
+      href={resolve('/break')}>Back to the break room</a
+    >
   </div>
 </main>
 

@@ -21,7 +21,7 @@ declare module 'cm-chessboard' {
     getPosition(): string;
     setPiece(square: string, piece?: string, animated?: boolean): Promise<void>;
     enableMoveInput(
-      eventHandler: (event: MoveInputEvent) => boolean | void,
+      eventHandler: (event: MoveInputEvent) => boolean | undefined,
       color?: string
     ): void;
     disableMoveInput(): void;

@@ -7,10 +7,10 @@ const SOLUTION = ['f8e8', 'e1e8'];
 
 describe('puzzle state machine', () => {
   it('plays the opponent first move automatically', () => {
-    const state = newPuzzle('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', [
-      'e2e4',
-      'e7e5',
-    ]);
+    const state = newPuzzle(
+      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+      ['e2e4', 'e7e5']
+    );
     expect(state.index).toBe(1);
     expect(state.game.turn()).toBe('b');
   });

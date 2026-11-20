@@ -465,7 +465,7 @@ Conventions for every web task:
   - Verify: the doc contains no "optimal" claim and states the limits from the design.
   - Preserve: the licence statements match `docs/licence-rules.md`.
 
-- [ ] **T45 [S] (30 min) Full verification gate**
+- [x] **T45 [S] (30 min) Full verification gate**
   - Files: none planned; fixes only if a check fails.
   - Run: `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo test --workspace`; the `pg_` suites; `cargo deny check licenses`; `cd web && npm ci && npm run check && npm test && npm run build`. Confirm `cargo metadata --no-deps` lists exactly six packages and the engine manifest still has only `serde` and `serde_json`.
   - Requirements: R15.5.
@@ -531,3 +531,9 @@ Critical path for the demo: T01 → T02 → T03 → T06 → T09 → T11 → T12 
 - [ ] At least three launch problems have bench enabled, or the shortfall is reported to Brighton.
 - [ ] fmt, Clippy (`-D warnings`), workspace tests, `pg_` tests, web check, web tests and `cargo deny check licenses` are green.
 - [ ] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
+
+## Agent task notes (2026-12-01)
+- **T45**: fmt/clippy/test battery green; cargo metadata lists 8 workspace packages, not the
+  six the task assumed — counterspell-common and counterspell-testserver were added by later
+  sanctioned specs. The engine manifest still has only serde and serde_json. cargo deny
+  clean. Web npm ci/check/test/build all pass.

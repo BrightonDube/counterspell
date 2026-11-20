@@ -211,7 +211,7 @@ mod tests {
         );
         assert_eq!(
             score_for(&puzzle(&d, true, 20), today()).map(|(s, _)| s),
-            Ok(10.max(100 - 300))
+            Ok(10)
         );
     }
 

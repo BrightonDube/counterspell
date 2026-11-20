@@ -2,7 +2,6 @@
 // Submit, Ghost, Autopsy, Hint and Rerun and back, and the same failing run with and without
 // reduced motion. Same prerequisites as real-api-check.mjs (see README.md).
 import {
-  BASE,
   createReporter,
   focusLabel,
   launchBrowser,

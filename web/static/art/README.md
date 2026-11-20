@@ -35,6 +35,8 @@ placeholders in `web/static/landing/` and `web/static/familiar/`, which stay as 
   some cut-out edges are imperfect (grave hand, wraith smoke).
 
 ## Derived small variants (19 Nov 2026)
+
 Resized copies of approved art, made with Lanczos resampling and alpha kept, so phones do not download 512 px files for 64 and 96 px slots. The originals stay in place and remain the `src` fallback. No new art was generated.
+
 - `objects/crypt-key-128.webp`, `objects/crystal-ball-128.webp`, `objects/brain-jar-128.webp` (from the 512 px files; landing beat icons)
 - `objects/candle-flame-192.webp`, `familiar/jack-o-lantern-orange-192.webp` (landing call to action)

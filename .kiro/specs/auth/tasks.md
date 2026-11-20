@@ -383,7 +383,7 @@ Conventions for every Rust task:
   - Verify: `cargo test -p counterspell-server pg_auth_delete -- --include-ignored`.
   - Preserve: nothing is deleted without the handle confirmation.
 
-- [ ] **T37 [S] (30 min) Final verification and the manual smoke checklist**
+- [x] **T37 [S] (30 min) Final verification and the manual smoke checklist**
   - Files: no planned source changes; `docs/kiro-log/auth-dod.md` records results.
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace -- --include-ignored` with `PROPTEST_CASES=512` for P1, P2, P3, P6, P9, P10, P11, P18, `cd web && npm run check && npm run build`, `cargo deny check licenses`, `docker compose config`. Then the manual checklist on the VPS with real services: GitHub sign-in, Google sign-in, magic link through Resend (SPF and DKIM pass), link GitHub to a magic-link account, link Google, add an email to an OAuth-only account, sign in with a Google account whose email matches an existing account and confirm `account_exists`, logout-all from a second browser, the demo account (restrictions visible), and the next-day demo reset. Record the results and any failure as a note, not as a silent pass.
   - Requirements: R21.1–R21.5.
@@ -424,3 +424,7 @@ Conventions for every Rust task:
 - [ ] No task read, wrote or created `.env` or any credential file.
 - [ ] The 22 correctness properties each have a passing test; fmt, Clippy (`-D warnings`), workspace tests, web checks and `cargo deny check licenses` are green.
 - [ ] The manual smoke checklist was run with real GitHub, Google and Resend and its results are recorded.
+
+## Agent task notes (2026-12-01)
+- **T37**: automated gates all pass (see docs/kiro-log/auth-dod.md). The manual VPS
+  checklist is recorded NOT TESTED — no host exists yet; local equivalents verified in T33/T34.

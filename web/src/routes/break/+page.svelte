@@ -11,7 +11,11 @@
 
   onMount(async () => {
     const daily = await fetchDaily();
-    puzzle = daily.ok ? 'ready' : daily.code === 'not_imported' ? 'not_imported' : 'error';
+    puzzle = daily.ok
+      ? 'ready'
+      : daily.code === 'not_imported'
+        ? 'not_imported'
+        : 'error';
     const own = await fetchScores();
     if (own.ok) {
       signedIn = true;
@@ -25,7 +29,9 @@
 <main class="mx-auto max-w-3xl space-y-8 p-6">
   <header class="space-y-1">
     <h1 class="text-2xl font-bold">Break room</h1>
-    <p class="text-text-muted">A few ungraded games. Nothing here affects your practice.</p>
+    <p class="text-text-muted">
+      A few ungraded games. Nothing here affects your practice.
+    </p>
   </header>
 
   <section class="grid gap-4 sm:grid-cols-3" aria-label="Games">
@@ -46,20 +52,26 @@
       class="rounded-lg border border-border bg-raised p-4 hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
     >
       <h2 class="font-semibold">Chess bot</h2>
-      <p class="mt-1 text-sm text-text-muted">A casual game against a small local engine.</p>
+      <p class="mt-1 text-sm text-text-muted">
+        A casual game against a small local engine.
+      </p>
     </a>
     <a
       href={resolve('/break/memory')}
       class="rounded-lg border border-border bg-raised p-4 hover:border-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus"
     >
       <h2 class="font-semibold">Lantern recall</h2>
-      <p class="mt-1 text-sm text-text-muted">Repeat the growing sequence of nine lanterns.</p>
+      <p class="mt-1 text-sm text-text-muted">
+        Repeat the growing sequence of nine lanterns.
+      </p>
     </a>
   </section>
 
   {#if signedIn && scores.length > 0}
     <section aria-labelledby="recent-scores">
-      <h2 id="recent-scores" class="text-lg font-semibold">Your recent scores</h2>
+      <h2 id="recent-scores" class="text-lg font-semibold">
+        Your recent scores
+      </h2>
       <ul class="mt-2 divide-y divide-border rounded-lg border border-border">
         {#each scores as s (s.id)}
           <li class="flex justify-between px-4 py-2 text-sm">

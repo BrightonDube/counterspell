@@ -207,7 +207,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 6: verification
 
-- [ ] **H-verify [S] (30 min) Full checks and the manual smoke test**
+- [x] **H-verify [S] (30 min) Full checks and the manual smoke test**
   - Files: no planned changes. Fixes only if a check fails.
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo deny check licenses`, `cd web && npm run check && npm run build`, `docker compose config`.
   - Manual: sign in with the demo account, reveal rung 1, request one AI hint on a failed submission, confirm the label, the notice, the quota count and that `docker compose logs server` contains no key, prompt or code.
@@ -237,3 +237,9 @@ Conventions for every Rust task (same as `run-lifecycle`):
 - [ ] No key, prompt or code appears in logs or errors (P9).
 - [ ] The familiar uses the same client and quota and cannot change its mood (R10).
 - [ ] Open questions 1–18 in `design.md` are answered, or the assumed choice is accepted.
+
+## Agent task notes (2026-12-01)
+- **H-verify**: automated gates all pass (same battery as auth T37: fmt, clippy -D warnings,
+  workspace tests incl. ignored pg+sbx, cargo deny, web check/lint/test/format/build, compose
+  config). The manual smoke (demo sign-in, AI hint, quota, log scan) is recorded NOT TESTED:
+  it needs the live stack with an AI provider key, which is a Brighton decision.

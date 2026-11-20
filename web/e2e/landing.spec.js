@@ -4,10 +4,14 @@ import { expect, test } from '@playwright/test';
 
 /** Relative luminance of an `rgb(r, g, b)` or `rgba(...)` string, per WCAG 2.x. */
 function luminance(color) {
-  const [r, g, b] = color.match(/[\d.]+/g).slice(0, 3).map(Number).map((v) => {
-    const s = v / 255;
-    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
-  });
+  const [r, g, b] = color
+    .match(/[\d.]+/g)
+    .slice(0, 3)
+    .map(Number)
+    .map((v) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
@@ -22,7 +26,8 @@ test('every request stays on our own origin and the page needs no third party', 
 }) => {
   const hosts = new Set();
   page.on('request', (request) => {
-    if (request.url().startsWith('http')) hosts.add(new URL(request.url()).host);
+    if (request.url().startsWith('http'))
+      hosts.add(new URL(request.url()).host);
   });
   await page.goto('/');
   await page.waitForLoadState('networkidle');

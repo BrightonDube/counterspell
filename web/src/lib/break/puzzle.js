@@ -21,7 +21,13 @@ import { Chess } from 'chess.js';
 export function newPuzzle(fen, solutionMoves) {
   const game = new Chess(fen);
   /** @type {PuzzleState} */
-  const state = { game, solution: solutionMoves.slice(), index: 0, mistakes: 0, status: 'playing' };
+  const state = {
+    game,
+    solution: solutionMoves.slice(),
+    index: 0,
+    mistakes: 0,
+    status: 'playing'
+  };
   playOpponent(state);
   return state;
 }
@@ -49,7 +55,8 @@ function uciToMove(uci) {
  * @returns {{ state: PuzzleState, feedback: string }}
  */
 export function tryMove(state, input) {
-  if (state.status !== 'playing') return { state, feedback: 'The puzzle is already finished.' };
+  if (state.status !== 'playing')
+    return { state, feedback: 'The puzzle is already finished.' };
   /** @type {import('chess.js').Move} */
   let played;
   try {

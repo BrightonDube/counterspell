@@ -16,7 +16,10 @@ function sources(dir: string): { path: string; text: string }[] {
     if (statSync(full).isDirectory()) {
       found.push(...sources(full));
     } else if (/\.(svelte|ts)$/.test(name) && !/\.test\.ts$/.test(name)) {
-      found.push({ path: relative(HERE, full), text: readFileSync(full, 'utf8') });
+      found.push({
+        path: relative(HERE, full),
+        text: readFileSync(full, 'utf8')
+      });
     }
   }
   return found;
@@ -57,7 +60,9 @@ describe('Familiar sources', () => {
   // parsing text as HTML would be a sink for server or AI text. Breaks if any other type is used.
   it('uses DOMParser only to parse SVG art', () => {
     const calls = files.flatMap((file) =>
-      [...file.text.matchAll(/parseFromString\([^)]*\)/g)].map((m) => `${file.path}: ${m[0]}`)
+      [...file.text.matchAll(/parseFromString\([^)]*\)/g)].map(
+        (m) => `${file.path}: ${m[0]}`
+      )
     );
     expect(calls.length).toBeGreaterThan(0);
     for (const call of calls) expect(call, call).toContain("'image/svg+xml'");
@@ -73,7 +78,10 @@ describe('Familiar sources', () => {
       'document.write(body)',
       'frame.srcdoc = body'
     ]) {
-      expect(HTML_SINKS.some((sink) => sink.test(sample)), sample).toBe(true);
+      expect(
+        HTML_SINKS.some((sink) => sink.test(sample)),
+        sample
+      ).toBe(true);
     }
   });
 });

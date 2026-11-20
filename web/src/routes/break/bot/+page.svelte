@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { onMount, onDestroy } from 'svelte';
   import { Chess } from 'chess.js';
   import { Chessboard, INPUT_EVENT_TYPE } from 'cm-chessboard';
@@ -28,11 +29,19 @@
       playing = false;
       const won = game.turn() !== userColor;
       status = won ? 'You win. Well played.' : 'The bot wins this one.';
-      void saveScore({ game: 'chess_bot', result: won ? 'win' : 'loss', moves: game.moveNumber() });
+      void saveScore({
+        game: 'chess_bot',
+        result: won ? 'win' : 'loss',
+        moves: game.moveNumber()
+      });
     } else if (game.isDraw() || game.isStalemate()) {
       playing = false;
       status = 'A draw.';
-      void saveScore({ game: 'chess_bot', result: 'draw', moves: game.moveNumber() });
+      void saveScore({
+        game: 'chess_bot',
+        result: 'draw',
+        moves: game.moveNumber()
+      });
     }
   }
 
@@ -50,7 +59,11 @@
     worker.onmessage = (event) => {
       const data = event.data || {};
       if (data.ok && data.uci) {
-        game.move({ from: data.uci.slice(0, 2), to: data.uci.slice(2, 4), promotion: data.uci[4] });
+        game.move({
+          from: data.uci.slice(0, 2),
+          to: data.uci.slice(2, 4),
+          promotion: data.uci[4]
+        });
       } else {
         const moves = game.moves({ verbose: true });
         const pick = moves[Math.floor(Math.random() * moves.length)];
@@ -85,12 +98,16 @@
     }
     board = new Chessboard(boardEl, {
       position: game.fen(),
-      sprite: { url: piecesUrl },
+      sprite: { url: piecesUrl }
     });
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!playing || game.turn() !== userColor) return false;
-      const move = game.move({ from: event.squareFrom ?? '', to: event.squareTo ?? '', promotion: 'q' });
+      const move = game.move({
+        from: event.squareFrom ?? '',
+        to: event.squareTo ?? '',
+        promotion: 'q'
+      });
       if (!move) return false;
       board?.setPosition(game.fen(), true);
       refreshStatus();
@@ -116,9 +133,15 @@
     >
   </div>
   <div bind:this={boardEl} class="break-board max-w-md"></div>
-  <output class="block text-sm text-text-muted" aria-live="polite">{statusLine}</output>
+  <output class="block text-sm text-text-muted" aria-live="polite"
+    >{statusLine}</output
+  >
   <p role="status" class="text-sm">{status}</p>
-  {#if fallbackNote}<p role="status" class="text-sm text-text-muted">{fallbackNote}</p>{/if}
+  {#if fallbackNote}<p role="status" class="text-sm text-text-muted">
+      {fallbackNote}
+    </p>{/if}
   <p class="text-sm text-text-muted">Signed-out results are not saved.</p>
-  <a class="text-sm text-text-muted underline" href="/break">Back to the break room</a>
+  <a class="text-sm text-text-muted underline" href={resolve('/break')}
+    >Back to the break room</a
+  >
 </main>

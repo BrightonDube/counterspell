@@ -6,7 +6,7 @@ const POSITIONS = [
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
   'r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3',
   '8/8/4k3/8/8/4K3/4P3/8 w - - 0 1',
-  '6k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1',
+  '6k1/5ppp/8/8/8/8/5PPP/6K1 b - - 0 1'
 ];
 
 describe('chooseMove', () => {

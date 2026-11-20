@@ -28,7 +28,7 @@ impl TempPack {
         let root = parent.join("lantern-streaks");
         let _ = fs::remove_dir_all(&parent);
         copy_dir(
-            Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pipeline/lantern-streaks"),
+            &Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/pipeline/lantern-streaks"),
             &root,
         );
         Self { root }
@@ -41,13 +41,13 @@ impl Drop for TempPack {
     }
 }
 
-fn copy_dir(from: PathBuf, to: &Path) {
-    for entry in fs::read_dir(&from).expect("fixture dir") {
+fn copy_dir(from: &Path, to: &Path) {
+    for entry in fs::read_dir(from).expect("fixture dir") {
         let entry = entry.expect("entry");
         let dest = to.join(entry.file_name());
         if entry.file_type().expect("type").is_dir() {
             fs::create_dir_all(&dest).expect("mkdir");
-            copy_dir(entry.path(), &dest);
+            copy_dir(&entry.path(), &dest);
         } else {
             fs::create_dir_all(to).expect("mkdir");
             fs::copy(entry.path(), &dest).expect("copy");
@@ -68,7 +68,7 @@ fn s0_to_s9_static_pipeline_passes_and_sandbox_stages_stay_pending() {
 
     // The pipeline rests at S10 with status static_complete: sandbox stages
     // S10/S11 are pending_judge and the runner was never invoked.
-    let mut runner = FakeRunner::new(json!(2)).with_program(
+    let runner = FakeRunner::new(json!(2)).with_program(
         "incorrect/counts-all-lit.py",
         ProgramResult::Returned(json!(3)),
     );

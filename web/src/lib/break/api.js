@@ -15,7 +15,7 @@ async function call(path, options = {}) {
   const res = await fetch(path, {
     credentials: 'same-origin',
     headers: { 'content-type': 'application/json' },
-    ...options,
+    ...options
   });
   const body = await res.json().catch(() => ({}));
   if (!res.ok) return { ok: false, status: res.status, ...body };
@@ -28,7 +28,10 @@ export function fetchDaily() {
 
 /** @param {Record<string, unknown>} payload */
 export function saveScore(payload) {
-  return call('/api/breakroom/scores', { method: 'POST', body: JSON.stringify(payload) });
+  return call('/api/breakroom/scores', {
+    method: 'POST',
+    body: JSON.stringify(payload)
+  });
 }
 
 export function fetchScores() {

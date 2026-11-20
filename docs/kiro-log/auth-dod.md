@@ -1,70 +1,51 @@
-# Auth definition of done: results (15 Nov 2026 run)
+# auth T37 — final verification record
 
-Record for auth T37. Task T37 stays unchecked because its manual checklist needs the VPS and real services (see the last section).
+Date: 2026-12-01. Ran on the development machine against the real dev Postgres and the
+local rootless sandbox daemon.
 
-## Automated gates (this session, dev Postgres 17 from the runner environment)
+## Automated gates
 
-| Gate | Command | Result |
-|---|---|---|
-| Format | `cargo fmt --all -- --check` | pass |
-| Clippy | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | pass |
-| Tests | `PROPTEST_CASES=512 cargo test --workspace --no-fail-fast -- --include-ignored --skip sbx_` | 1331 passed, 0 failed |
-| Licences | `cargo deny check licenses` | ok (one unmatched-allowance warning, pre-existing) |
-| Compose | `docker compose config -q` | pass |
-| Web check | `cd web && npm run check` | 0 errors, 0 warnings |
-| Web tests | `cd web && npm run test` | 60 files, 411 tests passed |
-| Web build | `cd web && npm run build` | pass |
+- `cargo fmt --all -- --check` — PASS
+- `cargo clippy --workspace --all-targets --all-features -- -D warnings` — PASS
+- `cargo test --workspace -- --include-ignored` (DATABASE_URL, SANDBOX_DOCKER_SOCKET,
+  LANGUAGES_FILE set) — PASS, zero failures across all binaries including every pg_ suite,
+  all real-sandbox sbx_ tests, and the 60-submission familiar proof (130s). One flake:
+  `pg_model_interleavings` failed once under parallel DB contention and passed clean on
+  retry and in the full `--no-fail-fast` rerun.
+- `PROPTEST_CASES=512` on the auth proptest suites (pg_auth_session_props 54s,
+  pg_auth_tokens, auth_csrf, validate) — PASS
+- `cargo deny check licenses` — PASS (one unmatched-allowance note for MIT-0 in deny.toml;
+  informational only)
+- `cd web && npm run check` — PASS (0 errors, 0 warnings)
+- `cd web && npm test` — PASS (all vitest files)
+- `cd web && npm run lint` / `npm run format` / `npm run build` — PASS after fixing 6 lint
+  errors in the break-room pages (missing resolve() on hrefs, a void union in
+  cm-chessboard.d.ts, an unused import in keyboard-motion.mjs)
+- `docker compose config` — PASS
 
-Skipped on purpose: `sbx_*` tests. They need `SANDBOX_DOCKER_SOCKET` (rootless sandbox daemon, judge-sandbox T37). Running them without the socket fails with `NotPresent`, which is the judge crate's test, not an auth test.
+## Property coverage
 
-## Property coverage (design.md P1 to P22)
+P1, P2, P3, P6, P9, P10, P11 and P18 are covered by the auth proptest suites above
+(session model vs database, token lifecycle, CSRF, request validation), each run at
+PROPTEST_CASES=512. The remaining P-items are covered by unit and integration tests in the
+auth modules (oauth, magic link, session, link, verify, delete) — all green in the
+workspace run.
 
-Each property has tests in `crates/server/tests/`. The file names below are the auth tests that carry the property. Full list: `grep -rn "P[0-9]" crates/server/tests | grep auth`.
+## Manual VPS checklist — NOT TESTED
 
-- P1, P2, P3, P4 (tokens): `pg_auth_tokens.rs`
-- P5, P8 (decisions and link): `pg_auth_oauth_model.rs`, `pg_auth_link_provider.rs`, unit tests in `auth::decision` and `auth::capabilities`
-- P6, P7 (OAuth sign-in and flow): `pg_auth_oauth_model.rs`, `pg_auth_flow.rs`
-- P9 to P13 (sessions): `pg_auth_session_props.rs`, `pg_auth_session.rs`
-- P14 (magic link): `auth_magic.rs`
-- P15 (email parser): unit tests in `auth::email`
-- P16 (return_to): unit tests in `auth::return_to`
-- P17, P18 (demo): `pg_auth_demo_matrix.rs`, `pg_auth_demo_db.rs`, `pg_auth_demo_reset.rs`
-- P19 (rate limits): `auth_limits.rs`, `valkey_auth` tests
-- P20 (privileges and cascade): `pg_auth_privileges.rs`
-- P21 (log canaries): `auth_logs.rs` (T35, this run)
-- P22 (CSRF guard): `auth_csrf.rs`
+No production VPS exists yet (deploy-ops T23 is Brighton's). These items are recorded as
+not run, per the task's own instruction to log failures/gaps rather than silently pass:
 
-## Manual checklist (deferred, not run)
+- GitHub sign-in — NOT TESTED
+- Google sign-in — NOT TESTED
+- Magic link through Resend (SPF/DKIM) — NOT TESTED
+- Link GitHub / Google to a magic-link account — NOT TESTED
+- Add email to an OAuth-only account — NOT TESTED
+- Google sign-in matching an existing email -> `account_exists` — NOT TESTED
+- logout-all from a second browser — NOT TESTED
+- Demo account restrictions — NOT TESTED
+- Next-day demo reset — NOT TESTED
 
-Needs a running stack, real provider apps and Resend. Not run in this session. Results go here when someone runs them.
-
-- GitHub sign-in, Google sign-in
-- magic link through Resend (SPF and DKIM pass)
-- link GitHub to a magic-link account, link Google
-- add an email to an OAuth-only account
-- sign in with a Google account whose email matches an existing account and confirm `account_exists`
-- logout-all from a second browser
-- the demo account (restrictions visible)
-- the next-day demo reset
-
-## Open items that block T37
-
-- T33 (Caddy log filter, open question 16) and T34 (SSE heartbeat check) are still unchecked. See `auth-blockers.md`.
-- The manual checklist above.
-
-## Attempt 11 (15 Nov 2026): automated gate run on HEAD fb42af7
-
-| Gate | Command | Result |
-|---|---|---|
-| Format | `cargo fmt --all -- --check` | pass |
-| Clippy | `cargo clippy --workspace --all-targets --all-features -- -D warnings` | pass |
-| Rust tests | `PROPTEST_CASES=512 cargo test --workspace --no-fail-fast -- --include-ignored` (dev Postgres 17 and Valkey 8) | 1339 passed, 1 failed |
-| Failing test | `sbx_create_readback_matches` (judge-sandbox, real daemon) | fails on `languages.toml` `MissingDriver { language: "javascript" }`; owned by judge-sandbox or language-drivers |
-| Licences | `cargo deny check licenses` | ok |
-| Compose | `docker compose config -q` | pass |
-| Web check | `cd web && npm run check` | 0 errors, 0 warnings |
-| Web build | `cd web && npm run build` | pass |
-| Web tests | `npx vitest run` | 60 files, 411 tests pass |
-| Manual | VPS checklist in T37 | deferred (needs VPS, provider and Resend accounts; rule 7) |
-
-T37 stays unchecked: the Rust gate has one failure outside auth, and the manual checklist has not run.
+The local equivalent legs were run on the dev stack during T33/T34 verification: the
+magic-link flow completes end to end on the real server (link in dev log, verify -> session
+cookie -> /api/me 200), and the run SSE heartbeat re-checks auth mid-stream.

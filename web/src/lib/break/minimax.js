@@ -71,7 +71,12 @@ export function chooseMove(fen, options = {}) {
 
   const moves = orderedMoves(game);
   if (moves.length === 0)
-    return { uci: null, san: null, nodes: state.nodes, timedOut: state.timedOut };
+    return {
+      uci: null,
+      san: null,
+      nodes: state.nodes,
+      timedOut: state.timedOut
+    };
   let bestScore = -Infinity;
   /** @type {import('chess.js').Move[]} */
   let best = [];
@@ -91,7 +96,7 @@ export function chooseMove(fen, options = {}) {
     uci: pick.from + pick.to + (pick.promotion ?? ''),
     san: pick.san,
     nodes: state.nodes,
-    timedOut: state.timedOut,
+    timedOut: state.timedOut
   };
 }
 

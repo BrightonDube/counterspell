@@ -1,6 +1,6 @@
 //! Integration tests against a throwaway Postgres, plus the daily maths.
 
-use sqlx::PgPool;
+use sqlx::{PgPool, Row};
 
 // The 12-row synthetic fixture ships at crates/server/tests/fixtures.
 const CSV: &str = include_str!("fixtures/breakroom-sample.csv");
@@ -38,7 +38,6 @@ async fn import_and_daily(pool: PgPool) {
     .fetch_one(&pool)
     .await
     .expect("row");
-    use sqlx::Row;
     assert_eq!(row.get::<String, _>("id"), "SYN01");
 }
 

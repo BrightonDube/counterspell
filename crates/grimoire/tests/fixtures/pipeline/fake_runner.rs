@@ -51,7 +51,7 @@ impl PackRunner for FakeRunner {
                 .programs
                 .get(name)
                 .cloned()
-                .unwrap_or_else(|| ProgramResult::Returned(json!(null))),
+                .unwrap_or(ProgramResult::Returned(json!(null))),
         };
         Ok(result)
     }

@@ -1,4 +1,5 @@
 <script>
+  import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
   import { Chessboard, INPUT_EVENT_TYPE } from 'cm-chessboard';
   import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
@@ -31,7 +32,8 @@
     const before = puzzleState.game.fen();
     const { feedback: fb } = tryMove(puzzleState, input);
     feedback = fb;
-    if (puzzleState.game.fen() !== before) board?.setPosition(puzzleState.game.fen(), true);
+    if (puzzleState.game.fen() !== before)
+      board?.setPosition(puzzleState.game.fen(), true);
     refreshStatus();
     if (puzzleState.status === 'solved' && puzzleMeta) void recordScore();
   }
@@ -42,11 +44,13 @@
       game: 'chess_puzzle',
       date: puzzleMeta.date,
       solved: true,
-      mistakes: puzzleState.mistakes,
+      mistakes: puzzleState.mistakes
     });
     if (res.ok) {
       saveResult =
-        res.status === 'already_recorded' ? 'Already recorded today.' : `Score saved: ${res.score}.`;
+        res.status === 'already_recorded'
+          ? 'Already recorded today.'
+          : `Score saved: ${res.score}.`;
     } else if (res.status === 401) {
       signedOut = true;
       saveResult = 'Sign in to save your score.';
@@ -77,7 +81,7 @@
     puzzleState = newPuzzle(daily.puzzle.fen, solution);
     board = new Chessboard(boardEl, {
       position: puzzleState.game.fen(),
-      sprite: { url: piecesUrl },
+      sprite: { url: piecesUrl }
     });
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
@@ -85,7 +89,10 @@
       const uci = (event.squareFrom ?? '') + (event.squareTo ?? '');
       const ok = puzzleState.game
         .moves({ verbose: true })
-        .some((/** @type {{ from: string, to: string }} */ m) => m.from + m.to === uci);
+        .some(
+          (/** @type {{ from: string, to: string }} */ m) =>
+            m.from + m.to === uci
+        );
       if (ok) apply(uci);
       return ok;
     });
@@ -100,17 +107,29 @@
   <h1 class="text-2xl font-bold">Daily chess puzzle</h1>
   {#if puzzleMeta}
     <p class="text-sm text-text-muted">
-      {puzzleMeta.date} · rating {puzzleMeta.puzzle.rating} · {puzzleMeta.puzzle.themes.join(', ')}
-      {#if puzzleMeta.puzzle.themes.some((/** @type {string} */ t) => t.startsWith('mate'))}
+      {puzzleMeta.date} · rating {puzzleMeta.puzzle.rating} · {puzzleMeta.puzzle.themes.join(
+        ', '
+      )}
+      {#if puzzleMeta.puzzle.themes.some( (/** @type {string} */ t) => t.startsWith('mate') )}
         · Hint: look for a mate.
       {/if}
     </p>
   {/if}
-  <div bind:this={boardEl} class="break-board max-w-md" data-testid="board"></div>
-  <output class="block text-sm text-text-muted" aria-live="polite">{statusLine}</output>
+  <div
+    bind:this={boardEl}
+    class="break-board max-w-md"
+    data-testid="board"
+  ></div>
+  <output class="block text-sm text-text-muted" aria-live="polite"
+    >{statusLine}</output
+  >
   <p role="status" class="text-sm">{feedback}</p>
-  {#if saveResult}<p role="status" class="text-sm text-text-muted">{saveResult}</p>{/if}
-  {#if signedOut}<a class="text-accent underline" href="/login?return_to=/break/puzzle">Sign in</a
+  {#if saveResult}<p role="status" class="text-sm text-text-muted">
+      {saveResult}
+    </p>{/if}
+  {#if signedOut}<a
+      class="text-accent underline"
+      href={resolve('/login?return_to=/break/puzzle')}>Sign in</a
     >{/if}
   <form
     class="flex gap-2"
@@ -119,7 +138,9 @@
       submitText();
     }}
   >
-    <label class="sr-only" for="move-input">Move in UCI (e2e4) or SAN (Nf3)</label>
+    <label class="sr-only" for="move-input"
+      >Move in UCI (e2e4) or SAN (Nf3)</label
+    >
     <input
       id="move-input"
       class="w-40 rounded-md border border-border bg-surface px-3 py-2 text-sm"
@@ -133,5 +154,7 @@
       >Play</button
     >
   </form>
-  <a class="text-sm text-text-muted underline" href="/break">Back to the break room</a>
+  <a class="text-sm text-text-muted underline" href={resolve('/break')}
+    >Back to the break room</a
+  >
 </main>
