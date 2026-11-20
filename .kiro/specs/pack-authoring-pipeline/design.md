@@ -121,7 +121,7 @@ approved_at = "2026-11-26"
 
 ### Grimoire allow-list change (X2)
 
-The current grimoire-packs layout rules require `reference/solution.py` and a `[generator]` table in `meta.toml` (GRM-1, GRM-9). The split needs the rule to apply to the assembled tree, with `hidden.toml`, `generator.toml`, `incorrect/`, `known_ghosts.toml` and `approval.toml` allowed. A file from the wrong tree is an error (`LAY-05`, planned). This is the largest cross-spec change. It is listed in section 14.
+The current grimoire-packs layout rules require `reference/solution.py` and a `[generator]` table in `meta.toml` (GRM-1, GRM-9). The split needs the rule to apply to the assembled tree, with `hidden.toml`, `generator.toml`, `incorrect/`, `known_ghosts.toml` and `approval.toml` allowed. A file from the wrong tree is an error (`LAY-07`, planned). This is the largest cross-spec change. It is listed in section 14.
 
 ## 5. Roles, agents and tools
 
@@ -346,7 +346,7 @@ These changes belong to other specs. This spec does not edit those files, as the
 | ID | Spec | Change | Why |
 |---|---|---|---|
 | X1 | `grimoire-packs` | Add the two-tree layout: the assembled tree may contain `hidden.toml`, `generator.toml`, `known_ghosts.toml`, `incorrect/`, `reference/` and `approval.toml`. Move the `[generator]` requirement (GRM-9) to `generator.toml`. Make `reference/solution.py` valid in the assembled tree. | Split (D2). The current layout rules forbid these files in `meta.toml` and in the public tree. |
-| X2 | `grimoire-packs` | Add the new codes: `HID-01` to `HID-04` (already in `33-starter-pack-hardening-v2.md`), `STM-03`, `HNT-03`, `ORG-01`, `ORG-02`, `GHC-01`, `LAY-05`, `PUB-01`, `APR-01`, `REV-01` to `REV-03`, `SUM-01`, `SLUG-01`, `TAX-01`, `BRF-01`. Each needs a negative fixture (GRM-51). | Stage codes in section 3. |
+| X2 | `grimoire-packs` | Add the new codes: `HID-01` to `HID-04` (already in `33-starter-pack-hardening-v2.md`), `STM-03`, `HNT-03`, `ORG-01`, `ORG-02`, `GHC-01`, `LAY-07`, `PUB-01`, `APR-01`, `REV-01` to `REV-03`, `SUM-01`, `SLUG-01`, `TAX-01`, `BRF-01`. Each needs a negative fixture (GRM-51). | Stage codes in section 3. |
 | X3 | `problem-catalogue` | Importer reads both trees, assembles the manifest, requires `approval.toml` with the same hash, and refuses otherwise (`APR-01`). Confirms that `status` and `approval.toml` are both checked before any write. The 14 Nov 23:06 amendment (`docs/kiro-prompts/38-private-pack-split.md`) is not visible in `.kiro/specs/problem-catalogue/` at spec time. Its requirements and design still describe a public-only importer, so that amendment is still needed. | PIP-36 and D9. |
 | X4 | `judge-sandbox` | `PackRunner` (T20 to T22) and the batch-safe sandbox run. The operator path in S10 and S11 depends on T20 to T22 and the VPS checks (T02, T37). | PIP-17, D6. |
 | X5 | `grimoire-packs` | T20 (`--sandbox` wiring) is a prerequisite for S10. T28 (starter packs review) is replaced by the rotation and the review in this spec. | PIP-35, PIP-17. |

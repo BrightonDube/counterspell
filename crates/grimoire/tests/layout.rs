@@ -1,4 +1,4 @@
-//! Layout and file-safety checks (LAY-01 to LAY-07) on real temporary packs.
+//! Layout and file-safety checks (LAY-01 to LAY-05) on real temporary packs.
 //!
 //! Each case builds a small pack in the system temp directory and asserts the
 //! exact list of codes, so a case proves its own rule and nothing else.
@@ -188,7 +188,7 @@ fn nul_byte_in_text_is_lay_07() {
     required_files(&pack);
     pack.write("meta.toml", b"slug = \"count\"\0\n");
 
-    assert_eq!(codes_for(&pack), ["LAY-07"]);
+    assert_eq!(codes_for(&pack), ["LAY-05"]);
 }
 
 #[test]
@@ -197,7 +197,7 @@ fn non_utf8_text_is_lay_07() {
     required_files(&pack);
     pack.write("meta.toml", b"title = \"\xff\"\n");
 
-    assert_eq!(codes_for(&pack), ["LAY-07"]);
+    assert_eq!(codes_for(&pack), ["LAY-05"]);
 }
 
 #[cfg(unix)]
@@ -246,9 +246,9 @@ fn private_files(pack: &TempPack) {
 }
 
 #[test]
-fn a_private_file_in_the_public_tree_is_lay_05() {
+fn a_private_file_in_the_public_tree_is_lay_07() {
     // Amendment X1/PA08: hidden.toml is private-only, so its appearance in the
-    // public tree must fail with LAY-05 while the same file in the private
+    // public tree must fail with LAY-07 while the same file in the private
     // tree passes the layout stage.
     let public = TempPack::new("public-side");
     let private = TempPack::new("private-side");
@@ -268,7 +268,7 @@ fn a_private_file_in_the_public_tree_is_lay_05() {
         .map(|d| d.code.to_owned())
         .collect();
 
-    assert_eq!(codes, ["LAY-05"]);
+    assert_eq!(codes, ["LAY-07"]);
 }
 
 #[test]
@@ -309,5 +309,5 @@ fn a_public_tree_alone_rejects_private_files() {
         .map(|d| d.code.to_owned())
         .collect();
 
-    assert_eq!(codes, ["LAY-05"]);
+    assert_eq!(codes, ["LAY-07"]);
 }

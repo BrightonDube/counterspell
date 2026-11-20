@@ -33,4 +33,3 @@ expected = 2
 [[samples]]
 input = [[0, 0, 0]]
 expected = 0
-

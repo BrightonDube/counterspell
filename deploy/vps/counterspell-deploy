@@ -56,9 +56,32 @@ check_compose_files() {
     || refuse "compose files differ from compose.sha256; run the app role"
 }
 
-# Waits up to 60 s for the server's readiness route, asked from inside the edge network via caddy.
+# Picks a container already attached to counterspell_edge to ask the server its readiness route.
+# The shared proxy is always one (preferring *caddy* names); any edge member can reach the server.
+edge_probe_container() {
+  local names n
+  names="$(docker network inspect counterspell_edge \
+    -f '{{range .Containers}}{{.Name}} {{end}}' 2>/dev/null || true)"
+  for n in $names; do case "$n" in *caddy*) printf '%s' "$n"; return 0 ;; esac; done
+  for n in $names; do printf '%s' "$n"; return 0; done
+  return 1
+}
+
+# Waits up to 60 s for the server's readiness route. The shared host runs no app Caddy (its service
+# is profile-disabled), so there we ask from inside the counterspell_edge network via a container
+# already attached to it. A dedicated host asks the app's own caddy service instead.
 server_ready() {
-  local env_file="$1"
+  local env_file="$1" probe
+  if [[ -f "$APP_DIR/compose.shared.yml" ]]; then
+    probe="$(edge_probe_container)" || return 1
+    for _ in $(seq 1 30); do
+      if docker exec "$probe" wget -q -O /dev/null http://counterspell-server:8080/api/ready; then
+        return 0
+      fi
+      sleep 2
+    done
+    return 1
+  fi
   for _ in $(seq 1 30); do
     if dc "$env_file" exec -T caddy wget -q -O /dev/null http://server:8080/api/ready; then
       return 0
@@ -106,8 +129,13 @@ promote() {
 # Restores the current release after a failed check, without touching migrations.
 restore_current() {
   if [[ -f "$CURRENT" ]]; then
-    dc "$CURRENT" up -d --no-build --remove-orphans || true
-    log "restored $(grep '^COUNTERSPELL_SHA=' "$CURRENT" | cut -d= -f2)"
+    local previous_sha
+    previous_sha="$(grep '^COUNTERSPELL_SHA=' "$CURRENT" | cut -d= -f2)"
+    if dc "$CURRENT" up -d --no-build --remove-orphans; then
+      log "restored $previous_sha"
+    else
+      log "failed to restore $previous_sha"
+    fi
   fi
   rm -f "$CANDIDATE"
 }
@@ -121,8 +149,8 @@ deploy_release() {
   dc "$CANDIDATE" run --rm judge preflight || abort_unchanged "judge preflight failed"
   dc "$CANDIDATE" run --rm migrate || abort_unchanged "migration failed"
 
-  dc "$CANDIDATE" up -d --no-build --remove-orphans
-  if server_ready "$CANDIDATE" && public_healthy; then
+  if dc "$CANDIDATE" up -d --no-build --remove-orphans \
+    && server_ready "$CANDIDATE" && public_healthy; then
     promote
     log "deployed $sha"
     exit 0

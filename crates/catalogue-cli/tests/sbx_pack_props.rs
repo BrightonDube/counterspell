@@ -51,9 +51,9 @@ fn pack_meta(pack_dir: &Path) -> Meta {
         .unwrap_or_else(|error| panic!("{}: meta.toml: {error}", pack_dir.display()))
 }
 
-/// The published pack directories, sorted by path. `_`-prefixed directories and
-/// drafts are skipped, exactly as the catalogue import treats them.
-fn published_packs() -> Vec<PathBuf> {
+/// The published packs and the starter-pack drafts, sorted by path.
+/// PA08 moves the starters into draft for their next approval; keep testing them.
+fn packs_to_check() -> Vec<PathBuf> {
     let mut dirs = Vec::new();
     for entry in std::fs::read_dir(packs_root()).expect("packs/ is readable") {
         let path = entry.expect("a packs/ entry").path();
@@ -63,7 +63,12 @@ fn published_packs() -> Vec<PathBuf> {
         if !path.is_dir() || slug.starts_with('_') {
             continue;
         }
-        if pack_meta(&path).status == "published" {
+        if pack_meta(&path).status == "published"
+            || matches!(
+                slug,
+                "count-pairs" | "diagonal-total" | "longest-run-length"
+            )
+        {
             dirs.push(path);
         }
     }
@@ -124,10 +129,10 @@ async fn sbx_published_packs_fixtures_agree_with_reference() {
         eprintln!("skipping: no counterspell-packs-private checkout is available");
         return;
     };
-    let packs = published_packs();
+    let packs = packs_to_check();
     assert!(
         packs.len() >= 3,
-        "the property suite must cover every published pack — found {packs:?}"
+        "the property suite must cover the starter and published packs — found {packs:?}"
     );
     let (docker, cfg) = sbx::sandbox().await;
     let catalog = sbx::catalogue(&cfg);
@@ -175,7 +180,7 @@ async fn check_pack(
     python: &LanguageDefinition,
     handle: &tokio::runtime::Handle,
 ) {
-    let meta = pack_meta(pack_dir);
+    let mut meta = pack_meta(pack_dir);
     let slug = meta.slug.clone();
     let private_dir = private_root.join("packs").join(&slug);
     let record = record::build_pair(pack_dir, &private_dir)
@@ -183,7 +188,10 @@ async fn check_pack(
     let signature =
         signature_descriptor(&record).expect("the signature maps to the protocol shape");
     let reference = read_pack_file(&private_dir.join("reference/solution.py"));
-    let gen_seed = meta.generator.as_ref().map_or(0, |g| g.seed);
+    meta.generator = Some(
+        toml::from_str(&read_pack_file(&private_dir.join("generator.toml")))
+            .unwrap_or_else(|_| panic!("{slug}: invalid private generator settings")),
+    );
     let inputs = generated_inputs(&meta);
     assert!(!inputs.is_empty(), "{slug}: the generator yields inputs");
 
@@ -212,31 +220,27 @@ async fn check_pack(
         for (index, input) in inputs.iter().enumerate() {
             let (back, result) = evaluate(oracle, input).await;
             oracle = back;
-            let observation = result.unwrap_or_else(|error| {
-                panic!("{slug}/{lang} input #{index} (seed {gen_seed}): {error}")
+            let observation = result.unwrap_or_else(|_| {
+                panic!("{slug}/{lang}: sandbox call failed for input #{index}")
             });
             let (ProgramResult::Returned(got), ProgramResult::Returned(expected)) =
                 (&observation.user, &observation.reference)
             else {
-                panic!(
-                    "{slug}/{lang} seed {} input #{index} {input}: \
-                     user = {:?}, reference = {:?}",
-                    gen_seed, observation.user, observation.reference
-                );
+                panic!("{slug}/{lang}: the fixture or reference did not return for input #{index}");
             };
             // The answer is a canonical JSON value: decoding, re-encoding and
             // re-decoding preserves it exactly.
             let reparsed: Value =
                 serde_json::from_str(&serde_json::to_string(got).expect("the answer re-encodes"))
                     .expect("the answer re-decodes");
-            assert_eq!(
-                &reparsed, got,
-                "{slug}/{lang} seed {gen_seed} input #{index}: the answer is not canonical JSON"
+            assert!(
+                &reparsed == got,
+                "{slug}/{lang} input #{index}: the answer is not canonical JSON"
             );
             assert!(
                 record.comparator.equal(expected, got),
-                "{slug}/{lang} seed {gen_seed} input #{index} {input}: fixture {got} \
-                 disagrees with reference {expected}"
+                "{slug}/{lang} input #{index} fixture \
+                 disagrees with reference"
             );
             if index == 0 {
                 first_answer = Some(got.clone());

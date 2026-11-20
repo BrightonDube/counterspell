@@ -129,4 +129,3 @@ local rootless sandbox. See crates/judge/tests/familiar_proof.rs.
 Runs: 30 linear + 30 quadratic in 128.5s wall. Linear moods: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4]
 Quadratic moods: [4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5]
 Violations: []
-

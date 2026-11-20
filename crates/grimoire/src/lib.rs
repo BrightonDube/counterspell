@@ -70,7 +70,7 @@ pub fn validate_static(root: &Path) -> io::Result<Report> {
 
 /// Validates the public tree of a pack on its own (`--public`).
 /// `reference/solution.py` and the other private files are private-resident
-/// by policy, so a missing reference skips that stage instead of failing it;
+/// by policy, so an absent reference reports a warning and skips that stage;
 /// every other check stays strict. Used by CI, which never sees the private
 /// checkout.
 ///
@@ -167,17 +167,17 @@ fn validate_pack(
     report.mark_checked("limits");
 
     // Amendment X1: the generator settings live in private `generator.toml`.
-    // A `[generator]` table inside meta.toml was already flagged LAY-05 by the
+    // A `[generator]` table inside meta.toml was already flagged LAY-07 by the
     // meta check; the file form supplies the values instead.
     let mut meta = meta;
     match pack.text("generator.toml") {
         Some(text) => match toml::from_str::<meta::Generator>(text) {
             Ok(generator) => meta.generator = Some(generator),
-            Err(error) => report.push(Diagnostic::new(
+            Err(_) => report.push(Diagnostic::new(
                 codes::GEN_01,
                 "generator.toml",
                 None,
-                format!("generator.toml does not parse: {error}"),
+                "generator.toml does not parse",
             )),
         },
         None if !public_only => report.push(Diagnostic::new(
@@ -214,8 +214,12 @@ fn validate_pack(
     }
 
     if public_only && pack.text("reference/solution.py").is_none() {
-        // The reference is private-resident by design (X1); a public tree has
-        // nothing to check, so the stage skips rather than warns.
+        report.push(Diagnostic::new(
+            codes::REF_01_PUBLIC,
+            "reference/solution.py",
+            None,
+            "reference is expected in the private tree",
+        ));
         report.mark_skipped("reference");
     } else {
         reference::check(pack.text("reference/solution.py"), &meta.function, report);

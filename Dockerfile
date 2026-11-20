@@ -38,6 +38,8 @@ FROM debian:bookworm-slim AS judge-runtime
 RUN groupadd --system --gid 10001 counterspell \
     && useradd --system --uid 10001 --gid counterspell --no-create-home counterspell
 COPY --from=rust-builder /app/target/release/counterspell-judge /usr/local/bin/counterspell-judge
+WORKDIR /app
+COPY languages/ ./languages/
 USER counterspell:counterspell
 ENTRYPOINT ["/usr/local/bin/counterspell-judge"]
 

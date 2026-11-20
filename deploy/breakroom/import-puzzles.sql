@@ -3,7 +3,7 @@
 -- lichess_db_puzzle.csv.zst on stdin and pass the file date.
 --
 --   zstd -d lichess_db_puzzle.csv.zst -c | \
---     psql "$DATABASE_URL" -v source_date=2026-11-01 -f deploy/breakroom/import-puzzles.sql
+--     psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -v source_date=2026-11-01 -f deploy/breakroom/import-puzzles.sql
 --
 BEGIN;
 CREATE TEMP TABLE puzzle_stage (
@@ -18,7 +18,7 @@ CREATE TEMP TABLE puzzle_stage (
     "GameUrl"    text,
     "OpeningTags" text
 ) ON COMMIT DROP;
-\copy puzzle_stage FROM stdin WITH CSV HEADER
+\copy puzzle_stage FROM pstdin WITH CSV HEADER
 INSERT INTO puzzles (id, fen, moves, rating, themes, popularity, nb_plays, source_date)
 SELECT "PuzzleId", "FEN", "Moves", "Rating", "Themes", "Popularity", "NbPlays",
        :'source_date'::date

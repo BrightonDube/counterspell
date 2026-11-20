@@ -1,8 +1,9 @@
 # Deploy to the production VPS.
 #
-# Routine deploys: a push to main that finishes a green CI run (which also publishes the signed
-# images) triggers this workflow through workflow_run. Manual deploys: Actions > Deploy > Run
-# workflow, optionally with the full SHA of a green main commit.
+# Routine deploys: a push to main that finishes a green "Publish images" run triggers this workflow
+# through workflow_run. Triggering on Publish (not CI) guarantees the signed images exist before any
+# deploy step looks for them; CI finishing alone is not enough. Manual deploys: Actions > Deploy >
+# Run workflow, optionally with the full SHA of a published main commit.
 #
 # Setup (one-time, see deploy/vps/README.md):
 #   1. Settings > Environments > "production": deployment branches = main (+ tags v*).
@@ -16,8 +17,8 @@
 name: Deploy
 
 on:
-  workflow_run: # zizmor: ignore[dangerous-triggers] deploy is CI-gated on main and pins head_sha
-    workflows: [CI]
+  workflow_run: # zizmor: ignore[dangerous-triggers] Same repository and main only; validate the artifact SHA and require signed images.
+    workflows: ["Publish images"]
     types: [completed]
     branches: [main]
   workflow_dispatch:
@@ -34,7 +35,7 @@ concurrency:
   cancel-in-progress: false # never interrupt a deploy halfway
 
 env:
-  HEALTH_URL: https://15-204-92-66.sslip.io/api/health
+  HEALTH_URL: https://counterspel.online/api/health
 
 jobs:
   disabled:
@@ -53,22 +54,36 @@ jobs:
     name: Deploy to production
     if: >-
       vars.DEPLOY_ENABLED == 'true' &&
-      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'workflow_dispatch' ||
+        (github.event.workflow_run.conclusion == 'success' &&
+         github.event.workflow_run.head_repository.full_name == github.repository))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
       name: production
     permissions:
+      actions: read
       contents: read
       packages: read
     steps:
+      - name: Download the publisher's commit
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: published-commit
+          path: ${{ runner.temp }}/counterspell-publish
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
       - name: Resolve and validate the commit
         id: sha
         env:
           INPUT_SHA: ${{ inputs.sha }}
-          RUN_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
-          sha="${INPUT_SHA:-$RUN_SHA}"
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
+            sha=$(cat "$RUNNER_TEMP/counterspell-publish/published-sha") || exit 1
+          else
+            sha="${INPUT_SHA:-$GITHUB_SHA}"
+          fi
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]] || { echo "::error::Not a full commit SHA"; exit 1; }
           echo "value=$sha" >> "$GITHUB_OUTPUT"
       - name: Install cosign
@@ -88,11 +103,12 @@ jobs:
           owner="${GITHUB_REPOSITORY_OWNER,,}"
           identity="^https://github.com/${GITHUB_REPOSITORY}/\.github/workflows/publish-images\.yml@refs/(heads/main|tags/v.+)$"
           for img in server judge migrate; do
-            ref="ghcr.io/${owner}/counterspell-${img}:sha-${SHA}"
-            cosign verify "$ref" --certificate-identity-regexp "$identity" \
-              --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+            image="ghcr.io/${owner}/counterspell-${img}"
+            ref="${image}:sha-${SHA}"
             digest=$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}')
             [[ "$digest" =~ ^sha256:[0-9a-f]{64}$ ]] || { echo "::error::Bad digest for $ref"; exit 1; }
+            cosign verify "${image}@${digest}" --certificate-identity-regexp "$identity" \
+              --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
             echo "${img}=${digest}" >> "$GITHUB_OUTPUT"
           done
       - name: Deploy over SSH (pinned host key, forced command)
@@ -124,7 +140,7 @@ jobs:
           HEALTH_URL: ${{ env.HEALTH_URL }}
         run: |
           set -euo pipefail
-          for i in $(seq 1 30); do echo "health attempt $i";
+          for _ in $(seq 1 30); do
             body="$(curl -fsS --max-time 5 "$HEALTH_URL" || true)"
             if [[ "$body" == *'"ok"'* ]]; then
               echo "health: $body"

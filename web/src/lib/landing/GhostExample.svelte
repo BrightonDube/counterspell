@@ -11,14 +11,14 @@
       <span class="text-text-subtle">input </span>{EXAMPLE.input}
     </p>
     <p class="text-text">
-      <span class="text-text-subtle">expected </span><span class="text-success"
-        >{EXAMPLE.expected}</span
-      >
+      <span class="text-text-subtle">expected </span><span class="text-success">
+        {EXAMPLE.expected}
+      </span>
     </p>
     <p class="text-text">
-      <span class="text-text-subtle">got </span><span class="text-danger"
-        >{EXAMPLE.got}</span
-      >
+      <span class="text-text-subtle">got </span><span class="text-danger">
+        {EXAMPLE.got}
+      </span>
     </p>
   </div>
   <figcaption class="mt-3 text-xs text-text-subtle">{CAPTION}</figcaption>

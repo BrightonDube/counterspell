@@ -84,15 +84,17 @@
         {#if block.kind === 'heading'}
           <svelte:element this={`h${block.level}`} class="font-semibold">
             {#each block.segments as segment, index (segmentKey(segment, index))}
-              {#if segment.code}<code class="font-mono">{segment.text}</code
-                >{:else}{segment.text}{/if}
+              {#if segment.code}<code class="font-mono">
+                  {segment.text}
+                </code>{:else}{segment.text}{/if}
             {/each}
           </svelte:element>
         {:else if block.kind === 'paragraph'}
           <p class="whitespace-pre-line break-words">
             {#each block.segments as segment, index (segmentKey(segment, index))}
-              {#if segment.code}<code class="font-mono">{segment.text}</code
-                >{:else}{segment.text}{/if}
+              {#if segment.code}<code class="font-mono">
+                  {segment.text}
+                </code>{:else}{segment.text}{/if}
             {/each}
           </p>
         {:else if block.kind === 'list'}
@@ -100,8 +102,9 @@
             {#each block.items as item, itemIndex (itemIndex)}
               <li>
                 {#each item as segment, index (segmentKey(segment, index))}
-                  {#if segment.code}<code class="font-mono">{segment.text}</code
-                    >{:else}{segment.text}{/if}
+                  {#if segment.code}<code class="font-mono">
+                      {segment.text}
+                    </code>{:else}{segment.text}{/if}
                 {/each}
               </li>
             {/each}

@@ -80,11 +80,11 @@ else
     fail "a changed private file did not change the content hash"
 fi
 
-# Case 5: a private file placed in the public tree is refused with LAY-05, and nothing is assembled.
+# Case 5: a private file placed in the public tree is refused with LAY-07, and nothing is assembled.
 make_trees leak
 cp "$tmp/leak/private/packs/demo/hidden.toml" "$tmp/leak/public/packs/demo/hidden.toml"
 run_assemble leak demo "$tmp/leak/public" "$tmp/leak/private"
-if [[ "$status" -eq 3 && "$err" == *"LAY-05"* && ! -e "$tmp/leak/assembly/demo" ]]; then
+if [[ "$status" -eq 3 && "$err" == *"LAY-07"* && ! -e "$tmp/leak/assembly/demo" ]]; then
     pass
 else
     fail "private file in public tree: status $status, err '$err'"
@@ -111,7 +111,7 @@ if [[ "$status" -eq 3 && "$err" == *"symbolic link"* ]]; then pass; else fail "s
 make_trees collision
 printf 'notes\n' > "$tmp/collision/private/packs/demo/problem.md"
 run_assemble collision demo "$tmp/collision/public" "$tmp/collision/private"
-if [[ "$status" -eq 3 && "$err" == *"LAY-05"* ]]; then pass; else fail "collision: status $status, err '$err'"; fi
+if [[ "$status" -eq 3 && "$err" == *"LAY-07"* ]]; then pass; else fail "collision: status $status, err '$err'"; fi
 
 # Case 10: running without the three arguments is a usage error.
 status=0

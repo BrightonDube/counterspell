@@ -24,8 +24,10 @@ async fn import_fixture(pool: &PgPool) {
     }
 }
 
+// test-change: BRK-1. Run against the isolated Postgres test service.
 #[sqlx::test(migrations = "../../migrations")]
-async fn import_and_daily(pool: PgPool) {
+#[ignore = "needs DATABASE_URL"]
+async fn pg_breakroom_import_and_daily(pool: PgPool) {
     import_fixture(&pool).await;
     let count: i64 = sqlx::query_scalar("SELECT count(*) FROM puzzles")
         .fetch_one(&pool)
@@ -41,8 +43,10 @@ async fn import_and_daily(pool: PgPool) {
     assert_eq!(row.get::<String, _>("id"), "SYN01");
 }
 
+// test-change: BRK-1. Run against the isolated Postgres test service.
 #[sqlx::test(migrations = "../../migrations")]
-async fn one_puzzle_score_per_day(pool: PgPool) {
+#[ignore = "needs DATABASE_URL"]
+async fn pg_breakroom_one_puzzle_score_per_day(pool: PgPool) {
     let uid: uuid::Uuid = sqlx::query_scalar(
             "INSERT INTO users (handle, display_name) VALUES ('brk_a', 'Brk A')              RETURNING id",
         )
@@ -70,8 +74,10 @@ async fn one_puzzle_score_per_day(pool: PgPool) {
     assert_eq!(dup, None, "partial unique index rejects the same date");
 }
 
+// test-change: BRK-1. Run against the isolated Postgres test service.
 #[sqlx::test(migrations = "../../migrations")]
-async fn delete_user_cascades_scores(pool: PgPool) {
+#[ignore = "needs DATABASE_URL"]
+async fn pg_breakroom_delete_user_cascades_scores(pool: PgPool) {
     let uid: uuid::Uuid = sqlx::query_scalar(
             "INSERT INTO users (handle, display_name) VALUES ('brk_b', 'Brk B')              RETURNING id",
         )

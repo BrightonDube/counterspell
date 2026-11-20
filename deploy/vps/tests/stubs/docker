@@ -4,6 +4,8 @@
 # `image inspect IMAGE` prints the image's own digest as RepoDigests, unless FAKE_REPO_DIGESTS overrides it.
 echo "docker $*" >> "${STUB_LOG:?}"
 if [[ "$*" == *" run --rm migrate"* && -n "${FAIL_MIGRATE:-}" ]]; then exit 1; fi
+if [[ "$*" == *"/deploy.env.new up -d"* && -n "${FAIL_CANDIDATE_UP:-}" ]]; then exit 1; fi
+if [[ "$*" == "network inspect counterspell_edge "* ]]; then printf "proxy-caddy-1\n"; fi
 if [[ "$*" == *" pg_dump "* ]]; then printf 'PLAINTEXT-MARKER-DO-NOT-STORE\n'; fi
 if [[ "$*" == *" psql "* ]]; then printf 'users 5\nsubmissions 9\njobs 4\nrun_events 30\nmigration 3\n'; fi
 if [[ "$*" == *" image inspect "* ]]; then

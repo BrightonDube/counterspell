@@ -2,10 +2,11 @@
 //!
 //! Exit codes: 0 when there are no errors (and no warnings under
 //! `--deny-warnings`), 1 for validation errors, 2 for usage, I/O or
-//! infrastructure failures.
+//! infrastructure failures. Public validation reports an absent private reference
+//! without making that expected warning fatal.
 
 use counterspell_grimoire::codes;
-use counterspell_grimoire::report::{Diagnostic, Report};
+use counterspell_grimoire::report::{Diagnostic, Report, Severity};
 use counterspell_grimoire::runner::PackRunner;
 use counterspell_grimoire::{
     validate_sandbox, validate_static, validate_static_public, SandboxFault,
@@ -171,7 +172,7 @@ fn read_pack(path: &Path, public_only: bool) -> Result<Report, String> {
 /// Validates one pack under --all. A tree that carries private-only files is
 /// an assembled tree and validates as such; a public-only tree validates as
 /// public. --public forces the public checks even when private files sit in
-/// the tree, so wrong-tree placements still surface as LAY-05.
+/// the tree, so wrong-tree placements still surface as LAY-07.
 fn read_pack_tree(path: &Path, public_only: bool) -> Result<Report, String> {
     if public_only || !has_private_files(path) {
         return read_pack(path, true);
@@ -253,9 +254,14 @@ fn print_reports(reports: &[Report], options: &Options) -> ExitCode {
             );
         }
     }
-    let failed = reports
-        .iter()
-        .any(|report| report.has_errors() || (options.deny_warnings && report.warning_count() > 0));
+    let failed = reports.iter().any(|report| {
+        report.has_errors()
+            || (options.deny_warnings
+                && report.diagnostics().iter().any(|diagnostic| {
+                    diagnostic.severity == Severity::Warning
+                        && !(options.public_only && diagnostic.code == codes::REF_01.id)
+                }))
+    });
     if failed {
         ExitCode::from(1)
     } else {
@@ -407,12 +413,24 @@ hidden_count = 12
         let report = read_pack(&dir.0, true).expect("public report");
         assert!(
             !report.has_errors(),
-            "public validation skips the absent reference stage: {report:?}"
+            "public validation accepts an absent private reference: {report:?}"
+        );
+        assert!(report.diagnostics().iter().any(|diagnostic| {
+            diagnostic.code == "REF-01" && diagnostic.severity == Severity::Warning
+        }));
+        assert_eq!(
+            run(&args(&[
+                "validate",
+                dir.0.to_str().expect("pack path"),
+                "--public",
+                "--deny-warnings",
+            ])),
+            ExitCode::SUCCESS
         );
     }
 
     #[test]
-    fn a_reference_in_the_public_tree_is_lay_05() {
+    fn a_reference_in_the_public_tree_is_lay_07() {
         // Amendment X1: the reference is private-only, so a copy under the
         // public tree is a wrong-tree file even though it parses.
         let dir = pack_dir();
@@ -428,7 +446,7 @@ hidden_count = 12
         assert!(report
             .diagnostics()
             .iter()
-            .any(|d| d.code == "LAY-05" && d.file == "reference/solution.py"));
+            .any(|d| d.code == "LAY-07" && d.file == "reference/solution.py"));
     }
 
     #[test]

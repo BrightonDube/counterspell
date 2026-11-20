@@ -49,7 +49,7 @@ pub struct Meta {
     pub input_schema: Schema,
     /// The seed and hidden-test count. Read from `generator.toml` in the
     /// assembled tree (amendment X1); a `[generator]` table inside `meta.toml`
-    /// is LAY-05, so this stays `Some` only long enough for the check to fire.
+    /// is LAY-07, so this stays `Some` only long enough for the check to fire.
     #[serde(default)]
     pub generator: Option<Generator>,
     /// The public examples.
@@ -158,7 +158,7 @@ pub fn check(text: &str, dir_name: &str, report: &mut Report) -> Option<Meta> {
     };
     if meta.generator.is_some() {
         report.push(Diagnostic::new(
-            codes::LAY_05,
+            codes::LAY_07,
             FILE,
             Some("/generator"),
             "[generator] belongs in the private generator.toml, not the public meta.toml",
@@ -352,7 +352,7 @@ expected = 2
     }
 
     #[test]
-    fn a_generator_table_in_meta_is_lay_05() {
+    fn a_generator_table_in_meta_is_lay_07() {
         // Amendment X1: [generator] lives in the private generator.toml; a
         // public meta.toml that still carries the table must fail.
         let text = valid()
@@ -362,7 +362,7 @@ hidden_count = 5
 ";
         let (_, codes) = codes_for(&text, "count-pairs");
 
-        assert_eq!(codes, ["LAY-05"]);
+        assert_eq!(codes, ["LAY-07"]);
     }
 
     #[test]

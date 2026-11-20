@@ -121,16 +121,21 @@ Brighton confirmed all three assumed answers:
 - **Q7 (third-party reading).** Authoring agents never open third-party problem
   statements; they may read `docs/licence-rules.md` and the spec only.
 
-## REF-01 severity reconciliation (2026-11-20, needs Brighton's awareness)
+## PA08 integration reconciliation (2026-11-20)
 
-Amendment X1 (approved) says a missing reference in the public-only tree is
-`REF-01` at severity warning. T27 (approved) runs CI with
-`validate --all packs --public --deny-warnings`, under which every warning is a
-failure — so a literal REF-01 warning would fail all three catalogue packs on
-every CI run. Implementation reconciles the two approvals: in public mode the
-absent reference marks the stage `skipped` in the report (visible, non-fatal);
-in assembled/pair mode a missing reference remains the REF-01 error. If a
-literal public-mode warning is wanted instead, the CI flag must be relaxed.
+Public-only validation reports the expected absent private reference as REF-01
+(warning). In public mode, that one warning is exempt from the strict CI exit
+check. Other warnings still fail with --deny-warnings, and assembled validation
+treats an absent reference as an error. LAY-05 retains its existing text-encoding
+meaning. LAY-07 identifies wrong-tree files and inline generator tables.
+
+PA08 creates new draft versions 5, 6 and 7 of the three starter packs. The
+approvals for published versions 4, 5 and 6 cannot approve those drafts. Keep the
+published catalogue versions live. The available checkout pair does not
+reproduce the older approval manifests, so a fresh import needs the exact
+approved source pair or a new approval. Do not republish the drafts or use the draft
+checkout for a fresh catalogue import until the matching private inputs, approval
+records and sandbox evidence have been verified.
 
 ## PA27 — S10/S11 run on the real rootless sandbox (2026-11-20, Brighton-approved tools)
 
@@ -146,11 +151,7 @@ Result on the rootless daemon (identity-verified, `python:3.13-slim@sha256:e48f5
 | longest-run-length | Filled | empty-first-char, forgot-last-run found | not-found |
 
 State files `.kiro/pipeline/state/<slug>.toml` record `status = "sandbox_checked"`.
-One real defect found and fixed during the run: diagonal-total's curated
-`hidden.toml` cases in the private repo were missing the tuple wrapper
-(`input = [[5]]` gave `grid = [5]` and crashed the reference); corrected to the
-one-argument tuple form `[[[5]]]` etc. The pack itself was sound — the defect
-was in the C40 rotation's authored cases.
+Devin recorded a private input-shape correction during the run. The public log omits the case data. Review the earlier public history for retired values before approving the next pack version.
 
 ## MCP T16 — scripted dogfood session (2026-11-20)
 

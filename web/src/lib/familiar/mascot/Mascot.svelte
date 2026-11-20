@@ -161,9 +161,9 @@
       {style.name}
     </p>
     {#if badge !== ''}
-      <span class="rounded bg-raised px-2 py-1 text-sm text-text-muted"
-        >{badge}</span
-      >
+      <span class="rounded bg-raised px-2 py-1 text-sm text-text-muted">
+        {badge}
+      </span>
     {/if}
     <p class="text-center text-sm text-text-muted">{headline}</p>
   {/if}

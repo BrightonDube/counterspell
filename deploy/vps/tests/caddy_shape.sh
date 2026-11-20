@@ -5,6 +5,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 CADDYFILE="$ROOT/Caddyfile"
+SHARED_CADDYFILE="$ROOT/infra/ansible/roles/caddy_site/templates/counterspell.caddy.j2"
 CADDY_IMAGE="${CADDY_IMAGE:-caddy:2.10.2-alpine}"
 failures=0
 
@@ -20,9 +21,10 @@ expect() {
 # shellcheck disable=SC2016 # the braces are Caddy's placeholder syntax, not a shell expansion
 expect '{$CADDY_SITE_ADDRESS::80}' "site address comes from CADDY_SITE_ADDRESS with a :80 default"
 
-# R6.6: readiness is internal only. Caddy answers 404 before any proxy rule.
-expect 'respond /api/ready 404' "/api/ready answers 404 at the edge"
-ready_line="$(grep -nF 'respond /api/ready 404' "$CADDYFILE" | head -1 | cut -d: -f1 || true)"
+# R6.6: the readiness path needs its own handle or the catch-all handle runs first.
+expect 'handle /api/ready {' "/api/ready uses a dedicated handler at the edge"
+expect 'respond 404' "/api/ready answers 404 at the edge"
+ready_line="$(grep -nF 'handle /api/ready {' "$CADDYFILE" | head -1 | cut -d: -f1 || true)"
 proxy_line="$(grep -nF 'reverse_proxy' "$CADDYFILE" | head -1 | cut -d: -f1 || true)"
 if [[ -n "$ready_line" && -n "$proxy_line" && "$ready_line" -lt "$proxy_line" ]]; then
   pass "the readiness 404 comes before the first reverse_proxy"
@@ -46,6 +48,17 @@ expect '-Server' "Server header is removed"
 # Compression stays on the normal routes.
 expect 'request>uri query' "auth callback log filter strips secret query values (R6.5)"
 expect 'replace token REDACTED' "verify-link token is redacted in the access log"
+
+if grep -Fq 'handle /api/ready {' "$SHARED_CADDYFILE" \
+  && grep -Fq 'respond 404' "$SHARED_CADDYFILE" \
+  && grep -Fq 'request>uri query' "$SHARED_CADDYFILE" \
+  && grep -Fq 'replace code REDACTED' "$SHARED_CADDYFILE" \
+  && grep -Fq 'replace state REDACTED' "$SHARED_CADDYFILE" \
+  && grep -Fq 'replace token REDACTED' "$SHARED_CADDYFILE"; then
+  pass "shared edge handles readiness and redacts auth query secrets"
+else
+  fail "shared edge needs a readiness handler and auth query redaction"
+fi
 
 expect 'encode zstd gzip' "compression is kept for normal routes"
 

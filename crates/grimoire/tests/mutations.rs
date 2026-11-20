@@ -37,10 +37,10 @@ fn private_pack_dir() -> Option<PathBuf> {
 /// no pack text can reach it. The engine's property tests cover it instead.
 const NOT_TEXT_REACHABLE: [&str; 2] = [
     "GEN-02",
-    // LAY-05 (wrong-tree file) fires only on the public side of a pair or
+    // LAY-07 (wrong-tree file) fires only on the public side of a pair or
     // public validation; this runner always sees an assembled tree. The
     // pair-side fixture in tests/layout.rs covers it instead (GRM-51).
-    "LAY-05",
+    "LAY-07",
 ];
 
 /// One change to the copied pack.
@@ -125,7 +125,7 @@ fn cases() -> Vec<Case> {
             expected: vec!["LAY-04", "REF-01"],
         },
         Case {
-            code: "LAY-07",
+            code: "LAY-05",
             name: "a NUL byte in problem.md",
             edits: vec![replace(
                 "problem.md",
@@ -133,7 +133,7 @@ fn cases() -> Vec<Case> {
                 "The public\u{0} examples",
             )],
             // A rejected file is skipped, so the statement checks do not run.
-            expected: vec!["LAY-07"],
+            expected: vec!["LAY-05"],
         },
         Case {
             code: "LAY-06",

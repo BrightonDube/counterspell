@@ -1,6 +1,6 @@
 # Deploy runbook
 
-Production is the shared OVH VPS (`15.204.92.66`, site `https://15-204-92-66.sslip.io`). It shares
+Production is the shared OVH VPS (`15.204.92.66`, site `https://counterspel.online`). It shares
 the box with Evorayn: never restart Caddy (validate + reload only) and check
 `https://api.evorayn.com/health` before and after any host change. Counterspell lives under
 `/opt/counterspell` owned by `deploy-counterspell`, with its own Postgres and Valkey and a rootless
@@ -19,7 +19,7 @@ ssh -i <ci key> -p <DEPLOY_PORT> deploy-counterspell@<DEPLOY_HOST> \
 
 The deploy script pulls by digest, runs judge preflight and migrations, starts the stack, checks
 readiness and public health, and restores the previous release itself if a check fails. The
-workflow then re-checks `https://15-204-92-66.sslip.io/api/health` and runs `rollback` if it does
+workflow then re-checks `https://counterspel.online/api/health` and runs `rollback` if it does
 not answer `"ok"`. Deploys require the `DEPLOY_ENABLED=true` repository variable and the
 `production` environment secrets (`DEPLOY_HOST`, `DEPLOY_PORT`, `DEPLOY_SSH_KEY`,
 `DEPLOY_KNOWN_HOSTS`).

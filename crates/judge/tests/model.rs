@@ -291,13 +291,17 @@ impl Harness {
                 // The reaper ends an orphaned cancelled run instead of retrying it.
                 m.phase = Phase::Terminal;
                 m.end_state = "failed";
-            } else if m.attempts + 1 >= MAX_ATTEMPTS {
-                m.phase = Phase::Terminal;
-                m.end_state = "dead";
             } else {
-                m.phase = Phase::Ready;
+                // A reaped claim always uses one attempt, whether the job is
+                // requeued or dies at the cap (requeue_or_exhaust_locked).
                 m.attempts += 1;
-                m.compiled = false;
+                if m.attempts >= MAX_ATTEMPTS {
+                    m.phase = Phase::Terminal;
+                    m.end_state = "dead";
+                } else {
+                    m.phase = Phase::Ready;
+                    m.compiled = false;
+                }
             }
         }
         // A retry waits out a backoff. Clear it with SQL so the next claim is not delayed.

@@ -239,7 +239,7 @@ Validation runs against the assembled tree (public `packs/` overlaid with the pr
 `packs-private/` tree, as `catalogue-cli import` produces it). In the assembled tree the
 layout allow-list additionally permits the files below. In the public `packs/` tree none
 of them may exist — the reference, the incorrect programs and the review records never
-sit in the public repo. Each public-tree violation is `LAY-05` (severity: error):
+sit in the public repo. Each public-tree violation is `LAY-07` (severity: error):
 
 - `hidden.toml` — curated hidden cases with `why` (private tree only)
 - `generator.toml` — generation seed and `hidden_count` (private tree only)
@@ -250,8 +250,8 @@ sit in the public repo. Each public-tree violation is `LAY-05` (severity: error)
 
 The `[generator]` requirement (GRM-9) moves from `meta.toml` to `generator.toml`
 (severity: error when absent from the assembled tree; a public `meta.toml` carrying
-`[generator]` is `LAY-05`, error). Existing packs are migrated in the same PA08 work:
-their `[generator]` table moves to `generator.toml`, every pack stays `status = draft`,
+`[generator]` is `LAY-07`, error). Existing packs are migrated in the same PA08 work:
+their `[generator]` table moves to `generator.toml`, new pack versions stay `status = draft` pending their own approval,
 and a test proves a public `meta.toml` with `[generator]` fails.
 
 A missing `reference/solution.py` in the public-only tree is `REF-01` (severity:
@@ -274,7 +274,7 @@ this code (GRM-51), under `crates/grimoire/tests/fixtures/`:
 | `ORG-01` | an originality record must exist and parse | error | `pipeline/no-originality-record` (exists) |
 | `ORG-02` | no statement text may match a recorded third-party source | error | `pipeline/copied-marker` (exists) |
 | `GHC-01` | every known ghost must reproduce under the fake-runner replay | error | `pipeline/ghost-not-reproducing` (exists) |
-| `LAY-05` | a private-tree file present in the public tree, or a `[generator]` table in public `meta.toml` | error | `pipeline/lay-private-in-public` |
+| `LAY-07` | a private-tree file present in the public tree, or a `[generator]` table in public `meta.toml` | error | `pipeline/lay-private-in-public` |
 | `PUB-01` | a pack may reach `published` only with a matching `approval.toml` | error | `pipeline/publish-without-approval` (exists) |
 | `APR-01` | `approval.toml` hashes must match the manifest contents | error | `pipeline/approval-hash-mismatch` (exists) |
 | `REV-01` | a review round must record its checklist | error | `pipeline/checklist-missing-category` (exists) |

@@ -32,7 +32,7 @@ const REQUIRED_PUBLIC: [&str; 3] = ["problem.md", "meta.toml", "hints.toml"];
 const GHOSTS_FILE: &str = "known_ghosts.toml";
 
 /// Files that may live only in the private tree (amendment X1). Any of these
-/// names seen in the public tree is LAY-05.
+/// names seen in the public tree is LAY-07.
 const PRIVATE_ONLY_FILES: [&str; 4] = [
     "hidden.toml",
     "generator.toml",
@@ -311,7 +311,7 @@ fn check_candidate(
     let name = candidate.name.as_str();
     if !candidate.private && is_private_only(name) {
         report.push(Diagnostic::new(
-            codes::LAY_05,
+            codes::LAY_07,
             name,
             None,
             "private-tree file must not sit in the public tree",
@@ -358,7 +358,7 @@ fn check_candidate(
     match check_text(&bytes) {
         Ok(text) => Ok(Some(text)),
         Err(reason) => {
-            report.push(Diagnostic::new(codes::LAY_07, name, None, reason));
+            report.push(Diagnostic::new(codes::LAY_05, name, None, reason));
             Ok(None)
         }
     }
