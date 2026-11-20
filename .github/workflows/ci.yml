@@ -322,10 +322,9 @@ jobs:
   publish:
     name: Publish
     needs: ci-ok
-    # Production publish: main and version tags only, never brighton/kiro-setup.
-    # A failed ci-ok already skips this job through the implicit success() guard;
-    # needs.* is not resolved for `uses:` job conditions, so it must not appear here.
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    # Calls the reusable workflow whenever ci-ok passes; publish-images.yml then
+    # gates its image job on main/tags. An `if` on this `uses:` job skipped the
+    # call on a green main run even with a provably-true expression, so no `if`.
     permissions:
       contents: read
       packages: write
