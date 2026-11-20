@@ -16,6 +16,8 @@
 name: Deploy
 
 on:
+  # zizmor: ignore[dangerous-triggers]: deploy pipeline; requires CI success on
+  # main and checks out the pinned workflow_run head_sha, never attacker input.
   workflow_run:
     workflows: [CI]
     types: [completed]

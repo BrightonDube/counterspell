@@ -74,6 +74,7 @@ test('Enter on a focused control does not hijack the page', async ({
   await page.keyboard.press('Enter');
   if (target) {
     await expect(page).toHaveURL(
+      // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- input is regex-escaped inline
       new RegExp(`${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
     );
   } else {
