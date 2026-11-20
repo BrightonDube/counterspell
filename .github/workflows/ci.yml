@@ -257,7 +257,16 @@ jobs:
           context: .
           target: judge-runtime
           push: false
+          load: true
+          tags: counterspell-judge:ci
           cache-from: type=gha,scope=counterspell
+      - name: Check the judge runtime includes language files
+        run: |
+          docker run --rm --entrypoint /bin/sh counterspell-judge:ci -ec '
+            test -r languages/languages.toml
+            test -r languages/drivers/python/driver.py
+            test -r languages/drivers/javascript/driver.js
+          '
       - name: Build migration image
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
