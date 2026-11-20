@@ -1,0 +1,8 @@
+[[ghost]]
+id = "counts-all-lit"
+program = "incorrect/counts-all-lit.py"
+kind = "wrong"
+input = [[1, 0, 1, 1]]
+got = 3
+explanation = "Counts every lit lantern instead of only the trailing streak."
+concepts = ["scanning"]

@@ -218,14 +218,14 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Depends on: PA00.
   - Verify: `docs/kiro-log/pack-pipeline-blockers.md` records the answers. The agent never sees the credential. No file in this repo changes.
 
-- [ ] **PA21 [S] (30 min) Backlog: seven new ideas and the dry-run topic**
+- [x] **PA21 [S] (30 min) Backlog: seven new ideas and the dry-run topic**
   - Files: `docs/pack-backlog.md`.
   - Seven original ideas that balance the tracks (arrays, strings, matrices) and include some medium problems. Each entry has: slug, track, concepts (must exist in `packs/catalogue.toml`), difficulty, a one-line original idea, and the planned ghost kinds. Include `lantern-streaks` as the dry-run topic. Do not name a third-party problem, and do not describe one.
   - Requirements: PIP-7, PIP-3, PIP-4.
   - Depends on: PA20 (originality list exists).
   - Verify: a check that every concept and track in the backlog exists in `packs/catalogue.toml` (TAX-01); every slug is unused (SLUG-01).
 
-- [ ] **PA22 [S] [SUPERVISED] (25 min) Rotation procedure for the three starter packs (plan only)**
+- [x] **PA22 [S] [SUPERVISED] (25 min) Rotation procedure for the three starter packs (plan only)**
   - Files: `.kiro/pipeline/rotation.md`.
   - Written procedure: record the retired canonical values as SHA-256 hashes in the private `retired-values.toml` (PIP-35); write new `hidden.toml` and `generator.toml` in the private tree; bump `pack_version` to 2; re-run S5 to S13. Do not run it in this task. The starter packs are `draft`.
   - Requirements: PIP-35, D10.
@@ -236,7 +236,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
 
 ## Wave 5: dry run and batch mode
 
-- [ ] **PA23 [S] (30 min) Dry-run harness with a fake `PackRunner`**
+- [x] **PA23 [S] (30 min) Dry-run harness with a fake `PackRunner`**
   - Files: `crates/grimoire/tests/pipeline_dry_run.rs`, `crates/grimoire/tests/fixtures/pipeline/fake_runner.rs` (test double only).
   - The fake runner returns recorded outputs for the fixture programs, and it is labelled in its file header as not evidence that the sandbox works (`tdd-and-quality` rule on test doubles). It implements the `PackRunner` trait from grimoire T17.
   - Requirements: PIP-17, PIP-48, PIP-49.
@@ -244,7 +244,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: the harness compiles and runs one fixture pack through S9 with the fake runner in a temporary directory.
   - Rust lesson: a trait is a contract. A test double that implements the same trait lets you test the pipeline without the real runner. Explain why the double must say what it is not.
 
-- [ ] **PA24 [S] [SUPERVISED] (30 min) Dry run on `lantern-streaks`**
+- [x] **PA24 [S] [SUPERVISED] (30 min) Dry run on `lantern-streaks`**
   - Files: `crates/grimoire/tests/pipeline_dry_run.rs` (extend), `crates/grimoire/tests/fixtures/pipeline/lantern-streaks/` (fixture pack, not in `packs/`).
   - Run S0 to S9 for the fixture, with the fake runner, in a temporary directory. Assert: S9 passes; S10 and S11 are `pending_judge`; the state file has no hidden value (canary check); `git status` in the repository is unchanged.
   - Requirements: PIP-48, P2, P3.
@@ -252,7 +252,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: the test passes; the report shows the stage reached and the codes, never the hidden values.
   - Rust lesson: none beyond PA23.
 
-- [ ] **PA25 [S] [SUPERVISED] (30 min) Batch orchestrator `scripts/pack-batch.sh`**
+- [x] **PA25 [S] [SUPERVISED] (30 min) Batch orchestrator `scripts/pack-batch.sh`**
   - Files: `scripts/pack-batch.sh`, `docs/kiro-log/pack-batch-<date>.md` (written at run time).
   - Implements design §11: per slug S0 to S9 headless; stop at S10 and S11 with `static_complete`; review; on pass, S13 summary and pull request through `gh` in draft-safe mode; never `published`, never `approval.toml`, never the importer; the loop cap of three; a log with codes and counts only.
   - Requirements: PIP-4, PIP-1, PIP-20, PIP-25, PIP-39.
@@ -260,7 +260,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: covered by PA26. Shell syntax check (`bash -n`) passes.
   - Rust lesson: none.
 
-- [ ] **PA26 [S] [SUPERVISED] (30 min) Batch tests with recorded outputs**
+- [x] **PA26 [S] [SUPERVISED] (30 min) Batch tests with recorded outputs**
   - Files: `scripts/tests/pack-batch-test.sh`.
   - Run the batch on two fixture slugs with recorded S10 and S11 reports and a fake reviewer that fails twice then passes. Assert: the state reaches `awaiting_approval`; no `published` appears in any file; no `approval.toml` is written; the importer is not run; a fixture that always fails stops at round 3 with `escalated`.
   - Requirements: P8, PIP-25, PIP-49.
@@ -291,7 +291,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: each command's exit code and the count are written to the task notes.
   - Rust lesson: `cargo clippy -D warnings` makes warnings errors, which keeps the rules from drifting. Explain why the test count matters when a gate is green.
 
-- [ ] **PA30 [S] (25 min) Operator guide for the pipeline**
+- [x] **PA30 [S] (25 min) Operator guide for the pipeline**
   - Files: `docs/pack-pipeline.md`.
   - One page for Brighton, in plain English: how a topic becomes a pack, which steps he runs, what he approves, how to read the summary, what a `draft` pack means, how to reject, and how the split between public and private works. No hidden values, no credentials.
   - Requirements: PIP-27, PIP-31, PIP-33.
