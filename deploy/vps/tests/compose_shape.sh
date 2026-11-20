@@ -72,6 +72,8 @@ check "P2 the data network is internal" \
 # R4.9: the server trusts forwarded addresses only from the proxy subnet in host.env.
 check "R4.9 server takes TRUSTED_PROXIES from host.env" \
   '.services.server.environment.TRUSTED_PROXIES != null'
+check "Server can start when optional AI hint keys are absent" \
+  '.services.server.environment.AI_STRICT_CONFIG == "false"'
 
 # P8: judge reads only judge.env, with only the allow-listed keys.
 check "P8 judge reads judge.env" \

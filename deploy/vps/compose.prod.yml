@@ -33,6 +33,8 @@ services:
       PORT: "8080"
       STATIC_DIR: /app/web/build
       TRUSTED_PROXIES: ${TRUSTED_PROXIES:?set in host.env}
+      # Keep built-in hints available when optional AI provider keys are absent.
+      AI_STRICT_CONFIG: "false"
     depends_on: !override
       migrate:
         condition: service_completed_successfully
