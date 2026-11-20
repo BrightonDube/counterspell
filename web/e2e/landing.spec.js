@@ -38,8 +38,8 @@ test('the title screen has the wordmark, a focusable ENTER link and the headline
   request
 }) => {
   const html = await (await request.get('/')).text();
-  expect(html).toContain('COUNTERSPELL');
-  expect(html).toContain('href="/login"');
+  expect(html).toContain('Counterspell');
+  expect(html).toMatch(/href="(\.\/)?login"/);
   expect(html).toContain('Learn why your code breaks.');
 });
 
@@ -60,8 +60,11 @@ test('the first Tab stop is ENTER and it shows a visible focus ring', async ({
 
 test('pressing Enter on the title screen goes to sign in', async ({ page }) => {
   await page.goto('/');
-  await page.keyboard.press('Enter');
-  await expect(page).toHaveURL(/\/login$/);
+  // The key handler registers during hydration; retry the press until it lands.
+  await expect(async () => {
+    await page.keyboard.press('Enter');
+    await page.waitForURL(/\/login$/, { timeout: 1000 });
+  }).toPass({ timeout: 15_000 });
 });
 
 test('Enter on a focused control does not hijack the page', async ({
@@ -76,11 +79,13 @@ test('Enter on a focused control does not hijack the page', async ({
   const target = await page.evaluate(
     () => document.activeElement?.getAttribute('href') ?? null
   );
+  // Prerendered hrefs are page-relative (./login); compare against the resolved path.
+  const targetPath = target?.replace(/^\.\//, '/');
   await page.keyboard.press('Enter');
-  if (target) {
+  if (targetPath) {
     await expect(page).toHaveURL(
       // nosemgrep: javascript.lang.security.audit.detect-non-literal-regexp.detect-non-literal-regexp -- input is regex-escaped inline
-      new RegExp(`${target.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
+      new RegExp(`${targetPath?.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`)
     );
   } else {
     await expect(page).toHaveURL(/\/$/);

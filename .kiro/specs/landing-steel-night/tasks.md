@@ -152,7 +152,7 @@ T13 and T14 stay open and must run **after Wave 5** (the title-screen hero), not
   - Verify: median performance is at least 90 and the log records the numbers, the Lighthouse version and the run date.
   - Requirements: R23, R24, R25. Preserve: the page is judged as finished only with the measured number.
 
-- [ ] **T14 [S] (25 min) Check accessibility, privacy and the full verification list**
+- [x] **T14 [S] (25 min) Check accessibility, privacy and the full verification list**
   - Files: fixes in `web/` only.
   - Keyboard path (ENTER, then the section headline, beats, Start practising / Log in) with visible focus. Include the Enter-key shortcut on the hero. Contrast of every text pair against `docs/palette.md`. No third-party request in the network log. No inline script added to `app.html`. Run the Compose smoke test: `http://localhost/` through Caddy shows the marker.
   - Depends on: T12, T13.
@@ -229,3 +229,13 @@ Replace the mid-page hero with the approved variant B title screen. Visual refer
 - [ ] The Hunt copy never claims a smallest possible or proven minimum input.
 - [ ] No Rust, server or route change was made by this spec (except the approved 200.html fallback).
 - [ ] The hero is the approved variant B title screen: full viewport, Creepster CSS wordmark, ENTER to `/login`, living `hero-moon-living-*` loop (poster first, video only in motion mode after first paint, never under reduced motion or Save-Data), CSS pumpkin glow, no middle familiar, and a gradient fade into the existing section below.
+
+## Agent task notes (2026-12-01)
+- **T14**: verification list green. npm check/test/build pass; the landing e2e spec (8 tests)
+  covers origin-only requests, static HTML, keyboard path, focus ring, WCAG AA contrast and
+  reduced-motion-no-GSAP. Fixed three stale expectations: the prerender emits ./login
+  (adapter-static relative paths), the wordmark is Counterspell, and the Enter press needs
+  hydration first (retry loop). Lighthouse median 91 already on record
+  (landing-steel-night-lighthouse.md). Compose smoke on http://localhost/ shows
+  data-smoke-marker=counterspell-svelte-static through Caddy; /api/ready answers 404 at
+  the edge as designed.
