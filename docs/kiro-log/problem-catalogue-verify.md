@@ -14,3 +14,15 @@ Fixed in this run: `pg_catalogue_privileges_match_matrix_for_each_role` failed b
 
 ## C37: repo-wide gates (CAT-Q3)
 `cargo fmt --all -- --check` ok; `cargo clippy --workspace --all-targets -- -D warnings` ok; `cargo test --workspace` 1508 passed, 0 failed; `cargo deny check licenses` ok.
+
+## C38 — sandbox import of approved starter packs (2026-11-20)
+
+Host: WSL2, rootless docker `unix:///run/user/1000/docker.sock`, image digest recorded per pack in `pack_images`.
+
+- `counterspell-catalogue import --packs packs --private-root /home/brighton/code/counterspell-packs-private --sandbox` → all three approved packs report `unchanged` (count-pairs v4 `1b7eade72efa`, diagonal-total v5 `0a9701bb1057`, longest-run-length v6 `b04d6385903e`). Re-import = `unchanged`, the idempotent leg.
+- `GET /api/problems` → all three slugs present (plus seeded add-two, two-sum); no ghost/hidden/seed/reference keys in list or detail responses.
+- `approval.toml` regenerated (combined content hash over public+private trees per `build_manifest`) and committed to counterspell-packs-private@45ce0f0 together with the restored `_demo/mcp-dogfood` private parts (reference, never-negative incorrect, known_ghosts) — the earlier copies were uncommitted and lost.
+
+## C40 — rotation gate: remains HUMAN
+
+Hidden values (reference/incorrect/known_ghosts) DO appear in public git history (grimoire-packs T21–T23 commits). `retired-values.toml` still has no `[[retired]]` entries; rotation requires Brighton to decide which pre-split seeds/ghost inputs retire before new values are generated.

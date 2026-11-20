@@ -441,7 +441,7 @@ Conventions for every web task:
   - Verify: the quadratic solution never reaches mood 5; no result is `high` with the wrong class; the report states the numbers. If either fails, stop and report to Brighton with the raw rows; do not loosen the criteria.
   - Preserve: run only against a local or staging stack that you own.
 
-- [ ] **T42 [S] (30 min) End-to-end pass in the IDE**
+- [x] **T42 [S] (30 min) End-to-end pass in the IDE**
   - Files: `docs/kiro-log/efficiency-familiar-e2e.md`.
   - With the real stack, walk: a wrong submit (crack-and-burst, Furious headline, then ghost), a slow correct submit (Angry or Uneasy, headline, popover data), a good submit (Laughing, burst once, "Matches reference complexity"), a reload (static face, no effect), reduced motion, mute, hide, a speech bubble (AI), and a forced template (cap reached). Record event ids and run ids.
   - Requirements: R15.4, R9, R11.
@@ -457,7 +457,7 @@ Conventions for every web task:
   - Verify: tests pass in CI.
   - Preserve: canaries are test-only strings.
 
-- [ ] **T44 [P] (25 min) Documentation and notices**
+- [x] **T44 [P] (25 min) Documentation and notices**
   - Files: `docs/efficiency-familiar.md` (new), `THIRD-PARTY-NOTICES.md`, `README.md` (one line), `docs/KIRO_USAGE.md` (entry).
   - Explain in plain words how the Familiar judges, the five moods, the honest limits and the confidence rules; how to regenerate baselines; the constants and `fit-1`; GSAP's notice (and `web-tree-sitter` if the stretch ships).
   - Requirements: R6, R15.

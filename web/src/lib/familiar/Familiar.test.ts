@@ -20,7 +20,7 @@ const angryState = applyComplexity(
   }),
   {
     measuredClass: 'n^2',
-    confidence: 'med',
+    confidence: 'medium',
     reference: 'n',
     ratioVsBaseline: 1.1
   }

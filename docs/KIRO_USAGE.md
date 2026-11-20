@@ -498,3 +498,8 @@ Other tools used are disclosed separately in README.md (rules: "must disclose an
 ### 2026-11-16 07:38-07:39 SAST: 24-language-drivers-implement-a2 (Kiro CLI, claude-haiku-5.5, mode default)
 - Prompt: `/tmp/kiro-continue-language-drivers-a2.md`. Transcript: `docs/kiro-log/2026-11-16T0738-24-language-drivers-implement-a2.log`. Exit 0.
 - Credits used (from /usage): 1.90 (credits used now 3746.26/4000).
+
+### 2026-11-20: efficiency-familiar T40/T41/T44 (Devin, takeover after Kiro quota)
+- Ran bench admission on the launch packs against the local rootless sandbox: count-pairs admitted (n^2 fit confirmed, 4 baseline rows); longest-run-length and diagonal-total refused (fit not confirmed — bench decls removed, pack_version bumped). Log: docs/kiro-log/efficiency-familiar-admission.md.
+- T41 real-stack proof: crates/judge/tests/familiar_proof.rs, 30 linear + 30 quadratic submits, JUDGE_CONCURRENCY=2 — all linear mood 4, quadratic mood 5 only with a confirmed n^2 fit, zero violations. Report: docs/kiro-log/efficiency-familiar-proof.md.
+- T44: docs/efficiency-familiar.md added (moods, confidence, baselines, fit-1, limits); README pointer added.

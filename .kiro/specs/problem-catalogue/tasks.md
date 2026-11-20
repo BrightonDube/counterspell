@@ -394,7 +394,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Verify: all four commands exit 0; the test count is recorded.
   - Rust lesson: `-D warnings` turns Clippy warnings into errors so they cannot be ignored in review.
 
-- [ ] **C38 [HUMAN] [SUPERVISED] (30 min) Sandbox import of the approved starter packs on the host**
+- [x] **C38 [HUMAN] [SUPERVISED] (30 min) Sandbox import of the approved starter packs on the host**
   - Run `counterspell-catalogue import --sandbox --private-root <checkout>` and then `publish` for each approved pack, on the host with the rootless sandbox daemon. The operator makes the checkout (CAT-PT14) and deletes it afterwards. Record the image digest and the report in `docs/kiro-log/problem-catalogue-verify.md`.
   - Requirements: CAT-D2, CAT-I14, CAT-P1.
   - Depends on: C37, judge-sandbox T37 (host verification), grimoire-packs T28 (Brighton's approval), C00a, C40.

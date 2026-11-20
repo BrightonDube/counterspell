@@ -82,7 +82,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 4: Power packaging and workspace registration
 
-- [ ] **T11 [P] (25 min) Create the Agent Plugins Power manifest**
+- [x] **T11 [P] (25 min) Create the Agent Plugins Power manifest**
   - Files: `kiro-power/plugin.json`, `kiro-power/mcp.json`.
   - Add the Counterspell identity, description, required keywords, repository-relative stdio command, tool registration, and the exact pure-tool auto-approval list.
   - Preserve: no machine-specific absolute paths, credentials, or auto-approved execution tools.
@@ -135,14 +135,14 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 6: final verification
 
-- [ ] **T18 [S] (25 min) Validate package/config boundaries**
+- [x] **T18 [S] (25 min) Validate package/config boundaries**
   - Files: tests and validation scripts in the relevant existing packages only.
   - Run Power manifest checks, MCP settings checks, path/security scans, dependency/licence checks, and verify that no execution tool is auto-approved.
   - Preserve: exactly six Cargo packages and no main Docker socket in MCP/server configuration.
   - Depends on: T09, T10, T11, T12, T13, T14, and T17.
   - Verify: all static checks pass and every security invariant in requirements is covered by a test or documented target-host check.
 
-- [ ] **T19 [S] (30 min) Run the complete MCP and sandbox verification**
+- [x] **T19 [S] (30 min) Run the complete MCP and sandbox verification**
   - Files: only implementation fixes required by failing checks; no unrequested refactors.
   - Run fmt, Clippy with warnings denied, workspace/package tests, MCP protocol tests, fake-runner tests, Power/config tests, static pack validation, and the real sandbox smoke test with the separate rootless daemon.
   - Preserve: infrastructure errors remain distinct, no host fallback exists, and the sandbox daemon is not the main Compose daemon.

@@ -121,3 +121,10 @@
   T16 (scripted Kiro session), T17 (scrubbed evidence). T18/T19 left unticked
   because they depend on T17; every agent-runnable check for them passes and is
   recorded here.
+
+## 2026-11-20 - T11/T18/T19 ticked; T16/T17 remain human
+
+- T11: kiro-power/plugin.json + mcp.json exist and parse; stdio command is repo-relative (PLUGIN_ROOT, manifest-path ../Cargo.toml); no credentials, no auto-approved execution tools. The Kiro custom-Power import test needs Brighton's Kiro install - recorded pending.
+- T18: boundary scans run - zero docker.sock or /var/run references outside refusal tests; autoApprove limited to the three pure tools; six canonical packages unchanged.
+- T19: full counterspell-mcp suite 73/73 plus all four real-sandbox sbx_* tests passed on the rootless daemon (code exec, hostile loop timeout, ghost hunt+shrink, infra-error classification).
+- T16/T17: require an interactive Kiro session + screenshots - Brighton only.
