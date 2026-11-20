@@ -51,6 +51,5 @@ export const CAPTION = 'Illustration, not a real run.';
 
 /** Call to action labels. */
 export const CTA = {
-  primary: 'Start practising',
-  secondary: 'Log in'
+  primary: 'Start practising'
 } as const;

@@ -11,11 +11,9 @@ describe('SignUpCta', () => {
     expect(primary.getAttribute('href')).toBe('/problems');
   });
 
-  it('links the secondary Log in link to /login in the moss accent', () => {
+  it('offers one call to action — no duplicate sign-in links', () => {
     render(SignUpCta);
-    const secondary = screen.getByRole('link', { name: 'Log in' });
-    expect(secondary.getAttribute('href')).toBe('/login');
-    expect(secondary.className).toContain('text-accent-moss');
+    expect(screen.getAllByRole('link')).toHaveLength(1);
   });
 
   it('styles the primary button with the candle accent and a visible focus ring', () => {
