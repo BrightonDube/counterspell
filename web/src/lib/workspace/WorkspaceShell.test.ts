@@ -73,16 +73,19 @@ function ghostFixture(): GhostView {
 }
 
 /** Session deps whose watch replays a finished stream that carries a ghost. */
-function ghostSessionDeps(stream: RunStreamState): RunSessionDeps {
+function ghostSessionDeps(
+  stream: RunStreamState,
+  runId = 'run-ghost'
+): RunSessionDeps {
   return {
     startAction: () => ({
       key: 'ghost-key',
-      send: () => Promise.resolve('run-ghost')
+      send: () => Promise.resolve(runId)
     }),
     fetchRun: () =>
       Promise.resolve(
         parseRunView({
-          run_id: 'run-ghost',
+          run_id: runId,
           problem: 'two-sum',
           lang: 'python',
           mode: 'run',
@@ -99,6 +102,17 @@ function ghostSessionDeps(stream: RunStreamState): RunSessionDeps {
       options.onDone(stream);
       return { close() {} };
     }
+  };
+}
+
+/** Familiar deps that never touch the network and ask for no speech. */
+function familiarOff() {
+  return {
+    loadPreferences: () =>
+      Promise.resolve({ muted: false, hidden: false, speech: 'off' as const }),
+    savePreferences: () => Promise.resolve({ synced: true }),
+    requestSpeech: () =>
+      Promise.resolve({ kind: 'unavailable' as const, text: '' })
   };
 }
 
@@ -314,6 +328,43 @@ describe('WorkspaceShell', () => {
     );
   });
 
+  // Breaks if "speech off" still sends the learner's code to the server for a bubble (R11.9).
+  it('does not ask for the Familiar speech when the learner turned speech off', async () => {
+    const requestSpeech = vi.fn(() =>
+      Promise.resolve({
+        kind: 'ready' as const,
+        label: 'Measured summary' as const,
+        text: 'Looks linear.'
+      })
+    );
+    const loadPreferences = vi.fn(() =>
+      Promise.resolve({ muted: false, hidden: false, speech: 'off' as const })
+    );
+    const savePreferences = vi.fn(() => Promise.resolve({ synced: true }));
+    const stream: RunStreamState = {
+      ...initialRunState('run-quiet'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream),
+        familiarDeps: { loadPreferences, savePreferences, requestSpeech }
+      }
+    });
+    await vi.waitFor(() => expect(loadPreferences).toHaveBeenCalled());
+
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    await screen.findByRole('button', { name: /rerun ghost/i });
+
+    expect(requestSpeech).not.toHaveBeenCalled();
+  });
+
   // Breaks if the speech request fires before the terminal read, or fires more
   // than once for the same run across republished stream states.
   it('asks for the Familiar speech once, after the run finishes', async () => {
@@ -356,6 +407,256 @@ describe('WorkspaceShell', () => {
     });
     expect(requestSpeech).toHaveBeenCalledTimes(1);
     expect(await screen.findByText(/Looks linear\./)).toBeTruthy();
+  });
+
+  // Breaks if the authored ladder is not reachable from the workspace, so a learner who fails
+  // a run has no way to ask for the next rung (HNT-1: one level at a time, in order).
+  it('reveals authored hints one rung at a time after a run finishes', async () => {
+    const requestHint = vi.fn(async (_run: string, rung: number) => ({
+      rung,
+      text: `Authored rung ${rung}.`
+    }));
+    const stream: RunStreamState = {
+      ...initialRunState('run-hints'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream, 'run-hints'),
+        familiarDeps: familiarOff(),
+        requestHint
+      }
+    });
+    expect(screen.queryByRole('button', { name: 'Show hint 1' })).toBeNull();
+
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 1' })
+    );
+    expect(await screen.findByText('Authored rung 1.')).toBeTruthy();
+    expect(requestHint).toHaveBeenCalledWith('run-hints', 1);
+
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 2' })
+    );
+    expect(await screen.findByText('Authored rung 2.')).toBeTruthy();
+    expect(requestHint.mock.calls.map((call) => call[1])).toEqual([1, 2]);
+  });
+
+  // Breaks if a hint that answers late for an earlier run lands on the ladder of the next run,
+  // or if a new run keeps the previous run's revealed hints (HNT-1: the ladder belongs to one run).
+  it('starts a fresh ladder per run and drops a late reply for the old run', async () => {
+    type Hint = { rung: number; text: string };
+    const pending = new Map<string, (hint: Hint) => void>();
+    const requestHint = vi.fn(
+      (run: string) =>
+        new Promise<Hint>((resolve) => {
+          pending.set(run, resolve);
+        })
+    );
+    const ids = ['run-a', 'run-b'];
+    let started = 0;
+    const deps: RunSessionDeps = {
+      startAction: () => {
+        const id = ids[Math.min(started, ids.length - 1)];
+        started += 1;
+        return { key: `key-${id}`, send: () => Promise.resolve(id) };
+      },
+      fetchRun: (id: string) =>
+        Promise.resolve(
+          parseRunView({
+            run_id: id,
+            problem: 'two-sum',
+            lang: 'python',
+            mode: 'run',
+            status: 'completed',
+            terminal: true,
+            verdict: 'wrong_answer',
+            attempt: 1,
+            created_at: '2026-11-15T10:00:00Z',
+            last_seq: 3,
+            tests: []
+          })
+        ),
+      watch: (options) => {
+        options.onDone({
+          ...initialRunState(ids[started - 1]),
+          status: 'completed',
+          ghost: ghostFixture()
+        });
+        return { close() {} };
+      }
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: deps,
+        familiarDeps: familiarOff(),
+        requestHint
+      }
+    });
+    const run = await screen.findByRole('button', { name: 'Run samples' });
+    await fireEvent.click(run);
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 1' })
+    );
+    expect(requestHint).toHaveBeenLastCalledWith('run-a', 1);
+
+    // A second run finishes while run A's hint is still in flight.
+    await fireEvent.click(run);
+    await vi.waitFor(() => {
+      expect(
+        (
+          screen.getByRole('button', {
+            name: 'Show hint 1'
+          }) as HTMLButtonElement
+        ).disabled
+      ).toBe(false);
+    });
+    // Run B asks for its own rung 1, then run A's old reply for rung 1 arrives first.
+    await fireEvent.click(screen.getByRole('button', { name: 'Show hint 1' }));
+    expect(requestHint).toHaveBeenLastCalledWith('run-b', 1);
+    pending.get('run-a')?.({ rung: 1, text: 'Stale rung 1.' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(screen.queryByText('Stale rung 1.')).toBeNull();
+
+    pending.get('run-b')?.({ rung: 1, text: 'Fresh rung 1.' });
+    expect(await screen.findByText('Fresh rung 1.')).toBeTruthy();
+  });
+
+  // Breaks if a failed hint request shows invented text or drops the hints already revealed.
+  it('keeps revealed hints and invents nothing when a hint request fails', async () => {
+    const requestHint = vi
+      .fn()
+      .mockResolvedValueOnce({ rung: 1, text: 'Authored rung 1.' })
+      .mockRejectedValueOnce(new Error('upstream secret detail'));
+    const stream: RunStreamState = {
+      ...initialRunState('run-hints-fail'),
+      status: 'completed',
+      ghost: ghostFixture()
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream, 'run-hints-fail'),
+        familiarDeps: familiarOff(),
+        requestHint
+      }
+    });
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 1' })
+    );
+    await screen.findByText('Authored rung 1.');
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Show hint 2' })
+    );
+    expect(await screen.findByRole('alert')).toBeTruthy();
+    expect(screen.getByText('Authored rung 1.')).toBeTruthy();
+    expect(screen.queryByText(/Authored rung 2/)).toBeNull();
+    expect(document.body.textContent).not.toContain('upstream secret');
+    // The failed rung can be asked for again.
+    expect(screen.getByRole('button', { name: 'Show hint 2' })).toBeTruthy();
+  });
+
+  // Breaks if the browser performance check cannot see the workspace phases, or if a mark
+  // carries the run id (R15.5).
+  it('marks shell, first event and terminal once, with fixed names only', async () => {
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      const stream: RunStreamState = {
+        ...initialRunState('run-marks-91c2'),
+        lastSeq: 3,
+        status: 'completed',
+        ghost: ghostFixture()
+      };
+      render(WorkspaceShell, {
+        props: {
+          problem,
+          languages,
+          layout: 'desktop',
+          sessionDeps: ghostSessionDeps(stream, 'run-marks-91c2'),
+          familiarDeps: familiarOff()
+        }
+      });
+      await fireEvent.click(
+        await screen.findByRole('button', { name: 'Run samples' })
+      );
+      await screen.findByRole('button', { name: 'Show hint 1' });
+      const names = mark.mock.calls.map((call) => call[0]);
+      expect(
+        names.filter((n) => n === 'workspace-shell-interactive')
+      ).toHaveLength(1);
+      expect(names.filter((n) => n === 'run-first-event')).toHaveLength(1);
+      expect(names.filter((n) => n === 'run-terminal')).toHaveLength(1);
+      expect(mark.mock.calls.every((call) => call.length === 1)).toBe(true);
+      expect(JSON.stringify(mark.mock.calls)).not.toContain('91c2');
+    } finally {
+      mark.mockRestore();
+    }
+  });
+
+  // Breaks if leaving the page and coming back to the same finished run sends a second
+  // speech request (FAM-6: at most one bubble per run, whatever the page does).
+  it('sends one speech request for a run across a remount', async () => {
+    const posts: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (init?.method === 'POST' && url.includes('/familiar-hint')) {
+          posts.push(url);
+          return new Response(
+            JSON.stringify({
+              source: 'template',
+              body: 'Looks linear.',
+              sent_to_provider: false
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } }
+          );
+        }
+        // Preferences load and save: answer with a failure, which the page tolerates.
+        return new Response('{}', { status: 500 });
+      })
+    );
+    try {
+      const stream: RunStreamState = {
+        ...initialRunState('run-remount'),
+        status: 'completed',
+        ghost: ghostFixture()
+      };
+      for (let mount = 0; mount < 2; mount += 1) {
+        render(WorkspaceShell, {
+          props: {
+            problem,
+            languages,
+            layout: 'desktop',
+            sessionDeps: ghostSessionDeps(stream, 'run-remount')
+          }
+        });
+        await fireEvent.click(
+          await screen.findByRole('button', { name: 'Run samples' })
+        );
+        await vi.waitFor(() => {
+          expect(screen.getByText(/Looks linear\./)).toBeTruthy();
+        });
+        cleanup();
+      }
+      expect(posts).toEqual(['/api/runs/run-remount/familiar-hint']);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   // Breaks if a screen-reader user never hears the run finish, or if a stream

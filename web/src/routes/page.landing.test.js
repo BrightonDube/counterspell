@@ -50,6 +50,26 @@ describe('landing route composition (T08)', () => {
     expect(preload?.getAttribute('href')).not.toMatch(/^https?:/);
   });
 
+  // R24: the poster is the largest contentful paint, so the browser must start it with the CSS.
+  it('preloads the hero poster with the same srcset as the picture (T13)', () => {
+    const { container } = render(Page);
+    const preload = document.head.querySelector(
+      'link[rel="preload"][as="image"]'
+    );
+    expect(preload, 'poster preload link').not.toBeNull();
+    const source = container.querySelector('picture source');
+    expect(source, 'hero picture source').not.toBeNull();
+    expect(preload?.getAttribute('imagesrcset')).toBe(
+      source?.getAttribute('srcset')
+    );
+    expect(preload?.getAttribute('imagesizes')).toBe(
+      source?.getAttribute('sizes')
+    );
+    expect(preload?.getAttribute('type')).toBe('image/webp');
+    expect(preload?.getAttribute('fetchpriority')).toBe('high');
+    expect(preload?.getAttribute('imagesrcset')).not.toMatch(/https?:/);
+  });
+
   it('no longer shows the skeleton milestone message', () => {
     const { container } = render(Page);
     expect(container.textContent).not.toContain('Skeleton milestone');

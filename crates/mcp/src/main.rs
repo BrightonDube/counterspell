@@ -37,10 +37,12 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
         workspace_root(&current).unwrap_or(current)
     };
     let socket = std::env::var(SANDBOX_SOCKET_VAR).ok();
-    let slot = production_slot(socket.as_deref()).unwrap_or_else(|error| {
-        eprintln!("sandbox runner unavailable: {error}");
-        RunnerSlot::unconfigured()
-    });
+    let slot = production_slot(&root, socket.as_deref())
+        .await
+        .unwrap_or_else(|error| {
+            eprintln!("sandbox runner unavailable: {error}");
+            RunnerSlot::unconfigured()
+        });
     let digest = match python_image_digest(&root.join(LANGUAGES_FILE), &root) {
         Ok(digest) => Some(digest),
         Err(error) => {

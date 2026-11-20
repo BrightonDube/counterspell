@@ -73,3 +73,9 @@ sudo systemctl restart user@1000.service
 - Postgres and Valkey run as Counterspell's own containers. Supabase is Evorayn's, not Counterspell's.
 - Use one shared Caddy: Counterspell adds a single site file, validates, then reloads. No second Caddy.
 - The `base` and `docker` roles are never run on the shared host. Only the `app`, `sandbox` and `caddy_site` roles, via the `deployer` agent, which needs Brighton's typed DEPLOY.
+
+## 19 Nov 2026 (Brighton): MCP Option 2, dogfood split, C33 unblock, VPS & catalogue gates
+- **counterspell-mcp-power T05/T10 (Option 2 approved):** Move `PackRunner` (and `Target`, `RunnerError`) into `counterspell-common` or `counterspell-engine`, re-export from `counterspell-grimoire`, and move `PackSandboxRunner` into `counterspell-judge` so `judge` never depends on `grimoire`. Update `crates/judge/tests/boundary.rs` accordingly.
+- **counterspell-mcp-power T14:** `.kiro/settings/mcp.json` created with `autoApprove` restricted to `validate_pack`, `explain_verdict`, `fit_complexity`.
+- **counterspell-mcp-power T15:** `packs/_demo/mcp-dogfood/{reference,incorrect}` moved to `counterspell-packs-private/packs/_demo/mcp-dogfood/`; public repo keeps only `problem.md`, `meta.toml`, `hints.toml`. `crates/mcp` resolves `incorrect/`/`reference/` from `COUNTERSPELL_PACKS_PRIVATE_ROOT` as well as the public pack dir.
+- **problem-catalogue C33 (`GhostLookup`):** Unblocked — `ide-workspace` T02/T25 established `submissions.ghost_source_id` (and `submissions.ghost_input`) as the custom ghost-run provenance seam.

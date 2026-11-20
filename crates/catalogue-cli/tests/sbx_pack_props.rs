@@ -115,6 +115,7 @@ async fn evaluate(
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 async fn sbx_published_packs_fixtures_agree_with_reference() {
+    let _guard = sbx::ONE_RUN_AT_A_TIME.lock().await;
     let Some(private_root) = sbx::private_packs_root() else {
         eprintln!("skipping: no counterspell-packs-private checkout is available");
         return;

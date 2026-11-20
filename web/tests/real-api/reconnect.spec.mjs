@@ -18,8 +18,9 @@ import { fileURLToPath } from 'node:url';
 const BASE = process.env.REAL_API_BASE ?? 'http://127.0.0.1:8088';
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), '../../..');
 const SERVER_LOG = resolve(REPO, 'web/tests/real-api/.scratch/server.log');
-const WSL_REPO =
-  '/mnt/c/Users/Brighton/Downloads/Personal Projects/Counterspell';
+// The judge this script may kill and restart. Only the PID in this file is touched, never any
+// other judge on the machine. The restarted judge runs from this repository.
+const JUDGE_PID_FILE = process.env.JUDGE_PID_FILE ?? '';
 
 const results = [];
 function check(name, ok, detail = '') {
@@ -60,11 +61,52 @@ function pgScalar(sql) {
   return '';
 }
 
-function wsl(script) {
-  return execFileSync('wsl', ['-e', 'bash', '-lc', script], {
+// Runs a shell script on the machine that hosts the stack: directly on Linux, through WSL when
+// this script runs Windows-side.
+function hostShell(script, args = []) {
+  const [command, argv] =
+    process.platform === 'win32'
+      ? ['wsl', ['-e', 'bash', '-c', script, 'host-shell', ...args]]
+      : ['bash', ['-c', script, 'host-shell', ...args]];
+  return execFileSync(command, argv, {
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe']
   }).trim();
+}
+
+// Kills only the judge named in JUDGE_PID_FILE, and only if that PID really is a
+// counterspell-judge process. Paths reach the shell as arguments, never inside the script text.
+function killJudge() {
+  if (!JUDGE_PID_FILE) {
+    console.error(
+      'JUDGE_PID_FILE is not set; refusing to kill an unknown judge.'
+    );
+    process.exit(2);
+  }
+  const text = readFileSync(JUDGE_PID_FILE, 'utf8').trim();
+  if (!/^[1-9][0-9]*$/.test(text) || Number(text) <= 1) {
+    console.error(
+      `JUDGE_PID_FILE does not hold a usable PID: ${JSON.stringify(text)}`
+    );
+    process.exit(2);
+  }
+  hostShell(
+    'case "$(readlink /proc/"$1"/exe 2>/dev/null)" in */counterspell-judge | *"/counterspell-judge (deleted)") kill -9 "$1" ;; esac',
+    [text]
+  );
+}
+
+// Starts a fresh judge from this repository. The whole start runs detached with every stream
+// redirected, so this call returns at once. The child writes its own PID and then becomes the
+// judge, so the file names the judge.
+function startJudge() {
+  hostShell(
+    '( cd "$1" && set -a && . ~/.config/counterspell/dev-test.env && set +a && ' +
+      'LANGUAGES_FILE=languages/languages.toml RUST_LOG=info ' +
+      `exec setsid nohup sh -c 'echo $$ > "$0"; exec ./target/debug/counterspell-judge' "$2" ` +
+      '>> web/tests/real-api/.scratch/judge.log 2>&1 < /dev/null ) > /dev/null 2>&1 < /dev/null &',
+    [REPO, JUDGE_PID_FILE]
+  );
 }
 
 // --- auth ---------------------------------------------------------------
@@ -390,14 +432,9 @@ const huntId = huntRun.body.run_id;
 // Wait for the run to be claimed (first event) so the kill lands mid-work.
 for (let i = 0; i < 30 && eventTypes(huntId).length === 0; i++)
   await sleep(1000);
-wsl('pgrep -f "[c]ounterspell-judge" | xargs -r kill -9');
+killJudge();
 await sleep(500);
-wsl(
-  `cd "${WSL_REPO}" && . ~/.config/counterspell/dev-test.env && ` +
-    `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock ` +
-    `setsid nohup ./target/debug/counterspell-judge >> web/tests/real-api/.scratch/judge.log 2>&1 < /dev/null & ` +
-    `sleep 2; pgrep -f "[c]ounterspell-judge" | head -1`
-);
+startJudge();
 const retryTerminal = await waitTerminal(huntId, 300000);
 const retryEvents = eventTypes(huntId);
 const retryVerdict = pgScalar(
@@ -406,18 +443,93 @@ const retryVerdict = pgScalar(
 const retryError = pgScalar(
   `select payload->>'code' from run_events where submission_id = '${huntId}' and type = 'error'`
 );
-// The honest contract: a killed run is reclaimed (`restarted` per attempt) and
-// always reaches a terminal state — either a real verdict, or internal_error
-// with retries_exhausted rather than hanging forever. A run killed mid-compile
-// currently takes the internal_error path because every retry dies at compile
-// (recorded in ide-workspace-blockers.md); a completed retry remains a pass.
+// A killed run is reclaimed (`restarted`) and the retry judges it to its real
+// verdict and ghost. Each attempt names its containers with its attempt number,
+// so the killed attempt's container cannot block the retry.
 check(
   'retry: killed run is reclaimed and terminated',
   retryEvents.includes('restarted') &&
-    (retryVerdict === 'wrong_answer' ||
-      (retryTerminal === 'internal_error' &&
-        retryError === 'retries_exhausted')),
+    retryTerminal === 'completed' &&
+    retryVerdict === 'wrong_answer' &&
+    retryEvents.includes('ghost'),
   `status=${retryTerminal} verdict=${retryVerdict} error=${retryError} events=${retryEvents.join(',')}`
+);
+
+// Leg 13: failure verdicts are named for what happened, never Wrong Answer.
+const LOOP = 'def add_two(a, b):\n    while True:\n        pass\n';
+const CRASH = 'def add_two(a, b):\n    raise ValueError("boom")\n';
+// Parses as Python for tree-sitter, but Python itself refuses it when the module loads.
+const COMPILE = 'def add_two(a, b):\n    return a + b\nnonlocal a\n';
+async function verdictOf(code) {
+  const posted = await postRun(userB.cookie, code, 'submit');
+  if (posted.status !== 202)
+    return { posted: posted.status, code: posted.body?.code };
+  const id = posted.body.run_id;
+  const status = await waitTerminal(id, 240000);
+  return {
+    posted: posted.status,
+    status,
+    verdict: pgScalar(`select verdict from submissions where id = '${id}'`),
+    read: (await getRun(userB.cookie, id)).body
+  };
+}
+const looped = await verdictOf(LOOP);
+check(
+  'failure: an endless loop ends as Time limit, not Wrong answer',
+  looped.status === 'completed' &&
+    looped.verdict === 'time_limit' &&
+    looped.read?.verdict === 'time_limit',
+  `posted=${looped.posted} status=${looped.status} verdict=${looped.verdict}`
+);
+const crashed = await verdictOf(CRASH);
+check(
+  'failure: an exception ends as Runtime error, not Wrong answer',
+  crashed.status === 'completed' && crashed.verdict === 'runtime_error',
+  `posted=${crashed.posted} status=${crashed.status} verdict=${crashed.verdict}`
+);
+const refused = await verdictOf(COMPILE);
+check(
+  'failure: a module Python refuses is a Compile or Runtime error, never judged as an answer',
+  (refused.posted === 400 && refused.code === 'source_does_not_parse') ||
+    (refused.status === 'completed' &&
+      (refused.verdict === 'compile_error' ||
+        refused.verdict === 'runtime_error')),
+  `posted=${refused.posted} code=${refused.code ?? ''} status=${refused.status} verdict=${refused.verdict}`
+);
+
+// Leg 14: an infrastructure failure is an internal error, never a verdict. The worker
+// is killed each time it claims the run, until the attempts run out.
+const doomed = await postRun(userB.cookie, WRONG, 'submit');
+const doomedId = doomed.body?.run_id;
+let kills = 0;
+for (let i = 0; i < 600 && doomedId; i++) {
+  const status = pgScalar(
+    `select status from submissions where id = '${doomedId}'`
+  );
+  if (status === 'internal_error' || status === 'completed') break;
+  const claimed = pgScalar(
+    `select attempts from jobs where submission_id = '${doomedId}' and state = 'claimed'`
+  );
+  if (claimed !== '' && Number(claimed) >= kills) {
+    killJudge();
+    kills += 1;
+    await sleep(500);
+    startJudge();
+  }
+  await sleep(500);
+}
+const doomedTerminal = doomedId ? await waitTerminal(doomedId, 240000) : 'none';
+const doomedRead = doomedId ? (await getRun(userB.cookie, doomedId)).body : {};
+const doomedError = pgScalar(
+  `select payload->>'code' from run_events where submission_id = '${doomedId}' and type = 'error'`
+);
+check(
+  'failure: a worker lost on every attempt ends as internal_error with no verdict',
+  doomedTerminal === 'internal_error' &&
+    !doomedRead.verdict &&
+    doomedError === 'retries_exhausted' &&
+    !eventTypes(doomedId).includes('ghost'),
+  `kills=${kills} status=${doomedTerminal} verdict=${doomedRead.verdict ?? 'none'} error=${doomedError}`
 );
 
 // Leg 11: the user rate limit / queue cap throttles a burst. Every accepted

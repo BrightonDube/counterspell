@@ -249,7 +249,7 @@ fn flag_value(rest: &[String], index: &mut usize) -> Result<String, UsageError> 
 }
 
 fn main() -> ExitCode {
-    let args: Vec<String> = env::args().skip(1).collect();
+    let args: Vec<String> = env::args().skip(1).collect(); // nosemgrep: rust.lang.security.args.args
     let options = match parse(&args) {
         Ok(options) => options,
         Err(error) => {

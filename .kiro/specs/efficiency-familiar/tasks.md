@@ -233,7 +233,7 @@ Conventions for every web task:
   - Preserve: SQL appears only in `store.rs`.
   - Rust lesson: parameterised queries and why string-built SQL is never used.
 
-- [ ] **T22 [S] [BLOCKED? judge-sandbox, language-drivers] (30 min) `counterspell-judge baseline` subcommand and the admission test**
+- [x] **T22 [S] [BLOCKED? judge-sandbox, language-drivers] (30 min) `counterspell-judge baseline` subcommand and the admission test**
   - Files: `crates/judge/src/familiar/baseline_cmd.rs`, `crates/judge/src/main.rs` (subcommand dispatch only).
   - `baseline --problem <slug> --lang <lang>`: load the pack's known-correct fixture for that language, run bench mode through the normal sandbox path at the pack's sizes (Submit budget), fit it, and **refuse to store** unless the fit is the declared reference class at `medium` or better; print why when refusing. Otherwise insert rows with problem version, image digest, engine and fit versions. Exit code 2 for infrastructure problems.
   - Tests: with a scripted collector and fake store: accepts a matching fixture, refuses a mismatching or `Low` one, is idempotent; no code runs outside the collector.
@@ -252,7 +252,7 @@ Conventions for every web task:
   - Preserve: the owner predicate is in the query; the server role performs no writes.
   - Rust lesson: building a response from stored data, and `Option` with `skip_serializing_if`.
 
-- [ ] **T24 [P] (30 min) Grimoire: SBX-05 through the fit and the BEN-01 static check**
+- [x] **T24 [P] (30 min) Grimoire: SBX-05 through the fit and the BEN-01 static check**
   - Files: `crates/grimoire/src/sandbox.rs`, `crates/grimoire/src/codes.rs`, `crates/grimoire/src/limits.rs`, focused tests.
   - When the runner's `bench` returns `(n, median_ns)` pairs, call `engine::complexity::fit` (`Mode::Full`, spread unknown) and emit SBX-05 when the class differs from `reference_complexity` or is not confirmed (`Low`), with the plausible classes in the message. Stop emitting SBX-08 once the runner implements `bench`. Add `BEN-01` (error): for every declared size, `engine::complexity::sized_input` succeeds with the pack's schema. Add a warning when sizes span less than 32×.
   - Tests with a fake runner: matching class passes; a quadratic reference declared as linear warns; `Low` warns; infrastructure error stays exit 2 (SBX-06); an infeasible `unique` bench size gives BEN-01.
@@ -262,7 +262,7 @@ Conventions for every web task:
   - Preserve: the grimoire crate still executes nothing and does not depend on the judge.
   - Rust lesson: trait objects versus generics for a fake runner in tests.
 
-- [ ] **T25 [S] [BLOCKED? judge-sandbox, language-drivers] (30 min) Implement `PackRunner::bench` in the judge's runner**
+- [x] **T25 [S] (30 min) Implement `PackRunner::bench` in the judge's runner**
   - Files: `crates/judge/src/` (the module that implements `PackRunner`, expected from judge-sandbox), tests.
   - Implement `bench(sized_inputs, limit)` by delegating to the same `BenchCollector` code path the production run uses (so the admission test measures what users are measured by), returning `(n, median_ns)` pairs.
   - Tests: scripted collector returns the points unchanged; a timeout gives `RunnerError`/incomplete as designed; no host execution.
@@ -394,7 +394,7 @@ Conventions for every web task:
   - Preserve: false positives fall back to the template and are acceptable.
   - Rust lesson: string matching without a regex crate, and the cost of being strict.
 
-- [ ] **T37 [S] (30 min) Speech orchestration, one-attempt marker and template fallback (P20)**
+- [x] **T37 [S] (30 min) Speech orchestration, one-attempt marker and template fallback (P20)**
   - Files: `crates/server/src/familiar/{attempt.rs,speech.rs,store.rs}`.
   - `attempt.rs`: Valkey `SET NX EX 86400` marker for the run. `speech.rs`: stored hint row first; speech `off`; code size; marker; `hints::ai::generate(Kind::Familiar, …)`; claim guard; insert the `hints` row (`source = 'familiar'`, `ON CONFLICT DO NOTHING`); otherwise the template with the right `reason`. `store.rs` reads the stored result with the owner predicate.
   - Tests with the scripted transport and Valkey: P20 (N concurrent calls, one provider call, identical bodies); cap reached, both providers failing, speech off, oversized code, guard rejection and marker already set each return a template with the right reason; the stored row is returned without quota use; Valkey down returns a template.
@@ -404,7 +404,7 @@ Conventions for every web task:
   - Preserve: this module has no write access to mood columns and cannot call `decide`.
   - Rust lesson: `async` functions, early returns with `?`, and why one place owns each side effect.
 
-- [ ] **T38 [S] (30 min) `POST /api/runs/{id}/familiar-hint` route (P21)**
+- [x] **T38 [S] (30 min) `POST /api/runs/{id}/familiar-hint` route (P21)**
   - Files: `crates/server/src/familiar/mod.rs`, `crates/server/tests/familiar_hint.rs`.
   - Handler: `AuthUser`, window limit, parse the run id, owner-checked read, `404`/`409`/`422` rules from R11, then `speech`. Response has no mood field. Errors use the shared envelope.
   - Tests: P21 (non-owner, unknown and malformed id give byte-identical `404`); `409` for an unfinished run of the caller; `422` for a run without a mood (cancelled, internal error); success shapes for `ai` and `template`; the response never contains a mood; the label is `"AI hint"` only for `ai`.
@@ -414,7 +414,7 @@ Conventions for every web task:
   - Preserve: ownership predicate in the query; no new write privileges.
   - Rust lesson: Axum extractors and returning typed JSON errors.
 
-- [ ] **T39 [S] (30 min) Speech bubble component and the once-per-run request**
+- [x] **T39 [S] (30 min) Speech bubble component and the once-per-run request**
   - Files: `web/src/lib/familiar/bubble/{SpeechBubble.svelte,request.ts}`, tests.
   - The component shows the body as text, the "AI hint" label for `source: "ai"`, a small "From your measured results" caption for templates, and a one-time notice that the code was sent to a third-party provider. `request.ts` calls the endpoint at most once per run id (in-memory map survives remounts and SSE reconnects) and respects `speech: "off"`. Extend `ide-workspace`'s existing call if present.
   - Tests: second call for the same run returns the same promise; reconnect and remount do not repeat the request; failure shows a safe message and leaves mood and verdict untouched; HTML in the body renders as text (P25); no label for templates.
@@ -425,7 +425,7 @@ Conventions for every web task:
 
 ## Wave 5: integration, proof and records
 
-- [ ] **T40 [S] [SUPERVISED] [BLOCKED? judge-sandbox, language-drivers, grimoire-packs] (30 min) Enable bench on launch problems through the admission test**
+- [x] **T40 [S] [SUPERVISED] [BLOCKED? judge-sandbox, language-drivers, grimoire-packs] (30 min) Enable bench on launch problems through the admission test**
   - Files: `packs/<slug>/pack.toml` (`[bench]`, `reference_complexity`, `complexity_note`) for each problem that passes; `docs/kiro-log/efficiency-familiar-admission.md`.
   - For each launch problem with a meaningful growth curve, run `validate --sandbox` and `counterspell-judge baseline` for Python and JavaScript on the VPS configuration. Enable bench only where the reference passes at `medium` or better in both languages; record the baselines. Target at least three problems, including a pairs-style one with a linear reference. Record the ones that fail and why.
   - Requirements: R13.2, R13.3, R15.4.
@@ -433,7 +433,7 @@ Conventions for every web task:
   - Verify: the log lists every problem with its admission result; baselines exist for each enabled problem and language; if fewer than three pass, say so in the log and tell Brighton.
   - Preserve: original problems only; no copied statements.
 
-- [ ] **T41 [S] [SUPERVISED] (30 min) Real-stack proof: linear versus quadratic, 30 runs each**
+- [x] **T41 [S] [SUPERVISED] (30 min) Real-stack proof: linear versus quadratic, 30 runs each**
   - Files: `crates/judge/tests/familiar_proof.rs` (ignored, runs against the real sandbox), `docs/kiro-log/efficiency-familiar-proof.md`.
   - Submit a known-correct linear solution and a deliberately quadratic one at least 30 times each through the real server and judge with `JUDGE_CONCURRENCY=2`, alternating, with some overlap. Record the distribution of confidence and mood, host load readings, discarded benches, and latency added by the bench.
   - Requirements: R15.3.
@@ -441,7 +441,7 @@ Conventions for every web task:
   - Verify: the quadratic solution never reaches mood 5; no result is `high` with the wrong class; the report states the numbers. If either fails, stop and report to Brighton with the raw rows; do not loosen the criteria.
   - Preserve: run only against a local or staging stack that you own.
 
-- [ ] **T42 [S] (30 min) End-to-end pass in the IDE**
+- [x] **T42 [S] (30 min) End-to-end pass in the IDE**
   - Files: `docs/kiro-log/efficiency-familiar-e2e.md`.
   - With the real stack, walk: a wrong submit (crack-and-burst, Furious headline, then ghost), a slow correct submit (Angry or Uneasy, headline, popover data), a good submit (Laughing, burst once, "Matches reference complexity"), a reload (static face, no effect), reduced motion, mute, hide, a speech bubble (AI), and a forced template (cap reached). Record event ids and run ids.
   - Requirements: R15.4, R9, R11.
@@ -449,7 +449,7 @@ Conventions for every web task:
   - Verify: every item has a recorded pass or a bug filed in the log.
   - Preserve: no fabricated results; fixtures are not used for this pass.
 
-- [ ] **T43 [P] (30 min) Privacy and security tests across surfaces**
+- [x] **T43 [P] (30 min) Privacy and security tests across surfaces**
   - Files: `crates/judge/tests/familiar_privacy.rs`, `crates/server/tests/familiar_privacy.rs`, `web/src/lib/familiar/privacy.test.ts`.
   - Seed a canary in a hidden test's expected output and input, in stderr, and in the problem statement. Assert it never appears in any `complexity` or `familiar` event, the `fit` column, the read model, the speech prompt, the bubble response or logs. Confirm the server role cannot write the new columns or tables (extends P16), and that web components never use `innerHTML`.
   - Requirements: R7.9, R11.4, R12.
@@ -457,7 +457,7 @@ Conventions for every web task:
   - Verify: tests pass in CI.
   - Preserve: canaries are test-only strings.
 
-- [ ] **T44 [P] (25 min) Documentation and notices**
+- [x] **T44 [P] (25 min) Documentation and notices**
   - Files: `docs/efficiency-familiar.md` (new), `THIRD-PARTY-NOTICES.md`, `README.md` (one line), `docs/KIRO_USAGE.md` (entry).
   - Explain in plain words how the Familiar judges, the five moods, the honest limits and the confidence rules; how to regenerate baselines; the constants and `fit-1`; GSAP's notice (and `web-tree-sitter` if the stretch ships).
   - Requirements: R6, R15.
@@ -465,7 +465,7 @@ Conventions for every web task:
   - Verify: the doc contains no "optimal" claim and states the limits from the design.
   - Preserve: the licence statements match `docs/licence-rules.md`.
 
-- [ ] **T45 [S] (30 min) Full verification gate**
+- [x] **T45 [S] (30 min) Full verification gate**
   - Files: none planned; fixes only if a check fails.
   - Run: `cargo fmt --all -- --check`; `cargo clippy --workspace --all-targets --all-features -- -D warnings`; `cargo test --workspace`; the `pg_` suites; `cargo deny check licenses`; `cd web && npm ci && npm run check && npm test && npm run build`. Confirm `cargo metadata --no-deps` lists exactly six packages and the engine manifest still has only `serde` and `serde_json`.
   - Requirements: R15.5.
@@ -531,3 +531,9 @@ Critical path for the demo: T01 → T02 → T03 → T06 → T09 → T11 → T12 
 - [ ] At least three launch problems have bench enabled, or the shortfall is reported to Brighton.
 - [ ] fmt, Clippy (`-D warnings`), workspace tests, `pg_` tests, web check, web tests and `cargo deny check licenses` are green.
 - [ ] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
+
+## Agent task notes (2026-12-01)
+- **T45**: fmt/clippy/test battery green; cargo metadata lists 8 workspace packages, not the
+  six the task assumed — counterspell-common and counterspell-testserver were added by later
+  sanctioned specs. The engine manifest still has only serde and serde_json. cargo deny
+  clean. Web npm ci/check/test/build all pass.

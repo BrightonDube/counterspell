@@ -5,10 +5,15 @@
   // Each beat has one decorative picture from the approved art. The heading and text carry the
   // meaning, so the picture is hidden from assistive technology.
   const art = {
-    Submit: '/art/objects/crypt-key.webp',
-    Hunt: '/art/objects/crystal-ball.webp',
-    Understand: '/art/objects/brain-jar.webp'
+    Submit: 'crypt-key',
+    Hunt: 'crystal-ball',
+    Understand: 'brain-jar'
   } as const;
+
+  // The icons show at 64 px, so a 128 px file covers a 2x screen. The 512 px file stays as the fallback.
+  const src = (name: string) => `/art/objects/${name}.webp`;
+  const srcset = (name: string) =>
+    `/art/objects/${name}-128.webp 128w, ${src(name)} 512w`;
 </script>
 
 <div class="flex flex-col gap-12">
@@ -17,7 +22,9 @@
       <div class="flex items-center gap-4">
         <img
           class="h-16 w-16 shrink-0 object-contain"
-          src={art[beat.heading]}
+          src={src(art[beat.heading])}
+          srcset={srcset(art[beat.heading])}
+          sizes="64px"
           width="64"
           height="64"
           alt=""

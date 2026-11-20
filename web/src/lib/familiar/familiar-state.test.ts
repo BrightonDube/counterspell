@@ -17,7 +17,7 @@ const noPrefs: FamiliarPrefs = { muted: false, hidden: false };
 function fact(overrides: Partial<ComplexityFact> = {}): ComplexityFact {
   return {
     measuredClass: 'n^2',
-    confidence: 'med',
+    confidence: 'medium',
     reference: 'n',
     ratioVsBaseline: 1.1,
     ...overrides

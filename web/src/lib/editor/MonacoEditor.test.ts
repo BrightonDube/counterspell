@@ -105,6 +105,28 @@ describe('MonacoEditor', () => {
     expect(harness.state.models[0].getValue()).toBe('print(1)');
   });
 
+  // Breaks if the browser performance check cannot tell when the editor became usable (R15.5).
+  it('marks monaco-ready once the editor exists, with no detail', async () => {
+    const mark = vi.spyOn(performance, 'mark');
+    try {
+      render(MonacoEditor, {
+        props: {
+          value: 'print(1)',
+          language: 'python',
+          label: 'Python solution editor',
+          onChange: () => {}
+        }
+      });
+      expect(mark.mock.calls.map((c) => c[0])).not.toContain('monaco-ready');
+      await waitFor(() => expect(harness.state.editors).toHaveLength(1));
+      await waitFor(() =>
+        expect(mark.mock.calls).toContainEqual(['monaco-ready'])
+      );
+    } finally {
+      mark.mockRestore();
+    }
+  });
+
   // Breaks if switching language throws away the Python draft, so returning to Python loses work.
   it('keeps each language model when the learner switches language', async () => {
     const { rerender } = render(MonacoEditor, {

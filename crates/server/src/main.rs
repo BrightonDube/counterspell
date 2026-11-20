@@ -69,8 +69,16 @@ async fn main() -> Result<(), io::Error> {
     let hints =
         counterspell_server::hints::handlers::hint_state_from_env(pool.clone(), &config.valkey_url)
             .map_err(|message| io::Error::new(io::ErrorKind::InvalidInput, message))?;
+    let attempt = counterspell_server::familiar::attempt::AttemptMarker::open(&config.valkey_url)
+        .map_err(|_| {
+        io::Error::new(
+            io::ErrorKind::InvalidInput,
+            "VALKEY_URL is not a valid Valkey URL",
+        )
+    })?;
     let state = AppState::new(pool, config, limiter)
         .with_hints(hints)
+        .with_familiar_attempt(attempt)
         .with_auth(auth, &auth_config.public_base_url)
         .map_err(|_| {
             io::Error::new(

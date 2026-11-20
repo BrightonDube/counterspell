@@ -56,13 +56,13 @@ describe('parseComplexityFact', () => {
     expect(
       parseComplexityFact({
         class: 'n',
-        confidence: 'med',
+        confidence: 'medium',
         reference: 'n',
         ratio_vs_baseline: null
       })
     ).toEqual({
       measuredClass: 'n',
-      confidence: 'med',
+      confidence: 'medium',
       reference: 'n',
       ratioVsBaseline: null
     });

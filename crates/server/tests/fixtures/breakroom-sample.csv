@@ -1,0 +1,13 @@
+PuzzleId,FEN,Moves,Rating,RatingDeviation,Popularity,NbPlays,Themes,GameUrl,OpeningTags
+SYN01,rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2,g1f3 d7d5 e4d5,1200,150,99,12000,opening middlegame,https://lichess.org/syn01,Sicilian
+SYN02,rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2,c2c3 g8f6 e4e5,1250,140,98,11000,opening,https://lichess.org/syn02,Sicilian
+SYN03,r1bqkbnr/pppp1ppp/2n5/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3,f1b5 a7a6,1300,135,97,10000,opening middlegame,https://lichess.org/syn03,Ruy Lopez
+SYN04,6k1/5ppp/8/8/8/8/5PPP/6K1 w - - 0 1,f2f4 g7g6,1400,130,96,9000,endgame,https://lichess.org/syn04,
+SYN05,r1bqk2r/pppp1ppp/2n2n2/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4,e1g1 e8g8,1450,125,95,8500,castling middlegame,https://lichess.org/syn05,Italian
+SYN06,8/8/4k3/8/8/4K3/4P3/8 w - - 0 1,e3e4 e6e5,1500,120,94,8000,endgame pawnEndgame,https://lichess.org/syn06,
+SYN07,r3k2r/ppp2ppp/2n5/3p4/3P4/2N5/PPP2PPP/R3K2R w KQkq - 0 1,c3d5 d8d5,1600,118,93,7500,middlegame fork,https://lichess.org/syn07,
+SYN08,4r1k1/pp3ppp/8/3q4/8/5N2/PP3PPP/4R1K1 w - - 0 1,f3d4 d5d4,1700,115,92,7000,middlegame,https://lichess.org/syn08,
+SYN09,6k1/pp3ppp/8/8/8/8/PP3PPP/4R1K1 w - - 0 1,e1e8,1800,112,91,6500,endgame mate mateIn1,https://lichess.org/syn09,
+SYN10,r1bqkb1r/pppp1ppp/2n2n2/4p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 4 4,d2d3 f8c5,1900,110,90,6000,opening,https://lichess.org/syn10,Italian
+SYN11,8/2k5/8/8/8/8/2K5/3Q4 w - - 0 1,d1d5,2000,108,88,5500,endgame,https://lichess.org/syn11,
+SYN12,rnb1kbnr/pp1ppppp/8/q1p5/3P4/8/PPP1PPPP/RNBQKBNR w KQkq - 0 1,c1d2 a5d2,2100,105,86,5000,opening trap,https://lichess.org/syn12,

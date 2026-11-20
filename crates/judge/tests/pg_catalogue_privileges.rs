@@ -43,8 +43,9 @@ const SERVER_READS: [&str; 8] = [
 ];
 
 /// Tables the judge may read (matrix: judge SELECT on the run inputs and hidden data).
-/// test-change: T25. The ghost hunt copies a problem's concept tags into a found
-/// ghost's autopsy, so `problem_concepts` joined the judge's read set.
+// test-change: GHO-6. The Bug Autopsy copies the problem's concept tags into a found ghost, so the
+// judge reads `problem_concepts` (additive grant in migration 20261119090000). The old matrix
+// predates that; every other row is unchanged.
 const JUDGE_READS: [&str; 10] = [
     "problems",
     "problem_concepts",

@@ -6,6 +6,7 @@
   import { SvelteMap } from 'svelte/reactivity';
   import type * as Monaco from 'monaco-editor';
   import { CRYPT_THEME_NAME, loadMonaco } from './monaco-loader';
+  import { markWorkspace } from '../performance';
 
   let {
     value,
@@ -50,6 +51,7 @@
           onChange(editor?.getValue() ?? '');
         });
         status = 'ready';
+        markWorkspace('monaco-ready');
       })
       .catch(() => {
         if (!cancelled) status = 'failed';

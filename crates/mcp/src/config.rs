@@ -18,6 +18,9 @@ pub enum ConfigError {
     NotConfigured,
     /// A socket was configured but the guard refused it.
     Rejected(SocketPathError),
+    /// The socket passed the guard but the sandbox cannot be used: the settings are unusable, or
+    /// the daemon behind it failed the identity check.
+    Unavailable(String),
 }
 
 impl fmt::Display for ConfigError {
@@ -25,6 +28,9 @@ impl fmt::Display for ConfigError {
         match self {
             Self::NotConfigured => formatter.write_str("no sandbox endpoint is configured"),
             Self::Rejected(error) => write!(formatter, "the sandbox endpoint was refused: {error}"),
+            Self::Unavailable(reason) => {
+                write!(formatter, "the sandbox endpoint is unavailable: {reason}")
+            }
         }
     }
 }

@@ -4,7 +4,9 @@
 //
 // Start the fixture first:
 //   DATABASE_URL=postgres://... CS_TEST_PORT=5198 RUN_RATE_USER=1 \
-//     cargo run -p counterspell-server --features testkit --bin counterspell-testserver
+//     RUN_RATE_IP=10000 cargo run -p counterspell-testserver
+// RUN_RATE_IP lifts the loopback IP cap so repeated suite runs are refused only
+// by the per-user limit the refusal tests exercise.
 // Then: AXUM_TEST_URL=http://127.0.0.1:5198 npx vitest run run-session.axum
 import { describe, expect, it } from 'vitest';
 import { ApiRequestError, type FetchLike } from '../api/client';
@@ -17,9 +19,14 @@ const token = (n: number) => `Bearer test-user-${n}`;
 // RUN_RATE_USER=1 on the fixture: a user's first POST succeeds, the second in
 // the window is refused. Each test draws a fresh user so reruns stay true.
 const describeAxum = BASE ? describe : describe.skip;
-// The fixture seeds 256 users; 1-8 are for manual smoke. The window is per
-// user, so a time-rotated start keeps repeat runs away from spent slots.
-const firstUser = 9 + (Math.floor(Date.now() / 1000) % 200);
+// The fixture seeds 4096 users; 1-8 are for manual smoke. The rate window is
+// 600 s per user, and one suite run draws USERS_PER_RUN users. Users 9-4093
+// form 817 slots of 5; the slot advances every second, so a slot comes round
+// again only after 817 s, longer than the window. A suite run lasts longer
+// than one second, so back-to-back reruns never reuse a spent user.
+const USERS_PER_RUN = 5;
+const SLOTS = 817;
+const firstUser = 9 + (Math.floor(Date.now() / 1000) % SLOTS) * USERS_PER_RUN;
 let nextUser = firstUser;
 const freshUser = () => nextUser++;
 
@@ -32,6 +39,18 @@ function axumFetch(user: number): FetchLike {
         ...(init?.headers as Record<string, string> | undefined),
         authorization: token(user)
       }
+    }).catch((error: unknown) => {
+      // The client maps every transport failure to one friendly message; keep
+      // the real cause visible when this suite fails.
+      const cause = (error as { cause?: unknown }).cause;
+      console.error(
+        'fetch %s %s failed:',
+        init?.method ?? 'GET',
+        String(input),
+        error,
+        cause
+      );
+      throw error;
     });
 }
 
@@ -128,7 +147,9 @@ function untilFinished(
     const timer = setTimeout(
       () =>
         reject(
-          new Error(`no terminal snapshot; last=${snapshots.at(-1)?.phase}`)
+          new Error(
+            `no terminal snapshot; last=${snapshots.at(-1)?.phase}; error=${JSON.stringify(snapshots.at(-1)?.error)}`
+          )
         ),
       15000
     );
@@ -170,7 +191,9 @@ describeAxum('run session against a real Axum server', () => {
     expect(done.view?.tests).toHaveLength(3);
     expect(done.error).toBeUndefined();
     session.cancel();
-  });
+    // The first run after a cold fixture start can take several seconds; the
+    // test's own wait is 15 s, so the vitest limit must sit above it.
+  }, 20000);
 
   it('a refused submission shows the server message and keeps the prior result', async () => {
     const snapshots: RunSessionSnapshot[] = [];

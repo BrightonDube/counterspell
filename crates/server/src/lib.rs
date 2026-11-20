@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 
 pub mod auth;
+pub mod breakroom;
 pub mod catalogue;
 pub mod client_ip;
 pub mod config;
@@ -77,6 +78,8 @@ pub struct AppState {
     pub readiness: Arc<health::Readiness>,
     /// Hint settings, quota counters and the provider transport. AI stays off until `with_hints`.
     pub hints: Arc<hints::handlers::HintState>,
+    /// The one-attempt marker for the familiar's speech bubble. `None` keeps the bubble on the template.
+    pub familiar_attempt: Option<familiar::attempt::AttemptMarker>,
 }
 
 impl AppState {
@@ -105,6 +108,7 @@ impl AppState {
             origin: None,
             readiness: Arc::new(readiness),
             hints,
+            familiar_attempt: None,
         }
     }
 
@@ -157,6 +161,13 @@ impl AppState {
         self
     }
 
+    /// Sets the one-attempt marker the speech bubble uses. `main` builds it from the Valkey URL.
+    #[must_use]
+    pub fn with_familiar_attempt(mut self, marker: familiar::attempt::AttemptMarker) -> Self {
+        self.familiar_attempt = Some(marker);
+        self
+    }
+
     /// Replaces the hint state (settings, quota store and transport). `main` builds it from the environment.
     #[must_use]
     pub fn with_hints(mut self, hints: hints::handlers::HintState) -> Self {
@@ -199,10 +210,15 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/runs/{id}/cancel", post(runs::cancel::cancel_run))
         .route("/api/runs/{id}/events", get(runs::sse::stream_run))
         .route(
+            "/api/runs/{id}/familiar-hint",
+            post(familiar::hint::post_familiar_hint),
+        )
+        .route(
             "/api/me/familiar",
             get(familiar::api::get_prefs).patch(familiar::api::patch_prefs),
         )
         .route("/api", any(api_not_found))
+        .nest("/api/breakroom", breakroom::router())
         .route("/api/{*path}", any(api_not_found))
         .with_state(state);
     let api = match hardening {

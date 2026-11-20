@@ -5,12 +5,12 @@
   // reading order with the problem first and collapsible. The results region shows the
   // live run, or the last finished run until its replacement finishes. The shell never
   // invents a result.
-  import { onDestroy, untrack } from 'svelte';
+  import { onDestroy, onMount, untrack } from 'svelte';
+  import { createRunMarks, markWorkspace } from '../performance';
   import type { LanguageSummary, ProblemDetail } from '../api/types';
   import {
     createSpeechGuard,
     loadPreferences,
-    requestSpeech,
     savePreferences,
     type FamiliarDeps,
     type FamiliarPrefs,
@@ -23,11 +23,21 @@
     initialFamiliarState,
     type FamiliarState
   } from '../familiar/familiar-state';
+  import { requestAuthoredHint, type AuthoredHint } from '../api/hints';
+  import { requestSpeechOnce } from '../familiar/bubble/request';
   import Familiar from '../familiar/Familiar.svelte';
   import { runOutcomeLabel, statusLabel } from './test-rows';
   import AutopsyCard from './AutopsyCard.svelte';
   import EditorPanel from './EditorPanel.svelte';
   import GhostPanel from './GhostPanel.svelte';
+  import HintPanel from './HintPanel.svelte';
+  import {
+    failRung,
+    initialLadder,
+    receiveRung,
+    requestNext,
+    type LadderState
+  } from './hint-ladder';
   import ProblemPanel from './ProblemPanel.svelte';
   import StatusAnnouncer from './StatusAnnouncer.svelte';
   import TestPanel from './TestPanel.svelte';
@@ -47,7 +57,12 @@
     layout,
     reducedMotion,
     sessionDeps = browserRunSessionDeps,
-    familiarDeps = { loadPreferences, savePreferences, requestSpeech }
+    familiarDeps = {
+      loadPreferences,
+      savePreferences,
+      requestSpeech: requestSpeechOnce
+    },
+    requestHint = requestAuthoredHint
   }: {
     problem: ProblemDetail;
     languages: LanguageSummary[];
@@ -55,6 +70,8 @@
     reducedMotion?: boolean;
     sessionDeps?: RunSessionDeps;
     familiarDeps?: FamiliarDeps;
+    /** Asks for one authored hint rung. Tests inject a fake. */
+    requestHint?: (submissionId: string, rung: number) => Promise<AuthoredHint>;
   } = $props();
 
   const detected = createLayoutMode();
@@ -113,6 +130,16 @@
 
   onDestroy(() => session.cancel());
 
+  // Timing marks for the browser performance check. Fixed names only; no run id or source.
+  onMount(() => markWorkspace('workspace-shell-interactive'));
+  const runMarks = createRunMarks();
+  $effect(() => {
+    const runId = runs.runId;
+    if (runId === undefined) return;
+    if ((runs.stream?.lastSeq ?? 0) > 0) runMarks.event(runId);
+    if (runs.phase === 'finished') runMarks.terminal(runId);
+  });
+
   const canRerunGhost = $derived(runs.stream?.ghost !== undefined);
 
   // The measured-only Familiar state. Only stream facts reach it; the mood can
@@ -145,7 +172,8 @@
   });
 
   function onPrefsChange(next: FamiliarPrefs): void {
-    prefs = next;
+    // Keep the speech choice the server sent. The Familiar panel only changes mute and hide.
+    prefs = { ...prefs, ...next };
     prefsTouched = true;
     familiarDeps.savePreferences(next).catch(() => {});
   }
@@ -156,6 +184,8 @@
   let speechRunId = '';
   $effect(() => {
     if (runs.phase !== 'finished' || runs.runId === undefined) return;
+    // Speech off means the page never asks, so the code is not sent anywhere.
+    if (prefs.speech === 'off') return;
     const runId = runs.runId;
     if (runId === speechRunId) return;
     if (!speechGuard.claim(runId)) return;
@@ -168,6 +198,42 @@
       })
       .catch(() => {});
   });
+
+  // The authored ladder belongs to one finished run. A new run starts a new ladder; the server
+  // keeps what was already revealed, so asking again for a rung is safe.
+  const HINT_RUNGS = 4;
+  let ladder = $state<LadderState>(initialLadder(HINT_RUNGS));
+  let ladderRunId = '';
+  $effect(() => {
+    const runId = runs.phase === 'finished' ? runs.runId : undefined;
+    if (runId === undefined || runId === ladderRunId) return;
+    ladderRunId = runId;
+    ladder = initialLadder(HINT_RUNGS);
+  });
+
+  async function onNextHint(): Promise<void> {
+    // Only ask for the ladder the page is showing. A click before the ladder has switched to a
+    // newly finished run does nothing, so no rung is left pending without a request.
+    const runId = runs.phase === 'finished' ? runs.runId : undefined;
+    if (runId === undefined || runId !== ladderRunId) return;
+    const next = requestNext(ladder);
+    ladder = next.state;
+    if (next.rung === null) return;
+    const rung = next.rung;
+    try {
+      const hint = await requestHint(runId, rung);
+      if (runId === ladderRunId) ladder = receiveRung(ladder, rung, hint.text);
+    } catch {
+      // A fixed line: the server's own message is never shown here.
+      if (runId === ladderRunId) {
+        ladder = failRung(
+          ladder,
+          rung,
+          'This hint could not be loaded. Try again.'
+        );
+      }
+    }
+  }
 
   function requestRun(request: RunRequest): void {
     const ghost = request.ghost ? runs.stream?.ghost : undefined;
@@ -269,6 +335,9 @@
       reducedMotion={motion.value}
     />
     <AutopsyCard ghost={runs.stream.ghost ?? null} />
+  {/if}
+  {#if runs.phase === 'finished' && runs.runId !== undefined}
+    <HintPanel {ladder} onNext={onNextHint} />
   {/if}
   <Familiar
     measured={familiar}

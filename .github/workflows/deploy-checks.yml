@@ -1,0 +1,116 @@
+name: Deploy checks
+
+# Deploy-ops T19, R12.1 to R12.5. Runs the deploy-side static checks that never need a host:
+# ShellCheck, bats, Compose and Caddy shape tests, Ansible lint and syntax check, and the
+# tracked-file secret-name scan. Uses only the actions already pinned in ci.yml and
+# terraform.yml. Not part of the required CI aggregate until Brighton adds it (ci-cd.md).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "deploy/**"
+      - "infra/ansible/**"
+      - "docker-compose.yml"
+      - "Caddyfile"
+      - "scripts/**"
+      - ".github/workflows/deploy-checks.yml"
+  pull_request:
+    paths:
+      - "deploy/**"
+      - "infra/ansible/**"
+      - "docker-compose.yml"
+      - "Caddyfile"
+      - "scripts/**"
+      - ".github/workflows/deploy-checks.yml"
+
+permissions: {}
+
+jobs:
+  shellcheck:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: ShellCheck deploy and scripts directories
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq shellcheck
+          git ls-files 'deploy/vps/*.sh' 'deploy/vps/**/*.sh' 'scripts/*.sh' 'scripts/**/*.sh' \
+            | xargs -r shellcheck --severity=warning
+
+  bats:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install bats
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq bats
+      - name: Run all deploy bats suites
+        run: git ls-files 'deploy/vps/tests/*.bats' | xargs -r bats
+
+  compose-shape:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Compose shape test
+        run: bash deploy/vps/tests/compose_shape.sh
+
+  caddy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Caddy shape test and validate in the pinned image
+        run: bash deploy/vps/tests/caddy_shape.sh
+
+  ansible:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install ansible and ansible-lint
+        run: pipx install ansible-core ansible-lint
+      - name: ansible-lint
+        working-directory: infra/ansible
+        run: ansible-lint site.yml counterspell-shared.yml
+      - name: Ansible syntax check
+        working-directory: infra/ansible
+        run: |
+          ansible-playbook --syntax-check site.yml
+          ansible-playbook --syntax-check counterspell-shared.yml
+
+  secret-names:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: No secret-shaped files are tracked
+        run: |
+          bad="$(git ls-files | grep -E '(^|/)[^/]*\.env$|\.tfstate$|\.tfvars$' \
+            | grep -vE '\.env\.example$' || true)"
+          if [ -n "$bad" ]; then
+            echo "Tracked files with secret-shaped names:"
+            echo "$bad"
+            exit 1
+          fi
+          echo "no tracked .env/.tfstate/.tfvars files"

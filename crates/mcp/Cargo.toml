@@ -10,7 +10,7 @@ rust-version = "1.88"
 counterspell-engine = { path = "../engine" }
 counterspell-grimoire = { path = "../grimoire" }
 # Reused for the sandbox socket guard, so the main-daemon refusal lives in one place.
-counterspell-judge = { path = "../judge" }
+counterspell-judge = { path = "../judge", features = ["sandbox"] }
 rmcp = { version = "3.10.0", default-features = false, features = ["server", "macros", "transport-io"] }
 schemars = "1"
 serde = { version = "1", features = ["derive"] }

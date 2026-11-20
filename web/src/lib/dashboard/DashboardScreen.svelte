@@ -6,6 +6,7 @@
   import { loadDashboard } from './client';
   import { reasonLabel, runStatusLabel } from './labels';
   import type { DashboardView, RecentSubmission } from './types';
+  import NavEntry from '../nav/NavEntry.svelte';
 
   let { load = loadDashboard }: { load?: () => Promise<DashboardView> } =
     $props();
@@ -111,6 +112,10 @@
     </div>
   {:else}
     {@const view = phase.view}
+
+    <div class="flex justify-end pb-2">
+      <NavEntry />
+    </div>
 
     {#if hasNoActivity(view)}
       <div class="flex items-start gap-4 border-t border-border pt-6">

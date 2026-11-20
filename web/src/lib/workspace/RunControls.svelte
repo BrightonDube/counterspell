@@ -50,14 +50,20 @@
       inTextField: isFormField(event.target)
     };
     const shortcut = shortcutFor(input);
-    if (shortcut === null || blocked) return;
+    if (shortcut === null) return;
+    // A recognised shortcut never reaches the editor, so Monaco does not insert a line for it,
+    // even while a run is in flight.
     event.preventDefault();
+    event.stopPropagation();
+    if (blocked) return;
     if (shortcut === 'run') onRun();
     else onSubmit();
   }
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<!-- Capture phase: Monaco stops Ctrl(+Shift)+Enter at its own element, so a bubbling listener
+     would never hear the shortcut while the caret is in the editor. -->
+<svelte:window onkeydowncapture={onKeydown} />
 
 <div class="flex flex-col gap-2">
   <div class="flex flex-wrap gap-2">

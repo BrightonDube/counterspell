@@ -8,6 +8,7 @@ use std::{
     collections::VecDeque,
     convert::Infallible,
     str::FromStr,
+    sync::Arc,
     time::{Duration, Instant},
 };
 
@@ -28,6 +29,7 @@ use tokio::sync::broadcast::{self, error::RecvError};
 use crate::{
     error::ApiError,
     runs::{streams::StreamGuard, wake::Wake},
+    seams::UserResolver,
     AppState,
 };
 
@@ -195,6 +197,7 @@ pub async fn stream_run(
     })?;
 
     // Subscribe before the first query, so no wake-up sent during the replay is lost.
+    let heartbeat = Duration::from_secs(state.config.sse.heartbeat_secs);
     let replay = Replay {
         pool: state.pool.clone(),
         owner: user,
@@ -206,9 +209,14 @@ pub async fn stream_run(
         finished: false,
         poll: Duration::from_millis(state.config.sse.poll_ms),
         deadline: Instant::now() + Duration::from_secs(state.config.sse.max_age_secs),
+        session: SessionWatch {
+            resolver: Arc::clone(&state.user_resolver),
+            headers,
+            every: heartbeat,
+            next_check: Instant::now() + heartbeat,
+        },
         _slot: slot,
     };
-    let heartbeat = Duration::from_secs(state.config.sse.heartbeat_secs);
     Ok(sse_response(stream::unfold(replay, next_event), heartbeat))
 }
 
@@ -250,8 +258,33 @@ struct Replay {
     poll: Duration,
     /// When the stream must close. The client reconnects with its cursor and loses nothing.
     deadline: Instant,
+    /// Re-checks the caller's session while the stream is open.
+    session: SessionWatch,
     /// Holds this user's stream slot until the stream is dropped.
     _slot: StreamGuard,
+}
+
+/// Re-checks, once per heartbeat interval, that the session that opened the stream is still valid.
+/// A logout (including sign-out of all devices) then ends the stream instead of leaving it open until
+/// its maximum age. The check is read-only, so an open stream cannot keep a session alive.
+struct SessionWatch {
+    resolver: Arc<dyn UserResolver>,
+    /// The headers of the request that opened the stream: they carry the session cookie.
+    headers: HeaderMap,
+    every: Duration,
+    next_check: Instant,
+}
+
+impl SessionWatch {
+    /// Returns `false` when the stream must close because the session is gone. Between checks it
+    /// returns `true` without touching the database.
+    async fn still_open(&mut self, owner: UserId) -> bool {
+        if Instant::now() < self.next_check {
+            return true;
+        }
+        self.next_check = Instant::now() + self.every;
+        self.resolver.still_signed_in(&self.headers, owner).await
+    }
 }
 
 /// Produces the next SSE event, or ends the stream. The stream ends after a terminal event, or when a
@@ -263,6 +296,11 @@ async fn next_event(mut replay: Replay) -> Option<(Result<Event, Infallible>, Re
             return None;
         }
         if Instant::now() >= replay.deadline {
+            return None;
+        }
+        // Checked before the queue: once the session is gone, no further event is sent.
+        if !replay.session.still_open(replay.owner).await {
+            tracing::info!("session ended; closing run stream");
             return None;
         }
         if let Some(row) = replay.pending.pop_front() {

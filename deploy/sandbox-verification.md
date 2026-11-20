@@ -66,3 +66,19 @@ Host: same WSL machine as run 1. Brighton had installed `uidmap`. The rootless e
 - `SANDBOX_DOCKER_SOCKET=/run/user/1000/docker.sock` is set in `~/.config/counterspell/dev-test.env` (outside the repo).
 - `sbx_*` tests: none present in the tree yet, so they were not run. A compile-only `cargo test -p counterspell-judge --features sandbox -- --ignored sbx` in an isolated `/tmp` target filled the 3.9G tmpfs and was deleted; the repo `target/` and kiro-impl were not used.
 - T02 and T37 stay open for the real VPS. This run is not a substitute for T37.
+
+## Run 4: target VPS `shared-vps` (T02 re-verify, 19 Nov 2026)
+
+Host: `shared-vps` (`Linux shared-vps 7.0.0-43-generic x86_64`, Ubuntu, GLIBC 2.43).
+User: `sandbox` (uid 1002), socket `unix:///run/user/1002/docker.sock`.
+Date (UTC): 2026-11-19 11:43. Docker version: 29.9.3.
+
+| # | Command / Check | Output (trimmed) | Result |
+|---|---|---|---|
+| 2 | `docker info --format "{{json .SecurityOptions}} {{.CgroupVersion}} {{.CgroupDriver}} {{.DockerRootDir}}"` | `["name=seccomp,profile=builtin","name=rootless","name=cgroupns"] 2 systemd /home/sandbox/.local/share/docker` | **PASS** (rootless, cgroup v2, systemd, seccomp) |
+| 3 | `cat /sys/fs/cgroup/user.slice/user-1002.slice/user@1002.service/cgroup.controllers` | `cpuset cpu io memory pids` | **PASS** (all 5 controllers delegated) |
+| 4 | Trusted probe (`--network none --read-only --tmpfs /box:... --user 65534:65534 --cap-drop ALL --security-opt no-new-privileges:true --memory 256m --memory-swap 256m --pids-limit 64 --cpus 1`) | `memory.max=268435456`, `pids.max=64`, `cpu.max=100000 100000`, `CapEff: 0`, `CapBnd: 0`, `NoNewPrivs: 1`, `Seccomp: 2`, `box_stat=65534 65534 700` | **PASS** |
+| 5.1 | `tar -cf - hello.py \| docker exec -i <cid> sh -c "cd /box && tar -xf - && python3 hello.py"` | `hi`, exit 0 | **PASS** (tar over exec works in rootless mode) |
+| 5.3 | `--memory 64m --memory-swap 64m`; `python3 -c "x=bytearray(200*1024*1024)"` | exec rc `137`, `memory.events`: `max 37`, `oom 1`, `oom_kill 1`, `OOMKilled=true` | **PASS** |
+| 5.4 | `for c in sleep tar cat touch; do command -v $c; done` | `/usr/bin/sleep /usr/bin/tar /usr/bin/cat /usr/bin/touch` | **PASS** |
+| 5.5 | `stat -c "%u %g %a" /box` | `65534 65534 700` | **PASS** (rootless tmpfs uid/gid/mode honored) |

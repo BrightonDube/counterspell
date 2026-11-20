@@ -121,6 +121,10 @@ jobs:
             echo "| $passed | $ignored |"
           } >> "$GITHUB_STEP_SUMMARY"
           if [ "$passed" -eq 0 ]; then echo "::error::No Rust tests ran. TDD: every change ships with tests."; exit 1; fi
+      - name: Validate all public packs (grimoire-packs T30)
+        run: cargo run -q -p counterspell-grimoire --locked -- validate --all packs --public --deny-warnings
+      - name: Reject committed provider keys (hints H-ci)
+        run: bash scripts/check-no-hint-secrets.sh
       - name: Database and Valkey tests (ignored pg_ and valkey_)
         run: |
           set -o pipefail
@@ -216,6 +220,10 @@ jobs:
         run: npm run test
       - name: Build
         run: npm run build
+      - name: Break-room isolation
+        run: bash scripts/check-breakroom-isolation.sh
+      - name: Break-room bundle hygiene
+        run: bash scripts/check-breakroom-bundle.sh
 
   docker:
     name: Docker build (no push)

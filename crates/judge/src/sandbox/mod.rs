@@ -17,6 +17,7 @@ pub mod daemon;
 pub mod driver_protocol;
 pub mod hunt;
 pub mod oracle;
+pub mod pack_runner;
 pub mod policy;
 pub mod precheck;
 pub mod preflight;

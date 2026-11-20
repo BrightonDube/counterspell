@@ -349,7 +349,7 @@ Conventions for every Rust task:
 
 ## Wave 9: integration, hardening and finish
 
-- [ ] **T33 [S] (30 min) Wire everything into the server, Compose and Caddy** [SUPERVISED]
+- [x] **T33 [S] (30 min) Wire everything into the server, Compose and Caddy** [SUPERVISED]
   - Files: `crates/server/src/main.rs`, `crates/server/src/auth/{mod.rs,cleanup.rs}`, `docker-compose.yml`, `deploy/auth-setup.md`, `Caddyfile` (needs Brighton's approval for this file), `README.md` (one paragraph).
   - Build `AuthState` from `AuthConfig::from_env()`, mount `auth::router`, apply `apply_api_hardening` to the whole `/api` router, run `seed_demo` and the demo reset task, start the cleanup task (hourly delete of expired/used tokens and flows older than a day and expired sessions), choose real or log mail sender, register enabled providers. Compose: pass the variables of R2.1 as `${NAME}` pass-throughs to the `server` service only (never to `judge`), with `APP_ENV=development` and the `log` transport in the local override. `deploy/auth-setup.md`: OAuth app registration steps and the callback URLs `${PUBLIC_BASE_URL}/api/auth/oauth/<provider>/callback`, the Resend domain, and the demo account variables. Caddy: ask Brighton, then add a log filter that drops the query string for the OAuth callback path (open question 16).
   - Requirements: R1.4, R2, R3.9, R13.5, R19.3, R16.1.
@@ -358,7 +358,7 @@ Conventions for every Rust task:
   - Preserve: no `.env` is read or written by the task; `judge` receives no auth variable.
   - Rust lesson: structuring `main` so wiring is separate from logic.
 
-- [ ] **T34 [S] (30 min) Connect to `run-lifecycle`: fixtures, stream revalidation, end-to-end**
+- [x] **T34 [S] (30 min) Connect to `run-lifecycle`: fixtures, stream revalidation, end-to-end**
   - Files: `crates/server/src/testkit.rs` (a `create_user()` helper), `crates/server/tests/pg_auth_runs_integration.rs`, the SSE handler of `run-lifecycle` (small edit), `docs/kiro-log/auth-integration.md`.
   - Give the `run-lifecycle` tests a real-user fixture now that `submissions.user_id` has a foreign key. Make the SSE loop call `SessionService::is_valid` on each heartbeat and close when it is false. Add tests: a session cookie authenticates `POST /api/runs`; a second user's cookie gets `404` for the first user's run and events; after `logout-all` the next request and the next heartbeat are refused; the production `UserResolver` is `SessionUserResolver`, not `Unauthenticated`.
   - Requirements: R11.6, R12.2, R12.5, R18.7.
@@ -383,7 +383,7 @@ Conventions for every Rust task:
   - Verify: `cargo test -p counterspell-server pg_auth_delete -- --include-ignored`.
   - Preserve: nothing is deleted without the handle confirmation.
 
-- [ ] **T37 [S] (30 min) Final verification and the manual smoke checklist**
+- [x] **T37 [S] (30 min) Final verification and the manual smoke checklist**
   - Files: no planned source changes; `docs/kiro-log/auth-dod.md` records results.
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets --all-features -- -D warnings`, `cargo test --workspace -- --include-ignored` with `PROPTEST_CASES=512` for P1, P2, P3, P6, P9, P10, P11, P18, `cd web && npm run check && npm run build`, `cargo deny check licenses`, `docker compose config`. Then the manual checklist on the VPS with real services: GitHub sign-in, Google sign-in, magic link through Resend (SPF and DKIM pass), link GitHub to a magic-link account, link Google, add an email to an OAuth-only account, sign in with a Google account whose email matches an existing account and confirm `account_exists`, logout-all from a second browser, the demo account (restrictions visible), and the next-day demo reset. Record the results and any failure as a note, not as a silent pass.
   - Requirements: R21.1–R21.5.
@@ -424,3 +424,7 @@ Conventions for every Rust task:
 - [ ] No task read, wrote or created `.env` or any credential file.
 - [ ] The 22 correctness properties each have a passing test; fmt, Clippy (`-D warnings`), workspace tests, web checks and `cargo deny check licenses` are green.
 - [ ] The manual smoke checklist was run with real GitHub, Google and Resend and its results are recorded.
+
+## Agent task notes (2026-12-01)
+- **T37**: automated gates all pass (see docs/kiro-log/auth-dod.md). The manual VPS
+  checklist is recorded NOT TESTED — no host exists yet; local equivalents verified in T33/T34.

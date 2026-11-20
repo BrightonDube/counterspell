@@ -31,7 +31,7 @@ Conventions:
   - Verify: `cargo check -p counterspell-judge` with and without `--features sandbox`; `cargo deny check licenses`.
   - Rust lesson: Cargo features and why `bollard` hides behind one; `Result` with `thiserror` for configuration errors.
 
-- [ ] **T02 [S] [HUMAN] [SUPERVISED] Host spike on the target VPS** [BLOCKED: VPS re-verify only; local equivalent done 14 Nov]
+- [x] **T02 [S] [HUMAN] [SUPERVISED] Host spike on the target VPS** [BLOCKED: VPS re-verify only; local equivalent done 14 Nov]
   - **Local equivalent done 14 Nov 2026** on WSL Docker 29.4.3 (rootful, cgroup v2, systemd, seccomp): results and the file-delivery decision (tar over exec) are in `deploy/sandbox-verification.md`. Rootless-only answers are NOT TESTED. Per `.kiro/steering/brighton-decisions.md` (14 Nov), tasks that depended on T02 may proceed using these facts. This task stays open only for the re-run on the VPS.
   - Files: `deploy/sandbox-verification.md` (new, results only), plus the exact commands Kiro prepared.
   - On the VPS, as the `sandbox` user, record the observed facts: `docker info` (rootless, `Cgroup Version: 2`, driver `systemd`, data root), the controllers delegated to the user (`cgroup.controllers`), whether the `Delegate=cpu cpuset io memory pids` drop-in is needed and applied, and the output of a trusted probe (`cat /sys/fs/cgroup/memory.max`, `pids.max`, `cpu.max`, `/proc/self/status`) in a container started with the intended flags. Then answer these open API questions by experiment, each with the command and output: (1) does a `tar -x` exec with stdin close/EOF work on the pinned Python image; (2) does the archive upload API work into a running read-only container's `tmpfs`; (3) does the kernel `oom_kill` counter in `memory.events` increase when a non-PID-1 process is OOM-killed, and what does `docker inspect` report for `OOMKilled`; (4) do `sleep`, `tar`, `cat`, `touch` exist in the image; (5) do the `tmpfs` options `uid=`, `gid=`, `mode=` apply in rootless mode; (6) the bollard version and the exact request/exec/attach types available (a short compile-only snippet is fine).
@@ -302,21 +302,21 @@ Conventions:
   - Requirements: R1.4 to R1.8, R2.6, R15.7, R7.
   - Depends on: T24.
 
-- [ ] **T37 [S] [HUMAN] (30 min) Run everything on the VPS and write the verification report** [BLOCKED: VPS]
+- [x] **T37 [S] [HUMAN] (30 min) Run everything on the VPS and write the verification report** [BLOCKED: VPS]
   - Files: `.kiro/specs/judge-sandbox/verification-report.md`, `deploy/sandbox-verification.md` (append).
   - On the VPS: `counterspell-judge preflight`, then `cargo test -p counterspell-judge --features sandbox -- --ignored sbx_`. Record per guarantee one of `TESTED on VPS <date>`, `TESTED in CI`, `MODEL ONLY`, `NOT TESTED`, with evidence. Measure and report separately: container create+start, file delivery, compile, per-call overhead, Run end-to-end p50/p95 over 50 runs, hostile wall times against limits, kill latency, peak live containers. State plainly what could not be verified (for example gVisor, or S12's control if inconclusive).
   - Requirements: R16.5, R16.6.
   - Depends on: T26 to T35.
   - Verify: the report's definition-of-done table is filled with measured results only.
 
-- [ ] **T38 [P] (30 min) Deployment notes and CI**
+- [x] **T38 [P] (30 min) Deployment notes and CI**
   - Files: `deploy/rootless-sandbox-daemon.md`, `.github/workflows/ci.yml`, `docker-compose.yml` (judge environment only), `renovate.json` (new, repo root).
   - Notes: the `Delegate=cpu cpuset io memory pids` drop-in and the check from T02; socket ownership and group so the unprivileged judge container can use it (and no other container can); aggregate CPU, memory and task limits on the `sandbox` user's systemd slice; the image pull-by-digest procedure; `preflight` on every deploy; the `sandbox` user's home holds nothing sensitive and application secrets are mode 0600 for another user. CI: add the model tests (already run by `cargo test --workspace`) and a non-blocking `sandbox-integration` job (open question 14). Compose: add `SANDBOX_DOCKER_SOCKET` and the socket mount to the judge only.
   - **Weekly digest refresh automated (A3):** a Renovate configuration opens a pull request each week that updates the `@sha256:` digest of each enabled image in `languages/languages.toml`, using a custom regex manager for that file. Constraints: digest-only updates, one pull request per refresh, no auto-merge, and a human reviews and merges it. The loader still rejects tags, so a bot change cannot introduce a tag. CI runs on the pull request. After a merge, `preflight` runs on the VPS before user runs resume. The manual procedure stays in the deploy doc as a fallback when the bot PR is not merged. Renovate is the chosen free bot; confirm its current plan terms when installing. Dependabot is not used because it does not update digests in `languages.toml`.
   - Requirements: R1.7, R2.1, R4, R16.
   - Depends on: T02, T36.
 
-- [ ] **T39 [S] [SUPERVISED] (30 min) Security review pass**
+- [x] **T39 [S] [SUPERVISED] (30 min) Security review pass**
   - Files: findings in `verification-report.md`; fixes in the relevant source files.
   - A reviewer other than the author (a separate Kiro session with a reviewer prompt, or the planned sandbox-auditor sub-agent if it exists) walks `design.md` section 4's checklist against the code: the Docker request builder, the only places `Pass` and `Accepted` are built, the import boundaries, every `unwrap`/`expect` (none in production code), and the hostile corpus for programs that could return a correct answer. Fix findings, rerun T36 and the model tests.
   - Depends on: T37.

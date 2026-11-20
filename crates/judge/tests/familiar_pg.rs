@@ -5,7 +5,10 @@
 //!
 //! Run with `cargo test -p counterspell-judge --test familiar_pg -- --ignored pg_`.
 
-use counterspell_judge::familiar::store::{find_baseline, insert_baselines, BaselineRow};
+use counterspell_judge::catalogue::testkit::{insert_published_fixture, insert_static_fixture};
+use counterspell_judge::familiar::store::{
+    find_baseline, insert_baselines, published_version, BaselineRow,
+};
 use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
@@ -561,4 +564,22 @@ async fn pg_run_timings_attempt_fences_retries(pool: PgPool) {
         .await
         .unwrap();
     assert_eq!(count.0, 2, "only attempts 1 and 2 are stored");
+}
+
+/// R8: a baseline is taken against the version learners are served, so the command asks the
+/// catalogue for the published version and gets nothing for a problem that was never published.
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_published_version_is_the_served_version_or_nothing(pool: PgPool) {
+    insert_static_fixture(&pool, "never-published", 1)
+        .await
+        .unwrap();
+    insert_published_fixture(&pool, "served", 4).await.unwrap();
+
+    assert_eq!(published_version(&pool, "served").await.unwrap(), Some(4));
+    assert_eq!(
+        published_version(&pool, "never-published").await.unwrap(),
+        None
+    );
+    assert_eq!(published_version(&pool, "absent").await.unwrap(), None);
 }

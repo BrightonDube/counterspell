@@ -140,6 +140,57 @@ impl SessionSpec {
         ordinal: u32,
         expires_unix: i64,
     ) -> Result<Self, SpecError> {
+        Self::named(
+            lang,
+            run_cap,
+            runtime,
+            run,
+            worker,
+            expires_unix,
+            format!("{CONTAINER_PREFIX}-{run}-{ordinal}"),
+        )
+    }
+
+    /// Builds the spec for one session of one attempt of a run.
+    ///
+    /// The attempt is part of the container name. A worker that crashes mid-run leaves its
+    /// container behind until the sweeper removes it; the retry of the same run must not ask
+    /// the daemon for that name again, or the create is refused and the retry fails.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`SpecError::BadWorkerId`] when the worker id is not a safe label value.
+    #[allow(clippy::too_many_arguments)]
+    pub fn for_attempt(
+        lang: &LanguageDefinition,
+        run_cap: Duration,
+        runtime: OciRuntime,
+        run: Uuid,
+        worker: &str,
+        attempt: u16,
+        ordinal: u32,
+        expires_unix: i64,
+    ) -> Result<Self, SpecError> {
+        Self::named(
+            lang,
+            run_cap,
+            runtime,
+            run,
+            worker,
+            expires_unix,
+            format!("{CONTAINER_PREFIX}-{run}-a{attempt}-{ordinal}"),
+        )
+    }
+
+    fn named(
+        lang: &LanguageDefinition,
+        run_cap: Duration,
+        runtime: OciRuntime,
+        run: Uuid,
+        worker: &str,
+        expires_unix: i64,
+        name: String,
+    ) -> Result<Self, SpecError> {
         if !valid_worker_id(worker) {
             return Err(SpecError::BadWorkerId);
         }
@@ -153,10 +204,7 @@ impl SessionSpec {
         policy
             .labels
             .insert("counterspell.expires".to_owned(), expires_unix.to_string());
-        Ok(Self {
-            name: format!("{CONTAINER_PREFIX}-{run}-{ordinal}"),
-            policy,
-        })
+        Ok(Self { name, policy })
     }
 }
 

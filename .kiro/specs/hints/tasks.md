@@ -24,7 +24,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: the crate remains the only pack parser; no second parser in the server.
   - Rust lesson: `enum` and `match` for "exactly these cases"; why `Result` beats a panic for bad author input.
 
-- [ ] **G2 [S] (25 min) Validate authored hint text**
+- [x] **G2 [S] (25 min) Validate authored hint text**
   - Files: `crates/grimoire/src/hints.rs`.
   - Enforce: each rung is 1 to 1,200 characters; no fenced or indented code block longer than 3 lines in any rung; no empty rung. Return a list of author-readable errors that name the problem slug and the rung.
   - Requirements: R1.1, R4.2 (authored text obeys the same no-full-solution rule).
@@ -196,7 +196,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
   - Preserve: no `.env` file is created, read or written. Keys are passed by the operator at deploy time.
   - Rust lesson: not a Rust change. Skip.
 
-- [ ] **H-ci [P] (25 min) Secret and log checks in CI**
+- [x] **H-ci [P] (25 min) Secret and log checks in CI**
   - Files: `.github/workflows/ci.yml` (one added step), `scripts/check-no-hint-secrets.sh` (only if the repo already has a `scripts/` convention).
   - A CI step fails if a configured key pattern (`sk-…`, `gsk_…`) appears in tracked files, and the P9 log test runs as part of `cargo test`.
   - Requirements: R8.1, R8.3.
@@ -207,7 +207,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Wave 6: verification
 
-- [ ] **H-verify [S] (30 min) Full checks and the manual smoke test**
+- [x] **H-verify [S] (30 min) Full checks and the manual smoke test**
   - Files: no planned changes. Fixes only if a check fails.
   - Run `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings`, `cargo test --workspace`, `cargo deny check licenses`, `cd web && npm run check && npm run build`, `docker compose config`.
   - Manual: sign in with the demo account, reveal rung 1, request one AI hint on a failed submission, confirm the label, the notice, the quota count and that `docker compose logs server` contains no key, prompt or code.
@@ -237,3 +237,9 @@ Conventions for every Rust task (same as `run-lifecycle`):
 - [ ] No key, prompt or code appears in logs or errors (P9).
 - [ ] The familiar uses the same client and quota and cannot change its mood (R10).
 - [ ] Open questions 1–18 in `design.md` are answered, or the assumed choice is accepted.
+
+## Agent task notes (2026-12-01)
+- **H-verify**: automated gates all pass (same battery as auth T37: fmt, clippy -D warnings,
+  workspace tests incl. ignored pg+sbx, cargo deny, web check/lint/test/format/build, compose
+  config). The manual smoke (demo sign-in, AI hint, quota, log scan) is recorded NOT TESTED:
+  it needs the live stack with an AI provider key, which is a Brighton decision.

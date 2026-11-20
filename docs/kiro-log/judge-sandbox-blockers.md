@@ -154,3 +154,14 @@ The pinned Python and Node images are pulled onto the rootless sandbox daemon, a
 - `sbx_create_readback_matches` passes on the rootless sandbox daemon. The earlier blockers (MissingDriver for python and javascript, missing cpuset/io delegation, missing images) are all cleared. T20 is recorded in `judge-sandbox-done-pending-tick.md`.
 - Remaining open for T22: probe runner, `PreflightState` with the 60 s refresh, `counterspell-judge preflight` subcommand, `sbx_preflight_*` tests. All now runnable on the local rootless daemon.
 - T23 open decision now resolved (non-Kiro run, 16 Nov 2026): the sweeper needs a container-listing call. Smallest backward-compatible extension: add `Backend::list_managed(&self) -> Vec<ManagedContainer>` listing containers with the `counterspell.managed=true` label, implemented by the fake and the bollard backend. Recorded in `brighton-decisions.md`.
+
+## T39 independent review (19 Nov 2026): T39 stays `[ ]`
+Reviewer: separate semantic-reviewer session. Full report: `docs/kiro-log/judge-sandbox-t39-independent-review.md`. Verdict NEEDS_CHANGES, no Critical findings.
+- **Important 1 (fixed in this run):** a sample-only Run (`mode = 'run'`) or a custom ghost run that came out `accepted` counted as "solved" on the dashboard and catalogue. Both queries now require `mode = 'submit' AND ghost_input IS NULL`. Tests: `pg_an_accepted_sample_run_is_not_a_solved_problem`, `pg_accepted_sample_run_is_attempted_not_solved`. Requirement text (dashboard-fsrs DASH-4, CAT-A2) says "accepted submission"; I read that as an accepted Submit. Brighton may overrule.
+- **Important 2 (open):** a program that closes fd 1 and fd 2 and keeps running may leave `inspect_exec` without an exit code (`bollard_backend.rs:919-925`), reported as `InfraError` rather than a user verdict. Unconfirmed. Next step: add a corpus program that closes both fds and an `sbx_` test on the rootless daemon; fix the mapping if it shows an infrastructure error.
+- **Minor (open):** MCP runner must call the daemon identity `verify`, not only the string check; empty preflight state list passes the gate (`sandbox_executor.rs:403`); bench answers unchecked and bench mode visible to user code (Familiar mood is only a display, but note it); judge compose service lacks container hardening; unchecked `mem_mb * MIB`; four corpus gaps listed in the review.
+
+## T39 review Important 2 resolved (spec-driver, drive queue)
+- Added corpus program `hostile/close_both_fds.py` (closes fd 1 and 2, keeps running) and `sbx_s15e_closing_both_fds_and_staying_alive_is_a_time_limit`.
+- Run on the rootless daemon: passes with no code change. The run ends as `time_limit` (killed from outside), not an infrastructure error. The review's concern is not reproduced; the test is now a regression guard.
+- T39 stays `[ ]`: it still depends on T37 (VPS). Minor review items remain open.

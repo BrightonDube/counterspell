@@ -59,7 +59,7 @@ const BADGE: Record<Mood, string> = {
 
 const CONFIDENCE_TEXT: Record<Confidence, string> = {
   low: 'low confidence, a rough reading',
-  med: 'medium confidence',
+  medium: 'medium confidence',
   high: 'high confidence'
 };
 

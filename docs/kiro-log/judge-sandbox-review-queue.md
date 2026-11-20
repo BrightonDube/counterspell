@@ -182,3 +182,9 @@ Reviewed by the semantic reviewer over `git diff ee648ae..c67110d -- crates/judg
 - Code: `.kiro/specs/judge-sandbox/verification-report.md`.
 - Brighton to check: (1) the review was done by the implementing agent in a fresh pass — the task text asks for "a reviewer other than the author"; if an independent review (separate Kiro session or the sandbox-auditor agent) is required for sign-off, this report is the code-state record to review against, not the independent judgment itself. (2) `import_all.py` accepted by design (S27) — confirm that's still the intent. (3) The report honestly scopes all `sbx_*` evidence to the local WSL rootless daemon; T37's VPS rerun is the gate.
 - Verified: checklist table complete, no findings, boundary+model reruns green.
+
+## Retry name collision fix (20 Nov 2026, found by ide-workspace T26)
+- Commit: `judge-sandbox: name sandbox containers per attempt so a retry never collides`.
+- Bug: names were `cs-sbx-<run>-<ordinal>` and the ordinal restarted at 0 each attempt. A worker killed mid-run leaves its container until the sweeper reaps it, so every retry's first create got `409 Conflict` and the run ended `internal_error` (`retries_exhausted`). Reproduced on the rootless daemon (`sbx_retry_names` fails without the attempt in the name).
+- Fix: `SessionSpec::for_attempt` names the suite sessions `cs-sbx-<run>-a<attempt>-<ordinal>`; `SessionSpec::new` is unchanged; the oracle already used fresh run ids. Labels and policy are identical.
+- Check: the 409 surfaces as `InfraError::DaemonUnreachable`, which mislabels a name conflict (Minor, not changed here).

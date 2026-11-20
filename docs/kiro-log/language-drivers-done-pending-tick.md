@@ -80,3 +80,7 @@ Environment notes for whoever re-runs this: `/tmp` is a 3.9 GB tmpfs and filled 
 - Note for re-runs: `cargo test -- --ignored` needs `SANDBOX_DOCKER_SOCKET`
   for the sbx suites and the 55432 `DATABASE_URL` for pg; the stopped
   `counterspell-pg-test` container on 5432 must not be used.
+
+## Verified (kiro/drive-queue run)
+- T12 ticked. Fresh gate in this session: fmt clean, clippy `-D warnings` clean, `cargo test --workspace` 1508 passed / 0 failed, `sbx_bench` 3/3, `sbx_driver_hostile` 5/5 and catalogue-cli `sbx_pack_props` 1/1 on the rootless daemon, 58 of 59 `pg_` tests green on `cs-dev-pg`, web check 0/0, build ok, 488 tests passed.
+- The one `pg_` failure was `pg_model_interleavings`: `VersionMismatch(20261118100000)`. The shared dev database holds an older draft of `custom_ghost_runs` (checksum 8b69d9dd..., file is cf324f2f...). It passes on a fresh scratch database (created and dropped). Not a code fault. Fix when convenient: Brighton resets or recreates the `cs-dev-pg` database. I did not touch the shared dev database.

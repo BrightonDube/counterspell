@@ -3,7 +3,12 @@
   import { onMount } from 'svelte';
   import { TAGLINE, WORDMARK } from './copy';
   import { afterPaint } from './after-paint';
-  import { chooseHeroVideo, type HeroVideo } from './hero-media';
+  import {
+    chooseHeroVideo,
+    HERO_POSTER_SIZES,
+    HERO_POSTER_SRCSET,
+    type HeroVideo
+  } from './hero-media';
   import { planLanding, type LandingPlan } from './motion-plan';
 
   // The plan decides which motion overlays exist. The static default matches a page with no script.
@@ -129,8 +134,8 @@
         <picture class="absolute inset-0 block h-full w-full">
           <source
             type="image/webp"
-            srcset="/art/landing/hero-moon-living-poster-960.webp 960w, /art/landing/hero-moon-living-poster-1920.webp 1920w"
-            sizes="(max-width: 900px) 100vw, 1920px"
+            srcset={HERO_POSTER_SRCSET}
+            sizes={HERO_POSTER_SIZES}
           />
           <img
             class="hero-poster h-full w-full object-cover"

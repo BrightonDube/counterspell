@@ -12,7 +12,7 @@ import {
 /** The five measured moods, from furious (1) to laughing (5). */
 export type Mood = 1 | 2 | 3 | 4 | 5;
 
-export const CONFIDENCE_LEVELS = ['low', 'med', 'high'] as const;
+export const CONFIDENCE_LEVELS = ['low', 'medium', 'high'] as const;
 export type Confidence = (typeof CONFIDENCE_LEVELS)[number];
 
 export interface MeasuredFamiliar {

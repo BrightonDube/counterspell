@@ -34,7 +34,7 @@ const WEAK_CONCEPT_LIMIT: usize = 10;
 /// other learner's rows are read.
 const DASHBOARD_SQL: &str = r#"
 WITH owned_completed AS (
-    SELECT s.id, s.problem_slug, s.verdict, s.finished_at
+    SELECT s.id, s.problem_slug, s.verdict, s.finished_at, s.mode, s.ghost_input
     FROM submissions s
     WHERE s.user_id = $1 AND s.status = 'completed'
 ),
@@ -42,7 +42,7 @@ solved AS (
     SELECT DISTINCT p.slug, p.difficulty
     FROM owned_completed oc
     JOIN problems p ON p.slug = oc.problem_slug AND p.publication_state = 'published'
-    WHERE oc.verdict = 'accepted'
+    WHERE oc.verdict = 'accepted' AND oc.mode = 'submit' AND oc.ghost_input IS NULL
 ),
 weak AS (
     SELECT c.id AS slug, c.name,

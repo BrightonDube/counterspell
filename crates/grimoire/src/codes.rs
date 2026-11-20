@@ -116,13 +116,15 @@ pub const SBX_07: Code = error("SBX-07");
 pub const SBX_08: Code = warning("SBX-08");
 /// A bench size cannot be turned into a valid input, so the bench cannot run.
 pub const BEN_01: Code = error("BEN-01");
+/// The bench sizes span less than 32 times, so the fit cannot reach `high` confidence.
+pub const BEN_02: Code = warning("BEN-02");
 
 /// Every code, in the order the design lists them.
 pub const ALL: &[Code] = &[
     LAY_01, LAY_02, LAY_03, LAY_04, LAY_05, LAY_06, MET_01, MET_02, MET_03, MET_04, MET_05, MET_06,
     MET_07, MET_08, MET_09, STM_01, STM_02, SMP_01, SMP_02, SMP_03, GEN_01, GEN_02, HNT_01, HNT_02,
     KNG_01, KNG_02, KNG_03, KNG_04, KNG_05, KNG_06, REF_01, SBX_01, SBX_02, SBX_03, SBX_04, SBX_05,
-    SBX_06, SBX_07, SBX_08, BEN_01,
+    SBX_06, SBX_07, SBX_08, BEN_01, BEN_02,
 ];
 
 #[cfg(test)]
@@ -137,14 +139,16 @@ mod tests {
         assert_eq!(ids.len(), ALL.len());
     }
 
+    // test-change: PCK-2. The efficiency-familiar spec (R13.4) adds the BEN-02 bench-span
+    // warning, so the pack validator now has four warning codes, not three.
     #[test]
-    fn only_three_codes_are_warnings() {
+    fn only_four_codes_are_warnings() {
         let warnings: Vec<&str> = ALL
             .iter()
             .filter(|code| code.severity == Severity::Warning)
             .map(|code| code.id)
             .collect();
 
-        assert_eq!(warnings, vec!["SBX-04", "SBX-05", "SBX-08"]);
+        assert_eq!(warnings, vec!["SBX-04", "SBX-05", "SBX-08", "BEN-02"]);
     }
 }

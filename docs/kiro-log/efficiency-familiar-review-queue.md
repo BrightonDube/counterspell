@@ -25,3 +25,17 @@
 - What to check:
   1. `FinalResult.measured` is `Option<Box<MeasuredColumns>>`. The box was added because clippy's `large_enum_variant` fired on `RunOutcome::Completed`.
   2. `finish_failed` does not touch the five columns, so failed, cancelled and expired runs store none.
+
+## T22 (kiro/drive-queue run): `counterspell-judge baseline`
+- What changed: `parse_args`, `fixture_inputs`, `FixtureCollector` (sandbox feature), `execute` and `fixture_source` in `crates/judge/src/familiar/baseline_cmd.rs`; `published_version` in `familiar/store.rs` (SQL stays in `store.rs`); the `baseline` dispatch in `main.rs`.
+- Check: execution goes only through `oracle::side` + `bench_side` on the verified rootless daemon (`daemon::verify` runs first, as in `preflight`); nothing runs on the host. The fixture runs with `Role::Reference`, so a fixture crash is treated as infrastructure-level for the bench, which then refuses.
+- Check: baselines use the same inputs as learner benches (`bench_seed(slug, version, n)`), and the digest key is `lang.image().as_str()`, the same string the executor's `find_baseline` uses.
+- Decision for review: without `--fixture` the stored Python reference is the Python fixture; JavaScript (and any other language) needs `--fixture <path>`, because only Python references are stored. The fixture path is an operator-supplied file (trusted operator input), but its contents still run only in the sandbox.
+- `sbx_baseline` stores a quadratic fixture declared quadratic and refuses it declared linear. Linear vs n log n was not used for the stored path: on this host it came back `Low` (plausible [Linear, Linearithmic]) at every span tried, which matches the calibration report. Sizes 256..8192 were needed; 64..2048 and 128..4096 gave `Low` in 1/8 and 3/15 runs.
+
+## T43 (kiro/drive-queue run): privacy across surfaces
+- Judge: `crates/judge/tests/familiar_privacy.rs` runs an accepted benched Submit through the scripted backend with canaries in a hidden test's input and expected output and in stderr. The run is Accepted only because the expected canary was matched, so the canary really crossed the comparator. None appears in `bench_*`, `complexity` or `familiar` events, in the measured columns (including `fit`) or in the logs.
+- Server: `crates/server/tests/familiar_privacy.rs` (`pg_`) checks the speech prompt, the bubble and the stored hint against five canaries (hidden input, hidden expected, reference, known ghost, statement). Control: the prompt does contain the learner's code. `ScriptedTransport` now records prompts (`prompts()`, testkit only). The judge catalogue fixture gained `CANARY_STATEMENT` in place of the literal "Statement"; no test depended on that text and 385 `pg_` tests pass.
+- Web: `web/src/lib/familiar/privacy.test.ts` scans every Familiar source for HTML sinks. Mutation-checked: `{@html}` and an HTML-typed `DOMParser` both fail it. `Mascot.svelte` parses its own validated SVG art with `DOMParser` as `image/svg+xml`; the test allows that and nothing else.
+- Server-role write grants (P16) are already covered by `pg_familiar_roles`; not duplicated.
+- Not covered by an automated canary: the read-model JSON of `GET /api/runs/{id}` is built from stored columns only (T23), and its columns are covered by the judge test above.

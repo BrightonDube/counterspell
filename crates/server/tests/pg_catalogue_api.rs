@@ -251,3 +251,35 @@ async fn pg_unfinished_run_does_not_count_as_solved(pool: PgPool) {
     let body: Value = serde_json::from_str(&reply.body).expect("JSON");
     assert_eq!(status_of(&body, "two-sum"), "attempted");
 }
+
+/// T39 finding 1: an accepted sample-only Run must show as attempted, never solved.
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_accepted_sample_run_is_attempted_not_solved(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("published");
+    make_user(&pool, 1).await;
+    sqlx::query(
+        "INSERT INTO submissions (id, user_id, problem_slug, lang, mode, code, code_sha256, status, verdict, finished_at) \
+         VALUES ($1, $2, 'two-sum', 'python', 'run', 'pass', $3, 'completed', 'accepted', now())",
+    )
+    .bind(Uuid::new_v4())
+    .bind(Uuid::from_u128(1))
+    .bind(vec![9u8; 32])
+    .execute(&pool)
+    .await
+    .expect("run row");
+    let fixture = Fixture::new();
+    let address = app(&pool, &fixture.dir).await;
+
+    let reply = get(
+        address,
+        "/api/problems",
+        &[("Authorization", "Bearer test-user-1")],
+    )
+    .await;
+
+    let body: Value = serde_json::from_str(&reply.body).expect("JSON");
+    assert_eq!(status_of(&body, "two-sum"), "attempted");
+}

@@ -17,7 +17,6 @@ use counterspell_grimoire::ghosts::{sandbox_ghosts, SandboxGhost};
 use counterspell_grimoire::hints::AuthoredLadder;
 use counterspell_grimoire::meta::Meta;
 use counterspell_grimoire::record::ProblemRecord;
-use counterspell_grimoire::signature::LaunchType;
 use serde::Deserialize;
 use serde_json::{json, Value};
 use sha2::{Digest, Sha256};
@@ -222,20 +221,6 @@ impl PackFiles {
     }
 }
 
-/// Maps a meta.toml type string to a driver-protocol `{"kind": …}` descriptor.
-fn type_descriptor(name: &str) -> Result<Value, AssembleError> {
-    match LaunchType::parse(name) {
-        Some(LaunchType::Int) => Ok(json!({"kind": "int"})),
-        Some(LaunchType::Str) => Ok(json!({"kind": "string"})),
-        Some(LaunchType::IntArray) => Ok(json!({"kind": "list", "items": {"kind": "int"}})),
-        Some(LaunchType::Matrix) => Ok(json!({
-            "kind": "list",
-            "items": {"kind": "list", "items": {"kind": "int"}}
-        })),
-        None => Err(AssembleError::SignatureTypeInvalid(name.to_owned())),
-    }
-}
-
 /// Builds the driver-protocol signature descriptor the column stores.
 ///
 /// The judge writes `signature` verbatim to `/box/signature.json` when a run
@@ -247,20 +232,8 @@ fn type_descriptor(name: &str) -> Result<Value, AssembleError> {
 /// Returns [`AssembleError::SignatureTypeInvalid`] when a parameter or the
 /// return type is not a launch type.
 pub fn signature_descriptor(record: &ProblemRecord) -> Result<Value, AssembleError> {
-    let parameters = record
-        .signature
-        .params
-        .iter()
-        .map(|param| {
-            type_descriptor(&param.kind).map(|kind| json!({"name": param.name, "type": kind}))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
-    Ok(json!({
-        "protocol_version": 1,
-        "function": record.signature.function,
-        "parameters": parameters,
-        "returns": type_descriptor(&record.signature.returns)?,
-    }))
+    counterspell_grimoire::record::signature_descriptor(&record.signature)
+        .map_err(AssembleError::SignatureTypeInvalid)
 }
 
 /// Assembles the static import model for a pack that passed validation.

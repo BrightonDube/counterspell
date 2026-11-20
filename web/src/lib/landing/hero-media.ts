@@ -4,6 +4,13 @@
 /** Viewports up to this width (CSS px) get the 960 px loop, to save bytes on phones. */
 const NARROW_MAX_WIDTH = 900;
 
+/** The hero poster's WebP candidates. The `<picture>` and the head preload must use the same values. */
+export const HERO_POSTER_SRCSET =
+  '/art/landing/hero-moon-living-poster-960.webp 960w, /art/landing/hero-moon-living-poster-1920.webp 1920w';
+
+/** The poster's `sizes`: the full viewport on phones, the 1920 px file above that. */
+export const HERO_POSTER_SIZES = '(max-width: 900px) 100vw, 1920px';
+
 export interface HeroVideoFacts {
   /** True when the visitor has asked for reduced motion. */
   reducedMotion: boolean;

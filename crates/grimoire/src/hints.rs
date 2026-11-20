@@ -114,7 +114,7 @@ pub fn check(text: &str, report: &mut Report) {
                 codes::HNT_02,
                 "hints.toml",
                 Some(&pointer),
-                "each hint must be 1 to 600 characters",
+                format!("rung {rung}: each hint must be 1 to {MAX_HINT_CHARACTERS} characters"),
             ));
         }
         if longest_fence(body) > MAX_FENCE_LINES {
@@ -122,10 +122,47 @@ pub fn check(text: &str, report: &mut Report) {
                 codes::HNT_02,
                 "hints.toml",
                 Some(&pointer),
-                "a code fence in a hint may be at most 3 lines",
+                format!(
+                    "rung {rung}: a code fence in a hint may be at most {MAX_FENCE_LINES} lines"
+                ),
+            ));
+        }
+        if longest_indented_block(body) > MAX_FENCE_LINES {
+            report.push(Diagnostic::new(
+                codes::HNT_02,
+                "hints.toml",
+                Some(&pointer),
+                format!(
+                    "rung {rung}: an indented code block in a hint may be at most {MAX_FENCE_LINES} lines"
+                ),
             ));
         }
     }
+}
+
+/// The number of lines in the longest run of consecutive indented lines in `text`. A line is
+/// indented when it starts with four spaces or a tab and has other text on it. Lines inside a
+/// fenced block are left to [`longest_fence`].
+fn longest_indented_block(text: &str) -> usize {
+    let mut longest = 0;
+    let mut current = 0;
+    let mut in_fence = false;
+    for line in text.lines() {
+        if line.trim_start().starts_with("```") {
+            in_fence = !in_fence;
+            current = 0;
+            continue;
+        }
+        let indented =
+            (line.starts_with("    ") || line.starts_with('\t')) && !line.trim().is_empty();
+        if !in_fence && indented {
+            current += 1;
+            longest = longest.max(current);
+        } else {
+            current = 0;
+        }
+    }
+    longest
 }
 
 /// The number of lines in the longest fenced block in `text`.
@@ -261,6 +298,72 @@ mod tests {
         );
 
         assert_eq!(codes_for(&text), ["HNT-02"]);
+    }
+
+    fn messages_for(text: &str) -> Vec<String> {
+        let mut report = Report::new("count-pairs");
+        check(text, &mut report);
+        report
+            .diagnostics()
+            .iter()
+            .map(|d| d.message.clone())
+            .collect()
+    }
+
+    /// G2: an author must be able to tell which rung to fix.
+    #[test]
+    fn a_too_long_hint_names_its_rung() {
+        let text = ladder().replace("Loop over each first item.", &"a".repeat(601));
+
+        let messages = messages_for(&text);
+
+        assert_eq!(messages.len(), 1);
+        assert!(messages[0].contains("rung 2"), "{}", messages[0]);
+    }
+
+    #[test]
+    fn a_long_code_fence_names_its_rung() {
+        let text = ladder().replace(
+            "Change where the inner loop starts.",
+            "Try:\\n```\\na\\nb\\nc\\nd\\n```",
+        );
+
+        let messages = messages_for(&text);
+
+        assert_eq!(messages.len(), 1);
+        assert!(messages[0].contains("rung 4"), "{}", messages[0]);
+    }
+
+    /// G2: an indented block is a code block too, so it obeys the same three-line limit.
+    #[test]
+    fn indented_code_block_of_four_lines_is_hnt_02() {
+        let text = ladder().replace(
+            "Ask what a pair needs.",
+            "Try this:\\n\\n    one\\n    two\\n    three\\n    four",
+        );
+
+        assert_eq!(codes_for(&text), ["HNT-02"]);
+    }
+
+    #[test]
+    fn indented_code_block_of_three_lines_is_allowed() {
+        let text = ladder().replace(
+            "Ask what a pair needs.",
+            "Try this:\\n\\n    one\\n    two\\n    three",
+        );
+
+        assert_eq!(codes_for(&text), Vec::<String>::new());
+    }
+
+    /// Prose that merely wraps with leading spaces on two lines is not a code block.
+    #[test]
+    fn two_indented_lines_in_prose_are_allowed() {
+        let text = ladder().replace(
+            "Ask what a pair needs.",
+            "Think about it:\\n    first idea\\n    second idea",
+        );
+
+        assert_eq!(codes_for(&text), Vec::<String>::new());
     }
 
     #[test]

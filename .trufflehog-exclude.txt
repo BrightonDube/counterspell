@@ -1,0 +1,4 @@
+# Intentional fixture connection strings (fake passwords for tests/examples).
+infra/ansible/tests/check-app-env\.sh
+deploy/vps/tests/fixtures/.*\.env\.example
+crates/server/src/auth/config\.rs

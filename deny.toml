@@ -15,3 +15,11 @@ allow = [
 exceptions = [
     { allow = ["CDLA-Permissive-2.0"], crate = "webpki-roots" },
 ]
+
+[advisories]
+ignore = [
+    # chrono arrives transitively via oauth2 and rmcp; neither offers a
+    # maintained replacement path today. RUSTSEC-2026-0543 is unmaintained-only,
+    # no known vulnerability.
+    "RUSTSEC-2026-0543",
+]

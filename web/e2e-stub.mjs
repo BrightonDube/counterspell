@@ -12,7 +12,7 @@ const problem = (slug, title) => ({
   title,
   track: { slug: 'arrays', name: 'Crypt of Arrays' },
   concepts: [{ slug: 'loops', name: 'Loops' }],
-  difficulty: 'intro',
+  difficulty: 'easy',
   statement_markdown:
     'Given an array of integers, return the indices of the two numbers that add to the target.',
   constraints: ['2 <= nums.length <= 10^4', 'One valid answer exists.'],
@@ -24,7 +24,7 @@ const problem = (slug, title) => ({
     ],
     return_type: 'list<int>'
   },
-  samples: [{ input: '[[2, 7], 9]', expected: '[0, 1]' }],
+  examples: [{ input: [[2, 7], 9], expected: [0, 1] }],
   starters: { python: 'def two_sum(nums, target):\n    pass\n' },
   enabled_languages: ['python', 'javascript']
 });
@@ -65,12 +65,15 @@ const server = http.createServer((req, res) => {
   }
   if (url.pathname === '/api/languages') {
     res.writeHead(200, { 'content-type': 'application/json' });
-    res.end(JSON.stringify(languages));
+    res.end(JSON.stringify({ languages }));
     return;
   }
   const upstream = http.request(
     VITE + (req.url ?? '/'),
-    { method: req.method, headers: req.headers },
+    {
+      method: req.method,
+      headers: { ...req.headers, 'accept-encoding': 'identity' }
+    },
     (proxy) => {
       res.writeHead(proxy.statusCode ?? 502, proxy.headers);
       proxy.pipe(res);

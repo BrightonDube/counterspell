@@ -64,7 +64,27 @@ pub fn validate_static(root: &Path) -> io::Result<Report> {
         .to_owned();
     let mut report = Report::new(pack_name.clone());
     let pack = pack::load(root, &mut report)?;
-    validate_pack(&pack_name, &pack, &mut report);
+    validate_pack(&pack_name, dogfood_scope(root), false, &pack, &mut report);
+    Ok(report)
+}
+
+/// [] for a public tree checked on its own ().
+///  and  are private-resident by policy, so a missing
+/// reference skips that stage instead of failing it; every other check stays
+/// strict. Used by CI, which never sees the private checkout.
+///
+/// # Errors
+///
+/// Returns an I/O error only when the pack directory itself cannot be read.
+pub fn validate_static_public(root: &Path) -> io::Result<Report> {
+    let pack_name = root
+        .file_name()
+        .and_then(|name| name.to_str())
+        .unwrap_or_default()
+        .to_owned();
+    let mut report = Report::new(pack_name.clone());
+    let pack = pack::load_public(root, &mut report)?;
+    validate_pack(&pack_name, dogfood_scope(root), true, &pack, &mut report);
     Ok(report)
 }
 
@@ -83,12 +103,41 @@ pub fn validate_static_pair(public_root: &Path, private_root: &Path) -> io::Resu
         .to_owned();
     let mut report = Report::new(pack_name.clone());
     let pack = pack::load_pair(public_root, private_root, &mut report)?;
-    validate_pack(&pack_name, &pack, &mut report);
+    validate_pack(
+        &pack_name,
+        dogfood_scope(public_root),
+        false,
+        &pack,
+        &mut report,
+    );
     Ok(report)
 }
 
+/// The name the known-ghosts underscore rule (KNG-06) checks against. An
+/// underscore marks test and dogfood packs, and it may sit on the pack leaf
+/// (`packs/_demo`) or on its container (`packs/_demo/<slug>`); the leaf itself
+/// must stay a valid slug (LAY-06), so the container carries the mark.
+fn dogfood_scope(root: &Path) -> &str {
+    let marked = |path: &Path| {
+        path.file_name()
+            .and_then(|name| name.to_str())
+            .is_some_and(|name| name.starts_with('_'))
+    };
+    if marked(root) || root.parent().is_some_and(marked) {
+        "_"
+    } else {
+        ""
+    }
+}
+
 /// The shared check body behind [`validate_static`] and [`validate_static_pair`].
-fn validate_pack(pack_name: &str, pack: &pack::Pack, report: &mut Report) {
+fn validate_pack(
+    pack_name: &str,
+    dogfood_scope: &str,
+    public_only: bool,
+    pack: &pack::Pack,
+    report: &mut Report,
+) {
     report.mark_checked("layout");
 
     match pack.text("hints.toml") {
@@ -130,14 +179,18 @@ fn validate_pack(pack_name: &str, pack: &pack::Pack, report: &mut Report) {
 
     match pack.text("known_ghosts.toml") {
         Some(text) => {
-            ghosts::check(text, &meta, pack_name, pack, report);
+            ghosts::check(text, &meta, dogfood_scope, pack, report);
             report.mark_checked("ghosts");
         }
         None => report.mark_skipped("ghosts"),
     }
 
-    reference::check(pack.text("reference/solution.py"), &meta.function, report);
-    report.mark_checked("reference");
+    if public_only && pack.text("reference/solution.py").is_none() {
+        report.mark_skipped("reference");
+    } else {
+        reference::check(pack.text("reference/solution.py"), &meta.function, report);
+        report.mark_checked("reference");
+    }
 }
 
 /// Runs the static checks, then the sandbox checks through `runner`.

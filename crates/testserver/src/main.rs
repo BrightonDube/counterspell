@@ -32,7 +32,10 @@ use sqlx::{postgres::PgPoolOptions, PgPool};
 use tokio::{net::TcpListener, sync::watch};
 use uuid::Uuid;
 
-const TEST_USERS: u32 = 256;
+/// Seeded identities. Each web integration suite run draws fresh users from
+/// this pool, and the per-user run limit counts over a 600 s window, so the
+/// pool must outlast that window when suites are rerun back to back.
+const TEST_USERS: u32 = 4096;
 const SCRIPTED_TESTS: u32 = 3;
 const SCRIPT_DELAY: Duration = Duration::from_millis(30);
 

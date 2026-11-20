@@ -1544,3 +1544,74 @@ The builder is a plain function from stored values to sections, so its tests nee
 - `BollardDriver::next_event` emits raw stdout `Chunk`s; line splitting lives in `LineReader` (`sandbox/stream.rs`), fed by `call.rs`. `FakeDriver` emits whole `Line` events, so a consumer greened only against the fake compiles and passes model tests but never sees a complete line on the real daemon. New driver consumers must handle `Line | Chunk` through `LineReader` with the `STDOUT_BUDGET` cap, exactly as `call.rs` does — and a real-daemon test is the first gate, not the last.
 - Dropping a driver channel closes the exec attach stdin; a well-behaved driver's serve loop then ends and the process exits by itself — no kill primitive needed for a cooperative stop.
 - A whole-bench deadline is a `tokio::time::Instant` shared across calls; `call_deadline.min(budget_deadline)` per call makes a budget that runs out mid-call distinguishable from a driver that is actually slow, so the cutoff maps to `Incomplete`, not `Failed`.
+
+## problem-catalogue C36 (privilege matrix)
+Rust lesson: `[&str; 10]` is an array whose length is part of its type, so adding one table name forced the type to change from `[&str; 9]`. That makes the compiler catch a list that silently grew or shrank. Also, `cargo test` stops after the first failing test binary unless you pass `--no-fail-fast`, so one red binary can hide failures in later crates.
+
+## efficiency-familiar T37: the speech bubble pipeline (17-19 Nov 2026)
+- `SET key 1 NX EX 86400` is one atomic Valkey command. `Some` back means "you were first", `None` means someone else was. That is how two clicks at once make one provider call.
+- `speak` returns `Result<Bubble, SpeechError>`, but provider, quota and guard failures are not errors: they are a `Bubble` with a template and a `reason`. Reserve `Err` for things the learner can do nothing about, such as a database fault.
+- A closure that builds a template can be passed to a helper as `&impl Fn(...) -> Bubble`. It borrows what it needs, so the helper does not repeat the fields.
+- `generate` became `generate_from_prompt` plus a thin wrapper. Splitting a function at its natural seam lets a second caller reuse the quota and guard code without copying it.
+
+## efficiency-familiar T38: the familiar-hint route (19 Nov 2026)
+- An Axum handler's arguments are extractors. `CurrentUser(user)` runs first and turns a missing session into `401` before the handler body starts, so the body never sees an anonymous caller.
+- `Option<&Deps>` models "AI is off at the server" in the type. The compiler forces every caller to say what happens in the `None` case, instead of a flag someone can forget to check.
+- `bubble.reason.map(TemplateReason::code)` passes a method as a function. `Option::map` then calls it only when there is a value.
+- The `404` for a stranger, an unknown id and a malformed id is built by one closure, so the three bodies cannot drift apart.
+
+## 19 Nov 2026: GhostLookup and the solved definition
+- **Ownership in the SQL.** `stored_for` puts `user_id = $2` inside the `WHERE`, so the database never returns another learner's row. If the check lived in Rust after the query, one forgotten `if` would leak data.
+- **`Option` inside `Result`.** The function returns `Result<Option<_>, sqlx::Error>`. `Err` means the database failed; `Ok(None)` means "nothing for you". Callers must handle both, and the compiler enforces it.
+- **`query_scalar` + `fetch_optional`.** This asks for one column from zero or one row, so "no row" is `None`, not an error.
+
+## 19 Nov 2026: ide-workspace T13, a larger fixture user pool
+- **`const` is checked at compile time.** `TEST_USERS: u32 = 4096` is a constant; the seeding loop `for number in 1..=TEST_USERS` runs once per value, and `1..=` includes the end value.
+- **`u32` to `u128` with `u128::from`.** The user id is built from a 128-bit number. `u128::from(number)` widens safely and can never fail, unlike `as`, which can silently truncate in other directions.
+- **Why a doc comment on a constant.** `///` above the `const` becomes part of the generated docs and explains the "why" (the 600 s rate window) next to the number, so nobody shrinks it again by mistake.
+
+## 20 Nov 2026: ide-workspace T18, the ghost rate-limit test
+- **A test can share state with the call it checks.** The limiter counts hits per user, so the plain source run spends the one allowed hit and the ghost rerun is the second. `RUN_RATE_USER=1` makes that deterministic.
+- **`is_some_and` on an `Option`.** `json_body(..)["message"].as_str()` is an `Option<&str>`; `.is_some_and(|m| m.contains("seconds"))` returns false for `None` and runs the check for `Some`, so there is no `unwrap` in the test.
+- **Count before and after.** Reading the job and submission counts around the refused call proves nothing was written, which is the real promise behind a 429.
+
+## 20 Nov 2026: the attempt in the sandbox container name
+- **A closure that returns a closure.** `attempt_namer` returns `impl Fn(u32) -> Result<SessionSpec, InfraError> + 'a`. The `move` keyword copies `attempt`, `run` and the limits into the closure, and `'a` says it may keep borrowing `lang` and `worker` for as long as the caller holds them.
+- **Keep the old door open.** `SessionSpec::new` still exists and builds the old name; `for_attempt` is a second constructor. Both call one private `named`, so the policy and labels cannot drift apart, and no existing caller had to change.
+- **Why a 409 matters.** The daemon refuses a second container with the same name. Putting the attempt number in the name means a crashed attempt's leftover container can never block its own retry.
+
+## 20 Nov 2026: efficiency-familiar T24, the bench-span warning
+- **Trait objects for a fake runner.** `check_bench` takes `runner: &mut dyn PackRunner`. `dyn` means "any type that implements the trait, chosen at run time", so a test can hand in `ScriptedBench` without the function being generic. Generics would compile one copy per type; for a validator that runs once, the trait object is simpler.
+- **`Option` and `?` in a small helper.** `narrow_span` returns `Option<Diagnostic>`. `inputs.iter().map(..).min()?` returns `None` early when there are no inputs, so the caller only pushes a warning when there is one.
+- **`checked_div` instead of `/`.** Dividing by zero panics in Rust. `largest.checked_div(lowest)` gives `None` for a zero divisor, and `.unwrap_or(0)` turns that into a plain number with no panic.
+- **A test inside the module.** `#[cfg(test)] mod attempt_namer_tests` in `sandbox_executor.rs` can call the private `attempt_namer`, because a child module sees its parent's private items.
+
+## efficiency-familiar T25: one bench path
+`PackSandboxRunner::bench` is a trait method that must be sync, but the shared bench collector is `async`. It hands the async call to a scoped thread and blocks on it with the tokio `Handle`. The win is one measurement path: pack validation now times the reference exactly as a learner's Submit does (two warm-ups, five timed calls, same budget). `match` on `BenchOutcome` forces every outcome (complete, incomplete, failed) to be handled, so none can be silently dropped.
+
+## efficiency-familiar T22: a trait as a seam
+`run_baseline` takes a `BenchCollector` and a `BaselineStore` as generic parameters instead of a database and a Docker client. Tests pass a scripted collector and an in-memory store, so the admission rules run in microseconds with no daemon. `Result<Outcome, Error>` separates a finding (the fixture is refused, exit 1) from a fault (the judge broke, exit 2), so a broken daemon can never look like a bad fixture.
+
+## efficiency-familiar T22: subcommands, exit codes and `Result` at a program's edge
+`main` reads `std::env::args()` and hands the rest to `parse_args`, which returns `Result<BaselineArgs, String>`: a bad flag is a value, not a panic. Deep inside, every step returns `Result` and `?` passes failures up unchanged. Only at the very edge (`baseline()` in `main.rs`) are those results turned into words for the operator and into `ExitCode::from(0 | 1 | 2)`, so scripts can tell "stored", "refused" (a finding about the fixture) and "the judge itself failed" apart. Keeping that translation in one place means no inner function needs to know about the process at all.
+
+## efficiency-familiar T43: a test double that remembers (`Mutex` behind `&self`)
+`ScriptedTransport::prompts()` needs to record every request, but the trait method only gets `&self` (a shared borrow), so the recorder is a `Mutex<Vec<String>>`: `lock()` hands out one mutable borrow at a time, checked at run time instead of compile time. We use `if let Ok(..)` and `unwrap_or_default()` instead of `unwrap()`, because a poisoned lock should degrade a test helper, not panic. The helper is only built with the `testkit` feature, so production code never carries it.
+
+## counterspell-mcp-power T05 (part): moving a trait so two crates can share it without a cycle
+A trait is a contract, so where it is declared decides who may implement it. `PackRunner` sat in `counterspell-grimoire`, which meant the judge (the only crate that really runs code) would have had to depend on grimoire. Moving the trait to `counterspell-engine`, which both already depend on, lets the judge implement it and grimoire re-export it with `pub use`. Because the re-export is the same type (not a copy), old `use counterspell_grimoire::runner::PackRunner` lines still compile, and the new seam test would stop compiling if the two ever drifted apart.
+
+## counterspell-mcp-power T10: a value that cleans up in `Drop`, and the order fields drop in
+`PackSandboxRunner` owns sandbox containers, and its `Drop` spawns a kill-and-remove on the runtime that is current at that moment. Two Rust rules decide whether that cleanup happens. First, a value is dropped when its owner lets go, so the MCP slot calls `release()` after every tool call (`*built = None` drops the old runner at once) instead of holding the runner until the next call. Second, a struct drops its fields in the order they are declared, so `built` is declared before `factory`: the runner goes first, while the factory's runtime is still alive to run the cleanup. The test `dropping_a_slot_drops_the_runner_before_the_factory` writes each drop into a shared `Vec` to prove that order.
+
+## judge-sandbox: regression test for a closed-stream program
+A test that passes the first time it runs is not "red", so say so plainly: here it showed the suspected bug does not exist. `inspect_exec` returns `Option<i64>` for the exit code, and the judge turns `None` into an `InfraError` with `ok_or_else`, so a missing code can never become a user verdict. The deadline kill from outside is what ends the run, and that path already yields `time_limit`.
+
+## counterspell-mcp: tests that read config files
+A Rust integration test in `tests/` is its own small program. `env!("CARGO_MANIFEST_DIR")` is filled in by the compiler with the crate's folder, so the test can find `../../.kiro/settings/mcp.json` from any machine. `serde_json::Value` lets you read JSON you do not have a struct for. The test reads files only and never starts the server.
+
+## auth T34: a default method on a trait
+A trait can give a method a default body, so existing types keep working and only the one that needs different behaviour overrides it. `still_signed_in` defaults to "resolve again and compare", and `SessionUserResolver` replaces it with a read-only database check. The stream stores the resolver as `Arc<dyn UserResolver>`: `Arc` lets several tasks share one value, and `dyn` means "any type that implements the trait". `unwrap_or(false)` turns a database error into "signed out", so the failure closes the stream instead of leaving it open.
+
+## hints G2: collecting every error, and `format!` with named values
+The validator pushes one `Diagnostic` per problem into a `Report` instead of returning at the first one, so an author sees every rung to fix in a single run. `format!("rung {rung}: ...")` reads the variable straight from scope, and `{MAX_FENCE_LINES}` does the same for a `const`, so the message and the check can never disagree about the number. `str::lines()` borrows slices of the original text, so scanning for code blocks copies nothing.

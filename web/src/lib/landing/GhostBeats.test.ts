@@ -35,6 +35,20 @@ describe('GhostBeats', () => {
     }
   });
 
+  // R24 (landing performance): a 64 px icon must not download the 512 px file.
+  it('offers a 128 px candidate for each 64 px beat icon and keeps the 512 px file as the fallback', () => {
+    const { container } = render(GhostBeats);
+    const images = Array.from(container.querySelectorAll('section img'));
+    expect(images.map((img) => img.getAttribute('srcset'))).toEqual([
+      '/art/objects/crypt-key-128.webp 128w, /art/objects/crypt-key.webp 512w',
+      '/art/objects/crystal-ball-128.webp 128w, /art/objects/crystal-ball.webp 512w',
+      '/art/objects/brain-jar-128.webp 128w, /art/objects/brain-jar.webp 512w'
+    ]);
+    for (const img of images) {
+      expect(img.getAttribute('sizes')).toBe('64px');
+    }
+  });
+
   it('places the labelled example inside the Hunt beat', () => {
     const { container } = render(GhostBeats);
     const hunt = Array.from(container.querySelectorAll('section')).find((s) =>

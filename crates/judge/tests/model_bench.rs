@@ -13,7 +13,9 @@ use counterspell_judge::familiar::assess::BenchPoint;
 use counterspell_judge::familiar::{BenchCollector, BenchOutcome, BenchPlan};
 use counterspell_judge::languages::LanguageCatalog;
 use counterspell_judge::sandbox::backend::{BackendSession, InfraError};
-use counterspell_judge::sandbox::bench::{SandboxBenchCollector, TIMED_REPS, WARM_UPS};
+use counterspell_judge::sandbox::bench::{
+    DiscardBench, SandboxBenchCollector, TIMED_REPS, WARM_UPS,
+};
 use counterspell_judge::sandbox::config::OciRuntime;
 use counterspell_judge::sandbox::session::{open_session, Opened};
 use counterspell_judge::sandbox::spec::SessionSpec;
@@ -308,5 +310,89 @@ async fn sandbox_failures_are_infrastructure_never_a_verdict() {
         backend.fault_fired_on(),
         Some("open_driver"),
         "the fault fired on the bench driver open"
+    );
+}
+
+/// efficiency-familiar T25 (R13.1, R13.2): pack validation times the reference through this
+/// same collector. Prepared inputs are sent exactly as given, every size still gets the two
+/// warm-ups and five timed calls, and a sink that keeps nothing receives no run event.
+#[tokio::test]
+async fn a_bench_over_prepared_inputs_sends_those_inputs_and_writes_no_run_record() {
+    let (_dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    let calls = 2 * (WARM_UPS + TIMED_REPS);
+    backend.script_program((0..calls as u64).map(|id| answer(id, 5)));
+    let mut opened = opened(&backend, &catalog).await;
+    let (_tx, mut stop) = watch::channel(false);
+    let inputs = vec![
+        (4_u64, serde_json::json!([[9, 8, 7, 6], 1])),
+        (
+            16_u64,
+            serde_json::json!([[5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5], 2]),
+        ),
+    ];
+    let sink = DiscardBench;
+
+    let outcome = {
+        let mut collector = SandboxBenchCollector::for_inputs(
+            &mut opened,
+            catalog.get("python").unwrap(),
+            &inputs,
+            Duration::from_secs(5),
+            &sink,
+            &mut stop,
+        );
+        collector
+            .collect(&plan(&[4, 16], Duration::from_secs(30)))
+            .await
+            .expect("the bench completes")
+    };
+
+    let BenchOutcome::Complete(points) = outcome else {
+        panic!("a scripted-complete bench must be Complete: {outcome:?}");
+    };
+    assert_eq!(points.iter().map(|p| p.n).collect::<Vec<_>>(), vec![4, 16]);
+    let lines = call_lines(&backend);
+    assert_eq!(lines.len(), calls, "warm-ups and timed calls for each size");
+    let first = String::from_utf8_lossy(&lines[0]);
+    let last = String::from_utf8_lossy(&lines[calls - 1]);
+    assert!(
+        first.contains("[[9,8,7,6],1]"),
+        "the prepared input: {first}"
+    );
+    assert!(
+        last.contains("[[5,5,5,5,5,5,5,5,5,5,5,5,5,5,5,5],2]"),
+        "{last}"
+    );
+}
+
+/// A prepared bench without an input for a planned size fails inside the bench, not the judge.
+#[tokio::test]
+async fn a_planned_size_without_a_prepared_input_fails_the_bench() {
+    let (_dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    let mut opened = opened(&backend, &catalog).await;
+    let (_tx, mut stop) = watch::channel(false);
+    let inputs = vec![(4_u64, serde_json::json!([[1], 1]))];
+
+    let outcome = {
+        let mut collector = SandboxBenchCollector::for_inputs(
+            &mut opened,
+            catalog.get("python").unwrap(),
+            &inputs,
+            Duration::from_secs(5),
+            &DiscardBench,
+            &mut stop,
+        );
+        collector
+            .collect(&plan(&[8], Duration::from_secs(30)))
+            .await
+            .expect("not a judge error")
+    };
+
+    assert_eq!(outcome, BenchOutcome::Failed);
+    assert!(
+        call_lines(&backend).is_empty(),
+        "nothing was sent for the missing size"
     );
 }

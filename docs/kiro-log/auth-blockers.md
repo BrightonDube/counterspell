@@ -254,3 +254,8 @@ Results are in `docs/kiro-log/auth-dod.md` (attempt 11 section). Summary:
 - T33: Caddy log filter (needs Brighton's approval for the shared `Caddyfile`) and the running-stack checks are not done.
 - T34: **unblocked.** run-lifecycle T29 (SSE endpoint core) is now done (39/39). The remaining work is the `SessionService::is_valid` check on each SSE heartbeat, its test, and the logout-all heartbeat test.
 - T37: the manual checklist needs the VPS and real providers. The recorded failure `sbx_create_readback_matches` now passes at `36d6064` (judge-sandbox T20 verified).
+
+## drive queue run (kiro/drive-queue): T34 code done, tick waits on T33
+- SSE session re-check implemented and tested; details and evidence in `docs/kiro-log/auth-integration.md`. 7 of 7 `pg_auth_runs_integration` tests pass, fmt and clippy clean, workspace 1568 passed / 0 failed, all server `pg_` suites pass.
+- T34 stays `[ ]` only because its dependency T33 is open. T33 needs Brighton's approval for the shared `Caddyfile` log filter (open question 16) and a running-stack check.
+- **Security review wanted (Brighton):** the stream now closes on any session failure, including a database error, and checks every heartbeat interval (15 s by default). It changed `UserResolver` (default method, backward compatible).
