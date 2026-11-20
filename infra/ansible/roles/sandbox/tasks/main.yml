@@ -184,6 +184,22 @@
     XDG_RUNTIME_DIR: "{{ sandbox_runtime_dir }}"
   when: not ansible_check_mode
 
+# ExecStartPost only applies the ACL when the daemon starts. A host where the daemon was already
+# running when this role first converged keeps refusing the judge until a restart, so apply the
+# same grants directly; the drop-in still reapplies them on every later daemon start (R3.4).
+- name: Grant the judge UID socket access now (mirrors acl.conf, R3.4)
+  ansible.builtin.command:
+    argv:
+      - /usr/bin/setfacl
+      - -m
+      - "{{ item.spec }}"
+      - "{{ item.path }}"
+  loop:
+    - { spec: "u:{{ judge_uid }}:x", path: "{{ sandbox_runtime_dir }}" }
+    - { spec: "u:{{ judge_uid }}:rw", path: "{{ sandbox_socket }}" }
+  changed_when: false
+  when: not ansible_check_mode
+
 - name: Install the language catalogue (the pre-pull reads the pinned digests from it)
   ansible.builtin.copy:
     src: "{{ repo_root }}/languages/languages.toml"
