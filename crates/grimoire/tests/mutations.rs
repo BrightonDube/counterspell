@@ -129,8 +129,8 @@ fn cases() -> Vec<Case> {
             name: "a NUL byte in problem.md",
             edits: vec![replace(
                 "problem.md",
-                "The public examples",
-                "The public\u{0} examples",
+                "## Examples",
+                "## Exa\u{0}mples",
             )],
             // A rejected file is skipped, so the statement checks do not run.
             expected: vec!["LAY-05"],
@@ -150,7 +150,7 @@ fn cases() -> Vec<Case> {
         Case {
             code: "MET-02",
             name: "a required field is missing",
-            edits: vec![replace("meta.toml", "pack_version = 1\n", "")],
+            edits: vec![replace("meta.toml", "pack_version = 5\n", "")],
             expected: vec!["MET-02"],
         },
         Case {
@@ -162,7 +162,11 @@ fn cases() -> Vec<Case> {
         Case {
             code: "MET-04",
             name: "parameter type outside the launch set",
-            edits: vec![replace("meta.toml", "type = \"list[int]\"", "type = \"list[float]\"")],
+            edits: vec![replace(
+                "meta.toml",
+                "name = \"target\"\ntype = \"int\"",
+                "name = \"target\"\ntype = \"float\"",
+            )],
             expected: vec!["MET-04"],
         },
         Case {
@@ -180,8 +184,8 @@ fn cases() -> Vec<Case> {
                 "min = 50, max = -50 }",
             )],
             // The broken range no longer holds the samples or the ghost inputs. Each of the
-            // three samples reports its own SMP-02, and the first ghost reports KNG-02.
-            expected: vec!["KNG-02", "MET-06", "SMP-02", "SMP-02", "SMP-02"],
+            // three samples reports SMP-02, and each of the two ghosts reports KNG-02.
+            expected: vec!["KNG-02", "KNG-02", "MET-06", "SMP-02", "SMP-02", "SMP-02"],
         },
         Case {
             code: "MET-07",
@@ -200,8 +204,8 @@ fn cases() -> Vec<Case> {
             name: "reference_complexity without a bench table",
             edits: vec![replace(
                 "meta.toml",
-                "pack_version = 1\n",
-                "pack_version = 1\nreference_complexity = \"n^2\"\n",
+                "\n[bench]\nsize_param = \"values\"\nsizes = [128, 512, 2048, 4096]\n",
+                "",
             )],
             expected: vec!["MET-09"],
         },
@@ -216,8 +220,8 @@ fn cases() -> Vec<Case> {
             name: "raw HTML in the statement",
             edits: vec![replace(
                 "problem.md",
-                "The public examples are listed in the pack's samples.",
-                "The public examples are listed in the pack's samples. <b>Note</b>",
+                "The first and third positions make one pair.",
+                "The first and third positions make one pair. <b>Note</b>",
             )],
             expected: vec!["STM-02"],
         },
@@ -257,7 +261,7 @@ fn cases() -> Vec<Case> {
         Case {
             code: "GEN-01",
             name: "hidden count below 5",
-            edits: vec![replace("meta.toml", "hidden_count = 12", "hidden_count = 4")],
+            edits: vec![replace("generator.toml", "hidden_count = 12", "hidden_count = 4")],
             expected: vec!["GEN-01"],
         },
         Case {
@@ -265,7 +269,7 @@ fn cases() -> Vec<Case> {
             name: "only three hints",
             edits: vec![replace(
                 "hints.toml",
-                "\n[[hint]]\nrung = 4\ntext = \"Your inner loop may start at the same index as the outer loop. Change where it starts.\"\n",
+                "\n[[hint]]\nrung = 4\ntext = \"Start each inner scan after its outer position. Add to the count whenever the two values sum to the target.\"\n",
                 "",
             )],
             expected: vec!["HNT-01"],
@@ -283,13 +287,17 @@ fn cases() -> Vec<Case> {
         Case {
             code: "KNG-01",
             name: "two known ghosts with the same id",
-            edits: vec![replace("known_ghosts.toml", "id = \"empty-min\"", "id = \"same-index\"")],
+            edits: vec![replace("known_ghosts.toml", "id = \"discard-negative-target\"", "id = \"deduplicate-pair-values\"")],
             expected: vec!["KNG-01"],
         },
         Case {
             code: "KNG-02",
             name: "known ghost input does not fit the schema",
-            edits: vec![replace("known_ghosts.toml", "input = [[0], 0]", "input = [[0], 999]")],
+            edits: vec![replace(
+                "known_ghosts.toml",
+                "input = [[10, -12, -11], -23]",
+                "input = [[10, -12, -11], 999]",
+            )],
             expected: vec!["KNG-02"],
         },
         Case {
@@ -297,8 +305,8 @@ fn cases() -> Vec<Case> {
             name: "crash ghost that also has a got value",
             edits: vec![replace(
                 "known_ghosts.toml",
-                "exception_class = \"ValueError\"",
-                "exception_class = \"ValueError\"\ngot = 1",
+                "kind = \"wrong\"\ninput = [[5, 11, 5, 11, 11], 16]",
+                "kind = \"crash\"\nexception_class = \"ValueError\"\ninput = [[5, 11, 5, 11, 11], 16]",
             )],
             expected: vec!["KNG-03"],
         },
@@ -307,8 +315,8 @@ fn cases() -> Vec<Case> {
             name: "explanation claims minimality",
             edits: vec![replace(
                 "known_ghosts.toml",
-                "The early exit calls min()",
-                "The smallest early exit calls min()",
+                "Counting distinct value pairs",
+                "The smallest counting of distinct value pairs",
             )],
             expected: vec!["KNG-04"],
         },
