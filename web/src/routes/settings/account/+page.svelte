@@ -58,6 +58,7 @@
   let code = $state('');
   let totpInput = $state<HTMLInputElement>();
   let totpAction = $state<HTMLButtonElement>();
+  let disableTotpAction = $state<HTMLButtonElement>();
   let recoveryHeading = $state<HTMLHeadingElement>();
   let recoveryCodes = $state<string[]>([]);
   let copiedCodes = $state(false);
@@ -208,10 +209,22 @@
     totpInput?.focus();
   }
 
+  async function openDisableTotp() {
+    issue = null;
+    notice = null;
+    code = '';
+    disablingTotp = true;
+    await tick();
+    totpInput?.focus();
+  }
+
   async function updateTotp() {
     if (disablingTotp) {
       await disableTotp(code.trim());
-      if (security) security.totp_enabled = false;
+      if (security) {
+        security.totp_enabled = false;
+        security.can_replace_authenticator = false;
+      }
       notice = { area: 'totp', text: 'Two-factor authentication is off.' };
       disablingTotp = false;
     } else {
@@ -244,12 +257,13 @@
   }
 
   async function closeTotp() {
+    const focusTurnOff = disablingTotp && security?.can_replace_authenticator;
     totpSetup = null;
     disablingTotp = false;
     code = '';
     issue = null;
     await tick();
-    totpAction?.focus();
+    (focusTurnOff ? disableTotpAction : totpAction)?.focus();
   }
 
   async function closeRecoveryCodes() {
@@ -497,38 +511,40 @@
                 </p>
               </div>
               {#if !totpSetup && !disablingTotp && !recoveryCodes.length}
-                <button
-                  class={security.totp_enabled &&
-                  !security.can_replace_authenticator
-                    ? button
-                    : primary}
-                  type="button"
-                  disabled={securityBusy}
-                  bind:this={totpAction}
-                  onclick={async () => {
-                    if (
-                      security?.totp_enabled &&
-                      !security.can_replace_authenticator
-                    ) {
-                      issue = null;
-                      notice = null;
-                      code = '';
-                      disablingTotp = true;
-                      await tick();
-                      totpInput?.focus();
-                    } else {
-                      await run('totp', beginTotp);
-                    }
-                  }}
-                >
-                  {busy === 'totp'
-                    ? 'Please wait…'
-                    : security.can_replace_authenticator
-                      ? 'Replace authenticator'
-                      : security.totp_enabled
-                        ? 'Turn off'
-                        : 'Set up'}
-                </button>
+                <div class="method-actions flex flex-wrap gap-2">
+                  <button
+                    class={security.totp_enabled &&
+                    !security.can_replace_authenticator
+                      ? button
+                      : primary}
+                    type="button"
+                    disabled={securityBusy}
+                    bind:this={totpAction}
+                    onclick={security.totp_enabled &&
+                    !security.can_replace_authenticator
+                      ? openDisableTotp
+                      : () => run('totp', beginTotp)}
+                  >
+                    {busy === 'totp'
+                      ? 'Please wait…'
+                      : security.can_replace_authenticator
+                        ? 'Replace authenticator'
+                        : security.totp_enabled
+                          ? 'Turn off'
+                          : 'Set up'}
+                  </button>
+                  {#if security.can_replace_authenticator}
+                    <button
+                      type="button"
+                      class={button}
+                      disabled={securityBusy}
+                      bind:this={disableTotpAction}
+                      onclick={openDisableTotp}
+                    >
+                      Turn off
+                    </button>
+                  {/if}
+                </div>
               {/if}
             </div>
 
@@ -989,7 +1005,8 @@
     row-gap: 0.625rem;
   }
 
-  .security-method > button {
+  .security-method > button,
+  .security-method > .method-actions {
     grid-column: 2;
     justify-self: start;
   }
@@ -1065,7 +1082,8 @@
       align-items: center;
     }
 
-    .security-method > button {
+    .security-method > button,
+    .security-method > .method-actions {
       grid-column: auto;
     }
   }
