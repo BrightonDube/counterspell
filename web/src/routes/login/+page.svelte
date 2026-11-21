@@ -52,9 +52,9 @@
   let codeInput = $state<HTMLInputElement>();
 
   const choiceClass =
-    'inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-lg border border-accent-moss-muted bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-accent-moss-strong hover:bg-raised disabled:opacity-55';
+    'inline-flex min-h-12 w-full items-center justify-center gap-3 rounded-full border border-accent-moss-muted bg-surface px-4 py-2 text-sm font-medium text-text transition-colors hover:border-accent-moss-strong hover:bg-raised disabled:opacity-55';
   const primaryClass =
-    'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-lg border border-accent-candle bg-accent-candle px-4 py-2 text-sm font-semibold text-bg transition-colors hover:bg-accent-candle-glow disabled:opacity-55';
+    'inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-accent-candle bg-accent-candle px-4 py-2 text-sm font-semibold text-bg transition-colors hover:bg-accent-candle-glow disabled:opacity-55';
   const fieldClass =
     'w-full rounded-md border border-accent-moss-muted bg-bg px-3 py-2.5 text-base text-text placeholder:text-text-subtle caret-accent-candle';
   const textAction =
