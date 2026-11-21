@@ -86,6 +86,24 @@ fn loaded_pack_exposes_the_text_of_each_file() {
 }
 
 #[test]
+fn layout_accepts_the_public_originality_record() {
+    let public = TempPack::new("originality");
+    public.write("problem.md", b"# Count\n");
+    public.write("meta.toml", b"slug = \"count\"\n");
+    public.write("hints.toml", b"# Hints\n");
+    public.write("originality.md", b"## Idea\nCount occurrences.\n");
+    let mut report = Report::new("fixture");
+
+    let loaded = pack::load_public(public.path(), &mut report).expect("public pack reads");
+
+    assert_eq!(
+        loaded.text("originality.md"),
+        Some("## Idea\nCount occurrences.\n")
+    );
+    assert!(report.diagnostics().is_empty());
+}
+
+#[test]
 fn missing_required_file_is_lay_01() {
     let pack = TempPack::new("missing");
     required_files(&pack);

@@ -1,16 +1,17 @@
 # The Longest Run
 
 ## Task
-Given a text, find the length of its longest run: the most letters in a row that are all the same.
+Call `longest_run(text)` and return the length of the longest group of consecutive matching letters as an integer.
 
 ## Input
 A single text made of the letters a, b and c.
 
 ## Output
-One whole number: the length of the longest run. An empty text has a longest run of 0.
+Return the length as an integer. Empty text has a longest run of 0.
 
 ## Examples
-The public examples are listed in the pack's samples.
+`longest_run("aabbbc")` returns `3`.
+The three consecutive b letters form the longest run.
 
 ## Constraints
 The text is at most 40 letters long. Each letter is a, b or c.

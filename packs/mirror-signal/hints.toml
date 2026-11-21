@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Which rune is the same distance from the other end of the strip?"
+
+[[hint]]
+rung = 2
+text = "Keep a position at each end of the signal. Compare their runes, then move both positions toward the middle."
+
+[[hint]]
+rung = 3
+text = "```\nwhile the left position is before the right position\n  add to the count if the runes differ\n  move both positions inward\n```"
+
+[[hint]]
+rung = 4
+text = "Start the left position at the first rune and the right position at the last rune. After each comparison, advance left and move right back. Return the mismatch count when the positions meet or cross."

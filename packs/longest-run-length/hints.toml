@@ -8,8 +8,8 @@ text = "Keep a count of the current run, and a count of the best run so far."
 
 [[hint]]
 rung = 3
-text = "When a letter matches the one before it, the current run grows. When it does not, the current run starts again at one."
+text = "```\nfor each letter\n  extend the run if the letter matches the previous one, otherwise start a new run\n  update the best run\n```"
 
 [[hint]]
 rung = 4
-text = "Check the best run after every letter, not only when a run ends."
+text = "Update the best length after every letter. The last group can be the longest even if the input ends during that group."

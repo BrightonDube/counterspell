@@ -21,7 +21,7 @@ use std::collections::HashSet;
 use std::time::Duration;
 
 use counterspell_engine::classify::{classify, Classification, Observation};
-use counterspell_engine::generate::{CandidateStream, GeneratorConfig};
+use counterspell_engine::generate::{CandidateStream, GeneratorConfig, Origin};
 use counterspell_engine::{Comparator, ProgramResult, Schema};
 use counterspell_grimoire::ghosts::SandboxGhost;
 use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
@@ -275,10 +275,25 @@ fn fill_generated(
         GeneratorConfig::default(),
     );
     let mut cases: Vec<HiddenFill> = Vec::with_capacity(check.hidden_count);
+    let rotated = check
+        .retired
+        .rotated
+        .iter()
+        .any(|record| record.slug == check.slug && record.pack_version == check.pack_version);
     // The stream yields unique candidates; a tiny domain could otherwise loop on
     // duplicates forever, so the attempt count is bounded before the shortfall check.
     let attempts = check.hidden_count.saturating_mul(8).max(16);
-    for candidate in stream.take(attempts) {
+    // The enumerated prefix is independent of the seed. After a recorded rotation,
+    // consume it without selecting it so the stream also excludes those inputs from its seeded tail.
+    let candidates = stream.filter(|candidate| !rotated || candidate.origin == Origin::Generated);
+    let retired: HashSet<&str> = check
+        .retired
+        .retired
+        .iter()
+        .filter(|entry| rotated && entry.slug == check.slug)
+        .map(|entry| entry.sha256.as_str())
+        .collect();
+    for candidate in candidates.take(attempts) {
         if cases.len() == check.hidden_count {
             break;
         }
@@ -293,6 +308,12 @@ fn fill_generated(
                 index: cases.len(),
             }));
         };
+        // An approved rotation can resample a leaked generated value. Curated cases
+        // and the finished set still pass through the fail-closed retired-value check.
+        if !retired.is_empty() && retired.contains(hex(&canonical_hash(&input, &expected)).as_str())
+        {
+            continue;
+        }
         cases.push(HiddenFill {
             source: CaseSource::Generated,
             input,

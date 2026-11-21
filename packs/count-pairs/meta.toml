@@ -1,6 +1,6 @@
 slug = "count-pairs"
 title = "Count the Pairs"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "arrays"
 concepts = ["arrays", "pairs", "nested-loops"]
@@ -12,7 +12,7 @@ function = "count_pairs"
 returns = "int"
 comparator = "exact"
 reference_complexity = "n^2"
-complexity_note = "The reference counts pairs with two nested loops; a hash-set solution is linear and benches better."
+complexity_note = "The reference checks every pair in quadratic time and uses constant extra space. A map of value counts supports a linear-time approach."
 
 [[params]]
 name = "values"

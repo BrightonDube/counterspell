@@ -369,6 +369,79 @@ fn a_retired_slug_without_rotation_is_refused() {
     assert_eq!(outcome_code(&outcome), "rotation_missing");
 }
 
+#[test]
+fn recorded_rotation_skips_the_seed_independent_prefix() {
+    use std::fmt::Write as _;
+
+    let mut hash = String::new();
+    for byte in canonical_hash(&json!(0), &json!(0)) {
+        write!(hash, "{byte:02x}").expect("write hex to string");
+    }
+    let retired = parse_retired_text(&format!(
+        "[[retired]]\nslug = \"count-pairs\"\nsha256 = \"{hash}\"\n\
+         [[rotated]]\nslug = \"count-pairs\"\npack_version = 1\nrotated_on = \"2026-11-21\"\n"
+    ));
+    let mut check = check(&[], &[], &[], &retired);
+    check.schema = Schema::Int { min: 0, max: 1000 };
+    let mut runner = Scripted::default();
+    runner.reference((0..check.hidden_count).map(|_| ProgramResult::Returned(json!(0))));
+
+    let outcome = sandbox_fill(&check, &mut runner).expect("runner answers");
+
+    let FillOutcome::Filled(fill) = outcome else {
+        panic!("recorded rotation should select distinct generated values: {outcome:?}");
+    };
+    assert_eq!(fill.hidden.len(), check.hidden_count);
+    assert!(fill.hidden.iter().all(|case| case.input != json!(0)));
+}
+
+#[test]
+fn recorded_rotation_resamples_retired_seeded_values() {
+    use std::fmt::Write as _;
+
+    use counterspell_engine::generate::{CandidateStream, GeneratorConfig, Origin};
+    use counterspell_judge::catalogue::retired::{Retired, Rotated};
+
+    let empty = RetiredFile::default();
+    let mut check = check(&[], &[], &[], &empty);
+    check.schema = Schema::Int { min: 0, max: 1000 };
+    let leaked = CandidateStream::new(
+        check.schema.clone(),
+        check.seed,
+        Vec::new(),
+        Vec::new(),
+        GeneratorConfig::default(),
+    )
+    .find(|candidate| candidate.origin == Origin::Generated)
+    .expect("seeded value")
+    .value;
+    let mut hash = String::new();
+    for byte in canonical_hash(&leaked, &json!(0)) {
+        write!(hash, "{byte:02x}").expect("write hash");
+    }
+    let retired = RetiredFile {
+        retired: vec![Retired {
+            slug: "count-pairs".into(),
+            sha256: hash,
+        }],
+        rotated: vec![Rotated {
+            slug: "count-pairs".into(),
+            pack_version: 1,
+            rotated_on: "2026-11-21".into(),
+        }],
+    };
+    check.retired = &retired;
+    let mut runner = Scripted::default();
+    runner.reference((0..=check.hidden_count).map(|_| ProgramResult::Returned(json!(0))));
+
+    let outcome = sandbox_fill(&check, &mut runner).expect("runner answers");
+    let FillOutcome::Filled(fill) = outcome else {
+        panic!("an approved rotation should replace a retired generated value: {outcome:?}");
+    };
+    assert_eq!(fill.hidden.len(), check.hidden_count);
+    assert!(fill.hidden.iter().all(|case| case.input != leaked));
+}
+
 /// Parses retired-values text the same way the importer does.
 fn parse_retired_text(text: &str) -> RetiredFile {
     counterspell_judge::catalogue::retired::parse_retired(text).expect("the retired file parses")

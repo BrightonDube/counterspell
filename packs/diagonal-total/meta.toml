@@ -1,6 +1,6 @@
 slug = "diagonal-total"
 title = "The Diagonal Total"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "matrices"
 concepts = ["matrices", "indexing", "edge-cases"]
@@ -11,6 +11,7 @@ pack_version = 6
 function = "diagonal_total"
 returns = "int"
 comparator = "exact"
+complexity_note = "The reference visits the shorter dimension once and uses constant extra space."
 
 [[params]]
 name = "grid"

@@ -1,0 +1,50 @@
+slug = "lantern-ledger"
+title = "Lantern Ledger"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "scanning"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "lantern_ledger"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference reads each change once in O(n) time and uses O(1) extra space for the meter and mark count."
+
+[[params]]
+name = "changes"
+type = "list[int]"
+
+[[params]]
+name = "start"
+type = "int"
+
+[[params]]
+name = "level"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 32, min = -100, max = 100 },
+  { type = "int", min = -100, max = 100 },
+  { type = "int", min = -100, max = 100 },
+]
+
+[[samples]]
+input = [[4, -2, 2, 0, -3], 1, 5]
+expected = 3
+
+[[samples]]
+input = [[], -2, -2]
+expected = 0
+
+[[samples]]
+input = [[-3, -2, 4, -4], 2, -3]
+expected = 2

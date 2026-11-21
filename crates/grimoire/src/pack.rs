@@ -369,7 +369,7 @@ fn size_cap(name: &str) -> Option<u64> {
     match name {
         "problem.md" | "meta.toml" | GHOSTS_FILE | "hidden.toml" | "generator.toml"
         | "approval.toml" => Some(32 * 1024),
-        "hints.toml" => Some(8 * 1024),
+        "hints.toml" | "originality.md" => Some(8 * 1024),
         "reference/solution.py" => Some(64 * 1024),
         _ if is_incorrect_program(name) => Some(64 * 1024),
         _ if is_fixture_program(name) => Some(64 * 1024),
