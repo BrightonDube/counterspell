@@ -68,8 +68,9 @@
             <a
               href={resolve('/problems/[slug]', { slug: problem.slug })}
               class="text-lg font-medium text-accent-moss underline-offset-4 hover:underline {LINK_FOCUS}"
-              >{problem.title}</a
             >
+              {problem.title}
+            </a>
             <p class="mt-1 text-sm capitalize text-text-muted">
               {problem.track.name} · {problem.difficulty}
             </p>

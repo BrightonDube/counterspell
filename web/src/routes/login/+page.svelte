@@ -61,8 +61,10 @@
     <a
       href={resolve('/')}
       class="font-wordmark text-5xl tracking-wide text-text transition-colors hover:text-accent-candle-glow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus sm:text-6xl"
-      aria-label="Counterspell — back to the front page">{WORDMARK}</a
+      aria-label="Counterspell — back to the front page"
     >
+      {WORDMARK}
+    </a>
     <p class="mt-3 text-center text-sm text-text-muted sm:text-base">
       {TAGLINE}
     </p>
