@@ -121,7 +121,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 3: [stretch] FSRS foundation, only after T08
 
-- [ ] **T11 [stretch] [S] (25 min) Add the `fsrs` dependency and notices**
+- [x] **T11 [stretch] [S] (25 min) Add the `fsrs` dependency and notices**
   - Files: `crates/server/Cargo.toml`, `Cargo.lock`, `THIRD-PARTY-NOTICES.md`, and existing licence configuration only if the dependency's declared BSD-3-Clause metadata requires it.
   - Add the workspace-compatible `fsrs` crate with the smallest required feature set. Do not add `rs-fsrs`. Record the BSD-3-Clause notice and inspect the resolved dependency tree.
   - Verify: `cargo check -p counterspell-server`; `cargo deny check licenses`; dependency tree contains `fsrs` and no `rs-fsrs`.

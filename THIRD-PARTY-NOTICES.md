@@ -160,3 +160,7 @@ Added by break-room T01 (the break-room pages only; both pinned and loaded from 
 
 - **chess.js 1.4.0** - Jeff Hlywa - BSD-2-Clause - <https://www.npmjs.com/package/chess.js> (move generation and legality for the daily puzzle and the chess bot)
 - **cm-chessboard 8.15.8** - Stefan Haack - MIT - <https://www.npmjs.com/package/cm-chessboard> (the board UI on the break-room pages)
+
+Added by dashboard-fsrs T11 (server dependency for the spaced-repetition scheduler, kept behind the reviews adapter):
+
+- **fsrs 7.0.0** — Open Spaced Repetition — BSD-3-Clause — <https://crates.io/crates/fsrs>
