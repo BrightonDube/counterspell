@@ -146,7 +146,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T11.
   - Rust lesson: explain traits as a boundary around the scheduler, borrowing versus owned card state, and `Result` for invariant failures.
 
-- [ ] **T14 [stretch] [P] (30 min) Add FSRS property tests**
+- [x] **T14 [stretch] [P] (30 min) Add FSRS property tests**
   - Files: `crates/server/src/reviews/fsrs_adapter.rs` tests or `crates/server/tests/fsrs_properties.rs`.
   - Add `proptest` properties for non-negative intervals, `due >= reviewed_at`, deterministic repeated calculations, `good` longer than `again` for the documented fixture, repeated good reviews not shortening the persisted interval, and invalid results being rejected.
   - Bound generated states to database-representable values and keep the test oracle independent of the implementation's internal helper.

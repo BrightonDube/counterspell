@@ -339,6 +339,7 @@ fn next_state(previous: CardState, grade: ReviewGrade) -> CardState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
     use time::macros::datetime;
 
     fn card(state: CardState) -> PersistedCard {
@@ -466,5 +467,209 @@ mod tests {
             .expect("second review");
 
         assert_eq!(first, second);
+    }
+
+    fn generated_state() -> impl Strategy<Value = CardState> {
+        prop::sample::select(vec![
+            CardState::New,
+            CardState::Learning,
+            CardState::Review,
+            CardState::Relearning,
+        ])
+    }
+
+    fn generated_grade() -> impl Strategy<Value = ReviewGrade> {
+        prop::sample::select(vec![
+            ReviewGrade::Again,
+            ReviewGrade::Hard,
+            ReviewGrade::Good,
+            ReviewGrade::Easy,
+        ])
+    }
+
+    fn generated_card_and_reviewed_at() -> impl Strategy<Value = (PersistedCard, OffsetDateTime)> {
+        let base = datetime!(2026-11-20 12:00 UTC);
+        (
+            0.01f64..=30.0,
+            0.01f64..=30.0,
+            0.5f64..=10.0,
+            0u32..=10_000,
+            0u32..=10_000,
+            generated_state(),
+            0i64..=1_000_000,
+            0i64..=31_536_000,
+            0i64..=31_536_000,
+        )
+            .prop_map(
+                move |(
+                    stability,
+                    stability_fast,
+                    difficulty,
+                    reps,
+                    lapses,
+                    state,
+                    version,
+                    due_offset_seconds,
+                    reviewed_offset_seconds,
+                )| {
+                    (
+                        PersistedCard {
+                            stability,
+                            stability_fast,
+                            difficulty,
+                            reps,
+                            lapses,
+                            state,
+                            due: base + Duration::seconds(due_offset_seconds),
+                            last_review: (state != CardState::New).then_some(base),
+                            version,
+                        },
+                        base + Duration::seconds(reviewed_offset_seconds),
+                    )
+                },
+            )
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(128))]
+
+        #[test]
+        fn successful_reviews_never_schedule_into_the_past(
+            (input, reviewed_at) in generated_card_and_reviewed_at(),
+            grade in generated_grade(),
+        ) {
+            let scheduler = FsrsScheduler::default();
+            let result = scheduler.review(&input, grade, reviewed_at);
+
+            prop_assume!(result.is_ok());
+            let calculation = result.expect("assumed successful calculation");
+            prop_assert!(calculation.next_interval >= Duration::ZERO);
+            prop_assert!(calculation.due >= reviewed_at);
+            prop_assert_eq!(calculation.due, reviewed_at + calculation.next_interval);
+            prop_assert_eq!(calculation.next_card.due, calculation.due);
+        }
+
+        #[test]
+        fn repeated_calculations_are_deterministic(
+            (input, reviewed_at) in generated_card_and_reviewed_at(),
+            grade in generated_grade(),
+        ) {
+            let scheduler = FsrsScheduler::default();
+            let first = scheduler.review(&input, grade, reviewed_at);
+            let second = scheduler.review(&input, grade, reviewed_at);
+
+            prop_assert_eq!(first, second);
+        }
+
+        #[test]
+        fn repeated_good_reviews_do_not_shorten_the_interval(
+            (input, _reviewed_at) in generated_card_and_reviewed_at(),
+        ) {
+            let scheduler = FsrsScheduler::default();
+            let first = scheduler.review(&input, ReviewGrade::Good, input.due);
+            prop_assume!(first.is_ok());
+            let first = first.expect("assumed first calculation");
+
+            let second = scheduler.review(&first.next_card, ReviewGrade::Good, first.due);
+            prop_assume!(second.is_ok());
+            let second = second.expect("assumed second calculation");
+
+            prop_assert!(
+                second.next_interval >= first.next_interval,
+                "first {:?}, second {:?}",
+                first.next_interval,
+                second.next_interval
+            );
+        }
+
+        #[test]
+        fn malformed_persisted_cards_are_rejected(
+            (input, reviewed_at) in generated_card_and_reviewed_at(),
+            field in 0usize..6,
+            bad_float in prop_oneof![
+                Just(f64::NAN),
+                Just(f64::INFINITY),
+                Just(f64::NEG_INFINITY),
+                Just(-0.01),
+            ],
+        ) {
+            let scheduler = FsrsScheduler::default();
+            let mut invalid = input;
+            match field {
+                0 => invalid.stability = bad_float,
+                1 => invalid.stability_fast = bad_float,
+                2 => invalid.difficulty = bad_float,
+                3 => invalid.version = -1,
+                4 => {
+                    invalid.last_review = if invalid.state == CardState::New {
+                        Some(reviewed_at)
+                    } else {
+                        None
+                    };
+                }
+                _ => {
+                    if invalid.state == CardState::New {
+                        invalid.last_review = Some(datetime!(2026-11-19 12:00 UTC));
+                    } else {
+                        invalid.last_review = Some(reviewed_at + Duration::seconds(1));
+                    }
+                }
+            }
+
+            prop_assert_eq!(
+                scheduler.review(&invalid, ReviewGrade::Good, reviewed_at),
+                Err(ReviewError::InvalidCard)
+            );
+        }
+
+        #[test]
+        fn invalid_scheduler_results_are_rejected(
+            field in 0usize..4,
+            bad_value in prop_oneof![
+                Just(f32::NAN),
+                Just(f32::INFINITY),
+                Just(f32::NEG_INFINITY),
+                Just(-0.01),
+            ],
+        ) {
+            let mut values = [1.0f32; 4];
+            values[field] = bad_value;
+            let memory = MemoryState {
+                stability: values[0],
+                stability_fast: values[1],
+                difficulty: values[2],
+            };
+
+            prop_assert_eq!(
+                FsrsScheduler::validate_output(memory, values[3]),
+                Err(ReviewError::InvalidOutput)
+            );
+        }
+    }
+
+    #[test]
+    fn documented_good_schedule_is_longer_than_again() {
+        let scheduler = FsrsScheduler::default();
+        let reviewed_at = datetime!(2026-11-21 13:00 UTC);
+        let input = PersistedCard {
+            stability: 10.0,
+            stability_fast: 10.0,
+            difficulty: 5.0,
+            reps: 4,
+            lapses: 1,
+            state: CardState::Review,
+            due: reviewed_at,
+            last_review: Some(datetime!(2026-11-14 13:00 UTC)),
+            version: 4,
+        };
+
+        let again = scheduler
+            .review(&input, ReviewGrade::Again, reviewed_at)
+            .expect("again should schedule");
+        let good = scheduler
+            .review(&input, ReviewGrade::Good, reviewed_at)
+            .expect("good should schedule");
+
+        assert!(good.next_interval > again.next_interval);
     }
 }
