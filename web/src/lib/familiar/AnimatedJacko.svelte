@@ -6,8 +6,9 @@
 
   let {
     mood = 'orange',
-    size = 96
-  }: { mood?: 'orange' | 'poison'; size?: number } = $props();
+    size = 96,
+    centre = true
+  }: { mood?: 'orange' | 'poison'; size?: number; centre?: boolean } = $props();
 </script>
 
 <AnimatedArt
@@ -18,5 +19,5 @@
   {size}
   motion="breathe"
   bounce
-  centre
+  {centre}
 />

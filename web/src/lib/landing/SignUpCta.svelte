@@ -8,7 +8,7 @@
   // The candle is decorative: it is hidden from assistive technology and sized so the layout does not shift.
 </script>
 
-<div class="flex flex-wrap items-center gap-6">
+<div class="flex flex-wrap items-center justify-center gap-6">
   <AnimatedArt
     src="/art/objects/candle-flame.webp"
     srcset="/art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w"
@@ -23,5 +23,5 @@
   >
     {CTA.primary}
   </a>
-  <AnimatedJacko mood="orange" size={96} />
+  <AnimatedJacko mood="orange" size={96} centre={false} />
 </div>
