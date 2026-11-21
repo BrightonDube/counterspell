@@ -1,6 +1,7 @@
 <script lang="ts">
   // Problem statement panel. Every value is rendered as text. The statement is parsed into plain
   // blocks, so no markup from the server or a pack can reach the DOM.
+  import { resolve } from '$app/paths';
   import type { ProblemDetail } from '../api/types';
   import { parseStatement, type InlineSegment } from './statement';
 
@@ -28,13 +29,29 @@
 
 <section aria-labelledby="problem-title" class="flex flex-col gap-4 text-text">
   <nav aria-label="Breadcrumb" class="text-sm text-text-muted">
-    <span>{problem.track.name}</span>
+    <a
+      href={resolve('/problems')}
+      class="transition-colors hover:text-accent-candle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+    >
+      &larr; Grimoire
+    </a>
+    <span aria-hidden="true"> / </span><span>{problem.track.name}</span>
   </nav>
 
   <header class="flex flex-col gap-2">
     <h2 id="problem-title" class="text-xl font-semibold">{problem.title}</h2>
     <p class="text-sm text-text-muted">
-      Difficulty: <span class="text-text">{problem.difficulty}</span>
+      Difficulty:
+      <span
+        class="rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize {problem.difficulty ===
+        'easy'
+          ? 'border-success/40 bg-success/10 text-success'
+          : problem.difficulty === 'medium'
+            ? 'border-accent-candle/40 bg-accent-candle/10 text-accent-candle'
+            : 'border-danger/40 bg-danger/10 text-danger'}"
+      >
+        {problem.difficulty}
+      </span>
     </p>
     {#if problem.concepts.length > 0}
       <ul aria-label="Concepts" class="flex flex-wrap gap-2">
