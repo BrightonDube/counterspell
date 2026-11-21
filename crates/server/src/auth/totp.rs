@@ -1,7 +1,6 @@
 //! Authenticator enrollment and single-use TOTP and recovery-code verification.
 
 use axum::{
-    body::Bytes,
     extract::State,
     http::{header, StatusCode},
     response::IntoResponse,
@@ -30,6 +29,7 @@ use super::{
 };
 
 const SETUP_TTL: Duration = Duration::minutes(10);
+pub(crate) const RECOVERY_TTL: Duration = Duration::minutes(10);
 const STEP_SECONDS: i64 = 30;
 const SECRET_BYTES: usize = 20;
 const RECOVERY_COUNT: usize = 10;
@@ -38,11 +38,19 @@ const RECOVERY_LENGTH: usize = RECOVERY_BYTES * 8 / 5;
 const RECOVERY_GROUP: usize = 4;
 const DISPLAYED_RECOVERY_LENGTH: usize = RECOVERY_LENGTH + (RECOVERY_LENGTH - 1) / RECOVERY_GROUP;
 
-#[derive(Deserialize)]
-struct EmptyBody {}
+#[derive(Clone, Copy, Eq, PartialEq)]
+pub(crate) enum VerifiedCode {
+    Authenticator,
+    Recovery,
+}
 
 #[derive(Deserialize)]
-struct CodeBody {
+#[serde(deny_unknown_fields)]
+pub(crate) struct EmptyBody {}
+
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+pub(crate) struct CodeBody {
     code: String,
 }
 
@@ -61,14 +69,14 @@ struct EnableResponse {
 pub(crate) async fn start(
     State(state): State<AuthState>,
     actor: AuthUser,
-    body: Bytes,
+    body: security::AuthJson<EmptyBody>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let _: EmptyBody = serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let _: EmptyBody = security::decode_json(body)?;
     authorize(&state, &actor).await?;
     let key = security::credential_key(&state)?;
     let mut tx = state.pool.begin().await.map_err(database)?;
     let handle = lock_actor(&mut tx, &actor, state.clock.now()).await?;
-    require_not_enrolled(&mut tx, actor.user_id).await?;
+    permit_setup(&mut tx, &actor, state.clock.now()).await?;
 
     let secret = random::<SECRET_BYTES>()?;
     let scope = setup_aad(actor.user_id, &actor.key);
@@ -100,14 +108,14 @@ pub(crate) async fn start(
 pub(crate) async fn enable(
     State(state): State<AuthState>,
     actor: AuthUser,
-    body: Bytes,
+    body: security::AuthJson<CodeBody>,
 ) -> Result<impl IntoResponse, AuthError> {
-    let CodeBody { code } = serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let CodeBody { code } = security::decode_json(body)?;
     authorize(&state, &actor).await?;
     let key = security::credential_key(&state)?;
     let mut tx = state.pool.begin().await.map_err(database)?;
     lock_actor(&mut tx, &actor, state.clock.now()).await?;
-    require_not_enrolled(&mut tx, actor.user_id).await?;
+    permit_setup(&mut tx, &actor, state.clock.now()).await?;
 
     let now = state.clock.now();
     // Verification failures roll back the deletion, so a typo can be retried.
@@ -127,6 +135,12 @@ pub(crate) async fn enable(
         .ok_or(AuthError::InvalidSecurityCode)?;
     let scope = active_aad(actor.user_id);
     let encrypted = encrypt(key, scope.as_bytes(), secret)?;
+    // A replacement rotates the authenticator and all of its recovery codes together.
+    sqlx::query("DELETE FROM auth_totp WHERE user_id = $1")
+        .bind(actor.user_id.as_uuid())
+        .execute(&mut *tx)
+        .await
+        .map_err(database)?;
     sqlx::query(
         "INSERT INTO auth_totp (user_id, secret, last_step, created_at) VALUES ($1, $2, $3, $4)",
     )
@@ -154,12 +168,15 @@ pub(crate) async fn enable(
         recovery_codes.push(code);
     }
 
-    sqlx::query("UPDATE sessions SET second_factor_verified = true WHERE user_id = $1 AND id = $2")
-        .bind(actor.user_id.as_uuid())
-        .bind(actor.key.as_str())
-        .execute(&mut *tx)
-        .await
-        .map_err(database)?;
+    sqlx::query(
+        "UPDATE sessions SET second_factor_verified = true, authenticator_recovery_until = NULL
+          WHERE user_id = $1 AND id = $2",
+    )
+    .bind(actor.user_id.as_uuid())
+    .bind(actor.key.as_str())
+    .execute(&mut *tx)
+    .await
+    .map_err(database)?;
     sqlx::query("DELETE FROM sessions WHERE user_id = $1 AND id <> $2")
         .bind(actor.user_id.as_uuid())
         .bind(actor.key.as_str())
@@ -178,14 +195,17 @@ pub(crate) async fn enable(
 pub(crate) async fn disable(
     State(state): State<AuthState>,
     actor: AuthUser,
-    body: Bytes,
+    body: security::AuthJson<CodeBody>,
 ) -> Result<StatusCode, AuthError> {
-    let CodeBody { code } = serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let CodeBody { code } = security::decode_json(body)?;
     authorize(&state, &actor).await?;
     let key = security::credential_key(&state)?;
     let mut tx = state.pool.begin().await.map_err(database)?;
     lock_actor(&mut tx, &actor, state.clock.now()).await?;
-    if !consume_code(&mut tx, key, actor.user_id, &code, state.clock.now()).await? {
+    if consume_code(&mut tx, key, actor.user_id, &code, state.clock.now())
+        .await?
+        .is_none()
+    {
         return Err(AuthError::InvalidSecurityCode);
     }
     sqlx::query("DELETE FROM auth_totp WHERE user_id = $1")
@@ -193,6 +213,19 @@ pub(crate) async fn disable(
         .execute(&mut *tx)
         .await
         .map_err(database)?;
+    sqlx::query("DELETE FROM auth_totp_setup WHERE user_id = $1")
+        .bind(actor.user_id.as_uuid())
+        .execute(&mut *tx)
+        .await
+        .map_err(database)?;
+    sqlx::query(
+        "UPDATE sessions SET authenticator_recovery_until = NULL
+          WHERE user_id = $1 AND authenticator_recovery_until IS NOT NULL",
+    )
+    .bind(actor.user_id.as_uuid())
+    .execute(&mut *tx)
+    .await
+    .map_err(database)?;
     clear_step_up(&mut tx, actor.user_id).await?;
     tx.commit().await.map_err(database)?;
     Ok(StatusCode::NO_CONTENT)
@@ -205,7 +238,7 @@ pub(crate) async fn consume_code(
     user_id: UserId,
     code: &str,
     now: OffsetDateTime,
-) -> Result<bool, AuthError> {
+) -> Result<Option<VerifiedCode>, AuthError> {
     let code = code.trim();
     if is_totp(code) {
         let row: Option<(Vec<u8>, i64)> =
@@ -215,13 +248,13 @@ pub(crate) async fn consume_code(
                 .await
                 .map_err(database)?;
         let Some((mut encrypted, last_step)) = row else {
-            return Ok(false);
+            return Ok(None);
         };
         let scope = active_aad(user_id);
         let secret =
             decrypt(key, scope.as_bytes(), &mut encrypted).ok_or(AuthError::SecurityUnavailable)?;
         let Some(step) = valid_step(secret, code, last_step, now.unix_timestamp()) else {
-            return Ok(false);
+            return Ok(None);
         };
         let result = sqlx::query(
             "UPDATE auth_totp SET last_step = $2 WHERE user_id = $1 AND last_step < $2",
@@ -231,11 +264,11 @@ pub(crate) async fn consume_code(
         .execute(&mut *tx)
         .await
         .map_err(database)?;
-        return Ok(result.rows_affected() == 1);
+        return Ok((result.rows_affected() == 1).then_some(VerifiedCode::Authenticator));
     }
 
     let Some(hash) = recovery_hash(code) else {
-        return Ok(false);
+        return Ok(None);
     };
     let result =
         sqlx::query("DELETE FROM auth_recovery_codes WHERE user_id = $1 AND code_hash = $2")
@@ -244,7 +277,7 @@ pub(crate) async fn consume_code(
             .execute(&mut *tx)
             .await
             .map_err(database)?;
-    Ok(result.rows_affected() == 1)
+    Ok((result.rows_affected() == 1).then_some(VerifiedCode::Recovery))
 }
 
 async fn authorize(state: &AuthState, actor: &AuthUser) -> Result<(), AuthError> {
@@ -277,14 +310,29 @@ async fn lock_actor(
     Ok(handle)
 }
 
-async fn require_not_enrolled(tx: &mut PgConnection, user_id: UserId) -> Result<(), AuthError> {
-    let enrolled: bool =
-        sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM auth_totp WHERE user_id = $1)")
-            .bind(user_id.as_uuid())
-            .fetch_one(tx)
-            .await
-            .map_err(database)?;
-    if enrolled {
+pub(crate) async fn can_replace(
+    connection: &mut PgConnection,
+    actor: &AuthUser,
+    now: OffsetDateTime,
+) -> Result<bool, AuthError> {
+    sqlx::query_scalar(
+        "SELECT EXISTS (SELECT 1 FROM sessions
+          WHERE id = $1 AND user_id = $2 AND authenticator_recovery_until > $3)",
+    )
+    .bind(actor.key.as_str())
+    .bind(actor.user_id.as_uuid())
+    .bind(now)
+    .fetch_one(connection)
+    .await
+    .map_err(database)
+}
+
+async fn permit_setup(
+    tx: &mut PgConnection,
+    actor: &AuthUser,
+    now: OffsetDateTime,
+) -> Result<(), AuthError> {
+    if security::requires_factor(tx, actor.user_id).await? && !can_replace(tx, actor, now).await? {
         return Err(AuthError::SecurityConflict);
     }
     Ok(())

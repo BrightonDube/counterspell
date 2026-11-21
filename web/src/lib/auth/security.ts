@@ -2,7 +2,11 @@ import { AuthApiError, request } from './client.js';
 import { messageFor } from './messages.js';
 
 type Passkey = { id: string; name: string; created_at: string };
-type SecuritySettings = { totp_enabled: boolean; passkeys: Passkey[] };
+type SecuritySettings = {
+  totp_enabled: boolean;
+  can_replace_authenticator: boolean;
+  passkeys: Passkey[];
+};
 type TotpSetup = { secret: string; uri: string };
 type Destination = { return_to: string };
 type SignInResult = Partial<Destination> & { two_factor_required?: boolean };

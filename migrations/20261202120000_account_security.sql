@@ -55,6 +55,7 @@ CREATE INDEX auth_totp_setup_expiry ON auth_totp_setup (expires_at);
 
 ALTER TABLE sessions
     ADD COLUMN second_factor_verified boolean NOT NULL DEFAULT false,
+    ADD COLUMN authenticator_recovery_until timestamptz,
     ADD CONSTRAINT sessions_auth_method_expanded CHECK (auth_method IN (
         'magic_link', 'oauth_github', 'oauth_google', 'password', 'register', 'passkey'));
 ALTER TABLE sessions DROP CONSTRAINT sessions_auth_method_check;
@@ -76,4 +77,4 @@ CREATE TRIGGER sessions_require_factor BEFORE INSERT ON sessions
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON auth_totp, auth_totp_setup,
     auth_recovery_codes, auth_step_up, auth_passkeys, auth_passkey_flows TO counterspell_server;
-GRANT UPDATE (second_factor_verified) ON sessions TO counterspell_server;
+GRANT UPDATE (second_factor_verified, authenticator_recovery_until) ON sessions TO counterspell_server;

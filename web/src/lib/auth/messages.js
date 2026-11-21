@@ -30,6 +30,9 @@ export const ERROR_MESSAGES = Object.freeze({
   security_unavailable: 'This security feature is currently unavailable.',
   security_conflict:
     'Your security settings changed. Review the current settings and try again.',
+  passkey_limit: 'Remove a passkey before adding another.',
+  last_sign_in_method:
+    'Add another passkey or connect a sign-in provider before removing this one.',
   busy: 'The server is busy. Try again in a moment.',
   internal_error: 'Something went wrong on our side. Try again later.'
 });

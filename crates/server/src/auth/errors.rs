@@ -38,6 +38,10 @@ pub enum AuthError {
     SecurityUnavailable,
     /// The requested credential change conflicts with the account state.
     SecurityConflict,
+    /// Removing this passkey would leave no browser sign-in method.
+    LastSignInMethod,
+    /// The account already has the maximum number of passkeys.
+    PasskeyLimit,
     /// Passkey verification failed.
     PasskeyFailed,
     /// The request's `Origin` or `Sec-Fetch-Site` is not this site.
@@ -101,7 +105,9 @@ impl AuthError {
             | Self::EmailInUse
             | Self::AccountExists
             | Self::RunsActive
-            | Self::SecurityConflict => StatusCode::CONFLICT,
+            | Self::SecurityConflict
+            | Self::LastSignInMethod
+            | Self::PasskeyLimit => StatusCode::CONFLICT,
             Self::BodyTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
             Self::UnsupportedMediaType => StatusCode::UNSUPPORTED_MEDIA_TYPE,
             Self::RateLimited { .. } => StatusCode::TOO_MANY_REQUESTS,
@@ -128,6 +134,8 @@ impl AuthError {
             Self::RecentSignInRequired => "recent_sign_in_required",
             Self::SecurityUnavailable => "security_unavailable",
             Self::SecurityConflict => "security_conflict",
+            Self::LastSignInMethod => "last_sign_in_method",
+            Self::PasskeyLimit => "passkey_limit",
             Self::PasskeyFailed => "passkey_failed",
             Self::CsrfOriginMismatch => "csrf_origin_mismatch",
             Self::DemoAccountRestricted => "demo_account_restricted",
@@ -166,6 +174,10 @@ impl AuthError {
             Self::SecurityUnavailable => "This security feature is temporarily unavailable.",
             Self::SecurityConflict => {
                 "This change is unavailable with your current sign-in methods."
+            }
+            Self::PasskeyLimit => "Remove a passkey before adding another.",
+            Self::LastSignInMethod => {
+                "Add another passkey or connect a sign-in provider before removing this one."
             }
             Self::PasskeyFailed => {
                 "The passkey could not be verified. Try again or use another sign-in method."
@@ -248,6 +260,8 @@ mod tests {
             AuthError::RecentSignInRequired,
             AuthError::SecurityUnavailable,
             AuthError::SecurityConflict,
+            AuthError::LastSignInMethod,
+            AuthError::PasskeyLimit,
             AuthError::PasskeyFailed,
             AuthError::CsrfOriginMismatch,
             AuthError::DemoAccountRestricted,

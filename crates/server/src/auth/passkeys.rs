@@ -3,7 +3,6 @@
 use std::net::SocketAddr;
 
 use axum::{
-    body::Bytes,
     extract::{ConnectInfo, Extension, Path, State},
     http::{HeaderMap, StatusCode},
     Json,
@@ -69,17 +68,20 @@ pub(crate) async fn list(pool: &PgPool, user_id: UserId) -> Result<Vec<PasskeySu
 }
 
 #[derive(Deserialize)]
-struct RegisterStart {
+#[serde(deny_unknown_fields)]
+pub(crate) struct RegisterStart {
     name: String,
 }
 
 #[derive(Deserialize)]
-struct LoginStart {
+#[serde(deny_unknown_fields)]
+pub(crate) struct LoginStart {
     return_to: Option<String>,
 }
 
 #[derive(Deserialize)]
-struct Finish<C> {
+#[serde(deny_unknown_fields)]
+pub(crate) struct Finish<C> {
     flow_id: Uuid,
     credential: C,
 }
@@ -101,12 +103,12 @@ pub(crate) struct SignedIn {
 pub(crate) async fn register_start(
     State(state): State<AuthState>,
     actor: AuthUser,
-    body: Bytes,
+    body: security::AuthJson<RegisterStart>,
 ) -> Result<Json<Start<PublicKeyCredentialCreationOptions>>, AuthError> {
     security::require_recent(&state, &actor).await?;
     let webauthn = security::webauthn(&state)?;
     security::limit(&state, &format!("passkey:register:{}", actor.user_id)).await?;
-    let input: RegisterStart = serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let input: RegisterStart = security::decode_json(body)?;
     let name = input.name.trim();
     if name.is_empty() || name.chars().count() > 64 || name.chars().any(char::is_control) {
         return Err(AuthError::InvalidJson);
@@ -128,7 +130,7 @@ pub(crate) async fn register_start(
             .await
             .map_err(database)?;
     if i64::try_from(credentials.len()).unwrap_or(i64::MAX) >= MAX_PASSKEYS {
-        return Err(AuthError::SecurityConflict);
+        return Err(AuthError::PasskeyLimit);
     }
     let excluded = credentials.into_iter().map(CredentialID::from).collect();
     let (options, flow) =
@@ -184,14 +186,13 @@ fn start_registration(
 pub(crate) async fn register_finish(
     State(state): State<AuthState>,
     actor: AuthUser,
-    body: Bytes,
+    body: security::AuthJson<Finish<RegisterPublicKeyCredential>>,
 ) -> Result<StatusCode, AuthError> {
     let mut tx = state.pool.begin().await.map_err(database)?;
     security::lock_user(&mut tx, actor.user_id).await?;
     security::require_recent_in(&mut tx, &state, &actor).await?;
     let webauthn = security::webauthn(&state)?;
-    let input: Finish<RegisterPublicKeyCredential> =
-        serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let input: Finish<RegisterPublicKeyCredential> = security::decode_json(body)?;
     let user_id = actor.user_id.as_uuid();
     let (DbJson(flow), name): (DbJson<PasskeyRegistration>, String) = sqlx::query_as(
         "DELETE FROM auth_passkey_flows \
@@ -220,7 +221,7 @@ pub(crate) async fn register_finish(
         .map_err(database)?;
     if count >= MAX_PASSKEYS {
         tx.commit().await.map_err(database)?;
-        return Err(AuthError::SecurityConflict);
+        return Err(AuthError::PasskeyLimit);
     }
     let inserted = sqlx::query(
         "INSERT INTO auth_passkeys (id, user_id, credential_id, credential, name, created_at) \
@@ -271,12 +272,12 @@ pub(crate) async fn login_start(
     Extension(slot): Extension<CookieSlot>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
-    body: Bytes,
+    body: security::AuthJson<LoginStart>,
 ) -> Result<Json<Start<PublicKeyCredentialRequestOptions>>, AuthError> {
     let webauthn = security::webauthn(&state)?;
     let ip = client_ip(peer.ip(), &headers, &state.trusted);
     security::limit(&state, &format!("passkey:login-start:{ip}")).await?;
-    let input: LoginStart = serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let input: LoginStart = security::decode_json(body)?;
     let (options, flow) = webauthn
         .start_discoverable_authentication()
         .map_err(|_| AuthError::PasskeyFailed)?;
@@ -310,13 +311,12 @@ pub(crate) async fn login_finish(
     Extension(slot): Extension<CookieSlot>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
-    body: Bytes,
+    body: security::AuthJson<Finish<PublicKeyCredential>>,
 ) -> Result<Json<SignedIn>, AuthError> {
     let webauthn = security::webauthn(&state)?;
     let ip = client_ip(peer.ip(), &headers, &state.trusted);
     security::limit(&state, &format!("passkey:login-finish:{ip}")).await?;
-    let input: Finish<PublicKeyCredential> =
-        serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let input: Finish<PublicKeyCredential> = security::decode_json(body)?;
     let binding = read_cookie(&headers, state.cookies.passkey_binding_name())
         .ok_or(AuthError::SecurityChallengeExpired)?;
     let binding_hash = TokenHash::of(binding);
@@ -409,19 +409,23 @@ pub(crate) async fn remove(
             .flat_map(|oauth| oauth.providers.keys().map(|id| id.as_str()))
             .collect();
         let can_sign_in: bool = sqlx::query_scalar(
-            "SELECT password_hash IS NOT NULL OR ($2 AND email_verified_at IS NOT NULL AND email IS NOT NULL) \
-             OR EXISTS (SELECT 1 FROM identities WHERE user_id = $1 AND provider = ANY($3)) \
-             OR EXISTS (SELECT 1 FROM auth_passkeys WHERE user_id = $1) FROM users WHERE id = $1",
+            "SELECT EXISTS (SELECT 1 FROM identities WHERE user_id = $1 AND provider = ANY($2))
+                 OR EXISTS (SELECT 1 FROM auth_passkeys WHERE user_id = $1)",
         )
         .bind(user_id)
-        .bind(state.mail.is_some())
         .bind(&providers)
         .fetch_one(&mut *tx)
         .await
         .map_err(database)?;
         if !can_sign_in {
-            return Err(AuthError::SecurityConflict);
+            return Err(AuthError::LastSignInMethod);
         }
+        // A removed credential cannot finish a previously started second-factor check.
+        sqlx::query("DELETE FROM auth_step_up WHERE user_id = $1 AND auth_method = 'passkey'")
+            .bind(user_id)
+            .execute(&mut *tx)
+            .await
+            .map_err(database)?;
     }
     tx.commit().await.map_err(database)?;
     Ok(StatusCode::NO_CONTENT)

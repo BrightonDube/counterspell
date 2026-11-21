@@ -3,8 +3,7 @@
 use std::{net::SocketAddr, sync::Arc};
 
 use axum::{
-    body::Bytes,
-    extract::{ConnectInfo, Extension, State},
+    extract::{rejection::JsonRejection, ConnectInfo, Extension, State},
     http::HeaderMap,
     Json,
 };
@@ -36,6 +35,14 @@ use crate::client_ip::client_ip;
 pub(crate) const STEP_UP_PATH: &str = "/login?step=2fa";
 const CHALLENGE_TTL: Duration = Duration::minutes(5);
 const RECENT_SIGN_IN: Duration = Duration::minutes(15);
+
+pub(crate) type AuthJson<T> = Result<Json<T>, JsonRejection>;
+
+pub(crate) fn decode_json<T>(input: AuthJson<T>) -> Result<T, AuthError> {
+    input
+        .map(|Json(value)| value)
+        .map_err(|_| AuthError::InvalidJson)
+}
 
 #[derive(Clone)]
 pub(crate) struct SecuritySettings {
@@ -131,7 +138,10 @@ pub(crate) async fn lock_user(
     Ok(())
 }
 
-async fn requires_factor(connection: &mut PgConnection, user: UserId) -> Result<bool, AuthError> {
+pub(crate) async fn requires_factor(
+    connection: &mut PgConnection,
+    user: UserId,
+) -> Result<bool, AuthError> {
     sqlx::query_scalar("SELECT EXISTS (SELECT 1 FROM auth_totp WHERE user_id = $1)")
         .bind(user.as_uuid())
         .fetch_one(connection)
@@ -196,7 +206,8 @@ pub(crate) async fn complete_primary_locked(
 }
 
 #[derive(Deserialize)]
-struct VerifyRequest {
+#[serde(deny_unknown_fields)]
+pub(crate) struct VerifyRequest {
     code: String,
 }
 
@@ -210,10 +221,9 @@ pub(crate) async fn verify(
     Extension(slot): Extension<CookieSlot>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
     headers: HeaderMap,
-    body: Bytes,
+    body: AuthJson<VerifyRequest>,
 ) -> Result<Json<Verified>, AuthError> {
-    let request: VerifyRequest =
-        serde_json::from_slice(&body).map_err(|_| AuthError::InvalidJson)?;
+    let request: VerifyRequest = decode_json(body)?;
     let key = credential_key(&state)?;
     let raw = read_cookie(&headers, state.cookies.step_up_name())
         .ok_or(AuthError::SecurityChallengeExpired)?;
@@ -248,9 +258,10 @@ pub(crate) async fn verify(
     .await
     .map_err(database)?
     .ok_or(AuthError::SecurityChallengeExpired)?;
-    if !totp::consume_code(&mut tx, key, user, &request.code, state.clock.now()).await? {
-        return Err(AuthError::InvalidSecurityCode);
-    }
+    let now = state.clock.now();
+    let verified = totp::consume_code(&mut tx, key, user, &request.code, now)
+        .await?
+        .ok_or(AuthError::InvalidSecurityCode)?;
     sqlx::query("DELETE FROM auth_step_up WHERE token_hash = $1")
         .bind(&hash)
         .execute(&mut *tx)
@@ -261,6 +272,14 @@ pub(crate) async fn verify(
         .sessions
         .create_in(&mut tx, user, method, true)
         .await?;
+    if verified == totp::VerifiedCode::Recovery {
+        sqlx::query("UPDATE sessions SET authenticator_recovery_until = $1 WHERE id = $2")
+            .bind(now + totp::RECOVERY_TTL)
+            .bind(created.key.as_str())
+            .execute(&mut *tx)
+            .await
+            .map_err(database)?;
+    }
     tx.commit().await.map_err(database)?;
     slot.push(state.cookies.session_value(created.cookie_value.expose())?);
     slot.push(state.cookies.clear_step_up()?);
@@ -288,6 +307,7 @@ pub(crate) async fn end_pending(
 #[derive(Serialize)]
 pub(crate) struct SecuritySummary {
     totp_enabled: bool,
+    can_replace_authenticator: bool,
     passkeys: Vec<passkeys::PasskeySummary>,
 }
 
@@ -297,10 +317,13 @@ pub(crate) async fn summary(
 ) -> Result<Json<SecuritySummary>, AuthError> {
     let mut connection = state.pool.acquire().await.map_err(database)?;
     let totp_enabled = requires_factor(&mut connection, actor.user_id).await?;
+    let can_replace_authenticator =
+        totp_enabled && totp::can_replace(&mut connection, &actor, state.clock.now()).await?;
     drop(connection);
     let passkeys = passkeys::list(&state.pool, actor.user_id).await?;
     Ok(Json(SecuritySummary {
         totp_enabled,
+        can_replace_authenticator,
         passkeys,
     }))
 }

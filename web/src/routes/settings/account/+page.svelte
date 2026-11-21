@@ -41,10 +41,13 @@
   let linkedNote = $derived(linkedMessage(search));
   let errorNote = $derived(errorFromQuery(search));
   let availableProviders = $state<Provider[]>([]);
+  let providersProblem = $state('');
+  let loadingProviders = $state(false);
   let security = $state<Awaited<ReturnType<typeof getSecurity>> | null>(null);
   let busy = $state<Area | null>(null);
   let loading = $state(true);
   let loadingSecurity = $state(false);
+  const securityBusy = $derived(!!busy || loadingSecurity);
   let securityProblem = $state('');
   let issue = $state<{ area: Area; text: string; code?: string } | null>(null);
   let notice = $state<{ area: Area; text: string } | null>(null);
@@ -97,17 +100,7 @@
         return;
       }
       if (session.user && !session.user.is_demo) void loadSecurity();
-      if (session.capabilities?.link_provider) {
-        void getConfig()
-          .then((config) => {
-            availableProviders = providers.filter(
-              (provider) => config.providers[provider]
-            );
-          })
-          .catch(() => {
-            availableProviders = [];
-          });
-      }
+      if (session.capabilities?.link_provider) void loadProviders();
     } catch (failure) {
       issue = { area: 'account', text: authProblem(failure) };
     } finally {
@@ -115,7 +108,24 @@
     }
   }
 
+  async function loadProviders() {
+    if (loadingProviders) return;
+    loadingProviders = true;
+    providersProblem = '';
+    try {
+      const config = await getConfig();
+      availableProviders = providers.filter(
+        (provider) => config.providers[provider]
+      );
+    } catch (failure) {
+      providersProblem = authProblem(failure);
+    } finally {
+      loadingProviders = false;
+    }
+  }
+
   async function loadSecurity() {
+    if (loadingSecurity) return;
     loadingSecurity = true;
     securityProblem = '';
     try {
@@ -151,7 +161,14 @@
         await signInAgain();
       } else {
         issue = { area, text: authProblem(failure), code };
-        if (code === 'security_conflict') void loadSecurity();
+        if (code === 'security_conflict') {
+          if (area === 'totp') {
+            totpSetup = null;
+            disablingTotp = false;
+          }
+          void loadSecurity();
+        }
+        if (code === 'last_sign_in_method') removingPasskey = '';
       }
     } finally {
       busy = null;
@@ -198,10 +215,29 @@
       notice = { area: 'totp', text: 'Two-factor authentication is off.' };
       disablingTotp = false;
     } else {
-      const { recovery_codes } = await enableTotp(code.trim());
-      recoveryCodes = recovery_codes;
+      try {
+        const { recovery_codes } = await enableTotp(code.trim());
+        recoveryCodes = recovery_codes;
+      } catch (failure) {
+        if (!(failure instanceof AuthApiError) || failure.status >= 500) {
+          await loadSecurity();
+          if (security?.totp_enabled && !security.can_replace_authenticator) {
+            totpSetup = null;
+            code = '';
+            notice = {
+              area: 'totp',
+              text: 'Your authenticator is on. If you did not receive recovery codes, turn it off with a current code and set it up again.'
+            };
+            return;
+          }
+        }
+        throw failure;
+      }
       copiedCodes = false;
-      if (security) security.totp_enabled = true;
+      if (security) {
+        security.totp_enabled = true;
+        security.can_replace_authenticator = false;
+      }
       totpSetup = null;
     }
     code = '';
@@ -325,7 +361,7 @@
 
     {#if loading}
       <p class="text-text-muted" role="status">Loading your account…</p>
-    {:else if session.status === 'signed_in' && session.user}
+    {:else if issue?.area !== 'account' && session.status === 'signed_in' && session.user}
       {@const user = session.user}
       {@const can = session.capabilities ?? {}}
       {@const linkedProviders = providers.filter((provider) =>
@@ -382,7 +418,17 @@
           {:else}
             <p class="text-text-muted">No connected sign-in providers.</p>
           {/if}
-          {#if can.link_provider && unlinkedProviders.length}
+          {#if can.link_provider && providersProblem}
+            <p class="mb-2 mt-3 text-danger" role="alert">{providersProblem}</p>
+            <button
+              type="button"
+              class={button}
+              disabled={loadingProviders}
+              onclick={loadProviders}
+            >
+              Reload sign-in options
+            </button>
+          {:else if can.link_provider && unlinkedProviders.length}
             <details class="mt-3 border-t border-border pt-1">
               <summary
                 class="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-sm text-sm font-medium text-accent-moss-strong hover:text-text"
@@ -445,17 +491,25 @@
                   </span>
                 </div>
                 <p class="mt-1 text-sm text-text-muted">
-                  Require a second code when you sign in.
+                  {security.can_replace_authenticator
+                    ? 'You signed in with a recovery code. You have 10 minutes from sign-in to set up a new authenticator.'
+                    : 'Require a second code when you sign in.'}
                 </p>
               </div>
               {#if !totpSetup && !disablingTotp && !recoveryCodes.length}
                 <button
-                  class={security.totp_enabled ? button : primary}
+                  class={security.totp_enabled &&
+                  !security.can_replace_authenticator
+                    ? button
+                    : primary}
                   type="button"
-                  disabled={!!busy}
+                  disabled={securityBusy}
                   bind:this={totpAction}
                   onclick={async () => {
-                    if (security?.totp_enabled) {
+                    if (
+                      security?.totp_enabled &&
+                      !security.can_replace_authenticator
+                    ) {
                       issue = null;
                       notice = null;
                       code = '';
@@ -469,9 +523,11 @@
                 >
                   {busy === 'totp'
                     ? 'Please wait…'
-                    : security.totp_enabled
-                      ? 'Turn off'
-                      : 'Set up'}
+                    : security.can_replace_authenticator
+                      ? 'Replace authenticator'
+                      : security.totp_enabled
+                        ? 'Turn off'
+                        : 'Set up'}
                 </button>
               {/if}
             </div>
@@ -489,9 +545,17 @@
                 <h4 class="font-semibold">
                   {disablingTotp
                     ? 'Turn off two-factor authentication'
-                    : 'Set up your authenticator'}
+                    : security.can_replace_authenticator
+                      ? 'Set up a new authenticator'
+                      : 'Set up your authenticator'}
                 </h4>
                 {#if totpSetup}
+                  {#if security.can_replace_authenticator}
+                    <p class="mt-1 text-sm text-text-muted">
+                      Confirming the new app replaces your old recovery codes
+                      and signs out your other sessions.
+                    </p>
+                  {/if}
                   {#if totpSetup.qr}
                     <p class="mt-1 text-sm text-text-muted">
                       Scan this QR code in your authenticator app.
@@ -554,15 +618,17 @@
                   bind:this={totpInput}
                 />
                 <div class="mt-3 flex flex-wrap gap-2">
-                  <button type="submit" class={primary} disabled={!!busy}>
+                  <button type="submit" class={primary} disabled={securityBusy}>
                     {disablingTotp
                       ? 'Turn off two-factor authentication'
-                      : 'Confirm and turn on'}
+                      : security.can_replace_authenticator
+                        ? 'Confirm replacement'
+                        : 'Confirm and turn on'}
                   </button>
                   <button
                     type="button"
                     class={button}
-                    disabled={!!busy}
+                    disabled={securityBusy}
                     onclick={closeTotp}
                   >
                     Cancel
@@ -594,7 +660,7 @@
                     <button
                       type="button"
                       class={button}
-                      disabled={!!busy}
+                      disabled={securityBusy}
                       onclick={() => run('totp', copyRecoveryCodes)}
                     >
                       Copy codes
@@ -603,7 +669,7 @@
                   <button
                     type="button"
                     class={primary}
-                    disabled={!!busy}
+                    disabled={securityBusy}
                     onclick={closeRecoveryCodes}
                   >
                     Done
@@ -631,7 +697,7 @@
                 <button
                   type="button"
                   class={button}
-                  disabled={!!busy}
+                  disabled={securityBusy}
                   bind:this={passkeyAction}
                   onclick={() => {
                     issue = null;
@@ -672,7 +738,7 @@
                   bind:this={passkeyInput}
                 />
                 <div class="mt-3 flex flex-wrap gap-2">
-                  <button type="submit" class={primary} disabled={!!busy}>
+                  <button type="submit" class={primary} disabled={securityBusy}>
                     {busy === 'passkeys'
                       ? 'Waiting for your device…'
                       : 'Create passkey'}
@@ -680,7 +746,7 @@
                   <button
                     type="button"
                     class={button}
-                    disabled={!!busy}
+                    disabled={securityBusy}
                     onclick={() => setAddingPasskey(false)}
                   >
                     Cancel
@@ -709,7 +775,7 @@
                         <button
                           type="button"
                           class={button}
-                          disabled={!!busy}
+                          disabled={securityBusy}
                           bind:this={confirmRemovePasskey}
                           onclick={() =>
                             run(
@@ -723,7 +789,7 @@
                         <button
                           type="button"
                           class={button}
-                          disabled={!!busy}
+                          disabled={securityBusy}
                           onclick={() => setRemovingPasskey(passkey.id, false)}
                         >
                           Cancel
@@ -735,7 +801,7 @@
                         class={button}
                         id={'remove-passkey-' + passkey.id}
                         aria-label={'Remove ' + passkey.name + ' passkey'}
-                        disabled={!!busy}
+                        disabled={securityBusy}
                         onclick={() => setRemovingPasskey(passkey.id, true)}
                       >
                         Remove
@@ -752,7 +818,7 @@
             <button
               type="button"
               class={button}
-              disabled={loadingSecurity}
+              disabled={securityBusy}
               onclick={loadSecurity}
             >
               Reload security settings

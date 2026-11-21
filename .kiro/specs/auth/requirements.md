@@ -334,6 +334,8 @@ Kiro's *Analyze Requirements* feature is interactive and was not available in th
 - Signed-in account holders can register and remove discoverable, user-verified passkeys. Sign-in accepts a registered passkey for this site. Passkey credentials are bound to the site's origin. The demo account cannot change its credentials.
 - Authenticator enrollment requires a recent sign-in and proof of a valid TOTP code. Enrollment revokes the account's other sessions. Save the single-use recovery codes when prompted.
 - Passwords, OAuth, email sign-in links and passkeys require a second step for accounts with an authenticator enabled. An authenticator code can be used once per time step. Each recovery code works once.
+- A sign-in completed with a recovery code can replace the authenticator for ten minutes in that session, including after the final code is used. Replacement requires a valid code from the new app and atomically rotates all recovery codes.
+- Keep a passkey or an enabled linked OAuth provider when removing a passkey. Removal clears pending passkey sign-ins for the account.
 - The authenticator key is encrypted at rest using the server session secret. Preserve that secret when redeploying, and plan for re-enrollment before replacing it.
 
 ## Out of scope
