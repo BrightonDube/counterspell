@@ -111,8 +111,9 @@
       <a
         href={resolve('/login?return_to=/dashboard')}
         class="inline-block rounded-md bg-accent-candle px-4 py-2 font-medium text-bg hover:bg-accent-candle-glow focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-focus focus-visible:outline-none"
-        >Sign in</a
       >
+        Sign in
+      </a>
     </div>
   {:else if phase.kind === 'error'}
     <div class="{PANEL} space-y-3">
@@ -121,8 +122,9 @@
         type="button"
         onclick={refresh}
         class="rounded-md border border-border-strong bg-raised px-4 py-2 hover:bg-surface focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-focus focus-visible:outline-none"
-        >Try again</button
       >
+        Try again
+      </button>
     </div>
   {:else}
     {@const view = phase.view}
@@ -195,9 +197,9 @@
                 class="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border bg-raised px-4 py-3"
               >
                 <span class="font-medium">{concept.name}</span>
-                <span class="text-sm text-text-muted"
-                  >{failureText(concept.failureCount)}</span
-                >
+                <span class="text-sm text-text-muted">
+                  {failureText(concept.failureCount)}
+                </span>
               </li>
             {/each}
           </ul>
@@ -217,13 +219,14 @@
                 <a
                   href={resolve('/problems/[slug]', { slug: run.problem.slug })}
                   class="font-medium text-accent-moss {LINK_FOCUS}"
-                  >{run.problem.title}</a
                 >
+                  {run.problem.title}
+                </a>
                 <p class="text-sm text-text-muted">
                   {run.lang} · {run.mode} ·
-                  <span class={verdictTone(run)}
-                    >{runStatusLabel(run.status, run.verdict)}</span
-                  >
+                  <span class={verdictTone(run)}>
+                    {runStatusLabel(run.status, run.verdict)}
+                  </span>
                   {#if resultLine(run)}· {resultLine(run)}{/if}
                 </p>
               </li>
@@ -248,8 +251,9 @@
               <a
                 href={resolve('/problems/[slug]', { slug: challenge.slug })}
                 class="font-medium text-accent-moss {LINK_FOCUS}"
-                >{challenge.title}</a
               >
+                {challenge.title}
+              </a>
               <p class="text-sm text-text-muted">
                 {challenge.difficulty} ·
                 <span class="text-text">{reasonLabel(challenge.reason)}</span>

@@ -24,24 +24,28 @@
       <a
         href={resolve('/dashboard')}
         class="font-wordmark text-2xl tracking-wide text-text transition-colors hover:text-accent-candle-glow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-        >Counterspell</a
       >
+        Counterspell
+      </a>
       <nav class="flex items-center gap-1 text-sm" aria-label="App">
         <a
           href={resolve('/problems')}
           class="rounded px-3 py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >Problems</a
         >
+          Problems
+        </a>
         <a
           href={resolve('/break')}
           class="rounded px-3 py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >Break room</a
         >
+          Break room
+        </a>
         <a
           href={resolve('/settings/account')}
           class="rounded px-3 py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
-          >Settings</a
         >
+          Settings
+        </a>
       </nav>
     </div>
   </header>
