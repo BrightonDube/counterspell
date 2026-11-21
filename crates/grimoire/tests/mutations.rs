@@ -5,6 +5,9 @@
 //! validator reports. The expected lists are written by hand. A companion code
 //! appears only when the edit also breaks a later check, and the case says why.
 //! Symlink cases need Unix, so this file is compiled only there.
+//!
+// test-change: GHO-6. The published count-pairs fixture changed, and the ghost
+// mutations now synthesise private files instead of embedding hidden values.
 
 #![cfg(unix)]
 
@@ -129,8 +132,8 @@ fn cases() -> Vec<Case> {
             name: "a NUL byte in problem.md",
             edits: vec![replace(
                 "problem.md",
-                "The public examples",
-                "The public\u{0} examples",
+                "## Examples",
+                "## Exa\u{0}mples",
             )],
             // A rejected file is skipped, so the statement checks do not run.
             expected: vec!["LAY-05"],
@@ -150,7 +153,7 @@ fn cases() -> Vec<Case> {
         Case {
             code: "MET-02",
             name: "a required field is missing",
-            edits: vec![replace("meta.toml", "pack_version = 1\n", "")],
+            edits: vec![replace("meta.toml", "pack_version = 5\n", "")],
             expected: vec!["MET-02"],
         },
         Case {
@@ -162,7 +165,11 @@ fn cases() -> Vec<Case> {
         Case {
             code: "MET-04",
             name: "parameter type outside the launch set",
-            edits: vec![replace("meta.toml", "type = \"list[int]\"", "type = \"list[float]\"")],
+            edits: vec![replace(
+                "meta.toml",
+                "name = \"target\"\ntype = \"int\"",
+                "name = \"target\"\ntype = \"float\"",
+            )],
             expected: vec!["MET-04"],
         },
         Case {
@@ -180,8 +187,8 @@ fn cases() -> Vec<Case> {
                 "min = 50, max = -50 }",
             )],
             // The broken range no longer holds the samples or the ghost inputs. Each of the
-            // three samples reports its own SMP-02, and the first ghost reports KNG-02.
-            expected: vec!["KNG-02", "MET-06", "SMP-02", "SMP-02", "SMP-02"],
+            // three samples reports SMP-02, and each of the two ghosts reports KNG-02.
+            expected: vec!["KNG-02", "KNG-02", "MET-06", "SMP-02", "SMP-02", "SMP-02"],
         },
         Case {
             code: "MET-07",
@@ -200,8 +207,8 @@ fn cases() -> Vec<Case> {
             name: "reference_complexity without a bench table",
             edits: vec![replace(
                 "meta.toml",
-                "pack_version = 1\n",
-                "pack_version = 1\nreference_complexity = \"n^2\"\n",
+                "\n[bench]\nsize_param = \"values\"\nsizes = [128, 512, 2048, 4096]\n",
+                "",
             )],
             expected: vec!["MET-09"],
         },
@@ -216,8 +223,8 @@ fn cases() -> Vec<Case> {
             name: "raw HTML in the statement",
             edits: vec![replace(
                 "problem.md",
-                "The public examples are listed in the pack's samples.",
-                "The public examples are listed in the pack's samples. <b>Note</b>",
+                "The first and third positions make one pair.",
+                "The first and third positions make one pair. <b>Note</b>",
             )],
             expected: vec!["STM-02"],
         },
@@ -257,7 +264,7 @@ fn cases() -> Vec<Case> {
         Case {
             code: "GEN-01",
             name: "hidden count below 5",
-            edits: vec![replace("meta.toml", "hidden_count = 12", "hidden_count = 4")],
+            edits: vec![replace("generator.toml", "hidden_count = 12", "hidden_count = 4")],
             expected: vec!["GEN-01"],
         },
         Case {
@@ -265,7 +272,7 @@ fn cases() -> Vec<Case> {
             name: "only three hints",
             edits: vec![replace(
                 "hints.toml",
-                "\n[[hint]]\nrung = 4\ntext = \"Your inner loop may start at the same index as the outer loop. Change where it starts.\"\n",
+                "\n[[hint]]\nrung = 4\ntext = \"Start each inner scan after its outer position. Add to the count whenever the two values sum to the target.\"\n",
                 "",
             )],
             expected: vec!["HNT-01"],
@@ -283,49 +290,49 @@ fn cases() -> Vec<Case> {
         Case {
             code: "KNG-01",
             name: "two known ghosts with the same id",
-            edits: vec![replace("known_ghosts.toml", "id = \"empty-min\"", "id = \"same-index\"")],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"same-ghost\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[1, 1], 2]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"A pair is counted once.\"\n\n[[ghost]]\nid = \"same-ghost\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[1, 1], 2]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"A pair is counted once.\"\n",
+            ),
             expected: vec!["KNG-01"],
         },
         Case {
             code: "KNG-02",
             name: "known ghost input does not fit the schema",
-            edits: vec![replace("known_ghosts.toml", "input = [[0], 0]", "input = [[0], 999]")],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"bad-input\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 999]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"The target is outside the allowed range.\"\n",
+            ),
             expected: vec!["KNG-02"],
         },
         Case {
             code: "KNG-03",
             name: "crash ghost that also has a got value",
-            edits: vec![replace(
-                "known_ghosts.toml",
-                "exception_class = \"ValueError\"",
-                "exception_class = \"ValueError\"\ngot = 1",
-            )],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"crash-with-got\"\nprogram = \"incorrect/mutation.py\"\nkind = \"crash\"\ninput = [[0], 0]\ngot = 1\nexception_class = \"ValueError\"\nconcepts = [\"pairs\"]\nexplanation = \"The program raises an error.\"\n",
+            ),
             expected: vec!["KNG-03"],
         },
         Case {
             code: "KNG-04",
             name: "explanation claims minimality",
-            edits: vec![replace(
-                "known_ghosts.toml",
-                "The early exit calls min()",
-                "The smallest early exit calls min()",
-            )],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"minimal-claim\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"The smallest input breaks it.\"\n",
+            ),
             expected: vec!["KNG-04"],
         },
         Case {
             code: "KNG-05",
             name: "ghost concept not in the pack",
-            edits: vec![replace("known_ghosts.toml", "concepts = [\"arrays\"]", "concepts = [\"sorting\"]")],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"wrong-concept\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 1\nconcepts = [\"sorting\"]\nexplanation = \"The concept is not part of this pack.\"\n",
+            ),
             expected: vec!["KNG-05"],
         },
         Case {
             code: "KNG-06",
             name: "dogfood flag in a catalogue pack",
-            edits: vec![replace(
-                "known_ghosts.toml",
-                "concepts = [\"arrays\"]",
-                "concepts = [\"arrays\"]\ndogfood = true",
-            )],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"dogfood-ghost\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 1\nconcepts = [\"pairs\"]\ndogfood = true\nexplanation = \"The flag is only for test packs.\"\n",
+            ),
             expected: vec!["KNG-06"],
         },
         Case {
@@ -337,6 +344,20 @@ fn cases() -> Vec<Case> {
                 "def count_pair(values, target):",
             )],
             expected: vec!["REF-01"],
+        },
+    ]
+}
+
+/// Writes a self-contained private ghost fixture without publishing a hidden input.
+fn ghost_pack(known_ghosts: &str) -> Vec<Edit> {
+    vec![
+        Edit::Write {
+            file: "known_ghosts.toml",
+            text: known_ghosts.to_owned(),
+        },
+        Edit::Write {
+            file: "incorrect/mutation.py",
+            text: "def count_pairs(values, target):\n    return 0\n".to_owned(),
         },
     ]
 }
