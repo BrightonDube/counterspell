@@ -137,7 +137,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T11 and the auth/catalogue migration contracts.
   - Rust lesson: explain how database constraints complement Rust validation and how a composite key represents ownership plus concept identity.
 
-- [ ] **T13 [stretch] [P] (30 min) Implement the FSRS application adapter**
+- [x] **T13 [stretch] [P] (30 min) Implement the FSRS application adapter**
   - Files: `crates/server/src/reviews/{mod.rs,fsrs_adapter.rs}`, with unit/property tests.
   - Map persisted primitives to/from the selected `fsrs` API. Accept only `again`, `hard`, `good`, and `easy`. Return an application-owned calculation with non-negative interval and due timestamp.
   - Keep the third-party API isolated to this module. Reject invalid scheduler output rather than silently replacing or clamping the algorithm. Use an injected clock/configuration for deterministic tests.

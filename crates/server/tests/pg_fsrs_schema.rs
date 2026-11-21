@@ -57,8 +57,8 @@ async fn seed_owner_and_concept(pool: &PgPool) -> (Uuid, &'static str) {
 async fn insert_card(pool: &PgPool, user: Uuid, concept: &str) {
     sqlx::query(
         "INSERT INTO concept_cards
-         (user_id, concept_id, stability, difficulty, reps, lapses, state, due, version)
-         VALUES ($1, $2, 1, 1, 0, 0, 'new', now(), 0)",
+         (user_id, concept_id, stability, stability_fast, difficulty, reps, lapses, state, due, version)
+         VALUES ($1, $2, 1, 1, 1, 0, 0, 'new', now(), 0)",
     )
     .bind(user)
     .bind(concept)
@@ -90,8 +90,8 @@ async fn insert_history(pool: &PgPool, user: Uuid, concept: &str, grade: &str, i
 async fn pg_fsrs_card_rejects_duplicate_owner_concept(pool: PgPool) {
     let (user, concept) = seed_owner_and_concept(&pool).await;
     let insert = "INSERT INTO concept_cards \
-        (user_id, concept_id, stability, difficulty, state, due) \
-        VALUES ($1, $2, 0, 0, 'new', now())";
+        (user_id, concept_id, stability, stability_fast, difficulty, state, due) \
+        VALUES ($1, $2, 0, 0, 0, 'new', now())";
 
     sqlx::query(insert)
         .bind(user)
@@ -115,8 +115,8 @@ async fn pg_fsrs_card_rejects_negative_scheduler_fields(pool: PgPool) {
     let (user, concept) = seed_owner_and_concept(&pool).await;
     sqlx::query(
         "INSERT INTO concept_cards \
-         (user_id, concept_id, stability, difficulty, reps, lapses, state, due, version) \
-         VALUES ($1, $2, 1, 1, 0, 0, 'new', now(), 0)",
+         (user_id, concept_id, stability, stability_fast, difficulty, reps, lapses, state, due, version) \
+         VALUES ($1, $2, 1, 1, 1, 0, 0, 'new', now(), 0)",
     )
     .bind(user)
     .bind(concept)
@@ -124,7 +124,14 @@ async fn pg_fsrs_card_rejects_negative_scheduler_fields(pool: PgPool) {
     .await
     .expect("valid card should insert");
 
-    for field in ["stability", "difficulty", "reps", "lapses", "version"] {
+    for field in [
+        "stability",
+        "stability_fast",
+        "difficulty",
+        "reps",
+        "lapses",
+        "version",
+    ] {
         let statement =
             format!("UPDATE concept_cards SET {field} = -1 WHERE user_id = $1 AND concept_id = $2");
         let error = sqlx::query(&statement)
@@ -142,8 +149,8 @@ async fn pg_fsrs_card_rejects_negative_scheduler_fields(pool: PgPool) {
 async fn pg_fsrs_card_requires_valid_owner_and_concept(pool: PgPool) {
     let (user, concept) = seed_owner_and_concept(&pool).await;
     let insert = "INSERT INTO concept_cards \
-        (user_id, concept_id, stability, difficulty, state, due) \
-        VALUES ($1, $2, 0, 0, 'new', now())";
+        (user_id, concept_id, stability, stability_fast, difficulty, state, due) \
+        VALUES ($1, $2, 0, 0, 0, 'new', now())";
 
     let missing_owner = sqlx::query(insert)
         .bind(Uuid::new_v4())
