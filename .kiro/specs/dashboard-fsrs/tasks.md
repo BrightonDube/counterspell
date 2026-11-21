@@ -165,7 +165,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T12, T13, T14, and catalogue publication/solved seams.
   - Rust lesson: explain why ownership filters must happen before joins and how `Option` represents “no due card” without inventing one.
 
-- [ ] **T16 [stretch] [S] (30 min) Implement atomic review grading** [SUPERVISED]
+- [x] **T16 [stretch] [S] (30 min) Implement atomic review grading** [SUPERVISED]
   - Files: `crates/server/src/reviews/handler.rs`, `reviews/query.rs`, and review migration/tests as needed.
   - Implement `POST /api/reviews/{concept}` with authenticated ownership, grade/version validation, row lock or safe initial-card creation, FSRS calculation, invariant checks, card update, history insert, sibling selection, and one transaction.
   - Return `409 review_conflict` for stale versions and leave both card and history unchanged. Return safe `scheduler_invariant_failed` when the adapter rejects a library result.

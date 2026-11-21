@@ -10,7 +10,7 @@ use counterspell_server::{
     AppState,
 };
 use sqlx::postgres::PgPoolOptions;
-use support::{config_for, get, lazy_pool, serve, Fixture};
+use support::{config_for, get, lazy_pool, post, serve, Fixture};
 
 #[tokio::test]
 async fn signed_out_request_to_due_reviews_gets_401() {
@@ -20,6 +20,26 @@ async fn signed_out_request_to_due_reviews_gets_401() {
     let address = serve(counterspell_server::build_router(state)).await;
 
     let reply = get(address, "/api/reviews/due", &[]).await;
+
+    assert_eq!(reply.status, 401);
+    let json: serde_json::Value = serde_json::from_str(&reply.body).expect("json body");
+    assert_eq!(json["code"], "unauthenticated");
+}
+
+#[tokio::test]
+async fn signed_out_review_write_gets_401() {
+    let fixture = Fixture::new();
+    let limiter = Limiter::Memory(Arc::new(MemoryLimiter::default()));
+    let state = AppState::new(lazy_pool(), config_for(&fixture.dir), limiter);
+    let address = serve(counterspell_server::build_router(state)).await;
+
+    let reply = post(
+        address,
+        "/api/reviews/hash-maps",
+        &[("content-type", "application/json")],
+        r#"{"grade":"good"}"#,
+    )
+    .await;
 
     assert_eq!(reply.status, 401);
     let json: serde_json::Value = serde_json::from_str(&reply.body).expect("json body");

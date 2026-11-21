@@ -14,7 +14,7 @@ use counterspell_server::{
 };
 use serde_json::Value;
 use sqlx::PgPool;
-use support::{config_for, get, serve, Fixture};
+use support::{config_for, get, post, serve, Fixture};
 use uuid::Uuid;
 
 async fn make_user(pool: &PgPool, n: u128) -> Uuid {
@@ -169,4 +169,209 @@ async fn pg_due_reviews_skip_solved_and_unpublished_siblings_for_the_caller(pool
     assert_eq!(challenge["slug"], "fallback-normal");
     assert!(!reply.body.contains("unpublished-sibling"));
     assert!(!reply.body.contains("solved-sibling"));
+}
+
+async fn card_state(pool: &PgPool, user: Uuid, concept: &str) -> (String, i64) {
+    sqlx::query_as(
+        "SELECT state, version FROM concept_cards WHERE user_id = $1 AND concept_id = $2",
+    )
+    .bind(user)
+    .bind(concept)
+    .fetch_one(pool)
+    .await
+    .expect("card row")
+}
+
+async fn history_count(pool: &PgPool, user: Uuid, concept: &str) -> i64 {
+    sqlx::query_scalar(
+        "SELECT count(*) FROM concept_review_history WHERE user_id = $1 AND concept_id = $2",
+    )
+    .bind(user)
+    .bind(concept)
+    .fetch_one(pool)
+    .await
+    .expect("history count")
+}
+
+fn review_headers(user: u128) -> [(&'static str, String); 2] {
+    [
+        ("authorization", format!("Bearer test-user-{user}")),
+        ("content-type", "application/json".to_owned()),
+    ]
+}
+
+fn review_header_refs<'a>(
+    headers: &'a [(&'static str, String); 2],
+) -> [(&'static str, &'a str); 2] {
+    [
+        (headers[0].0, headers[0].1.as_str()),
+        (headers[1].0, headers[1].1.as_str()),
+    ]
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_review_write_creates_card_history_and_sibling_atomically(pool: PgPool) {
+    insert_published_fixture(&pool, "write-sibling", 1)
+        .await
+        .expect("sibling fixture");
+    add_concept(&pool, "atomic-review", "Atomic review").await;
+    tag(&pool, "write-sibling", "atomic-review").await;
+    let learner = make_user(&pool, 704).await;
+    let fixture = Fixture::new();
+    let address = address_for(pool.clone(), &fixture).await;
+
+    let header_values = review_headers(704);
+    let headers = review_header_refs(&header_values);
+    let reply = post(
+        address,
+        "/api/reviews/atomic-review",
+        &headers,
+        r#"{"grade":"good","version":0}"#,
+    )
+    .await;
+
+    assert_eq!(reply.status, 200, "body: {}", reply.body);
+    let json: Value = serde_json::from_str(&reply.body).expect("json body");
+    assert_eq!(json["concept"]["slug"], "atomic-review");
+    assert_eq!(json["card"]["version"], 1);
+    assert_eq!(json["challenge"]["kind"], "sibling");
+    assert_eq!(json["challenge"]["slug"], "write-sibling");
+    assert_eq!(
+        card_state(&pool, learner, "atomic-review").await,
+        ("review".to_owned(), 1)
+    );
+    assert_eq!(history_count(&pool, learner, "atomic-review").await, 1);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_stale_review_write_conflicts_without_card_or_history_changes(pool: PgPool) {
+    insert_published_fixture(&pool, "conflict-sibling", 1)
+        .await
+        .expect("sibling fixture");
+    add_concept(&pool, "conflict-review", "Conflict review").await;
+    tag(&pool, "conflict-sibling", "conflict-review").await;
+    let learner = make_user(&pool, 705).await;
+    add_card(&pool, learner, "conflict-review", "2020-01-01T00:00:00Z", 3).await;
+    let fixture = Fixture::new();
+    let address = address_for(pool.clone(), &fixture).await;
+    let header_values = review_headers(705);
+    let headers = review_header_refs(&header_values);
+
+    let stale = post(
+        address,
+        "/api/reviews/conflict-review",
+        &headers,
+        r#"{"grade":"easy","version":2}"#,
+    )
+    .await;
+    assert_eq!(stale.status, 409, "body: {}", stale.body);
+    assert_eq!(
+        card_state(&pool, learner, "conflict-review").await,
+        ("review".to_owned(), 3)
+    );
+    assert_eq!(history_count(&pool, learner, "conflict-review").await, 0);
+
+    let current = post(
+        address,
+        "/api/reviews/conflict-review",
+        &headers,
+        r#"{"grade":"easy","version":3}"#,
+    )
+    .await;
+    assert_eq!(current.status, 200, "body: {}", current.body);
+    assert_eq!(
+        card_state(&pool, learner, "conflict-review").await,
+        ("review".to_owned(), 4)
+    );
+    assert_eq!(history_count(&pool, learner, "conflict-review").await, 1);
+
+    let retry = post(
+        address,
+        "/api/reviews/conflict-review",
+        &headers,
+        r#"{"grade":"easy","version":3}"#,
+    )
+    .await;
+    assert_eq!(retry.status, 409, "body: {}", retry.body);
+    assert_eq!(history_count(&pool, learner, "conflict-review").await, 1);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_review_write_rejects_user_selector_and_bad_input(pool: PgPool) {
+    add_concept(&pool, "guarded-review", "Guarded review").await;
+    let _learner = make_user(&pool, 706).await;
+    let fixture = Fixture::new();
+    let address = address_for(pool, &fixture).await;
+    let header_values = review_headers(706);
+    let headers = review_header_refs(&header_values);
+
+    let selector = post(
+        address,
+        "/api/reviews/guarded-review",
+        &headers,
+        r#"{"grade":"good","user_id":"00000000-0000-0000-0000-000000000001"}"#,
+    )
+    .await;
+    assert_eq!(selector.status, 400);
+    assert!(selector.body.contains("unexpected_user_id"));
+
+    let grade = post(
+        address,
+        "/api/reviews/guarded-review",
+        &headers,
+        r#"{"grade":"sort-of"}"#,
+    )
+    .await;
+    assert_eq!(grade.status, 400);
+    assert!(grade.body.contains("invalid_grade"));
+
+    let unknown = post(
+        address,
+        "/api/reviews/missing-concept",
+        &headers,
+        r#"{"grade":"good"}"#,
+    )
+    .await;
+    assert_eq!(unknown.status, 404);
+    assert!(unknown.body.contains("unknown_concept"));
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_scheduler_failure_rolls_back_card_and_history(pool: PgPool) {
+    add_concept(&pool, "broken-review", "Broken review").await;
+    let learner = make_user(&pool, 707).await;
+    sqlx::query(
+        "INSERT INTO concept_cards
+         (user_id, concept_id, stability, stability_fast, difficulty, reps, lapses, state, due, last_review, version)
+         VALUES ($1, $2, 1, 1, 1, 0, 0, 'unsupported', now() - interval '1 day', now(), 0)",
+    )
+    .bind(learner)
+    .bind("broken-review")
+    .execute(&pool)
+    .await
+    .expect("unsupported card fixture");
+    let fixture = Fixture::new();
+    let address = address_for(pool.clone(), &fixture).await;
+
+    let header_values = review_headers(707);
+    let headers = review_header_refs(&header_values);
+    let reply = post(
+        address,
+        "/api/reviews/broken-review",
+        &headers,
+        r#"{"grade":"good","version":0}"#,
+    )
+    .await;
+
+    assert_eq!(reply.status, 500, "body: {}", reply.body);
+    assert!(reply.body.contains("scheduler_invariant_failed"));
+    assert_eq!(
+        card_state(&pool, learner, "broken-review").await,
+        ("unsupported".to_owned(), 0)
+    );
+    assert_eq!(history_count(&pool, learner, "broken-review").await, 0);
 }

@@ -203,6 +203,10 @@ pub fn build_router(state: AppState) -> Router {
         .route("/api/dashboard", get(dashboard::handler::get_dashboard))
         .route("/api/reviews/due", get(reviews::handler::get_due_reviews))
         .route(
+            "/api/reviews/{concept}",
+            post(reviews::handler::post_review),
+        )
+        .route(
             "/api/hints",
             post(hints::handlers::post_hint).get(hints::handlers::get_hints),
         )
