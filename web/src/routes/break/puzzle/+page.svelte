@@ -1,4 +1,5 @@
 <script>
+  import AppShell from '../../../lib/shell/AppShell.svelte';
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
   import { Chessboard, INPUT_EVENT_TYPE } from 'cm-chessboard';
@@ -103,61 +104,63 @@
 
 <svelte:head><title>Daily puzzle - Break room</title></svelte:head>
 
-<main class="mx-auto max-w-2xl space-y-4 p-6">
-  <h1 class="text-2xl font-bold">Daily chess puzzle</h1>
-  {#if puzzleMeta}
-    <p class="text-sm text-text-muted">
-      {puzzleMeta.date} · rating {puzzleMeta.puzzle.rating} · {puzzleMeta.puzzle.themes.join(
-        ', '
-      )}
-      {#if puzzleMeta.puzzle.themes.some( (/** @type {string} */ t) => t.startsWith('mate') )}
-        · Hint: look for a mate.
-      {/if}
-    </p>
-  {/if}
-  <div
-    bind:this={boardEl}
-    class="break-board max-w-md"
-    data-testid="board"
-  ></div>
-  <output class="block text-sm text-text-muted" aria-live="polite">
-    {statusLine}
-  </output>
-  <p role="status" class="text-sm">{feedback}</p>
-  {#if saveResult}<p role="status" class="text-sm text-text-muted">
-      {saveResult}
-    </p>{/if}
-  {#if signedOut}<a
-      class="text-accent underline"
-      href={resolve('/login?return_to=/break/puzzle')}
+<AppShell>
+  <div class="mx-auto max-w-2xl space-y-4">
+    <h1 class="text-2xl font-bold">Daily chess puzzle</h1>
+    {#if puzzleMeta}
+      <p class="text-sm text-text-muted">
+        {puzzleMeta.date} · rating {puzzleMeta.puzzle.rating} · {puzzleMeta.puzzle.themes.join(
+          ', '
+        )}
+        {#if puzzleMeta.puzzle.themes.some( (/** @type {string} */ t) => t.startsWith('mate') )}
+          · Hint: look for a mate.
+        {/if}
+      </p>
+    {/if}
+    <div
+      bind:this={boardEl}
+      class="break-board max-w-md"
+      data-testid="board"
+    ></div>
+    <output class="block text-sm text-text-muted" aria-live="polite">
+      {statusLine}
+    </output>
+    <p role="status" class="text-sm">{feedback}</p>
+    {#if saveResult}<p role="status" class="text-sm text-text-muted">
+        {saveResult}
+      </p>{/if}
+    {#if signedOut}<a
+        class="text-accent underline"
+        href={resolve('/login?return_to=/break/puzzle')}
+      >
+        Sign in
+      </a>{/if}
+    <form
+      class="flex gap-2"
+      onsubmit={(e) => {
+        e.preventDefault();
+        submitText();
+      }}
     >
-      Sign in
-    </a>{/if}
-  <form
-    class="flex gap-2"
-    onsubmit={(e) => {
-      e.preventDefault();
-      submitText();
-    }}
-  >
-    <label class="sr-only" for="move-input">
-      Move in UCI (e2e4) or SAN (Nf3)
-    </label>
-    <input
-      id="move-input"
-      class="w-40 rounded-md border border-border bg-surface px-3 py-2 text-sm"
-      bind:value={moveInput}
-      placeholder="e2e4 or Nf3"
-      autocomplete="off"
-    />
-    <button
-      type="submit"
-      class="rounded-md bg-accent-candle px-4 py-2 text-sm font-medium text-bg hover:bg-accent-candle-glow"
-    >
-      Play
-    </button>
-  </form>
-  <a class="text-sm text-text-muted underline" href={resolve('/break')}>
-    Back to the break room
-  </a>
-</main>
+      <label class="sr-only" for="move-input">
+        Move in UCI (e2e4) or SAN (Nf3)
+      </label>
+      <input
+        id="move-input"
+        class="w-40 rounded-md border border-border bg-surface px-3 py-2 text-sm"
+        bind:value={moveInput}
+        placeholder="e2e4 or Nf3"
+        autocomplete="off"
+      />
+      <button
+        type="submit"
+        class="rounded-md bg-accent-candle px-4 py-2 text-sm font-medium text-bg hover:bg-accent-candle-glow"
+      >
+        Play
+      </button>
+    </form>
+    <a class="text-sm text-text-muted underline" href={resolve('/break')}>
+      Back to the break room
+    </a>
+  </div>
+</AppShell>

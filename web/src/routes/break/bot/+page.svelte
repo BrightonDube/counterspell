@@ -1,4 +1,5 @@
 <script>
+  import AppShell from '../../../lib/shell/AppShell.svelte';
   import { resolve } from '$app/paths';
   import { onMount, onDestroy } from 'svelte';
   import { Chess } from 'chess.js';
@@ -120,32 +121,34 @@
 
 <svelte:head><title>Chess bot - Break room</title></svelte:head>
 
-<main class="mx-auto max-w-2xl space-y-4 p-6">
-  <h1 class="text-2xl font-bold">Chess bot</h1>
-  <div class="flex gap-2">
-    <button
-      class="rounded-md bg-accent-candle px-4 py-2 text-sm font-medium text-bg"
-      onclick={() => start('w')}
-    >
-      Play White
-    </button>
-    <button
-      class="rounded-md border border-border px-4 py-2 text-sm"
-      onclick={() => start('b')}
-    >
-      Play Black
-    </button>
+<AppShell>
+  <div class="mx-auto max-w-2xl space-y-4">
+    <h1 class="text-2xl font-bold">Chess bot</h1>
+    <div class="flex gap-2">
+      <button
+        class="rounded-md bg-accent-candle px-4 py-2 text-sm font-medium text-bg"
+        onclick={() => start('w')}
+      >
+        Play White
+      </button>
+      <button
+        class="rounded-md border border-border px-4 py-2 text-sm"
+        onclick={() => start('b')}
+      >
+        Play Black
+      </button>
+    </div>
+    <div bind:this={boardEl} class="break-board max-w-md"></div>
+    <output class="block text-sm text-text-muted" aria-live="polite">
+      {statusLine}
+    </output>
+    <p role="status" class="text-sm">{status}</p>
+    {#if fallbackNote}<p role="status" class="text-sm text-text-muted">
+        {fallbackNote}
+      </p>{/if}
+    <p class="text-sm text-text-muted">Signed-out results are not saved.</p>
+    <a class="text-sm text-text-muted underline" href={resolve('/break')}>
+      Back to the break room
+    </a>
   </div>
-  <div bind:this={boardEl} class="break-board max-w-md"></div>
-  <output class="block text-sm text-text-muted" aria-live="polite">
-    {statusLine}
-  </output>
-  <p role="status" class="text-sm">{status}</p>
-  {#if fallbackNote}<p role="status" class="text-sm text-text-muted">
-      {fallbackNote}
-    </p>{/if}
-  <p class="text-sm text-text-muted">Signed-out results are not saved.</p>
-  <a class="text-sm text-text-muted underline" href={resolve('/break')}>
-    Back to the break room
-  </a>
-</main>
+</AppShell>
