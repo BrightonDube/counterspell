@@ -1,0 +1,59 @@
+import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
+import { afterEach, expect, it, vi } from 'vitest';
+import Page from './+page.svelte';
+
+vi.mock('$app/env', () => ({ browser: true }));
+vi.mock('$app/navigation', () => ({ goto: vi.fn() }));
+vi.mock('$app/paths', () => ({ resolve: (path: string) => path }));
+vi.mock('$app/state', () => ({
+  page: { url: new URL('https://counterspel.online/login') }
+}));
+vi.mock('#lib/auth/client.js', () => ({
+  AuthApiError: class extends Error {},
+  getConfig: vi.fn().mockResolvedValue({
+    providers: { github: true, google: true },
+    email: { password: false, magic_link: false }
+  }),
+  providerSignInUrl: (provider: string) => `/api/auth/${provider}/start`
+}));
+vi.mock('#lib/auth/security.ts', () => ({
+  authProblem: () => 'Sign-in failed.',
+  requestEmailLink: vi.fn(),
+  signInWithPasskey: vi.fn(),
+  signInWithPassword: vi.fn(),
+  supportsPasskeys: () => true,
+  verifyTwoFactor: vi.fn()
+}));
+vi.mock('#lib/auth/session.svelte.js', () => ({
+  session: {
+    status: 'signed_out',
+    load: vi.fn().mockResolvedValue(undefined)
+  }
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
+
+it('renders passkey and provider actions as pill-shaped sign-in fields', async () => {
+  render(Page);
+
+  const passkey = await screen.findByRole('button', { name: 'Use a passkey' });
+  await waitFor(() =>
+    expect(
+      screen.getByRole('link', { name: 'Continue with GitHub' })
+    ).toBeTruthy()
+  );
+
+  const actions = [
+    passkey,
+    screen.getByRole('link', { name: 'Continue with GitHub' }),
+    screen.getByRole('link', { name: 'Continue with Google' })
+  ];
+
+  for (const action of actions) {
+    expect(action.className).toContain('rounded-full');
+    expect(action.className).not.toContain('rounded-lg');
+  }
+});
