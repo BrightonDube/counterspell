@@ -52,7 +52,7 @@ fn relative<'a>(root: &Path, path: &'a Path) -> &'a Path {
 #[allow(clippy::disallowed_methods)] // a test may shell out to `cargo metadata`; production code may not
 fn the_server_cannot_reach_docker_or_the_judge() {
     let output = std::process::Command::new("cargo")
-        .args(["metadata", "--format-version", "1", "--offline"])
+        .args(["metadata", "--format-version", "1"])
         .current_dir(root())
         .output()
         .expect("cargo metadata runs");
