@@ -99,7 +99,7 @@
     }
     board = new Chessboard(boardEl, {
       position: game.fen(),
-      sprite: { url: piecesUrl }
+      style: { pieces: { file: piecesUrl } }
     });
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;

@@ -98,6 +98,16 @@ await page.waitForSelector('.break-board', { timeout: 15000 });
 await page.waitForTimeout(800);
 const board = await page.locator('.break-board').boundingBox();
 check('bot: board mounted', !!board);
+// Pieces must actually paint: the sprite must resolve to the emitted asset, not the SPA fallback.
+const pieceBox = await page
+  .locator('.cm-chessboard use.piece')
+  .first()
+  .boundingBox();
+check(
+  'bot: pieces render with real geometry',
+  !!pieceBox && pieceBox.width > 10,
+  pieceBox ? `w=${Math.round(pieceBox.width)}` : 'none'
+);
 if (board) {
   const sq = board.width / 8;
   const click = async (file, rank) => {
