@@ -29,3 +29,6 @@ CREATE TABLE IF NOT EXISTS concept_cards (
 
 CREATE INDEX IF NOT EXISTS concept_cards_due
     ON concept_cards (user_id, due, concept_id);
+
+REVOKE ALL ON concept_cards FROM PUBLIC;
+GRANT SELECT, INSERT, UPDATE ON concept_cards TO counterspell_server;

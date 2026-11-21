@@ -17,6 +17,17 @@ fn database_code(error: &sqlx::Error) -> String {
         .expect("rejected statement should return a SQLSTATE")
 }
 
+async fn role_can(pool: &PgPool, role: &str, table: &str, privilege: &str) -> bool {
+    let (granted,): (bool,) = sqlx::query_as("SELECT has_table_privilege($1, $2, $3)")
+        .bind(role)
+        .bind(table)
+        .bind(privilege)
+        .fetch_one(pool)
+        .await
+        .expect("privilege query");
+    granted
+}
+
 async fn seed_user(pool: &PgPool) -> Uuid {
     let user = Uuid::new_v4();
     sqlx::query("INSERT INTO users (id, handle, display_name) VALUES ($1, $2, 'FSRS test user')")
@@ -180,6 +191,37 @@ async fn pg_fsrs_migrations_apply_twice(pool: PgPool) {
     .expect("FSRS tables should remain queryable");
     assert_eq!(cards, 0);
     assert_eq!(history, 0);
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_fsrs_server_role_can_use_storage_without_delete(pool: PgPool) {
+    for privilege in ["SELECT", "INSERT", "UPDATE"] {
+        assert!(
+            role_can(&pool, "counterspell_server", "concept_cards", privilege).await,
+            "server needs {privilege} on concept_cards"
+        );
+    }
+    for privilege in ["SELECT", "INSERT"] {
+        assert!(
+            role_can(
+                &pool,
+                "counterspell_server",
+                "concept_review_history",
+                privilege
+            )
+            .await,
+            "server needs {privilege} on concept_review_history"
+        );
+    }
+    for table in ["concept_cards", "concept_review_history"] {
+        for privilege in ["DELETE", "TRUNCATE"] {
+            assert!(
+                !role_can(&pool, "counterspell_server", table, privilege).await,
+                "server must not have {privilege} on {table}"
+            );
+        }
+    }
 }
 
 #[ignore = "needs DATABASE_URL"]

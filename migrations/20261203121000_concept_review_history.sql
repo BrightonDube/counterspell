@@ -23,3 +23,6 @@ CREATE TABLE IF NOT EXISTS concept_review_history (
 
 CREATE INDEX IF NOT EXISTS concept_review_history_owner_reviewed
     ON concept_review_history (user_id, concept_id, reviewed_at DESC);
+
+REVOKE ALL ON concept_review_history FROM PUBLIC;
+GRANT SELECT, INSERT ON concept_review_history TO counterspell_server;
