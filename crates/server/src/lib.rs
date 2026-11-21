@@ -17,6 +17,7 @@ pub mod familiar;
 pub mod health;
 pub mod hints;
 pub mod ratelimit;
+pub mod reviews;
 pub mod runs;
 pub mod seams;
 #[cfg(feature = "testkit")]
