@@ -82,7 +82,7 @@
     puzzleState = newPuzzle(daily.puzzle.fen, solution);
     board = new Chessboard(boardEl, {
       position: puzzleState.game.fen(),
-      sprite: { url: piecesUrl }
+      style: { pieces: { file: piecesUrl } }
     });
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
