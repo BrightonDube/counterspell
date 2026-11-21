@@ -4,6 +4,9 @@
 //! card, grade, and calculation types rather than the third-party API.
 
 pub mod fsrs_adapter;
+pub mod handler;
+pub mod query;
+pub mod types;
 
 pub use fsrs_adapter::{
     CardState, FsrsScheduler, PersistedCard, ReviewCalculation, ReviewError, ReviewGrade,
