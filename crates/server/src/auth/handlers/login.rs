@@ -23,6 +23,7 @@ use crate::{
         errors::{database, AuthError},
         limits::{Action, Scope},
         password::Verdict,
+        security,
         session::AuthMethod,
         AuthState,
     },
@@ -36,6 +37,8 @@ pub struct LoginRequest {
     pub email: String,
     /// The password, as typed.
     pub password: String,
+    /// The destination to use after a required second factor.
+    pub return_to: Option<String>,
 }
 
 /// `POST /api/auth/login`.
@@ -96,14 +99,17 @@ pub async fn login(
             .map_err(database)?;
     }
 
-    let created = state
-        .sessions
-        .create(
-            counterspell_common::ids::UserId::from_uuid(user_id),
-            AuthMethod::Password,
-        )
-        .await?;
-    slot.set(state.cookies.session_value(created.cookie_value.expose())?);
+    let pending = security::complete_primary(
+        &state,
+        &slot,
+        counterspell_common::ids::UserId::from_uuid(user_id),
+        AuthMethod::Password,
+        request.return_to.as_deref().unwrap_or("/"),
+    )
+    .await?;
+    if pending {
+        return Ok(Json(json!({ "two_factor_required": true })).into_response());
+    }
     Ok(Json(json!({ "user_id": user_id })).into_response())
 }
 

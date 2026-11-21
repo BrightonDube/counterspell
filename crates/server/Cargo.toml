@@ -3,7 +3,7 @@ name = "counterspell-server"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-rust-version.workspace = true
+rust-version = "1.88"
 
 [features]
 # Test helpers: bearer-token test identity, in-memory problem lookup and in-memory rate limiter. Off in release builds.
@@ -41,6 +41,10 @@ async-trait = "0.1.92"
 time = "0.3.44"
 reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 oauth2 = { version = "5.0", default-features = false, features = ["reqwest", "rustls-tls"] }
+ring = "0.17"
+data-encoding = "2.9"
+webauthn-rs = { version = "=0.5.5", features = ["conditional-ui", "danger-allow-state-serialisation"] }
+webauthn-rs-proto = "=0.5.5"
 
 [dev-dependencies]
 proptest = { version = "1.9", default-features = false, features = ["std"] }

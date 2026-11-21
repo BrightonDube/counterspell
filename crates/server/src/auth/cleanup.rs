@@ -42,7 +42,20 @@ pub async fn purge(pool: &PgPool, now: OffsetDateTime) -> Result<u64, AuthError>
             .execute(pool)
             .await
             .map_err(database)?;
-    Ok(tokens.rows_affected() + flows.rows_affected() + sessions.rows_affected())
+    let mut removed = tokens.rows_affected() + flows.rows_affected() + sessions.rows_affected();
+    for query in [
+        "DELETE FROM auth_step_up WHERE expires_at < $1",
+        "DELETE FROM auth_totp_setup WHERE expires_at < $1",
+        "DELETE FROM auth_passkey_flows WHERE expires_at < $1",
+    ] {
+        removed += sqlx::query(query)
+            .bind(now)
+            .execute(pool)
+            .await
+            .map_err(database)?
+            .rows_affected();
+    }
+    Ok(removed)
 }
 
 /// Runs [`purge`] once an hour for the life of the process. A failed run is logged and retried on

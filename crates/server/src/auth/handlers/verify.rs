@@ -108,9 +108,18 @@ async fn sign_in_with_link(
 ) -> Result<Response, AuthError> {
     let consumed = state.tokens.consume(raw, Purpose::MagicLink, None).await?;
     let user = find_or_create_user(state, &consumed.email).await?;
-    let created = state.sessions.create(user, AuthMethod::MagicLink).await?;
-    slot.set(state.cookies.session_value(created.cookie_value.expose())?);
     let return_to = sanitize_return_to(consumed.payload.get("return_to").and_then(Value::as_str));
+    let pending = crate::auth::security::complete_primary(
+        state,
+        slot,
+        user,
+        AuthMethod::MagicLink,
+        &return_to,
+    )
+    .await?;
+    if pending {
+        return Ok(Json(json!({ "return_to": crate::auth::security::STEP_UP_PATH, "two_factor_required": true })).into_response());
+    }
     Ok(Json(json!({
         "user": { "id": user.as_uuid() },
         "return_to": return_to,

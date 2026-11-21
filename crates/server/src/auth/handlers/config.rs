@@ -38,7 +38,7 @@ impl PublicSettings {
     }
 
     /// Reads the flags from the loaded configuration. Email sign-in and the demo account are
-    /// retired: the sign-in page offers provider sign-in only, whatever the configuration holds.
+    /// retired: the sign-in page offers providers and passkeys, whatever the mail configuration holds.
     #[must_use]
     pub fn from_config(config: &AuthConfig) -> Self {
         Self {

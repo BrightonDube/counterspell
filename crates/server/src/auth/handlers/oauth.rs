@@ -281,16 +281,13 @@ async fn sign_in(
         ProviderId::GitHub => AuthMethod::OauthGithub,
         ProviderId::Google => AuthMethod::OauthGoogle,
     };
-    let created = state
-        .sessions
-        .create(user, method)
-        .await
-        .map_err(|_| Refusal::Failed)?;
-    let cookie = state
-        .cookies
-        .session_value(created.cookie_value.expose())
-        .map_err(|_| Refusal::Failed)?;
-    slot.push(cookie);
+    let pending =
+        crate::auth::security::complete_primary(state, slot, user, method, flow.return_to())
+            .await
+            .map_err(|_| Refusal::Failed)?;
+    if pending {
+        return Ok(crate::auth::security::STEP_UP_PATH.to_owned());
+    }
     Ok(sanitize_return_to(Some(flow.return_to())))
 }
 

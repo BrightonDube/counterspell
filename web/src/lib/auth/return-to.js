@@ -7,7 +7,11 @@
  * @returns {string}
  */
 export function returnToFromQuery(search) {
-  const value = new URLSearchParams(search).get('return_to');
+  return safeReturnTo(new URLSearchParams(search).get('return_to'));
+}
+
+/** @param {string | null | undefined} value */
+export function safeReturnTo(value) {
   if (!value || value.length > 200) return '/';
   if (
     !value.startsWith('/') ||

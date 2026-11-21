@@ -112,6 +112,10 @@ The auth module adds these direct dependencies to `counterspell-server`. `cargo 
 - **reqwest 0.12.28** (features `json`, `rustls-tls`, default features off) — Sean McArthur and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/reqwest>
 - **oauth2 5.0.0** (default features off) — David Ramsay and contributors — MIT OR Apache-2.0 — <https://crates.io/crates/oauth2>
 - **webpki-roots 1.0.12** (transitive through `reqwest` `rustls-tls`; Mozilla root certificate list) — Chromium and webpki-roots contributors — CDLA-Permissive-2.0, approved by Brighton on 14 Nov 2026 for this crate only (`deny.toml` exception) — <https://crates.io/crates/webpki-roots>
+- **ring 0.17.14** — Brian Smith and contributors — Apache-2.0 AND ISC — <https://crates.io/crates/ring>
+- **data-encoding 2.11.1** — Ivan Maidanski and contributors — MIT — <https://crates.io/crates/data-encoding>
+- **webauthn-rs, webauthn-rs-proto, webauthn-rs-core, webauthn-attestation-ca, base64urlsafedata 0.5.5** — Kanidm contributors — MPL-2.0 — <https://github.com/kanidm/webauthn-rs/tree/v0.5.5>
+- **qrcode-generator 2.0.4** (web, authenticator enrollment) — Kazuhiko Arase — MIT — <https://www.npmjs.com/package/qrcode-generator/v/2.0.4>
 
 The licence decision for `reqwest` and `oauth2` was approved on 14 Nov 2026 (`webpki-roots` option). The earlier "held back" note is superseded.
 
