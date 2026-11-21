@@ -22,6 +22,14 @@ export const ERROR_MESSAGES = Object.freeze({
   rate_limited: 'Too many attempts. Wait a few minutes and try again.',
   email_unavailable:
     'Email sign-in is paused right now. Try again later or use a password.',
+  invalid_security_code: 'That code didn’t match. Check it and try again.',
+  security_challenge_expired: 'This security check expired. Start again.',
+  recent_sign_in_required: 'Sign in again to make this security change.',
+  passkey_failed:
+    'That passkey couldn’t be verified. Try again or use another sign-in method.',
+  security_unavailable: 'This security feature is currently unavailable.',
+  security_conflict:
+    'Your security settings changed. Review the current settings and try again.',
   busy: 'The server is busy. Try again in a moment.',
   internal_error: 'Something went wrong on our side. Try again later.'
 });

@@ -14,6 +14,12 @@ allow = [
 # Approved by Brighton on 14 Nov 2026 for this one crate only (auth T01).
 exceptions = [
     { allow = ["CDLA-Permissive-2.0"], crate = "webpki-roots" },
+    # docs/licence-rules.md permits MPL-2.0 for dependencies only.
+    { allow = ["MPL-2.0"], crate = "base64urlsafedata" },
+    { allow = ["MPL-2.0"], crate = "webauthn-attestation-ca" },
+    { allow = ["MPL-2.0"], crate = "webauthn-rs" },
+    { allow = ["MPL-2.0"], crate = "webauthn-rs-core" },
+    { allow = ["MPL-2.0"], crate = "webauthn-rs-proto" },
 ]
 
 [advisories]

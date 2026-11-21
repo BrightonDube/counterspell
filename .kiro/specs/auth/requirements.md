@@ -38,7 +38,7 @@ Sources: `docs/system-design.md` §1.1 (F1), §1.2, §4 (`users`, `identities`, 
 - **Postgres is the only store** for users, identities, sessions, tokens and flows. **Valkey holds rate-limit counters only.** No session, token or flow state is ever kept in Valkey or in process memory as the source of truth.
 - Only `counterspell-server` touches auth data. `counterspell-judge`, `counterspell-mcp` and the sandbox get no auth credentials and no privilege on auth tables.
 - Secrets are read from **environment variables only**. No task of this spec reads, writes or creates `.env`, key files or credential files.
-- Not in this spec: roles and admin, account suspension (ADM-3), profile editing, **unlinking** a provider, **changing** an email address, multi-factor, passkeys, organisation SSO, payments, the run endpoints themselves, the IDE.
+- Not in this spec: roles and admin, account suspension (ADM-3), profile editing, **unlinking** a provider, **changing** an email address, organisation SSO, payments, the run endpoints themselves, the IDE.
 - Numbers marked **[E]** are estimates and configuration defaults. Tune them after the VPS test.
 - Priority labels follow `docs/requirements.md` §8: **Must**, **Should**, **Could**.
 
@@ -328,10 +328,18 @@ Kiro's *Analyze Requirements* feature is interactive and was not available in th
 | 15 | Wording like "securely", "quickly" was avoided; every criterion names a status code, a limit or an observable state, so each can be tested. | Testability | Numbers are marked [E] where they are defaults. |
 | 16 | Tracing layers log the full URI by default; the OAuth callback URI carries `code` and `state`. | Risk | Path-only logging for those routes (R19.3). |
 
+## Account security
+
+- Account settings show the current sign-in methods and offer provider linking under Other sign-in options. The existing rules against automatic linking still apply.
+- Signed-in account holders can register and remove discoverable, user-verified passkeys. Sign-in accepts a registered passkey for this site. Passkey credentials are bound to the site's origin. The demo account cannot change its credentials.
+- Authenticator enrollment requires a recent sign-in and proof of a valid TOTP code. Enrollment revokes the account's other sessions. Save the single-use recovery codes when prompted.
+- Passwords, OAuth, email sign-in links and passkeys require a second step for accounts with an authenticator enabled. An authenticator code can be used once per time step. Each recovery code works once.
+- The authenticator key is encrypted at rest using the server session secret. Preserve that secret when redeploying, and plan for re-enrollment before replacing it.
+
 ## Out of scope
 
 - Unlinking a provider, changing an email address, adding a password to an OAuth-only account, multiple emails per account.
 - Roles, admin screens, suspension (ADM-3), audit dashboards (ADM-2, ADM-4), profile editing.
-- Multi-factor, passkeys, SSO, device lists, "remember this device".
+- SSO, device lists, "remember this device".
 - Any change to run, SSE, catalogue, hints or dashboard behaviour, except that they now see a real signed-in user.
 - Java, C++, payments, FSRS, the break room.

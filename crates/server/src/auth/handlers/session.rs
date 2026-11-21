@@ -29,6 +29,7 @@ pub async fn logout(
         state.sessions.revoke(&SessionKey::of(raw)).await?;
     }
     slot.set(state.cookies.clear_session()?);
+    crate::auth::security::end_pending(&state, &slot, &headers).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -47,5 +48,6 @@ pub async fn logout_all(
     Capabilities::for_user(user.is_demo).require(Capability::LogoutEverywhere)?;
     state.sessions.revoke_all(user.user_id).await?;
     slot.set(state.cookies.clear_session()?);
+    slot.push(state.cookies.clear_step_up()?);
     Ok(StatusCode::NO_CONTENT)
 }

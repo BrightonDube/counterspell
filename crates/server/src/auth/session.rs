@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use counterspell_common::ids::UserId;
 use sha2::{Digest, Sha256};
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 use time::{Duration, OffsetDateTime};
 use uuid::Uuid;
 
@@ -51,6 +51,8 @@ pub enum AuthMethod {
     Password,
     /// The first sign-in after a verified registration.
     Register,
+    /// A user-verified `WebAuthn` passkey.
+    Passkey,
 }
 
 impl AuthMethod {
@@ -63,6 +65,19 @@ impl AuthMethod {
             Self::OauthGoogle => "oauth_google",
             Self::Password => "password",
             Self::Register => "register",
+            Self::Passkey => "passkey",
+        }
+    }
+
+    pub(crate) fn from_stored(value: &str) -> Result<Self, AuthError> {
+        match value {
+            "magic_link" => Ok(Self::MagicLink),
+            "oauth_github" => Ok(Self::OauthGithub),
+            "oauth_google" => Ok(Self::OauthGoogle),
+            "password" => Ok(Self::Password),
+            "register" => Ok(Self::Register),
+            "passkey" => Ok(Self::Passkey),
+            _ => Err(AuthError::Internal),
         }
     }
 }
@@ -108,13 +123,25 @@ impl SessionService {
     ///
     /// Returns [`AuthError::Internal`] when the random source or the database fails.
     pub async fn create(&self, user: UserId, method: AuthMethod) -> Result<NewSession, AuthError> {
+        let mut connection = self.pool.acquire().await.map_err(database)?;
+        self.create_in(&mut connection, user, method, false).await
+    }
+
+    /// Inserts the session using the caller's already-locked authentication transaction.
+    pub(crate) async fn create_in(
+        &self,
+        connection: &mut PgConnection,
+        user: UserId,
+        method: AuthMethod,
+        second_factor_verified: bool,
+    ) -> Result<NewSession, AuthError> {
         let raw = RawToken::generate()?;
         let key = SessionKey::of(raw.expose());
         let now = self.clock.now();
         sqlx::query(
             "INSERT INTO sessions (id, user_id, auth_method, created_at, last_renewed_at,
-                                   expires_at, absolute_expires_at)
-             VALUES ($1, $2, $3, $4, $4, $5, $6)",
+                                   expires_at, absolute_expires_at, second_factor_verified)
+             VALUES ($1, $2, $3, $4, $4, $5, $6, $7)",
         )
         .bind(key.as_str())
         .bind(user.as_uuid())
@@ -122,7 +149,8 @@ impl SessionService {
         .bind(now)
         .bind(now + SESSION_IDLE)
         .bind(now + SESSION_ABSOLUTE)
-        .execute(&self.pool)
+        .bind(second_factor_verified)
+        .execute(connection)
         .await
         .map_err(database)?;
         Ok(NewSession {
@@ -202,11 +230,23 @@ impl SessionService {
     ///
     /// Returns [`AuthError::Internal`] when the database fails.
     pub async fn revoke_all(&self, user: UserId) -> Result<u64, AuthError> {
-        let result = sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+        let mut tx = self.pool.begin().await.map_err(database)?;
+        sqlx::query("SELECT id FROM users WHERE id = $1 FOR UPDATE")
             .bind(user.as_uuid())
-            .execute(&self.pool)
+            .execute(&mut *tx)
             .await
             .map_err(database)?;
+        let result = sqlx::query("DELETE FROM sessions WHERE user_id = $1")
+            .bind(user.as_uuid())
+            .execute(&mut *tx)
+            .await
+            .map_err(database)?;
+        sqlx::query("DELETE FROM auth_step_up WHERE user_id = $1")
+            .bind(user.as_uuid())
+            .execute(&mut *tx)
+            .await
+            .map_err(database)?;
+        tx.commit().await.map_err(database)?;
         Ok(result.rows_affected())
     }
 

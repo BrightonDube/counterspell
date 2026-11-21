@@ -28,6 +28,18 @@ pub enum AuthError {
     Unauthenticated,
     /// Password sign-in failed. The same answer for every cause.
     InvalidCredentials,
+    /// The authenticator or recovery code was refused.
+    InvalidSecurityCode,
+    /// The challenge is absent, expired, or already used.
+    SecurityChallengeExpired,
+    /// A recent session is required to manage credentials.
+    RecentSignInRequired,
+    /// The security feature is unavailable on this origin or deployment.
+    SecurityUnavailable,
+    /// The requested credential change conflicts with the account state.
+    SecurityConflict,
+    /// Passkey verification failed.
+    PasskeyFailed,
     /// The request's `Origin` or `Sec-Fetch-Site` is not this site.
     CsrfOriginMismatch,
     /// The demo account may not do this.
@@ -76,17 +88,26 @@ impl AuthError {
             | Self::WeakPassword
             | Self::InvalidJson
             | Self::ConfirmationMismatch
-            | Self::InvalidOrExpiredToken => StatusCode::BAD_REQUEST,
+            | Self::InvalidOrExpiredToken
+            | Self::InvalidSecurityCode
+            | Self::SecurityChallengeExpired
+            | Self::PasskeyFailed => StatusCode::BAD_REQUEST,
             Self::Unauthenticated | Self::InvalidCredentials => StatusCode::UNAUTHORIZED,
-            Self::CsrfOriginMismatch | Self::DemoAccountRestricted => StatusCode::FORBIDDEN,
-            Self::ProviderDisabled => StatusCode::NOT_FOUND,
-            Self::EmailAlreadySet | Self::EmailInUse | Self::AccountExists | Self::RunsActive => {
-                StatusCode::CONFLICT
+            Self::CsrfOriginMismatch | Self::DemoAccountRestricted | Self::RecentSignInRequired => {
+                StatusCode::FORBIDDEN
             }
+            Self::ProviderDisabled => StatusCode::NOT_FOUND,
+            Self::EmailAlreadySet
+            | Self::EmailInUse
+            | Self::AccountExists
+            | Self::RunsActive
+            | Self::SecurityConflict => StatusCode::CONFLICT,
             Self::BodyTooLarge => StatusCode::PAYLOAD_TOO_LARGE,
             Self::UnsupportedMediaType => StatusCode::UNSUPPORTED_MEDIA_TYPE,
             Self::RateLimited { .. } => StatusCode::TOO_MANY_REQUESTS,
-            Self::EmailUnavailable | Self::Busy => StatusCode::SERVICE_UNAVAILABLE,
+            Self::EmailUnavailable | Self::Busy | Self::SecurityUnavailable => {
+                StatusCode::SERVICE_UNAVAILABLE
+            }
             Self::Internal => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
@@ -102,6 +123,12 @@ impl AuthError {
             Self::InvalidOrExpiredToken => "invalid_or_expired_token",
             Self::Unauthenticated => "unauthenticated",
             Self::InvalidCredentials => "invalid_credentials",
+            Self::InvalidSecurityCode => "invalid_security_code",
+            Self::SecurityChallengeExpired => "security_challenge_expired",
+            Self::RecentSignInRequired => "recent_sign_in_required",
+            Self::SecurityUnavailable => "security_unavailable",
+            Self::SecurityConflict => "security_conflict",
+            Self::PasskeyFailed => "passkey_failed",
             Self::CsrfOriginMismatch => "csrf_origin_mismatch",
             Self::DemoAccountRestricted => "demo_account_restricted",
             Self::ProviderDisabled => "provider_disabled",
@@ -131,6 +158,18 @@ impl AuthError {
             }
             Self::Unauthenticated => "Sign in to continue.",
             Self::InvalidCredentials => "The email or password is not correct.",
+            Self::InvalidSecurityCode => {
+                "That code could not be verified. Try a fresh code or an unused recovery code."
+            }
+            Self::SecurityChallengeExpired => "This security check has expired. Start it again.",
+            Self::RecentSignInRequired => "Sign in again before changing your security settings.",
+            Self::SecurityUnavailable => "This security feature is temporarily unavailable.",
+            Self::SecurityConflict => {
+                "This change is unavailable with your current sign-in methods."
+            }
+            Self::PasskeyFailed => {
+                "The passkey could not be verified. Try again or use another sign-in method."
+            }
             Self::CsrfOriginMismatch => "This request did not come from Counterspell.",
             Self::DemoAccountRestricted => "The demo account cannot do this.",
             Self::ProviderDisabled => "This sign-in method is not available.",
@@ -204,6 +243,12 @@ mod tests {
             AuthError::InvalidOrExpiredToken,
             AuthError::Unauthenticated,
             AuthError::InvalidCredentials,
+            AuthError::InvalidSecurityCode,
+            AuthError::SecurityChallengeExpired,
+            AuthError::RecentSignInRequired,
+            AuthError::SecurityUnavailable,
+            AuthError::SecurityConflict,
+            AuthError::PasskeyFailed,
             AuthError::CsrfOriginMismatch,
             AuthError::DemoAccountRestricted,
             AuthError::ProviderDisabled,

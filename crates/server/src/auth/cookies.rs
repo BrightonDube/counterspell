@@ -109,6 +109,50 @@ impl CookieSettings {
         ))
     }
 
+    fn challenge_name(self, name: &'static str, secure_name: &'static str) -> &'static str {
+        if self.secure {
+            secure_name
+        } else {
+            name
+        }
+    }
+
+    pub(crate) fn step_up_name(self) -> &'static str {
+        self.challenge_name("cs_step_up", "__Host-cs_step_up")
+    }
+
+    pub(crate) fn step_up_value(self, raw: &str) -> Result<HeaderValue, AuthError> {
+        self.challenge_value(self.step_up_name(), raw, 300)
+    }
+
+    pub(crate) fn clear_step_up(self) -> Result<HeaderValue, AuthError> {
+        self.challenge_value(self.step_up_name(), "", 0)
+    }
+
+    pub(crate) fn passkey_binding_name(self) -> &'static str {
+        self.challenge_name("cs_passkey", "__Host-cs_passkey")
+    }
+
+    pub(crate) fn passkey_binding_value(self, raw: &str) -> Result<HeaderValue, AuthError> {
+        self.challenge_value(self.passkey_binding_name(), raw, 300)
+    }
+
+    pub(crate) fn clear_passkey_binding(self) -> Result<HeaderValue, AuthError> {
+        self.challenge_value(self.passkey_binding_name(), "", 0)
+    }
+
+    fn challenge_value(
+        self,
+        name: &str,
+        raw: &str,
+        max_age: u16,
+    ) -> Result<HeaderValue, AuthError> {
+        header_value(&format!(
+            "{name}={raw}; {}; Max-Age={max_age}",
+            self.attributes()
+        ))
+    }
+
     fn attributes(self) -> &'static str {
         if self.secure {
             "Path=/; HttpOnly; Secure; SameSite=Lax"

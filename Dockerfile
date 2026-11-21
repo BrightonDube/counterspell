@@ -22,7 +22,10 @@ ARG SQLX_CLI_VERSION=0.8.6
 RUN cargo install sqlx-cli --version "${SQLX_CLI_VERSION}" --no-default-features --features rustls,postgres --locked
 
 FROM debian:bookworm-slim AS server-runtime
-RUN groupadd --system --gid 10001 counterspell \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libssl3 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 counterspell \
     && useradd --system --uid 10001 --gid counterspell --no-create-home counterspell
 COPY --from=rust-builder /app/target/release/counterspell-server /usr/local/bin/counterspell-server
 COPY --from=web-builder /app/web/build /app/web/build

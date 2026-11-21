@@ -32,6 +32,8 @@ pub enum Action {
     OAuthStart,
     /// A provider link flow starts for a signed-in user.
     LinkStart,
+    /// A credential enrollment, passkey or second-factor request.
+    Security,
 }
 
 /// Whom a limit counts: an address, an IP, an address and IP pair, or a user.
@@ -59,6 +61,7 @@ impl Action {
             Self::LoginFailure => "login",
             Self::OAuthStart => "oauth_start",
             Self::LinkStart => "link_start",
+            Self::Security => "security",
         }
     }
 
@@ -66,7 +69,7 @@ impl Action {
     fn fails_closed(self) -> bool {
         matches!(
             self,
-            Self::Magic | Self::Register | Self::Reset | Self::LinkEmail
+            Self::Magic | Self::Register | Self::Reset | Self::LinkEmail | Self::Security
         )
     }
 
@@ -85,6 +88,7 @@ impl Action {
             (Self::LoginFailure, Scope::Ip) => Some((20, 900)),
             (Self::OAuthStart, Scope::Ip) => Some((20, 600)),
             (Self::LinkStart, Scope::User) => Some((10, 3600)),
+            (Self::Security, Scope::User | Scope::Ip) => Some((12, 300)),
             _ => None,
         }
     }
@@ -155,6 +159,9 @@ impl AuthLimiter {
             } => Err(AuthError::RateLimited {
                 retry_after_seconds,
             }),
+            Decision::SkippedFailOpen if action == Action::Security => {
+                Err(AuthError::SecurityUnavailable)
+            }
             Decision::SkippedFailOpen if action.fails_closed() => Err(AuthError::EmailUnavailable),
             Decision::Allowed { .. } | Decision::SkippedFailOpen => Ok(()),
         }
@@ -181,6 +188,7 @@ impl AuthLimiter {
             Some(count) if count >= limit => Err(AuthError::RateLimited {
                 retry_after_seconds: window,
             }),
+            None if action == Action::Security => Err(AuthError::SecurityUnavailable),
             None if action.fails_closed() => Err(AuthError::EmailUnavailable),
             Some(_) | None => Ok(()),
         }

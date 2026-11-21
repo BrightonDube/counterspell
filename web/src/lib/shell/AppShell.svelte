@@ -3,6 +3,7 @@
   // landing and sign-in screens, dimmed hard so work surfaces stay readable, with
   // the Creepster wordmark as the way home.
   import { resolve } from '$app/paths';
+  import { page } from '$app/state';
 
   let { children }: { children?: import('svelte').Snippet } = $props();
 </script>
@@ -19,7 +20,7 @@
 
   <header class="relative border-b border-border/70 bg-bg/60 backdrop-blur-sm">
     <div
-      class="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6"
+      class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-y-1 px-4 py-3 sm:px-6"
     >
       <a
         href={resolve('/dashboard')}
@@ -42,7 +43,10 @@
         </a>
         <a
           href={resolve('/settings/account')}
-          class="rounded px-3 py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+          aria-current={page.url.pathname === '/settings/account'
+            ? 'page'
+            : undefined}
+          class="rounded px-3 py-1.5 text-text-muted transition-colors hover:bg-surface hover:text-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus aria-[current=page]:bg-accent-moss-deep aria-[current=page]:text-text"
         >
           Settings
         </a>

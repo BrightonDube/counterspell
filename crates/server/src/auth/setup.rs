@@ -22,6 +22,7 @@ use crate::{
         limits::AuthLimiter,
         oauth::{github::GithubProvider, google::GoogleProvider, OAuthProvider},
         password::HashGate,
+        security::SecuritySettings,
         AuthState, MailPort,
     },
     client_ip::TrustedProxies,
@@ -67,7 +68,7 @@ pub fn build_state(
         .map_err(|_| SetupError::DemoEmail)?;
     // Email sign-in is optional: with no mail provider configured the state keeps mail unwired
     // and the mail routes answer email_unavailable.
-    let state = AuthState::new(
+    let mut state = AuthState::new(
         pool,
         clock,
         CookieSettings::for_base_url(&config.public_base_url),
@@ -77,6 +78,10 @@ pub fn build_state(
     )
     .with_oauth(config.public_base_url.clone(), oauth_providers(config)?)
     .with_settings(PublicSettings::from_config(config));
+    state.security = Some(SecuritySettings::new(
+        &config.public_base_url,
+        config.session_secret.expose(),
+    ));
     let state = match &config.mail {
         Some(mail_config) => {
             let transport = mail_transport(mail_config, config.app_env)?;

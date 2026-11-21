@@ -18,21 +18,26 @@ pub mod extract;
 pub mod handlers;
 pub mod limits;
 pub mod oauth;
+mod passkeys;
 pub mod password;
 pub mod resolver;
 pub mod return_to;
+mod security;
 pub mod session;
 pub mod setup;
 pub mod tokens;
+mod totp;
 
 use std::{collections::HashMap, sync::Arc};
 
 use axum::{
+    http::{header, HeaderValue},
     middleware,
-    routing::{get, post},
+    routing::{delete, get, post},
     Router,
 };
 use sqlx::PgPool;
+use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::client_ip::TrustedProxies;
 
@@ -96,6 +101,7 @@ pub struct AuthState {
     pub oauth: Option<OAuthPort>,
     /// The public settings that `GET /api/auth/config` shows: which sign-in methods are on.
     pub settings: PublicSettings,
+    pub(crate) security: Option<security::SecuritySettings>,
 }
 
 impl AuthState {
@@ -125,6 +131,7 @@ impl AuthState {
             flows,
             oauth: None,
             settings: PublicSettings::new(false, false, false),
+            security: None,
         }
     }
 
@@ -188,6 +195,14 @@ pub const MUTATING_ROUTES: &[&str] = &[
     "/api/auth/password/reset/confirm",
     "/api/auth/link/github/start",
     "/api/auth/link/email",
+    "/api/auth/totp/start",
+    "/api/auth/totp/enable",
+    "/api/auth/totp/disable",
+    "/api/auth/totp/verify",
+    "/api/auth/passkeys/register/start",
+    "/api/auth/passkeys/register/finish",
+    "/api/auth/passkeys/login/start",
+    "/api/auth/passkeys/login/finish",
 ];
 
 /// The auth routes that exist so far: password and email-link sign-in, logout, logout everywhere
@@ -227,6 +242,28 @@ pub fn router(state: AuthState) -> Router {
             post(handlers::link::start),
         )
         .route("/api/auth/link/email", post(handlers::link::email))
+        .route("/api/auth/security", get(security::summary))
+        .route("/api/auth/totp/start", post(totp::start))
+        .route("/api/auth/totp/enable", post(totp::enable))
+        .route("/api/auth/totp/disable", post(totp::disable))
+        .route("/api/auth/totp/verify", post(security::verify))
+        .route(
+            "/api/auth/passkeys/register/start",
+            post(passkeys::register_start),
+        )
+        .route(
+            "/api/auth/passkeys/register/finish",
+            post(passkeys::register_finish),
+        )
+        .route(
+            "/api/auth/passkeys/login/start",
+            post(passkeys::login_start),
+        )
+        .route(
+            "/api/auth/passkeys/login/finish",
+            post(passkeys::login_finish),
+        )
+        .route("/api/auth/passkeys/{id}", delete(passkeys::remove))
         .route(
             "/api/me",
             get(handlers::me::me).delete(handlers::delete::delete_account),
@@ -234,5 +271,8 @@ pub fn router(state: AuthState) -> Router {
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);
     let routes = routes.merge(config_router(settings));
-    csrf::json_body_guard_layer(routes)
+    csrf::json_body_guard_layer(routes).layer(SetResponseHeaderLayer::if_not_present(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static("no-store"),
+    ))
 }
