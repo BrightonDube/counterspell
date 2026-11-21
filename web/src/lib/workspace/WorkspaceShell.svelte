@@ -88,9 +88,6 @@
   let problemDrawerEl = $state<HTMLElement>();
   let resultsDrawerEl = $state<HTMLElement>();
 
-  const signInHref = $derived(
-    resolve(`/login?return_to=${encodeURIComponent(page.url.pathname)}`)
-  );
   let runs = $state<RunSessionSnapshot>({ phase: 'idle' });
   // Session deps are injected once at mount; swapping them mid-run is not supported.
   const session = createRunSession(
@@ -308,7 +305,9 @@
       {#if runs.errorCode === 'unauthenticated'}
         <a
           class="underline underline-offset-4 hover:text-text"
-          href={signInHref}
+          href={resolve(
+            `/login?return_to=${encodeURIComponent(page.url.pathname)}`
+          )}
         >
           {runs.error}
         </a>
