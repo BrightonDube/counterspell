@@ -157,7 +157,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 4: [stretch] review API and dashboard integration, only after T08 and FSRS foundation
 
-- [ ] **T15 [stretch] [S] (30 min) Implement due-review query and sibling selection**
+- [x] **T15 [stretch] [S] (30 min) Implement due-review query and sibling selection**
   - Files: `crates/server/src/reviews/query.rs`, `reviews/mod.rs`, and API tests.
   - Implement `GET /api/reviews/due` with ownership-first filtering, due ordering, a bounded result, and a published sibling problem that is not solved by the current user when one exists. Use the normal challenge fallback when no sibling exists and label it correctly.
   - Verify: two users with the same concept have independent due results; solved/unpublished problems are excluded; no arbitrary user id can affect the response.
