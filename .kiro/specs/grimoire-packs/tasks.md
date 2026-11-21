@@ -217,7 +217,7 @@ All tasks are implementation tasks for the design above. No task in this documen
   - Depends on: T24, T25, and Brighton's review.
   - Verify: each pack's `status` is `published` only after Brighton's sign-off recorded in the commit message.
 
-- [ ] **T29 [BLOCKED on ghost-engine] Convert `packs/_test/` to the new format**
+- [x] **T29 [BLOCKED on ghost-engine] Convert `packs/_test/` to the new format**
   - Files: `packs/_test/*` (only after ghost-engine ships and its tests are updated).
   - Depends on: `ghost-engine` spec complete, and a decision on open question 11.
   - Verify: `validate --all packs --include-underscore` passes for the converted fixtures, and ghost-engine tests still pass.

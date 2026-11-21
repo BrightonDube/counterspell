@@ -219,16 +219,16 @@ Replace the mid-page hero with the approved variant B title screen. Visual refer
 
 ## Completion checklist
 
-- [ ] `/` is prerendered from `web/` and served by `counterspell-server`; the smoke marker is present.
-- [ ] Wordmark, ENTER (link to `/login`) and the headline "Learn why your code breaks." are in the prerendered static HTML, along with the three beats and the CTA.
-- [ ] GSAP is loaded only in motion mode, after first paint, and only on the landing page.
-- [ ] Reduced motion shows the static final frames, with no GSAP request.
-- [ ] Scene SVGs are original, script-free and within the size budget.
-- [ ] Geist, JetBrains Mono and Creepster are self-hosted; their OFL notices are in `THIRD-PARTY-NOTICES.md`. No font CDN.
-- [ ] Lighthouse mobile performance median of three runs is at least 90, recorded in `docs/kiro-log/landing-steel-night-lighthouse.md`.
-- [ ] The Hunt copy never claims a smallest possible or proven minimum input.
-- [ ] No Rust, server or route change was made by this spec (except the approved 200.html fallback).
-- [ ] The hero is the approved variant B title screen: full viewport, Creepster CSS wordmark, ENTER to `/login`, living `hero-moon-living-*` loop (poster first, video only in motion mode after first paint, never under reduced motion or Save-Data), CSS pumpkin glow, no middle familiar, and a gradient fade into the existing section below.
+- [x] `/` is prerendered from `web/` and served by `counterspell-server`; the smoke marker is present.
+- [x] Wordmark, ENTER (link to `/login`) and the headline "Learn why your code breaks." are in the prerendered static HTML, along with the three beats and the CTA.
+- [x] GSAP is loaded only in motion mode, after first paint, and only on the landing page.
+- [x] Reduced motion shows the static final frames, with no GSAP request.
+- [x] Scene SVGs are original, script-free and within the size budget.
+- [x] Geist, JetBrains Mono and Creepster are self-hosted; their OFL notices are in `THIRD-PARTY-NOTICES.md`. No font CDN.
+- [x] Lighthouse mobile performance median of three runs is at least 90, recorded in `docs/kiro-log/landing-steel-night-lighthouse.md`.
+- [x] The Hunt copy never claims a smallest possible or proven minimum input.
+- [x] No Rust, server or route change was made by this spec (except the approved 200.html fallback).
+- [x] The hero is the approved variant B title screen: full viewport, Creepster CSS wordmark, ENTER to `/login`, living `hero-moon-living-*` loop (poster first, video only in motion mode after first paint, never under reduced motion or Save-Data), CSS pumpkin glow, no middle familiar, and a gradient fade into the existing section below.
 
 ## Agent task notes (2026-12-01)
 - **T14**: verification list green. npm check/test/build pass; the landing e2e spec (8 tests)

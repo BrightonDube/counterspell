@@ -111,7 +111,7 @@ These tasks add a `pipeline` module to `crates/grimoire/`. The module is pure: n
   - Verify: `pack-assemble-test.sh` runs with temporary directories: a normal assembly passes; a private file under the public root fails; a missing private root fails; output never includes a canary. The script is not run against the real private repo.
   - Rust lesson: none (shell). Record the shell safety choices used (`set -euo pipefail`, quoted paths).
 
-- [ ] **PA08 [S] [BLOCKED on grimoire-packs amendment X1 and X2] (30 min) Teach grimoire the assembled layout**
+- [x] **PA08 [S] [BLOCKED on grimoire-packs amendment X1 and X2] (30 min) Teach grimoire the assembled layout**
   - Files: `crates/grimoire/src/layout.rs` (existing), `crates/grimoire/tests/layout.rs`.
   - Allow `hidden.toml`, `generator.toml`, `known_ghosts.toml`, `incorrect/*.py`, `reference/solution.py` and `approval.toml` in the assembled tree. Move the `[generator]` requirement to `generator.toml`. Add `LAY-07` for a file from the wrong tree.
   - Requirements: PIP-31, D3, design §4 and §14 X1.
