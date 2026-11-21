@@ -129,7 +129,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T08 only.
   - Rust lesson: explain Cargo dependencies/features and why a third-party scheduler is kept behind a small adapter trait/module.
 
-- [ ] **T12 [stretch] [S] (30 min) Add FSRS card and history migrations** [SUPERVISED]
+- [x] **T12 [stretch] [S] (30 min) Add FSRS card and history migrations** [SUPERVISED]
   - Files: `migrations/<timestamp>_concept_cards.sql`, `migrations/<timestamp>_concept_review_history.sql`, and database tests.
   - Add one card per `(user_id, concept_id)`, serialised FSRS fields, due/last-review timestamps, optimistic `version`, review history, non-negative database checks, and ownership foreign keys. Match the final catalogue concept key type; do not duplicate the concepts table.
   - Verify: migrations apply twice; duplicate cards fail; negative intervals/stability/reps/lapses fail; user deletion cascades only that user's cards/history; no card exists without a valid concept/user.
