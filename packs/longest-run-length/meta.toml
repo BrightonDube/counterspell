@@ -1,6 +1,6 @@
 slug = "longest-run-length"
 title = "The Longest Run"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "strings"
 concepts = ["strings", "scanning", "edge-cases"]
@@ -11,6 +11,7 @@ pack_version = 7
 function = "longest_run"
 returns = "int"
 comparator = "exact"
+complexity_note = "The reference makes one pass through the text and uses constant extra space."
 
 [[params]]
 name = "text"
@@ -37,3 +38,11 @@ expected = 1
 [[samples]]
 input = ["cc"]
 expected = 2
+
+[[samples]]
+input = [""]
+expected = 0
+
+[[samples]]
+input = ["a"]
+expected = 1

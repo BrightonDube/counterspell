@@ -8,8 +8,8 @@ text = "A diagonal cell has the same row number and column number."
 
 [[hint]]
 rung = 3
-text = "Work out how far the diagonal reaches before you start adding, so you never read a cell that is not there."
+text = "```\nfor each index below the shorter dimension\n  add the cell at that row and column\n```"
 
 [[hint]]
 rung = 4
-text = "Add only the cells where both the row number and the column number exist, and keep each value's sign."
+text = "Use the shorter dimension as the limit. Add the signed value from each diagonal cell; return the accumulated total."

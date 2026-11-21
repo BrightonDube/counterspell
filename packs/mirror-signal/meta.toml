@@ -1,0 +1,40 @@
+slug = "mirror-signal"
+title = "Mirror Signal"
+status = "published"
+difficulty = "easy"
+track = "strings"
+concepts = ["strings", "scanning", "indexing"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "mirror_signal"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) time to scan the mirrored pairs and O(1) extra space for the two positions and the mismatch count."
+
+[[params]]
+name = "signal"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "kmv", min_len = 0, max_len = 48 },
+]
+
+[[samples]]
+input = ["kmmmv"]
+expected = 1
+
+[[samples]]
+input = ["kmvmk"]
+expected = 0
+
+[[samples]]
+input = ["vmkm"]
+expected = 2

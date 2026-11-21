@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "What would the meter display between entries in the ledger?"
+
+[[hint]]
+rung = 2
+text = "Scan the ledger once and carry the meter reading forward from each entry to the next."
+
+[[hint]]
+rung = 3
+text = "```\nmeter = opening reading\nfor each change in ledger order:\n    apply the change and inspect the resulting reading\n```"
+
+[[hint]]
+rung = 4
+text = "After adding a change, record a mark if the new reading equals the inspection level. Keep scanning after each match."

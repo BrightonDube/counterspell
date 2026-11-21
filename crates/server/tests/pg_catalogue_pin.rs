@@ -16,7 +16,7 @@ use counterspell_server::{
     runs::enqueue::{enqueue, EnqueueOutcome, NewRun},
     testkit::ensure_user,
 };
-use sqlx::PgPool;
+use sqlx::{postgres::PgPoolOptions, PgPool};
 
 fn limits() -> RunLimits {
     RunLimits {
@@ -62,8 +62,23 @@ async fn pg_catalogue_pin_keeps_the_version_after_unpublish(pool: PgPool) {
     insert_published_fixture(&pool, "two-sum", 1)
         .await
         .expect("published fixture");
+    let server_pool = PgPoolOptions::new()
+        .max_connections(1)
+        .after_connect(|connection, _| {
+            Box::pin(async move {
+                sqlx::query("SET ROLE counterspell_server")
+                    .execute(connection)
+                    .await?;
+                Ok(())
+            })
+        })
+        .connect_with(pool.connect_options().as_ref().clone())
+        .await
+        .expect("restricted server pool");
     let run = new_run(user, None);
-    let outcome = enqueue(&pool, &run, &limits()).await.expect("enqueue");
+    let outcome = enqueue(&server_pool, &run, &limits())
+        .await
+        .expect("enqueue as the server role");
     assert_eq!(outcome, EnqueueOutcome::Created { run_id: run.run_id });
 
     sqlx::query(
