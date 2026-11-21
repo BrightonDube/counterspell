@@ -5,6 +5,9 @@
 //! validator reports. The expected lists are written by hand. A companion code
 //! appears only when the edit also breaks a later check, and the case says why.
 //! Symlink cases need Unix, so this file is compiled only there.
+//!
+// test-change: GHO-6. The published count-pairs fixture changed, and the ghost
+// mutations now synthesise private files instead of embedding hidden values.
 
 #![cfg(unix)]
 
@@ -287,53 +290,49 @@ fn cases() -> Vec<Case> {
         Case {
             code: "KNG-01",
             name: "two known ghosts with the same id",
-            edits: vec![replace("known_ghosts.toml", "id = \"discard-negative-target\"", "id = \"deduplicate-pair-values\"")],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"same-ghost\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[1, 1], 2]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"A pair is counted once.\"\n\n[[ghost]]\nid = \"same-ghost\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[1, 1], 2]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"A pair is counted once.\"\n",
+            ),
             expected: vec!["KNG-01"],
         },
         Case {
             code: "KNG-02",
             name: "known ghost input does not fit the schema",
-            edits: vec![replace(
-                "known_ghosts.toml",
-                "input = [[10, -12, -11], -23]",
-                "input = [[10, -12, -11], 999]",
-            )],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"bad-input\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 999]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"The target is outside the allowed range.\"\n",
+            ),
             expected: vec!["KNG-02"],
         },
         Case {
             code: "KNG-03",
             name: "crash ghost that also has a got value",
-            edits: vec![replace(
-                "known_ghosts.toml",
-                "kind = \"wrong\"\ninput = [[5, 11, 5, 11, 11], 16]",
-                "kind = \"crash\"\nexception_class = \"ValueError\"\ninput = [[5, 11, 5, 11, 11], 16]",
-            )],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"crash-with-got\"\nprogram = \"incorrect/mutation.py\"\nkind = \"crash\"\ninput = [[0], 0]\ngot = 1\nexception_class = \"ValueError\"\nconcepts = [\"pairs\"]\nexplanation = \"The program raises an error.\"\n",
+            ),
             expected: vec!["KNG-03"],
         },
         Case {
             code: "KNG-04",
             name: "explanation claims minimality",
-            edits: vec![replace(
-                "known_ghosts.toml",
-                "Counting distinct value pairs",
-                "The smallest counting of distinct value pairs",
-            )],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"minimal-claim\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 1\nconcepts = [\"pairs\"]\nexplanation = \"The smallest input breaks it.\"\n",
+            ),
             expected: vec!["KNG-04"],
         },
         Case {
             code: "KNG-05",
             name: "ghost concept not in the pack",
-            edits: vec![replace("known_ghosts.toml", "concepts = [\"arrays\"]", "concepts = [\"sorting\"]")],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"wrong-concept\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 1\nconcepts = [\"sorting\"]\nexplanation = \"The concept is not part of this pack.\"\n",
+            ),
             expected: vec!["KNG-05"],
         },
         Case {
             code: "KNG-06",
             name: "dogfood flag in a catalogue pack",
-            edits: vec![replace(
-                "known_ghosts.toml",
-                "concepts = [\"arrays\"]",
-                "concepts = [\"arrays\"]\ndogfood = true",
-            )],
+            edits: ghost_pack(
+                "[[ghost]]\nid = \"dogfood-ghost\"\nprogram = \"incorrect/mutation.py\"\nkind = \"wrong\"\ninput = [[0], 0]\ngot = 1\nconcepts = [\"pairs\"]\ndogfood = true\nexplanation = \"The flag is only for test packs.\"\n",
+            ),
             expected: vec!["KNG-06"],
         },
         Case {
@@ -345,6 +344,20 @@ fn cases() -> Vec<Case> {
                 "def count_pair(values, target):",
             )],
             expected: vec!["REF-01"],
+        },
+    ]
+}
+
+/// Writes a self-contained private ghost fixture without publishing a hidden input.
+fn ghost_pack(known_ghosts: &str) -> Vec<Edit> {
+    vec![
+        Edit::Write {
+            file: "known_ghosts.toml",
+            text: known_ghosts.to_owned(),
+        },
+        Edit::Write {
+            file: "incorrect/mutation.py",
+            text: "def count_pairs(values, target):\n    return 0\n".to_owned(),
         },
     ]
 }
