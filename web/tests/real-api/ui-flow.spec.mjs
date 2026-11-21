@@ -54,6 +54,24 @@ check(
   /sign in|log in|continue with/i.test(body ?? '')
 );
 
+// --- Signed-out workspace: Run must point at sign-in, not dead-end ---
+await page.goto(`${BASE}/problems/add-two`, { waitUntil: 'networkidle' });
+await page.waitForSelector('.monaco-editor', { timeout: 45000 });
+await page.getByRole('button', { name: 'Run samples' }).click();
+await page.waitForSelector('[role=alert]', { timeout: 20000 });
+const authLink = page.locator('[role=alert] a[href^="/login?return_to="]');
+check(
+  'workspace: signed-out run offers a sign-in link back here',
+  (await authLink.count()) === 1,
+  (await authLink.getAttribute('href')) ?? 'no link'
+);
+const back = await authLink.getAttribute('href');
+check(
+  'workspace: sign-in link returns to this problem',
+  back !== null && back.includes(encodeURIComponent('/problems/add-two')),
+  back ?? ''
+);
+
 // --- Sign in (minted session, same shape OAuth verify writes) ---
 const signed = await signIn(context, page, 'uiflow');
 check('auth: minted session identifies a user', signed);
