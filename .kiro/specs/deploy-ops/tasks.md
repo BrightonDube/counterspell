@@ -306,7 +306,7 @@ Conventions:
 
 Nothing here may be ticked from reasoning alone. Each item is ticked from the evidence in `deploy/vps/verification-report.md`.
 
-- [ ] T00 signed off, and Q1 to Q27 answered in `design.md`.
+- [x] T00 signed off, and Q1 to Q27 answered in `design.md`.
 - [ ] `bats deploy/vps/tests/` green (P3 to P7, P10, P11 with its note).
 - [ ] `compose_shape.sh` green on the production override (P1, P2, P8, R4.x).
 - [ ] `caddy validate` passes in the pinned image with the site address from env (R6.1).
@@ -319,7 +319,7 @@ Nothing here may be ticked from reasoning alone. Each item is ticked from the ev
 - [ ] One nightly backup, one encrypted off-box copy and one restore drill, all recorded (R8.1, R8.4, R8.8).
 - [ ] Each alert route tested by a forced failure (R9.6, R9.8).
 - [ ] `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` pass for T06 and T07.
-- [ ] `verification-report.md` names every R-item as tested on host, tested in CI, model only, or not tested.
+- [x] `verification-report.md` names every R-item as tested on host, tested in CI, model only, or not tested.
 - [ ] The uptime checkpoint on 29 Jan 2027 is recorded (T34).
 
 ## Agent task notes (2026-12-01)

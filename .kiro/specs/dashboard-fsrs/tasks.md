@@ -221,13 +221,13 @@ T02 may be omitted if existing indexes already prove the required access paths, 
 
 ### Must: core dashboard
 
-- [ ] `GET /api/dashboard` requires the authenticated session and accepts no owner selector.
-- [ ] One PostgreSQL read produces solved counts, streak, weak concepts, recent submissions, and suggestions.
-- [ ] Solved problems are distinct per user and accepted verdicts only.
-- [ ] Streak uses completed activity days and deterministic UTC boundaries.
-- [ ] Weak concepts and suggestions use only the signed-in user's progress plus public catalogue data.
-- [ ] Recent submissions are capped at ten and contain no code or hidden judge data.
-- [ ] Suggestions are capped at three, deterministic, published, and unsolved for that user.
+- [x] `GET /api/dashboard` requires the authenticated session and accepts no owner selector.
+- [x] One PostgreSQL read produces solved counts, streak, weak concepts, recent submissions, and suggestions.
+- [x] Solved problems are distinct per user and accepted verdicts only.
+- [x] Streak uses completed activity days and deterministic UTC boundaries.
+- [x] Weak concepts and suggestions use only the signed-in user's progress plus public catalogue data.
+- [x] Recent submissions are capped at ten and contain no code or hidden judge data.
+- [x] Suggestions are capped at three, deterministic, published, and unsolved for that user.
 - [ ] Cross-user canary tests prove no aggregate or recommendation leakage.
 - [ ] Frontend loading, empty, error, signed-out, keyboard, semantic-token, and reduced-motion requirements pass.
 - [ ] Core CI-equivalent checks and the freeze-safe checkpoint pass.

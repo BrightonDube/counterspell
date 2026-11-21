@@ -407,21 +407,21 @@ Conventions for every Rust task:
 ## Completion checklist
 
 - [ ] No new Cargo package was added; `cargo metadata --no-deps` still lists exactly the six canonical packages; the server's dependency tree has no `bollard` and no `counterspell-judge`.
-- [ ] Postgres is the only store for users, identities, sessions, email tokens and OAuth flows; Valkey holds counters only.
+- [x] Postgres is the only store for users, identities, sessions, email tokens and OAuth flows; Valkey holds counters only.
 - [ ] The judge role has no privilege on any auth table or function; every foreign key to `users` or `submissions` cascades.
-- [ ] Email tokens are single-use (concurrent-safe), expire after exactly 15 minutes, are purpose-bound, superseded on re-issue, and stored only as hashes.
-- [ ] OAuth uses `state` and PKCE S256, a single-use flow, a browser binding cookie for sign-in, and a session binding for linking.
+- [x] Email tokens are single-use (concurrent-safe), expire after exactly 15 minutes, are purpose-bound, superseded on re-issue, and stored only as hashes.
+- [x] OAuth uses `state` and PKCE S256, a single-use flow, a browser binding cookie for sign-in, and a session binding for linking.
 - [ ] An OAuth email match never links, merges or signs in to another account (P5, P6 pass).
-- [ ] Linking happens only through a signed-in user's own flow or a verification email opened by the same account.
-- [ ] Sessions are opaque, hashed at rest, HttpOnly, Secure, SameSite=Lax, rolling 30 days with a 90-day cap, and renewed at most hourly; a new value is issued at every sign-in.
-- [ ] `logout` and `logout-all` take effect on the next request; long-lived streams stop within one heartbeat.
-- [ ] A session never reads another user's data; no handler takes a user id from the request.
-- [ ] The Origin guard covers every non-safe `/api` route, including the run endpoints.
-- [ ] Rate limits and the global email cap hold; mail endpoints fail closed when Valkey is down.
-- [ ] Magic link, register and reset answers are identical for known and unknown addresses; password login failures are identical.
-- [ ] The demo account signs in by password, is restricted by capabilities and by database triggers, is unreachable by magic link and OAuth, and resets daily without touching other users' data.
-- [ ] No secret, token, session value, password, `code`, `state` or email address appears in any log line.
-- [ ] No task read, wrote or created `.env` or any credential file.
+- [x] Linking happens only through a signed-in user's own flow or a verification email opened by the same account.
+- [x] Sessions are opaque, hashed at rest, HttpOnly, Secure, SameSite=Lax, rolling 30 days with a 90-day cap, and renewed at most hourly; a new value is issued at every sign-in.
+- [x] `logout` and `logout-all` take effect on the next request; long-lived streams stop within one heartbeat.
+- [x] A session never reads another user's data; no handler takes a user id from the request.
+- [x] The Origin guard covers every non-safe `/api` route, including the run endpoints.
+- [x] Rate limits and the global email cap hold; mail endpoints fail closed when Valkey is down.
+- [x] Magic link, register and reset answers are identical for known and unknown addresses; password login failures are identical.
+- [x] The demo account signs in by password, is restricted by capabilities and by database triggers, is unreachable by magic link and OAuth, and resets daily without touching other users' data.
+- [x] No secret, token, session value, password, `code`, `state` or email address appears in any log line.
+- [x] No task read, wrote or created `.env` or any credential file.
 - [ ] The 22 correctness properties each have a passing test; fmt, Clippy (`-D warnings`), workspace tests, web checks and `cargo deny check licenses` are green.
 - [ ] The manual smoke checklist was run with real GitHub, Google and Resend and its results are recorded.
 

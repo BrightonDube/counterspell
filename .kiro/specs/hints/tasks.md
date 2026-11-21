@@ -229,13 +229,13 @@ Conventions for every Rust task (same as `run-lifecycle`):
 
 ## Completion checklist
 
-- [ ] Ladder reveals are ordered, idempotent and owner-only (P1, P2, P7).
-- [ ] AI hints are click-only, grounded, guarded, labelled and cached (R2, R3, R4, P3, P6, P10–P12).
-- [ ] Fallback is used at most once and only after a failure (P4).
-- [ ] Quota and spend are exact under concurrency and released on infrastructure failure (P5, R6).
-- [ ] Cost is recorded with provider, model, tokens and estimate flag (P8).
-- [ ] No key, prompt or code appears in logs or errors (P9).
-- [ ] The familiar uses the same client and quota and cannot change its mood (R10).
+- [x] Ladder reveals are ordered, idempotent and owner-only (P1, P2, P7).
+- [x] AI hints are click-only, grounded, guarded, labelled and cached (R2, R3, R4, P3, P6, P10–P12).
+- [x] Fallback is used at most once and only after a failure (P4).
+- [x] Quota and spend are exact under concurrency and released on infrastructure failure (P5, R6).
+- [x] Cost is recorded with provider, model, tokens and estimate flag (P8).
+- [x] No key, prompt or code appears in logs or errors (P9).
+- [x] The familiar uses the same client and quota and cannot change its mood (R10).
 - [ ] Open questions 1–18 in `design.md` are answered, or the assumed choice is accepted.
 
 ## Agent task notes (2026-12-01)

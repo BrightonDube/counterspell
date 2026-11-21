@@ -235,14 +235,14 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 
 ## Completion checklist
 
-- [ ] A published problem loads from Axum with statement, constraints, signature, samples, starter, and only enabled languages.
-- [ ] Monaco uses the Crypt theme, is lazy-loaded, accessible, and preserves separate drafts per problem/language.
-- [ ] Run samples show real input/expected/got and Submit shows live hidden-test-safe events.
-- [ ] SSE reconnects with `Last-Event-ID`, de-duplicates by sequence, handles gaps/retries, and fetches the authoritative terminal result.
-- [ ] A real wrong submission enters Ghost Hunting, replays only real shrink steps, and shows a real minimized counterexample in Bug Autopsy.
-- [ ] Authored hints are ordered; AI text is labelled; Rerun ghost is a real sandboxed custom run.
-- [ ] A learner can fix and resubmit to Accepted without a page reload or manual intervention.
-- [ ] Familiar mood is measured-only, speech is labelled, preferences work, and reduced motion preserves information without effects.
+- [x] A published problem loads from Axum with statement, constraints, signature, samples, starter, and only enabled languages.
+- [x] Monaco uses the Crypt theme, is lazy-loaded, accessible, and preserves separate drafts per problem/language.
+- [x] Run samples show real input/expected/got and Submit shows live hidden-test-safe events.
+- [x] SSE reconnects with `Last-Event-ID`, de-duplicates by sequence, handles gaps/retries, and fetches the authoritative terminal result.
+- [x] A real wrong submission enters Ghost Hunting, replays only real shrink steps, and shows a real minimized counterexample in Bug Autopsy.
+- [x] Authored hints are ordered; AI text is labelled; Rerun ghost is a real sandboxed custom run.
+- [x] A learner can fix and resubmit to Accepted without a page reload or manual intervention.
+- [x] Familiar mood is measured-only, speech is labelled, preferences work, and reduced motion preserves information without effects.
 - [ ] Keyboard navigation, screen-reader status, focus, contrast, touch targets, output escaping, hidden-data protection, and 200% zoom are tested.
-- [ ] The definition-of-done path uses the built Axum app and actual judge/sandbox, never mocked success responses or prototype fixtures.
+- [x] The definition-of-done path uses the built Axum app and actual judge/sandbox, never mocked success responses or prototype fixtures.
 - [ ] Full formatting, lint, tests, frontend build, licence, Compose, and real-flow verification pass.

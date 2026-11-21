@@ -161,15 +161,15 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Completion checklist
 
-- [ ] `counterspell-mcp` runs as an official `rmcp` stdio server with six registered tools.
-- [ ] Pure tools reuse engine/Grimoire logic and code-running tools use the judge runner.
-- [ ] No MCP path executes Python/Node/shell on the developer host or uses the main Docker daemon.
-- [ ] Code-running tools have explicit sandbox descriptions and are absent from auto-approval lists.
-- [ ] `validate_pack`, `explain_verdict`, and `fit_complexity` are the only auto-approved tools.
-- [ ] `kiro-power/` contains the required Agent Plugins manifest, MCP registration, and both skills.
-- [ ] `.kiro/settings/mcp.json` matches the Power server and approval policy.
-- [ ] The private dogfood pack is original, underscore-prefixed, and excluded from the public catalogue.
+- [x] `counterspell-mcp` runs as an official `rmcp` stdio server with six registered tools.
+- [x] Pure tools reuse engine/Grimoire logic and code-running tools use the judge runner.
+- [x] No MCP path executes Python/Node/shell on the developer host or uses the main Docker daemon.
+- [x] Code-running tools have explicit sandbox descriptions and are absent from auto-approval lists.
+- [x] `validate_pack`, `explain_verdict`, and `fit_complexity` are the only auto-approved tools.
+- [x] `kiro-power/` contains the required Agent Plugins manifest, MCP registration, and both skills.
+- [x] `.kiro/settings/mcp.json` matches the Power server and approval policy.
+- [x] The private dogfood pack is original, underscore-prefixed, and excluded from the public catalogue.
 - [ ] Kiro evidence shows find → minimized counterexample → fix → validate → re-hunt and Power installation.
 - [ ] Chat export, screenshots, and `docs/KIRO_USAGE.md` links are scrubbed and factual.
 - [ ] Protocol, serialization, boundary, fake-runner, refusal, Power, static-pack, and real-sandbox tests pass.
-- [ ] Rust lessons are recorded for every implementation task that changes Rust.
+- [x] Rust lessons are recorded for every implementation task that changes Rust.
