@@ -137,6 +137,44 @@ body {
   --hero-ember: 255 170 60;
 }
 
+/* Catalogue and dashboard motion: staggered row entrances, card reveals and skeleton shimmer.
+   The global prefers-reduced-motion block above collapses all of these automatically. */
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.row-in {
+  animation: row-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.panel-in {
+  animation: row-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes skeleton-shimmer {
+  from {
+    background-position: -300px 0;
+  }
+  to {
+    background-position: 300px 0;
+  }
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--raised) 25%,
+    var(--border) 50%,
+    var(--raised) 75%
+  );
+  background-size: 600px 100%;
+  animation: skeleton-shimmer 1.4s linear infinite;
+}
+
 /* Shared motion vocabulary for art assets (AnimatedArt, the familiar mascot). */
 @keyframes art-breathe {
   0%,

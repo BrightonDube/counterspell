@@ -8,6 +8,7 @@
   import type { DashboardView, RecentSubmission } from './types';
   import NavEntry from '../nav/NavEntry.svelte';
   import AnimatedJacko from '../familiar/AnimatedJacko.svelte';
+  import ProgressRing from '../art/ProgressRing.svelte';
 
   let { load = loadDashboard }: { load?: () => Promise<DashboardView> } =
     $props();
@@ -143,7 +144,11 @@
       </div>
     {/if}
 
-    <section class="{PANEL} space-y-4" aria-labelledby="solved-title">
+    <section
+      class="{PANEL} panel-in space-y-4"
+      style="animation-delay: 60ms"
+      aria-labelledby="solved-title"
+    >
       <div class="flex items-center justify-between gap-3">
         <h2 id="solved-title" class="text-lg font-semibold">Solved</h2>
         {#if view.recentSubmissions[0]?.verdict === 'accepted'}
@@ -153,10 +158,23 @@
           </div>
         {/if}
       </div>
-      <p class="text-4xl font-semibold tabular-nums">
-        {view.solved.total}
-        <span class="text-base font-normal text-text-muted">problems</span>
-      </p>
+      <div class="flex flex-wrap items-center gap-6">
+        <ProgressRing
+          segments={[
+            { value: view.solved.byDifficulty.easy, color: 'var(--success)' },
+            {
+              value: view.solved.byDifficulty.medium,
+              color: 'var(--accent-candle)'
+            },
+            { value: view.solved.byDifficulty.hard, color: 'var(--danger)' }
+          ]}
+          goal={Math.max(view.solved.total, 1)}
+        />
+        <p class="text-4xl font-semibold tabular-nums">
+          {view.solved.total}
+          <span class="text-base font-normal text-text-muted">problems</span>
+        </p>
+      </div>
       <dl class="grid grid-cols-3 gap-3 text-sm">
         <div class="rounded-lg border border-border bg-raised px-4 py-3">
           <dt class="text-text-muted">Easy</dt>
@@ -183,7 +201,10 @@
       </p>
     </section>
 
-    <div class="grid gap-6 lg:grid-cols-2">
+    <div
+      class="grid gap-6 lg:grid-cols-2 panel-in"
+      style="animation-delay: 140ms"
+    >
       <section class="{PANEL} space-y-4" aria-labelledby="weak-title">
         <h2 id="weak-title" class="text-lg font-semibold">
           Concepts to revisit
@@ -192,9 +213,10 @@
           <p class="text-text-muted">No failed concepts yet.</p>
         {:else}
           <ul class="space-y-2">
-            {#each view.weakConcepts as concept (concept.slug)}
+            {#each view.weakConcepts as concept, weakIdx (concept.slug)}
               <li
-                class="flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border bg-raised px-4 py-3"
+                class="row-in flex flex-wrap items-baseline justify-between gap-2 rounded-lg border border-border bg-raised px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-accent-candle"
+                style="animation-delay: {200 + weakIdx * 50}ms"
               >
                 <span class="font-medium">{concept.name}</span>
                 <span class="text-sm text-text-muted">
@@ -212,9 +234,10 @@
           <p class="text-text-muted">No runs yet.</p>
         {:else}
           <ol class="space-y-2">
-            {#each view.recentSubmissions as run (run.id)}
+            {#each view.recentSubmissions as run, runIdx (run.id)}
               <li
-                class="space-y-1 rounded-lg border border-border bg-raised px-4 py-3 transition-colors hover:border-accent-candle"
+                class="row-in space-y-1 rounded-lg border border-border bg-raised px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-accent-candle"
+                style="animation-delay: {200 + runIdx * 50}ms"
               >
                 <a
                   href={resolve('/problems/[slug]', { slug: run.problem.slug })}
@@ -236,7 +259,11 @@
       </section>
     </div>
 
-    <section class="{PANEL} space-y-4" aria-labelledby="next-title">
+    <section
+      class="{PANEL} panel-in space-y-4"
+      style="animation-delay: 220ms"
+      aria-labelledby="next-title"
+    >
       <h2 id="next-title" class="text-lg font-semibold">Try next</h2>
       {#if view.suggestedChallenges.length === 0}
         <p class="text-text-muted">
@@ -244,9 +271,10 @@
         </p>
       {:else}
         <ol class="grid gap-3 sm:grid-cols-2">
-          {#each view.suggestedChallenges as challenge (challenge.slug)}
+          {#each view.suggestedChallenges as challenge, chIdx (challenge.slug)}
             <li
-              class="space-y-1 rounded-lg border border-border bg-raised px-4 py-3 transition-colors hover:border-accent-candle"
+              class="row-in space-y-1 rounded-lg border border-border bg-raised px-4 py-3 transition-all duration-150 hover:-translate-y-0.5 hover:border-accent-candle"
+              style="animation-delay: {260 + chIdx * 50}ms"
             >
               <a
                 href={resolve('/problems/[slug]', { slug: challenge.slug })}
