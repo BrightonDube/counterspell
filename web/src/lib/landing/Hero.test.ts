@@ -65,7 +65,7 @@ describe('Hero', () => {
   it('shows the tagline as text under the wordmark', () => {
     const { container } = render(Hero);
     expect(container.textContent).toContain(
-      'Master the algorithms that matter'
+      'Outthink the Machine. Sharpen Your Mind.'
     );
   });
 

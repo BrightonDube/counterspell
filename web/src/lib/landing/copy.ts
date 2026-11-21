@@ -5,7 +5,7 @@
 export const WORDMARK = 'Counterspell';
 
 /** The tagline under the wordmark (title screen). */
-export const TAGLINE = 'Master the algorithms that matter';
+export const TAGLINE = 'Outthink the Machine. Sharpen Your Mind.';
 
 /** The page headline, now shown below the title screen as the section heading. */
 export const HEADLINE = 'Learn why your code breaks.';
