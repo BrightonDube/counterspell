@@ -9,12 +9,6 @@
 </script>
 
 <div class="flex flex-wrap items-center gap-6">
-  <a
-    href={resolve('/problems')}
-    class="cta inline-flex items-center rounded bg-accent-candle px-6 py-3 text-base font-semibold text-bg transition-colors duration-200 hover:bg-accent-candle-glow focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg focus-visible:outline-none"
-  >
-    {CTA.primary}
-  </a>
   <AnimatedArt
     src="/art/objects/candle-flame.webp"
     srcset="/art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w"
@@ -23,5 +17,11 @@
     motion="flame"
     bounce
   />
+  <a
+    href={resolve('/problems')}
+    class="cta inline-flex items-center rounded bg-accent-candle px-6 py-3 text-base font-semibold text-bg transition-colors duration-200 hover:bg-accent-candle-glow focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg focus-visible:outline-none"
+  >
+    {CTA.primary}
+  </a>
   <AnimatedJacko mood="orange" size={96} />
 </div>
