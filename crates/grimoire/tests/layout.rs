@@ -100,7 +100,7 @@ fn layout_accepts_the_public_originality_record() {
         loaded.text("originality.md"),
         Some("## Idea\nCount occurrences.\n")
     );
-    assert!(report.diagnostics().is_empty());
+    assert_eq!(report.diagnostics(), []);
 }
 
 #[test]
