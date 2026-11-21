@@ -343,12 +343,12 @@ Nothing here may be ticked from reasoning alone. Each item is ticked from the ev
 - [x] A stdout flood gives `output_limit` (S09, S11); a stderr flood is truncated with a marker and does not kill the container or change the verdict (S10, A2).
 - [x] No labelled container remains after worker recovery, including with the sweeper alone (S16, S17).
 - [x] No network connection reaches any host listener (S12), and the control result is stated.
-- [x] Preflight passes on the VPS and fails for a weakened policy (S20).
+- [ ] Preflight passes on the VPS and fails for a weakened policy (S20).
 - [x] Infrastructure failures are never reported as a user's wrong answer (P9, S21, S22).
 - [x] Concurrent runs do not harm each other (S18) and the container cap holds (S19).
 - [x] `counterspell-server` has no Docker dependency and `bollard` is confined to two files (T36).
 - [x] No host process spawning in `judge` or `mcp` production code (T36).
-- [x] Validation vectors exist and the judge re-check passes them (T12).
+- [ ] Validation vectors exist and the judge re-check passes them (T12).
 - [ ] gVisor is reported as untested unless S23 passed on the VPS.
 - [ ] `cargo fmt`, `cargo clippy -D warnings`, `cargo test --workspace` and `cargo deny check licenses` pass.
 - [ ] `verification-report.md` states what was tested, what was model-only and what was not tested.

@@ -171,5 +171,5 @@ All tasks below are implementation tasks for the design above. No task is being 
 - [x] The private dogfood pack is original, underscore-prefixed, and excluded from the public catalogue.
 - [ ] Kiro evidence shows find → minimized counterexample → fix → validate → re-hunt and Power installation.
 - [ ] Chat export, screenshots, and `docs/KIRO_USAGE.md` links are scrubbed and factual.
-- [x] Protocol, serialization, boundary, fake-runner, refusal, Power, static-pack, and real-sandbox tests pass.
+- [ ] Protocol, serialization, boundary, fake-runner, refusal, Power, static-pack, and real-sandbox tests pass.
 - [x] Rust lessons are recorded for every implementation task that changes Rust.

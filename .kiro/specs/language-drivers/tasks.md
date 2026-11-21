@@ -130,7 +130,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 - [x] Bench mode uses the worker clock, two warm-ups, five repeats per size, raw `run_timings`, and safe public events.
 - [ ] Every published problem has Python and JavaScript known-correct test fixtures.
 - [ ] Generated-input round-trip and Python-reference agreement properties pass through the sandbox.
-- [x] Hostile output, fake verdict JSON, invalid protocol, timeouts, and cleanup behavior are verified.
+- [ ] Hostile output, fake verdict JSON, invalid protocol, timeouts, and cleanup behavior are verified.
 - [x] T12's core freeze-safe gate is recorded before any `[stretch]` task starts.
 - [ ] Java uses `eclipse-temurin`, tests 8–16 MiB stack candidates, and retains the smallest passing setting before enablement.
 - [ ] C++ uses `gcc`, follows the same protocol, and is enabled only after its full property suite passes.

@@ -411,7 +411,7 @@ Conventions for every Rust task:
 - [ ] The judge role has no privilege on any auth table or function; every foreign key to `users` or `submissions` cascades.
 - [x] Email tokens are single-use (concurrent-safe), expire after exactly 15 minutes, are purpose-bound, superseded on re-issue, and stored only as hashes.
 - [x] OAuth uses `state` and PKCE S256, a single-use flow, a browser binding cookie for sign-in, and a session binding for linking.
-- [x] An OAuth email match never links, merges or signs in to another account (P5, P6 pass).
+- [ ] An OAuth email match never links, merges or signs in to another account (P5, P6 pass).
 - [x] Linking happens only through a signed-in user's own flow or a verification email opened by the same account.
 - [x] Sessions are opaque, hashed at rest, HttpOnly, Secure, SameSite=Lax, rolling 30 days with a 90-day cap, and renewed at most hourly; a new value is issued at every sign-in.
 - [x] `logout` and `logout-all` take effect on the next request; long-lived streams stop within one heartbeat.

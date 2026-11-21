@@ -518,18 +518,18 @@ Critical path for the demo: T01 → T02 → T03 → T06 → T09 → T11 → T12 
 - [x] No new Cargo package or Rust dependency; `cargo metadata --no-deps` lists exactly the six canonical packages; the engine manifest still has only `serde` and `serde_json`.
 - [x] The mood is computed once, by `decide`, from `MeasuredFacts` only; a source-scan test proves no AI, hint, guess, speech, prompt or prefs identifier is reachable from it.
 - [x] A non-Accepted verdict always gives mood 1; `internal_error`, `failed` and `expired` runs have no mood and no reaction.
-- [x] The fit passes P1 to P7 on the synthetic corpus, with zero wrong-at-`High` results and a committed calibration report; constants are frozen as `fit-1`.
+- [ ] The fit passes P1 to P7 on the synthetic corpus, with zero wrong-at-`High` results and a committed calibration report; constants are frozen as `fit-1`.
 - [x] Results are worded as observations; the top mood says "Matches reference complexity"; no string says "optimal" (exhaustive test).
 - [x] The migration, constraints, freeze trigger and grants are in place; the server role cannot write any mood, class, timing or baseline.
 - [x] The five columns, the `complexity` event, the `familiar` event and the read-model sections come from one value and agree after a reload.
 - [x] Bench is gated (one at a time), guarded by load, and discarded or incomplete benches give Pleased with an honest headline, never a complexity claim.
 - [x] Baselines are same-language, same-version, same-digest, insert-only, and created only after the admission test.
 - [x] The mascot plays effects only for live events, honours reduced motion, mute and hide, loads GSAP lazily and disposes every timeline, and uses palette tokens only.
-- [x] The speech bubble is requested once per run, grounded only on the allowed inputs, passes the claim guard, is labelled "AI hint", falls back to a template, and cannot change verdict or mood.
+- [ ] The speech bubble is requested once per run, grounded only on the allowed inputs, passes the claim guard, is labelled "AI hint", falls back to a template, and cannot change verdict or mood.
 - [x] Preferences endpoints validate input and act only on the session user.
 - [ ] The real-stack proof shows the quadratic solution never reaching mood 5 and no wrong class at `high`.
 - [x] At least three launch problems have bench enabled, or the shortfall is reported to Brighton.
-- [x] fmt, Clippy (`-D warnings`), workspace tests, `pg_` tests, web check, web tests and `cargo deny check licenses` are green.
+- [ ] fmt, Clippy (`-D warnings`), workspace tests, `pg_` tests, web check, web tests and `cargo deny check licenses` are green.
 - [ ] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
 
 ## Agent task notes (2026-12-01)
