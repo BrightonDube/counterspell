@@ -41,6 +41,8 @@
   import ProblemPanel from './ProblemPanel.svelte';
   import StatusAnnouncer from './StatusAnnouncer.svelte';
   import TestPanel from './TestPanel.svelte';
+  import { page } from '$app/state';
+  import { resolve } from '$app/paths';
   import { createLayoutMode, type LayoutMode } from './layout-mode.svelte.js';
   import { createReducedMotion } from './reduced-motion.svelte.js';
   import {
@@ -86,6 +88,9 @@
   let problemDrawerEl = $state<HTMLElement>();
   let resultsDrawerEl = $state<HTMLElement>();
 
+  const signInHref = $derived(
+    resolve(`/login?return_to=${encodeURIComponent(page.url.pathname)}`)
+  );
   let runs = $state<RunSessionSnapshot>({ phase: 'idle' });
   // Session deps are injected once at mount; swapping them mid-run is not supported.
   const session = createRunSession(
@@ -299,7 +304,18 @@
 {#snippet resultsContent()}
   <StatusAnnouncer message={announcement} label="Run announcements" srOnly />
   {#if runs.error}
-    <p role="alert" class="text-sm text-danger">{runs.error}</p>
+    <p role="alert" class="text-sm text-danger">
+      {#if runs.errorCode === 'unauthenticated'}
+        <a
+          class="underline underline-offset-4 hover:text-text"
+          href={signInHref}
+        >
+          {runs.error}
+        </a>
+      {:else}
+        {runs.error}
+      {/if}
+    </p>
   {/if}
   {#if inProgress}
     <p role="status" class="text-sm text-text-muted">

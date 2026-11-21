@@ -39,6 +39,8 @@ export interface RunSessionSnapshot {
   readonly view?: RunView;
   /** A safe, fixed or server-provided message. Never a stack trace or internal error text. */
   readonly error?: string;
+  /** The stable API error code, when the failure carried one (for example unauthenticated). */
+  readonly errorCode?: string;
 }
 
 /** The side effects the session uses. Tests replace them with fakes. */
@@ -81,6 +83,10 @@ function safeMessage(error: unknown): string {
   return error instanceof ApiRequestError ? error.message : FALLBACK_ERROR;
 }
 
+function safeCode(error: unknown): string | undefined {
+  return error instanceof ApiRequestError ? error.code : undefined;
+}
+
 function isBusy(phase: SessionPhase): boolean {
   return phase === 'starting' || phase === 'streaming' || phase === 'loading';
 }
@@ -111,7 +117,14 @@ export function createRunSession(
     runId: string,
     stream: RunStreamState
   ): void {
-    publish({ ...current, phase: 'loading', runId, stream, error: undefined });
+    publish({
+      ...current,
+      phase: 'loading',
+      runId,
+      stream,
+      error: undefined,
+      errorCode: undefined
+    });
     pending = new AbortController();
     deps
       .fetchRun(runId, { signal: pending.signal })
@@ -127,7 +140,8 @@ export function createRunSession(
           mode: current.mode,
           runId,
           stream,
-          error: safeMessage(error)
+          error: safeMessage(error),
+          errorCode: safeCode(error)
         });
       });
   }
@@ -203,7 +217,8 @@ export function createRunSession(
           mode: input.mode,
           view: current.view,
           stream: priorStream,
-          error: safeMessage(error)
+          error: safeMessage(error),
+          errorCode: safeCode(error)
         });
       });
     return true;
