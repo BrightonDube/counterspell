@@ -144,16 +144,18 @@ class CapturedStderr:
                 offset += written
 
     def __exit__(self, _exc_type, _exc, _traceback):
-        sys.stderr.flush()
-        os.dup2(self._saved_fd, 2)
-        self._closing = True
-        self._thread.join(timeout=1)
-        if not self._thread.is_alive():
-            os.close(self._read_fd)
-            os.close(self._saved_fd)
-            self._saved_fd = None
-            self._read_fd = None
-            self._thread = None
+        try:
+            sys.stderr.flush()
+        finally:
+            os.dup2(self._saved_fd, 2)
+            self._closing = True
+            self._thread.join(timeout=1)
+            if not self._thread.is_alive():
+                os.close(self._read_fd)
+                os.close(self._saved_fd)
+                self._saved_fd = None
+                self._read_fd = None
+                self._thread = None
         return False
 
     def text(self):
