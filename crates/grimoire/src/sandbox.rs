@@ -453,12 +453,13 @@ pub fn check(
     let curated = match pack.text(hidden::HIDDEN_FILE).map(hidden::curated_cases) {
         None => Vec::new(),
         Some(Ok(cases)) => cases,
-        Some(Err(message)) => {
+        Some(Err(_)) => {
+            // The parser's message can quote private case values, so it is not reported.
             report.push(Diagnostic::new(
                 codes::SBX_09,
                 hidden::HIDDEN_FILE,
                 None,
-                format!("hidden.toml does not parse, so its cases cannot be checked: {message}"),
+                "hidden.toml does not parse, so its cases cannot be checked",
             ));
             Vec::new()
         }
