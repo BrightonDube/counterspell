@@ -28,7 +28,12 @@ const MODES = new Set(['normal', 'bench']);
 const STDERR_CAP = 64 * 1024;
 const STDERR_TRUNCATED = '\n[stderr truncated]\n';
 const CALL_STDERR_MARKER = '\x1ecounterspell:stderr\n';
+const writeOut = process.stdout.write.bind(process.stdout);
 const writeErr = process.stderr.write.bind(process.stderr);
+const writeFsSync = fs.writeSync.bind(fs);
+const writeFs = fs.write.bind(fs);
+const exitProcess = process.exit.bind(process);
+let activeCapture = null;
 
 /** A setup or protocol failure. The driver reports it on stderr and exits with `exitCode`. */
 class DriverFailure extends Error {
@@ -169,73 +174,79 @@ function resolveFunction(moduleExports, name) {
   throw new DriverFailure(`the solution does not define ${name}`);
 }
 
+/** The wrapper functions below live for the process's lifetime. A solution may cache one
+ * while it loads, so they consult the call currently owning the capture instead of closing
+ * over one call's buffer.
+ */
+function fsData(data, rest) {
+  if (typeof data === 'string') {
+    const encoding = rest.findLast((part) => typeof part === 'string');
+    return Buffer.from(data, encoding);
+  }
+  const buffer = Buffer.isBuffer(data)
+    ? data
+    : Buffer.from(data.buffer || data, data.byteOffset || 0, data.byteLength || data.length);
+  const offset = typeof rest[0] === 'number' ? rest[0] : 0;
+  const length = typeof rest[1] === 'number' ? rest[1] : buffer.length - offset;
+  return buffer.subarray(offset, offset + length);
+}
+
+process.stdout.write = (chunk, encoding, callback) => {
+  const done = typeof encoding === 'function' ? encoding : callback;
+  if (done) done();
+  return true;
+};
+process.stderr.write = (chunk, encoding, callback) => {
+  const bytes = Buffer.isBuffer(chunk)
+    ? chunk
+    : Buffer.from(String(chunk), typeof encoding === 'string' ? encoding : undefined);
+  if (activeCapture) activeCapture.push(bytes);
+  return writeErr(chunk, encoding, callback);
+};
+fs.writeSync = (fd, data, ...rest) => {
+  if (fd !== 1 && fd !== 2) return writeFsSync(fd, data, ...rest);
+  const bytes = fsData(data, rest);
+  if (fd === 1) return bytes.length;
+  if (activeCapture) activeCapture.push(bytes);
+  return writeFsSync(fd, data, ...rest);
+};
+fs.write = (fd, data, ...rest) => {
+  if (fd !== 1 && fd !== 2) return writeFs(fd, data, ...rest);
+  const callback = rest[rest.length - 1];
+  const bytes = fsData(data, typeof callback === 'function' ? rest.slice(0, -1) : rest);
+  if (fd === 1) {
+    if (typeof callback === 'function') callback(null, bytes.length, data);
+    else writeFs(fd, data, ...rest);
+    return;
+  }
+  if (activeCapture) activeCapture.push(bytes);
+  writeFs(fd, data, ...rest);
+};
+process.exit = () => {
+  throw new DriverFailure('the solution called process.exit', EXIT_USER);
+};
+
 /** Runs `run` with stdout discarded and bounded stderr captured for the answer. */
 function withCapturedOutput(run) {
-  const writeOut = process.stdout.write;
-  const writeErr = process.stderr.write;
-  const writeFsSync = fs.writeSync;
-  const writeFs = fs.write;
-  const exit = process.exit;
   const stderr = [];
   let captured = 0;
   let truncated = false;
-  const capture = (chunk, encoding, callback) => {
-    const data = Buffer.isBuffer(chunk)
-      ? chunk
-      : Buffer.from(String(chunk), typeof encoding === 'string' ? encoding : undefined);
-    const room = STDERR_CAP - captured;
-    if (room > 0) {
-      stderr.push(data.subarray(0, Math.min(room, data.length)));
-      captured += Math.min(room, data.length);
+  activeCapture = {
+    push(data) {
+      const room = STDERR_CAP - captured;
+      if (room > 0) {
+        stderr.push(data.subarray(0, Math.min(room, data.length)));
+        captured += Math.min(room, data.length);
+      }
+      truncated ||= data.length > room;
     }
-    truncated ||= data.length > room;
-    return writeErr(chunk, encoding, callback);
   };
   const rendered = () =>
     Buffer.concat(stderr).toString('utf8') + (truncated ? STDERR_TRUNCATED : '');
-  const fsData = (data, rest) => {
-    if (typeof data === 'string') {
-      const encoding = rest.findLast((part) => typeof part === 'string');
-      return Buffer.from(data, encoding);
-    }
-    const buffer = Buffer.isBuffer(data)
-      ? data
-      : Buffer.from(data.buffer || data, data.byteOffset || 0, data.byteLength || data.length);
-    const offset = typeof rest[0] === 'number' ? rest[0] : 0;
-    const length = typeof rest[1] === 'number' ? rest[1] : buffer.length - offset;
-    return buffer.subarray(offset, offset + length);
-  };
-  process.stdout.write = () => true;
-  process.stderr.write = capture;
-  fs.writeSync = (fd, data, ...rest) => {
-    if (fd === 2) {
-      const bytes = fsData(data, rest);
-      capture(bytes);
-      return bytes.length;
-    }
-    return writeFsSync.call(fs, fd, data, ...rest);
-  };
-  fs.write = (fd, data, ...rest) => {
-    const callback = rest[rest.length - 1];
-    if (fd === 2) {
-      const bytes = fsData(data, rest.slice(0, -1));
-      capture(bytes);
-      if (typeof callback === 'function') callback(null, bytes.length, data);
-      return;
-    }
-    writeFs.call(fs, fd, data, ...rest);
-  };
-  process.exit = () => {
-    throw new DriverFailure('the solution called process.exit', EXIT_USER);
-  };
   return Promise.resolve()
     .then(run)
     .finally(() => {
-      process.stdout.write = writeOut;
-      process.stderr.write = writeErr;
-      fs.writeSync = writeFsSync;
-      fs.write = writeFs;
-      process.exit = exit;
+      activeCapture = null;
     })
     .then(
       (out) => ({ out, stderr: rendered() }),
@@ -262,7 +273,7 @@ async function loadFunction(signature) {
     process.stderr.write('driver: the solution failed while loading\n');
     process.stderr.write(error.capturedStderr || '');
     reportError(error);
-    process.exit(EXIT_PROTOCOL);
+    exitProcess(EXIT_PROTOCOL);
   }
   return resolveFunction(loaded, signature.functionName);
 }
@@ -279,7 +290,7 @@ async function callSolution(fn, args) {
     process.stderr.write('driver: the solution raised an exception\n');
     process.stderr.write(error.capturedStderr || '');
     reportError(error);
-    process.exit(EXIT_USER);
+    exitProcess(EXIT_USER);
   }
 }
 
@@ -303,7 +314,6 @@ async function serve(fn, signature, answer) {
     const { id, args } = parseCall(line, signature);
     const { out, stderr } = await callSolution(fn, args);
     if (!conforms(out, signature.returns)) {
-      process.stderr.write(stderr);
       throw new DriverFailure('the return value is not JSON-safe for the signature');
     }
     const answerLine = stderr ? { t: id, out, stderr } : { t: id, out };
@@ -317,7 +327,7 @@ async function main(argv) {
   const signature = loadSignature();
   const fn = await loadFunction(signature);
   // Captured before any call discards stdout, so answers always reach the judge.
-  const answer = process.stdout.write.bind(process.stdout);
+  const answer = writeOut;
   return serve(fn, signature, answer);
 }
 
@@ -329,6 +339,6 @@ main(process.argv.slice(2)).then(
     const code = error instanceof DriverFailure ? error.exitCode : EXIT_PROTOCOL;
     const message = error instanceof DriverFailure ? error.message : String(error);
     const captured = error && error.capturedStderr ? error.capturedStderr : '';
-    process.stderr.write(`driver: ${message}\n${captured}`, () => process.exit(code));
+    process.stderr.write(`driver: ${message}\n${captured}`, () => exitProcess(code));
   }
 );
