@@ -2,7 +2,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AuthApiError } from './client.js';
 import { signInWithPasskey, verifyTwoFactor } from './security';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 
 describe('sign-in security', () => {
   it('passes the authenticator or recovery code and uses the server destination', async () => {
@@ -38,6 +41,39 @@ describe('sign-in security', () => {
     const failure = await verifyTwoFactor('123456').catch((error) => error);
     expect(failure).toBeInstanceOf(AuthApiError);
     expect(failure.code).toBe('security_challenge_expired');
+  });
+
+  it('cancels a pending passkey prompt after 60 seconds', async () => {
+    vi.useFakeTimers();
+    vi.stubGlobal('PublicKeyCredential', {});
+    const get = vi.fn(
+      ({ signal }: CredentialRequestOptions) =>
+        new Promise<Credential | null>((_, reject) => {
+          signal?.addEventListener('abort', () => reject(signal.reason), {
+            once: true
+          });
+        })
+    );
+    vi.stubGlobal('navigator', { credentials: { get } });
+    const fetch = vi.fn().mockResolvedValue(
+      Response.json({
+        flow_id: 'challenge-flow',
+        publicKey: { challenge: '_w', timeout: 300_000 }
+      })
+    );
+    vi.stubGlobal('fetch', fetch);
+
+    const attempt = signInWithPasskey('/problems').catch(
+      (failure: unknown) => failure
+    );
+    await vi.advanceTimersByTimeAsync(59_999);
+    const options = get.mock.calls[0][0];
+    expect(options.publicKey?.timeout).toBe(60_000);
+    expect(options.signal?.aborted).toBe(false);
+
+    await vi.advanceTimersByTimeAsync(1);
+    await expect(attempt).resolves.toMatchObject({ name: 'AbortError' });
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it('decodes and serializes the passkey assertion on browsers without WebAuthn JSON helpers', async () => {
