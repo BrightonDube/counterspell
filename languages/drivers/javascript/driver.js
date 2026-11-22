@@ -28,6 +28,7 @@ const MODES = new Set(['normal', 'bench']);
 const STDERR_CAP = 64 * 1024;
 const STDERR_TRUNCATED = '\n[stderr truncated]\n';
 const CALL_STDERR_MARKER = '\x1ecounterspell:stderr\n';
+const writeErr = process.stderr.write.bind(process.stderr);
 
 /** A setup or protocol failure. The driver reports it on stderr and exits with `exitCode`. */
 class DriverFailure extends Error {
@@ -188,9 +189,7 @@ function withCapturedOutput(run) {
       captured += Math.min(room, data.length);
     }
     truncated ||= data.length > room;
-    const done = typeof encoding === 'function' ? encoding : callback;
-    if (done) done();
-    return true;
+    return writeErr(chunk, encoding, callback);
   };
   const rendered = () =>
     Buffer.concat(stderr).toString('utf8') + (truncated ? STDERR_TRUNCATED : '');

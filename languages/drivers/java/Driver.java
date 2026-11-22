@@ -533,10 +533,15 @@ public final class Driver {
                 + " with the signature's Java types");
     }
 
-    /** A byte sink that keeps the sandbox's first-64KiB stderr rule. */
+    /** A tee that keeps the sandbox's first-64KiB stderr copy and mirrors live bytes. */
     static final class BoundedErr extends ByteArrayOutputStream {
+        private final PrintStream mirror;
         private boolean truncated;
+        BoundedErr(PrintStream mirror) {
+            this.mirror = mirror;
+        }
         @Override public synchronized void write(int b) {
+            mirror.write(b);
             if (size() < STDERR_CAP) {
                 super.write(b);
             } else {
@@ -544,6 +549,7 @@ public final class Driver {
             }
         }
         @Override public synchronized void write(byte[] bytes, int offset, int length) {
+            mirror.write(bytes, offset, length);
             int take = Math.min(length, STDERR_CAP - size());
             if (take > 0) {
                 super.write(bytes, offset, take);
@@ -560,11 +566,12 @@ public final class Driver {
         private final PrintStream savedOut;
         private final java.io.InputStream savedIn;
         private final PrintStream savedErr;
-        private final BoundedErr capturedErr = new BoundedErr();
+        private final BoundedErr capturedErr;
         Quiet() {
             savedOut = System.out;
             savedIn = System.in;
             savedErr = System.err;
+            capturedErr = new BoundedErr(savedErr);
             System.setOut(new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8));
             System.setIn(new ByteArrayInputStream(new byte[0]));
             System.setErr(new PrintStream(capturedErr, true, StandardCharsets.UTF_8));
@@ -672,7 +679,6 @@ public final class Driver {
                     stderr = quiet.stderr();
                     quiet.close();
                     diagnose("the solution raised an exception");
-                    System.err.print(stderr);
                     e.getCause().printStackTrace();
                     System.exit(EXIT_USER);
                     return;
@@ -680,7 +686,6 @@ public final class Driver {
                     stderr = quiet.stderr();
                     quiet.close();
                     diagnose("the solution failed while loading");
-                    System.err.print(stderr);
                     e.printStackTrace();
                     System.exit(EXIT_PROTOCOL);
                     return;
@@ -692,15 +697,9 @@ public final class Driver {
                 try {
                     normalized = normalize(result);
                 } catch (DriverFailure failure) {
-                    if (!stderr.isEmpty()) {
-                        System.err.print(stderr);
-                    }
                     throw failure;
                 }
                 if (!conforms(normalized, signature.returns)) {
-                    if (!stderr.isEmpty()) {
-                        System.err.print(stderr);
-                    }
                     throw new DriverFailure("the return value is not JSON-safe for the signature");
                 }
                 answers.print("{\"t\":" + call.id + ",\"out\":" + Json.write(normalized));
