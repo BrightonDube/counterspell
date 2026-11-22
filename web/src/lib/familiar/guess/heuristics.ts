@@ -190,36 +190,56 @@ function numeric(node: GuessNode): number {
   return Number.isFinite(v) && v > 0 ? v : 2;
 }
 
-// The coefficient a subexpression applies to the bound it is derived from:
-// `*` multiplies by its literal, `//` `/` `>>` divide by it, `%` discards the
-// bound (result is smaller than the modulus), and `+`/`-` keep the dominant
-// bound term. Names carry coefficient 1, literals carry none.
-function boundFactor(node: GuessNode): number {
+// The coefficient a subexpression applies to the target-named bound it
+// derives from: `*` multiplies by its literal (two bound-derived terms make
+// the product non-linear — no coefficient), `//` `/` divide by their
+// literal, `>>` divides by 2^shift, `%` and calls discard the bound, and
+// `+`/`-` keep the dominant bound term. Unknown names carry Infinity so a
+// param like `k` can never manufacture a shrink.
+function boundFactor(node: GuessNode, targets: Set<string>): number {
   if (node.type === 'literal') return 0;
-  if (node.type === 'name' || node.type === 'member') return 1;
+  if (node.type === 'name' || node.type === 'member') {
+    return targets.has(node.text) ? 1 : Infinity;
+  }
+  if (node.type === 'call' || node.type === 'member_call') return Infinity;
   if (node.type !== 'binary_op') {
-    return Math.max(0, ...node.children.map(boundFactor));
+    return Math.max(
+      0,
+      ...node.children.map((child) => boundFactor(child, targets))
+    );
   }
   if (node.text === '*') {
+    const boundChildren = node.children.filter(
+      (child) => child.type !== 'literal' && boundFactor(child, targets) > 0
+    );
+    if (boundChildren.length > 1) return Infinity;
     return node.children.reduce(
       (acc, child) =>
-        acc * (child.type === 'literal' ? numeric(child) : boundFactor(child)),
+        acc *
+        (child.type === 'literal'
+          ? numeric(child)
+          : boundFactor(child, targets)),
       1
     );
   }
   if (['//', '/', '>>'].includes(node.text)) {
-    const divisor = node.children
-      .slice(1)
-      .reduce(
-        (acc, child) =>
-          acc *
-          (child.type === 'literal' ? numeric(child) : boundFactor(child)),
-        1
-      );
-    return boundFactor(node.children[0]) / Math.max(divisor, 1);
+    const divisor = node.children.slice(1).reduce((acc, child) => {
+      if (child.type === 'literal') {
+        const scale =
+          node.text === '>>'
+            ? Math.pow(2, Math.min(numeric(child), 30))
+            : numeric(child);
+        return acc * scale;
+      }
+      return acc * boundFactor(child, targets);
+    }, 1);
+    return boundFactor(node.children[0], targets) / Math.max(divisor, 1);
   }
   if (node.text === '%') return 0;
-  return Math.max(0, ...node.children.map(boundFactor));
+  return Math.max(
+    0,
+    ...node.children.map((child) => boundFactor(child, targets))
+  );
 }
 
 // A `//`, `/`, or `>>` by a constant counts as a bound shrink only when the
@@ -233,7 +253,11 @@ function hasHalvingOpOn(
   pathFactor = 1,
   blocked = false
 ): boolean {
-  if (node.type === 'call' || node.type === 'member_call') {
+  if (
+    node.type === 'call' ||
+    node.type === 'member_call' ||
+    (node.type === 'binary_op' && node.text === '%')
+  ) {
     return node.children.some((child) =>
       hasHalvingOpOn(child, targets, pathFactor, true)
     );
@@ -243,17 +267,32 @@ function hasHalvingOpOn(
       hasHalvingOpOn(child, targets, pathFactor, blocked)
     );
   }
-  if (node.text === '%') {
-    return node.children.some((child) =>
-      hasHalvingOpOn(child, targets, pathFactor, true)
-    );
-  }
   const literalScale = node.children
     .filter((child) => child.type === 'literal')
-    .reduce((acc, child) => acc * numeric(child), 1);
+    .reduce(
+      (acc, child) =>
+        acc *
+        (node.text === '>>'
+          ? Math.pow(2, Math.min(numeric(child), 30))
+          : numeric(child)),
+      1
+    );
   if (node.text === '*') {
-    return node.children.some((child) =>
-      hasHalvingOpOn(child, targets, pathFactor * literalScale, blocked)
+    return node.children.some((child, i) =>
+      hasHalvingOpOn(
+        child,
+        targets,
+        pathFactor * literalScale,
+        // A sibling mentioning any name inflates the product by an unknown
+        // or bound-derived factor: `(n // 2) * n` grows.
+        blocked ||
+          node.children.some(
+            (other, j) =>
+              j !== i &&
+              other.type !== 'literal' &&
+              namesIn(other, new Set()).size > 0
+          )
+      )
     );
   }
   if (['//', '/', '>>'].includes(node.text)) {
@@ -264,10 +303,10 @@ function hasHalvingOpOn(
     );
     const shrinks =
       !blocked &&
-      literalScale >= 1 &&
       node.children.some((c) => c.type === 'literal') &&
       namedOperands.some(
-        (operand) => (pathFactor * boundFactor(operand)) / literalScale < 1
+        (operand) =>
+          (pathFactor * boundFactor(operand, targets)) / literalScale < 1
       );
     return (
       shrinks ||
@@ -282,28 +321,55 @@ function hasHalvingOpOn(
 }
 
 // True when `name` is referenced in `node` where the bound still flows
-// through it — under `+`/`-`/bare positions, not inside `*`, `%`, `/`, `//`,
-// `>>`, or a call, where `half % 2` is a parity peek, not a shrink.
+// through it — under `+`/`-`/bare positions, or a `*` whose only other
+// operands are literals (`half * 1` is still half). Inside `%`, `/`, `//`,
+// `>>`, or a call the reference proves nothing (`half % 2` is a parity
+// peek). When the target's own name appears in the value, the reference
+// must also sit under a `-`: `n - half` shrinks, `n + half` grows.
 function referencesBarely(
   node: GuessNode,
   name: string,
+  targetInValue: boolean,
+  underMinus = false,
   blocked = false
 ): boolean {
-  const hereBlocked =
-    blocked ||
+  if (
     node.type === 'call' ||
     node.type === 'member_call' ||
-    (node.type === 'binary_op' &&
-      ['*', '%', '/', '//', '>>'].includes(node.text));
+    (node.type === 'binary_op' && ['%', '/', '//', '>>'].includes(node.text))
+  ) {
+    return node.children.some((child) =>
+      referencesBarely(child, name, targetInValue, underMinus, true)
+    );
+  }
+  if (node.type === 'binary_op' && node.text === '*') {
+    const transparent = node.children.every(
+      (child) =>
+        child.type === 'literal' ||
+        ((child.type === 'name' || child.type === 'member') &&
+          child.text === name)
+    );
+    return node.children.some((child) =>
+      referencesBarely(
+        child,
+        name,
+        targetInValue,
+        underMinus,
+        blocked || !transparent
+      )
+    );
+  }
+  const seenMinus =
+    underMinus || (node.type === 'binary_op' && node.text === '-');
   if (
-    !hereBlocked &&
+    !blocked &&
     (node.type === 'name' || node.type === 'member') &&
     node.text === name
   ) {
-    return true;
+    return !targetInValue || seenMinus;
   }
   return node.children.some((child) =>
-    referencesBarely(child, name, hereBlocked)
+    referencesBarely(child, name, targetInValue, seenMinus, blocked)
   );
 }
 
@@ -353,11 +419,14 @@ function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
   return [...lastUpdate.values()].some((node) =>
     node.children.some((value) => {
       const names = namesIn(value, new Set());
+      const targetInValue = names.has(node.text);
       names.delete(node.text);
       return (
         hasHalvingOpOn(value, derived) ||
         [...names].some(
-          (name) => halvingValues.has(name) && referencesBarely(value, name)
+          (name) =>
+            halvingValues.has(name) &&
+            referencesBarely(value, name, targetInValue)
         )
       );
     })

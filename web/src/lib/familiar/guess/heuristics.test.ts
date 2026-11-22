@@ -601,3 +601,71 @@ describe('cost model edge cases', () => {
     expect(analyze(QUARTER_THEN_DOUBLE).guess_class).toBe('log n');
   });
 });
+
+// while n > 1: n = n >> 1   (right shift by one halves n)
+const SHIFT_HALVING = fn(
+  'shift_halve',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('n', op('>>', [id('n'), lit('1')]))
+    ])
+  ]
+);
+
+// while n > 3: n = (n // 2) * n   (bound grows quadratically, not halves)
+const INFLATED_BOUND = fn(
+  'inflated',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('3')]), [
+      assign('n', op('*', [op('//', [id('n'), lit('2')]), id('n')]))
+    ])
+  ]
+);
+
+// while n > 1:
+//     half = n // 2
+//     n = n - half * 1   (half times one is still half — geometric shrink)
+const IDENTITY_SCALED_HALF = fn(
+  'scaled_half',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('half', op('//', [id('n'), lit('2')])),
+      assign('n', op('-', [id('n'), op('*', [id('half'), lit('1')])]))
+    ])
+  ]
+);
+
+// while n > 1:
+//     half = n // 2
+//     n = n + half       (bound grows by half — no shrink at all)
+const GROWING_BOUND = fn(
+  'grow_half',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('half', op('//', [id('n'), lit('2')])),
+      assign('n', op('+', [id('n'), id('half')]))
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('reads a right-shift loop as log n', () => {
+    expect(analyze(SHIFT_HALVING).guess_class).toBe('log n');
+  });
+
+  it('does not read (n // 2) * n as a shrink', () => {
+    expect(analyze(INFLATED_BOUND).guess_class).toBe('n');
+  });
+
+  it('reads n - half * 1 as a geometric shrink', () => {
+    expect(analyze(IDENTITY_SCALED_HALF).guess_class).toBe('log n');
+  });
+
+  it('does not read n + half as a shrink', () => {
+    expect(analyze(GROWING_BOUND).guess_class).toBe('n');
+  });
+});
