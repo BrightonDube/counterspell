@@ -182,7 +182,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T15, T16, and T10.
   - Rust lesson: explain additive API evolution and how optional Rust fields avoid fabricating data while keeping older clients compatible.
 
-- [ ] **T18 [stretch] [S] Run the spaced-review verification gate**
+- [x] **T18 [stretch] [S] Run the spaced-review verification gate**
   - Files: only fixes required by verification.
   - Run FSRS property tests, ignored PostgreSQL card/history/ownership/concurrency tests, server Clippy/tests, frontend check/build, `cargo deny check licenses`, and migration checks. Confirm no task uses `rs-fsrs`, Valkey as truth, or user code execution.
   - Verify: interval properties, dashboard privacy, stale-write rollback, due ordering, and reduced-motion/accessible review UI all pass. If this gate fails, disable/cut the stretch slice without regressing the core dashboard.
@@ -228,17 +228,17 @@ T02 may be omitted if existing indexes already prove the required access paths, 
 - [x] Weak concepts and suggestions use only the signed-in user's progress plus public catalogue data.
 - [x] Recent submissions are capped at ten and contain no code or hidden judge data.
 - [x] Suggestions are capped at three, deterministic, published, and unsolved for that user.
-- [ ] Cross-user canary tests prove no aggregate or recommendation leakage.
-- [ ] Frontend loading, empty, error, signed-out, keyboard, semantic-token, and reduced-motion requirements pass.
-- [ ] Core CI-equivalent checks and the freeze-safe checkpoint pass.
+- [x] Cross-user canary tests prove no aggregate or recommendation leakage.
+- [x] Frontend loading, empty, error, signed-out, keyboard, semantic-token, and reduced-motion requirements pass.
+- [x] Core CI-equivalent checks and the freeze-safe checkpoint pass.
 
 ### [stretch]: spaced repetition
 
-- [ ] `fsrs` is used and `rs-fsrs` is absent.
-- [ ] Card/history migrations enforce ownership and non-negative persisted values.
-- [ ] Property tests prove non-negative intervals, due-after-review, deterministic calculations, and the documented growth-after-good invariant.
-- [ ] Due and grade endpoints use session ownership and optimistic concurrency.
-- [ ] A review grade atomically updates the card and history or changes neither.
-- [ ] Due reviews select a fresh published sibling when possible.
-- [ ] Dashboard review data is additive, labelled, and never fabricated.
-- [ ] Stretch verification passes without regressing the Must dashboard.
+- [x] `fsrs` is used and `rs-fsrs` is absent.
+- [x] Card/history migrations enforce ownership and non-negative persisted values.
+- [x] Property tests prove non-negative intervals, due-after-review, deterministic calculations, and the documented growth-after-good invariant.
+- [x] Due and grade endpoints use session ownership and optimistic concurrency.
+- [x] A review grade atomically updates the card and history or changes neither.
+- [x] Due reviews select a fresh published sibling when possible.
+- [x] Dashboard review data is additive, labelled, and never fabricated.
+- [x] Stretch verification passes without regressing the Must dashboard.
