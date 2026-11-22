@@ -239,4 +239,40 @@ describe('DashboardScreen', () => {
     );
     expect(sources).not.toContain('/art/familiar/jack-o-lantern-poison.webp');
   });
+
+  // Breaks if a due review is indistinguishable from a normal suggestion, or the due card is hidden.
+  it('labels a due review as spaced repetition with its concept and challenge', async () => {
+    const withReview = parseDashboard({
+      ...structuredClone(populatedRaw),
+      review_summary: {
+        due_count: 2,
+        next_review: {
+          concept: { slug: 'hash-maps', name: 'Hash maps' },
+          card: { state: 'review', due: '2026-11-15T09:00:00Z', version: 4 },
+          challenge: {
+            kind: 'sibling',
+            slug: 'review-gym',
+            title: 'Review Gym',
+            difficulty: 'hard'
+          }
+        }
+      }
+    });
+    render(DashboardScreen, { props: { load: async () => withReview } });
+
+    expect(await screen.findByText('Spaced repetition')).toBeTruthy();
+    expect(screen.getByText('2 cards due')).toBeTruthy();
+    expect(screen.getByText(/due 2026-11-15T09:00:00Z/)).toBeTruthy();
+    const link = screen.getByRole('link', { name: 'Review Gym' });
+    expect(link.getAttribute('href')).toBe('/problems/review-gym');
+    expect(screen.getByText(/Practises the same concept/)).toBeTruthy();
+  });
+
+  // Breaks if an empty review summary fabricates a next review instead of saying nothing is due.
+  it('shows the empty review state when no card is due', async () => {
+    render(DashboardScreen, { props: { load: async () => populatedView } });
+
+    expect(await screen.findByText('Spaced repetition')).toBeTruthy();
+    expect(screen.getByText('No reviews due.')).toBeTruthy();
+  });
 });

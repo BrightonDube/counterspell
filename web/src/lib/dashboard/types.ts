@@ -17,6 +17,12 @@ import {
 export const DIFFICULTIES = ['easy', 'medium', 'hard'] as const;
 export type Difficulty = (typeof DIFFICULTIES)[number];
 
+const CARD_STATES = ['new', 'learning', 'review', 'relearning'] as const;
+export type CardState = (typeof CARD_STATES)[number];
+
+const REVIEW_KINDS = ['sibling', 'normal'] as const;
+export type ReviewKind = (typeof REVIEW_KINDS)[number];
+
 /** Why a problem was suggested. Both values are stable server codes. */
 export const SUGGESTION_REASONS = [
   'practice_weak_concept',
@@ -129,6 +135,32 @@ export interface DashboardView {
   weakConcepts: WeakConcept[];
   recentSubmissions: RecentSubmission[];
   suggestedChallenges: SuggestedChallenge[];
+  reviewSummary: ReviewSummary | null;
+}
+
+/** The guard fields of the earliest due review card. */
+export interface ReviewCard {
+  state: CardState;
+  due: string;
+  version: number;
+}
+
+/** A challenge offered with a review: a same-concept sibling or a normal fallback. */
+export interface ReviewChallenge extends ProblemSummary {
+  kind: ReviewKind;
+}
+
+/** The earliest due review. */
+export interface NextReview {
+  concept: ConceptRef;
+  card: ReviewCard;
+  challenge: ReviewChallenge | null;
+}
+
+/** The [stretch] spaced-repetition summary. Never present without at least one due card. */
+export interface ReviewSummary {
+  dueCount: number;
+  nextReview: NextReview;
 }
 
 /** Parses the `GET /api/dashboard` body. Throws ContractError when a field is missing or out of range. */
@@ -210,7 +242,11 @@ export function parseDashboard(raw: unknown): DashboardView {
     streak,
     weakConcepts,
     recentSubmissions,
-    suggestedChallenges
+    suggestedChallenges,
+    reviewSummary:
+      record.review_summary === null || record.review_summary === undefined
+        ? null
+        : parseReviewSummary(record.review_summary, `${path}.review_summary`)
   };
 }
 
@@ -288,6 +324,48 @@ function parseSuggestion(value: unknown, path: string): SuggestedChallenge {
     difficulty: readEnum(record, 'difficulty', path, DIFFICULTIES),
     concepts: readArray(record, 'concepts', path, MAX_CONCEPTS, parseConcept),
     reason: readEnum(record, 'reason', path, SUGGESTION_REASONS)
+  };
+}
+
+function parseReviewSummary(value: unknown, path: string): ReviewSummary {
+  const record = asRecord(value, path);
+  const dueCount = readInt(record, 'due_count', path, 1, MAX_COUNT);
+  const next = asRecord(record.next_review, `${path}.next_review`);
+  const card = asRecord(next.card, `${path}.next_review.card`);
+  const challengeValue = next.challenge;
+  return {
+    dueCount,
+    nextReview: {
+      concept: parseConcept(next.concept, `${path}.next_review.concept`),
+      card: {
+        state: readEnum(card, 'state', `${path}.next_review.card`, CARD_STATES),
+        due: readMatching(card, 'due', `${path}.next_review.card`, TIMESTAMP),
+        version: readInt(
+          card,
+          'version',
+          `${path}.next_review.card`,
+          0,
+          INT32_MAX
+        )
+      },
+      challenge:
+        challengeValue === null || challengeValue === undefined
+          ? null
+          : parseReviewChallenge(
+              challengeValue,
+              `${path}.next_review.challenge`
+            )
+    }
+  };
+}
+
+function parseReviewChallenge(value: unknown, path: string): ReviewChallenge {
+  const record = asRecord(value, path);
+  return {
+    slug: readString(record, 'slug', path, TOKEN),
+    title: readString(record, 'title', path, TEXT),
+    difficulty: readEnum(record, 'difficulty', path, DIFFICULTIES),
+    kind: readEnum(record, 'kind', path, REVIEW_KINDS)
   };
 }
 

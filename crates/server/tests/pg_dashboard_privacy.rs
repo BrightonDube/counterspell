@@ -17,12 +17,16 @@ use counterspell_server::dashboard::{
     types::{DashboardResponse, SuggestionReason},
 };
 use sqlx::PgPool;
-use time::{Date, Month};
+use time::{Date, Month, OffsetDateTime};
 use uuid::Uuid;
 
-/// The UTC day the fixtures are measured against.
-fn today() -> Date {
-    Date::from_calendar_date(2026, Month::November, 15).expect("valid date")
+/// The UTC instant the fixtures are measured against.
+fn now() -> OffsetDateTime {
+    Date::from_calendar_date(2026, Month::November, 15)
+        .expect("valid date")
+        .with_hms(12, 0, 0)
+        .expect("valid time")
+        .assume_utc()
 }
 
 /// A published problem that no fixture solves, used by the unpublished-canary test.
@@ -159,7 +163,7 @@ async fn pg_each_learner_sees_only_their_own_progress_and_suggestions(pool: PgPo
 
     // Concept names and problem slugs in suggestions are public catalogue data, so the canary checks
     // below read only the private sections: solved counts, weak concepts and recent runs.
-    let alice_view = read_dashboard(&pool, alice, today())
+    let alice_view = read_dashboard(&pool, alice, now())
         .await
         .expect("alice reads");
     let alice_recent =
@@ -196,9 +200,7 @@ async fn pg_each_learner_sees_only_their_own_progress_and_suggestions(pool: PgPo
         "alice has not solved either problem; two-sum shares both weak concepts"
     );
 
-    let bob_view = read_dashboard(&pool, bob, today())
-        .await
-        .expect("bob reads");
+    let bob_view = read_dashboard(&pool, bob, now()).await.expect("bob reads");
     let bob_text = response_text(&bob_view);
 
     assert_eq!(bob_view.solved.total, 1);
@@ -250,7 +252,7 @@ async fn pg_hidden_test_data_never_reaches_any_dashboard(pool: PgPool) {
     )
     .await;
 
-    let response = read_dashboard(&pool, learner, today())
+    let response = read_dashboard(&pool, learner, now())
         .await
         .expect("dashboard reads");
     let text = response_text(&response);
@@ -309,7 +311,7 @@ async fn pg_queued_expired_and_internal_error_runs_are_not_solved_or_activity(po
     )
     .await;
 
-    let response = read_dashboard(&pool, learner, today())
+    let response = read_dashboard(&pool, learner, now())
         .await
         .expect("dashboard reads");
 
@@ -354,7 +356,7 @@ async fn pg_recent_submissions_are_the_ten_newest_runs_in_order(pool: PgPool) {
         );
     }
 
-    let response = read_dashboard(&pool, learner, today())
+    let response = read_dashboard(&pool, learner, now())
         .await
         .expect("dashboard reads");
 
@@ -404,7 +406,7 @@ async fn pg_suggestions_skip_solved_and_unpublished_problems_and_stop_at_three(p
     )
     .await;
 
-    let response = read_dashboard(&pool, learner, today())
+    let response = read_dashboard(&pool, learner, now())
         .await
         .expect("dashboard reads");
 

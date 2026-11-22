@@ -108,6 +108,7 @@ async fn pg_active_run_has_no_verdict_and_the_response_never_carries_code(pool: 
         keys,
         [
             "recent_submissions",
+            "review_summary",
             "solved",
             "streak",
             "suggested_challenges",

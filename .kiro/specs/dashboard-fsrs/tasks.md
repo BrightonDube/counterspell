@@ -174,7 +174,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Depends on: T12 through T15.
   - Rust lesson: explain mutable borrowing through a transaction, row locks as database ownership, and why `?` causes the whole transaction to roll back on failure.
 
-- [ ] **T17 [stretch] [P] (25 min) Add due-review dashboard integration**
+- [x] **T17 [stretch] [P] (25 min) Add due-review dashboard integration**
   - Files: `crates/server/src/dashboard/{types.rs,query.rs,handler.rs}`, `web/src/lib/dashboard/`, and dashboard route components.
   - Add the review summary as an additive field only after the review tables and endpoint work. Keep core fields unchanged. Show due concept and sibling challenge with a clear `Spaced repetition` label; show null/empty state when no card is due.
   - Verify: the core dashboard still works when FSRS is disabled or there are no cards; due data is owned by the current user; the UI distinguishes a review from a normal suggestion.

@@ -1,6 +1,6 @@
 // Plain-words labels for run states and suggestion reasons. Status is always text, so colour is never the only
 // signal. An active run shows its lifecycle status and no verdict.
-import type { SuggestionReason } from './types';
+import type { CardState, ReviewKind, SuggestionReason } from './types';
 
 const VERDICT_LABELS: Record<string, string> = {
   accepted: 'Accepted',
@@ -42,4 +42,26 @@ const REASON_LABELS: Record<SuggestionReason, string> = {
 /** The words that say why a problem was suggested. */
 export function reasonLabel(reason: SuggestionReason): string {
   return REASON_LABELS[reason];
+}
+
+const REVIEW_KIND_LABELS: Record<ReviewKind, string> = {
+  sibling: 'Practises the same concept',
+  normal: 'General challenge'
+};
+
+/** How a review challenge was selected, so a review reads differently from a suggestion. */
+export function reviewKindLabel(kind: ReviewKind): string {
+  return REVIEW_KIND_LABELS[kind];
+}
+
+const CARD_STATE_LABELS: Record<CardState, string> = {
+  new: 'New',
+  learning: 'Learning',
+  review: 'Review',
+  relearning: 'Relearning'
+};
+
+/** The words for a review card's scheduler state. */
+export function cardStateLabel(state: CardState): string {
+  return CARD_STATE_LABELS[state];
 }

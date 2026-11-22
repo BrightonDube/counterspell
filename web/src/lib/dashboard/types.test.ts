@@ -185,4 +185,57 @@ describe('parseDashboard', () => {
     };
     expect(() => parseDashboard(broken)).toThrow(ContractError);
   });
+
+  // Breaks if the additive review summary is dropped or its fields are guessed.
+  it('maps a due review summary and keeps a missing one empty', () => {
+    const withReview = {
+      ...structuredClone(populatedDashboard),
+      review_summary: {
+        due_count: 2,
+        next_review: {
+          concept: { slug: 'hash-maps', name: 'Hash maps' },
+          card: { state: 'review', due: '2026-11-15T09:00:00Z', version: 4 },
+          challenge: {
+            kind: 'sibling',
+            slug: 'pairs-four',
+            title: 'Pairs Four',
+            difficulty: 'hard'
+          }
+        }
+      }
+    };
+    const view = parseDashboard(withReview);
+    expect(view.reviewSummary?.dueCount).toBe(2);
+    expect(view.reviewSummary?.nextReview.card).toEqual({
+      state: 'review',
+      due: '2026-11-15T09:00:00Z',
+      version: 4
+    });
+    expect(view.reviewSummary?.nextReview.challenge?.kind).toBe('sibling');
+
+    expect(parseDashboard(emptyDashboard).reviewSummary).toBeNull();
+    const nullSummary = { ...emptyDashboard, review_summary: null };
+    expect(parseDashboard(nullSummary).reviewSummary).toBeNull();
+  });
+
+  // Breaks if a summary with zero due cards is fabricated into a review, or a bad card state passes.
+  it('rejects a review summary with no due cards or an unknown card state', () => {
+    const zero = {
+      ...structuredClone(populatedDashboard),
+      review_summary: {
+        due_count: 0,
+        next_review: {
+          concept: { slug: 'hash-maps', name: 'Hash maps' },
+          card: { state: 'review', due: '2026-11-15T09:00:00Z', version: 1 },
+          challenge: null
+        }
+      }
+    };
+    expect(() => parseDashboard(zero)).toThrow(ContractError);
+
+    const badState = structuredClone(zero);
+    badState.review_summary.due_count = 1;
+    badState.review_summary.next_review.card.state = 'suspended';
+    expect(() => parseDashboard(badState)).toThrow(ContractError);
+  });
 });

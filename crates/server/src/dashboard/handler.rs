@@ -24,8 +24,8 @@ pub async fn get_dashboard(
     State(state): State<AppState>,
     DashboardUser(owner): DashboardUser,
 ) -> Result<Json<DashboardResponse>, DashboardError> {
-    let today = OffsetDateTime::now_utc().date();
-    let response = read_dashboard(&state.pool, owner, today)
+    let now = OffsetDateTime::now_utc();
+    let response = read_dashboard(&state.pool, owner, now)
         .await
         .map_err(DashboardError::unavailable)?;
     Ok(Json(response))
