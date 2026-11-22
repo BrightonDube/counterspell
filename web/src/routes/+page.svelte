@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
+  import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
+  import { getSessionStatus } from '../lib/auth/client';
   import { startScenes } from '../lib/landing/scenes';
   import { planLanding, type LandingPlan } from '../lib/landing/motion-plan';
   import GhostBeats from '../lib/landing/GhostBeats.svelte';
@@ -29,6 +32,14 @@
   );
 
   onMount(() => {
+    void getSessionStatus()
+      .then((status) => {
+        if (status.signed_in) void goto(resolve('/dashboard'));
+      })
+      .catch(() => {
+        // A signed-out visitor, or an unavailable auth API, still gets the public page.
+      });
+
     const reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)'
     ).matches;

@@ -47,6 +47,8 @@ export async function request(path, { method = 'GET', body } = {}) {
 
 /** `GET /api/auth/config`: which sign-in options are offered. */
 export const getConfig = () => request('/api/auth/config');
+/** `GET /api/auth/session`: whether this browser has a valid session, without a 401. */
+export const getSessionStatus = () => request('/api/auth/session');
 /** `GET /api/me`: the signed-in user and capabilities. */
 export const getMe = () => request('/api/me');
 /** `POST /api/auth/logout`: ends this browser's session. */

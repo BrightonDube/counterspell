@@ -1,9 +1,16 @@
-import { cleanup, render, screen } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
+import { goto } from '$app/navigation';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Page from './+page.svelte';
 
+vi.mock('$app/navigation', () => ({ goto: vi.fn() }));
+
 describe('landing route composition (T08)', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.mocked(goto).mockClear();
+  });
 
   it('keeps the smoke marker on the root main element with lang en', () => {
     const { container } = render(Page);
@@ -63,6 +70,28 @@ describe('landing route composition (T08)', () => {
       'hero-moon-living-poster-1464.avif 1464w'
     );
     expect(source?.getAttribute('srcset')).not.toMatch(/https?:/);
+  });
+
+  it('sends a signed-in visitor to the dashboard without a 401 probe', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(JSON.stringify({ signed_in: true }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
+          })
+        )
+      )
+    );
+
+    render(Page);
+
+    await waitFor(() => expect(goto).toHaveBeenCalledWith('/dashboard'));
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/auth/session',
+      expect.objectContaining({ credentials: 'same-origin' })
+    );
   });
 
   it('uses the requested SEO title and description', () => {
