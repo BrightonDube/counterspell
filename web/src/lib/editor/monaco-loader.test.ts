@@ -46,6 +46,15 @@ describe('loadMonaco', () => {
         `monaco-editor/languages/definitions/${language}/register.js`
       );
     }
+    for (const contribution of [
+      'find/browser/findController',
+      'comment/browser/comment',
+      'toggleTabFocusMode/browser/toggleTabFocusMode'
+    ]) {
+      expect(source).toContain(
+        `monaco-editor/editor/contrib/${contribution}.js`
+      );
+    }
     expect(source).not.toContain("import('monaco-editor')");
   });
 });

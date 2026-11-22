@@ -27,7 +27,10 @@ export function loadMonaco(): Promise<MonacoModule> {
       import('monaco-editor/languages/definitions/python/register.js'),
       import('monaco-editor/languages/definitions/javascript/register.js'),
       import('monaco-editor/languages/definitions/java/register.js'),
-      import('monaco-editor/languages/definitions/cpp/register.js')
+      import('monaco-editor/languages/definitions/cpp/register.js'),
+      import('monaco-editor/editor/contrib/find/browser/findController.js'),
+      import('monaco-editor/editor/contrib/comment/browser/comment.js'),
+      import('monaco-editor/editor/contrib/toggleTabFocusMode/browser/toggleTabFocusMode.js')
     ]).then(([monaco]) => {
       monaco.editor.defineTheme(CRYPT_THEME_NAME, cryptTheme);
       return monaco;
