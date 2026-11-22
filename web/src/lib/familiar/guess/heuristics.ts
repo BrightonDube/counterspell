@@ -216,9 +216,14 @@ function isLinearInLoopOp(
 // Analysis ------------------------------------------------------------------
 
 interface Walk {
-  maxDepth: number;
-  linearInCountedLoop: boolean;
+  // The worst single path through the function: each counted loop level adds
+  // one, and a linear step or a sort inside a counted loop adds one at that
+  // depth. Separate passes never combine into a deeper class.
+  maxLevel: number;
+  // Set when a linear step priced into maxLevel, so the reason can say so.
+  sawLinearStep: boolean;
   halving: boolean;
+  sortOutsideLoop: boolean;
   unknownInLoop: boolean;
 }
 
@@ -236,19 +241,27 @@ function walk(
         ? containsParamName(iterable, ctx.params)
         : false;
       const next = counted ? depth + 1 : depth;
-      if (counted) out.maxDepth = Math.max(out.maxDepth, next);
+      if (counted) out.maxLevel = Math.max(out.maxLevel, next);
       for (const child of node.children.slice(1)) {
         walk(child, ctx, next, inCountedLoop || counted, out);
       }
       return;
     }
     case 'while': {
+      const body = node.children.slice(1);
+      if (halvesBound(body)) {
+        // A halving loop contributes a log factor, not a linear level; it
+        // never counts toward the depth even when its bound is a parameter.
+        out.halving = true;
+        for (const child of body) {
+          walk(child, ctx, depth, inCountedLoop, out);
+        }
+        return;
+      }
       const cond = node.children[0];
       const counted = cond ? containsParamName(cond, ctx.params) : false;
-      const body = node.children.slice(1);
-      if (halvesBound(body)) out.halving = true;
       const next = counted ? depth + 1 : depth;
-      if (counted) out.maxDepth = Math.max(out.maxDepth, next);
+      if (counted) out.maxLevel = Math.max(out.maxLevel, next);
       for (const child of body) {
         walk(child, ctx, next, inCountedLoop || counted, out);
       }
@@ -265,8 +278,15 @@ function walk(
       ) {
         out.unknownInLoop = true;
       }
+      if (inCountedLoop && SORT_CALLS.has(node.text)) {
+        // Sorting once per iteration costs a superlinear level here.
+        out.maxLevel = Math.max(out.maxLevel, depth + 1);
+      } else if (!inCountedLoop && SORT_CALLS.has(node.text)) {
+        out.sortOutsideLoop = true;
+      }
       if (inCountedLoop && isLinearInLoopOp(node, ctx.params, ctx.hashNames)) {
-        out.linearInCountedLoop = true;
+        out.maxLevel = Math.max(out.maxLevel, depth + 1);
+        out.sawLinearStep = true;
       }
       for (const child of node.children)
         walk(child, ctx, depth, inCountedLoop, out);
@@ -274,7 +294,8 @@ function walk(
     }
     default: {
       if (inCountedLoop && isLinearInLoopOp(node, ctx.params, ctx.hashNames)) {
-        out.linearInCountedLoop = true;
+        out.maxLevel = Math.max(out.maxLevel, depth + 1);
+        out.sawLinearStep = true;
       }
       for (const child of node.children)
         walk(child, ctx, depth, inCountedLoop, out);
@@ -312,7 +333,7 @@ function analyzeFunction(fn: GuessNode): FnReport {
       const value = node.children[0];
       if (
         value &&
-        (value.type === 'literal' ||
+        ((value.type === 'literal' && value.text.startsWith('{')) ||
           (value.type === 'call' && HASH_SOURCES.has(value.text)))
       ) {
         hashNames.add(node.text);
@@ -321,9 +342,10 @@ function analyzeFunction(fn: GuessNode): FnReport {
   }
 
   const walkOut: Walk = {
-    maxDepth: 0,
-    linearInCountedLoop: false,
+    maxLevel: 0,
+    sawLinearStep: false,
     halving: false,
+    sortOutsideLoop: false,
     unknownInLoop: false
   };
   for (const node of body) {
@@ -333,27 +355,21 @@ function analyzeFunction(fn: GuessNode): FnReport {
   const classes = new Map<string, string>();
   let signals = 0;
 
-  // Sort before a single pass reads as n log n and subsumes the lone loop.
-  const hasSort = body.some((node) =>
-    callsIn(node).some((call) => SORT_CALLS.has(call.text))
-  );
-  const loopLevel = walkOut.maxDepth + (walkOut.linearInCountedLoop ? 1 : 0);
-  if (hasSort && walkOut.maxDepth <= 1 && !walkOut.linearInCountedLoop) {
+  // A sort outside the loops followed by at most a single pass reads as
+  // n log n and subsumes that lone pass; a sort inside a counted loop was
+  // already priced into maxLevel as an extra level.
+  if (walkOut.sortOutsideLoop && walkOut.maxLevel <= 1) {
     classes.set('n log n', 'sort followed by a single pass over the input');
     signals += 1;
-  } else if (walkOut.maxDepth >= 1 || walkOut.linearInCountedLoop) {
-    const cls = depthClass(loopLevel);
+  } else if (walkOut.maxLevel >= 1) {
+    const cls = depthClass(walkOut.maxLevel);
     const reason =
-      walkOut.maxDepth >= 2
-        ? `loops over input-dependent data nest to depth ${walkOut.maxDepth}`
-        : walkOut.maxDepth === 1
-          ? 'a loop over input-dependent data'
-          : 'a linear operation inside a loop';
+      walkOut.maxLevel >= 2
+        ? 'nested loops or an in-loop scan over input-dependent data'
+        : 'a loop over input-dependent data';
     classes.set(
       cls,
-      walkOut.linearInCountedLoop
-        ? `${reason} with a linear step inside`
-        : reason
+      walkOut.sawLinearStep ? `${reason}, with a linear step inside` : reason
     );
     signals += 1;
   }

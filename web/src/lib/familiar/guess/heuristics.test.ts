@@ -6,7 +6,7 @@ import { analyze, type GuessNode } from './heuristics';
 
 // Small builders for the plain-object syntax trees the worker will produce.
 const id = (text: string): GuessNode => ({ type: 'name', text, children: [] });
-const lit = (): GuessNode => ({ type: 'literal', text: '', children: [] });
+const lit = (text = ''): GuessNode => ({ type: 'literal', text, children: [] });
 const call = (name: string, args: GuessNode[] = []): GuessNode => ({
   type: 'call',
   text: name,
@@ -239,5 +239,64 @@ describe('guard rails', () => {
     const guess = analyze(fn('noop', [], [call('print', [lit()])]));
     expect(guess.guess_class).toBeNull();
     expect(guess.confidence).toBe('low');
+  });
+});
+
+// Regression shapes: each pass costs independently, halving beats linear.
+
+// while n > 1: n = n // 2
+const DIRECT_HALVING = fn(
+  'halve',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('n', op('//', [id('n'), lit()]))
+    ])
+  ]
+);
+
+// for x in nums: nums.sort()
+const SORT_INSIDE_LOOP = fn(
+  'resort',
+  ['nums'],
+  [forLoop(id('nums'), [mcall(id('nums'), 'sort')])]
+);
+
+// seen = []; for x in nums: if x in seen: seen.append(x)
+// plus an unrelated double loop
+const LINEAR_SEARCH_PASS_AND_DOUBLE_LOOP = fn(
+  'two_passes',
+  ['nums'],
+  [
+    assign('seen', { type: 'literal', text: '[]', children: [] }),
+    forLoop(id('nums'), [
+      cmp('in', [id('x'), id('seen')]),
+      mcall(id('seen'), 'append', [id('x')])
+    ]),
+    forLoop(id('nums'), [
+      forLoop(id('nums'), [call('print', [id('x'), id('y')])])
+    ])
+  ]
+);
+
+describe('cost model', () => {
+  it('reads a direct halving loop as log n, not n', () => {
+    const guess = analyze(DIRECT_HALVING);
+    expect(guess.guess_class).toBe('log n');
+  });
+
+  it('does not read a sort inside a loop as a one-off preprocessing pass', () => {
+    const guess = analyze(SORT_INSIDE_LOOP);
+    expect(guess.guess_class).not.toBe('n log n');
+  });
+
+  it('costs separate passes independently instead of adding levels', () => {
+    const guess = analyze(LINEAR_SEARCH_PASS_AND_DOUBLE_LOOP);
+    expect(guess.guess_class).toBe('n^2');
+  });
+
+  it('treats membership on a list literal as a scan, not a hash lookup', () => {
+    const guess = analyze(LINEAR_SEARCH_PASS_AND_DOUBLE_LOOP);
+    expect(guess.reasons.join(' ')).toContain('linear');
   });
 });
