@@ -336,6 +336,20 @@ const HALVING_WITH_UNKNOWN_CALL = fn(
   ]
 );
 
+// while n > 1:
+//     half = n // 4
+//     n = half * 2   (quarter scaled back up still halves n)
+const SCALED_QUARTER = fn(
+  'scaled_quarter',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('half', op('//', [id('n'), lit('4')])),
+      assign('n', op('*', [id('half'), lit('2')]))
+    ])
+  ]
+);
+
 describe('cost model edge cases', () => {
   it('reads a sort in the iterable as preprocessing: n log n', () => {
     expect(analyze(SORT_IN_ITERABLE).guess_class).toBe('n log n');
@@ -748,5 +762,8 @@ describe('cost model edge cases', () => {
 
   it('does not read an unknown-name divisor as a shrink', () => {
     expect(analyze(UNKNOWN_DIVISOR).guess_class).toBe('n');
+  });
+  it('reads half * 2 of a quarter as a geometric shrink', () => {
+    expect(analyze(SCALED_QUARTER).guess_class).toBe('log n');
   });
 });

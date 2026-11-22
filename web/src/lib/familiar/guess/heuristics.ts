@@ -343,19 +343,22 @@ function appearsSubtracted(node: GuessNode, name: string): boolean {
 }
 
 // True when `name` is referenced in `node` where the bound still flows
-// through it — under `+`/`-`/bare positions, or a `*` whose literal
-// operands multiply to at most one (`half * 1` is still half, `half * 2`
-// doubles it back). Inside `%`, `/`, `//`, `>>`, or a call the reference
-// proves nothing (`half % 2` is a parity peek). When the target's own name
-// appears in the value, the reference must sit under a `-` (`n - half`
-// shrinks, `n + half` grows) unless the halving var itself was computed
-// from the target subtracted out of the bound — `half = (n - i) // 2`
-// makes `i = i + half` halve the remaining distance.
+// through it — under `+`/`-`/bare positions, or a `*` whose literals keep
+// the total coefficient below one (`nameFactor` is the fraction the
+// halving var's own definition carried, so `n // 4` scaled back by `* 2`
+// still halves while `n // 2 * 2` restores the bound). Inside `%`, `/`,
+// `//`, `>>`, or a call the reference proves nothing (`half % 2` is a
+// parity peek). When the target's own name appears in the value, the
+// reference must sit under a `-` (`n - half` shrinks, `n + half` grows)
+// unless the halving var itself was computed from the target subtracted
+// out of the bound — `half = (n - i) // 2` makes `i = i + half` halve the
+// remaining distance.
 function referencesBarely(
   node: GuessNode,
   name: string,
   targetInValue: boolean,
   allowPlus: boolean,
+  nameFactor: number,
   underMinus = false,
   blocked = false
 ): boolean {
@@ -365,7 +368,15 @@ function referencesBarely(
     (node.type === 'binary_op' && ['%', '/', '//', '>>'].includes(node.text))
   ) {
     return node.children.some((child) =>
-      referencesBarely(child, name, targetInValue, allowPlus, underMinus, true)
+      referencesBarely(
+        child,
+        name,
+        targetInValue,
+        allowPlus,
+        nameFactor,
+        underMinus,
+        true
+      )
     );
   }
   if (node.type === 'binary_op' && node.text === '*') {
@@ -373,7 +384,7 @@ function referencesBarely(
       .filter((child) => child.type === 'literal')
       .reduce((acc, child) => acc * numeric(child), 1);
     const transparent =
-      literalProduct <= 1 &&
+      nameFactor * literalProduct < 1 &&
       node.children.every(
         (child) =>
           child.type === 'literal' ||
@@ -386,6 +397,7 @@ function referencesBarely(
         name,
         targetInValue,
         allowPlus,
+        nameFactor,
         underMinus,
         blocked || !transparent
       )
@@ -401,7 +413,15 @@ function referencesBarely(
     return !targetInValue || seenMinus || allowPlus;
   }
   return node.children.some((child) =>
-    referencesBarely(child, name, targetInValue, allowPlus, seenMinus, blocked)
+    referencesBarely(
+      child,
+      name,
+      targetInValue,
+      allowPlus,
+      nameFactor,
+      seenMinus,
+      blocked
+    )
   );
 }
 
@@ -467,7 +487,8 @@ function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
               value,
               name,
               targetInValue,
-              appearsSubtracted(source, node.text)
+              appearsSubtracted(source, node.text),
+              boundFactor(source, derived)
             )
           );
         })
