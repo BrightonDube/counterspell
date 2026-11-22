@@ -587,10 +587,14 @@ fn shrink_input_inner(
     let infrastructure = |error: OracleError| {
         ToolError::new(ErrorCategory::SandboxInfrastructure, error.message(), root)
     };
+    // The starting check spends the same wall budget as the proposals.
+    let wall = Duration::from_millis(args.wall_ms);
+    let clock = SystemClock::new();
+    let deadline = clock.now().saturating_add(wall);
     // The shrink keeps the exact failure the input shows now, exception class included,
     // the same rule the hunt and the pack validator use.
     let first = oracle
-        .evaluate(&args.input, limit)
+        .evaluate(&args.input, limit.min(wall))
         .map_err(infrastructure)?;
     let predicate = match classify(&first, &comparator) {
         Classification::Fail(predicate) if predicate.kind == kind => predicate,
@@ -602,16 +606,13 @@ fn shrink_input_inner(
             ))
         }
     };
-    let clock = SystemClock::new();
     let request = ShrinkRequest {
         schema: &context.meta.input_schema,
         comparator,
         predicate: &predicate,
         max_evals: args.max_evals,
         eval_limit: limit,
-        deadline: clock
-            .now()
-            .saturating_add(Duration::from_millis(args.wall_ms)),
+        deadline,
     };
     let outcome = shrink_failure(&request, args.input.clone(), &mut oracle, &clock)
         .map_err(infrastructure)?;
