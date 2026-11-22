@@ -29,6 +29,15 @@
         respond 404
     }
 
+    @immutable path /_app/immutable/*
+    header @immutable Cache-Control "public, max-age=31536000, immutable"
+
+    @site_assets path /art/* /fonts/* /landing/*
+    header @site_assets Cache-Control "public, max-age=604800"
+
+    @robots path /robots.txt
+    header @robots Cache-Control "public, max-age=3600"
+
     # Run event streams must reach the browser as each event is written (R6.4).
     @run_events path_regexp run_events ^/api/runs/[^/]+/events$
     handle @run_events {
