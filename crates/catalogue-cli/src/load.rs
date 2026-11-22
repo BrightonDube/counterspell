@@ -26,7 +26,9 @@ use thiserror::Error;
 use crate::sandbox_fill::{SandboxCheck, SandboxPack};
 use counterspell_judge::catalogue::manifest::{build_manifest, Manifest, Tree};
 use counterspell_judge::catalogue::retired::RetiredFile;
-use counterspell_judge::catalogue::starter::{starter, Lang, Signature as StarterSignature};
+use counterspell_judge::catalogue::starter::{
+    starter, Lang, Param as StarterParam, Signature as StarterSignature,
+};
 use counterspell_judge::catalogue::statement::constraints;
 use counterspell_judge::catalogue::write::{KnownGhost, StaticImport};
 
@@ -275,24 +277,33 @@ pub fn assemble_import(
         .map(ghost_rows)
         .unwrap_or_default();
 
-    let param_names: Vec<&str> = record
+    let starter_params: Vec<StarterParam> = record
         .signature
         .params
         .iter()
-        .map(|param| param.name.as_str())
+        .map(|param| StarterParam {
+            name: param.name.as_str(),
+            kind: param.kind.as_str(),
+        })
         .collect();
     let starter_signature = StarterSignature {
         function_name: &record.signature.function,
-        params: &param_names,
+        params: &starter_params,
+        returns: &record.signature.returns,
     };
-    let starters = [(Lang::Python, "python"), (Lang::JavaScript, "javascript")]
-        .iter()
-        .map(|(lang, name)| {
-            starter(*lang, &starter_signature)
-                .map(|code| ((*name).to_string(), code))
-                .map_err(|_| AssembleError::StarterInvalid(name))
-        })
-        .collect::<Result<Vec<_>, _>>()?;
+    let starters = [
+        (Lang::Python, "python"),
+        (Lang::JavaScript, "javascript"),
+        (Lang::Java, "java"),
+        (Lang::Cpp, "cpp"),
+    ]
+    .iter()
+    .map(|(lang, name)| {
+        starter(*lang, &starter_signature)
+            .map(|code| ((*name).to_string(), code))
+            .map_err(|_| AssembleError::StarterInvalid(name))
+    })
+    .collect::<Result<Vec<_>, _>>()?;
 
     let signature = signature_descriptor(record)?;
     let limits = json!({

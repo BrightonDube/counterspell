@@ -17,7 +17,6 @@
   } from '#lib/auth/return-to.js';
   import {
     authProblem,
-    requestEmailLink,
     signInWithPasskey,
     signInWithPassword,
     supportsPasskeys,
@@ -29,7 +28,7 @@
 
   type AuthOptions = {
     providers: { github: boolean; google: boolean };
-    email?: { password: boolean; magic_link: boolean };
+    demo?: { enabled: boolean; email: string | null };
   };
 
   let search = $derived(browser ? page.url.search : '');
@@ -42,8 +41,6 @@
   let passkeysSupported = $state(false);
   let options = $state<AuthOptions | null>(null);
   let loadingOptions = $state(true);
-  let emailMode = $state<'password' | 'link'>('password');
-  let emailSent = $state(false);
   let email = $state('');
   let password = $state('');
   let code = $state('');
@@ -81,8 +78,8 @@
     loadingOptions = true;
     try {
       options = await getConfig();
-      if (options?.email?.magic_link && !options.email.password)
-        emailMode = 'link';
+      if (options?.demo?.enabled && options.demo.email && !email)
+        email = options.demo.email;
     } catch (failure) {
       if (!twoFactor) problem = authProblem(failure);
     } finally {
@@ -152,12 +149,7 @@
     else await goToDestination(result.return_to ?? returnTo);
   }
 
-  async function emailSignIn() {
-    if (emailMode === 'link') {
-      await requestEmailLink(email.trim(), returnTo);
-      emailSent = true;
-      return;
-    }
+  async function demoSignIn() {
     const result = await signInWithPassword(email.trim(), password, returnTo);
     password = '';
     if (result.two_factor_required) await showTwoFactor();
@@ -364,77 +356,50 @@
           {/if}
         </div>
 
-        {#if options?.email?.password || options?.email?.magic_link}
+        {#if options?.demo?.enabled}
           <details class="mt-4 border-t border-border pt-3">
             <summary
               class="cursor-pointer py-2 text-sm font-medium text-accent-moss-strong"
             >
-              Sign in with email
+              Use the demo account
             </summary>
-            {#if emailSent}
-              <p class="mt-2 text-sm text-text-muted" role="status">
-                Check your inbox for a Counterspell sign-in link.
-              </p>
-            {:else}
-              <form
-                class="mt-2 space-y-3"
-                onsubmit={(event) => {
-                  event.preventDefault();
-                  void run(emailSignIn);
-                }}
-              >
-                <div>
-                  <label for="sign-in-email" class="mb-1.5 block text-sm">
-                    Email
-                  </label>
-                  <input
-                    id="sign-in-email"
-                    class={fieldClass}
-                    type="email"
-                    autocomplete="username"
-                    required
-                    bind:value={email}
-                  />
-                </div>
-                {#if emailMode === 'password'}
-                  <div>
-                    <label for="sign-in-password" class="mb-1.5 block text-sm">
-                      Password
-                    </label>
-                    <input
-                      id="sign-in-password"
-                      class={fieldClass}
-                      type="password"
-                      autocomplete="current-password"
-                      required
-                      bind:value={password}
-                    />
-                  </div>
-                {/if}
-                <button type="submit" class={choiceClass} disabled={busy}>
-                  {emailMode === 'password'
-                    ? 'Sign in with password'
-                    : 'Send a sign-in link'}
-                </button>
-                {#if options.email.password && options.email.magic_link}
-                  <button
-                    type="button"
-                    class={textAction}
-                    disabled={busy}
-                    onclick={() => {
-                      emailMode =
-                        emailMode === 'password' ? 'link' : 'password';
-                      password = '';
-                      problem = '';
-                    }}
-                  >
-                    {emailMode === 'password'
-                      ? 'Email me a sign-in link'
-                      : 'Use my password'}
-                  </button>
-                {/if}
-              </form>
-            {/if}
+            <form
+              class="mt-2 space-y-3"
+              onsubmit={(event) => {
+                event.preventDefault();
+                void run(demoSignIn);
+              }}
+            >
+              <div>
+                <label for="sign-in-demo-email" class="mb-1.5 block text-sm">
+                  Demo email
+                </label>
+                <input
+                  id="sign-in-demo-email"
+                  class={fieldClass}
+                  type="email"
+                  autocomplete="username"
+                  required
+                  bind:value={email}
+                />
+              </div>
+              <div>
+                <label for="sign-in-demo-password" class="mb-1.5 block text-sm">
+                  Demo password
+                </label>
+                <input
+                  id="sign-in-demo-password"
+                  class={fieldClass}
+                  type="password"
+                  autocomplete="current-password"
+                  required
+                  bind:value={password}
+                />
+              </div>
+              <button type="submit" class={choiceClass} disabled={busy}>
+                Sign in as the demo account
+              </button>
+            </form>
           </details>
         {/if}
       {/if}

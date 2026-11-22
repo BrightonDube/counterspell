@@ -3,16 +3,37 @@
 use axum::{
     extract::{Extension, State},
     http::{HeaderMap, StatusCode},
+    Json,
 };
+use serde::Serialize;
 
 use crate::auth::{
     capabilities::{Capabilities, Capability},
     cookies::{read_cookie, CookieSlot},
     errors::AuthError,
-    extract::AuthUser,
+    extract::{AuthUser, MaybeAuthUser},
     session::SessionKey,
     AuthState,
 };
+
+/// The body of `GET /api/auth/session`.
+#[derive(Debug, Serialize)]
+pub struct SessionStatus {
+    /// Whether the request carried a valid session cookie.
+    pub signed_in: bool,
+}
+
+/// `GET /api/auth/session`. Lets public pages distinguish signed-in visitors without making an
+/// expected signed-out visit produce a `401`.
+///
+/// # Errors
+///
+/// Returns [`AuthError::Internal`] when the database fails.
+pub async fn status(user: MaybeAuthUser) -> Json<SessionStatus> {
+    Json(SessionStatus {
+        signed_in: user.0.is_some(),
+    })
+}
 
 /// `POST /api/auth/logout`. Ends the session in the cookie, if there is one, and clears the cookie.
 /// Calling it again, or with no cookie, is harmless and still answers `204`.

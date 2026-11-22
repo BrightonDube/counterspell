@@ -1,4 +1,10 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from '@testing-library/svelte';
 import { afterEach, expect, it, vi } from 'vitest';
 import Page from './+page.svelte';
 
@@ -12,13 +18,12 @@ vi.mock('#lib/auth/client.js', () => ({
   AuthApiError: class extends Error {},
   getConfig: vi.fn().mockResolvedValue({
     providers: { github: true, google: true },
-    email: { password: false, magic_link: false }
+    demo: { enabled: true, email: 'demo@example.co' }
   }),
   providerSignInUrl: (provider: string) => `/api/auth/${provider}/start`
 }));
 vi.mock('#lib/auth/security.ts', () => ({
   authProblem: () => 'Sign-in failed.',
-  requestEmailLink: vi.fn(),
   signInWithPasskey: vi.fn(),
   signInWithPassword: vi.fn(),
   supportsPasskeys: () => true,
@@ -56,4 +61,27 @@ it('renders passkey and provider actions as pill-shaped sign-in fields', async (
     expect(action.className).toContain('rounded-full');
     expect(action.className).not.toContain('rounded-lg');
   }
+});
+
+// test-change: ACC-1
+it('offers the demo account sign-in when the deployment advertises it', async () => {
+  const { signInWithPassword } = await import('#lib/auth/security.ts');
+  render(Page);
+
+  const summary = await screen.findByText('Use the demo account');
+  await fireEvent.click(summary);
+
+  const email = screen.getByLabelText('Demo email') as HTMLInputElement;
+  expect(email.value).toBe('demo@example.co');
+  const password = screen.getByLabelText('Demo password');
+  await fireEvent.input(password, { target: { value: 'hunter2' } });
+  await fireEvent.click(
+    screen.getByRole('button', { name: 'Sign in as the demo account' })
+  );
+
+  expect(signInWithPassword).toHaveBeenCalledWith(
+    'demo@example.co',
+    'hunter2',
+    expect.any(String)
+  );
 });

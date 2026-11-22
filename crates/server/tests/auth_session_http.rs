@@ -119,6 +119,30 @@ async fn pg_a_request_without_a_cookie_is_unauthorised(pool: PgPool) {
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
+async fn pg_session_status_is_public_and_reflects_the_cookie(pool: PgPool) {
+    let user = verified_user(&pool, "session-status").await;
+    let (router, clock) = app(&pool);
+
+    let (anonymous, _, body) = send(&router, "GET", "/api/auth/session", None).await;
+    assert_eq!(anonymous, StatusCode::OK);
+    assert_eq!(body["signed_in"], false);
+
+    let raw = login(&pool, &clock, user).await;
+    let (signed_in, _, body) = send(&router, "GET", "/api/auth/session", Some(&raw)).await;
+    assert_eq!(signed_in, StatusCode::OK);
+    assert_eq!(body["signed_in"], true);
+
+    let (invalid, headers, body) =
+        send(&router, "GET", "/api/auth/session", Some("not-a-session")).await;
+    assert_eq!(invalid, StatusCode::OK);
+    assert_eq!(body["signed_in"], false);
+    assert!(set_cookie_values(&headers)
+        .iter()
+        .any(|value| value.contains("Max-Age=0")));
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
 async fn pg_a_garbage_cookie_is_refused_and_cleared(pool: PgPool) {
     let (router, _clock) = app(&pool);
     let (status, headers, _body) = send(&router, "GET", "/api/me", Some("not-a-session")).await;

@@ -257,3 +257,23 @@ leaked (input, got) pair.
   `approval.toml` content hashes + `status = "published"`).
 - The stale `approval.toml` files (v4/v5/v6 hashes) intentionally remain —
   they record the approvals that did happen for those versions.
+
+## C40 update — 2026-11-22
+
+Later work superseded the plan above:
+
+- Brighton merged `counterspell-packs-private` PR #2 on 2026-11-21, which
+  wrote the full `retired-values.toml` on private main: 44 `[[retired]]`
+  sha256 entries (the importer's field is `sha256`, strict-parse) plus the
+  three `[[rotated]]` records (v5 / v6 / v7, `rotated_on = "2026-11-21"`).
+- Brighton's 2026-11-21 `approval.toml` stamps covered the rotated packs at
+  that date's hashes.
+- Private PR #3 (minimal known ghosts, merged 2026-11-22) changed all three
+  manifests again and re-staled those approvals (APR-01).
+- Brighton asked Devin to "rotate them for me" (2026-11-22 chat), so Devin
+  opened private PR #4 re-stamping the three `approval.toml` files at the
+  post-PR-#3 manifest hashes (computed by `scripts/pack-assemble.sh` against
+  public main `1aa5917`; all three packs `validate --deny-warnings` clean).
+- C40 ticks when Brighton merges private PR #4: at that point every
+  `[[retired]]` slug has its `[[rotated]]` record (CAT-PT13 passes) and the
+  rotated packs carry matching approvals.

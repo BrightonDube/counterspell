@@ -79,3 +79,6 @@ sudo systemctl restart user@1000.service
 - **counterspell-mcp-power T14:** `.kiro/settings/mcp.json` created with `autoApprove` restricted to `validate_pack`, `explain_verdict`, `fit_complexity`.
 - **counterspell-mcp-power T15:** `packs/_demo/mcp-dogfood/{reference,incorrect}` moved to `counterspell-packs-private/packs/_demo/mcp-dogfood/`; public repo keeps only `problem.md`, `meta.toml`, `hints.toml`. `crates/mcp` resolves `incorrect/`/`reference/` from `COUNTERSPELL_PACKS_PRIVATE_ROOT` as well as the public pack dir.
 - **problem-catalogue C33 (`GhostLookup`):** Unblocked — `ide-workspace` T02/T25 established `submissions.ghost_source_id` (and `submissions.ghost_input`) as the custom ghost-run provenance seam.
+
+## 22 Nov 2026 (Brighton): Java and C++ freeze-safe gate approved
+- language-drivers T16: Brighton approved the freeze-safe review for the Java and C++ stretch languages after `sbx_stretch_languages` passed on the rootless sandbox daemon. Both are enabled in `languages/languages.toml` (requirements R37, T16).

@@ -7,16 +7,36 @@ export const WORDMARK = 'Counterspell';
 /** The tagline under the wordmark (title screen). */
 export const TAGLINE = 'Outthink the Machine. Sharpen Your Mind.';
 
-/** The page headline, now shown below the title screen as the section heading. */
-export const HEADLINE = 'Learn why your code breaks.';
+/** The supporting description under the tagline on the title screen. */
+export const HERO_BODY =
+  'AI can give you answers. Counterspell challenges you to find your own. Solve coding challenges, think critically, and discover why your solutions fail. Build the skills to solve problems without relying on AI to do the thinking for you.';
 
-/** A short paragraph under the headline that says what the page does. */
+/** The Ghost Engine section heading below the title screen. */
+export const HEADLINE = "Don't Just Fix the Code. Understand the Mistake.";
+
+/** A short paragraph under the headline that positions deliberate practice. */
 export const INTRO_BODY =
-  'Most practice sites only tell you that a test failed. Counterspell shows you the input that makes your code fail, so you can see the mistake and fix the idea behind it.';
+  'Counterspell is deliberate practice for people who want to keep their problem-solving edge. Each challenge asks you to reason, test your assumptions, and work through failure yourself.';
 
-/** The line under the headline. */
+/** The Ghost Engine explanation under the headline. */
 export const SUPPORT_LINE =
-  'Your solution fails. Counterspell hunts down the input that breaks it, shrinks it to the smallest failing input it can find, and explains the mistake.';
+  'Passing a test is one thing. Understanding why your solution works—or why it fails—is what makes you a better problem solver. Counterspell goes beyond telling you that your answer is wrong. Its Ghost Engine hunts for inputs that break your code, reduces them to simpler examples, and helps you identify the underlying mistake.';
+
+/** The three visitor-facing benefits, in reading order. */
+export const BENEFITS = [
+  {
+    heading: 'Think independently',
+    body: 'Strengthen reasoning by solving problems yourself.'
+  },
+  {
+    heading: 'Learn from failure',
+    body: 'Understand why solutions break rather than simply receiving a pass/fail result.'
+  },
+  {
+    heading: 'Build real mastery',
+    body: 'Develop the ability to approach unfamiliar problems with confidence.'
+  }
+] as const;
 
 export interface Beat {
   heading: 'Submit' | 'Hunt' | 'Understand';
@@ -27,15 +47,15 @@ export interface Beat {
 export const BEATS: readonly Beat[] = [
   {
     heading: 'Submit',
-    body: 'Your code runs in a sealed sandbox on our server. A trusted judge holds the tests and the answers, so your program only prints what it computes.'
+    body: 'Write your solution and put your reasoning to the test.'
   },
   {
     heading: 'Hunt',
-    body: 'When the code is wrong, the ghost engine searches for an input that breaks it, then shrinks that input. You get the smallest failing input it can find within its time budget.'
+    body: 'When your solution fails, the Ghost Engine searches for a counterexample and reduces it to a simpler failing case.'
   },
   {
     heading: 'Understand',
-    body: 'You see the failing input, what you expected, what you got and the mistake behind it, so you learn the concept and not just the fix.'
+    body: 'See what went wrong, understand why, and improve your approach.'
   }
 ];
 
@@ -51,5 +71,5 @@ export const CAPTION = 'Illustration, not a real run.';
 
 /** Call to action labels. */
 export const CTA = {
-  primary: 'Start practising'
+  primary: 'Start Your First Challenge'
 } as const;

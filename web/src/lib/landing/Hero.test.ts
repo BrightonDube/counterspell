@@ -67,13 +67,14 @@ describe('Hero', () => {
     expect(container.textContent).toContain(
       'Outthink the Machine. Sharpen Your Mind.'
     );
+    expect(container.textContent).toContain('AI can give you answers');
   });
 
   // landing-steel-night T24: the ENTER control and the Enter-key shortcut.
   describe('ENTER control (T24)', () => {
     it('is a link to /login with an accessible name', () => {
       render(Hero);
-      const enter = screen.getByRole('link', { name: /enter/i });
+      const enter = screen.getByRole('link', { name: 'ENTER Press to begin' });
       expect(enter.getAttribute('href')).toBe('/login');
     });
 
@@ -89,7 +90,7 @@ describe('Hero', () => {
 
     it('follows the ENTER link when Enter is pressed and nothing is focused', () => {
       render(Hero);
-      const enter = screen.getByRole('link', { name: /enter/i });
+      const enter = screen.getByRole('link', { name: 'ENTER Press to begin' });
       const onClick = (event: Event) => event.preventDefault();
       enter.addEventListener('click', onClick);
       let clicks = 0;
@@ -104,7 +105,7 @@ describe('Hero', () => {
 
     it('leaves Enter alone when another control has focus', () => {
       render(Hero);
-      const enter = screen.getByRole('link', { name: /enter/i });
+      const enter = screen.getByRole('link', { name: 'ENTER Press to begin' });
       const onClick = (event: Event) => event.preventDefault();
       enter.addEventListener('click', onClick);
       let clicks = 0;
@@ -122,11 +123,15 @@ describe('Hero', () => {
   });
 
   // test-change: R23 (the title-screen poster is hero-moon-living-poster.jpg; design amendment 15 Nov 2026 19:20 SAST, landing-steel-night T22)
-  it('shows the living poster as a WebP picture with a JPEG fallback, explicit dimensions and no alt text', () => {
+  it('shows the living poster as an AVIF picture with WebP and JPEG fallbacks, explicit dimensions and no alt text', () => {
     const { container } = render(Hero);
-    const source = container.querySelector('picture source');
-    expect(source?.getAttribute('type')).toBe('image/webp');
-    expect(source?.getAttribute('srcset')).toBe(
+    const sources = container.querySelectorAll('picture source');
+    expect(sources[0]?.getAttribute('type')).toBe('image/avif');
+    expect(sources[0]?.getAttribute('srcset')).toBe(
+      '/art/landing/hero-moon-living-poster-960.avif 960w, /art/landing/hero-moon-living-poster-1200.avif 1200w, /art/landing/hero-moon-living-poster-1440.avif 1440w, /art/landing/hero-moon-living-poster-1464.avif 1464w, /art/landing/hero-moon-living-poster-1680.avif 1680w'
+    );
+    expect(sources[1]?.getAttribute('type')).toBe('image/webp');
+    expect(sources[1]?.getAttribute('srcset')).toBe(
       '/art/landing/hero-moon-living-poster-960.webp 960w, /art/landing/hero-moon-living-poster-1920.webp 1920w'
     );
     const poster = container.querySelector('img.hero-poster');
@@ -159,9 +164,9 @@ describe('Hero', () => {
   it('defers every overlay until after first paint, so the poster is the only first-load image (T18)', async () => {
     const { container } = render(Hero, { props: { plan: STATIC } });
     expect(sourcesOf(container)).not.toContain('/art/fx/fog-layer-cold.webp');
-    expect(sourcesOf(container)).not.toContain('/art/fx/embers.webp');
+    expect(sourcesOf(container)).not.toContain('/art/fx/embers-1200.avif');
     await waitFor(
-      () => expect(sourcesOf(container)).toContain('/art/fx/embers.webp'),
+      () => expect(sourcesOf(container)).toContain('/art/fx/embers-1200.avif'),
       {
         timeout: 3000
       }
@@ -172,9 +177,9 @@ describe('Hero', () => {
     const { container } = await renderSettled(STATIC);
     const sources = sourcesOf(container);
     expect(sources).toContain('/art/fx/fog-layer-cold.webp');
-    expect(sources).toContain('/art/fx/embers.webp');
+    expect(sources).toContain('/art/fx/embers-1200.avif');
     expect(sources).not.toContain('/art/fx/smoke-plume-ash.webp');
-    expect(sources).not.toContain('/art/fx/bat-swarm.webp');
+    expect(sources).not.toContain('/art/fx/bat-swarm-1000.avif');
   });
 
   it('adds smoke and bats in the motion plan, hidden until GSAP sets them (T16)', async () => {
@@ -182,7 +187,7 @@ describe('Hero', () => {
     const smoke = container.querySelector('img.layer-smoke');
     const bats = container.querySelector('img.layer-bats');
     expect(smoke?.getAttribute('src')).toBe('/art/fx/smoke-plume-ash.webp');
-    expect(bats?.getAttribute('src')).toBe('/art/fx/bat-swarm.webp');
+    expect(bats?.getAttribute('src')).toBe('/art/fx/bat-swarm-1000.avif');
     // Starts invisible so the overlays do not pop in before the scene timelines load.
     expect(smoke?.getAttribute('style')).toContain('opacity: 0');
     expect(bats?.getAttribute('style')).toContain('opacity: 0');

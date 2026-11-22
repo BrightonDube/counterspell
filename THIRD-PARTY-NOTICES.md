@@ -154,6 +154,7 @@ Added by the run-lifecycle close-out (T39). Both were direct server dependencies
 Added by dashboard-fsrs T10 (browser end-to-end tests; approved by Brighton on 16 Nov 2026; `web/` dev dependency only, never shipped):
 
 - **@playwright/test 1.57.0** (with `playwright` and `playwright-core`) — Microsoft Corporation — Apache-2.0 — <https://www.npmjs.com/package/@playwright/test> (runs `web/e2e/*.spec.js` in Chromium against `counterspell-testserver`)
+- **beasties 0.5.5** — The Chromium Authors — Apache-2.0 — <https://www.npmjs.com/package/beasties> (build-time critical-CSS inlining for the landing page; dev dependency only)
 
 
 Added by break-room T01 (the break-room pages only; both pinned and loaded from first-party code):

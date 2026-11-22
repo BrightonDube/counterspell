@@ -94,13 +94,11 @@ await context.addCookies([
 const me = await page.request.get(`${BASE}/api/me`);
 check('auth: minted session identifies a user', me.ok());
 
-// --- The sign-in contract: providers only, email and demo retired ---
+// --- The sign-in contract: providers and the demo account, email retired ---
 const cfg = await (await page.request.get(`${BASE}/api/auth/config`)).json();
 check(
-  'auth: config advertises provider sign-in only',
-  cfg.email?.magic_link === false &&
-    cfg.email?.password === false &&
-    cfg.demo?.enabled === false
+  'auth: config advertises provider sign-in, email routes retired',
+  cfg.email?.magic_link === false && cfg.email?.password === false
 );
 
 // --- Real problem page over Axum-served static output ---

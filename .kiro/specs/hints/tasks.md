@@ -236,7 +236,7 @@ Conventions for every Rust task (same as `run-lifecycle`):
 - [x] Cost is recorded with provider, model, tokens and estimate flag (P8).
 - [x] No key, prompt or code appears in logs or errors (P9).
 - [x] The familiar uses the same client and quota and cannot change its mood (R10).
-- [ ] Open questions 1–18 in `design.md` are answered, or the assumed choice is accepted.
+- [x] Open questions 1–18 in `design.md` are answered, or the assumed choice is accepted.
 
 ## Agent task notes (2026-12-01)
 - **H-verify**: automated gates all pass (same battery as auth T37: fmt, clippy -D warnings,

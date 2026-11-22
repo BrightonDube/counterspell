@@ -1,9 +1,16 @@
-import { cleanup, render, screen } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
+import { goto } from '$app/navigation';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Page from './+page.svelte';
 
+vi.mock('$app/navigation', () => ({ goto: vi.fn() }));
+
 describe('landing route composition (T08)', () => {
-  afterEach(() => cleanup());
+  afterEach(() => {
+    cleanup();
+    vi.unstubAllGlobals();
+    vi.mocked(goto).mockClear();
+  });
 
   it('keeps the smoke marker on the root main element with lang en', () => {
     const { container } = render(Page);
@@ -24,16 +31,19 @@ describe('landing route composition (T08)', () => {
     expect(
       screen.getByRole('heading', {
         level: 2,
-        name: 'Learn why your code breaks.'
+        name: "Don't Just Fix the Code. Understand the Mistake."
       })
     ).toBeTruthy();
     const beats = Array.from(container.querySelectorAll('section h3')).map(
       (h) => h.textContent?.trim()
     );
     expect(beats).toEqual(['Submit', 'Hunt', 'Understand']);
+    expect(container.textContent).toContain('Think independently');
+    expect(container.textContent).toContain('Learn from failure');
+    expect(container.textContent).toContain('Build real mastery');
     expect(
       screen
-        .getByRole('link', { name: 'Start practising' })
+        .getByRole('link', { name: 'Start Your First Challenge' })
         .getAttribute('href')
     ).toBe('/problems');
   });
@@ -50,24 +60,50 @@ describe('landing route composition (T08)', () => {
     expect(preload?.getAttribute('href')).not.toMatch(/^https?:/);
   });
 
-  // R24: the poster is the largest contentful paint, so the browser must start it with the CSS.
-  it('preloads the hero poster with the same srcset as the picture (T13)', () => {
+  // The poster is the largest contentful paint and the browser must pick the compact AVIF candidate.
+  it('uses the responsive AVIF poster candidates (T13)', () => {
     const { container } = render(Page);
-    const preload = document.head.querySelector(
-      'link[rel="preload"][as="image"]'
-    );
-    expect(preload, 'poster preload link').not.toBeNull();
     const source = container.querySelector('picture source');
     expect(source, 'hero picture source').not.toBeNull();
-    expect(preload?.getAttribute('imagesrcset')).toBe(
-      source?.getAttribute('srcset')
+    expect(source?.getAttribute('type')).toBe('image/avif');
+    expect(source?.getAttribute('srcset')).toContain(
+      'hero-moon-living-poster-1464.avif 1464w'
     );
-    expect(preload?.getAttribute('imagesizes')).toBe(
-      source?.getAttribute('sizes')
+    expect(source?.getAttribute('srcset')).not.toMatch(/https?:/);
+  });
+
+  it('sends a signed-in visitor to the dashboard without a 401 probe', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () =>
+        Promise.resolve(
+          new Response(JSON.stringify({ signed_in: true }), {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
+          })
+        )
+      )
     );
-    expect(preload?.getAttribute('type')).toBe('image/webp');
-    expect(preload?.getAttribute('fetchpriority')).toBe('high');
-    expect(preload?.getAttribute('imagesrcset')).not.toMatch(/https?:/);
+
+    render(Page);
+
+    await waitFor(() => expect(goto).toHaveBeenCalledWith('/dashboard'));
+    expect(fetch).toHaveBeenCalledWith(
+      '/api/auth/session',
+      expect.objectContaining({ credentials: 'same-origin' })
+    );
+  });
+
+  it('uses the requested SEO title and description', () => {
+    render(Page);
+    expect(document.title).toBe(
+      'Counterspell — Sharpen Your Mind with Coding Challenges'
+    );
+    expect(
+      document.head
+        .querySelector('meta[name="description"]')
+        ?.getAttribute('content')
+    ).toContain('stronger independent problem solver');
   });
 
   it('no longer shows the skeleton milestone message', () => {

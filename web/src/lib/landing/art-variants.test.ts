@@ -31,7 +31,9 @@ const VARIANTS: [string, number][] = [
   ['objects/crypt-key-128.webp', 128],
   ['objects/crystal-ball-128.webp', 128],
   ['objects/brain-jar-128.webp', 128],
+  ['objects/candle-flame-96.webp', 96],
   ['objects/candle-flame-192.webp', 192],
+  ['familiar/jack-o-lantern-orange-96.webp', 96],
   ['familiar/jack-o-lantern-orange-192.webp', 192]
 ];
 

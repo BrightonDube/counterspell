@@ -24,7 +24,7 @@ use counterspell_engine::complexity::{
     Point as EnginePoint,
 };
 use counterspell_engine::generate::{CandidateStream, GeneratorConfig, Origin};
-use counterspell_engine::shrink::{shrink, Probe};
+use counterspell_engine::shrink::Driver;
 use counterspell_engine::{
     classify, compare_size, Budget, Classification, Comparator, FailureKind, FailurePredicate,
     Observation, ProgramResult, Schema,
@@ -396,29 +396,20 @@ impl Run<'_, '_> {
         predicate: &FailurePredicate,
     ) -> Result<bool, RunnerError> {
         let comparator = self.inputs.comparator;
-        let mut fault = None;
-        let outcome = shrink(
-            self.inputs.schema,
-            ghost.known.input.clone(),
-            Budget::default().max_shrink_evals,
-            &mut |candidate: &Value| match self.observe(&ghost.program, candidate) {
-                Ok(observation)
-                    if classify(&observation, &comparator)
-                        == Classification::Fail(predicate.clone()) =>
-                {
-                    Probe::Keep
-                }
-                Ok(_) => Probe::Reject,
-                Err(error) => {
-                    fault = Some(error);
-                    Probe::Stop
-                }
-            },
-        );
-        if let Some(error) = fault {
-            return Err(error);
-        }
-        Ok(compare_size(&outcome.value, &ghost.known.input) != Ordering::Less)
+        let schema = self.inputs.schema;
+        let eval_limit = self.inputs.limit;
+        let mut evaluate =
+            |candidate: &Value, _limit: Duration| self.observe(&ghost.program, candidate);
+        let mut keeps = |observation: &Observation| {
+            classify(observation, &comparator) == Classification::Fail(predicate.clone())
+        };
+        let outcome = Driver::new(schema, &mut evaluate, &mut keeps)
+            .eval_limit(eval_limit)
+            .run(
+                ghost.known.input.clone(),
+                Budget::default().max_shrink_evals,
+            )?;
+        Ok(compare_size(&outcome.shrink.value, &ghost.known.input) != Ordering::Less)
     }
 
     /// Runs the program and the reference on one input, each within the pack limit.

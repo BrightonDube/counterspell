@@ -51,6 +51,7 @@ fn auth_router(pool: &PgPool) -> Router {
         Limiter::Memory(Arc::new(MemoryLimiter::default())),
         &Redacted::new(vec![4_u8; 32]),
     );
+    // test-change: ACC-1 (the password route needs the demo address advertised)
     let state = AuthState::new(
         pool.clone(),
         clock,
@@ -58,6 +59,10 @@ fn auth_router(pool: &PgPool) -> Router {
         limits,
         gate(),
         TrustedProxies::parse("10.0.0.0/8").expect("valid trusted proxies"),
+    )
+    .with_settings(
+        counterspell_server::auth::handlers::config::PublicSettings::new(false, false, true)
+            .with_demo_email(DEMO_EMAIL),
     );
     counterspell_server::auth::router(state).layer(MockConnectInfo(SocketAddr::from((
         [203, 0, 113, 9],

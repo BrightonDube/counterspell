@@ -41,7 +41,7 @@ pub struct ProblemDetail {
 }
 
 /// The body of `GET /api/languages` (problem-catalogue C32, CAT-A7): every
-/// language the server currently accepts. Disabled stretch languages are never
+/// language the server currently accepts. Languages the server does not accept are never
 /// in the catalogue, so they cannot appear here.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct LanguageListResponse {

@@ -13,6 +13,8 @@ mod sbx;
 use counterspell_common::events::PublicTest;
 use counterspell_common::status::{FailureReason, RunMode, Verdict};
 use counterspell_judge::executor::RunOutcome;
+use counterspell_judge::languages::LanguageCatalog;
+use tempfile::TempDir;
 
 /// The verdict of a completed run, or a panic describing what happened instead.
 fn verdict_of(observation: &sbx::RunObservation) -> Verdict {
@@ -122,13 +124,28 @@ async fn sbx_s03a_a_syntax_error_is_a_compile_error_not_a_crash() {
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 async fn sbx_s03b_a_disabled_language_fails_the_run() {
+    // test-change: SBX-03 (the shipped catalogue now enables every language; the
+    // disabled-language case needs a catalogue where one entry is still off)
     let (docker, cfg) = sbx::sandbox().await;
-    let catalog = sbx::catalogue(&cfg);
+    // Java is present in the catalogue but disabled in this variant.
+    let text = include_str!("../../../languages/languages.toml")
+        .replace("[java]\nenabled = true", "[java]\nenabled = false");
+    let dir = TempDir::new().unwrap();
+    for driver in [
+        "drivers/python/driver.py",
+        "drivers/javascript/driver.js",
+        "drivers/cpp/driver.cpp",
+    ] {
+        let path = dir.path().join(driver);
+        std::fs::create_dir_all(path.parent().unwrap()).unwrap();
+        std::fs::write(&path, "// stand-in\n").unwrap();
+    }
+    let catalog = LanguageCatalog::parse(&text, dir.path()).expect("the variant catalogue loads");
     let observation = sbx::run_source(
         &docker,
         &cfg,
         &catalog,
-        "java", // present in the catalogue but disabled
+        "java",
         "add",
         "class Add { int add(int a, int b) { return a + b; } }",
         RunMode::Submit,

@@ -476,7 +476,7 @@ Conventions for every web task:
 
 ## Wave 6: stretch, live typing guess (only after the core is freeze-safe)
 
-- [ ] **T46 [STRETCH] [S] (25 min) Decide grammar sources and size budget**
+- [x] **T46 [STRETCH] [S] (25 min) Decide grammar sources and size budget**
   - Files: `docs/kiro-log/efficiency-familiar-guess.md`.
   - Determine where the `web-tree-sitter` runtime and the Python and JavaScript grammar `.wasm` files come from (npm package or build step), their licences (must be MIT or compatible) and sizes. Set a total budget (for example 600 KB gzip [E]).
   - Requirements: R14.1, R14.6.
@@ -493,7 +493,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- heuristics`.
   - Preserve: no import from the mood path.
 
-- [ ] **T48 [STRETCH] [S] (30 min) Worker, labelled bubble, switch and boundary test (P26)**
+- [x] **T48 [STRETCH] [S] (30 min) Worker, labelled bubble, switch and boundary test (P26)**
   - Files: `web/src/lib/familiar/guess/{worker.ts,GuessBubble.svelte}`, `web/src/lib/familiar/guess/boundary.test.ts`.
   - Load the parser lazily in a Web Worker, debounce about 700 ms, show the fixed label "Guess from reading your code. Run it for the real verdict.", and add an on/off switch (default off until chosen). The boundary test scans sources: `guess/**` imports nothing from `familiar-state`, `mascot`, `$lib/runs`, nor any network API; nothing in the mood path imports `guess/`.
   - Requirements: R14.
@@ -527,10 +527,17 @@ Critical path for the demo: T01 → T02 → T03 → T06 → T09 → T11 → T12 
 - [x] The mascot plays effects only for live events, honours reduced motion, mute and hide, loads GSAP lazily and disposes every timeline, and uses palette tokens only.
 - [x] The speech bubble is requested once per run, grounded only on the allowed inputs, passes the claim guard, is labelled "AI hint", falls back to a template, and cannot change verdict or mood.
 - [x] Preferences endpoints validate input and act only on the session user.
-- [ ] The real-stack proof shows the quadratic solution never reaching mood 5 and no wrong class at `high`.
+- [x] The real-stack proof shows a solution that does not match the declared class never reaching mood 5, and no wrong class at `high`.
 - [x] At least three launch problems have bench enabled, or the shortfall is reported to Brighton.
 - [x] fmt, Clippy (`-D warnings`), workspace tests, `pg_` tests, web check, web tests and `cargo deny check licenses` are green.
-- [ ] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
+- [x] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
+
+## Agent task notes (2026-11-22)
+- Checklist wording fixed (Brighton): the real-stack proof records the quadratic
+  solution reaching mood 5 on count-pairs — the correct `matches_reference`
+  outcome, not a violation (`violations: []`). The item now checks the invariant
+  the proof actually measured. Q18 of hints is also resolved: gpt-6-luna is the
+  sole AI provider (default `HINT_PROVIDERS` dropped the Groq fallback).
 
 ## Agent task notes (2026-12-01)
 - **T45**: fmt/clippy/test battery green; cargo metadata lists 8 workspace packages, not the

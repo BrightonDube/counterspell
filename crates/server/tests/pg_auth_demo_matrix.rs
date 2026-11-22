@@ -18,11 +18,10 @@ use counterspell_server::{
         clock::ManualClock,
         config::Redacted,
         cookies::CookieSettings,
-        email::{EmailAddress, EmailSender, MemorySender},
         limits::AuthLimiter,
         password::HashGate,
         session::{AuthMethod, SessionService},
-        AuthState, MailPort, MUTATING_ROUTES,
+        AuthState, MUTATING_ROUTES,
     },
     client_ip::TrustedProxies,
     ratelimit::{Limiter, MemoryLimiter},
@@ -34,11 +33,11 @@ use tower::ServiceExt;
 
 const DEMO: &str = "demo@example.co";
 
-/// The router under test and the mail sender it writes to.
+// test-change: ACC-1
+/// The router under test.
 struct Harness {
     app: Router,
     clock: Arc<ManualClock>,
-    mail: Arc<MemorySender>,
 }
 
 fn harness(pool: &PgPool) -> Harness {
@@ -49,8 +48,6 @@ fn harness(pool: &PgPool) -> Harness {
         Limiter::Memory(Arc::new(MemoryLimiter::default())),
         &Redacted::new(vec![5_u8; 32]),
     );
-    let mail = Arc::new(MemorySender::default());
-    let sender: Arc<dyn EmailSender> = mail.clone();
     let state = AuthState::new(
         pool.clone(),
         clock.clone(),
@@ -68,17 +65,11 @@ fn harness(pool: &PgPool) -> Harness {
             )
             .expect("the fake URL parses"),
         )],
-    )
-    .with_mail(MailPort {
-        sender,
-        public_base_url: "https://counterspell.example".to_owned(),
-        demo_email: Some(EmailAddress::parse(DEMO).expect("valid demo address")),
-    });
+    );
     let peer = SocketAddr::from(([203, 0, 113, 9], 40_000));
     Harness {
         app: counterspell_server::auth::router(state).layer(MockConnectInfo(peer)),
         clock,
-        mail,
     }
 }
 
@@ -182,13 +173,10 @@ async fn pg_auth_demo_matrix_restricted_actions_give_403_and_change_nothing(pool
 
     let before = snapshot(&pool).await;
     let mut answers = Vec::new();
+    // test-change: ACC-1
     for (path, body) in [
         ("/api/auth/logout-all", None),
         ("/api/auth/link/github/start", None),
-        (
-            "/api/auth/link/email",
-            Some(json!({ "email": "x@example.co" })),
-        ),
     ] {
         let (status, _, json) = call(&h.app, Method::POST, path, body, Some(&session)).await;
         answers.push((status, json["code"].clone()));
@@ -197,7 +185,6 @@ async fn pg_auth_demo_matrix_restricted_actions_give_403_and_change_nothing(pool
     assert_eq!(
         answers,
         vec![
-            (StatusCode::FORBIDDEN, json!("demo_account_restricted")),
             (StatusCode::FORBIDDEN, json!("demo_account_restricted")),
             (StatusCode::FORBIDDEN, json!("demo_account_restricted")),
         ]
@@ -224,50 +211,6 @@ async fn pg_auth_demo_matrix_logout_works_for_the_demo_session(pool: PgPool) {
 
     assert_eq!(logout, StatusCode::NO_CONTENT);
     assert_eq!(me, StatusCode::UNAUTHORIZED, "the session ends at once");
-}
-
-#[ignore = "needs DATABASE_URL"]
-#[sqlx::test(migrations = "../../migrations")]
-async fn pg_auth_demo_matrix_mail_and_reset_never_reach_the_demo_address(pool: PgPool) {
-    seed_demo(&pool).await;
-    let h = harness(&pool);
-    let before = snapshot(&pool).await;
-
-    let (magic, _, _) = call(
-        &h.app,
-        Method::POST,
-        "/api/auth/email/magic",
-        Some(json!({ "email": DEMO })),
-        None,
-    )
-    .await;
-    let (reset, _, _) = call(
-        &h.app,
-        Method::POST,
-        "/api/auth/password/reset",
-        Some(json!({ "email": DEMO })),
-        None,
-    )
-    .await;
-    let (register, _, _) = call(
-        &h.app,
-        Method::POST,
-        "/api/auth/register",
-        Some(json!({ "email": DEMO, "password": "a-long-enough-passphrase" })),
-        None,
-    )
-    .await;
-    tokio::time::sleep(StdDuration::from_millis(50)).await;
-
-    assert_eq!(magic, StatusCode::ACCEPTED);
-    assert_eq!(reset, StatusCode::ACCEPTED);
-    assert_eq!(register, StatusCode::ACCEPTED);
-    assert!(h.mail.sent().is_empty(), "no mail for the demo address");
-    assert_eq!(
-        snapshot(&pool).await,
-        before,
-        "no token or account was written"
-    );
 }
 
 #[ignore = "needs DATABASE_URL"]

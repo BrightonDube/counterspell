@@ -31,8 +31,6 @@ fn auth_config() -> AuthConfig {
         ("DATABASE_URL", "postgres://server:fake-pw@127.0.0.1:1/cs"),
         ("VALKEY_URL", "redis://127.0.0.1:1"),
         ("SESSION_SECRET", "fake-session-secret-value-0123456789"),
-        ("RESEND_API_KEY", "re_fake_key_value"),
-        ("MAIL_FROM", "Counterspell <login@counterspell.example>"),
     ]
     .into_iter()
     .map(|(name, value)| (name.to_owned(), value.to_owned()))
@@ -56,21 +54,6 @@ fn lazy_pool() -> sqlx::PgPool {
     PgPoolOptions::new()
         .connect_lazy("postgres://server:fake-pw@127.0.0.1:1/cs")
         .expect("a lazy pool never connects")
-}
-
-/// The router with auth mounted, as `main` builds it.
-fn auth_config_without_mail() -> AuthConfig {
-    let vars: HashMap<String, String> = [
-        ("APP_ENV", "production"),
-        ("PUBLIC_BASE_URL", BASE),
-        ("DATABASE_URL", "postgres://server:fake-pw@127.0.0.1:1/cs"),
-        ("VALKEY_URL", "redis://127.0.0.1:1"),
-        ("SESSION_SECRET", "fake-session-secret-value-0123456789"),
-    ]
-    .into_iter()
-    .map(|(name, value)| (name.to_owned(), value.to_owned()))
-    .collect();
-    AuthConfig::from_map(&vars).expect("a valid production config without mail")
 }
 
 fn app_with_config(config: &AuthConfig) -> Router {
@@ -125,11 +108,26 @@ async fn auth_wiring_the_public_auth_config_is_served_without_a_session() {
         json.get("demo").is_some(),
         "the config answer describes the demo account"
     );
-    // Email sign-in and the demo account are retired: the page offers providers only, even
-    // when mail and demo credentials are configured.
+    // test-change: ACC-1
+    // The demo account is not configured here, so the sign-in page offers providers only.
     assert_eq!(json["demo"]["enabled"], false);
     assert_eq!(json["email"]["magic_link"], false);
     assert_eq!(json["email"]["password"], false);
+}
+
+#[tokio::test]
+async fn auth_wiring_session_status_is_public_without_a_session() {
+    let app = app_with_auth();
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/api/auth/session")
+        .body(Body::empty())
+        .expect("valid request");
+
+    let (status, json) = send(&app, request).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["signed_in"], false);
 }
 
 #[tokio::test]
@@ -164,8 +162,9 @@ async fn auth_wiring_a_cross_site_write_is_refused_before_any_handler() {
 }
 
 #[tokio::test]
+// test-change: ACC-1
 async fn auth_wiring_config_never_advertises_email_sign_in() {
-    let app = app_with_config(&auth_config_without_mail());
+    let app = app_with_config(&auth_config());
     let request = Request::builder()
         .method(Method::GET)
         .uri("/api/auth/config")
@@ -182,19 +181,28 @@ async fn auth_wiring_config_never_advertises_email_sign_in() {
 }
 
 #[tokio::test]
-async fn auth_wiring_magic_link_is_unavailable_when_mail_is_disabled() {
-    let app = app_with_config(&auth_config_without_mail());
-    let request = Request::builder()
-        .method(Method::POST)
-        .uri("/api/auth/email/magic")
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Body::from(r#"{"email":"someone@example.co"}"#))
-        .expect("valid request");
+// test-change: ACC-1
+async fn auth_wiring_the_retired_email_routes_answer_not_found() {
+    let app = app_with_config(&auth_config());
+    for path in [
+        "/api/auth/email/magic",
+        "/api/auth/email/verify",
+        "/api/auth/register",
+        "/api/auth/reset",
+        "/api/auth/reset/confirm",
+        "/api/auth/link/email",
+    ] {
+        let request = Request::builder()
+            .method(Method::POST)
+            .uri(path)
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(Body::from(r#"{"email":"someone@example.co"}"#))
+            .expect("valid request");
 
-    let (status, json) = send(&app, request).await;
+        let (status, _) = send(&app, request).await;
 
-    assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
-    assert_eq!(json["code"], "email_unavailable");
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path} is retired");
+    }
 }
 
 #[tokio::test]

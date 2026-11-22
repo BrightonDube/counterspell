@@ -9,6 +9,7 @@
   let {
     src,
     webm = '',
+    poster = src,
     srcset = undefined,
     sizes = undefined,
     alt = '',
@@ -19,6 +20,7 @@
   }: {
     src: string;
     webm?: string;
+    poster?: string;
     srcset?: string;
     sizes?: string;
     alt?: string;
@@ -61,7 +63,7 @@
       height={size}
       class="h-full w-full object-contain"
       aria-hidden="true"
-      poster={src}
+      {poster}
     >
       <source src={webm} type="video/webm" />
       <img

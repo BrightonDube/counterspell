@@ -583,43 +583,30 @@ fn shrink_input_inner(
         })
         .map_err(|error| slot_error(error, root))?;
     let mut oracle = ProgramOracle::new(runner, &args.program);
-    let deadline = Instant::now() + Duration::from_millis(args.wall_ms);
-    let mut fault: Option<ToolError> = None;
-    let outcome = {
-        let mut probe = |candidate: &Value| {
-            if Instant::now() >= deadline {
-                return counterspell_engine::shrink::Probe::Stop;
-            }
-            match counterspell_engine::Oracle::evaluate(&mut oracle, candidate, limit) {
-                Ok(observation) => match classify(&observation, &comparator) {
-                    Classification::Fail(predicate) if predicate.kind == kind => {
-                        counterspell_engine::shrink::Probe::Keep
-                    }
-                    _ => counterspell_engine::shrink::Probe::Reject,
-                },
-                Err(error) => {
-                    fault = Some(ToolError::new(
-                        ErrorCategory::SandboxInfrastructure,
-                        error.message(),
-                        root,
-                    ));
-                    counterspell_engine::shrink::Probe::Stop
-                }
-            }
-        };
-        counterspell_engine::shrink::shrink(
-            &context.meta.input_schema,
-            args.input.clone(),
-            args.max_evals,
-            &mut probe,
+    let wall = Duration::from_millis(args.wall_ms);
+    let started = Instant::now();
+    let mut evaluate = |candidate: &Value, eval_limit: Duration| {
+        counterspell_engine::Oracle::evaluate(&mut oracle, candidate, eval_limit)
+    };
+    let mut keeps = |observation: &counterspell_engine::Observation| {
+        matches!(
+            classify(observation, &comparator),
+            Classification::Fail(predicate) if predicate.kind == kind
         )
     };
-    if let Some(error) = fault {
-        return Err(error);
-    }
+    let mut now = move || started.elapsed();
+    let outcome = counterspell_engine::shrink::Driver::new(
+        &context.meta.input_schema,
+        &mut evaluate,
+        &mut keeps,
+    )
+    .eval_limit(limit)
+    .deadline(&mut now, wall)
+    .run(args.input.clone(), args.max_evals)
+    .map_err(|error| ToolError::new(ErrorCategory::SandboxInfrastructure, error.message(), root))?;
     Ok(json!({
-        "value": outcome.value,
-        "report": serde_json::to_value(&outcome.report).unwrap_or(Value::Null),
+        "value": outcome.shrink.value,
+        "report": serde_json::to_value(&outcome.shrink.report).unwrap_or(Value::Null),
     }))
 }
 

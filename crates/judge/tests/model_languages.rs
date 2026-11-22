@@ -95,24 +95,26 @@ fn a_valid_python_entry_loads_with_every_field() {
 }
 
 #[test]
-fn the_shipped_catalogue_enables_python_and_javascript_and_keeps_stretch_languages_off() {
-    // test-change: IDE-1 (Python and JavaScript are the launch languages; Java and C++ are stretch)
+fn the_shipped_catalogue_enables_all_four_languages() {
+    // test-change: IDE-1 (language-drivers T16 enabled Java and C++ after their
+    // stretch suites passed on the rootless daemon)
     // The real file in the repository. Its drivers are supplied by language-drivers,
     // so this test provides stand-in driver files in a temporary directory.
     let text = include_str!("../../../languages/languages.toml");
     let (dir, _path) = fixture(text);
-    let javascript_dir = dir.path().join("drivers").join("javascript");
-    fs::create_dir_all(&javascript_dir).unwrap();
-    fs::write(javascript_dir.join("driver.js"), "// stand-in\n").unwrap();
+    for (lang, file) in [
+        ("javascript", "driver.js"),
+        ("java", "Driver.java"),
+        ("cpp", "driver.cpp"),
+    ] {
+        let lang_dir = dir.path().join("drivers").join(lang);
+        fs::create_dir_all(&lang_dir).unwrap();
+        fs::write(lang_dir.join(file), "// stand-in\n").unwrap();
+    }
     let catalog = LanguageCatalog::parse(text, dir.path()).unwrap();
 
-    assert!(catalog.get("python").unwrap().is_enabled());
-    assert!(catalog.get("javascript").unwrap().is_enabled());
-    for name in ["java", "cpp"] {
-        assert!(
-            !catalog.get(name).unwrap().is_enabled(),
-            "{name} must be disabled"
-        );
+    for name in ["python", "javascript", "java", "cpp"] {
+        assert!(catalog.get(name).unwrap().is_enabled(), "{name} is enabled");
     }
 }
 
