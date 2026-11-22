@@ -101,7 +101,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: a Java known-correct fixture passes normal and bench protocol tests without exposing expected outputs.
   - Preserve: this is `[stretch]`; do not enable Java in the launch API before its full property suite passes.
 
-- [ ] **[stretch] T14 [P] (25 min) Select the smallest passing Java stack size**
+- [x] **[stretch] T14 [P] (25 min) Select the smallest passing Java stack size**
   - Files: Java deep-recursion fixtures, Java configuration, and verification notes owned by the implementation.
   - Run designated deep-recursion problems at `-Xss` candidates from 8 MiB through 16 MiB, starting at 16 MiB, and choose the smallest setting that passes all designated fixtures.
   - Depends on: T13.
