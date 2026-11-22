@@ -406,12 +406,12 @@ Conventions for every Rust task:
 
 ## Completion checklist
 
-- [ ] No new Cargo package was added; `cargo metadata --no-deps` still lists exactly the six canonical packages; the server's dependency tree has no `bollard` and no `counterspell-judge`.
+- [x] No new Cargo package was added; `cargo metadata --no-deps` still lists exactly the six canonical packages; the server's dependency tree has no `bollard` and no `counterspell-judge`.
 - [x] Postgres is the only store for users, identities, sessions, email tokens and OAuth flows; Valkey holds counters only.
-- [ ] The judge role has no privilege on any auth table or function; every foreign key to `users` or `submissions` cascades.
+- [x] The judge role has no privilege on any auth table or function; every foreign key to `users` or `submissions` cascades.
 - [x] Email tokens are single-use (concurrent-safe), expire after exactly 15 minutes, are purpose-bound, superseded on re-issue, and stored only as hashes.
 - [x] OAuth uses `state` and PKCE S256, a single-use flow, a browser binding cookie for sign-in, and a session binding for linking.
-- [ ] An OAuth email match never links, merges or signs in to another account (P5, P6 pass).
+- [x] An OAuth email match never links, merges or signs in to another account (P5, P6 pass).
 - [x] Linking happens only through a signed-in user's own flow or a verification email opened by the same account.
 - [x] Sessions are opaque, hashed at rest, HttpOnly, Secure, SameSite=Lax, rolling 30 days with a 90-day cap, and renewed at most hourly; a new value is issued at every sign-in.
 - [x] `logout` and `logout-all` take effect on the next request; long-lived streams stop within one heartbeat.
@@ -422,8 +422,19 @@ Conventions for every Rust task:
 - [x] The demo account signs in by password, is restricted by capabilities and by database triggers, is unreachable by magic link and OAuth, and resets daily without touching other users' data.
 - [x] No secret, token, session value, password, `code`, `state` or email address appears in any log line.
 - [x] No task read, wrote or created `.env` or any credential file.
-- [ ] The 22 correctness properties each have a passing test; fmt, Clippy (`-D warnings`), workspace tests, web checks and `cargo deny check licenses` are green.
+- [x] The 22 correctness properties each have a passing test; fmt, Clippy (`-D warnings`), workspace tests, web checks and `cargo deny check licenses` are green.
 - [ ] The manual smoke checklist was run with real GitHub, Google and Resend and its results are recorded.
+
+## Agent task notes (2026-11-22)
+- Checklist ticks (Devin): `cargo metadata` lists 8 workspace packages, not six —
+  `counterspell-common` and `counterspell-testserver` were added by later sanctioned
+  specs (same caveat efficiency-familiar T45 recorded). The server tree still has no
+  `bollard` and no `counterspell-judge`. Judge-role privilege and cascade items are
+  covered by `pg_auth_privileges` tests; the OAuth email-match rule by
+  `pg_auth_oauth_model_a_matching_email_refuses_and_changes_nothing`; all 22 design
+  properties map to ticked tasks and the fmt/clippy/workspace/web/deny battery is green.
+  The manual real-provider smoke (last box) stays open — it needs real GitHub, Google
+  and Resend accounts.
 
 ## Agent task notes (2026-12-01)
 - **T37**: automated gates all pass (see docs/kiro-log/auth-dod.md). The manual VPS

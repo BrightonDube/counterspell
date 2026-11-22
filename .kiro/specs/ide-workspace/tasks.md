@@ -243,6 +243,6 @@ All tasks are implementation tasks for `requirements.md` and `design.md`. This s
 - [x] Authored hints are ordered; AI text is labelled; Rerun ghost is a real sandboxed custom run.
 - [x] A learner can fix and resubmit to Accepted without a page reload or manual intervention.
 - [x] Familiar mood is measured-only, speech is labelled, preferences work, and reduced motion preserves information without effects.
-- [ ] Keyboard navigation, screen-reader status, focus, contrast, touch targets, output escaping, hidden-data protection, and 200% zoom are tested.
+- [x] Keyboard navigation, screen-reader status, focus, contrast, touch targets, output escaping, hidden-data protection, and 200% zoom are tested.
 - [x] The definition-of-done path uses the built Axum app and actual judge/sandbox, never mocked success responses or prototype fixtures.
-- [ ] Full formatting, lint, tests, frontend build, licence, Compose, and real-flow verification pass.
+- [x] Full formatting, lint, tests, frontend build, licence, Compose, and real-flow verification pass.

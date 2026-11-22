@@ -26,7 +26,7 @@ Conventions for every task (same as `run-lifecycle`):
 |---|---|---|
 | submissions, jobs, run_events tables and roles | run-lifecycle T05–T07 | done |
 | auth roles and submissions user FK | auth T07, T08 | T08 open |
-| judge `ProblemTests` seam | judge-sandbox T24 | open (`[ ]`) |
+| judge `ProblemTests` seam | judge-sandbox T24 | done (`[x]`) |
 | `PackRunner` implementation | judge-sandbox T20–T22, grimoire T17 and T20 | open or blocked |
 | `CandidateStream`, `Schema`, `shrink` public | ghost-engine | done |
 | grimoire `validate_static`, `ProblemRecord` | grimoire-packs T12, T14 | done |
