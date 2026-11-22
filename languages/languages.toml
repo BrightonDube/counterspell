@@ -66,8 +66,8 @@ enabled = false
 image = "gcc:14@sha256:a6f425a380ee03e682df3b436fc9077c544fb0fea0a9cab943c3b8320db10765"
 file = "solution.cpp"
 driver = "drivers/cpp/driver.cpp"
-compile = ["g++", "-O2", "-std=c++20", "-o", "/box/out/main", "driver.cpp"]
-run = ["/box/out/main"]
+compile = ["g++", "-O2", "-std=c++20", "-o", "/box/main", "driver.cpp"]
+run = ["/box/main"]
 bench_args = ["--mode", "bench"]
 mem_mb = 256
 time_ms_per_test = 2000
