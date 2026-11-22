@@ -23,6 +23,22 @@ vi.mock('monaco-editor/editor/editor.api.js', () => ({
   editor: monacoFake.editor,
   languages: monacoFake.languages
 }));
+vi.mock('monaco-editor/languages/definitions/python/register.js', () => ({}));
+vi.mock(
+  'monaco-editor/languages/definitions/javascript/register.js',
+  () => ({})
+);
+vi.mock('monaco-editor/languages/definitions/java/register.js', () => ({}));
+vi.mock('monaco-editor/languages/definitions/cpp/register.js', () => ({}));
+vi.mock(
+  'monaco-editor/editor/contrib/find/browser/findController.js',
+  () => ({})
+);
+vi.mock('monaco-editor/editor/contrib/comment/browser/comment.js', () => ({}));
+vi.mock(
+  'monaco-editor/editor/contrib/toggleTabFocusMode/browser/toggleTabFocusMode.js',
+  () => ({})
+);
 
 import { loadMonaco } from './monaco-loader';
 
