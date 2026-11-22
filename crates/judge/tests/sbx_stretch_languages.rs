@@ -158,9 +158,8 @@ async fn sbx_stretch_compile_errors_never_start_the_driver() {
     ] {
         let sig = signature("f", &[("n", int())], &int());
         let (session, driver) = start_on(&catalog, lang, bad, sig, Mode::Normal).await;
-        let err = match driver {
-            Err(err) => err,
-            Ok(_) => panic!("{lang} reports the compile failure instead of starting"),
+        let Err(err) = driver else {
+            panic!("{lang} reports the compile failure instead of starting")
         };
         assert!(!err.is_empty(), "{lang} compile failure carries stderr");
         finish(session).await;
@@ -218,7 +217,7 @@ async fn sbx_stretch_infinite_loop_never_answers_and_the_container_cleans_up() {
             }
             match tokio::time::timeout(left, driver.next_event()).await {
                 Err(_) => break,
-                Ok(Ok(DriverEvent::Stderr(_))) => continue,
+                Ok(Ok(DriverEvent::Stderr(_))) => {},
                 Ok(Ok(event)) => panic!("{lang} answered a call that should run forever: {event:?}"),
                 Ok(Err(err)) => panic!("{lang} driver stream failed: {err:?}"),
             }
