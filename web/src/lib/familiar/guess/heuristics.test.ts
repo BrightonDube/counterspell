@@ -443,3 +443,51 @@ describe('cost model edge cases', () => {
     expect(analyze(ALIASED_HALVING).guess_class).toBe('log n');
   });
 });
+
+// while lo < hi:
+//     mid = lo + (hi - lo) // 2   (midpoint written with an offset)
+//     if a[mid] < t: lo = mid + 1
+//     else:          hi = mid
+const OFFSET_MIDPOINT_SEARCH = fn(
+  'bsearch3',
+  ['a', 't'],
+  [
+    whileLoop(cmp('<', [id('lo'), id('hi')]), [
+      assign(
+        'mid',
+        op('+', [id('lo'), op('//', [op('-', [id('hi'), id('lo')]), lit()])])
+      ),
+      ifNode(
+        cmp('<', [call('get', [id('a'), id('mid')]), id('t')]),
+        [assign('lo', op('+', [id('mid'), lit()]))],
+        [assign('hi', id('mid'))]
+      )
+    ])
+  ]
+);
+
+// while n > 0:
+//     previous = n
+//     n = previous // 2
+//     n = previous - 1   (last update wins — net effect is a countdown)
+const OVERWRITTEN_HALVING = fn(
+  'fake_halving',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('previous', id('n')),
+      assign('n', op('//', [id('previous'), lit()])),
+      assign('n', op('-', [id('previous'), lit()]))
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('reads a midpoint written as lo + (hi - lo) // 2 as log n', () => {
+    expect(analyze(OFFSET_MIDPOINT_SEARCH).guess_class).toBe('log n');
+  });
+
+  it('lets a later countdown update override an earlier halving', () => {
+    expect(analyze(OVERWRITTEN_HALVING).guess_class).toBe('n');
+  });
+});
