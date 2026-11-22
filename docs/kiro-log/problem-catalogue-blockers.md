@@ -274,6 +274,7 @@ Later work superseded the plan above:
   opened private PR #4 re-stamping the three `approval.toml` files at the
   post-PR-#3 manifest hashes (computed by `scripts/pack-assemble.sh` against
   public main `1aa5917`; all three packs `validate --deny-warnings` clean).
-- C40 ticks when Brighton merges private PR #4: at that point every
-  `[[retired]]` slug has its `[[rotated]]` record (CAT-PT13 passes) and the
-  rotated packs carry matching approvals.
+- Devin merged private PR #4 on 2026-11-22 (15:50 UTC, with Brighton's
+  approval). C40 is now ticked: every `[[retired]]` slug has its
+  `[[rotated]]` record (CAT-PT13 passes) and the rotated packs carry
+  approvals matching the post-PR-#3 manifests.
