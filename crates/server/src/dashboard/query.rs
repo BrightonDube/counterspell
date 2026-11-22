@@ -301,6 +301,9 @@ fn build_response(
         })
         .collect();
     let streak = streak_from_dates(activity_days, today);
+    let mut public_days = activity_days.to_vec();
+    public_days.sort_unstable_by(|left, right| right.cmp(left));
+    public_days.truncate(366);
 
     Ok(DashboardResponse {
         solved: SolvedSummary {
@@ -334,6 +337,7 @@ fn build_response(
             .collect(),
         suggested_challenges: rank_suggestions(&candidates, &weak, SUGGESTION_LIMIT),
         review_summary: raw.review_summary.map(review_summary).transpose()?,
+        activity_days: public_days.iter().map(|day| iso_date(*day)).collect(),
     })
 }
 
@@ -422,7 +426,8 @@ mod tests {
                 "weak_concepts": [],
                 "recent_submissions": [],
                 "suggested_challenges": [],
-                "review_summary": null
+                "review_summary": null,
+                "activity_days": []
             })
         );
     }
@@ -456,6 +461,28 @@ mod tests {
                 last_activity_date: Some("2026-11-15".to_owned()),
             }
         );
+        assert_eq!(
+            response.activity_days,
+            ["2026-11-15", "2026-11-14", "2026-11-13"]
+        );
+    }
+
+    #[test]
+    fn the_public_activity_window_does_not_cap_the_streak() {
+        let today = date(2026, Month::November, 15);
+        let mut days = Vec::with_capacity(367);
+        let mut cursor = today;
+        for _ in 0..367 {
+            days.push(cursor);
+            cursor = cursor.previous_day().expect("test date has a previous day");
+        }
+
+        let response = build_response(empty_read(), &days, today).expect("maps");
+
+        assert_eq!(response.streak.current_days, 367);
+        assert_eq!(response.activity_days.len(), 366);
+        assert_eq!(response.activity_days[0], "2026-11-15");
+        assert_eq!(response.activity_days[365], "2025-11-15");
     }
 
     #[test]
