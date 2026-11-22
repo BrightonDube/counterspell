@@ -53,7 +53,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Requirements: CP-5.2, CP-5.3.
   - PR alone: yes.
 
-- [ ] **T06 [S] (30 min) Add the collapsible workspace console**
+- [x] **T06 [S] (30 min) Add the collapsible workspace console**
   - Files: `web/src/lib/runs/types.ts`, `web/src/lib/workspace/{console-view.ts,ConsolePanel.svelte,WorkspaceShell.svelte}`, tests and CSS.
   - Parse the public console fields, build ordered bounded console entries, and render a keyboard-accessible expandable/collapsible read-only console associated with the editor. Auto-open once when a run produces content, never after an explicit collapse for that run. Keep Run/Submit/results/ghost/hints/Familiar unchanged.
   - Verify: failing parser/view/component tests first, including hostile text staying plain and hidden rows carrying no output; `npm run check` and focused Vitest.
