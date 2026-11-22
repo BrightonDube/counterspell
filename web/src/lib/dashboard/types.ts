@@ -246,10 +246,7 @@ export function parseDashboard(raw: unknown): DashboardView {
     reviewSummary:
       record.review_summary === null || record.review_summary === undefined
         ? null
-        : parseReviewSummary(
-            record.review_summary,
-            `${path}.review_summary`
-          )
+        : parseReviewSummary(record.review_summary, `${path}.review_summary`)
   };
 }
 

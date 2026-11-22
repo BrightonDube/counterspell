@@ -228,7 +228,9 @@
           {summary.dueCount}
           {summary.dueCount === 1 ? 'card' : 'cards'} due
         </p>
-        <div class="space-y-2 rounded-lg border border-border bg-raised px-4 py-3">
+        <div
+          class="space-y-2 rounded-lg border border-border bg-raised px-4 py-3"
+        >
           <p class="font-medium">{summary.nextReview.concept.name}</p>
           <p class="text-sm text-text-muted">
             {cardStateLabel(summary.nextReview.card.state)} · due {summary
