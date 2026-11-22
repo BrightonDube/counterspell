@@ -493,7 +493,7 @@ Conventions for every web task:
   - Verify: `cd web && npm test -- heuristics`.
   - Preserve: no import from the mood path.
 
-- [ ] **T48 [STRETCH] [S] (30 min) Worker, labelled bubble, switch and boundary test (P26)**
+- [x] **T48 [STRETCH] [S] (30 min) Worker, labelled bubble, switch and boundary test (P26)**
   - Files: `web/src/lib/familiar/guess/{worker.ts,GuessBubble.svelte}`, `web/src/lib/familiar/guess/boundary.test.ts`.
   - Load the parser lazily in a Web Worker, debounce about 700 ms, show the fixed label "Guess from reading your code. Run it for the real verdict.", and add an on/off switch (default off until chosen). The boundary test scans sources: `guess/**` imports nothing from `familiar-state`, `mascot`, `$lib/runs`, nor any network API; nothing in the mood path imports `guess/`.
   - Requirements: R14.
@@ -530,7 +530,7 @@ Critical path for the demo: T01 → T02 → T03 → T06 → T09 → T11 → T12 
 - [x] The real-stack proof shows a solution that does not match the declared class never reaching mood 5, and no wrong class at `high`.
 - [x] At least three launch problems have bench enabled, or the shortfall is reported to Brighton.
 - [x] fmt, Clippy (`-D warnings`), workspace tests, `pg_` tests, web check, web tests and `cargo deny check licenses` are green.
-- [ ] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
+- [x] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
 
 ## Agent task notes (2026-11-22)
 - Checklist wording fixed (Brighton): the real-stack proof records the quadratic
