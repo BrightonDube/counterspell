@@ -4,7 +4,7 @@
   // It never submits a run; the workspace decides what to do with the source.
   import { untrack } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
-  import type * as Monaco from 'monaco-editor';
+  import type * as Monaco from 'monaco-editor/editor/editor.api.js';
   import { CRYPT_THEME_NAME, loadMonaco } from './monaco-loader';
   import { markWorkspace } from '../performance';
 

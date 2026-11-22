@@ -5,7 +5,7 @@ import { cryptTheme } from './crypt-theme';
 
 export const CRYPT_THEME_NAME = 'crypt';
 
-type MonacoModule = typeof import('monaco-editor');
+type MonacoModule = typeof import('monaco-editor/editor/editor.api.js');
 
 let monacoPromise: Promise<MonacoModule> | null = null;
 
@@ -22,7 +22,13 @@ export function loadMonaco(): Promise<MonacoModule> {
     globals.MonacoEnvironment ??= {
       getWorker: () => new EditorWorker()
     };
-    monacoPromise = import('monaco-editor').then((monaco) => {
+    monacoPromise = Promise.all([
+      import('monaco-editor/editor/editor.api.js'),
+      import('monaco-editor/languages/definitions/python/register.js'),
+      import('monaco-editor/languages/definitions/javascript/register.js'),
+      import('monaco-editor/languages/definitions/java/register.js'),
+      import('monaco-editor/languages/definitions/cpp/register.js')
+    ]).then(([monaco]) => {
       monaco.editor.defineTheme(CRYPT_THEME_NAME, cryptTheme);
       return monaco;
     });

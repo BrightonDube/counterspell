@@ -70,7 +70,14 @@ const harness = vi.hoisted(() => {
   return { state, editorApi, FakeModel, FakeEditor };
 });
 
-vi.mock('monaco-editor', () => ({ editor: harness.editorApi }));
+vi.mock('monaco-editor/editor/editor.api.js', () => ({
+  editor: harness.editorApi,
+  languages: {
+    register() {},
+    registerTokensProviderFactory() {},
+    onLanguageEncountered() {}
+  }
+}));
 
 import MonacoEditor from './MonacoEditor.svelte';
 
