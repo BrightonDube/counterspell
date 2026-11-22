@@ -61,7 +61,7 @@ fn add_plan() -> Vec<PlannedTest> {
 /// Runs the add plan against one solution on the real daemon and returns the
 /// worker's final verdict. Compiled languages build inside the sandbox first,
 /// exactly as a real run does.
-async fn run_lang(lang: &str, solution: &str) -> FinalVerdict {
+async fn run_lang(lang: &str, solution: &str) -> (FinalVerdict, Uuid) {
     let backend = sandbox_backend().await;
     let (_dir, catalog) = catalogue();
     let language = catalog.get(lang).expect("the language is in the catalogue");
@@ -98,15 +98,16 @@ async fn run_lang(lang: &str, solution: &str) -> FinalVerdict {
     )
     .await
     .expect("a hostile run still completes without an infrastructure error");
-    result.verdict()
+    (result.verdict(), run_id)
 }
 
 /// Runs a hostile solution and asserts the verdict plus a clean daemon afterwards.
+/// The cleanup check is scoped to this run's containers so the suite's tests can
+/// run in parallel without seeing each other's live sessions.
 async fn run_hostile(lang: &str, solution: &str) -> FinalVerdict {
-    let verdict = run_lang(lang, solution).await;
+    let (verdict, run_id) = run_lang(lang, solution).await;
     let (docker, cfg) = sbx::sandbox().await;
-    // No managed container may still be running; corpses are reaped here.
-    sbx::drain_dead(&docker, &cfg, Duration::from_secs(15)).await;
+    sbx::drain_run(&docker, &cfg, run_id, Duration::from_secs(15)).await;
     verdict
 }
 
