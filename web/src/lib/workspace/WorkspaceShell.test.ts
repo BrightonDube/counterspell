@@ -697,6 +697,101 @@ describe('WorkspaceShell', () => {
     expect(document.activeElement).toBe(runButton);
   });
 
+  // Breaks if terminal output never opens the console, or if a learner's collapse is
+  // overridden by a later stream update for the same run.
+  it('opens the console once for terminal output and keeps an explicit collapse', async () => {
+    let watcher: { onState: (stream: RunStreamState) => void } | undefined;
+    const stream: RunStreamState = {
+      ...initialRunState('run-console'),
+      status: 'completed',
+      tests: [
+        {
+          sample: true,
+          ordinal: 1,
+          verdict: 'wrong_answer',
+          timeMs: 5,
+          input: '[]',
+          expected: '1',
+          got: '0',
+          stderr: 'debug line'
+        }
+      ],
+      terminal: {
+        kind: 'done',
+        verdict: 'wrong_answer',
+        passed: 0,
+        total: 1,
+        score: 0,
+        compileOutput: 'compiler warning'
+      }
+    };
+    const sessionDeps: RunSessionDeps = {
+      startAction: () => ({
+        key: 'console-key',
+        send: () => Promise.resolve('run-console')
+      }),
+      fetchRun: () =>
+        Promise.resolve(
+          parseRunView({
+            run_id: 'run-console',
+            problem: 'two-sum',
+            lang: 'python',
+            mode: 'run',
+            status: 'completed',
+            terminal: true,
+            verdict: 'wrong_answer',
+            attempt: 1,
+            created_at: '2026-11-15T10:00:00Z',
+            last_seq: 3,
+            tests: [
+              {
+                ordinal: 1,
+                sample: true,
+                verdict: 'wrong_answer',
+                time_ms: 5,
+                detail: {
+                  input: '[]',
+                  expected: '1',
+                  got: '0',
+                  stderr: 'debug line'
+                }
+              }
+            ]
+          })
+        ),
+      watch: (options) => {
+        watcher = options;
+        options.onDone(stream);
+        return { close() {} };
+      }
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps,
+        familiarDeps: familiarOff()
+      }
+    });
+
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    const toggle = await screen.findByRole('button', { name: 'Console' });
+    await vi.waitFor(() => {
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    });
+    expect(screen.getByText('compiler warning')).toBeTruthy();
+    expect(screen.getByText('debug line')).toBeTruthy();
+
+    await fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    watcher?.onState(stream);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+  });
+
   // Breaks if leaving the page keeps a run watch or a pending request alive
   // behind the learner's back.
   it('closes the run watch and drops late results when the shell unmounts', async () => {
