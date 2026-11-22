@@ -355,7 +355,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "needs VALKEY_URL"]
     async fn valkey_a_failed_primary_uses_the_fallback_exactly_once() {
-        let config = config(&[]);
+        let config = config(&[("HINT_PROVIDERS", "openai:gpt-6-luna,groq:openai/gpt-oss-20b")]);
         let quota = valkey_quota(10, 5_000_000);
         let transport = ScriptedTransport::new(vec![failure(), reply("Try a map.")]);
         let deps = Deps {
@@ -381,7 +381,7 @@ mod tests {
     #[tokio::test]
     #[ignore = "needs VALKEY_URL"]
     async fn valkey_when_every_provider_fails_the_quota_is_released() {
-        let config = config(&[]);
+        let config = config(&[("HINT_PROVIDERS", "openai:gpt-6-luna,groq:openai/gpt-oss-20b")]);
         let quota = valkey_quota(1, 5_000_000);
         let user = UserId::new();
         let transport = ScriptedTransport::new(vec![failure(), failure(), reply("Second try.")]);
