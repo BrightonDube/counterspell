@@ -300,3 +300,54 @@ describe('cost model', () => {
     expect(guess.reasons.join(' ')).toContain('linear');
   });
 });
+
+// for x in sorted(nums): print(x)
+const SORT_IN_ITERABLE = fn(
+  'scan_sorted',
+  ['nums'],
+  [forLoop(call('sorted', [id('nums')]), [call('print', [id('x')])])]
+);
+
+// while n > 0:
+//     half = n // 2   (unrelated division — bound shrinks by 1)
+//     n = n - 1
+const LINEAR_COUNTDOWN = fn(
+  'countdown',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('half', op('//', [id('n'), lit()])),
+      assign('n', op('-', [id('n'), lit()]))
+    ])
+  ]
+);
+
+// while n > 1:
+//     external(n)      (unknown call inside the loop)
+//     n = n // 2
+const HALVING_WITH_UNKNOWN_CALL = fn(
+  'halve_external',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      call('external', [id('n')]),
+      assign('n', op('//', [id('n'), lit()]))
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('reads a sort in the iterable as preprocessing: n log n', () => {
+    expect(analyze(SORT_IN_ITERABLE).guess_class).toBe('n log n');
+  });
+
+  it('does not read an unrelated division as a halving loop', () => {
+    expect(analyze(LINEAR_COUNTDOWN).guess_class).toBe('n');
+  });
+
+  it('drops to low when an unknown call sits inside a halving loop', () => {
+    const guess = analyze(HALVING_WITH_UNKNOWN_CALL);
+    expect(guess.guess_class).toBe('log n');
+    expect(guess.confidence).toBe('low');
+  });
+});

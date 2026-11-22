@@ -170,17 +170,44 @@ function callsIn(node: GuessNode, out: GuessNode[] = []): GuessNode[] {
   return out;
 }
 
-// True when a `while` body halves one of its bound variables: `x = x // 2`,
-// `x /= 2`, `x >>= 1`, or the binary-search `mid = (lo + hi) // 2` shape.
-function halvesBound(body: GuessNode[]): boolean {
+function namesIn(node: GuessNode, out: Set<string>): Set<string> {
+  if (node.type === 'name' || node.type === 'member') out.add(node.text);
+  for (const child of node.children) namesIn(child, out);
+  return out;
+}
+
+function hasHalvingOp(node: GuessNode): boolean {
+  if (
+    node.type === 'binary_op' &&
+    ['//', '/', '>>'].includes(node.text) &&
+    node.children.some((operand) => operand.type === 'literal')
+  ) {
+    return true;
+  }
+  return node.children.some(hasHalvingOp);
+}
+
+// True when a `while` body shrinks a variable the condition tests by a
+// geometric factor — `x = x // 2`, `x >>= 1`, or the binary-search shape where
+// a bound var takes `mid` and `mid` came from a halving. An unrelated division
+// (`half = n // 2; n = n - 1`) is not a halving loop.
+function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
+  if (!cond) return false;
+  const condNames = namesIn(cond, new Set());
+  const halvingValues = new Set<string>();
+  for (const node of body) {
+    if (node.type === 'assign' && node.children.some(hasHalvingOp)) {
+      halvingValues.add(node.text);
+    }
+  }
   return body.some(
     (node) =>
       node.type === 'assign' &&
+      condNames.has(node.text) &&
       node.children.some(
         (value) =>
-          value.type === 'binary_op' &&
-          ['//', '/', '>>'].includes(value.text) &&
-          value.children.some((operand) => operand.type === 'literal')
+          hasHalvingOp(value) ||
+          [...namesIn(value, new Set())].some((name) => halvingValues.has(name))
       )
   );
 }
@@ -232,38 +259,42 @@ function walk(
   ctx: { params: Set<string>; hashNames: Set<string>; selfName: string },
   depth: number,
   inCountedLoop: boolean,
+  inLoop: boolean,
   out: Walk
 ): void {
   switch (node.type) {
     case 'for': {
       const iterable = node.children[0];
+      // The iterable evaluates once before iterating — a sort there is
+      // preprocessing, priced in whatever loop context encloses this `for`.
+      if (iterable) walk(iterable, ctx, depth, inCountedLoop, inLoop, out);
       const counted = iterable
         ? containsParamName(iterable, ctx.params)
         : false;
       const next = counted ? depth + 1 : depth;
       if (counted) out.maxLevel = Math.max(out.maxLevel, next);
       for (const child of node.children.slice(1)) {
-        walk(child, ctx, next, inCountedLoop || counted, out);
+        walk(child, ctx, next, inCountedLoop || counted, true, out);
       }
       return;
     }
     case 'while': {
+      const cond = node.children[0];
       const body = node.children.slice(1);
-      if (halvesBound(body)) {
+      if (halvesBound(cond, body)) {
         // A halving loop contributes a log factor, not a linear level; it
         // never counts toward the depth even when its bound is a parameter.
         out.halving = true;
         for (const child of body) {
-          walk(child, ctx, depth, inCountedLoop, out);
+          walk(child, ctx, depth, inCountedLoop, true, out);
         }
         return;
       }
-      const cond = node.children[0];
       const counted = cond ? containsParamName(cond, ctx.params) : false;
       const next = counted ? depth + 1 : depth;
       if (counted) out.maxLevel = Math.max(out.maxLevel, next);
       for (const child of body) {
-        walk(child, ctx, next, inCountedLoop || counted, out);
+        walk(child, ctx, next, inCountedLoop || counted, true, out);
       }
       return;
     }
@@ -271,11 +302,7 @@ function walk(
       return; // nested definitions are analysed separately
     case 'call':
     case 'member_call': {
-      if (
-        inCountedLoop &&
-        !KNOWN_CALLS.has(node.text) &&
-        node.text !== ctx.selfName
-      ) {
+      if (inLoop && !KNOWN_CALLS.has(node.text) && node.text !== ctx.selfName) {
         out.unknownInLoop = true;
       }
       if (inCountedLoop && SORT_CALLS.has(node.text)) {
@@ -289,7 +316,7 @@ function walk(
         out.sawLinearStep = true;
       }
       for (const child of node.children)
-        walk(child, ctx, depth, inCountedLoop, out);
+        walk(child, ctx, depth, inCountedLoop, inLoop, out);
       return;
     }
     default: {
@@ -298,7 +325,7 @@ function walk(
         out.sawLinearStep = true;
       }
       for (const child of node.children)
-        walk(child, ctx, depth, inCountedLoop, out);
+        walk(child, ctx, depth, inCountedLoop, inLoop, out);
     }
   }
 }
@@ -349,7 +376,14 @@ function analyzeFunction(fn: GuessNode): FnReport {
     unknownInLoop: false
   };
   for (const node of body) {
-    walk(node, { params, hashNames, selfName: fn.text }, 0, false, walkOut);
+    walk(
+      node,
+      { params, hashNames, selfName: fn.text },
+      0,
+      false,
+      false,
+      walkOut
+    );
   }
 
   const classes = new Map<string, string>();
