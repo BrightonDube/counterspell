@@ -207,7 +207,7 @@ fn language_keys_match_the_allow_list_exactly() {
 }
 
 #[test]
-fn launch_catalogue_lists_exactly_python_and_javascript() {
+fn launch_catalogue_lists_the_accepted_languages() {
     let catalogue = counterspell_server::seams::LanguageCatalog::launch(65_536);
     let ids: Vec<&str> = catalogue
         .entries()
@@ -215,10 +215,9 @@ fn launch_catalogue_lists_exactly_python_and_javascript() {
         .map(|language| language.name.as_str())
         .collect();
 
-    assert_eq!(ids, ["python", "javascript"]);
-    // Disabled stretch languages are never in the catalogue at all (CAT-A7).
-    assert!(catalogue.find("java").is_none());
-    assert!(catalogue.find("cpp").is_none());
+    assert_eq!(ids, ["python", "javascript", "java", "cpp"]);
+    // Languages the server does not accept are never in the catalogue (CAT-A7).
+    assert!(catalogue.find("rust").is_none());
 }
 
 #[tokio::test]
@@ -232,11 +231,15 @@ async fn get_languages_returns_the_enabled_languages() {
 
     assert_eq!(keys(&value), set(&["languages"]));
     let languages = value["languages"].as_array().expect("a languages array");
-    assert_eq!(languages.len(), 2);
+    assert_eq!(languages.len(), 4);
     assert_eq!(languages[0]["id"], json!("python"));
     assert_eq!(languages[0]["display_name"], json!("Python"));
     assert_eq!(languages[1]["id"], json!("javascript"));
     assert_eq!(languages[1]["display_name"], json!("JavaScript"));
+    assert_eq!(languages[2]["id"], json!("java"));
+    assert_eq!(languages[2]["display_name"], json!("Java"));
+    assert_eq!(languages[3]["id"], json!("cpp"));
+    assert_eq!(languages[3]["display_name"], json!("C++"));
     for language in languages {
         assert_eq!(
             keys(language),
