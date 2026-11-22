@@ -13,7 +13,7 @@ use crate::ghosts::{self, SandboxGhost};
 use crate::meta::{Bench, Meta};
 use crate::pack::Pack;
 use crate::report::{Diagnostic, Report};
-use crate::runner::{PackRunner, RunnerError, Target};
+use crate::runner::{PackRunner, ProgramOracle, RunnerError, Target};
 use crate::samples::accepts_return;
 use crate::signature::LaunchType;
 use counterspell_engine::complexity::{
@@ -21,10 +21,9 @@ use counterspell_engine::complexity::{
     Point as EnginePoint,
 };
 use counterspell_engine::generate::{CandidateStream, GeneratorConfig};
-use counterspell_engine::shrink::{shrink, Probe};
 use counterspell_engine::{
-    classify, compare_size, Budget, Classification, FailureKind, FailurePredicate, Observation,
-    ProgramResult,
+    classify, compare_size, shrink_failure, Budget, Classification, FailurePredicate, Observation,
+    ProgramResult, ShrinkRequest, SystemClock,
 };
 use serde_json::Value;
 use std::cmp::Ordering;
@@ -185,10 +184,6 @@ fn check_ghost(
             return Ok(());
         }
     };
-    // The engine does not shrink timeouts, so there is nothing to minimise.
-    if known.kind == FailureKind::Timeout {
-        return Ok(());
-    }
     check_minimal(index, ghost, &predicate, meta, runner, limit, report)
 }
 
@@ -202,29 +197,22 @@ fn check_minimal(
     limit: Duration,
     report: &mut Report,
 ) -> Result<(), RunnerError> {
-    let comparator = meta.engine_comparator();
-    let mut fault = None;
-    let outcome = shrink(
-        &meta.input_schema,
+    let request = ShrinkRequest {
+        schema: &meta.input_schema,
+        comparator: meta.engine_comparator(),
+        predicate,
+        max_evals: Budget::default().max_shrink_evals,
+        eval_limit: limit,
+        deadline: Duration::MAX,
+    };
+    let mut oracle = ProgramOracle::new(runner, &ghost.program);
+    let outcome = shrink_failure(
+        &request,
         ghost.known.input.clone(),
-        Budget::default().max_shrink_evals,
-        &mut |candidate: &Value| match observe(runner, &ghost.program, candidate, limit) {
-            Ok(observation)
-                if classify(&observation, &comparator)
-                    == Classification::Fail(predicate.clone()) =>
-            {
-                Probe::Keep
-            }
-            Ok(_) => Probe::Reject,
-            Err(error) => {
-                fault = Some(error);
-                Probe::Stop
-            }
-        },
-    );
-    if let Some(error) = fault {
-        return Err(error);
-    }
+        &mut oracle,
+        &SystemClock::new(),
+    )
+    .map_err(|error| RunnerError::Infrastructure(error.message().to_owned()))?;
     if compare_size(&outcome.value, &ghost.known.input) == Ordering::Less {
         report.push(Diagnostic::new(
             codes::SBX_04,

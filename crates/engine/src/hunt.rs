@@ -12,7 +12,7 @@ use crate::generate::{CandidateStream, GeneratorConfig, Origin};
 use crate::oracle::{Clock, Oracle, OracleError};
 use crate::rng::derive_seed;
 use crate::schema::Schema;
-use crate::shrink::{shrink, Probe, ShrinkReport, ShrinkStep, ShrinkStop};
+use crate::shrink::{shrink, Probe, ShrinkOutcome, ShrinkReport, ShrinkStep, ShrinkStop};
 use crate::size::{size_of, SizeMetric};
 use crate::{ENGINE_VERSION, GENERATOR_VERSION};
 use serde::{Deserialize, Serialize};
@@ -307,14 +307,10 @@ fn finish(
     stats: &mut HuntStats,
 ) -> HuntOutcome {
     let total_deadline = hunt_start.saturating_add(req.budget.total_wall);
-    let shrunk = if first.predicate.kind == FailureKind::Timeout {
-        not_shrunk(&first.input)
-    } else {
-        match shrink_failure(req, &first, oracle, clock, hunt_start, stats) {
-            Ok(report) => report,
-            Err(error) => {
-                return HuntOutcome::Aborted(AbortReason::OracleFailure(error.message().to_owned()))
-            }
+    let shrunk = match shrink_first(req, &first, oracle, clock, hunt_start, stats) {
+        Ok(report) => report,
+        Err(error) => {
+            return HuntOutcome::Aborted(AbortReason::OracleFailure(error.message().to_owned()))
         }
     };
 
@@ -377,33 +373,59 @@ fn finish(
     }))
 }
 
-/// Shrinks the first failure, asking the Oracle about each new proposal.
+/// What [`shrink_failure`] keeps, and how much it may spend.
+pub struct ShrinkRequest<'a> {
+    /// The input schema; every proposal stays inside it.
+    pub schema: &'a Schema,
+    /// The comparator that classifies each observation.
+    pub comparator: Comparator,
+    /// The failure to keep. A proposal is kept only when it fails exactly this way,
+    /// exception class included.
+    pub predicate: &'a FailurePredicate,
+    /// The most proposals the Oracle is asked about.
+    pub max_evals: u32,
+    /// The time limit for one Oracle call.
+    pub eval_limit: Duration,
+    /// The clock time at which the shrink stops.
+    pub deadline: Duration,
+}
+
+/// Shrinks `start`, which fails as `req.predicate`, asking the Oracle about each new,
+/// smaller proposal and keeping the ones that fail the same way.
 ///
-/// The shrink stops at its own deadline. An Oracle error ends the shrink early
-/// and is returned, so it is never mistaken for a smaller input.
-fn shrink_failure(
-    req: &HuntRequest,
-    first: &FirstFailure,
+/// A timeout is never shrunk: the outcome is `start` with a `NotAttempted` trace and no
+/// Oracle call. Each call's limit is `eval_limit`, cut to the time left before the
+/// deadline; at the deadline the shrink stops with `WallTime`.
+///
+/// # Errors
+///
+/// An Oracle error ends the shrink and is returned, so it is never mistaken for a
+/// smaller input.
+pub fn shrink_failure(
+    req: &ShrinkRequest<'_>,
+    start: Value,
     oracle: &mut dyn Oracle,
     clock: &dyn Clock,
-    hunt_start: Duration,
-    stats: &mut HuntStats,
-) -> Result<ShrinkReport, OracleError> {
-    let elapsed = clock.now().saturating_sub(hunt_start);
-    let deadline = hunt_start.saturating_add(req.budget.shrink_deadline(elapsed));
+) -> Result<ShrinkOutcome, OracleError> {
+    if req.predicate.kind == FailureKind::Timeout {
+        let report = not_shrunk(&start);
+        return Ok(ShrinkOutcome {
+            value: start,
+            report,
+        });
+    }
     let mut failure: Option<OracleError> = None;
     let outcome = {
         let mut probe = |candidate: &Value| -> Probe {
             let now = clock.now();
-            if now >= deadline {
+            if now >= req.deadline {
                 return Probe::Stop;
             }
-            let limit = req.budget.eval_limit.min(deadline.saturating_sub(now));
-            stats.oracle_calls += 1;
+            let limit = req.eval_limit.min(req.deadline.saturating_sub(now));
             match oracle.evaluate(candidate, limit) {
                 Ok(observation)
                     if classify(&observation, &req.comparator)
-                        == Classification::Fail(first.predicate.clone()) =>
+                        == Classification::Fail(req.predicate.clone()) =>
                 {
                     Probe::Keep
                 }
@@ -414,16 +436,54 @@ fn shrink_failure(
                 }
             }
         };
-        shrink(
-            &req.schema,
-            first.input.clone(),
-            req.budget.max_shrink_evals,
-            &mut probe,
-        )
+        shrink(req.schema, start, req.max_evals, &mut probe)
     };
     match failure {
         Some(error) => Err(error),
-        None => Ok(outcome.report),
+        None => Ok(outcome),
+    }
+}
+
+/// Shrinks the hunt's first failure within the shrink share of the hunt budget, counting
+/// every Oracle call in the hunt stats.
+fn shrink_first(
+    req: &HuntRequest,
+    first: &FirstFailure,
+    oracle: &mut dyn Oracle,
+    clock: &dyn Clock,
+    hunt_start: Duration,
+    stats: &mut HuntStats,
+) -> Result<ShrinkReport, OracleError> {
+    let elapsed = clock.now().saturating_sub(hunt_start);
+    let request = ShrinkRequest {
+        schema: &req.schema,
+        comparator: req.comparator,
+        predicate: &first.predicate,
+        max_evals: req.budget.max_shrink_evals,
+        eval_limit: req.budget.eval_limit,
+        deadline: hunt_start.saturating_add(req.budget.shrink_deadline(elapsed)),
+    };
+    let mut counted = Counted {
+        inner: oracle,
+        calls: &mut stats.oracle_calls,
+    };
+    shrink_failure(&request, first.input.clone(), &mut counted, clock).map(|outcome| outcome.report)
+}
+
+/// An Oracle that counts the calls it passes on.
+struct Counted<'o, 'c> {
+    inner: &'o mut dyn Oracle,
+    calls: &'c mut u32,
+}
+
+impl Oracle for Counted<'_, '_> {
+    fn evaluate(
+        &mut self,
+        input: &Value,
+        limit: Duration,
+    ) -> Result<crate::classify::Observation, OracleError> {
+        *self.calls += 1;
+        self.inner.evaluate(input, limit)
     }
 }
 
@@ -1157,5 +1217,121 @@ mod tests {
         ] {
             assert!(!reason.to_string().to_lowercase().contains("correct"));
         }
+    }
+
+    /// The user result on top of a reference that always returns 0.
+    fn against_zero(user: ProgramResult) -> Observation {
+        Observation {
+            user,
+            reference: ProgramResult::Returned(json!(0)),
+        }
+    }
+
+    fn shrink_request<'a>(
+        schema: &'a Schema,
+        predicate: &'a FailurePredicate,
+        deadline: Duration,
+    ) -> ShrinkRequest<'a> {
+        ShrinkRequest {
+            schema,
+            comparator: Comparator::Exact,
+            predicate,
+            max_evals: 300,
+            eval_limit: Duration::from_secs(1),
+            deadline,
+        }
+    }
+
+    #[test]
+    fn shrink_failure_keeps_only_the_same_exception_class() {
+        // x >= 10 raises IndexError, 5 to 9 raise ValueError, and below 5 passes, so the
+        // smallest IndexError input is 10.
+        let schema = int_range(0, 100);
+        let predicate = FailurePredicate {
+            kind: FailureKind::RuntimeError,
+            exception_class: Some("IndexError".to_owned()),
+        };
+        let mut oracle = Scripted(|input: &Value, _limit: Duration| {
+            let x = input.as_i64().unwrap_or_default();
+            let user = if x >= 10 {
+                index_error()
+            } else if x >= 5 {
+                ProgramResult::Crashed {
+                    exception_class: "ValueError".to_owned(),
+                    message: String::new(),
+                }
+            } else {
+                ProgramResult::Returned(json!(0))
+            };
+            Ok(against_zero(user))
+        });
+        let request = shrink_request(&schema, &predicate, Duration::from_secs(60));
+
+        let outcome = shrink_failure(&request, json!(50), &mut oracle, &ManualClock::new())
+            .expect("the oracle answers");
+
+        assert_eq!(outcome.value, json!(10));
+        assert_eq!(outcome.report.stop, ShrinkStop::LocalMinimum);
+    }
+
+    #[test]
+    fn shrink_failure_never_shrinks_a_timeout() {
+        let schema = int_range(0, 100);
+        let predicate = FailurePredicate {
+            kind: FailureKind::Timeout,
+            exception_class: None,
+        };
+        let calls = Cell::new(0);
+        let mut oracle = Scripted(|_input: &Value, _limit: Duration| {
+            calls.set(calls.get() + 1);
+            Ok(against_zero(ProgramResult::TimedOut))
+        });
+        let request = shrink_request(&schema, &predicate, Duration::from_secs(60));
+
+        let outcome = shrink_failure(&request, json!(50), &mut oracle, &ManualClock::new())
+            .expect("no oracle call");
+
+        assert_eq!(outcome.value, json!(50));
+        assert_eq!(outcome.report.stop, ShrinkStop::NotAttempted);
+        assert_eq!(calls.get(), 0);
+    }
+
+    #[test]
+    fn shrink_failure_returns_an_oracle_error() {
+        let schema = int_range(0, 100);
+        let predicate = FailurePredicate {
+            kind: FailureKind::WrongAnswer,
+            exception_class: None,
+        };
+        let mut oracle =
+            Scripted(|_input: &Value, _limit: Duration| Err(OracleError::new("sandbox down")));
+        let request = shrink_request(&schema, &predicate, Duration::from_secs(60));
+
+        let error = shrink_failure(&request, json!(50), &mut oracle, &ManualClock::new())
+            .expect_err("the oracle failed");
+
+        assert_eq!(error.message(), "sandbox down");
+    }
+
+    #[test]
+    fn shrink_failure_stops_at_the_deadline_without_asking() {
+        let schema = int_range(0, 100);
+        let predicate = FailurePredicate {
+            kind: FailureKind::WrongAnswer,
+            exception_class: None,
+        };
+        let calls = Cell::new(0);
+        let mut oracle = Scripted(|_input: &Value, _limit: Duration| {
+            calls.set(calls.get() + 1);
+            Ok(against_zero(ProgramResult::Returned(json!(1))))
+        });
+        let request = shrink_request(&schema, &predicate, Duration::ZERO);
+
+        let outcome = shrink_failure(&request, json!(50), &mut oracle, &ManualClock::new())
+            .expect("no oracle call");
+
+        assert_eq!(outcome.value, json!(50));
+        assert_eq!(outcome.report.stop, ShrinkStop::WallTime);
+        assert_eq!(calls.get(), 0);
     }
 }

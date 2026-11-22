@@ -15,8 +15,9 @@ use crate::schemas::{
 };
 use counterspell_engine::complexity::{self, Class, FitConfig, Mode, Point};
 use counterspell_engine::{
-    build_autopsy, classify, hunt, AbortReason, Budget, Classification, FailureKind,
-    FailurePredicate, HuntOutcome, ProgramResult, SystemClock,
+    build_autopsy, classify, hunt, shrink_failure, AbortReason, Budget, Classification, Clock,
+    FailureKind, FailurePredicate, HuntOutcome, Oracle, OracleError, ProgramResult, ShrinkRequest,
+    SystemClock,
 };
 use counterspell_grimoire::record::{self, signature_descriptor};
 use counterspell_grimoire::runner::{ProgramOracle, RunnerError, Target};
@@ -26,7 +27,7 @@ use serde_json::{json, Value};
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::{Path, PathBuf};
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 /// The time an explanation assumes for an observed timeout, in milliseconds.
 const EXPLAIN_LIMIT_MS: u64 = 2000;
@@ -533,7 +534,7 @@ fn abort_error(reason: &AbortReason, root: &Path) -> ToolError {
 ///
 /// Returns `InvalidRequest` for a timeout target, a bad input or a bad path,
 /// `SandboxNotConfigured` without a runner, `SandboxInfrastructure` on a runner fault, and
-/// `EngineAborted` when the shrunk input does not reproduce the failure.
+/// `EngineAborted` when the input does not fail the way the target names.
 pub fn shrink_input(
     root: &Path,
     slot: &mut RunnerSlot,
@@ -550,7 +551,7 @@ pub fn shrink_input(
 ///
 /// Returns `InvalidRequest` for a timeout target, a bad input or a bad path,
 /// `SandboxNotConfigured` without a runner, `SandboxInfrastructure` on a runner fault, and
-/// `EngineAborted` when the shrunk input does not reproduce the failure.
+/// `EngineAborted` when the input does not fail the way the target names.
 fn shrink_input_inner(
     root: &Path,
     slot: &mut RunnerSlot,
@@ -583,40 +584,37 @@ fn shrink_input_inner(
         })
         .map_err(|error| slot_error(error, root))?;
     let mut oracle = ProgramOracle::new(runner, &args.program);
-    let deadline = Instant::now() + Duration::from_millis(args.wall_ms);
-    let mut fault: Option<ToolError> = None;
-    let outcome = {
-        let mut probe = |candidate: &Value| {
-            if Instant::now() >= deadline {
-                return counterspell_engine::shrink::Probe::Stop;
-            }
-            match counterspell_engine::Oracle::evaluate(&mut oracle, candidate, limit) {
-                Ok(observation) => match classify(&observation, &comparator) {
-                    Classification::Fail(predicate) if predicate.kind == kind => {
-                        counterspell_engine::shrink::Probe::Keep
-                    }
-                    _ => counterspell_engine::shrink::Probe::Reject,
-                },
-                Err(error) => {
-                    fault = Some(ToolError::new(
-                        ErrorCategory::SandboxInfrastructure,
-                        error.message(),
-                        root,
-                    ));
-                    counterspell_engine::shrink::Probe::Stop
-                }
-            }
-        };
-        counterspell_engine::shrink::shrink(
-            &context.meta.input_schema,
-            args.input.clone(),
-            args.max_evals,
-            &mut probe,
-        )
+    let infrastructure = |error: OracleError| {
+        ToolError::new(ErrorCategory::SandboxInfrastructure, error.message(), root)
     };
-    if let Some(error) = fault {
-        return Err(error);
-    }
+    // The shrink keeps the exact failure the input shows now, exception class included,
+    // the same rule the hunt and the pack validator use.
+    let first = oracle
+        .evaluate(&args.input, limit)
+        .map_err(infrastructure)?;
+    let predicate = match classify(&first, &comparator) {
+        Classification::Fail(predicate) if predicate.kind == kind => predicate,
+        _ => {
+            return Err(ToolError::new(
+                ErrorCategory::EngineAborted,
+                "the input does not fail the way the target names",
+                root,
+            ))
+        }
+    };
+    let clock = SystemClock::new();
+    let request = ShrinkRequest {
+        schema: &context.meta.input_schema,
+        comparator,
+        predicate: &predicate,
+        max_evals: args.max_evals,
+        eval_limit: limit,
+        deadline: clock
+            .now()
+            .saturating_add(Duration::from_millis(args.wall_ms)),
+    };
+    let outcome = shrink_failure(&request, args.input.clone(), &mut oracle, &clock)
+        .map_err(infrastructure)?;
     Ok(json!({
         "value": outcome.value,
         "report": serde_json::to_value(&outcome.report).unwrap_or(Value::Null),
@@ -628,7 +626,6 @@ mod tests {
     use super::*;
     use crate::config::ConfigError;
     use crate::schemas::{BudgetArgs, ShrinkTargetArg};
-    use counterspell_engine::Oracle;
     use counterspell_grimoire::runner::PackRunner;
 
     /// The repository root, two levels above this crate.
