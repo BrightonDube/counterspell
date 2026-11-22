@@ -383,6 +383,20 @@ const NESTED_UNKNOWN_DIVISOR = fn(
   ]
 );
 
+// while n > 1:
+//     half = n - n // 2
+//     n = half   (n minus its own half is still half)
+const COMPLEMENT_HALF = fn(
+  'complement_half',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('half', op('-', [id('n'), op('//', [id('n'), lit('2')])])),
+      assign('n', id('half'))
+    ])
+  ]
+);
+
 describe('cost model edge cases', () => {
   it('reads a sort in the iterable as preprocessing: n log n', () => {
     expect(analyze(SORT_IN_ITERABLE).guess_class).toBe('n log n');
@@ -805,5 +819,8 @@ describe('cost model edge cases', () => {
 
   it('does not read a nested unknown divisor scaled back as a shrink', () => {
     expect(analyze(NESTED_UNKNOWN_DIVISOR).guess_class).toBe('n');
+  });
+  it('reads n - n // 2 as a halving', () => {
+    expect(analyze(COMPLEMENT_HALF).guess_class).toBe('log n');
   });
 });

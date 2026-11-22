@@ -236,6 +236,26 @@ function boundFactor(node: GuessNode, targets: Set<string>): number {
     return boundFactor(node.children[0], targets) / Math.max(divisor, 1);
   }
   if (node.text === '%') return 0;
+  if (node.text === '-') {
+    const left = boundFactor(node.children[0], targets);
+    const rest = node.children.slice(1);
+    const right = rest.map((child) => boundFactor(child, targets));
+    // Subtracting a strict fraction of the same bound keeps a fraction:
+    // `n - n // 2` is `n // 2`. Other pairs stay bound-scale — `hi - lo`
+    // is a distance, not a difference of two halves of one bound.
+    if (
+      rest.length > 0 &&
+      rest.every(
+        (child, i) =>
+          right[i] > 0 &&
+          right[i] < left &&
+          [...namesIn(child, new Set())].some((n) => targets.has(n))
+      )
+    ) {
+      return right.reduce((acc, factor) => acc - factor, left);
+    }
+    return Math.max(0, left, ...right);
+  }
   if (node.text === '+') {
     const factors = node.children.map((child) => boundFactor(child, targets));
     if (factors.some((factor) => !Number.isFinite(factor))) return Infinity;
