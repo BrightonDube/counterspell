@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-    "build": "vite build",
+    "build": "vite build && node scripts/optimize-critical-css.mjs",
     "dev": "vite dev",
     "preview": "vite preview",
     "prepare": "svelte-kit sync",
@@ -24,6 +24,7 @@
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@tailwindcss/vite": "^4.1.13",
     "@testing-library/svelte": "^5.4.2",
+    "beasties": "^0.5.5",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-svelte": "^3.24.1",

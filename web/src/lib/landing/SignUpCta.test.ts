@@ -7,7 +7,9 @@ describe('SignUpCta', () => {
 
   it('links the primary call to action to the problems catalogue', () => {
     render(SignUpCta);
-    const primary = screen.getByRole('link', { name: 'Start practising' });
+    const primary = screen.getByRole('link', {
+      name: 'Start Your First Challenge'
+    });
     expect(primary.getAttribute('href')).toBe('/problems');
   });
 
@@ -18,7 +20,9 @@ describe('SignUpCta', () => {
 
   it('styles the primary button with the candle accent and a visible focus ring', () => {
     render(SignUpCta);
-    const primary = screen.getByRole('link', { name: 'Start practising' });
+    const primary = screen.getByRole('link', {
+      name: 'Start Your First Challenge'
+    });
     expect(primary.className).toContain('bg-accent-candle');
     expect(primary.className).toContain('hover:bg-accent-candle-glow');
     expect(primary.className).toContain('focus-visible:ring-2');
@@ -52,7 +56,7 @@ describe('SignUpCta', () => {
   });
 
   // R24 (landing performance): a 96 px picture must not download the 512 px file.
-  it('offers a 192 px candidate for each 96 px picture and keeps the 512 px file as the fallback', () => {
+  it('offers pixel-sized candidates for each 96 px picture and keeps the 512 px file as the fallback', () => {
     const { container } = render(SignUpCta);
     const candle = container.querySelector(
       'img[src="/art/objects/candle-flame.webp"]'
@@ -61,10 +65,10 @@ describe('SignUpCta', () => {
       'img[src="/art/familiar/jack-o-lantern-orange.webp"]'
     );
     expect(candle?.getAttribute('srcset')).toBe(
-      '/art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w'
+      '/art/objects/candle-flame-96.webp 96w, /art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w'
     );
     expect(pumpkin?.getAttribute('srcset')).toBe(
-      '/art/familiar/jack-o-lantern-orange-192.webp 192w, /art/familiar/jack-o-lantern-orange.webp 512w'
+      '/art/familiar/jack-o-lantern-orange-96.webp 96w, /art/familiar/jack-o-lantern-orange-192.webp 192w, /art/familiar/jack-o-lantern-orange.webp 512w'
     );
     expect(candle?.getAttribute('sizes')).toBe('96px');
     expect(pumpkin?.getAttribute('sizes')).toBe('96px');

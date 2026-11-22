@@ -6,10 +6,14 @@ const NARROW_MAX_WIDTH = 900;
 
 /** The hero poster's WebP candidates. The `<picture>` and the head preload must use the same values. */
 export const HERO_POSTER_SRCSET =
+  '/art/landing/hero-moon-living-poster-960.avif 960w, /art/landing/hero-moon-living-poster-1200.avif 1200w, /art/landing/hero-moon-living-poster-1440.avif 1440w, /art/landing/hero-moon-living-poster-1464.avif 1464w, /art/landing/hero-moon-living-poster-1680.avif 1680w';
+
+/** WebP candidates for browsers that cannot decode AVIF. */
+export const HERO_POSTER_WEBP_SRCSET =
   '/art/landing/hero-moon-living-poster-960.webp 960w, /art/landing/hero-moon-living-poster-1920.webp 1920w';
 
-/** The poster's `sizes`: the full viewport on phones, the 1920 px file above that. */
-export const HERO_POSTER_SIZES = '(max-width: 900px) 100vw, 1920px';
+/** The hero plate is 16:9 and covers the viewport, so width follows viewport height. */
+export const HERO_POSTER_SIZES = 'calc(100vh * 1.7778)';
 
 export interface HeroVideoFacts {
   /** True when the visitor has asked for reduced motion. */

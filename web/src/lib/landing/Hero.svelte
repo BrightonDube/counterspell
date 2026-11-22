@@ -1,12 +1,13 @@
 <script lang="ts">
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
-  import { TAGLINE, WORDMARK } from './copy';
+  import { HERO_BODY, TAGLINE, WORDMARK } from './copy';
   import { afterPaint } from './after-paint';
   import {
     chooseHeroVideo,
     HERO_POSTER_SIZES,
     HERO_POSTER_SRCSET,
+    HERO_POSTER_WEBP_SRCSET,
     type HeroVideo
   } from './hero-media';
   import { planLanding, type LandingPlan } from './motion-plan';
@@ -133,8 +134,13 @@
       {:else}
         <picture class="absolute inset-0 block h-full w-full">
           <source
-            type="image/webp"
+            type="image/avif"
             srcset={HERO_POSTER_SRCSET}
+            sizes={HERO_POSTER_SIZES}
+          />
+          <source
+            type="image/webp"
+            srcset={HERO_POSTER_WEBP_SRCSET}
             sizes={HERO_POSTER_SIZES}
           />
           <img
@@ -167,23 +173,26 @@
       {/if}
 
       {#if overlaysReady && plan.layers.far}
-        <img
-          class="layer-far absolute inset-x-0 bottom-0 h-auto w-full"
-          src="/art/fx/fog-layer-cold.webp"
-          width="1600"
-          height="400"
-          alt=""
-          aria-hidden="true"
-          decoding="async"
-        />
+        <picture class="absolute inset-x-0 bottom-0 block w-full">
+          <source type="image/avif" srcset="/art/fx/fog-layer-cold.avif" />
+          <img
+            class="layer-far h-auto w-full"
+            src="/art/fx/fog-layer-cold.webp"
+            width="1600"
+            height="400"
+            alt=""
+            aria-hidden="true"
+            decoding="async"
+          />
+        </picture>
       {/if}
 
       {#if overlaysReady && plan.layers.near}
         <img
           class="layer-near absolute bottom-0 left-0 h-auto w-2/3"
-          src="/art/fx/embers.webp"
-          width="400"
-          height="300"
+          src="/art/fx/embers-1200.avif"
+          width="1200"
+          height="900"
           alt=""
           aria-hidden="true"
           decoding="async"
@@ -209,9 +218,9 @@
         <img
           class="layer-bats absolute top-[18%] left-0 h-auto w-1/2"
           style="opacity: 0"
-          src="/art/fx/bat-swarm.webp"
-          width="1600"
-          height="500"
+          src="/art/fx/bat-swarm-1000.avif"
+          width="1000"
+          height="313"
           alt=""
           aria-hidden="true"
           decoding="async"
@@ -228,16 +237,12 @@
   >
     <h1 class="wordmark">{WORDMARK}</h1>
     <p class="tagline">{TAGLINE}</p>
+    <p class="hero-copy">{HERO_BODY}</p>
   </div>
 
-  <a
-    bind:this={enterLink}
-    class="enter-link"
-    href={resolve('/login')}
-    aria-label="Enter, go to sign in"
-  >
-    <span class="enter-label" aria-hidden="true">ENTER</span>
-    <span class="enter-hint" aria-hidden="true">Press to begin</span>
+  <a bind:this={enterLink} class="enter-link" href={resolve('/login')}>
+    <span class="enter-label">ENTER</span>
+    <span class="enter-hint">Press to begin</span>
   </a>
 </section>
 
@@ -320,6 +325,16 @@
       0 0 8px rgb(var(--hero-ember) / 0.55),
       0 0 22px rgb(var(--hero-ember) / 0.35),
       0 2px 10px color-mix(in oklab, var(--bg) 95%, transparent);
+  }
+
+  .hero-copy {
+    max-width: 38rem;
+    font-size: clamp(0.95rem, 1.15vw, 1.125rem);
+    line-height: 1.6;
+    color: var(--color-text);
+    text-shadow:
+      0 1px 8px color-mix(in oklab, var(--bg) 95%, transparent),
+      0 0 18px color-mix(in oklab, var(--bg) 85%, transparent);
   }
 
   /* A soft dark pool behind the wordmark keeps the bone letters legible over the bright moon. */
