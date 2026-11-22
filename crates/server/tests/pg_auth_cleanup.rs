@@ -1,6 +1,9 @@
 //! The auth cleanup removes rows that stopped working more than a day ago (auth T33, requirement
 //! R3.9 and the session limits in R10.2).
 //!
+//! Email tokens are retired, but stale rows can still exist from before the retirement, so the
+//! cleanup still sweeps the table. The test seeds them with SQL, since nothing issues them now.
+//!
 //! Run with `DATABASE_URL` set: `cargo test -p counterspell-server pg_auth_cleanup -- --include-ignored`.
 
 use std::sync::Arc;
@@ -9,12 +12,10 @@ use counterspell_common::ids::UserId;
 use counterspell_server::auth::{
     cleanup::purge,
     clock::{Clock, ManualClock},
-    email::EmailAddress,
     oauth::{flow::FlowStore, ProviderId},
     session::{AuthMethod, SessionService},
-    tokens::{Purpose, TokenStore},
+    tokens::TokenHash,
 };
-use serde_json::json;
 use sqlx::{types::Uuid, PgPool};
 use time::{Duration, OffsetDateTime};
 
@@ -38,27 +39,38 @@ async fn user(pool: &PgPool, handle: &str) -> UserId {
     UserId::from_uuid(id)
 }
 
+/// Writes a stale `email_tokens` row the way the retired token store used to: a 15-minute window
+/// starting at `issued`.
+// test-change: AUTH-EMAIL-REMOVAL
+async fn old_email_token(pool: &PgPool, email: &str, issued: OffsetDateTime) {
+    sqlx::query(
+        "INSERT INTO email_tokens (token_hash, purpose, email, created_at, expires_at)
+         VALUES ($1, 'magic_link', $2, $3, $3 + interval '15 minutes')",
+    )
+    .bind(TokenHash::of(email).as_bytes().as_slice())
+    .bind(email)
+    .bind(issued)
+    .execute(pool)
+    .await
+    .expect("an old token");
+}
+
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
+// test-change: AUTH-EMAIL-REMOVAL
 async fn pg_auth_cleanup_removes_only_rows_that_stopped_working_a_day_ago(pool: PgPool) {
     let clock = Arc::new(ManualClock::new(start()));
     let old_user = user(&pool, "old").await;
     let new_user = user(&pool, "new").await;
     let sessions = SessionService::new(pool.clone(), clock.clone());
-    let tokens = TokenStore::new(pool.clone(), clock.clone());
     let flows = FlowStore::new(pool.clone(), clock.clone());
-    let old_address = EmailAddress::parse("old@example.co").expect("valid address");
-    let new_address = EmailAddress::parse("new@example.co").expect("valid address");
 
     // Everything below is created at the start time, so it is long dead when the clock moves on.
     sessions
         .create(old_user, AuthMethod::MagicLink)
         .await
         .expect("an old session");
-    tokens
-        .issue(Purpose::MagicLink, &old_address, None, json!({}))
-        .await
-        .expect("an old token");
+    old_email_token(&pool, "old@example.co", start()).await;
     flows
         .create_login(ProviderId::GitHub, "/")
         .await
@@ -69,10 +81,7 @@ async fn pg_auth_cleanup_removes_only_rows_that_stopped_working_a_day_ago(pool: 
         .create(new_user, AuthMethod::MagicLink)
         .await
         .expect("a live session");
-    tokens
-        .issue(Purpose::MagicLink, &new_address, None, json!({}))
-        .await
-        .expect("a live token");
+    old_email_token(&pool, "new@example.co", clock.now()).await;
     flows
         .create_login(ProviderId::Google, "/")
         .await

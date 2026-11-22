@@ -32,10 +32,6 @@ export const signInWithPassword = (
   password: string,
   returnTo: string
 ) => post<SignInResult>('login', { email, password, return_to: returnTo });
-export const requestEmailLink = (email: string, returnTo: string) =>
-  post('email/magic', { email, return_to: returnTo });
-export const verifyEmailLink = (token: string) =>
-  post<Partial<Destination> & { status?: string }>('email/verify', { token });
 export const deletePasskey = (id: string) =>
   request(`/api/auth/passkeys/${encodeURIComponent(id)}`, { method: 'DELETE' });
 

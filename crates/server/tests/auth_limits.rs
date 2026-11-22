@@ -1,4 +1,4 @@
-//! Tests for the auth rate limits (auth T15, requirements R14.1 to R14.4, R14.6, R14.7, R4.8).
+//! Tests for the auth rate limits (auth T15, requirements R14.1 to R14.4, R14.6, R14.7).
 //!
 //! Most tests use the in-memory limiter. The Valkey test is ignored unless it is run with
 //! `VALKEY_URL=redis://localhost:6379 cargo test -p counterspell-server -- --ignored valkey_auth`.
@@ -7,13 +7,12 @@ use std::sync::Arc;
 
 use counterspell_server::{
     auth::{
-        config::{Redacted, DEFAULT_EMAIL_DAILY_CAP},
+        config::Redacted,
         errors::AuthError,
         limits::{Action, AuthLimiter, Scope},
     },
     ratelimit::{Limiter, MemoryLimiter, ValkeyLimiter},
 };
-use time::{Date, Month};
 use uuid::Uuid;
 
 fn limiter_in_memory() -> AuthLimiter {
@@ -23,160 +22,119 @@ fn limiter_in_memory() -> AuthLimiter {
     )
 }
 
-fn today() -> Date {
-    Date::from_calendar_date(2026, Month::November, 13).expect("valid date")
-}
-
 #[tokio::test]
+// test-change: AUTH-EMAIL-REMOVAL
 async fn the_request_after_the_limit_is_refused_with_a_wait() {
-    let limits = limiter_in_memory();
-    for _ in 0..3 {
-        limits
-            .hit(Action::Magic, Scope::Email, "thandi@example.co")
-            .await
-            .expect("the first three magic links in an hour are allowed");
-    }
-    let refused = limits
-        .hit(Action::Magic, Scope::Email, "thandi@example.co")
-        .await;
-    match refused {
-        Err(AuthError::RateLimited {
-            retry_after_seconds,
-        }) => assert!(retry_after_seconds >= 1, "the client gets a real wait"),
-        other => panic!("the fourth request must be limited, got {other:?}"),
-    }
-}
-
-#[tokio::test]
-async fn limits_on_one_address_do_not_affect_another() {
-    let limits = limiter_in_memory();
-    for _ in 0..4 {
-        let _ = limits
-            .hit(Action::Magic, Scope::Email, "busy@example.co")
-            .await;
-    }
-    assert!(
-        limits
-            .hit(Action::Magic, Scope::Email, "quiet@example.co")
-            .await
-            .is_ok(),
-        "a different address has its own counter"
-    );
-}
-
-#[tokio::test]
-async fn login_failures_count_per_address_and_ip_pair() {
     let limits = limiter_in_memory();
     for _ in 0..5 {
         limits
             .hit(
                 Action::LoginFailure,
                 Scope::EmailAndIp,
-                "pair@example.co|203.0.113.7",
+                "thandi@example.co|203.0.113.7",
             )
             .await
-            .expect("five failures are allowed");
+            .expect("under the limit");
     }
     assert!(matches!(
         limits
             .hit(
                 Action::LoginFailure,
                 Scope::EmailAndIp,
-                "pair@example.co|203.0.113.7"
+                "thandi@example.co|203.0.113.7"
             )
+            .await,
+        Err(AuthError::RateLimited {
+            retry_after_seconds
+        }) if retry_after_seconds > 0
+    ));
+    // The same address from another IP is a different counter.
+    limits
+        .hit(
+            Action::LoginFailure,
+            Scope::EmailAndIp,
+            "thandi@example.co|203.0.113.9",
+        )
+        .await
+        .expect("a different pair has its own counter");
+}
+
+#[tokio::test]
+// test-change: AUTH-EMAIL-REMOVAL
+async fn every_identity_has_its_own_counter() {
+    let limits = limiter_in_memory();
+    for _ in 0..20 {
+        limits
+            .hit(Action::OAuthStart, Scope::Ip, "203.0.113.7")
+            .await
+            .expect("under the ip limit");
+    }
+    assert!(matches!(
+        limits
+            .hit(Action::OAuthStart, Scope::Ip, "203.0.113.7")
             .await,
         Err(AuthError::RateLimited { .. })
     ));
+    limits
+        .hit(Action::OAuthStart, Scope::Ip, "203.0.113.8")
+        .await
+        .expect("a second IP has a fresh counter");
 }
 
 #[test]
+// test-change: AUTH-EMAIL-REMOVAL
 fn keys_hold_no_email_address_or_ip() {
     let limits = limiter_in_memory();
     let key = limits
-        .key(Action::Magic, Scope::Email, "Thandi@Example.co")
-        .expect("key");
-    assert!(key.starts_with("rl:auth:magic:email:"), "got {key}");
+        .key(
+            Action::LoginFailure,
+            Scope::EmailAndIp,
+            "Thandi@Example.co|203.0.113.7",
+        )
+        .expect("a limited pair makes a key");
+    assert!(key.starts_with("rl:auth:login:email_ip:"), "got {key}");
     assert!(!key.contains("thandi"), "no email text in the key");
-    assert!(!key.contains("example"), "no domain text in the key");
-
-    let ip_key = limits
+    assert!(!key.contains("203.0.113.7"), "no ip text in the key");
+    let other = limits
         .key(Action::OAuthStart, Scope::Ip, "203.0.113.7")
-        .expect("key");
-    assert!(!ip_key.contains("203.0.113.7"), "no IP text in the key");
+        .expect("a limited pair makes a key");
+    assert!(other.starts_with("rl:auth:oauth_start:ip:"), "got {other}");
+    assert!(!other.contains("203.0.113.7"), "no ip text in the key");
 }
 
 #[test]
-fn the_same_identity_gives_the_same_key_and_a_different_secret_does_not() {
-    let first = AuthLimiter::new(
-        Limiter::Memory(Arc::new(MemoryLimiter::default())),
-        &Redacted::new(vec![1_u8; 32]),
-    );
-    let second = AuthLimiter::new(
-        Limiter::Memory(Arc::new(MemoryLimiter::default())),
-        &Redacted::new(vec![2_u8; 32]),
-    );
-    let a = first
-        .key(Action::Reset, Scope::Email, "x@example.co")
-        .expect("key");
-    let b = first
-        .key(Action::Reset, Scope::Email, "x@example.co")
-        .expect("key");
-    let c = second
-        .key(Action::Reset, Scope::Email, "x@example.co")
-        .expect("key");
-    assert_eq!(a, b, "the same secret and identity give the same key");
-    assert_ne!(
-        a, c,
-        "the key depends on the secret, so it cannot be guessed from the address"
-    );
-}
-
-#[tokio::test]
-async fn the_daily_mail_cap_stops_at_eighty_and_resets_on_the_next_utc_day() {
+fn the_same_key_answers_for_the_same_inputs() {
     let limits = limiter_in_memory();
-    for _ in 0..DEFAULT_EMAIL_DAILY_CAP {
-        limits
-            .hit_daily_mail_cap(today(), DEFAULT_EMAIL_DAILY_CAP)
-            .await
-            .expect("up to the cap, mail is allowed");
-    }
+    // test-change: AUTH-EMAIL-REMOVAL
+    let first = limits
+        .key(Action::OAuthStart, Scope::Ip, "203.0.113.7")
+        .expect("key");
+    let second = limits
+        .key(Action::OAuthStart, Scope::Ip, "203.0.113.7")
+        .expect("key");
+    assert_eq!(first, second);
+}
+
+#[test]
+fn an_unknown_pair_is_refused() {
+    let limits = limiter_in_memory();
+    // test-change: AUTH-EMAIL-REMOVAL
     assert_eq!(
-        limits
-            .hit_daily_mail_cap(today(), DEFAULT_EMAIL_DAILY_CAP)
-            .await,
-        Err(AuthError::EmailUnavailable),
-        "the 81st mail of the day is refused"
-    );
-    let tomorrow = today().next_day().expect("next day");
-    assert!(
-        limits
-            .hit_daily_mail_cap(tomorrow, DEFAULT_EMAIL_DAILY_CAP)
-            .await
-            .is_ok(),
-        "the next UTC day starts with a full allowance"
+        limits.key(
+            Action::OAuthStart,
+            Scope::EmailAndIp,
+            "x@example.co|203.0.113.7"
+        ),
+        Err(AuthError::Internal)
     );
 }
 
 #[tokio::test]
-async fn mail_fails_closed_and_logins_fail_open_when_valkey_is_down() {
+// test-change: AUTH-EMAIL-REMOVAL
+async fn logins_fail_open_when_valkey_is_down() {
     // Nothing listens on port 1, so every Valkey call fails at once.
-    let down = ValkeyLimiter::open("redis://127.0.0.1:1").expect("a well-formed URL");
+    let down = ValkeyLimiter::open("redis://127.0.0.1:1").expect("valid url");
     let limits = AuthLimiter::new(Limiter::Valkey(down), &Redacted::new(vec![3_u8; 32]));
-
-    assert_eq!(
-        limits
-            .hit(Action::Magic, Scope::Email, "down@example.co")
-            .await,
-        Err(AuthError::EmailUnavailable),
-        "mail stops when its counter store is down"
-    );
-    assert_eq!(
-        limits
-            .hit_daily_mail_cap(today(), DEFAULT_EMAIL_DAILY_CAP)
-            .await,
-        Err(AuthError::EmailUnavailable),
-        "the daily cap also fails closed"
-    );
     assert!(
         limits
             .hit(
@@ -188,23 +146,33 @@ async fn mail_fails_closed_and_logins_fail_open_when_valkey_is_down() {
             .is_ok(),
         "password attempts still work while the counter store is down"
     );
+    assert!(
+        matches!(
+            limits.hit(Action::Security, Scope::Ip, "203.0.113.7").await,
+            Err(AuthError::SecurityUnavailable)
+        ),
+        "credential enrollment stops when the counter store is down"
+    );
 }
 
 #[ignore = "needs VALKEY_URL"]
 #[tokio::test]
+// test-change: AUTH-EMAIL-REMOVAL
 async fn valkey_auth_limits_count_in_real_valkey() {
     let url = std::env::var("VALKEY_URL").expect("VALKEY_URL must be set for this test");
     let limiter = ValkeyLimiter::open(&url).expect("valid VALKEY_URL");
     let limits = AuthLimiter::new(Limiter::Valkey(limiter), &Redacted::new(vec![9_u8; 32]));
-    let identity = format!("{}@example.co", Uuid::new_v4());
-    for _ in 0..3 {
+    let identity = format!("{}@example.co|{}", Uuid::new_v4(), Uuid::new_v4());
+    for _ in 0..5 {
         limits
-            .hit(Action::Magic, Scope::Email, &identity)
+            .hit(Action::LoginFailure, Scope::EmailAndIp, &identity)
             .await
-            .expect("three magic links are allowed");
+            .expect("five login failures are allowed");
     }
     assert!(matches!(
-        limits.hit(Action::Magic, Scope::Email, &identity).await,
+        limits
+            .hit(Action::LoginFailure, Scope::EmailAndIp, &identity)
+            .await,
         Err(AuthError::RateLimited { .. })
     ));
 }

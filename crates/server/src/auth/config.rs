@@ -14,11 +14,8 @@ use url::Url;
 pub const MIN_SESSION_SECRET_BYTES: usize = 32;
 /// The fewest characters the demo account password may have.
 pub const MIN_DEMO_PASSWORD_CHARS: usize = 16;
-/// The default number of sign-in emails the whole service may send each UTC day.
-pub const DEFAULT_EMAIL_DAILY_CAP: u32 = 80;
-
 /// Every variable this module reads. [`AuthConfig::from_env`] collects only these names.
-pub const ENV_NAMES: [&str; 16] = [
+pub const ENV_NAMES: [&str; 12] = [
     "PUBLIC_BASE_URL",
     "DATABASE_URL",
     "VALKEY_URL",
@@ -28,10 +25,6 @@ pub const ENV_NAMES: [&str; 16] = [
     "GITHUB_OAUTH_CLIENT_SECRET",
     "GOOGLE_OAUTH_CLIENT_ID",
     "GOOGLE_OAUTH_CLIENT_SECRET",
-    "RESEND_API_KEY",
-    "MAIL_FROM",
-    "MAIL_TRANSPORT",
-    "EMAIL_DAILY_CAP",
     "DEMO_ACCOUNT_EMAIL",
     "DEMO_ACCOUNT_PASSWORD",
     "DEMO_RESET_HOUR_UTC",
@@ -88,17 +81,8 @@ pub enum ConfigError {
 pub enum AppEnv {
     /// The deployed server. Strict rules apply.
     Production,
-    /// A developer machine. Local plain-HTTP and the log mail sender are allowed.
+    /// A developer machine. Local plain-HTTP is allowed.
     Development,
-}
-
-/// How sign-in emails leave the server.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MailTransport {
-    /// Send through the Resend HTTP API.
-    Resend,
-    /// Write the message to the log. Development only.
-    Log,
 }
 
 /// Client id and secret for one OAuth provider. The provider is enabled only when both exist.
@@ -108,17 +92,6 @@ pub struct OAuthClient {
     pub client_id: String,
     /// Client secret. Never printed.
     pub client_secret: Redacted<String>,
-}
-
-/// Outgoing mail settings.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MailConfig {
-    /// The transport to use.
-    pub transport: MailTransport,
-    /// Resend API key. Present only for the Resend transport. Never printed.
-    pub resend_api_key: Option<Redacted<String>>,
-    /// The sender line, for example `Counterspell <login@your-domain>`.
-    pub mail_from: Option<String>,
 }
 
 /// The demo account's sign-in details.
@@ -147,11 +120,6 @@ pub struct AuthConfig {
     pub github: Option<OAuthClient>,
     /// Google sign-in, when both of its variables are set.
     pub google: Option<OAuthClient>,
-    /// Outgoing mail settings. `None` means email sign-in is off and only OAuth (and password
-    /// sign-in for existing accounts) is offered.
-    pub mail: Option<MailConfig>,
-    /// Sign-in emails allowed across the whole service each UTC day.
-    pub email_daily_cap: u32,
     /// The demo account, when its variables are set.
     pub demo: Option<DemoConfig>,
     /// The UTC hour (0 to 23) at which the demo account resets.
@@ -192,7 +160,6 @@ impl AuthConfig {
         let database_url = Redacted::new(required(vars, "DATABASE_URL")?.to_owned());
         let valkey_url = Redacted::new(required(vars, "VALKEY_URL")?.to_owned());
         let session_secret = parse_session_secret(required(vars, "SESSION_SECRET")?)?;
-        let mail = parse_mail(vars, app_env)?;
         Ok(Self {
             app_env,
             public_base_url,
@@ -201,8 +168,6 @@ impl AuthConfig {
             session_secret,
             github: oauth_client(vars, "GITHUB_OAUTH_CLIENT_ID", "GITHUB_OAUTH_CLIENT_SECRET"),
             google: oauth_client(vars, "GOOGLE_OAUTH_CLIENT_ID", "GOOGLE_OAUTH_CLIENT_SECRET"),
-            mail,
-            email_daily_cap: parse_email_cap(optional(vars, "EMAIL_DAILY_CAP"))?,
             demo: parse_demo(vars)?,
             demo_reset_hour_utc: parse_reset_hour(optional(vars, "DEMO_RESET_HOUR_UTC"))?,
         })
@@ -293,70 +258,6 @@ fn oauth_client(
     }
 }
 
-/// Chooses the mail transport and checks what it needs. Email sign-in is optional: `None` means
-/// it is off, either by `MAIL_TRANSPORT=none` or, in production, by setting no mail variable at
-/// all. When any mail variable is set, production still defaults to Resend and the log transport
-/// is refused there.
-fn parse_mail(
-    vars: &HashMap<String, String>,
-    app_env: AppEnv,
-) -> Result<Option<MailConfig>, ConfigError> {
-    let transport = optional(vars, "MAIL_TRANSPORT");
-    if transport == Some("none") {
-        return Ok(None);
-    }
-    let mail_vars_set = transport.is_some()
-        || optional(vars, "RESEND_API_KEY").is_some()
-        || optional(vars, "MAIL_FROM").is_some();
-    let transport = match (transport, app_env) {
-        (None, AppEnv::Production) if !mail_vars_set => return Ok(None),
-        (None, AppEnv::Production) | (Some("resend"), _) => MailTransport::Resend,
-        (None, AppEnv::Development) | (Some("log"), _) => MailTransport::Log,
-        (Some(_), _) => {
-            return Err(invalid("MAIL_TRANSPORT", "must be resend, log or none"));
-        }
-    };
-    let config = match transport {
-        MailTransport::Log if app_env == AppEnv::Production => {
-            return Err(invalid(
-                "MAIL_TRANSPORT",
-                "the log transport is for development only",
-            ));
-        }
-        MailTransport::Log => MailConfig {
-            transport,
-            resend_api_key: None,
-            mail_from: optional(vars, "MAIL_FROM").map(str::to_owned),
-        },
-        MailTransport::Resend => {
-            let key = required(vars, "RESEND_API_KEY")?;
-            let from = required(vars, "MAIL_FROM")?;
-            if !from.contains('@') {
-                return Err(invalid("MAIL_FROM", "must contain an email address"));
-            }
-            MailConfig {
-                transport,
-                resend_api_key: Some(Redacted::new(key.to_owned())),
-                mail_from: Some(from.to_owned()),
-            }
-        }
-    };
-    Ok(Some(config))
-}
-
-fn parse_email_cap(raw: Option<&str>) -> Result<u32, ConfigError> {
-    let Some(raw) = raw else {
-        return Ok(DEFAULT_EMAIL_DAILY_CAP);
-    };
-    let cap: u32 = raw
-        .parse()
-        .map_err(|_| invalid("EMAIL_DAILY_CAP", "must be a whole number"))?;
-    if cap == 0 {
-        return Err(invalid("EMAIL_DAILY_CAP", "must be at least 1"));
-    }
-    Ok(cap)
-}
-
 fn parse_reset_hour(raw: Option<&str>) -> Result<u8, ConfigError> {
     let Some(raw) = raw else {
         return Ok(0);
@@ -420,8 +321,6 @@ mod tests {
             ("DATABASE_URL", "postgres://server:fake-pw@db.internal/cs"),
             ("VALKEY_URL", "redis://:fake-valkey@cache.internal:6379"),
             ("SESSION_SECRET", "fake-session-secret-value-0123456789"),
-            ("RESEND_API_KEY", "re_fake_key_value"),
-            ("MAIL_FROM", "Counterspell <login@counterspell.example>"),
         ];
         pairs
             .into_iter()
@@ -454,12 +353,8 @@ mod tests {
     fn a_complete_production_map_is_accepted() {
         let config = AuthConfig::from_map(&valid()).expect("valid production map");
         assert_eq!(config.app_env, AppEnv::Production);
+        // test-change: AUTH-EMAIL-REMOVAL
         assert_eq!(config.public_base_url, "https://counterspell.example");
-        assert_eq!(
-            config.mail.as_ref().map(|mail| mail.transport),
-            Some(MailTransport::Resend)
-        );
-        assert_eq!(config.email_daily_cap, DEFAULT_EMAIL_DAILY_CAP);
         assert_eq!(config.demo_reset_hour_utc, 0);
         assert!(config.github.is_none() && config.google.is_none() && config.demo.is_none());
     }
@@ -510,18 +405,14 @@ mod tests {
     }
 
     #[test]
+    // test-change: AUTH-EMAIL-REMOVAL
     fn development_allows_http_on_localhost_only() {
         let local = with(&[
             ("APP_ENV", "development"),
             ("PUBLIC_BASE_URL", "http://localhost:8080/"),
-            ("MAIL_TRANSPORT", "log"),
         ]);
         let config = AuthConfig::from_map(&local).expect("localhost in development");
         assert_eq!(config.public_base_url, "http://localhost:8080");
-        assert_eq!(
-            config.mail.as_ref().map(|mail| mail.transport),
-            Some(MailTransport::Log)
-        );
 
         let remote = with(&[
             ("APP_ENV", "development"),
@@ -548,84 +439,6 @@ mod tests {
                 "{raw}"
             );
         }
-    }
-
-    #[test]
-    fn production_refuses_the_log_mail_transport() {
-        let vars = with(&[("MAIL_TRANSPORT", "log")]);
-        assert_eq!(invalid_name(AuthConfig::from_map(&vars)), "MAIL_TRANSPORT");
-    }
-
-    #[test]
-    fn production_mail_needs_a_resend_key_and_sender() {
-        assert_eq!(
-            AuthConfig::from_map(&without("RESEND_API_KEY")),
-            Err(ConfigError::Missing("RESEND_API_KEY"))
-        );
-        assert_eq!(
-            AuthConfig::from_map(&without("MAIL_FROM")),
-            Err(ConfigError::Missing("MAIL_FROM"))
-        );
-    }
-
-    #[test]
-    fn development_defaults_to_the_log_transport_without_a_key() {
-        let vars: HashMap<String, String> = [
-            ("APP_ENV", "development"),
-            ("PUBLIC_BASE_URL", "http://127.0.0.1:8080"),
-            ("DATABASE_URL", "postgres://server:fake-pw@localhost/cs"),
-            ("VALKEY_URL", "redis://127.0.0.1:6379"),
-            ("SESSION_SECRET", "fake-session-secret-value-0123456789"),
-        ]
-        .into_iter()
-        .map(|(name, value)| (name.to_owned(), value.to_owned()))
-        .collect();
-        let config = AuthConfig::from_map(&vars).expect("development defaults");
-        assert_eq!(
-            config.mail.as_ref().map(|mail| mail.transport),
-            Some(MailTransport::Log)
-        );
-        assert!(config
-            .mail
-            .as_ref()
-            .is_some_and(|mail| mail.resend_api_key.is_none()));
-    }
-
-    #[test]
-    fn production_without_a_mail_provider_disables_email_sign_in() {
-        let mut vars = valid();
-        vars.remove("RESEND_API_KEY");
-        vars.remove("MAIL_FROM");
-        let config = AuthConfig::from_map(&vars).expect("production without mail");
-        assert!(
-            config.mail.is_none(),
-            "no mail provider means no mail config"
-        );
-    }
-
-    #[test]
-    fn mail_transport_none_disables_email_sign_in_in_every_environment() {
-        for app_env in ["production", "development"] {
-            let vars = with(&[("APP_ENV", app_env), ("MAIL_TRANSPORT", "none")]);
-            let config = AuthConfig::from_map(&vars).expect("the none transport is accepted");
-            assert!(config.mail.is_none(), "{app_env} with MAIL_TRANSPORT=none");
-        }
-    }
-
-    #[test]
-    fn a_partial_mail_configuration_is_still_an_error() {
-        // One of RESEND_API_KEY or MAIL_FROM without the other must not silently disable mail.
-        assert_eq!(
-            AuthConfig::from_map(&without("MAIL_FROM")),
-            Err(ConfigError::Missing("MAIL_FROM"))
-        );
-        assert_eq!(
-            AuthConfig::from_map(&with(&[
-                ("MAIL_TRANSPORT", "resend"),
-                ("RESEND_API_KEY", "")
-            ])),
-            Err(ConfigError::Missing("RESEND_API_KEY"))
-        );
     }
 
     #[test]
@@ -680,11 +493,8 @@ mod tests {
     }
 
     #[test]
-    fn email_cap_and_reset_hour_have_safe_ranges() {
-        assert_eq!(
-            invalid_name(AuthConfig::from_map(&with(&[("EMAIL_DAILY_CAP", "0")]))),
-            "EMAIL_DAILY_CAP"
-        );
+    // test-change: AUTH-EMAIL-REMOVAL
+    fn reset_hour_has_a_safe_range() {
         assert_eq!(
             invalid_name(AuthConfig::from_map(&with(&[(
                 "DEMO_RESET_HOUR_UTC",
@@ -692,12 +502,8 @@ mod tests {
             )]))),
             "DEMO_RESET_HOUR_UTC"
         );
-        let config = AuthConfig::from_map(&with(&[
-            ("EMAIL_DAILY_CAP", "50"),
-            ("DEMO_RESET_HOUR_UTC", "23"),
-        ]))
-        .expect("in range");
-        assert_eq!(config.email_daily_cap, 50);
+        let config =
+            AuthConfig::from_map(&with(&[("DEMO_RESET_HOUR_UTC", "23")])).expect("in range");
         assert_eq!(config.demo_reset_hour_utc, 23);
     }
 

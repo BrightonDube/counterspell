@@ -19,7 +19,7 @@ pub struct PublicSettings {
     /// The demo account's address, shown so the sign-in page can pre-fill it. `None` when the
     /// demo account is disabled.
     demo_email: Option<String>,
-    /// Whether a mail provider is configured, so the magic-link tab can be offered.
+    /// Always `false`: email sign-in is retired and no email method is ever offered.
     email_enabled: bool,
 }
 
@@ -37,15 +37,30 @@ impl PublicSettings {
         }
     }
 
-    /// Reads the flags from the loaded configuration. Email sign-in and the demo account are
-    /// retired: the sign-in page offers providers and passkeys, whatever the mail configuration holds.
+    /// The configured demo address, when the demo account is offered. The password route accepts
+    /// only this address.
+    #[must_use]
+    pub fn demo_email(&self) -> Option<&str> {
+        self.demo_email.as_deref()
+    }
+
+    /// Sets the demo address, for tests that exercise the password route.
+    #[cfg(any(test, feature = "testkit"))]
+    #[must_use]
+    pub fn with_demo_email(mut self, email: &str) -> Self {
+        self.demo_email = Some(email.to_owned());
+        self
+    }
+
+    /// Reads the flags from the loaded configuration. Email sign-in is retired: the sign-in page
+    /// offers providers, passkeys and the demo account, whatever the mail configuration holds.
     #[must_use]
     pub fn from_config(config: &AuthConfig) -> Self {
         Self {
             github: config.github.is_some(),
             google: config.google.is_some(),
-            demo: false,
-            demo_email: None,
+            demo: config.demo.is_some(),
+            demo_email: config.demo.as_ref().map(|demo| demo.email.clone()),
             email_enabled: false,
         }
     }

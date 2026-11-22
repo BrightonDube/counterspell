@@ -62,6 +62,11 @@ pub async fn login(
     let Ok(email) = EmailAddress::parse(&request.email) else {
         return Err(refuse(&state, &ip, None).await);
     };
+    // Email sign-in is retired: only the configured demo address may use a password.
+    if state.settings.demo_email() != Some(email.as_str()) {
+        let _ = state.hashes.verify_dummy(request.password.clone()).await;
+        return Err(refuse(&state, &ip, None).await);
+    }
     let pair = format!("{}|{ip}", email.as_str());
 
     state
