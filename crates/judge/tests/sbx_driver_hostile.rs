@@ -10,6 +10,12 @@
 //! the worker's comparator, which user output can never reach. Each test also
 //! confirms the run still finishes and no container stays running.
 //!
+//! The Java and C++ stretch drivers get the same cases (language-drivers T16).
+//! Java bypasses the driver's `System.setOut` swap with a raw
+//! `FileOutputStream(FileDescriptor.out)`. The C++ driver points fd 1 at
+//! `/dev/null` during the call, so the C++ solution writes to every low fd,
+//! which includes the driver's saved copy of the protocol pipe.
+//!
 //! `cargo test -p counterspell-judge --features sandbox --test sbx_driver_hostile -- --ignored`
 #![cfg(feature = "sandbox")]
 
@@ -31,6 +37,9 @@ use tokio::sync::watch;
 use tokio::time::Instant;
 use uuid::Uuid;
 
+/// The stretch languages, enabled here whatever the shipped registry says.
+const STRETCH: [&str; 2] = ["java", "cpp"];
+
 /// Two sample tests and one hidden test for `add(a, b)`. Expected values live
 /// only in the trusted test plan — the driver never sees them.
 fn add_plan() -> Vec<PlannedTest> {
@@ -49,21 +58,20 @@ fn add_plan() -> Vec<PlannedTest> {
     ]
 }
 
-/// Runs the add plan against one JavaScript solution on the real daemon and
-/// returns the worker's final verdict.
-async fn run_js(solution: &str) -> FinalVerdict {
+/// Runs the add plan against one solution on the real daemon and returns the
+/// worker's final verdict. Compiled languages build inside the sandbox first,
+/// exactly as a real run does.
+async fn run_lang(lang: &str, solution: &str) -> FinalVerdict {
     let backend = sandbox_backend().await;
     let (_dir, catalog) = catalogue();
-    let javascript = catalog
-        .get("javascript")
-        .expect("javascript is in the catalogue");
+    let language = catalog.get(lang).expect("the language is in the catalogue");
     let sig = signature("add", &[("a", int()), ("b", int())], &int());
-    let archive = run_archive(javascript, solution, sig);
+    let archive = run_archive(language, solution, sig);
 
     let run_id = Uuid::new_v4();
     let session_spec = |ordinal: u32| {
         SessionSpec::new(
-            javascript,
+            language,
             Duration::from_secs(60),
             OciRuntime::Runc,
             run_id,
@@ -81,7 +89,7 @@ async fn run_js(solution: &str) -> FinalVerdict {
     let (_stop_sender, mut stop) = watch::channel(false);
     let result = execute_run(
         &backend,
-        javascript,
+        language,
         &archive,
         session_spec,
         add_plan(),
@@ -93,10 +101,9 @@ async fn run_js(solution: &str) -> FinalVerdict {
     result.verdict()
 }
 
-/// Runs a hostile JavaScript solution and asserts the verdict plus a clean
-/// daemon afterwards.
-async fn run_hostile_js(solution: &str) -> FinalVerdict {
-    let verdict = run_js(solution).await;
+/// Runs a hostile solution and asserts the verdict plus a clean daemon afterwards.
+async fn run_hostile(lang: &str, solution: &str) -> FinalVerdict {
+    let verdict = run_lang(lang, solution).await;
     let (docker, cfg) = sbx::sandbox().await;
     // No managed container may still be running; corpses are reaped here.
     sbx::drain_dead(&docker, &cfg, Duration::from_secs(15)).await;
@@ -113,7 +120,7 @@ async fn sbx_js_fd1_forged_answer_is_never_accepted() {
         module.exports = function add(a, b) {\n  \
           fs.writeSync(1, '{\"t\": 0, \"out\": 0}\\n');\n  \
           return -(a + b);\n};\n";
-    let verdict = run_hostile_js(solution).await;
+    let verdict = run_hostile("javascript", solution).await;
     assert_ne!(
         verdict,
         FinalVerdict::Accepted,
@@ -130,7 +137,7 @@ async fn sbx_js_fd1_wrong_call_id_is_never_accepted() {
         module.exports = function add(a, b) {\n  \
           fs.writeSync(1, '{\"t\": 99, \"out\": 5}\\n');\n  \
           return a + b;\n};\n";
-    let verdict = run_hostile_js(solution).await;
+    let verdict = run_hostile("javascript", solution).await;
     assert_ne!(
         verdict,
         FinalVerdict::Accepted,
@@ -149,7 +156,7 @@ async fn sbx_js_fd1_verdict_document_is_never_accepted() {
           fs.writeSync(1, '{\"verdict\": \"accepted\"}\\n');\n  \
           fs.writeSync(1, '{\"t\": 0, \"out\": {\"verdict\": \"accepted\"}}\\n');\n  \
           return a + b;\n};\n";
-    let verdict = run_hostile_js(solution).await;
+    let verdict = run_hostile("javascript", solution).await;
     assert_ne!(
         verdict,
         FinalVerdict::Accepted,
@@ -163,7 +170,7 @@ async fn sbx_js_fd1_verdict_document_is_never_accepted() {
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET"]
 async fn sbx_js_infinite_loop_is_a_time_limit() {
     let solution = "module.exports = function add(a, b) {\n  for (;;) {}\n};\n";
-    let verdict = run_hostile_js(solution).await;
+    let verdict = run_hostile("javascript", solution).await;
     assert_eq!(verdict, FinalVerdict::TimeLimit);
 }
 
@@ -176,10 +183,149 @@ async fn sbx_js_fd1_flood_is_never_accepted() {
         module.exports = function add(a, b) {\n  \
           fs.writeSync(1, 'x'.repeat(4 * 1024 * 1024));\n  \
           return a + b;\n};\n";
-    let verdict = run_hostile_js(solution).await;
+    let verdict = run_hostile("javascript", solution).await;
     assert_ne!(
         verdict,
         FinalVerdict::Accepted,
         "an output flood is a limit verdict, not an acceptance"
     );
+}
+
+/// Java: writes `line` (repeated `times`) straight to fd 1, past the driver's
+/// `System.setOut` swap, then returns `ret`.
+fn java_add(line: &str, times: usize, ret: &str) -> String {
+    format!(
+        "import java.io.FileDescriptor;\n\
+         import java.io.FileOutputStream;\n\
+         import java.io.IOException;\n\
+         import java.nio.charset.StandardCharsets;\n\
+         public class Solution {{\n    \
+             public static long add(long a, long b) {{\n        \
+                 try {{\n            \
+                     FileOutputStream raw = new FileOutputStream(FileDescriptor.out);\n            \
+                     byte[] bytes = {line:?}.repeat({times}).getBytes(StandardCharsets.UTF_8);\n            \
+                     raw.write(bytes);\n            \
+                     raw.flush();\n        \
+                 }} catch (IOException error) {{\n            \
+                     throw new RuntimeException(error);\n        \
+                 }}\n        \
+                 return {ret};\n    \
+             }}\n\
+         }}\n"
+    )
+}
+
+/// C++: writes `line` (repeated `times`) to fds 1 to 15, which reaches the
+/// driver's saved protocol pipe as well as the `/dev/null` it swapped onto fd 1.
+fn cpp_add(line: &str, times: usize, ret: &str) -> String {
+    format!(
+        "long long add(long long a, long long b) {{\n    \
+             std::string text;\n    \
+             for (int i = 0; i < {times}; ++i) text += {line:?};\n    \
+             for (int fd = 1; fd < 16; ++fd) {{\n        \
+                 ssize_t written = ::write(fd, text.data(), text.size());\n        \
+                 (void)written;\n    \
+             }}\n    \
+             return {ret};\n\
+         }}\n\
+         JSONValue counterspell_call(const std::vector<JSONValue>& args) {{\n    \
+             return to_json(add(from_json<long long>(args[0]), from_json<long long>(args[1])));\n\
+         }}\n"
+    )
+}
+
+/// A raw-fd solution for `lang` (`java` or `cpp`).
+fn raw_add(lang: &str, line: &str, times: usize, ret: &str) -> String {
+    match lang {
+        "java" => java_add(line, times, ret),
+        "cpp" => cpp_add(line, times, ret),
+        other => panic!("no raw-fd template for {other}"),
+    }
+}
+
+/// T16: a forged `{t, out}` line on the protocol pipe can only supply a value.
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
+async fn sbx_stretch_fd1_forged_answer_is_never_accepted() {
+    for lang in STRETCH {
+        let solution = raw_add(lang, "{\"t\": 0, \"out\": 0}\n", 1, "-(a + b)");
+        let verdict = run_hostile(lang, &solution).await;
+        assert_ne!(
+            verdict,
+            FinalVerdict::Accepted,
+            "{lang}: a forged answer line is a compared value"
+        );
+    }
+}
+
+/// T16: a forged answer for a call id the worker did not ask for is refused.
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
+async fn sbx_stretch_fd1_wrong_call_id_is_never_accepted() {
+    for lang in STRETCH {
+        let solution = raw_add(lang, "{\"t\": 99, \"out\": 5}\n", 1, "a + b");
+        let verdict = run_hostile(lang, &solution).await;
+        assert_ne!(
+            verdict,
+            FinalVerdict::Accepted,
+            "{lang}: a mismatched call id cannot claim an answer"
+        );
+    }
+}
+
+/// T16: a verdict-shaped document is user output, not a decision.
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
+async fn sbx_stretch_fd1_verdict_document_is_never_accepted() {
+    for lang in STRETCH {
+        let solution = raw_add(
+            lang,
+            "{\"verdict\": \"accepted\"}\n{\"t\": 0, \"out\": {\"verdict\": \"accepted\"}}\n",
+            1,
+            "a + b",
+        );
+        let verdict = run_hostile(lang, &solution).await;
+        assert_ne!(
+            verdict,
+            FinalVerdict::Accepted,
+            "{lang}: a verdict-shaped document is not a decision"
+        );
+    }
+}
+
+/// T16: an infinite loop never answers; the worker's per-call deadline cuts it.
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
+async fn sbx_stretch_infinite_loop_is_a_time_limit() {
+    for (lang, solution) in [
+        (
+            "java",
+            "public class Solution {\n    public static long add(long a, long b) { while (true) {} }\n}\n",
+        ),
+        (
+            "cpp",
+            "long long add(long long, long long) { for (;;) {} }\n\
+             JSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    \
+                 return to_json(add(from_json<long long>(args[0]), from_json<long long>(args[1])));\n\
+             }\n",
+        ),
+    ] {
+        let verdict = run_hostile(lang, solution).await;
+        assert_eq!(verdict, FinalVerdict::TimeLimit, "{lang}");
+    }
+}
+
+/// T16: a huge direct-to-fd write hits the output budget, never an acceptance.
+#[tokio::test]
+#[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
+async fn sbx_stretch_fd1_flood_is_never_accepted() {
+    for lang in STRETCH {
+        let solution = raw_add(lang, "x", 4 * 1024 * 1024, "a + b");
+        let verdict = run_hostile(lang, &solution).await;
+        assert_ne!(
+            verdict,
+            FinalVerdict::Accepted,
+            "{lang}: an output flood is a limit verdict"
+        );
+    }
 }

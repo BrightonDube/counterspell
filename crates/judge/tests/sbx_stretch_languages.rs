@@ -4,8 +4,9 @@
 //! Each case runs the same function in Python (the launch reference) and in Java and C++,
 //! with the same signature and the same calls, in normal and in bench mode. The stretch
 //! drivers' replies must agree with Python's: the same parsed answers, and the same exit
-//! code when a call fails. Compile errors, deep recursion and an infinite loop are covered
-//! by the focused tests at the bottom.
+//! code when a call fails, including invalid argument values. Compile errors, deep
+//! recursion and a hung call are covered by the focused tests at the bottom; the judge's
+//! time limit, fd-level forgery and output floods are in `sbx_driver_hostile`.
 //!
 //! Ignored by default. Needs `SANDBOX_DOCKER_SOCKET` and the pinned temurin and gcc images
 //! on the rootless daemon, and never runs on the host.
@@ -60,6 +61,30 @@ fn cases() -> Vec<Case> {
             calls: vec![json!([4]), json!([7])],
         },
         Case {
+            name: "null where allowed",
+            python: "def first_or_none(xs):\n    return xs[0] if xs else None\n",
+            java: "public class Solution {\n    public static Long first_or_none(long[] xs) { return xs.length > 0 ? Long.valueOf(xs[0]) : null; }\n}\n",
+            cpp: "JSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    std::vector<long long> xs = from_json<std::vector<long long>>(args[0]);\n    return xs.empty() ? JSONValue() : to_json(xs[0]);\n}\n",
+            signature: signature("first_or_none", &[("xs", int_list.clone())], &json!({"kind": "int", "nullable": true})),
+            calls: vec![json!([[]]), json!([[7]])],
+        },
+        Case {
+            name: "boolean where int expected",
+            python: "def f(n):\n    return True\n",
+            java: "public class Solution {\n    public static boolean f(long n) { return true; }\n}\n",
+            cpp: "bool f(long long) { return true; }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(f(from_json<long long>(args[0])));\n}\n",
+            signature: signature("f", &[("n", int())], &int()),
+            calls: vec![json!([1])],
+        },
+        Case {
+            name: "returned int beyond the safe range",
+            python: "def f(n):\n    return 2 ** 60\n",
+            java: "public class Solution {\n    public static long f(long n) { return 1L << 60; }\n}\n",
+            cpp: "long long f(long long) { return 1LL << 60; }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(f(from_json<long long>(args[0])));\n}\n",
+            signature: signature("f", &[("n", int())], &int()),
+            calls: vec![json!([1])],
+        },
+        Case {
             name: "user prints",
             python: "def f(n):\n    print('hello')\n    return n\n",
             java: "public class Solution {\n    public static long f(long n) { System.out.println(\"hello\"); return n; }\n}\n",
@@ -76,16 +101,6 @@ fn cases() -> Vec<Case> {
             calls: vec![json!([1])],
         },
         Case {
-            name: "invalid values",
-            python: "def f(n):\n    return n\n",
-            java: "public class Solution {\n    public static long f(long n) { return n; }\n}\n",
-            cpp: "long long f(long long n) { return n; }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(f(from_json<long long>(args[0])));\n}\n",
-            signature: signature("f", &[("n", int())], &int()),
-            // A string, a null and a float where the signature says int: every driver
-            // must fail the call the same way instead of coercing a wrong answer.
-            calls: vec![json!(["x"]), json!([null]), json!([1.5])],
-        },
-        Case {
             name: "wrong argument count",
             python: "def f(n):\n    return n\n",
             java: "public class Solution {\n    public static long f(long n) { return n; }\n}\n",
@@ -94,6 +109,33 @@ fn cases() -> Vec<Case> {
             calls: vec![json!([1, 2])],
         },
     ]
+    .into_iter()
+    .chain(invalid_argument_cases())
+    .collect()
+}
+
+/// Invalid argument values for an `int` parameter, one case each because a driver that
+/// rejects a call ends. Every stretch driver must reject them as Python does.
+fn invalid_argument_cases() -> Vec<Case> {
+    [
+        ("string where int expected", json!(["7"])),
+        ("float where int expected", json!([1.5])),
+        ("null where int expected", json!([null])),
+        ("boolean argument where int expected", json!([true])),
+        ("int beyond the safe range", json!([9_007_199_254_740_993_i64])),
+        ("list where int expected", json!([[1]])),
+        ("int beyond 64 bits", json!([u64::MAX])),
+    ]
+    .into_iter()
+    .map(|(name, args)| Case {
+        name,
+        python: "def f(n):\n    return n\n",
+        java: "public class Solution {\n    public static long f(long n) { return n; }\n}\n",
+        cpp: "long long f(long long n) { return n; }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(f(from_json<long long>(args[0])));\n}\n",
+        signature: signature("f", &[("n", int())], &int()),
+        calls: vec![args, json!([1])],
+    })
+    .collect()
 }
 
 /// Runs every call of a case in one container on the given catalogue and returns the replies.
@@ -169,7 +211,7 @@ async fn sbx_stretch_compile_errors_never_start_the_driver() {
         let sig = signature("f", &[("n", int())], &int());
         let (session, driver) = start_on(&catalog, lang, bad, sig, Mode::Normal).await;
         let Err(err) = driver else {
-            panic!("{lang} reports the compile failure instead of starting")
+            panic!("{lang} reports the compile failure instead of starting");
         };
         assert!(!err.is_empty(), "{lang} compile failure carries stderr");
         finish(session).await;
@@ -182,8 +224,7 @@ async fn sbx_stretch_deep_recursion_fits_the_configured_stack() {
     let (_dir, catalog) = catalogue();
     let sig = signature("depth", &[("n", int())], &int());
     // The T14 sizing evidence: linear recursion to depth n, as linked-list and
-    // tree-depth problems take. 50_000 frames fits the configured -Xss14m and the
-    // C++ frame budget.
+    // tree-depth problems take. 50_000 frames fits the configured -Xss14m.
     for (lang, source) in [
         ("java", "public class Solution {\n    public static long depth(long n) { return n <= 0 ? 0 : 1 + depth(n - 1); }\n}\n"),
         ("cpp", "long long depth(long long n) { return n <= 0 ? 0 : 1 + depth(n - 1); }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(depth(from_json<long long>(args[0])));\n}\n"),
@@ -228,7 +269,7 @@ async fn sbx_stretch_infinite_loop_never_answers_and_the_container_cleans_up() {
             }
             match tokio::time::timeout(left, driver.next_event()).await {
                 Err(_) => break,
-                Ok(Ok(DriverEvent::Stderr(_))) => {},
+                Ok(Ok(DriverEvent::Stderr(_))) => {}
                 Ok(Ok(event)) => panic!("{lang} answered a call that should run forever: {event:?}"),
                 Ok(Err(err)) => panic!("{lang} driver stream failed: {err:?}"),
             }
