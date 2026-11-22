@@ -22,12 +22,23 @@
     <div
       class="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-y-1 px-4 py-3 sm:px-6"
     >
-      <a
-        href={resolve('/dashboard')}
-        class="font-wordmark text-2xl tracking-wide text-text transition-colors hover:text-accent-candle-glow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
-      >
-        Counterspell
-      </a>
+      <div class="flex items-center gap-2">
+        <img
+          data-testid="nav-creature"
+          src="/art/creatures/skull-green-eyes.webp"
+          width="32"
+          height="32"
+          alt=""
+          aria-hidden="true"
+          class="nav-creature h-8 w-8 object-contain"
+        />
+        <a
+          href={resolve('/dashboard')}
+          class="font-wordmark text-2xl tracking-wide text-text transition-colors hover:text-accent-candle-glow focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus"
+        >
+          Counterspell
+        </a>
+      </div>
       <nav class="flex items-center gap-1 text-sm" aria-label="App">
         <a
           href={resolve('/problems')}
@@ -66,5 +77,24 @@
       rgba(8, 13, 14, 0.72) 0%,
       rgba(8, 13, 14, 0.92) 100%
     );
+  }
+
+  .nav-creature {
+    filter: saturate(0.92);
+    transition:
+      filter 180ms ease-out,
+      transform 180ms ease-out;
+  }
+
+  header:hover .nav-creature,
+  header:focus-within .nav-creature {
+    filter: saturate(1) drop-shadow(0 0 0.55rem var(--accent-candle));
+    transform: translateY(-1px);
+  }
+
+  @media (width < 24rem) {
+    .nav-creature {
+      display: none;
+    }
   }
 </style>

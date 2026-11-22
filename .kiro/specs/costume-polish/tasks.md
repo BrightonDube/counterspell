@@ -14,7 +14,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 0: costume surfaces
 
-- [ ] **T01 [S] (30 min) Add the nav creature mark**
+- [x] **T01 [S] (30 min) Add the nav creature mark**
   - Files: `web/src/lib/shell/AppShell.svelte`, a small component test, and CSS if needed.
   - Render `art/creatures/skull-green-eyes.webp` beside the Counterspell wordmark as a compact decorative mark, preserving all nav links and keyboard order. Add a bounded hover/focus-within eye glow or flicker, static under reduced motion. Hide it only when it would crowd narrow navigation.
   - Verify: failing component test asserts decorative alt, source, dimensions and nav content; then `npm run check` and focused Vitest.
