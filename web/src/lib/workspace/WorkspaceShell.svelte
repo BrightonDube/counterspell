@@ -28,6 +28,8 @@
   import Familiar from '../familiar/Familiar.svelte';
   import { runOutcomeLabel, statusLabel } from './test-rows';
   import AutopsyCard from './AutopsyCard.svelte';
+  import ConsolePanel from './ConsolePanel.svelte';
+  import { buildConsoleEntries } from './console-view';
   import EditorPanel from './EditorPanel.svelte';
   import GhostPanel from './GhostPanel.svelte';
   import HintPanel from './HintPanel.svelte';
@@ -89,6 +91,19 @@
   let resultsDrawerEl = $state<HTMLElement>();
 
   let runs = $state<RunSessionSnapshot>({ phase: 'idle' });
+  let consoleOpen = $state(false);
+  let consoleRunId = $state<string | undefined>(undefined);
+  let consoleAutoOpened = false;
+  let consoleCollapsed = false;
+  const consoleEntries = $derived(
+    buildConsoleEntries({
+      tests:
+        runs.phase === 'finished' && runs.view
+          ? runs.view.tests
+          : (runs.stream?.tests ?? runs.view?.tests ?? []),
+      terminal: runs.stream?.terminal
+    })
+  );
   // Session deps are injected once at mount; swapping them mid-run is not supported.
   const session = createRunSession(
     untrack(() => sessionDeps),
@@ -108,6 +123,34 @@
         ? statusLabel(runs.view.status)
         : 'No run yet'
   );
+
+  $effect(() => {
+    if (runs.runId !== consoleRunId) {
+      consoleRunId = runs.runId;
+      consoleOpen = false;
+      consoleAutoOpened = false;
+      consoleCollapsed = false;
+    }
+    if (
+      runs.runId !== undefined &&
+      runs.phase === 'finished' &&
+      consoleEntries.length > 0 &&
+      !consoleAutoOpened &&
+      !consoleCollapsed
+    ) {
+      consoleOpen = true;
+      consoleAutoOpened = true;
+    }
+  });
+
+  function toggleConsole(): void {
+    if (consoleOpen) {
+      consoleOpen = false;
+      consoleCollapsed = true;
+    } else {
+      consoleOpen = true;
+    }
+  }
 
   // Polite announcements for the phase changes a screen-reader user would miss.
   // Identical text never repeats, so only transitions speak.
@@ -392,6 +435,11 @@
     busy={inProgress}
     {canRerunGhost}
     onRequest={requestRun}
+  />
+  <ConsolePanel
+    entries={consoleEntries}
+    open={consoleOpen}
+    onToggle={toggleConsole}
   />
 {/snippet}
 
