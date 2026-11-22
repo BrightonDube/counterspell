@@ -61,8 +61,37 @@ fn repo_root() -> PathBuf {
 /// accepts the catalogue. The sandbox run itself always uses the real driver file.
 pub fn catalogue() -> (TempDir, LanguageCatalog) {
     let text = include_str!("../../../../languages/languages.toml");
+    catalogue_text(text, &[])
+}
+
+/// The shipped catalogue with the named languages flipped to `enabled = true`. Used by the
+/// stretch suites: Java and C++ stay disabled for users until T16's full pass, but tests must
+/// see them as enabled.
+pub fn catalogue_enabled(extra: &[&str]) -> (TempDir, LanguageCatalog) {
+    let mut text = include_str!("../../../../languages/languages.toml").to_string();
+    for lang in extra {
+        let section = format!("[{lang}]");
+        let start = text
+            .find(&section)
+            .unwrap_or_else(|| panic!("a [{lang}] section"));
+        let end = text[start..]
+            .find("\n[")
+            .map_or(text.len(), |offset| start + offset);
+        let block = text[start..end].replace("enabled = false", "enabled = true");
+        assert!(block.contains("enabled = true"), "[{lang}] becomes enabled");
+        text.replace_range(start..end, &block);
+    }
+    catalogue_text(&text, &[])
+}
+
+fn catalogue_text(text: &str, _stub: &[&str]) -> (TempDir, LanguageCatalog) {
     let dir = TempDir::new().expect("a temp dir for the stub drivers");
-    for driver in ["drivers/python/driver.py", "drivers/javascript/driver.js"] {
+    for driver in [
+        "drivers/python/driver.py",
+        "drivers/javascript/driver.js",
+        "drivers/java/Driver.java",
+        "drivers/cpp/driver.cpp",
+    ] {
         let target = dir.path().join(driver);
         std::fs::create_dir_all(target.parent().expect("driver path has a parent"))
             .expect("driver directory");
@@ -145,11 +174,23 @@ pub async fn start(
     signature_json: Vec<u8>,
     mode: Mode,
 ) -> (Session, Driver) {
-    let backend = sandbox_backend().await;
     let (_dir, catalog) = catalogue();
-    let language = catalog
-        .get(lang)
-        .expect("the language is in the shipped catalogue");
+    let (session, driver) = start_on(&catalog, lang, solution, signature_json, mode).await;
+    (session, driver.expect("the shipped languages compile"))
+}
+
+/// Like [`start`] but on a caller-supplied catalogue (the stretch tests enable Java and
+/// C++). Runs the compile step when the language defines one and reports its exit code to
+/// the caller, so a compile-failure case can observe it instead of panicking.
+pub async fn start_on(
+    catalog: &LanguageCatalog,
+    lang: &str,
+    solution: &str,
+    signature_json: Vec<u8>,
+    mode: Mode,
+) -> (Session, Option<Driver>) {
+    let backend = sandbox_backend().await;
+    let language = catalog.get(lang).expect("the language is in the catalogue");
     let archive = run_archive(language, solution, signature_json);
 
     let spec = SessionSpec::new(
@@ -170,6 +211,16 @@ pub async fn start(
         .expect("unpack the run files");
     assert_eq!(extract.exit_code, 0, "tar -x accepts the archive");
 
+    if let Some(compile) = ExecSpec::compile(language) {
+        let built = session
+            .exec(&compile, &[])
+            .await
+            .expect("the compile step runs");
+        if built.exit_code != 0 {
+            return (session, None);
+        }
+    }
+
     let command = match mode {
         Mode::Normal => ExecSpec::driver(language),
         Mode::Bench => ExecSpec::bench(language),
@@ -178,7 +229,7 @@ pub async fn start(
         .open_driver(&command)
         .await
         .expect("the driver starts");
-    (session, driver)
+    (session, Some(driver))
 }
 
 /// Kills and removes the container. Every test ends with this, so no container is left behind.
