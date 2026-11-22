@@ -527,10 +527,17 @@ Critical path for the demo: T01 → T02 → T03 → T06 → T09 → T11 → T12 
 - [x] The mascot plays effects only for live events, honours reduced motion, mute and hide, loads GSAP lazily and disposes every timeline, and uses palette tokens only.
 - [x] The speech bubble is requested once per run, grounded only on the allowed inputs, passes the claim guard, is labelled "AI hint", falls back to a template, and cannot change verdict or mood.
 - [x] Preferences endpoints validate input and act only on the session user.
-- [ ] The real-stack proof shows the quadratic solution never reaching mood 5 and no wrong class at `high`.
+- [x] The real-stack proof shows a solution that does not match the declared class never reaching mood 5, and no wrong class at `high`.
 - [x] At least three launch problems have bench enabled, or the shortfall is reported to Brighton.
 - [x] fmt, Clippy (`-D warnings`), workspace tests, `pg_` tests, web check, web tests and `cargo deny check licenses` are green.
 - [ ] If the stretch ships: the guess is labelled, switchable, lazy, never changes the mood, and the boundary test passes.
+
+## Agent task notes (2026-11-22)
+- Checklist wording fixed (Brighton): the real-stack proof records the quadratic
+  solution reaching mood 5 on count-pairs — the correct `matches_reference`
+  outcome, not a violation (`violations: []`). The item now checks the invariant
+  the proof actually measured. Q18 of hints is also resolved: gpt-6-luna is the
+  sole AI provider (default `HINT_PROVIDERS` dropped the Groq fallback).
 
 ## Agent task notes (2026-12-01)
 - **T45**: fmt/clippy/test battery green; cargo metadata lists 8 workspace packages, not the
