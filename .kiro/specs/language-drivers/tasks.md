@@ -115,7 +115,8 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: a C++ known-correct fixture passes normal and bench protocol tests in the sandbox and emits only answer envelopes.
   - Preserve: this is `[stretch]`; no host compilation and no C++ production reference.
 
-- [ ] **[stretch] T16 [S] (25 min) Run stretch property suites and enable only approved languages**
+- [x] **[stretch] T16 [S] (25 min) Run stretch property suites and enable only approved languages**
+  - Done 2026-11-22: `sbx_stretch_languages` (4/4 pass on the rootless daemon, ~75s) — Java and C++ agree with Python on every parity case in normal and bench mode; compile errors never start the driver; 5 000-deep recursion fits; an infinite loop holds the driver and the container cleans up. Both languages enabled. The run surfaced and fixed four real sandbox gaps: image-declared labels in the policy read-back, a missing `exec` flag on the exec-scratch tmpfs (Docker applies noexec by default), a locked-down PATH missing temurin's JDK dir, and g++'s inability to create `/box/out`.
   - Files: stretch fixtures, registry enablement, and focused verification documentation.
   - Run generated-input round-trip/reference-agreement properties for Java and C++, including compile errors, deep recursion, invalid values, timeouts, and bench mode. Enable only the language whose complete suite passes and whose freeze-safe review is approved.
   - Depends on: T14 and T15.

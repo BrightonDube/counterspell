@@ -271,7 +271,7 @@ pub async fn shared_executor(
 ) -> Arc<SandboxExecutor<DirProblemTests, BollardBackend>> {
     let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
     let mut states = Vec::new();
-    for name in ["python", "javascript"] {
+    for name in ["python", "javascript", "java", "cpp"] {
         if let Some(lang_def) = catalog.get(name).filter(|lang| lang.is_enabled()) {
             let state = Arc::new(PreflightState::new());
             let spec =
