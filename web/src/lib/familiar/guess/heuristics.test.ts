@@ -669,3 +669,84 @@ describe('cost model edge cases', () => {
     expect(analyze(GROWING_BOUND).guess_class).toBe('n');
   });
 });
+
+// while n > 1:
+//     half = n // 2
+//     n = half * 2 - 1   (doubling the half restores n -> linear countdown)
+const DOUBLED_HALF = fn(
+  'doubled_half',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('half', op('//', [id('n'), lit('2')])),
+      assign('n', op('-', [op('*', [id('half'), lit('2')]), lit('1')]))
+    ])
+  ]
+);
+
+// while i < n:
+//     half = (n - i) // 2
+//     i = i + half + 1   (each step halves the remaining distance)
+const HALF_DISTANCE = fn(
+  'half_distance',
+  ['i', 'n'],
+  [
+    whileLoop(cmp('<', [id('i'), id('n')]), [
+      assign('half', op('//', [op('-', [id('n'), id('i')]), lit('2')])),
+      assign('i', op('+', [op('+', [id('i'), id('half')]), lit('1')]))
+    ])
+  ]
+);
+
+// while n > 1:
+//     k = 1
+//     n = ((n // k) * 2) // 2 - 1   (unknown divisor, then *2/2 -> countdown)
+const UNKNOWN_DIVISOR = fn(
+  'unknown_divisor',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('k', lit('1')),
+      assign(
+        'n',
+        op('-', [
+          op('//', [
+            op('*', [op('//', [id('n'), id('k')]), lit('2')]),
+            lit('2')
+          ]),
+          lit('1')
+        ])
+      )
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('reads a right-shift loop as log n', () => {
+    expect(analyze(SHIFT_HALVING).guess_class).toBe('log n');
+  });
+
+  it('does not read (n // 2) * n as a shrink', () => {
+    expect(analyze(INFLATED_BOUND).guess_class).toBe('n');
+  });
+
+  it('reads n - half * 1 as a geometric shrink', () => {
+    expect(analyze(IDENTITY_SCALED_HALF).guess_class).toBe('log n');
+  });
+
+  it('does not read n + half as a shrink', () => {
+    expect(analyze(GROWING_BOUND).guess_class).toBe('n');
+  });
+
+  it('does not read half * 2 - 1 as a shrink', () => {
+    expect(analyze(DOUBLED_HALF).guess_class).toBe('n');
+  });
+
+  it('reads i + (n - i) // 2 as a halving of the remaining distance', () => {
+    expect(analyze(HALF_DISTANCE).guess_class).toBe('log n');
+  });
+
+  it('does not read an unknown-name divisor as a shrink', () => {
+    expect(analyze(UNKNOWN_DIVISOR).guess_class).toBe('n');
+  });
+});

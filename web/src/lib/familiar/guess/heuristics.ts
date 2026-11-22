@@ -304,10 +304,12 @@ function hasHalvingOpOn(
     const shrinks =
       !blocked &&
       node.children.some((c) => c.type === 'literal') &&
-      namedOperands.some(
-        (operand) =>
-          (pathFactor * boundFactor(operand, targets)) / literalScale < 1
-      );
+      namedOperands.some((operand) => {
+        const factor = boundFactor(operand, targets);
+        // Zero means the operand carries no bound coefficient at all
+        // (`n // k` with an unknown k), not a bound shrunk to nothing.
+        return factor > 0 && (pathFactor * factor) / literalScale < 1;
+      });
     return (
       shrinks ||
       node.children.some((child) =>
@@ -320,16 +322,40 @@ function hasHalvingOpOn(
   );
 }
 
+// True when `name` appears in `node` as a subtracted operand — `(n - i)`
+// subtracts `i`, so a halving var derived from it still holds a bound
+// that `i` steps toward.
+function appearsSubtracted(node: GuessNode, name: string): boolean {
+  if (
+    node.type === 'binary_op' &&
+    node.text === '-' &&
+    node.children
+      .slice(1)
+      .some(
+        (child) =>
+          (child.type === 'name' || child.type === 'member') &&
+          child.text === name
+      )
+  ) {
+    return true;
+  }
+  return node.children.some((child) => appearsSubtracted(child, name));
+}
+
 // True when `name` is referenced in `node` where the bound still flows
-// through it — under `+`/`-`/bare positions, or a `*` whose only other
-// operands are literals (`half * 1` is still half). Inside `%`, `/`, `//`,
-// `>>`, or a call the reference proves nothing (`half % 2` is a parity
-// peek). When the target's own name appears in the value, the reference
-// must also sit under a `-`: `n - half` shrinks, `n + half` grows.
+// through it — under `+`/`-`/bare positions, or a `*` whose literal
+// operands multiply to at most one (`half * 1` is still half, `half * 2`
+// doubles it back). Inside `%`, `/`, `//`, `>>`, or a call the reference
+// proves nothing (`half % 2` is a parity peek). When the target's own name
+// appears in the value, the reference must sit under a `-` (`n - half`
+// shrinks, `n + half` grows) unless the halving var itself was computed
+// from the target subtracted out of the bound — `half = (n - i) // 2`
+// makes `i = i + half` halve the remaining distance.
 function referencesBarely(
   node: GuessNode,
   name: string,
   targetInValue: boolean,
+  allowPlus: boolean,
   underMinus = false,
   blocked = false
 ): boolean {
@@ -339,21 +365,27 @@ function referencesBarely(
     (node.type === 'binary_op' && ['%', '/', '//', '>>'].includes(node.text))
   ) {
     return node.children.some((child) =>
-      referencesBarely(child, name, targetInValue, underMinus, true)
+      referencesBarely(child, name, targetInValue, allowPlus, underMinus, true)
     );
   }
   if (node.type === 'binary_op' && node.text === '*') {
-    const transparent = node.children.every(
-      (child) =>
-        child.type === 'literal' ||
-        ((child.type === 'name' || child.type === 'member') &&
-          child.text === name)
-    );
+    const literalProduct = node.children
+      .filter((child) => child.type === 'literal')
+      .reduce((acc, child) => acc * numeric(child), 1);
+    const transparent =
+      literalProduct <= 1 &&
+      node.children.every(
+        (child) =>
+          child.type === 'literal' ||
+          ((child.type === 'name' || child.type === 'member') &&
+            child.text === name)
+      );
     return node.children.some((child) =>
       referencesBarely(
         child,
         name,
         targetInValue,
+        allowPlus,
         underMinus,
         blocked || !transparent
       )
@@ -366,10 +398,10 @@ function referencesBarely(
     (node.type === 'name' || node.type === 'member') &&
     node.text === name
   ) {
-    return !targetInValue || seenMinus;
+    return !targetInValue || seenMinus || allowPlus;
   }
   return node.children.some((child) =>
-    referencesBarely(child, name, targetInValue, seenMinus, blocked)
+    referencesBarely(child, name, targetInValue, allowPlus, seenMinus, blocked)
   );
 }
 
@@ -401,11 +433,15 @@ function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
       }
     }
   }
-  const halvingValues = new Set<string>();
+  // Halving vars keep their definition so `i = i + half` can tell whether
+  // `half` was computed from the target subtracted out of the bound
+  // (`half = (n - i) // 2`), where adding it still halves the distance.
+  const halvingValues = new Map<string, GuessNode>();
   for (const node of assigns) {
-    if (node.children.some((value) => hasHalvingOpOn(value, derived))) {
-      halvingValues.add(node.text);
-    }
+    const source = node.children.find((value) =>
+      hasHalvingOpOn(value, derived)
+    );
+    if (source) halvingValues.set(node.text, source);
   }
   // When a condition var is written more than once per pass, only its last
   // assignment decides the step: `n = previous // 2; n = previous - 1`
@@ -423,11 +459,18 @@ function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
       names.delete(node.text);
       return (
         hasHalvingOpOn(value, derived) ||
-        [...names].some(
-          (name) =>
-            halvingValues.has(name) &&
-            referencesBarely(value, name, targetInValue)
-        )
+        [...names].some((name) => {
+          const source = halvingValues.get(name);
+          return (
+            source !== undefined &&
+            referencesBarely(
+              value,
+              name,
+              targetInValue,
+              appearsSubtracted(source, node.text)
+            )
+          );
+        })
       );
     })
   );
