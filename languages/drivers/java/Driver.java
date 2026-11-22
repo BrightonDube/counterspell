@@ -42,8 +42,11 @@ public final class Driver {
     static final String SIGNATURE_PATH = "/box/signature.json";
     static final int EXIT_PROTOCOL = 2;
     static final int EXIT_USER = 1;
+    static final String CALL_STDERR_MARKER = "\u001ecounterspell:stderr\n";
     /** The largest integer every launch driver can hold exactly (2^53 - 1, as Python and JS). */
     static final long MAX_SAFE_INTEGER = (1L << 53) - 1;
+    static final int STDERR_CAP = 64 * 1024;
+    static final String STDERR_TRUNCATED = "\n[stderr truncated]\n";
 
     private Driver() {}
 
@@ -530,19 +533,49 @@ public final class Driver {
                 + " with the signature's Java types");
     }
 
-    /** Hides stdout and stdin while user code runs, then restores them. */
+    /** A byte sink that keeps the sandbox's first-64KiB stderr rule. */
+    static final class BoundedErr extends ByteArrayOutputStream {
+        private boolean truncated;
+        @Override public synchronized void write(int b) {
+            if (size() < STDERR_CAP) {
+                super.write(b);
+            } else {
+                truncated = true;
+            }
+        }
+        @Override public synchronized void write(byte[] bytes, int offset, int length) {
+            int take = Math.min(length, STDERR_CAP - size());
+            if (take > 0) {
+                super.write(bytes, offset, take);
+            }
+            truncated |= take < length;
+        }
+        String text() {
+            return toString(StandardCharsets.UTF_8) + (truncated ? STDERR_TRUNCATED : "");
+        }
+    }
+
+    /** Hides stdout and stdin and captures stderr while user code runs. */
     static final class Quiet implements AutoCloseable {
         private final PrintStream savedOut;
         private final java.io.InputStream savedIn;
+        private final PrintStream savedErr;
+        private final BoundedErr capturedErr = new BoundedErr();
         Quiet() {
             savedOut = System.out;
             savedIn = System.in;
+            savedErr = System.err;
             System.setOut(new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8));
             System.setIn(new ByteArrayInputStream(new byte[0]));
+            System.setErr(new PrintStream(capturedErr, true, StandardCharsets.UTF_8));
+        }
+        String stderr() {
+            return capturedErr.text();
         }
         @Override public void close() {
             System.setOut(savedOut);
             System.setIn(savedIn);
+            System.setErr(savedErr);
         }
     }
 
@@ -623,29 +656,58 @@ public final class Driver {
         String line;
         try {
             while ((line = requests.readLine()) != null) {
+                // Marks this call's process-stderr boundary. Successful user stderr travels
+                // in the answer instead, so delayed process output can be discarded safely.
+                System.err.print(CALL_STDERR_MARKER);
                 if (line.isBlank()) {
                     throw new DriverFailure("a blank call line is not valid protocol");
                 }
                 Call call = parseCall(line, signature);
                 Object result;
-                try (Quiet quiet = new Quiet()) {
+                String stderr;
+                Quiet quiet = new Quiet();
+                try {
                     result = function.invoke(null, call.args);
                 } catch (InvocationTargetException e) {
+                    stderr = quiet.stderr();
+                    quiet.close();
                     diagnose("the solution raised an exception");
+                    System.err.print(stderr);
                     e.getCause().printStackTrace();
                     System.exit(EXIT_USER);
                     return;
                 } catch (IllegalArgumentException | IllegalAccessException e) {
+                    stderr = quiet.stderr();
+                    quiet.close();
                     diagnose("the solution failed while loading");
+                    System.err.print(stderr);
                     e.printStackTrace();
                     System.exit(EXIT_PROTOCOL);
                     return;
+                } finally {
+                    stderr = quiet.stderr();
+                    quiet.close();
                 }
-                Object normalized = normalize(result);
+                Object normalized;
+                try {
+                    normalized = normalize(result);
+                } catch (DriverFailure failure) {
+                    if (!stderr.isEmpty()) {
+                        System.err.print(stderr);
+                    }
+                    throw failure;
+                }
                 if (!conforms(normalized, signature.returns)) {
+                    if (!stderr.isEmpty()) {
+                        System.err.print(stderr);
+                    }
                     throw new DriverFailure("the return value is not JSON-safe for the signature");
                 }
-                answers.println("{\"t\":" + call.id + ",\"out\":" + Json.write(normalized) + "}");
+                answers.print("{\"t\":" + call.id + ",\"out\":" + Json.write(normalized));
+                if (!stderr.isEmpty()) {
+                    answers.print(",\"stderr\":" + Json.write(stderr));
+                }
+                answers.println("}");
                 answers.flush();
             }
         } catch (IOException e) {

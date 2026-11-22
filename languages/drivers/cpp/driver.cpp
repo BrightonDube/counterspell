@@ -18,6 +18,7 @@
 // std::vector<JSONValue> per the signature, null -> JSONValue{}. The helpers never
 // coerce kinds; the driver validates each value against the signature anyway.
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -123,6 +124,10 @@ template <typename T> JSONValue to_json(const T& v) { return JSONValue(v); }
 // ------------------------------------------------------------------
 // Minimal JSON reader/writer: protocol v1 needs only JSON-safe values.
 // ------------------------------------------------------------------
+
+constexpr std::size_t STDERR_CAP = 64 * 1024;
+constexpr const char* STDERR_TRUNCATED = "\n[stderr truncated]\n";
+constexpr const char* CALL_STDERR_MARKER = "\x1e" "counterspell:stderr\n";
 
 class DriverFailure : public std::runtime_error {
   public:
@@ -329,6 +334,53 @@ class JsonReader {
         }
     }
 };
+
+static std::string sanitizeUtf8(const std::string& input) {
+    std::string out;
+    out.reserve(input.size());
+    for (std::size_t i = 0; i < input.size();) {
+        const unsigned char first = static_cast<unsigned char>(input[i]);
+        if (first < 0x80) {
+            out += static_cast<char>(first);
+            i++;
+            continue;
+        }
+        std::size_t length = 0;
+        unsigned long code = 0;
+        if (first >= 0xC2 && first <= 0xDF) {
+            length = 2;
+            code = first & 0x1F;
+        } else if (first >= 0xE0 && first <= 0xEF) {
+            length = 3;
+            code = first & 0x0F;
+        } else if (first >= 0xF0 && first <= 0xF4) {
+            length = 4;
+            code = first & 0x07;
+        } else {
+            out += "\xEF\xBF\xBD";
+            i++;
+            continue;
+        }
+        bool valid = i + length <= input.size();
+        for (std::size_t j = 1; valid && j < length; j++) {
+            const unsigned char next = static_cast<unsigned char>(input[i + j]);
+            valid = (next & 0xC0) == 0x80;
+            code = (code << 6) | (next & 0x3F);
+        }
+        if (valid && ((length == 3 && (code < 0x800 || (code >= 0xD800 && code <= 0xDFFF)))
+                      || (length == 4 && (code < 0x10000 || code > 0x10FFFF)))) {
+            valid = false;
+        }
+        if (valid) {
+            out.append(input, i, length);
+            i += length;
+        } else {
+            out += "\xEF\xBF\xBD";
+            i++;
+        }
+    }
+    return out;
+}
 
 static void appendJson(std::string& out, const JSONValue& v) {
     if (std::holds_alternative<std::nullptr_t>(v.value)) {
@@ -580,6 +632,50 @@ class Quiet {
     int saved_ = -1;
 };
 
+// Sends fd 2 to an anonymous file while user code runs, then reads at most the
+// sandbox stderr cap into the call's answer. fd-level capture keeps C `fprintf`
+// and C++ `cerr` writes in the same call that emitted them.
+class CapturedErr {
+  public:
+    CapturedErr() {
+        std::fflush(stderr);
+        std::cerr.flush();
+        file_ = std::tmpfile();
+        saved_ = dup(STDERR_FILENO);
+        if (file_ != nullptr && saved_ >= 0) {
+            dup2(fileno(file_), STDERR_FILENO);
+        }
+    }
+    ~CapturedErr() {
+        std::fflush(stderr);
+        std::cerr.flush();
+        if (saved_ >= 0) {
+            dup2(saved_, STDERR_FILENO);
+            close(saved_);
+        }
+        if (file_ != nullptr) fclose(file_);
+    }
+
+    std::string take() {
+        std::fflush(stderr);
+        std::cerr.flush();
+        if (file_ == nullptr) return {};
+        std::fflush(file_);
+        std::fseek(file_, 0, SEEK_SET);
+        std::string out;
+        out.resize(STDERR_CAP + 1);
+        const std::size_t got = std::fread(out.data(), 1, out.size(), file_);
+        const bool truncated = got > STDERR_CAP;
+        out.resize(std::min(got, STDERR_CAP));
+        if (truncated) out += STDERR_TRUNCATED;
+        return out;
+    }
+
+  private:
+    FILE* file_ = nullptr;
+    int saved_ = -1;
+};
+
 int main(int argc, char** argv) {
     std::string mode = "normal";
     for (int i = 1; i < argc; i++) {
@@ -595,22 +691,36 @@ int main(int argc, char** argv) {
         Signature signature = loadSignature();
         std::string line;
         while (std::getline(std::cin, line)) {
+            // Marks this call's process-stderr boundary. Successful user stderr travels
+            // in the answer instead, so delayed process output can be discarded safely.
+            std::cerr << CALL_STDERR_MARKER << std::flush;
             if (line.find_first_not_of(" \t\r") == std::string::npos) {
                 throw DriverFailure("a blank call line is not valid protocol");
             }
             Call call = parseCall(line, signature);
             JSONValue result;
+            std::string stderr;
             try {
                 Quiet quiet;
-                result = counterspell_call(call.args);
+                CapturedErr captured;
+                try {
+                    result = counterspell_call(call.args);
+                } catch (...) {
+                    stderr = captured.take();
+                    throw;
+                }
+                stderr = captured.take();
             } catch (const std::exception& e) {
                 diagnose(std::string("the solution raised an exception: ") + e.what());
+                std::cerr << stderr;
                 return 1;
             } catch (...) {
                 diagnose("the solution raised an exception");
+                std::cerr << stderr;
                 return 1;
             }
             if (!conforms(result, signature.returns)) {
+                std::cerr << stderr;
                 throw DriverFailure("the return value is not JSON-safe for the signature");
             }
             std::string answer;
@@ -618,6 +728,10 @@ int main(int argc, char** argv) {
             answer += std::to_string(call.id);
             answer += ",\"out\":";
             appendJson(answer, result);
+            if (!stderr.empty()) {
+                answer += ",\"stderr\":";
+                appendJson(answer, JSONValue(sanitizeUtf8(stderr)));
+            }
             answer += "}";
             std::cout << answer << "\n" << std::flush;
         }

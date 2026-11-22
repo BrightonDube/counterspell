@@ -25,6 +25,9 @@ const IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/;
 const EXIT_PROTOCOL = 2;
 const EXIT_USER = 1;
 const MODES = new Set(['normal', 'bench']);
+const STDERR_CAP = 64 * 1024;
+const STDERR_TRUNCATED = '\n[stderr truncated]\n';
+const CALL_STDERR_MARKER = '\x1ecounterspell:stderr\n';
 
 /** A setup or protocol failure. The driver reports it on stderr and exits with `exitCode`. */
 class DriverFailure extends Error {
@@ -165,20 +168,83 @@ function resolveFunction(moduleExports, name) {
   throw new DriverFailure(`the solution does not define ${name}`);
 }
 
-/** Runs `run` with the stdout writes discarded, so user prints cannot reach the answers. */
-function withStdoutDiscarded(run) {
-  const write = process.stdout.write;
+/** Runs `run` with stdout discarded and bounded stderr captured for the answer. */
+function withCapturedOutput(run) {
+  const writeOut = process.stdout.write;
+  const writeErr = process.stderr.write;
+  const writeFsSync = fs.writeSync;
+  const writeFs = fs.write;
   const exit = process.exit;
+  const stderr = [];
+  let captured = 0;
+  let truncated = false;
+  const capture = (chunk, encoding, callback) => {
+    const data = Buffer.isBuffer(chunk)
+      ? chunk
+      : Buffer.from(String(chunk), typeof encoding === 'string' ? encoding : undefined);
+    const room = STDERR_CAP - captured;
+    if (room > 0) {
+      stderr.push(data.subarray(0, Math.min(room, data.length)));
+      captured += Math.min(room, data.length);
+    }
+    truncated ||= data.length > room;
+    const done = typeof encoding === 'function' ? encoding : callback;
+    if (done) done();
+    return true;
+  };
+  const rendered = () =>
+    Buffer.concat(stderr).toString('utf8') + (truncated ? STDERR_TRUNCATED : '');
+  const fsData = (data, rest) => {
+    if (typeof data === 'string') {
+      const encoding = rest.findLast((part) => typeof part === 'string');
+      return Buffer.from(data, encoding);
+    }
+    const buffer = Buffer.isBuffer(data)
+      ? data
+      : Buffer.from(data.buffer || data, data.byteOffset || 0, data.byteLength || data.length);
+    const offset = typeof rest[0] === 'number' ? rest[0] : 0;
+    const length = typeof rest[1] === 'number' ? rest[1] : buffer.length - offset;
+    return buffer.subarray(offset, offset + length);
+  };
   process.stdout.write = () => true;
+  process.stderr.write = capture;
+  fs.writeSync = (fd, data, ...rest) => {
+    if (fd === 2) {
+      const bytes = fsData(data, rest);
+      capture(bytes);
+      return bytes.length;
+    }
+    return writeFsSync.call(fs, fd, data, ...rest);
+  };
+  fs.write = (fd, data, ...rest) => {
+    const callback = rest[rest.length - 1];
+    if (fd === 2) {
+      const bytes = fsData(data, rest.slice(0, -1));
+      capture(bytes);
+      if (typeof callback === 'function') callback(null, bytes.length, data);
+      return;
+    }
+    writeFs.call(fs, fd, data, ...rest);
+  };
   process.exit = () => {
     throw new DriverFailure('the solution called process.exit', EXIT_USER);
   };
   return Promise.resolve()
     .then(run)
     .finally(() => {
-      process.stdout.write = write;
+      process.stdout.write = writeOut;
+      process.stderr.write = writeErr;
+      fs.writeSync = writeFsSync;
+      fs.write = writeFs;
       process.exit = exit;
-    });
+    })
+    .then(
+      (out) => ({ out, stderr: rendered() }),
+      (error) => {
+        error.capturedStderr = rendered();
+        throw error;
+      }
+    );
 }
 
 /** Writes an error's stack to stderr, so the cause is visible without touching stdout. */
@@ -188,30 +254,31 @@ function reportError(error) {
 
 /** Loads the solution once and returns the function named in the signature. */
 async function loadFunction(signature) {
-  const loaded = await withStdoutDiscarded(() => {
-    try {
-      return require(SOLUTION_PATH);
-    } catch (error) {
-      // The driver line goes first: the judge reads the last stderr line as
-      // the exception diagnostic, so the stack tail must stay last.
-      process.stderr.write('driver: the solution failed while loading\n');
-      reportError(error);
-      process.exit(EXIT_PROTOCOL);
-    }
-  });
+  let loaded;
+  try {
+    ({ out: loaded } = await withCapturedOutput(() => require(SOLUTION_PATH)));
+  } catch (error) {
+    // The driver line goes first: the judge reads the last stderr line as
+    // the exception diagnostic, so the stack tail must stay last.
+    process.stderr.write('driver: the solution failed while loading\n');
+    process.stderr.write(error.capturedStderr || '');
+    reportError(error);
+    process.exit(EXIT_PROTOCOL);
+  }
   return resolveFunction(loaded, signature.functionName);
 }
 
-/** Calls the user's function, awaiting a Promise result, with its prints discarded. */
+/** Calls the user's function, awaiting a Promise result and captured stderr. */
 async function callSolution(fn, args) {
   try {
-    return await withStdoutDiscarded(() => fn(...args));
+    return await withCapturedOutput(() => fn(...args));
   } catch (error) {
     if (error instanceof DriverFailure) {
       throw error;
     }
-    // Same ordering: `driver:` diagnostic first, stack tail last.
+    // Same ordering: `driver:` diagnostic first, captured output, then stack tail.
     process.stderr.write('driver: the solution raised an exception\n');
+    process.stderr.write(error.capturedStderr || '');
     reportError(error);
     process.exit(EXIT_USER);
   }
@@ -231,12 +298,17 @@ function parseArguments(argv) {
 async function serve(fn, signature, answer) {
   const lines = readline.createInterface({ input: process.stdin, crlfDelay: Infinity });
   for await (const line of lines) {
+    // Marks this call's process-stderr boundary. Successful user stderr travels in
+    // the answer instead, so delayed process output can be discarded safely.
+    process.stderr.write(CALL_STDERR_MARKER);
     const { id, args } = parseCall(line, signature);
-    const out = await callSolution(fn, args);
+    const { out, stderr } = await callSolution(fn, args);
     if (!conforms(out, signature.returns)) {
+      process.stderr.write(stderr);
       throw new DriverFailure('the return value is not JSON-safe for the signature');
     }
-    answer(`${JSON.stringify({ t: id, out })}\n`);
+    const answerLine = stderr ? { t: id, out, stderr } : { t: id, out };
+    answer(`${JSON.stringify(answerLine)}\n`);
   }
   return 0;
 }
@@ -257,6 +329,7 @@ main(process.argv.slice(2)).then(
   (error) => {
     const code = error instanceof DriverFailure ? error.exitCode : EXIT_PROTOCOL;
     const message = error instanceof DriverFailure ? error.message : String(error);
-    process.stderr.write(`driver: ${message}\n`, () => process.exit(code));
+    const captured = error && error.capturedStderr ? error.capturedStderr : '';
+    process.stderr.write(`driver: ${message}\n${captured}`, () => process.exit(code));
   }
 );

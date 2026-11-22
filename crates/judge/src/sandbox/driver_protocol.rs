@@ -1,8 +1,9 @@
 //! The line protocol between the judge and the driver inside a sandbox.
 //!
 //! The judge writes one call per line: `{"t": <id>, "args": [...]}`. The driver answers
-//! with one line: `{"t": <id>, "out": <value>}`. This module only checks the shape of
-//! an answer. It never decides a verdict; the trusted comparator does that.
+//! with one line: `{"t": <id>, "out": <value>, "stderr": "<optional>"}`. This module
+//! only checks the shape of an answer. It never decides a verdict; the trusted
+//! comparator does that.
 //!
 //! Named to match `language-drivers` so that crate can extend it.
 
@@ -16,6 +17,7 @@ use thiserror::Error;
 const KEY_ID: &str = "t";
 const KEY_OUT: &str = "out";
 const KEY_ARGS: &str = "args";
+const KEY_STDERR: &str = "stderr";
 
 /// Why an answer line is not a valid answer. The protocol is the only thing it reports on.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
@@ -35,9 +37,12 @@ pub enum ProtocolViolation {
     /// The JSON value is not an object.
     #[error("the answer is not a JSON object")]
     NotAnObject,
-    /// The object has a key other than `t` and `out`.
+    /// The object has a key other than `t`, `out` and optional `stderr`.
     #[error("the answer has an unexpected key {0:?}")]
     ExtraKey(String),
+    /// The optional `stderr` field is not a string.
+    #[error("the answer has an invalid {0:?} field")]
+    InvalidField(&'static str),
     /// The same key appears twice in the object.
     #[error("the answer repeats the key {0:?}")]
     DuplicateKey(String),
@@ -98,15 +103,25 @@ impl<'de> Deserialize<'de> for KeyList {
     }
 }
 
-/// Checks one answer line and returns its `out` value.
+/// A checked answer: the `out` value for the comparator and the diagnostics the
+/// driver captured inside this call.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParsedAnswer {
+    /// The program's return value.
+    pub out: Value,
+    /// Bounded stderr emitted by the driver while running this call, when it wrote any.
+    pub stderr: Option<String>,
+}
+
+/// Checks one answer line and returns its `out` value and optional per-call stderr.
 ///
-/// The line must be one JSON object with exactly the keys `t` and `out`, and `t` must
-/// equal `expected`. The `out` value is returned as it is, for the comparator to judge.
+/// The line must be one JSON object with the keys `t` and `out`, plus an optional
+/// string `stderr` field. `t` must equal `expected`.
 ///
 /// # Errors
 ///
 /// Returns the [`ProtocolViolation`] for the first broken rule.
-pub fn parse_answer(line: &[u8], expected: u64) -> Result<Value, ProtocolViolation> {
+pub fn parse_answer_detail(line: &[u8], expected: u64) -> Result<ParsedAnswer, ProtocolViolation> {
     let text = std::str::from_utf8(line).map_err(|_| ProtocolViolation::NotUtf8)?;
     if text.trim().is_empty() {
         return Err(ProtocolViolation::Blank);
@@ -126,7 +141,7 @@ pub fn parse_answer(line: &[u8], expected: u64) -> Result<Value, ProtocolViolati
 
     if let Some(extra) = object
         .keys()
-        .find(|key| key.as_str() != KEY_ID && key.as_str() != KEY_OUT)
+        .find(|key| key.as_str() != KEY_ID && key.as_str() != KEY_OUT && key.as_str() != KEY_STDERR)
     {
         return Err(ProtocolViolation::ExtraKey(extra.clone()));
     }
@@ -136,9 +151,29 @@ pub fn parse_answer(line: &[u8], expected: u64) -> Result<Value, ProtocolViolati
     let out = object
         .remove(KEY_OUT)
         .ok_or(ProtocolViolation::MissingKey(KEY_OUT))?;
+    let stderr = object
+        .remove(KEY_STDERR)
+        .map(|value| match value {
+            Value::String(stderr) => Ok(stderr),
+            _ => Err(ProtocolViolation::InvalidField(KEY_STDERR)),
+        })
+        .transpose()?;
 
     if id.as_u64() != Some(expected) {
         return Err(ProtocolViolation::WrongId);
     }
-    Ok(out)
+    Ok(ParsedAnswer { out, stderr })
+}
+
+/// Checks one answer line and returns its `out` value.
+///
+/// The line must be one JSON object with the keys `t` and `out`, plus an optional
+/// string `stderr` field. `t` must equal `expected`. The `out` value is returned as
+/// it is, for the comparator to judge.
+///
+/// # Errors
+///
+/// Returns the [`ProtocolViolation`] for the first broken rule.
+pub fn parse_answer(line: &[u8], expected: u64) -> Result<Value, ProtocolViolation> {
+    parse_answer_detail(line, expected).map(|answer| answer.out)
 }

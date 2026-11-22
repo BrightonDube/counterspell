@@ -95,6 +95,11 @@ impl LineReader {
     }
 }
 
+/// The marker every driver writes to process stderr before it reads one call. It is a
+/// record separator, not user output: finding it clears stale stderr that the stream
+/// delivered after an earlier answer.
+pub const CALL_STDERR_MARKER: &[u8] = b"\x1ecounterspell:stderr\n";
+
 /// Keeps a bounded copy of stderr. Bytes past the store cap are counted only as a
 /// truncation, so a flood cannot grow memory.
 #[derive(Debug, Default)]
@@ -103,6 +108,7 @@ pub struct StderrBuffer {
     truncated: bool,
     current: Vec<u8>,
     last_line: Option<Vec<u8>>,
+    marker_tail: Vec<u8>,
 }
 
 impl StderrBuffer {
@@ -113,14 +119,33 @@ impl StderrBuffer {
     }
 
     /// Adds `chunk`. Stores as much as fits under the cap and tracks the last line.
+    /// A call marker discards everything buffered before it, including marker bytes.
     pub fn push(&mut self, chunk: &[u8]) {
+        let tail_len = self.marker_tail.len();
+        let mut haystack = Vec::with_capacity(tail_len + chunk.len());
+        haystack.extend_from_slice(&self.marker_tail);
+        haystack.extend_from_slice(chunk);
+        let marker = haystack
+            .windows(CALL_STDERR_MARKER.len())
+            .rposition(|window| window == CALL_STDERR_MARKER);
+        let data = if let Some(start) = marker {
+            self.stored.clear();
+            self.truncated = false;
+            self.current.clear();
+            self.last_line = None;
+            &haystack[start + CALL_STDERR_MARKER.len()..]
+        } else {
+            &haystack[tail_len..]
+        };
+        let tail_start = haystack.len().saturating_sub(CALL_STDERR_MARKER.len() - 1);
+        self.marker_tail = haystack[tail_start..].to_vec();
         let room = STDERR_STORE_CAP - self.stored.len();
-        let take = room.min(chunk.len());
-        self.stored.extend_from_slice(&chunk[..take]);
-        if take < chunk.len() {
+        let take = room.min(data.len());
+        self.stored.extend_from_slice(&data[..take]);
+        if take < data.len() {
             self.truncated = true;
         }
-        for &byte in chunk {
+        for &byte in data {
             self.track_line(byte);
         }
     }

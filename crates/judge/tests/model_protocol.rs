@@ -3,7 +3,9 @@
 //! The parser checks the shape of an answer only. It never decides a verdict; the
 //! comparator does that (design section 10).
 
-use counterspell_judge::sandbox::driver_protocol::{encode_call, parse_answer, ProtocolViolation};
+use counterspell_judge::sandbox::driver_protocol::{
+    encode_call, parse_answer, parse_answer_detail, ProtocolViolation,
+};
 use proptest::prelude::*;
 use serde_json::{json, Value};
 
@@ -19,6 +21,30 @@ fn a_call_is_one_json_line_with_its_id_and_arguments() {
 fn a_well_formed_answer_returns_its_out_value() {
     let out = parse_answer(br#"{"t":3,"out":[1,2]}"#, 3).unwrap();
     assert_eq!(out, json!([1, 2]));
+}
+
+// test-change: CP-5.3 (sample stderr travels inside the answer line it belongs to)
+#[test]
+fn an_answer_may_carry_its_own_stderr_string() {
+    let answer = parse_answer_detail(br#"{"t":3,"out":[1,2],"stderr":"debug\n"}"#, 3).unwrap();
+    assert_eq!(answer.out, json!([1, 2]));
+    assert_eq!(answer.stderr.as_deref(), Some("debug\n"));
+}
+
+// test-change: CP-5.3 (the stderr field is optional for existing drivers)
+#[test]
+fn an_answer_without_stderr_has_none() {
+    let answer = parse_answer_detail(br#"{"t":3,"out":1}"#, 3).unwrap();
+    assert_eq!(answer.stderr, None);
+}
+
+// test-change: CP-5.3 (only a bounded string may occupy the stderr field)
+#[test]
+fn a_non_string_stderr_field_is_refused() {
+    assert_eq!(
+        parse_answer_detail(br#"{"t":3,"out":1,"stderr":["debug"]}"#, 3).unwrap_err(),
+        ProtocolViolation::InvalidField("stderr")
+    );
 }
 
 #[test]

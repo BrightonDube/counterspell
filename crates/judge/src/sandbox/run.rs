@@ -14,7 +14,7 @@ use tokio::time::{timeout_at, Instant};
 use super::backend::{Backend, BackendSession, InfraError};
 use super::call::{run_call, CallFacts, CallIo, CallLimits};
 use super::compare::WrongReason;
-use super::compare::{judge_answer, Expected, TestVerdict};
+use super::compare::{judge_answer_detail, Expected, TestVerdict};
 use super::driver_protocol::ProtocolViolation;
 use super::session::{open_session, Opened, SessionError};
 use super::spec::SessionSpec;
@@ -305,28 +305,29 @@ async fn run_test<S: BackendSession + 'static>(
     let started = Instant::now();
     let facts = run_call(open, io, u64::from(test.ordinal), &test.args, limits, stop).await?;
     let elapsed = started.elapsed();
-    let stderr = io.take_stderr();
+    let process_stderr = io.take_stderr();
     let container_alive = matches!(facts, CallFacts::Answer { .. });
-    let (verdict, answer) = match facts {
-        CallFacts::Answer { line, .. } => (
-            judge_answer(
+    let (verdict, answer, stderr) = match facts {
+        CallFacts::Answer { line, .. } => {
+            let judged = judge_answer_detail(
                 &test.expected,
                 u64::from(test.ordinal),
                 &line,
                 test.comparator,
-            ),
-            Some(line),
-        ),
-        CallFacts::Deadline => (TestVerdict::TimeLimit, None),
-        CallFacts::OutputLimit => (TestVerdict::OutputLimit, None),
+            );
+            (judged.verdict, Some(line), judged.stderr)
+        }
+        CallFacts::Deadline => (TestVerdict::TimeLimit, None, Some(process_stderr)),
+        CallFacts::OutputLimit => (TestVerdict::OutputLimit, None, Some(process_stderr)),
         CallFacts::ExtraOutput => (
             TestVerdict::WrongAnswer(WrongReason::Protocol(ProtocolViolation::ExtraOutput)),
             None,
+            Some(process_stderr),
         ),
         CallFacts::DriverExited { oom_kill, .. } if oom_kill > 0 => {
-            (TestVerdict::MemoryLimit, None)
+            (TestVerdict::MemoryLimit, None, Some(process_stderr))
         }
-        CallFacts::DriverExited { .. } => (TestVerdict::RuntimeError, None),
+        CallFacts::DriverExited { .. } => (TestVerdict::RuntimeError, None, Some(process_stderr)),
         CallFacts::Stopped => return Ok(Step::Stopped),
     };
     Ok(Step::Ran(RanTest {
@@ -334,7 +335,7 @@ async fn run_test<S: BackendSession + 'static>(
         elapsed,
         container_alive,
         answer,
-        stderr: test.sample.then_some(stderr),
+        stderr: test.sample.then_some(stderr).flatten(),
     }))
 }
 

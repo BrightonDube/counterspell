@@ -13,7 +13,9 @@ import contextlib
 import io
 import json
 import math
+import os
 import sys
+import tempfile
 import traceback
 
 PROTOCOL_VERSION = 1
@@ -23,6 +25,9 @@ MAX_SAFE_INTEGER = 2**53 - 1
 KINDS = frozenset({"int", "float", "bool", "string", "list", "tuple", "null"})
 EXIT_PROTOCOL = 2
 EXIT_USER = 1
+STDERR_CAP = 64 * 1024
+STDERR_TRUNCATED = "\n[stderr truncated]\n"
+CALL_STDERR_MARKER = "\x1ecounterspell:stderr\n"
 
 
 class DriverFailure(Exception):
@@ -50,14 +55,34 @@ class _Sink(io.TextIOBase):
 
 
 @contextlib.contextmanager
-def quiet():
-    """Hides stdout and stdin while user code runs, then restores them."""
+def quiet(stderr_file=None):
+    """Hides stdout and stdin; when asked, captures every stderr byte at fd level."""
     saved_stdout, saved_stdin = sys.stdout, sys.stdin
     sys.stdout, sys.stdin = _Sink(), io.StringIO("")
+    saved_stderr_fd = None
+    if stderr_file is not None:
+        sys.stderr.flush()
+        saved_stderr_fd = os.dup(2)
+        os.dup2(stderr_file.fileno(), 2)
     try:
         yield
     finally:
+        if saved_stderr_fd is not None:
+            sys.stderr.flush()
+            os.dup2(saved_stderr_fd, 2)
+            os.close(saved_stderr_fd)
         sys.stdout, sys.stdin = saved_stdout, saved_stdin
+
+
+def read_stderr(stderr_file):
+    """Reads the captured file with the same cap the sandbox applies to stderr."""
+    stderr_file.flush()
+    stderr_file.seek(0)
+    data = stderr_file.read(STDERR_CAP + 1)
+    truncated = len(data) > STDERR_CAP
+    return data[:STDERR_CAP].decode("utf-8", errors="replace") + (
+        STDERR_TRUNCATED if truncated else ""
+    )
 
 
 def diagnose(message):
@@ -220,20 +245,28 @@ def load_function(signature):
 
 
 def call_solution(function, args):
-    """Calls the user's function with its prints discarded. A failure ends the driver."""
-    try:
-        with quiet():
-            return function(*args)
-    except BaseException:
-        # Same ordering: `driver:` diagnostic first, traceback tail last.
-        diagnose("the solution raised an exception")
-        traceback.print_exc()
-        sys.exit(EXIT_USER)
+    """Calls the user's function, capturing stderr for the answer."""
+    with tempfile.TemporaryFile() as captured_stderr:
+        try:
+            with quiet(captured_stderr):
+                result = function(*args)
+            return result, read_stderr(captured_stderr)
+        except BaseException:
+            stderr = read_stderr(captured_stderr)
+            # Same ordering: `driver:` diagnostic first, traceback tail last. Captured user
+            # stderr still belongs to this failing call and follows the diagnostic.
+            diagnose("the solution raised an exception")
+            sys.stderr.write(stderr)
+            traceback.print_exc()
+            sys.exit(EXIT_USER)
 
 
-def write_answer(stream, call_id, out):
+def write_answer(stream, call_id, out, stderr):
     """Writes one answer line and flushes it. JSON escapes newlines, so it is one line."""
-    line = json.dumps({"t": call_id, "out": out}, allow_nan=False, separators=(",", ":"))
+    answer = {"t": call_id, "out": out}
+    if stderr:
+        answer["stderr"] = stderr
+    line = json.dumps(answer, allow_nan=False, separators=(",", ":"))
     stream.write((line + "\n").encode("ascii"))
     stream.flush()
 
@@ -241,11 +274,18 @@ def write_answer(stream, call_id, out):
 def serve(function, signature, requests, answers):
     """Answers calls until the judge closes stdin."""
     for raw in iter(requests.readline, b""):
+        # Marks this call's process-stderr boundary. Successful user stderr travels in
+        # the answer instead, so delayed process output can be discarded safely.
+        sys.stderr.write(CALL_STDERR_MARKER)
+        sys.stderr.flush()
         call_id, args = parse_call(raw, signature)
-        result = call_solution(function, args)
+        result, stderr = call_solution(function, args)
         if not conforms(result, signature.returns):
+            if stderr:
+                sys.stderr.write(stderr)
+                sys.stderr.flush()
             raise DriverFailure("the return value is not JSON-safe for the signature")
-        write_answer(answers, call_id, result)
+        write_answer(answers, call_id, result, stderr)
 
 
 def main(argv=None):

@@ -54,8 +54,9 @@ and not part of version 1.
   `t` is a non-negative integer call ID. `args` is an array with one JSON value per parameter,
   in signature order.
 - **Answer (driver to judge, stdout):** one UTF-8 JSON object per line, ending in `\n`,
-  with exactly two keys, `t` and `out`. `t` must echo the call ID. `out` is the JSON-safe
-  return value.
+  with the keys `t` and `out`, plus an optional string `stderr`. `t` must echo the call
+  ID. `out` is the JSON-safe return value. `stderr` carries the bounded diagnostics the
+  driver captured while running that call.
 - The judge sends a call only after the previous answer has arrived. It starts the deadline
   before writing the call and stops it when the full answer line has been read.
 - The driver flushes stdout after every answer.
@@ -70,6 +71,12 @@ Answer example:
 
 ```json
 {"t": 0, "out": [0, 1]}
+```
+
+Answer carrying the stderr emitted by that call:
+
+```json
+{"t": 0, "out": [0, 1], "stderr": "debug: reached base case\n"}
 ```
 
 Answer with a null return, when the signature allows null:
@@ -106,8 +113,15 @@ judge's comparator compares parsed JSON values.
 
 - **stdout** carries protocol answer lines only. Output the user's function prints while it
   runs is captured by the driver, so it cannot corrupt the answer stream.
-- **stderr** carries diagnostics, such as a setup failure or a traceback. It is capped by the
-  sandbox output limit. It is never parsed as an answer and never becomes a verdict.
+- **stderr on the process stream** carries diagnostics for a call that produced no answer,
+  such as a setup failure or a traceback. It is capped by the sandbox output limit and is
+  never parsed as an answer. Before each call the driver writes the private marker
+  `\x1ecounterspell:stderr\n` to this stream; the judge treats it as a call boundary and
+  drops everything before it, so delayed output from an earlier call cannot contaminate a
+  later failed call.
+- **stderr on an answer line** is how drivers report ordinary diagnostics from a call that
+  did answer. The driver captures stderr while the user function runs and embeds it in the
+  same `t` line, so delayed process-stream delivery cannot assign it to the next call.
 - Output that bypasses that capture and breaks the framing is a protocol failure. The judge
   classifies it from the process outcome. It is never read as a wrong answer from the user.
 
@@ -118,9 +132,9 @@ its answer line unwritten, in these cases:
 
 | Condition | Driver behaviour | Judge classification |
 |---|---|---|
-| user function raises | diagnostic on stderr, no answer | runtime error (from the process outcome) |
-| return value is not JSON-safe | diagnostic on stderr, no answer | invalid answer |
-| argument does not match the signature | diagnostic on stderr, no answer | protocol failure |
+| user function raises | diagnostic on process stderr, no answer | runtime error (from the process outcome) |
+| return value is not JSON-safe | diagnostic on process stderr, no answer | invalid answer |
+| argument does not match the signature | diagnostic on process stderr, no answer | protocol failure |
 | malformed input line, or a blank line | diagnostic on stderr, exit | protocol failure |
 | process exits or stops responding | none | process failure or time limit |
 
@@ -159,5 +173,7 @@ complexity. The judge owns all timing.
 ## Versioning
 
 `protocol_version` is `1` in `signature.json` and in every `languages.toml` entry. The judge
-refuses any other version. A change to the framing or the value rules needs a new version
-and a matching driver for each enabled language.
+refuses any other version. `stderr` is an optional additive field on version-1 answer lines:
+drivers that do not emit it still satisfy the required `t`/`out` frame. A change to the
+required framing or the value rules needs a new version and a matching driver for each
+enabled language.
