@@ -242,14 +242,19 @@ function boundFactor(node: GuessNode, targets: Set<string>): number {
     const right = rest.map((child) => boundFactor(child, targets));
     // Subtracting a strict fraction of the same bound keeps a fraction:
     // `n - n // 2` is `n // 2`. Other pairs stay bound-scale — `hi - lo`
-    // is a distance, not a difference of two halves of one bound.
+    // is a distance, and `hi - lo // 2` subtracts a fraction of a
+    // different var, so the subtrahend's bound names must all appear on
+    // the left.
+    const leftNames = namesIn(node.children[0], new Set());
     if (
       rest.length > 0 &&
       rest.every(
         (child, i) =>
           right[i] > 0 &&
           right[i] < left &&
-          [...namesIn(child, new Set())].some((n) => targets.has(n))
+          [...namesIn(child, new Set())].every(
+            (n) => targets.has(n) && leftNames.has(n)
+          )
       )
     ) {
       return right.reduce((acc, factor) => acc - factor, left);

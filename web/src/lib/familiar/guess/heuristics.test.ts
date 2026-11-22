@@ -397,6 +397,22 @@ const COMPLEMENT_HALF = fn(
   ]
 );
 
+// lo = 2
+// while hi > lo:
+//     half = hi - lo // 2   (hi minus half of lo, not (hi - lo) // 2)
+//     hi = half
+const CROSS_BOUND_HALF = fn(
+  'cross_bound_half',
+  ['hi'],
+  [
+    assign('lo', lit('2')),
+    whileLoop(cmp('>', [id('hi'), id('lo')]), [
+      assign('half', op('-', [id('hi'), op('//', [id('lo'), lit('2')])])),
+      assign('hi', id('half'))
+    ])
+  ]
+);
+
 describe('cost model edge cases', () => {
   it('reads a sort in the iterable as preprocessing: n log n', () => {
     expect(analyze(SORT_IN_ITERABLE).guess_class).toBe('n log n');
@@ -822,5 +838,8 @@ describe('cost model edge cases', () => {
   });
   it('reads n - n // 2 as a halving', () => {
     expect(analyze(COMPLEMENT_HALF).guess_class).toBe('log n');
+  });
+  it('does not read hi - lo // 2 as a halving of hi', () => {
+    expect(analyze(CROSS_BOUND_HALF).guess_class).toBe('n');
   });
 });
