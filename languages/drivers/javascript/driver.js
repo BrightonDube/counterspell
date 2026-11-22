@@ -248,13 +248,7 @@ function withCapturedOutput(run) {
     .finally(() => {
       activeCapture = null;
     })
-    .then(
-      (out) => ({ out, stderr: rendered() }),
-      (error) => {
-        error.capturedStderr = rendered();
-        throw error;
-      }
-    );
+    .then((out) => ({ out, stderr: rendered() }));
 }
 
 /** Writes an error's stack to stderr, so the cause is visible without touching stdout. */
@@ -271,7 +265,6 @@ async function loadFunction(signature) {
     // The driver line goes first: the judge reads the last stderr line as
     // the exception diagnostic, so the stack tail must stay last.
     process.stderr.write('driver: the solution failed while loading\n');
-    process.stderr.write(error.capturedStderr || '');
     reportError(error);
     exitProcess(EXIT_PROTOCOL);
   }
@@ -288,7 +281,6 @@ async function callSolution(fn, args) {
     }
     // Same ordering: `driver:` diagnostic first, captured output, then stack tail.
     process.stderr.write('driver: the solution raised an exception\n');
-    process.stderr.write(error.capturedStderr || '');
     reportError(error);
     exitProcess(EXIT_USER);
   }
@@ -338,7 +330,6 @@ main(process.argv.slice(2)).then(
   (error) => {
     const code = error instanceof DriverFailure ? error.exitCode : EXIT_PROTOCOL;
     const message = error instanceof DriverFailure ? error.message : String(error);
-    const captured = error && error.capturedStderr ? error.capturedStderr : '';
-    process.stderr.write(`driver: ${message}\n${captured}`, () => exitProcess(code));
+    process.stderr.write(`driver: ${message}\n`, () => exitProcess(code));
   }
 );
