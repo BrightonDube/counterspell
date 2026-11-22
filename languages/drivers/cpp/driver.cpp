@@ -18,6 +18,10 @@
 // std::vector<JSONValue> per the signature, null -> JSONValue{}. The helpers never
 // coerce kinds; the driver validates each value against the signature anyway.
 
+#include <algorithm>
+#include <atomic>
+#include <cerrno>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -25,9 +29,11 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <poll.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -123,6 +129,10 @@ template <typename T> JSONValue to_json(const T& v) { return JSONValue(v); }
 // ------------------------------------------------------------------
 // Minimal JSON reader/writer: protocol v1 needs only JSON-safe values.
 // ------------------------------------------------------------------
+
+constexpr std::size_t STDERR_CAP = 64 * 1024;
+constexpr const char* STDERR_TRUNCATED = "\n[stderr truncated]\n";
+constexpr const char* CALL_STDERR_MARKER = "\x1e" "counterspell:stderr\n";
 
 class DriverFailure : public std::runtime_error {
   public:
@@ -329,6 +339,53 @@ class JsonReader {
         }
     }
 };
+
+static std::string sanitizeUtf8(const std::string& input) {
+    std::string out;
+    out.reserve(input.size());
+    for (std::size_t i = 0; i < input.size();) {
+        const unsigned char first = static_cast<unsigned char>(input[i]);
+        if (first < 0x80) {
+            out += static_cast<char>(first);
+            i++;
+            continue;
+        }
+        std::size_t length = 0;
+        unsigned long code = 0;
+        if (first >= 0xC2 && first <= 0xDF) {
+            length = 2;
+            code = first & 0x1F;
+        } else if (first >= 0xE0 && first <= 0xEF) {
+            length = 3;
+            code = first & 0x0F;
+        } else if (first >= 0xF0 && first <= 0xF4) {
+            length = 4;
+            code = first & 0x07;
+        } else {
+            out += "\xEF\xBF\xBD";
+            i++;
+            continue;
+        }
+        bool valid = i + length <= input.size();
+        for (std::size_t j = 1; valid && j < length; j++) {
+            const unsigned char next = static_cast<unsigned char>(input[i + j]);
+            valid = (next & 0xC0) == 0x80;
+            code = (code << 6) | (next & 0x3F);
+        }
+        if (valid && ((length == 3 && (code < 0x800 || (code >= 0xD800 && code <= 0xDFFF)))
+                      || (length == 4 && (code < 0x10000 || code > 0x10FFFF)))) {
+            valid = false;
+        }
+        if (valid) {
+            out.append(input, i, length);
+            i += length;
+        } else {
+            out += "\xEF\xBF\xBD";
+            i++;
+        }
+    }
+    return out;
+}
 
 static void appendJson(std::string& out, const JSONValue& v) {
     if (std::holds_alternative<std::nullptr_t>(v.value)) {
@@ -580,6 +637,126 @@ class Quiet {
     int saved_ = -1;
 };
 
+// Pipes fd 2 through a live reader while user code runs. It mirrors every byte
+// to real stderr for deadline diagnostics and stores the first 64KiB for the
+// answer without spending the sandbox's temporary-file budget.
+class CapturedErr {
+  public:
+    CapturedErr() {
+        std::fflush(stderr);
+        std::cerr.flush();
+        int fds[2];
+        if (pipe(fds) != 0) return;
+        read_fd_ = fds[0];
+        const int flags = fcntl(read_fd_, F_GETFL, 0);
+        if (flags < 0 || fcntl(read_fd_, F_SETFL, flags | O_NONBLOCK) < 0) {
+            close(fds[0]);
+            close(fds[1]);
+            read_fd_ = -1;
+            return;
+        }
+        saved_ = dup(STDERR_FILENO);
+        if (saved_ < 0 || dup2(fds[1], STDERR_FILENO) < 0) {
+            if (saved_ >= 0) close(saved_);
+            close(fds[0]);
+            close(fds[1]);
+            read_fd_ = -1;
+            saved_ = -1;
+            return;
+        }
+        close(fds[1]);
+        try {
+            worker_ = std::thread(&CapturedErr::drain, this);
+            active_ = true;
+        } catch (...) {
+            dup2(saved_, STDERR_FILENO);
+            close(read_fd_);
+            close(saved_);
+            read_fd_ = -1;
+            saved_ = -1;
+        }
+    }
+    ~CapturedErr() { finish(); }
+
+    std::string take() {
+        finish();
+        std::string out = captured_;
+        if (truncated_) out += STDERR_TRUNCATED;
+        return out;
+    }
+
+  private:
+    void drain() {
+        char buffer[8192];
+        std::optional<std::chrono::steady_clock::time_point> close_deadline;
+        while (true) {
+            if (closing_.load()) {
+                if (!close_deadline) {
+                    close_deadline = std::chrono::steady_clock::now() +
+                        std::chrono::milliseconds(100);
+                } else if (std::chrono::steady_clock::now() > *close_deadline) {
+                    return;
+                }
+            }
+            const ssize_t got = read(read_fd_, buffer, sizeof(buffer));
+            if (got == 0) return;
+            if (got < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    if (closing_.load()) return;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    continue;
+                }
+                if (errno == EINTR) continue;
+                return;
+            }
+            const std::size_t room = STDERR_CAP - std::min(captured_.size(), STDERR_CAP);
+            const std::size_t keep = std::min<std::size_t>(room, got);
+            if (keep > 0) captured_.append(buffer, keep);
+            truncated_ |= keep < static_cast<std::size_t>(got);
+            ssize_t written = 0;
+            while (written < got) {
+                pollfd ready{saved_, POLLOUT, 0};
+                int polled;
+                do {
+                    polled = poll(&ready, 1, 10);
+                } while (polled < 0 && errno == EINTR);
+                if (polled <= 0) {
+                    if (closing_.load()) break;
+                    continue;
+                }
+                const ssize_t step = write(
+                    saved_, buffer + written,
+                    std::min<ssize_t>(4096, got - written));
+                if (step < 0 && errno == EINTR) continue;
+                if (step <= 0) break;
+                written += step;
+            }
+        }
+    }
+
+    void finish() {
+        if (!active_) return;
+        std::fflush(stderr);
+        std::cerr.flush();
+        dup2(saved_, STDERR_FILENO);
+        closing_.store(true);
+        if (worker_.joinable()) worker_.join();
+        close(read_fd_);
+        close(saved_);
+        read_fd_ = -1;
+        saved_ = -1;
+        active_ = false;
+    }
+
+    int read_fd_ = -1;
+    int saved_ = -1;
+    bool active_ = false;
+    std::atomic<bool> closing_{false};
+    std::thread worker_;
+    std::string captured_;
+    bool truncated_ = false;
+};
+
 int main(int argc, char** argv) {
     std::string mode = "normal";
     for (int i = 1; i < argc; i++) {
@@ -595,14 +772,25 @@ int main(int argc, char** argv) {
         Signature signature = loadSignature();
         std::string line;
         while (std::getline(std::cin, line)) {
+            // Marks this call's process-stderr boundary. Successful user stderr travels
+            // in the answer instead, so delayed process output can be discarded safely.
+            std::cerr << CALL_STDERR_MARKER << std::flush;
             if (line.find_first_not_of(" \t\r") == std::string::npos) {
                 throw DriverFailure("a blank call line is not valid protocol");
             }
             Call call = parseCall(line, signature);
             JSONValue result;
+            std::string stderr;
             try {
                 Quiet quiet;
-                result = counterspell_call(call.args);
+                CapturedErr captured;
+                try {
+                    result = counterspell_call(call.args);
+                } catch (...) {
+                    stderr = captured.take();
+                    throw;
+                }
+                stderr = captured.take();
             } catch (const std::exception& e) {
                 diagnose(std::string("the solution raised an exception: ") + e.what());
                 return 1;
@@ -618,6 +806,10 @@ int main(int argc, char** argv) {
             answer += std::to_string(call.id);
             answer += ",\"out\":";
             appendJson(answer, result);
+            if (!stderr.empty()) {
+                answer += ",\"stderr\":";
+                appendJson(answer, JSONValue(sanitizeUtf8(stderr)));
+            }
             answer += "}";
             std::cout << answer << "\n" << std::flush;
         }

@@ -34,7 +34,7 @@ fn passing_result() -> FinalResult {
                 ordinal: 1,
                 verdict: TestVerdict::Pass,
                 time_ms: 3,
-                detail: SampleDetail::new("[2,7]", "[0,1]", "[0,1]"),
+                detail: SampleDetail::new("[2,7]", "[0,1]", "[0,1]").with_stderr("debug"),
             },
             TestRecord::Hidden {
                 ordinal: 2,
@@ -153,6 +153,7 @@ async fn pg_finish_hidden_tests_store_no_detail(pool: PgPool) {
     let detail = rows[0].2.as_ref().expect("samples keep their detail");
     assert_eq!(detail["input"], "[2,7]");
     assert_eq!(detail["expected"], "[0,1]");
+    assert_eq!(detail["stderr"], "debug");
     for (_, is_sample, detail) in &rows[1..] {
         assert!(!is_sample);
         assert!(detail.is_none(), "hidden tests keep no input or output");

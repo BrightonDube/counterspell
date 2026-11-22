@@ -23,6 +23,7 @@ use counterspell_judge::sandbox::problem::{
     BenchDecl, EmptyProblemTests, ProblemSpec, ProblemTests, TestCase,
 };
 use counterspell_judge::sandbox::sandbox_executor::SandboxExecutor;
+use counterspell_judge::sandbox::stream::CALL_STDERR_MARKER;
 use counterspell_judge::sandbox::testkit::{
     Behaviour, DirProblemTests, FakeBackend, StaticProblemTests,
 };
@@ -228,6 +229,103 @@ async fn a_sample_test_event_carries_its_public_detail() {
         ),
         "the hidden test carries no detail: {events:?}"
     );
+}
+
+// test-change: CP-5.3 (sample stderr arrives with the answer it belongs to, not
+// through an unordered process stream)
+#[tokio::test]
+async fn a_sample_test_event_carries_stderr_from_its_own_answer_line() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([
+        Behaviour::Answer(
+            br#"{"t":1,"out":[0,1],"stderr":"debug from sample\n"}
+"#
+            .to_vec(),
+        ),
+        // Late process-level stderr belongs to no answered call and must not be
+        // attributed to the next test.
+        Behaviour::Stderr(b"late diagnostic\n".to_vec()),
+        answer(2, &json!([0, 1])),
+    ]);
+    let executor = executor(catalog, &backend, dir.path().join("languages.toml"));
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let events = log.events();
+    let sample = events[1].payload();
+    assert_eq!(sample["stderr"], json!("debug from sample\n"));
+    let hidden = events[2].payload();
+    assert_eq!(
+        hidden,
+        json!({
+            "ordinal": 2,
+            "verdict": "pass",
+            "time_ms": hidden["time_ms"],
+            "sample": false
+        })
+    );
+}
+
+// test-change: CP-5.3 (process stderr after an answered call is stale and cannot
+// contaminate the next sample)
+#[tokio::test]
+async fn a_sample_test_event_ignores_process_stderr_that_arrives_after_an_answer() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    let mut spec = problem();
+    spec.tests[1].is_sample = true;
+    backend.script_program([
+        answer(1, &json!([0, 1])),
+        Behaviour::Stderr(b"late diagnostic from test one\n".to_vec()),
+        answer(2, &json!([0, 1])),
+    ]);
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    executor
+        .execute(input(RunMode::Run), ctx)
+        .await
+        .expect("the run completes");
+
+    let events = log.events();
+    assert_eq!(events[1].payload().get("stderr"), None);
+    assert_eq!(events[2].payload().get("stderr"), None);
+}
+
+// test-change: CP-5.3 (the driver's call marker clears stderr left by an earlier
+// call before a failing call reports its own diagnostics)
+#[tokio::test]
+async fn a_failing_sample_uses_stderr_after_its_call_marker() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    let mut spec = problem();
+    spec.tests[1].is_sample = true;
+    let mut current_stderr = CALL_STDERR_MARKER.to_vec();
+    current_stderr.extend_from_slice(b"current failure\n");
+    backend.script_program([
+        answer(1, &json!([0, 1])),
+        Behaviour::Stderr(b"stale stderr from test one\n".to_vec()),
+        Behaviour::Stderr(current_stderr),
+        Behaviour::Exit {
+            code: 1,
+            oom_kill: 0,
+        },
+    ]);
+    let executor = executor_with(catalog, &backend, dir.path().join("languages.toml"), spec);
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    executor
+        .execute(input(RunMode::Run), ctx)
+        .await
+        .expect("the run completes");
+
+    let events = log.events();
+    assert_eq!(events[2].payload()["stderr"], json!("current failure\n"));
 }
 
 #[tokio::test]

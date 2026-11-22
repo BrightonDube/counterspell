@@ -3,7 +3,9 @@
 //! is a doc test on `counterspell_judge::sandbox::compare`.
 
 use counterspell_engine::Comparator;
-use counterspell_judge::sandbox::compare::{judge_answer, Expected, TestVerdict, WrongReason};
+use counterspell_judge::sandbox::compare::{
+    judge_answer, judge_answer_detail, Expected, TestVerdict, WrongReason,
+};
 use counterspell_judge::sandbox::driver_protocol::ProtocolViolation;
 use proptest::prelude::*;
 use serde_json::{json, Value};
@@ -91,6 +93,22 @@ fn exact_comparison_is_order_sensitive() {
         Comparator::Exact,
     );
     assert_eq!(verdict, TestVerdict::WrongAnswer(WrongReason::Different));
+}
+
+// test-change: CP-5.3 (a judged sample keeps the stderr embedded in its answer)
+#[test]
+fn a_wrong_answer_keeps_the_stderr_from_its_own_answer_line() {
+    let judged = judge_answer_detail(
+        &expected(json!([0, 1])),
+        3,
+        br#"{"t":3,"out":[0,0],"stderr":"debug\n"}"#,
+        Comparator::Exact,
+    );
+    assert_eq!(
+        judged.verdict,
+        TestVerdict::WrongAnswer(WrongReason::Different)
+    );
+    assert_eq!(judged.stderr.as_deref(), Some(b"debug\n".as_slice()));
 }
 
 #[test]

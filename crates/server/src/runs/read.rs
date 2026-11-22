@@ -99,6 +99,9 @@ pub struct DetailView {
     pub expected: String,
     /// What the program printed, as text.
     pub got: String,
+    /// The bounded stderr the program wrote, when it wrote any. Older rows may not carry it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub stderr: Option<String>,
 }
 
 #[derive(Debug, sqlx::FromRow)]

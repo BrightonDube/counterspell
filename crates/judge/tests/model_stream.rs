@@ -1,7 +1,7 @@
 //! Model tests for the bounded line reader and the stderr buffer (requirements R6.1 to
 //! R6.4, property P5). No Docker, no clock, no I/O.
 
-use counterspell_judge::sandbox::stream::{LineReader, Overflow, StderrBuffer};
+use counterspell_judge::sandbox::stream::{LineReader, Overflow, StderrBuffer, CALL_STDERR_MARKER};
 use proptest::prelude::*;
 
 const STDERR_CAP: usize = 64 * 1024;
@@ -166,6 +166,45 @@ fn an_unterminated_final_line_is_not_a_complete_line() {
     let mut stderr = StderrBuffer::new();
     stderr.push(b"ValueError: bad\npartial");
     assert_eq!(stderr.last_line(), Some(b"ValueError: bad".as_slice()));
+}
+
+// test-change: CP-5.3 (stderr emitted before the next call marker must not be
+// attributed to that next call)
+#[test]
+fn a_call_marker_drops_stderr_from_before_it() {
+    let mut stderr = StderrBuffer::new();
+    stderr.push(b"stale from an earlier call\n");
+    stderr.push(CALL_STDERR_MARKER);
+    stderr.push(b"stderr from this call\n");
+    assert_eq!(stderr.rendered(), b"stderr from this call\n");
+    assert_eq!(
+        stderr.last_line(),
+        Some(b"stderr from this call".as_slice())
+    );
+}
+
+// test-change: CP-5.3 (call markers are stream framing, so chunking cannot
+// change attribution)
+#[test]
+fn a_call_marker_split_across_chunks_still_drops_stale_stderr() {
+    let mut stderr = StderrBuffer::new();
+    stderr.push(b"stale\n");
+    stderr.push(&CALL_STDERR_MARKER[..10]);
+    stderr.push(&CALL_STDERR_MARKER[10..]);
+    stderr.push(b"current\n");
+    assert_eq!(stderr.rendered(), b"current\n");
+}
+
+// test-change: CP-5.3 (the most recent call boundary wins)
+#[test]
+fn the_latest_call_marker_owns_the_stderr_after_it() {
+    let mut stderr = StderrBuffer::new();
+    stderr.push(b"stale\n");
+    stderr.push(CALL_STDERR_MARKER);
+    stderr.push(b"old call\n");
+    stderr.push(CALL_STDERR_MARKER);
+    stderr.push(b"new call\n");
+    assert_eq!(stderr.rendered(), b"new call\n");
 }
 
 #[test]

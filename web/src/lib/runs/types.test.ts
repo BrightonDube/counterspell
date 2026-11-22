@@ -35,8 +35,11 @@ describe('parsePublicTest', () => {
   });
 
   // Breaks if hidden stdout or stderr is accepted, since the public surface must not expose them.
-  it('rejects a hidden test that carries captured stdout', () => {
+  it('rejects a hidden test that carries captured stdout or stderr', () => {
     expect(() => parsePublicTest({ ...hidden, stdout: 'secret' })).toThrow(
+      ContractError
+    );
+    expect(() => parsePublicTest({ ...hidden, stderr: 'secret' })).toThrow(
       ContractError
     );
   });
@@ -57,10 +60,20 @@ describe('parsePublicTest', () => {
     expect(() => parsePublicTest(withoutGot)).toThrow(ContractError);
   });
 
-  // Breaks if sample output larger than the display cap reaches the DOM unbounded.
-  it('rejects sample output over the display cap', () => {
+  // Breaks if sample stderr is dropped from the public detail or accepted unbounded.
+  it('reads sample stderr when present and enforces its display cap', () => {
+    expect(parsePublicTest({ ...sample, stderr: 'debug' })).toEqual({
+      sample: true,
+      ordinal: 1,
+      verdict: 'pass',
+      timeMs: 4,
+      input: '[2, 7]',
+      expected: '[0, 1]',
+      got: '[0, 1]',
+      stderr: 'debug'
+    });
     expect(() =>
-      parsePublicTest({ ...sample, got: 'x'.repeat(64 * 1024 + 1) })
+      parsePublicTest({ ...sample, stderr: 'x'.repeat(64 * 1024 + 1) })
     ).toThrow(ContractError);
   });
 });
@@ -178,7 +191,12 @@ describe('parseRunView', () => {
           sample: true,
           verdict: 'pass',
           time_ms: 4,
-          detail: { input: '[2, 7]', expected: '[0, 1]', got: '[0, 1]' }
+          detail: {
+            input: '[2, 7]',
+            expected: '[0, 1]',
+            got: '[0, 1]',
+            stderr: 'debug'
+          }
         }
       ])
     );
@@ -190,7 +208,8 @@ describe('parseRunView', () => {
         timeMs: 4,
         input: '[2, 7]',
         expected: '[0, 1]',
-        got: '[0, 1]'
+        got: '[0, 1]',
+        stderr: 'debug'
       }
     ]);
   });

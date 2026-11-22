@@ -79,6 +79,11 @@ impl CallIo {
             stderr: StderrBuffer::new(),
         }
     }
+
+    /// Returns and clears the stderr observed since the previous call.
+    pub fn take_stderr(&mut self) -> Vec<u8> {
+        self.stderr.take_rendered()
+    }
 }
 
 impl Default for CallIo {

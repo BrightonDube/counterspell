@@ -52,15 +52,20 @@ impl PublicTest {
                 verdict,
                 time_ms,
                 detail,
-            } => json!({
-                "ordinal": ordinal,
-                "verdict": verdict.as_str(),
-                "time_ms": time_ms,
-                "sample": true,
-                "input": detail.input,
-                "expected": detail.expected,
-                "got": detail.got,
-            }),
+            } => {
+                let mut object = Map::new();
+                object.insert("ordinal".to_owned(), json!(ordinal));
+                object.insert("verdict".to_owned(), json!(verdict.as_str()));
+                object.insert("time_ms".to_owned(), json!(time_ms));
+                object.insert("sample".to_owned(), json!(true));
+                object.insert("input".to_owned(), json!(detail.input));
+                object.insert("expected".to_owned(), json!(detail.expected));
+                object.insert("got".to_owned(), json!(detail.got));
+                if let Some(stderr) = &detail.stderr {
+                    object.insert("stderr".to_owned(), json!(stderr));
+                }
+                Value::Object(object)
+            }
         }
     }
 }
@@ -71,6 +76,7 @@ pub struct SampleDetail {
     input: String,
     expected: String,
     got: String,
+    stderr: Option<String>,
 }
 
 impl SampleDetail {
@@ -81,7 +87,17 @@ impl SampleDetail {
             input: fit_text(input, MAX_SAMPLE_FIELD_BYTES),
             expected: fit_text(expected, MAX_SAMPLE_FIELD_BYTES),
             got: fit_text(got, MAX_SAMPLE_FIELD_BYTES),
+            stderr: None,
         }
+    }
+
+    /// Adds the program's stderr, cut to the same public field budget.
+    #[must_use]
+    pub fn with_stderr(mut self, stderr: &str) -> Self {
+        if !stderr.is_empty() {
+            self.stderr = Some(fit_text(stderr, MAX_SAMPLE_FIELD_BYTES));
+        }
+        self
     }
 }
 
@@ -379,27 +395,39 @@ mod tests {
     }
 
     #[test]
-    fn sample_test_payload_adds_input_expected_and_got() {
+    fn sample_test_payload_adds_input_expected_got_and_stderr() {
+        let event = PublicEvent::Test(PublicTest::Sample {
+            ordinal: 1,
+            verdict: TestVerdict::WrongAnswer,
+            time_ms: 3,
+            detail: SampleDetail::new("[2,7]", "[0,1]", "[0,0]").with_stderr("boom"),
+        });
+        assert_eq!(
+            event.payload(),
+            json!({
+                "ordinal": 1, "verdict": "wrong_answer", "time_ms": 3, "sample": true,
+                "input": "[2,7]", "expected": "[0,1]", "got": "[0,0]", "stderr": "boom"
+            })
+        );
+    }
+
+    #[test]
+    fn sample_test_payload_omits_stderr_when_the_program_wrote_none() {
         let event = PublicEvent::Test(PublicTest::Sample {
             ordinal: 1,
             verdict: TestVerdict::WrongAnswer,
             time_ms: 3,
             detail: SampleDetail::new("[2,7]", "[0,1]", "[0,0]"),
         });
-        assert_eq!(
-            event.payload(),
-            json!({
-                "ordinal": 1, "verdict": "wrong_answer", "time_ms": 3, "sample": true,
-                "input": "[2,7]", "expected": "[0,1]", "got": "[0,0]"
-            })
-        );
+        assert_eq!(event.payload().get("stderr"), None);
     }
 
     #[test]
     fn sample_fields_are_cut_by_their_escaped_length() {
         // Each control character is written as six bytes (\u0001) in JSON.
         // A 2048-byte budget therefore holds 341 of them.
-        let detail = SampleDetail::new(&"\u{1}".repeat(1000), "x", "y");
+        let detail =
+            SampleDetail::new(&"\u{1}".repeat(1000), "x", "y").with_stderr(&"\u{1}".repeat(1000));
         let payload = PublicEvent::Test(PublicTest::Sample {
             ordinal: 1,
             verdict: TestVerdict::RuntimeError,
@@ -409,6 +437,8 @@ mod tests {
         .payload();
         let input = payload["input"].as_str().expect("input is a string");
         assert_eq!(input.chars().count(), 341);
+        let stderr = payload["stderr"].as_str().expect("stderr is a string");
+        assert_eq!(stderr.chars().count(), 341);
     }
 
     #[test]

@@ -798,7 +798,11 @@ fn sample_detail(case: Option<&TestCase>, executed: &super::verdict::ExecutedTes
                 .map(|line| sanitize_display(line, DETAIL_CAP).text)
         })
         .unwrap_or_default();
-    SampleDetail::new(&input, &expected, &got)
+    let stderr = executed
+        .stderr()
+        .map(|bytes| sanitize_display(bytes, DETAIL_CAP).text)
+        .unwrap_or_default();
+    SampleDetail::new(&input, &expected, &got).with_stderr(&stderr)
 }
 
 /// Maps the sandbox's test verdict onto the queue's verdict enum. The two enums list the

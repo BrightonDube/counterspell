@@ -94,7 +94,7 @@ async fn complete_by_hand(pool: &PgPool, run: RunId) {
         .expect("succeed job");
     sqlx::query(
         "INSERT INTO test_results (submission_id, ordinal, is_sample, verdict, time_ms, public_detail) \
-         VALUES ($1, 1, true, 'pass', 3, '{\"input\":\"[1]\",\"expected\":\"1\",\"got\":\"1\"}'), \
+         VALUES ($1, 1, true, 'pass', 3, '{\"input\":\"[1]\",\"expected\":\"1\",\"got\":\"1\",\"stderr\":\"debug\"}'), \
                 ($1, 2, false, 'wrong_answer', 5, NULL)",
     )
     .bind(id)
@@ -211,6 +211,7 @@ async fn pg_get_run_terminal_reload_is_identical_and_hides_hidden_detail(pool: P
     assert_eq!(tests[0]["detail"]["input"], "[1]");
     assert_eq!(tests[0]["detail"]["expected"], "1");
     assert_eq!(tests[0]["detail"]["got"], "1");
+    assert_eq!(tests[0]["detail"]["stderr"], "debug");
     assert_eq!(tests[1]["sample"], false);
     assert!(
         tests[1].get("detail").is_none(),
