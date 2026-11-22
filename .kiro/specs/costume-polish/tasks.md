@@ -60,7 +60,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Requirements: CP-5.1–CP-5.6.
   - PR alone: yes.
 
-- [ ] **T07 [P] (30 min) Verify and improve first workspace load**
+- [x] **T07 [P] (30 min) Verify and improve first workspace load**
   - Files: `web/src/lib/editor/{MonacoEditor.svelte,monaco-loader.ts}`, `web/src/lib/workspace/*`, bundle/performance test support only where a verified blocker exists.
   - Inspect lazy Monaco loading, current chunk output and timing marks. Fix one confirmed first-load blocker if present (for example duplicate Monaco/theme loading or unnecessary eager imports). Do not guess a rewrite.
   - Verify: record bundle/measurement evidence; shell/editor/first-event/terminal marks still exist; workspace and performance tests pass.
