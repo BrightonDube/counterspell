@@ -7,8 +7,9 @@ use std::{collections::HashMap, fmt, ops::RangeInclusive};
 
 use thiserror::Error;
 
-/// Default `HINT_PROVIDERS`: `openai` first, `groq` as the fallback.
-const DEFAULT_PROVIDERS: &str = "openai:gpt-6-luna,groq:openai/gpt-oss-20b";
+/// Default `HINT_PROVIDERS`: `openai` only; Brighton chose gpt-6-luna as the sole
+/// provider (2026-11-22). `groq` stays a known provider when explicitly listed.
+const DEFAULT_PROVIDERS: &str = "openai:gpt-6-luna";
 /// Default OpenAI-compatible base URL.
 const DEFAULT_OPENAI_BASE_URL: &str = "https://api.openai.com/v1";
 /// Default Groq OpenAI-compatible base URL.
@@ -436,16 +437,15 @@ mod tests {
     }
 
     #[test]
-    fn defaults_list_openai_then_groq_with_their_models() {
+    fn defaults_list_openai_only() {
         let config = HintConfig::from_map(&map(&[
             ("OPENAI_API_KEY", "sk-test-openai"),
             ("GROQ_API_KEY", "gsk-test-groq"),
         ]))
         .expect("the default list is valid when both keys are set");
 
-        assert_eq!(names(&config), ["openai", "groq"]);
+        assert_eq!(names(&config), ["openai"]);
         assert_eq!(config.providers[0].model, "gpt-6-luna");
-        assert_eq!(config.providers[1].model, "openai/gpt-oss-20b");
         assert_eq!(config.timeout_ms, 8_000);
         assert_eq!(config.max_output_tokens, 300);
         assert_eq!(config.daily_limit, 10);
