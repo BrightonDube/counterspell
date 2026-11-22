@@ -402,12 +402,25 @@
             </p>
           {/if}
         </div>
-        <img
-          src="/art/objects/crypt-key-128.webp"
-          width="88"
-          height="88"
-          alt=""
-        />
+        <!-- The costume key is a deliberate focus target so keyboard users get the same cue. -->
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <span
+          class="crypt-key-wrap"
+          role="img"
+          tabindex="0"
+          aria-label="Account crypt key"
+        >
+          <img
+            data-testid="account-crypt-key"
+            class="crypt-key"
+            src="/art/objects/crypt-key-128.webp"
+            width="88"
+            height="88"
+            alt=""
+            aria-hidden="true"
+            tabindex="-1"
+          />
+        </span>
       </div>
 
       <section class="section" aria-labelledby="sign-in-methods">
@@ -456,12 +469,18 @@
                 {#each unlinkedProviders as provider (provider)}
                   <button
                     type="button"
-                    class={button}
+                    class={`${button} provider-link`}
                     disabled={!!busy}
+                    aria-busy={busy === 'methods'}
+                    aria-describedby={`link-${provider}-help`}
                     onclick={() => run('methods', () => linkProvider(provider))}
                   >
+                    <SecurityIcon name="key" />
                     Link {providerNames[provider]}
                   </button>
+                  <span id={`link-${provider}-help`} class="sr-only">
+                    Link {providerNames[provider]} to this account.
+                  </span>
                 {/each}
               </div>
             </details>
@@ -845,7 +864,17 @@
 
       <section class="section" aria-labelledby="sessions-heading">
         <header>
-          <h2 id="sessions-heading">Sessions</h2>
+          <div class="section-mark">
+            <img
+              src="/art/objects/cursed-crt.webp"
+              width="30"
+              height="30"
+              alt=""
+              aria-hidden="true"
+              loading="lazy"
+            />
+            <h2 id="sessions-heading">Sessions</h2>
+          </div>
           <p>Choose which devices to sign out.</p>
         </header>
         <div>
@@ -971,10 +1000,66 @@
     border-radius: 0.75rem;
   }
 
-  .identity img {
+  .crypt-key-wrap {
+    display: grid;
+    flex: none;
+    place-items: center;
+    border-radius: 0.75rem;
+  }
+
+  .crypt-key-wrap:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+  }
+
+  .crypt-key {
     flex: none;
     inline-size: clamp(3.25rem, 10vw, 5.5rem);
     block-size: auto;
+    transform-origin: 35% 35%;
+  }
+
+  .crypt-key-wrap:hover .crypt-key,
+  .crypt-key-wrap:focus-visible .crypt-key {
+    animation: crypt-key-turn 480ms ease-out;
+    filter: drop-shadow(0 0 0.7rem var(--accent-candle));
+  }
+
+  .provider-link :global(svg) {
+    color: var(--accent-moss-strong);
+    transition:
+      transform 240ms ease-out,
+      color 240ms ease-out;
+  }
+
+  .provider-link:hover:not(:disabled) :global(svg),
+  .provider-link:focus-visible :global(svg),
+  .provider-link[aria-busy='true'] :global(svg) {
+    color: var(--accent-candle);
+    transform: rotate(-16deg) translateX(1px);
+  }
+
+  .provider-link[aria-busy='true'] {
+    animation: provider-link-unlock 480ms ease-out;
+  }
+
+  @keyframes crypt-key-turn {
+    50% {
+      transform: rotate(-18deg) scale(1.04);
+    }
+
+    to {
+      transform: rotate(0deg);
+    }
+  }
+
+  @keyframes provider-link-unlock {
+    45% {
+      transform: translateY(-1px);
+      border-color: var(--accent-candle);
+      box-shadow: 0 0 0.85rem
+        color-mix(in srgb, var(--accent-candle) 30%, transparent);
+    }
   }
 
   .section {
@@ -988,6 +1073,28 @@
     font-size: 1.125rem;
     font-weight: 600;
     letter-spacing: -0.015em;
+  }
+
+  .section-mark {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .section-mark img {
+    inline-size: 1.875rem;
+    block-size: 1.875rem;
+    object-fit: contain;
+    filter: saturate(0.9);
+    transition:
+      filter 240ms ease-out,
+      transform 240ms ease-out;
+  }
+
+  .section:hover .section-mark img,
+  .section:focus-within .section-mark img {
+    filter: saturate(1) drop-shadow(0 0 0.4rem var(--accent-candle));
+    transform: rotate(-4deg);
   }
 
   .section header p {
@@ -1068,6 +1175,10 @@
 
   details[open] summary :global(svg) {
     transform: rotate(90deg);
+  }
+
+  details summary :global(svg) {
+    transition: transform 240ms ease-out;
   }
 
   @media (min-width: 48rem) {
