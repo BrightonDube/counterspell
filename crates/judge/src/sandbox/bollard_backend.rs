@@ -232,7 +232,7 @@ pub async fn create_checked(
     if let Some(first) = policy.hardening_violations().into_iter().next() {
         return Err(InfraError::PolicyRejected(first.to_string()));
     }
-    let image_env = check_image(docker, policy, api_timeout).await?;
+    let image = check_image(docker, policy, api_timeout).await?;
 
     let options = CreateContainerOptionsBuilder::new().name(name).build();
     let created = with_timeout(
@@ -243,7 +243,7 @@ pub async fn create_checked(
     .map_err(|error| InfraError::DaemonUnreachable(error.to_string()))?;
     let id = created.id;
 
-    match verify_readback(docker, policy, &id, &image_env, api_timeout).await {
+    match verify_readback(docker, policy, &id, &image, api_timeout).await {
         Ok(()) => Ok(id),
         Err(error) => {
             if let Err(removal) = remove_forced(docker, &id, api_timeout).await {
@@ -301,11 +301,18 @@ pub async fn create_started_unchecked(
     Ok(created.id)
 }
 
+/// What the pinned image declares: the environment and labels the daemon merges into
+/// every container it creates from it. The read-back tolerates exactly these.
+struct ImageDetails {
+    env: Vec<String>,
+    labels: BTreeMap<String, String>,
+}
+
 async fn check_image(
     docker: &Docker,
     policy: &ContainerPolicy,
     api_timeout: Duration,
-) -> Result<Vec<String>, InfraError> {
+) -> Result<ImageDetails, InfraError> {
     let reference = policy.image.as_str();
     let inspected = tokio::time::timeout(api_timeout, docker.inspect_image(reference))
         .await
@@ -319,10 +326,11 @@ async fn check_image(
     };
     let digests = image.repo_digests.unwrap_or_default();
     if image_digest_matches(&digests, &policy.image) {
-        Ok(image
-            .config
-            .and_then(|config| config.env)
-            .unwrap_or_default())
+        let config = image.config.unwrap_or_default();
+        Ok(ImageDetails {
+            env: config.env.unwrap_or_default(),
+            labels: config.labels.unwrap_or_default().into_iter().collect(),
+        })
     } else {
         Err(InfraError::DigestMismatch(reference.to_owned()))
     }
@@ -350,11 +358,29 @@ pub fn without_image_env(
         .collect()
 }
 
+/// Removes labels that the pinned image itself declares, with the same values.
+///
+/// The daemon merges an image's own labels into every container created from it (OCI
+/// `org.opencontainers.image.*` labels are the common case). Those are not ours to set,
+/// and the digest already pins them. A label is dropped only when its key is not one of
+/// ours and the image declares the same value. Any other label stays, so an injected or
+/// changed value still fails the read-back.
+#[must_use]
+pub fn without_image_labels(
+    read: BTreeMap<String, String>,
+    ours: &BTreeMap<String, String>,
+    image_labels: &BTreeMap<String, String>,
+) -> BTreeMap<String, String> {
+    read.into_iter()
+        .filter(|(key, value)| ours.contains_key(key) || image_labels.get(key) != Some(value))
+        .collect()
+}
+
 async fn verify_readback(
     docker: &Docker,
     policy: &ContainerPolicy,
     id: &str,
-    image_env: &[String],
+    image: &ImageDetails,
     api_timeout: Duration,
 ) -> Result<(), InfraError> {
     let inspect = with_timeout(
@@ -365,7 +391,8 @@ async fn verify_readback(
     .map_err(|error| InfraError::DaemonUnreachable(error.to_string()))?;
     let mut read = from_inspect(&inspect)
         .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))?;
-    read.env = without_image_env(read.env, image_env);
+    read.env = without_image_env(read.env, &image.env);
+    read.labels = without_image_labels(read.labels, &policy.labels, &image.labels);
     if let Some(first) = read.hardening_violations().into_iter().next() {
         return Err(InfraError::PolicyReadbackMismatch(first.to_string()));
     }
@@ -743,13 +770,13 @@ impl Backend for BollardBackend {
     async fn create(&self, spec: &SessionSpec) -> Result<BollardSession, InfraError> {
         // Read the image's declared environment first, so that `read_policy` can tolerate it
         // exactly as the create-time read-back does. A failure here creates nothing.
-        let image_env = check_image(&self.docker, &spec.policy, self.api_timeout).await?;
+        let image = check_image(&self.docker, &spec.policy, self.api_timeout).await?;
         let id = create_checked(&self.docker, &spec.policy, &spec.name, self.api_timeout).await?;
         Ok(BollardSession {
             docker: self.docker.clone(),
             id,
             api_timeout: self.api_timeout,
-            image_env,
+            image,
         })
     }
 
@@ -793,9 +820,9 @@ pub struct BollardSession {
     docker: Docker,
     id: String,
     api_timeout: Duration,
-    /// The `KEY=VALUE` entries the pinned image declares. The daemon merges them into the
-    /// container, so the read-back must tolerate them (see `without_image_env`).
-    image_env: Vec<String>,
+    /// What the pinned image declares. The daemon merges its environment and labels into
+    /// the container, so the read-back must tolerate them (see `without_image_env`).
+    image: ImageDetails,
 }
 
 impl BackendSession for BollardSession {
@@ -815,7 +842,8 @@ impl BackendSession for BollardSession {
         .map_err(|error| map_error(&error))?;
         let mut read = from_inspect(&inspect)
             .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))?;
-        read.env = without_image_env(read.env, &self.image_env);
+        read.env = without_image_env(read.env, &self.image.env);
+        read.labels = without_image_labels(read.labels, &BTreeMap::new(), &self.image.labels);
         Ok(read)
     }
 
