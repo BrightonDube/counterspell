@@ -260,8 +260,10 @@ pub async fn ask(driver: &mut Driver, call_id: u64, args: Value) -> Reply {
             DriverEvent::Chunk(bytes) | DriverEvent::Line(bytes) => {
                 pending.extend_from_slice(&bytes);
                 if let Some(end) = pending.iter().position(|byte| *byte == b'\n') {
-                    let out = parse_answer(&pending[..end], call_id)
-                        .expect("the answer line follows the protocol");
+                    let line = String::from_utf8_lossy(&pending[..end]).into_owned();
+                    let out = parse_answer(&pending[..end], call_id).unwrap_or_else(|e| {
+                        panic!("the answer line follows the protocol: {e:?} — line: {line:?}")
+                    });
                     return Reply::Answer(out);
                 }
             }

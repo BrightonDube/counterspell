@@ -18,7 +18,7 @@ mod sbx_support;
 use std::time::Duration;
 
 use counterspell_judge::languages::LanguageCatalog;
-use counterspell_judge::sandbox::backend::DriverChannel;
+use counterspell_judge::sandbox::backend::{DriverChannel, DriverEvent};
 use sbx_support::{ask, catalogue_enabled, finish, int, list_of, signature, start_on, Mode, Reply};
 use serde_json::{json, Value};
 
@@ -208,10 +208,20 @@ async fn sbx_stretch_infinite_loop_never_answers_and_the_container_cleans_up() {
             .write_line(b"{\"t\":0,\"args\":[1]}\n")
             .await
             .expect("the driver accepts a call line");
-        let answered = tokio::time::timeout(Duration::from_secs(5), driver.next_event()).await;
-        match answered {
-            Err(_) => {} // still silent after five seconds: the loop holds the driver
-            Ok(_) => panic!("{lang} answered a call that should run forever"),
+        // Watch the event stream for five seconds: an answer line or an exit means the
+        // driver is not actually held by the loop. Bare diagnostics are ignored.
+        let deadline = std::time::Instant::now() + Duration::from_secs(5);
+        loop {
+            let left = deadline.saturating_duration_since(std::time::Instant::now());
+            if left.is_zero() {
+                break; // five silent seconds: the loop holds the driver
+            }
+            match tokio::time::timeout(left, driver.next_event()).await {
+                Err(_) => break,
+                Ok(Ok(DriverEvent::Stderr(_))) => continue,
+                Ok(Ok(event)) => panic!("{lang} answered a call that should run forever: {event:?}"),
+                Ok(Err(err)) => panic!("{lang} driver stream failed: {err:?}"),
+            }
         }
         finish(session).await;
     }
