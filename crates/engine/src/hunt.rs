@@ -6,13 +6,15 @@
 
 use crate::autopsy::{build_autopsy, Autopsy, KnownGhost};
 use crate::budget::Budget;
-use crate::classify::{classify, Classification, FailureKind, FailurePredicate, ProgramResult};
+use crate::classify::{
+    classify, Classification, FailureKind, FailurePredicate, Observation, ProgramResult,
+};
 use crate::compare::Comparator;
 use crate::generate::{CandidateStream, GeneratorConfig, Origin};
 use crate::oracle::{Clock, Oracle, OracleError};
 use crate::rng::derive_seed;
 use crate::schema::Schema;
-use crate::shrink::{shrink, Probe, ShrinkReport, ShrinkStep, ShrinkStop};
+use crate::shrink::{Driver, ShrinkReport, ShrinkStep, ShrinkStop};
 use crate::size::{size_of, SizeMetric};
 use crate::{ENGINE_VERSION, GENERATOR_VERSION};
 use serde::{Deserialize, Serialize};
@@ -391,40 +393,19 @@ fn shrink_failure(
 ) -> Result<ShrinkReport, OracleError> {
     let elapsed = clock.now().saturating_sub(hunt_start);
     let deadline = hunt_start.saturating_add(req.budget.shrink_deadline(elapsed));
-    let mut failure: Option<OracleError> = None;
-    let outcome = {
-        let mut probe = |candidate: &Value| -> Probe {
-            let now = clock.now();
-            if now >= deadline {
-                return Probe::Stop;
-            }
-            let limit = req.budget.eval_limit.min(deadline.saturating_sub(now));
-            stats.oracle_calls += 1;
-            match oracle.evaluate(candidate, limit) {
-                Ok(observation)
-                    if classify(&observation, &req.comparator)
-                        == Classification::Fail(first.predicate.clone()) =>
-                {
-                    Probe::Keep
-                }
-                Ok(_) => Probe::Reject,
-                Err(error) => {
-                    failure = Some(error);
-                    Probe::Stop
-                }
-            }
-        };
-        shrink(
-            &req.schema,
-            first.input.clone(),
-            req.budget.max_shrink_evals,
-            &mut probe,
-        )
+    let mut evaluate = |candidate: &Value, limit: Duration| {
+        stats.oracle_calls += 1;
+        oracle.evaluate(candidate, limit)
     };
-    match failure {
-        Some(error) => Err(error),
-        None => Ok(outcome.report),
-    }
+    let mut keeps = |observation: &Observation| {
+        classify(observation, &req.comparator) == Classification::Fail(first.predicate.clone())
+    };
+    let mut now = || clock.now();
+    let outcome = Driver::new(&req.schema, &mut evaluate, &mut keeps)
+        .eval_limit(req.budget.eval_limit)
+        .deadline(&mut now, deadline)
+        .run(first.input.clone(), req.budget.max_shrink_evals)?;
+    Ok(outcome.shrink.report)
 }
 
 /// The trace for a timeout ghost. It is reported as found and never shrunk.

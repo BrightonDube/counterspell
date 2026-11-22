@@ -8,6 +8,7 @@ use crate::size::{compare_size, size_of, SizeMetric};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::collections::{HashSet, VecDeque};
+use std::time::Duration;
 
 /// Whole-value moves: every integer goes to its target, then halfway to it.
 #[must_use]
@@ -470,6 +471,149 @@ fn map_int(value: &Value, min: i64, max: i64, change: &dyn Fn(i64, i64, i64) -> 
         .map_or_else(|| value.clone(), |current| json!(change(current, min, max)))
 }
 
+/// What the driver does when `evaluate` faults on a proposal.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum OnFault {
+    /// Stop the shrink and return the fault.
+    Abort,
+    /// Count the fault, treat the proposal as rejected and keep shrinking.
+    Record,
+}
+
+/// The shrink plus the faults absorbed while running under `OnFault::Record`.
+#[derive(Clone, Debug, PartialEq)]
+pub struct DriveOutcome {
+    /// The shrunk input and its trace.
+    pub shrink: ShrinkOutcome,
+    /// Faulting proposals rejected along the way. Always 0 under `OnFault::Abort`.
+    pub faults: u32,
+}
+
+/// A deep shrink driver: the caller supplies how to run a proposal and what counts
+/// as the same failure; the driver owns the deadline, the per-evaluation limit,
+/// fault policy and probe bookkeeping.
+pub struct Driver<'a, Obs, Err> {
+    schema: &'a Schema,
+    evaluate: &'a mut dyn FnMut(&Value, Duration) -> Result<Obs, Err>,
+    same_failure: &'a mut dyn FnMut(&Obs) -> bool,
+    eval_limit: Duration,
+    clock: Option<&'a mut dyn FnMut() -> Duration>,
+    deadline: Option<Duration>,
+    on_fault: OnFault,
+    on_eval: Option<&'a mut dyn FnMut()>,
+}
+
+impl<'a, Obs, Err> Driver<'a, Obs, Err> {
+    /// A driver for `schema`: `evaluate` runs one proposal within the given limit,
+    /// `same_failure` says whether an observation reproduces the target failure.
+    pub fn new(
+        schema: &'a Schema,
+        evaluate: &'a mut dyn FnMut(&Value, Duration) -> Result<Obs, Err>,
+        same_failure: &'a mut dyn FnMut(&Obs) -> bool,
+    ) -> Self {
+        Self {
+            schema,
+            evaluate,
+            same_failure,
+            eval_limit: Duration::MAX,
+            clock: None,
+            deadline: None,
+            on_fault: OnFault::Abort,
+            on_eval: None,
+        }
+    }
+
+    /// The per-evaluation cap passed to `evaluate`; smaller when the deadline is closer.
+    #[must_use]
+    pub fn eval_limit(mut self, limit: Duration) -> Self {
+        self.eval_limit = limit;
+        self
+    }
+
+    /// Stop shrinking once `clock()` reaches `at`. The clock reads elapsed time.
+    #[must_use]
+    pub fn deadline(mut self, clock: &'a mut dyn FnMut() -> Duration, at: Duration) -> Self {
+        self.clock = Some(clock);
+        self.deadline = Some(at);
+        self
+    }
+
+    /// What to do when `evaluate` faults on a proposal. Defaults to `OnFault::Abort`.
+    #[must_use]
+    pub fn on_fault(mut self, policy: OnFault) -> Self {
+        self.on_fault = policy;
+        self
+    }
+
+    /// Called once per proposal evaluation, for callers that keep statistics.
+    #[must_use]
+    pub fn on_eval(mut self, callback: &'a mut dyn FnMut()) -> Self {
+        self.on_eval = Some(callback);
+        self
+    }
+
+    /// Shrinks `start` within `max_evals` proposals. Under `OnFault::Abort` the
+    /// first fault ends the run and is returned; under `OnFault::Record` faulting
+    /// proposals are rejected and counted on the outcome.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first `evaluate` fault under `OnFault::Abort`.
+    pub fn run(self, start: Value, max_evals: u32) -> Result<DriveOutcome, Err> {
+        let Self {
+            schema,
+            evaluate,
+            same_failure,
+            eval_limit,
+            clock,
+            deadline,
+            on_fault,
+            on_eval,
+        } = self;
+        let mut first_fault = None;
+        let mut faults = 0_u32;
+        let mut clock = clock;
+        let mut on_eval = on_eval;
+        let mut probe = |candidate: &Value| -> Probe {
+            let remaining = match (clock.as_deref_mut(), deadline) {
+                (Some(now), Some(at)) => {
+                    let elapsed = now();
+                    if elapsed >= at {
+                        return Probe::Stop;
+                    }
+                    at.saturating_sub(elapsed)
+                }
+                _ => eval_limit,
+            };
+            if let Some(callback) = on_eval.as_deref_mut() {
+                callback();
+            }
+            match evaluate(candidate, eval_limit.min(remaining)) {
+                Ok(observation) if same_failure(&observation) => Probe::Keep,
+                Ok(_) => Probe::Reject,
+                Err(error) => match on_fault {
+                    OnFault::Abort => {
+                        first_fault = Some(error);
+                        Probe::Stop
+                    }
+                    OnFault::Record => {
+                        faults = faults.saturating_add(1);
+                        Probe::Reject
+                    }
+                },
+            }
+        };
+        let outcome = shrink(schema, start, max_evals, &mut probe);
+        match first_fault {
+            Some(error) => Err(error),
+            None => Ok(DriveOutcome {
+                shrink: outcome,
+                faults,
+            }),
+        }
+    }
+}
+
 /// The simplest integer in range: zero, or the nearest bound when zero is outside.
 fn target(min: i64, max: i64) -> i64 {
     0_i64.clamp(min, max)
@@ -813,6 +957,115 @@ mod tests {
             prop_assert_eq!(report.total_steps + 1, entries + report.omitted_steps);
             prop_assert!(report.steps.windows(2).all(|pair| pair[0].index < pair[1].index));
         }
+    }
+
+    /// A Driver probe: `evaluate` echoes the candidate, `same_failure` keeps
+    /// arrays that still hold items.
+    fn driver_of<'a>(
+        evaluate: &'a mut dyn FnMut(&Value, Duration) -> Result<Value, String>,
+        same_failure: &'a mut dyn FnMut(&Value) -> bool,
+        schema: &'a Schema,
+    ) -> Driver<'a, Value, String> {
+        Driver::new(schema, evaluate, same_failure)
+    }
+
+    #[test]
+    fn driver_shrinks_to_a_local_minimum() {
+        let schema = Schema::IntArray {
+            min_len: 0,
+            max_len: 8,
+            min: 0,
+            max: 9,
+            sorted: false,
+            unique: false,
+        };
+        let mut evaluate = |candidate: &Value, _limit: Duration| Ok::<_, String>(candidate.clone());
+        let mut keeps = |observation: &Value| {
+            observation
+                .as_array()
+                .is_some_and(|items| !items.is_empty())
+        };
+        let outcome = driver_of(&mut evaluate, &mut keeps, &schema)
+            .run(json!([3, 2, 1]), 300)
+            .unwrap_or_else(|error| panic!("unexpected fault: {error}"));
+        // The empty array fails `keeps`, so the minimal kept input is a one-item array at zero.
+        assert_eq!(outcome.shrink.value, json!([0]));
+        assert_eq!(outcome.shrink.report.stop, ShrinkStop::LocalMinimum);
+        assert_eq!(outcome.faults, 0);
+    }
+
+    #[test]
+    fn driver_aborts_and_returns_the_first_fault() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut evaluate =
+            |_candidate: &Value, _limit: Duration| Err::<Value, _>("boom".to_owned());
+        let mut keeps = |_observation: &Value| true;
+        let result = driver_of(&mut evaluate, &mut keeps, &schema).run(json!(37), 300);
+        assert_eq!(result.err(), Some("boom".to_owned()));
+    }
+
+    #[test]
+    fn driver_stops_at_the_deadline() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut evaluate = |candidate: &Value, _limit: Duration| Ok::<_, String>(candidate.clone());
+        let mut keeps = |_observation: &Value| true;
+        let mut clock = || Duration::from_secs(10);
+        let outcome = driver_of(&mut evaluate, &mut keeps, &schema)
+            .deadline(&mut clock, Duration::from_secs(5))
+            .run(json!(37), 300)
+            .unwrap_or_else(|error| panic!("unexpected fault: {error}"));
+        assert_eq!(outcome.shrink.report.stop, ShrinkStop::WallTime);
+        assert_eq!(outcome.shrink.value, json!(37));
+    }
+
+    #[test]
+    fn driver_caps_each_evaluation_by_the_remaining_budget() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut seen_limits = Vec::new();
+        let mut evaluate = |candidate: &Value, limit: Duration| {
+            seen_limits.push(limit);
+            Ok::<_, String>(candidate.clone())
+        };
+        let mut keeps = |_observation: &Value| true;
+        let mut clock = || Duration::from_secs(4);
+        let _ = driver_of(&mut evaluate, &mut keeps, &schema)
+            .eval_limit(Duration::from_secs(60))
+            .deadline(&mut clock, Duration::from_secs(5))
+            .run(json!(37), 1);
+        assert_eq!(seen_limits, vec![Duration::from_secs(1)]);
+    }
+
+    #[test]
+    fn driver_record_mode_rejects_faulting_proposals_and_counts_them() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut evaluate = |candidate: &Value, _limit: Duration| {
+            if candidate.as_i64() == Some(0) {
+                Err::<Value, _>("fault on zero".to_owned())
+            } else {
+                Ok(candidate.clone())
+            }
+        };
+        let mut keeps = |_observation: &Value| true;
+        let outcome = driver_of(&mut evaluate, &mut keeps, &schema)
+            .on_fault(OnFault::Record)
+            .run(json!(37), 300)
+            .unwrap_or_else(|error| panic!("record mode must not abort: {error}"));
+        assert_eq!(outcome.faults, 1);
+        assert!(outcome.shrink.report.evaluations > 0);
+    }
+
+    #[test]
+    fn driver_calls_on_eval_once_per_proposal() {
+        let schema = Schema::Int { min: 0, max: 100 };
+        let mut evaluate = |candidate: &Value, _limit: Duration| Ok::<_, String>(candidate.clone());
+        let mut keeps = |_observation: &Value| false;
+        let mut count = 0_u32;
+        let mut tally = || count += 1;
+        let outcome = driver_of(&mut evaluate, &mut keeps, &schema)
+            .on_eval(&mut tally)
+            .run(json!(37), 300)
+            .unwrap_or_else(|error| panic!("unexpected fault: {error}"));
+        assert_eq!(count, outcome.shrink.report.evaluations);
     }
 
     proptest! {
