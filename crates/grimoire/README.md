@@ -7,7 +7,8 @@ The pack validator for `packs/<slug>/`. Format rules are in `packs/README.md`. T
 | Item | Use |
 |---|---|
 | `validate_static(root) -> io::Result<Report>` | Static checks only. Reads files and never runs them. Used by the CLI and by the MCP tool later. |
-| `validate_sandbox(root, &mut dyn PackRunner) -> Result<Report, SandboxFault>` | Static checks, then SBX-01 to SBX-04 through the runner. The sandbox stage runs only when the static checks have no errors. |
+| `validate_sandbox(root, &mut dyn PackRunner) -> Result<Report, SandboxFault>` | Static checks, then SBX-01 to SBX-04 and SBX-09 through the runner. The sandbox stage runs only when the static checks have no errors. |
+| `sandbox::run_checks(&SandboxInputs, Scope, &mut dyn PackRunner)` | The one implementation of the code-running checks and the hidden set. `validate` uses `Scope::Everything`; the catalogue import uses `Scope::FirstError` and stores the returned hidden cases, so both see the same set. |
 | `record::build(root) -> Result<ProblemRecord, RecordError>` | The import handoff. Built only from a pack with zero errors. The crate has no database types. |
 | `PackRunner` (trait), `Target`, `RunnerError` | Implemented by the judge. Runner faults are `RunnerError`, never a `ProgramResult`. |
 | `SandboxFault::diagnostic()` | The SBX-06 diagnostic for a runner or I/O fault (exit 2). |
@@ -18,7 +19,7 @@ The CLI is `counterspell-grimoire validate <pack-dir> [--json] [--deny-warnings]
 ## Current state
 
 - Static checks (LAY, MET, STM, SMP, GEN, HNT, KNG, REF) are complete and tested.
-- Sandbox checks (SBX-01 to SBX-04) are tested with a model runner in `tests/sandbox_fake.rs`. That proves the logic, not the sandbox.
+- Sandbox checks (SBX-01 to SBX-04, SBX-09) are tested with a model runner in `tests/sandbox_fake.rs` and `tests/sandbox_checks.rs`. That proves the logic, not the sandbox.
 - SBX-08 is emitted for any `[bench]` table. `PackRunner::bench` is not called.
 - `--sandbox` on the CLI prints SBX-07 and exits 2, because no runner is configured.
 - Starter packs `count-pairs`, `longest-run-length` and `diagonal-total` are `draft` and validate with zero errors.

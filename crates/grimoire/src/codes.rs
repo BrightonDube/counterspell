@@ -118,6 +118,8 @@ pub const SBX_06: Code = error("SBX-06");
 pub const SBX_07: Code = error("SBX-07");
 /// Complexity is not checked yet, because the bench fit is not available.
 pub const SBX_08: Code = warning("SBX-08");
+/// The reference disagrees with a curated hidden case's expected value.
+pub const SBX_09: Code = error("SBX-09");
 /// A bench size cannot be turned into a valid input, so the bench cannot run.
 pub const BEN_01: Code = error("BEN-01");
 /// The bench sizes span less than 32 times, so the fit cannot reach `high` confidence.
@@ -128,7 +130,7 @@ pub const ALL: &[Code] = &[
     LAY_01, LAY_02, LAY_03, LAY_04, LAY_07, LAY_06, LAY_05, MET_01, MET_02, MET_03, MET_04, MET_05,
     MET_06, MET_07, MET_08, MET_09, STM_01, STM_02, SMP_01, SMP_02, SMP_03, GEN_01, GEN_02, HNT_01,
     HNT_02, KNG_01, KNG_02, KNG_03, KNG_04, KNG_05, KNG_06, REF_01, SBX_01, SBX_02, SBX_03, SBX_04,
-    SBX_05, SBX_06, SBX_07, SBX_08, BEN_01, BEN_02,
+    SBX_05, SBX_06, SBX_07, SBX_08, SBX_09, BEN_01, BEN_02,
 ];
 
 #[cfg(test)]
