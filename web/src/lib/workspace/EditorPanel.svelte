@@ -13,6 +13,7 @@
     type SessionStatus
   } from './editor-session';
   import RunControls from './RunControls.svelte';
+  import GuessBubble from '../familiar/guess/GuessBubble.svelte';
 
   let {
     problem,
@@ -149,6 +150,7 @@
       onSubmit={() => request('submit')}
       onRerunGhost={requestGhost}
     />
+    <GuessBubble source={liveSource} language={current} />
   {:else}
     <p class="text-sm text-text-muted">
       No language is enabled for this problem.
