@@ -1,6 +1,6 @@
 //! Public response types for review endpoints.
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::dashboard::types::{ConceptRef, Difficulty};
 
@@ -49,7 +49,7 @@ pub struct ReviewChallenge {
 }
 
 /// How a challenge was selected.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ReviewChallengeKind {
     /// Shares the due card's concept and is unsolved by the caller.

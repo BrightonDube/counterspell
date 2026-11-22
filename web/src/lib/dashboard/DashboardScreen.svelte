@@ -4,7 +4,12 @@
   import { resolve } from '$app/paths';
   import { ApiRequestError } from '../api/client';
   import { loadDashboard } from './client';
-  import { reasonLabel, runStatusLabel } from './labels';
+  import {
+    cardStateLabel,
+    reasonLabel,
+    reviewKindLabel,
+    runStatusLabel
+  } from './labels';
   import type { DashboardView, RecentSubmission } from './types';
   import NavEntry from '../nav/NavEntry.svelte';
   import AnimatedJacko from '../familiar/AnimatedJacko.svelte';
@@ -199,6 +204,52 @@
         <span class="text-accent-candle" aria-hidden="true">●</span>
         {streakLine(view)}
       </p>
+    </section>
+
+    <section
+      class="{PANEL} panel-in space-y-4"
+      style="animation-delay: 120ms"
+      aria-labelledby="review-title"
+      aria-live="polite"
+    >
+      <div class="flex items-center justify-between gap-3">
+        <h2 id="review-title" class="text-lg font-semibold">Review due</h2>
+        <span
+          class="rounded-full border border-border bg-raised px-3 py-1 text-xs font-medium text-accent-candle"
+        >
+          Spaced repetition
+        </span>
+      </div>
+      {#if view.reviewSummary === null}
+        <p class="text-text-muted">No reviews due.</p>
+      {:else}
+        {@const summary = view.reviewSummary}
+        <p class="text-sm text-text-muted">
+          {summary.dueCount}
+          {summary.dueCount === 1 ? 'card' : 'cards'} due
+        </p>
+        <div class="space-y-2 rounded-lg border border-border bg-raised px-4 py-3">
+          <p class="font-medium">{summary.nextReview.concept.name}</p>
+          <p class="text-sm text-text-muted">
+            {cardStateLabel(summary.nextReview.card.state)} · due {summary
+              .nextReview.card.due}
+          </p>
+          {#if summary.nextReview.challenge}
+            {@const challenge = summary.nextReview.challenge}
+            <div>
+              <a
+                href={resolve('/problems/[slug]', { slug: challenge.slug })}
+                class="font-medium text-accent-moss {LINK_FOCUS}"
+              >
+                {challenge.title}
+              </a>
+              <p class="text-sm text-text-muted">
+                {challenge.difficulty} · {reviewKindLabel(challenge.kind)}
+              </p>
+            </div>
+          {/if}
+        </div>
+      {/if}
     </section>
 
     <div

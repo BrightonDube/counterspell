@@ -5,8 +5,10 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::reviews::types::DueReview;
+
 /// The whole dashboard. `Default` is the stable empty shape for a learner with no activity.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Default, PartialEq, Serialize)]
 pub struct DashboardResponse {
     /// Solved counts for the learner.
     pub solved: SolvedSummary,
@@ -18,6 +20,19 @@ pub struct DashboardResponse {
     pub recent_submissions: Vec<RecentSubmission>,
     /// Unsolved published problems to try next. At most three.
     pub suggested_challenges: Vec<SuggestedChallenge>,
+    /// The [stretch] due-review summary (dashboard-fsrs T17). `null` when no card is due.
+    /// Additive: older clients can ignore it.
+    pub review_summary: Option<ReviewSummary>,
+}
+
+/// The learner's spaced-repetition summary. Never fabricated: it exists only when at least one
+/// card is due, and it never adds a row to the core fields.
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct ReviewSummary {
+    /// How many of the learner's cards are due now.
+    pub due_count: u32,
+    /// The earliest due review: the concept, the card guard fields and the offered challenge.
+    pub next_review: DueReview,
 }
 
 /// Solved problem counts. A problem counts once, however many accepted runs it has.
@@ -170,7 +185,8 @@ mod tests {
                 },
                 "weak_concepts": [],
                 "recent_submissions": [],
-                "suggested_challenges": []
+                "suggested_challenges": [],
+                "review_summary": null
             })
         );
     }

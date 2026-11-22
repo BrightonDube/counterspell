@@ -11,12 +11,17 @@ use counterspell_judge::catalogue::testkit::insert_published_fixture;
 use counterspell_server::dashboard::{query::read_dashboard, types::DashboardResponse};
 use serde_json::{json, Value};
 use sqlx::PgPool;
-use time::{Date, Month};
+use time::{Date, Month, OffsetDateTime};
 use uuid::Uuid;
 
-/// The UTC day the fixtures are built around. The streak is measured against it.
-fn today() -> Date {
-    Date::from_calendar_date(2026, Month::November, 15).expect("valid date")
+/// The UTC instant the fixtures are built around. The streak and the due-review cutoff
+/// are measured against it.
+fn now() -> OffsetDateTime {
+    Date::from_calendar_date(2026, Month::November, 15)
+        .expect("valid date")
+        .with_hms(12, 0, 0)
+        .expect("valid time")
+        .assume_utc()
 }
 
 async fn make_user(pool: &PgPool, n: u128) -> UserId {
@@ -80,7 +85,7 @@ async fn pg_new_learner_gets_the_stable_empty_dashboard(pool: PgPool) {
         .expect("published problem");
     let learner = make_user(&pool, 101).await;
 
-    let response = read_dashboard(&pool, learner, today())
+    let response = read_dashboard(&pool, learner, now())
         .await
         .expect("dashboard reads for a learner with no runs");
 
@@ -97,7 +102,8 @@ async fn pg_new_learner_gets_the_stable_empty_dashboard(pool: PgPool) {
                 "difficulty": "easy",
                 "concepts": [{"slug": "hash-maps", "name": "Hash maps"}],
                 "reason": "continue_track"
-            }]
+            }],
+            "review_summary": null
         })
     );
 }
@@ -123,7 +129,7 @@ async fn pg_read_maps_one_learners_runs_and_leaves_the_other_learner_untouched(p
     )
     .await;
 
-    let response = read_dashboard(&pool, alice, today())
+    let response = read_dashboard(&pool, alice, now())
         .await
         .expect("alice's dashboard reads");
 
@@ -151,7 +157,7 @@ async fn pg_read_maps_one_learners_runs_and_leaves_the_other_learner_untouched(p
         .collect();
     assert_eq!(suggested, ["lookup-pairs"], "alice has solved two-sum");
 
-    let other = read_dashboard(&pool, bob, today())
+    let other = read_dashboard(&pool, bob, now())
         .await
         .expect("bob's dashboard reads");
     assert_eq!(
@@ -195,7 +201,7 @@ async fn pg_repeated_accepted_runs_count_one_solved_problem(pool: PgPool) {
     )
     .await;
 
-    let response = read_dashboard(&pool, learner, today())
+    let response = read_dashboard(&pool, learner, now())
         .await
         .expect("dashboard reads");
 
@@ -217,10 +223,140 @@ async fn pg_an_accepted_sample_run_is_not_a_solved_problem(pool: PgPool) {
     let learner = make_user(&pool, 302).await;
     save_completed_run_mode(&pool, learner, "two-sum", "accepted").await;
 
-    let response = read_dashboard(&pool, learner, today())
+    let response = read_dashboard(&pool, learner, now())
         .await
         .expect("dashboard reads");
 
     assert_eq!(response.solved.total, 0, "a sample Run is not a solve");
     assert_eq!(response.solved.by_difficulty.easy, 0);
+}
+
+/// T17: a due review card owned by the learner produces the additive `review_summary`; another
+/// learner's card and a sibling already solved by the owner are excluded.
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_a_due_card_produces_the_review_summary_without_changing_core_fields(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("sibling problem");
+    insert_published_fixture(&pool, "three-sum", 1)
+        .await
+        .expect("fallback problem");
+    let learner = make_user(&pool, 401).await;
+    let other = make_user(&pool, 402).await;
+
+    sqlx::query("INSERT INTO concepts (id, name) VALUES ('dp', 'Dynamic programming') ON CONFLICT DO NOTHING")
+        .execute(&pool)
+        .await
+        .expect("concept");
+    sqlx::query("INSERT INTO problem_concepts (problem_slug, concept_id) VALUES ('two-sum', 'dp') ON CONFLICT DO NOTHING")
+        .execute(&pool)
+        .await
+        .expect("tag");
+    sqlx::query(
+        "INSERT INTO concept_cards
+         (user_id, concept_id, stability, stability_fast, difficulty, reps, lapses, state, due, last_review, version)
+         VALUES ($1, 'dp', 1, 1, 1, 1, 0, 'review', '2026-11-15T08:00:00Z'::timestamptz,
+                 '2026-11-14T08:00:00Z'::timestamptz, 7)",
+    )
+    .bind(learner.as_uuid())
+    .execute(&pool)
+    .await
+    .expect("due card");
+    // Another learner's due card must not leak into this dashboard.
+    sqlx::query(
+        "INSERT INTO concept_cards
+         (user_id, concept_id, stability, stability_fast, difficulty, reps, lapses, state, due, last_review, version)
+         VALUES ($1, 'dp', 1, 1, 1, 1, 0, 'review', '2020-01-01T00:00:00Z'::timestamptz,
+                 '2019-12-31T00:00:00Z'::timestamptz, 99)",
+    )
+    .bind(other.as_uuid())
+    .execute(&pool)
+    .await
+    .expect("other user's card");
+
+    let response = read_dashboard(&pool, learner, now())
+        .await
+        .expect("dashboard reads");
+
+    let summary = response
+        .review_summary
+        .as_ref()
+        .expect("a due card produces a summary");
+    assert_eq!(summary.due_count, 1);
+    assert_eq!(summary.next_review.concept.slug, "dp");
+    assert_eq!(summary.next_review.card.version, 7);
+    assert_eq!(
+        summary
+            .next_review
+            .challenge
+            .as_ref()
+            .map(|challenge| (challenge.slug.as_str(), challenge.kind)),
+        Some((
+            "two-sum",
+            counterspell_server::reviews::types::ReviewChallengeKind::Sibling
+        ))
+    );
+    assert_eq!(
+        response.recent_submissions.len(),
+        0,
+        "core fields are untouched by the additive field"
+    );
+}
+
+/// T17: when the only sibling is already solved, the summary offers the normal fallback and
+/// labels it `normal`; with no due cards at all the summary is `null`.
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_a_solved_sibling_falls_back_to_a_normal_challenge(pool: PgPool) {
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("sibling problem");
+    insert_published_fixture(&pool, "three-sum", 1)
+        .await
+        .expect("fallback problem");
+    let learner = make_user(&pool, 501).await;
+
+    sqlx::query("INSERT INTO concepts (id, name) VALUES ('dp', 'Dynamic programming') ON CONFLICT DO NOTHING")
+        .execute(&pool)
+        .await
+        .expect("concept");
+    sqlx::query("INSERT INTO problem_concepts (problem_slug, concept_id) VALUES ('two-sum', 'dp') ON CONFLICT DO NOTHING")
+        .execute(&pool)
+        .await
+        .expect("tag");
+    sqlx::query(
+        "INSERT INTO concept_cards
+         (user_id, concept_id, stability, stability_fast, difficulty, reps, lapses, state, due, last_review, version)
+         VALUES ($1, 'dp', 1, 1, 1, 1, 0, 'review', '2026-11-15T08:00:00Z'::timestamptz,
+                 '2026-11-14T08:00:00Z'::timestamptz, 3)",
+    )
+    .bind(learner.as_uuid())
+    .execute(&pool)
+    .await
+    .expect("due card");
+    save_completed(
+        &pool,
+        learner,
+        "two-sum",
+        "accepted",
+        "2026-11-14T10:00:00Z",
+    )
+    .await;
+
+    let response = read_dashboard(&pool, learner, now())
+        .await
+        .expect("dashboard reads");
+
+    let summary = response
+        .review_summary
+        .expect("a due card produces a summary");
+    let challenge = summary.next_review.challenge.expect("fallback exists");
+    assert_eq!(
+        (challenge.slug.as_str(), challenge.kind),
+        (
+            "three-sum",
+            counterspell_server::reviews::types::ReviewChallengeKind::Normal
+        )
+    );
 }

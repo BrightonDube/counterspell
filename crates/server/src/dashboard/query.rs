@@ -9,14 +9,19 @@ use counterspell_common::ids::UserId;
 use serde::Deserialize;
 use serde_json::Value;
 use sqlx::PgPool;
-use time::Date;
+use time::{Date, OffsetDateTime};
 use uuid::Uuid;
+
+use crate::reviews::{
+    types::{DueCard, DueReview, ReviewChallenge, ReviewChallengeKind},
+    CardState,
+};
 
 use super::recommendations::{rank_suggestions, Candidate, WeakSignal};
 use super::streak::streak_from_dates;
 use super::types::{
     ConceptRef, DashboardResponse, Difficulty, DifficultyCounts, ProblemSummary, RecentSubmission,
-    SolvedSummary, StreakSummary, WeakConcept,
+    ReviewSummary, SolvedSummary, StreakSummary, WeakConcept,
 };
 
 /// The most suggested problems the dashboard shows.
@@ -73,6 +78,33 @@ candidates AS (
     LEFT JOIN concepts c ON c.id = pc.concept_id
     WHERE p.publication_state = 'published'
     GROUP BY p.slug, p.title, p.difficulty
+),
+-- [stretch] T17: the owner's due review cards only, earliest first. An empty set makes
+-- review_first empty and the review_summary scalar subquery NULL, so nothing is fabricated.
+due_reviews AS (
+    SELECT cc.concept_id, c.name AS concept_name, cc.state, cc.due, cc.version
+    FROM concept_cards cc
+    JOIN concepts c ON c.id = cc.concept_id
+    WHERE cc.user_id = $1 AND cc.due <= $2
+    ORDER BY cc.due ASC, cc.concept_id ASC
+),
+review_first AS (
+    SELECT * FROM due_reviews ORDER BY due ASC, concept_id ASC LIMIT 1
+),
+review_sibling AS (
+    SELECT p.slug, p.title, p.difficulty
+    FROM review_first rf
+    JOIN problem_concepts pc ON pc.concept_id = rf.concept_id
+    JOIN problems p ON p.slug = pc.problem_slug AND p.publication_state = 'published'
+    WHERE NOT EXISTS (SELECT 1 FROM solved sv WHERE sv.slug = p.slug)
+    ORDER BY p.slug ASC LIMIT 1
+),
+review_fallback AS (
+    SELECT p.slug, p.title, p.difficulty
+    FROM problems p
+    WHERE p.publication_state = 'published'
+      AND NOT EXISTS (SELECT 1 FROM solved sv WHERE sv.slug = p.slug)
+    ORDER BY p.slug ASC LIMIT 1
 )
 SELECT jsonb_build_object(
     'solved', (SELECT jsonb_build_object(
@@ -111,14 +143,31 @@ SELECT jsonb_build_object(
                    'concepts', concepts,
                    'solved', solved)
                ORDER BY slug), '[]'::jsonb)
-               FROM candidates)
+               FROM candidates),
+    'review_summary', (SELECT jsonb_build_object(
+                   'due_count', (SELECT count(*) FROM due_reviews),
+                   'next_review', jsonb_build_object(
+                       'concept', jsonb_build_object('slug', rf.concept_id, 'name', rf.concept_name),
+                       'card', jsonb_build_object(
+                           'state', rf.state,
+                           'due', to_char(rf.due AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"'),
+                           'version', rf.version),
+                       'challenge', COALESCE(
+                           (SELECT jsonb_build_object('kind', 'sibling', 'slug', slug,
+                                                      'title', title, 'difficulty', difficulty)
+                            FROM review_sibling),
+                           (SELECT jsonb_build_object('kind', 'normal', 'slug', slug,
+                                                      'title', title, 'difficulty', difficulty)
+                            FROM review_fallback))))
+               FROM review_first rf)
 ) AS dashboard,
 ARRAY(SELECT DISTINCT (finished_at AT TIME ZONE 'UTC')::date
       FROM owned_completed
       ORDER BY 1 DESC) AS activity_days
 "#;
 
-/// Reads the dashboard for `owner` in one statement. `today` is the UTC date that ends the streak.
+/// Reads the dashboard for `owner` in one statement. `now` ends the streak at its UTC date and
+/// decides which review cards are due.
 ///
 /// # Errors
 ///
@@ -127,13 +176,14 @@ ARRAY(SELECT DISTINCT (finished_at AT TIME ZONE 'UTC')::date
 pub async fn read_dashboard(
     pool: &PgPool,
     owner: UserId,
-    today: Date,
+    now: OffsetDateTime,
 ) -> Result<DashboardResponse, sqlx::Error> {
     let (dashboard, activity_days): (Value, Vec<Date>) = sqlx::query_as(DASHBOARD_SQL)
         .bind(owner.as_uuid())
+        .bind(now)
         .fetch_one(pool)
         .await?;
-    build_response(dashboard, &activity_days, today)
+    build_response(dashboard, &activity_days, now.date())
 }
 
 /// The statement's JSON object, before it is mapped to the public response.
@@ -143,6 +193,7 @@ struct RawDashboard {
     weak_concepts: Vec<RawWeakConcept>,
     recent_submissions: Vec<RawRecentRun>,
     candidates: Vec<RawCandidate>,
+    review_summary: Option<RawReviewSummary>,
 }
 
 #[derive(Deserialize)]
@@ -185,6 +236,36 @@ struct RawCandidate {
     difficulty: Difficulty,
     concepts: Vec<ConceptRef>,
     solved: bool,
+}
+
+/// The [stretch] review summary as the statement writes it. `next_review` is always present when
+/// the summary exists; a missing one is a decode error, not a guessed review.
+#[derive(Deserialize)]
+struct RawReviewSummary {
+    due_count: u32,
+    next_review: RawDueReview,
+}
+
+#[derive(Deserialize)]
+struct RawDueReview {
+    concept: ConceptRef,
+    card: RawDueCard,
+    challenge: Option<RawReviewChallenge>,
+}
+
+#[derive(Deserialize)]
+struct RawDueCard {
+    state: String,
+    due: String,
+    version: i64,
+}
+
+#[derive(Deserialize)]
+struct RawReviewChallenge {
+    kind: ReviewChallengeKind,
+    slug: String,
+    title: String,
+    difficulty: Difficulty,
 }
 
 /// Maps the statement's JSON and the activity dates to the public response.
@@ -252,6 +333,30 @@ fn build_response(
             .map(recent_submission)
             .collect(),
         suggested_challenges: rank_suggestions(&candidates, &weak, SUGGESTION_LIMIT),
+        review_summary: raw.review_summary.map(review_summary).transpose()?,
+    })
+}
+
+/// Maps the statement's review JSON to the public summary. Unknown card states are decode errors.
+fn review_summary(raw: RawReviewSummary) -> Result<ReviewSummary, sqlx::Error> {
+    let next = raw.next_review;
+    Ok(ReviewSummary {
+        due_count: raw.due_count,
+        next_review: DueReview {
+            concept: next.concept,
+            card: DueCard {
+                state: CardState::parse(&next.card.state)
+                    .map_err(|error| sqlx::Error::Decode(Box::new(error)))?,
+                due: next.card.due,
+                version: next.card.version,
+            },
+            challenge: next.challenge.map(|raw| ReviewChallenge {
+                kind: raw.kind,
+                slug: raw.slug,
+                title: raw.title,
+                difficulty: raw.difficulty,
+            }),
+        },
     })
 }
 
@@ -316,7 +421,8 @@ mod tests {
                 "streak": {"current_days": 0, "active_today": false, "last_activity_date": null},
                 "weak_concepts": [],
                 "recent_submissions": [],
-                "suggested_challenges": []
+                "suggested_challenges": [],
+                "review_summary": null
             })
         );
     }
@@ -442,6 +548,61 @@ mod tests {
         );
         assert_eq!(response.weak_concepts[0].slug, "concept-00");
         assert_eq!(response.weak_concepts[9].slug, "concept-09");
+    }
+
+    #[test]
+    fn a_due_review_maps_to_the_additive_summary_and_nothing_else() {
+        let mut read = empty_read();
+        read["review_summary"] = json!({
+            "due_count": 3,
+            "next_review": {
+                "concept": {"slug": "loops", "name": "Loops"},
+                "card": {"state": "review", "due": "2026-11-15T09:00:00Z", "version": 4},
+                "challenge": {"kind": "sibling", "slug": "loop-gym",
+                              "title": "Loop Gym", "difficulty": "medium"}
+            }
+        });
+
+        let response = build_response(read, &[], date(2026, Month::November, 15)).expect("maps");
+
+        let summary = response.review_summary.expect("summary present");
+        assert_eq!(summary.due_count, 3);
+        assert_eq!(summary.next_review.concept.slug, "loops");
+        assert_eq!(summary.next_review.card.state, CardState::Review);
+        assert_eq!(summary.next_review.card.version, 4);
+        assert_eq!(
+            summary
+                .next_review
+                .challenge
+                .map(|challenge| challenge.kind),
+            Some(ReviewChallengeKind::Sibling)
+        );
+        assert_eq!(response.solved.total, 0, "core fields stay unchanged");
+    }
+
+    #[test]
+    fn a_null_review_summary_stays_empty_without_fabricating_a_review() {
+        let mut read = empty_read();
+        read["review_summary"] = Value::Null;
+
+        let response = build_response(read, &[], date(2026, Month::November, 15)).expect("maps");
+
+        assert_eq!(response.review_summary, None);
+    }
+
+    #[test]
+    fn an_unknown_card_state_is_a_decode_error_not_a_guessed_state() {
+        let mut read = empty_read();
+        read["review_summary"] = json!({
+            "due_count": 1,
+            "next_review": {
+                "concept": {"slug": "loops", "name": "Loops"},
+                "card": {"state": "suspended", "due": "2026-11-15T09:00:00Z", "version": 1},
+                "challenge": null
+            }
+        });
+
+        assert!(build_response(read, &[], date(2026, Month::November, 15)).is_err());
     }
 
     #[test]
