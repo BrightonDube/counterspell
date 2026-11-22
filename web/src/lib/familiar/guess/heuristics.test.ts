@@ -491,3 +491,60 @@ describe('cost model edge cases', () => {
     expect(analyze(OVERWRITTEN_HALVING).guess_class).toBe('n');
   });
 });
+
+// while n > 1:
+//     n = (n // 2) * 2 - 1   (the multiplication cancels the division)
+const CANCELLED_HALVING = fn(
+  'cancelled',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign(
+        'n',
+        op('-', [op('*', [op('//', [id('n'), lit()]), lit()]), lit()])
+      )
+    ])
+  ]
+);
+
+// while n > 1:
+//     half = n // 2
+//     n = n - half         (n - n/2 = n/2 — a true geometric shrink)
+const SUBTRACTED_HALF = fn(
+  'subtract_half',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('half', op('//', [id('n'), lit()])),
+      assign('n', op('-', [id('n'), id('half')]))
+    ])
+  ]
+);
+
+// while n > 1:
+//     n = n // 2
+//     n = n - 1            (net effect per pass is n - 1 — linear)
+const HALVING_THEN_DECREMENT = fn(
+  'halve_then_dec',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('n', op('//', [id('n'), lit()])),
+      assign('n', op('-', [id('n'), lit()]))
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('does not read a division cancelled by multiplication as halving', () => {
+    expect(analyze(CANCELLED_HALVING).guess_class).toBe('n');
+  });
+
+  it('reads n = n - half as a geometric shrink', () => {
+    expect(analyze(SUBTRACTED_HALF).guess_class).toBe('log n');
+  });
+
+  it('reads a halving overwritten by a decrement as linear', () => {
+    expect(analyze(HALVING_THEN_DECREMENT).guess_class).toBe('n');
+  });
+});

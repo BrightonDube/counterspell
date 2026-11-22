@@ -183,22 +183,42 @@ function assignsIn(node: GuessNode, out: GuessNode[] = []): GuessNode[] {
   return out;
 }
 
+function hasStar(node: GuessNode): boolean {
+  return (
+    (node.type === 'binary_op' && node.text === '*') ||
+    node.children.some(hasStar)
+  );
+}
+
 // A `//`, `/`, or `>>` by a constant whose dividend mentions one of the
 // target names — `x // 2`, `(lo + hi) // 2`, the `(hi - lo) // 2` inside
-// `lo + (hi - lo) // 2`. A division whose dividend names nothing bound
-// (`10 // 2`, `k // 2`) shrinks nobody's bound.
-function hasHalvingOpOn(node: GuessNode, targets: Set<string>): boolean {
+// `lo + (hi - lo) // 2`. It must reach the new bound uninflated: a `*` on
+// the path back (`(n // 2) * 2 - 1`) or inside the dividend (`(n * 2) // 2`)
+// cancels the shrink, and a division naming nothing bound (`10 // 2`,
+// `k // 2`) shrinks nobody's bound.
+function hasHalvingOpOn(
+  node: GuessNode,
+  targets: Set<string>,
+  blocked = false
+): boolean {
+  const hereBlocked =
+    blocked || (node.type === 'binary_op' && node.text === '*');
   if (
+    !hereBlocked &&
     node.type === 'binary_op' &&
     ['//', '/', '>>'].includes(node.text) &&
     node.children.some((operand) => operand.type === 'literal') &&
-    node.children.some((operand) =>
-      [...namesIn(operand, new Set())].some((name) => targets.has(name))
+    node.children.some(
+      (operand) =>
+        !hasStar(operand) &&
+        [...namesIn(operand, new Set())].some((name) => targets.has(name))
     )
   ) {
     return true;
   }
-  return node.children.some((child) => hasHalvingOpOn(child, targets));
+  return node.children.some((child) =>
+    hasHalvingOpOn(child, targets, hereBlocked)
+  );
 }
 
 // True when a `while` body shrinks a variable the condition tests by a
@@ -237,9 +257,9 @@ function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
   }
   // When a condition var is written more than once per pass, only its last
   // assignment decides the step: `n = previous // 2; n = previous - 1`
-  // counts down. The indirect rule also requires the target absent from the
-  // right-hand side, so `n = n - (k // 2)` reads as a decrement, not a
-  // halving of a copied bound.
+  // counts down. The target's own name never satisfies the indirect rule,
+  // so `n = n - 1` stays a countdown while `n = n - half` (half of n) still
+  // reads as a geometric shrink.
   const lastUpdate = new Map<string, GuessNode>();
   for (const node of assigns) {
     if (condNames.has(node.text)) lastUpdate.set(node.text, node);
@@ -247,10 +267,10 @@ function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
   return [...lastUpdate.values()].some((node) =>
     node.children.some((value) => {
       const names = namesIn(value, new Set());
+      names.delete(node.text);
       return (
         hasHalvingOpOn(value, derived) ||
-        (!names.has(node.text) &&
-          [...names].some((name) => halvingValues.has(name)))
+        [...names].some((name) => halvingValues.has(name))
       );
     })
   );
