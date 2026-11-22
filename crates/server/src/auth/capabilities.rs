@@ -12,8 +12,6 @@ use super::errors::AuthError;
 pub enum Capability {
     /// Link a GitHub or Google identity to the account.
     LinkProvider,
-    /// Add an email address to the account.
-    LinkEmail,
     /// Set or change a password.
     ChangeCredentials,
     /// Delete the account.
@@ -31,8 +29,6 @@ pub enum Capability {
 pub struct Capabilities {
     /// May link a provider identity.
     pub link_provider: bool,
-    /// May add an email address.
-    pub link_email: bool,
     /// May change its password.
     pub change_credentials: bool,
     /// May delete the account.
@@ -48,7 +44,6 @@ impl Capabilities {
         let granted = !is_demo;
         Self {
             link_provider: granted,
-            link_email: granted,
             change_credentials: granted,
             delete_account: granted,
             logout_everywhere: granted,
@@ -63,7 +58,6 @@ impl Capabilities {
     pub fn require(&self, capability: Capability) -> Result<(), AuthError> {
         let granted = match capability {
             Capability::LinkProvider => self.link_provider,
-            Capability::LinkEmail => self.link_email,
             Capability::ChangeCredentials => self.change_credentials,
             Capability::DeleteAccount => self.delete_account,
             Capability::LogoutEverywhere => self.logout_everywhere,
@@ -80,9 +74,9 @@ impl Capabilities {
 mod tests {
     use super::*;
 
-    const ALL: [Capability; 5] = [
+    // test-change: ACC-1
+    const ALL: [Capability; 4] = [
         Capability::LinkProvider,
-        Capability::LinkEmail,
         Capability::ChangeCredentials,
         Capability::DeleteAccount,
         Capability::LogoutEverywhere,
@@ -94,12 +88,11 @@ mod tests {
         assert_eq!(
             [
                 demo.link_provider,
-                demo.link_email,
                 demo.change_credentials,
                 demo.delete_account,
                 demo.logout_everywhere
             ],
-            [false; 5]
+            [false; 4]
         );
         for capability in ALL {
             assert_eq!(
@@ -115,12 +108,11 @@ mod tests {
         assert_eq!(
             [
                 user.link_provider,
-                user.link_email,
                 user.change_credentials,
                 user.delete_account,
                 user.logout_everywhere
             ],
-            [true; 5]
+            [true; 4]
         );
         for capability in ALL {
             assert_eq!(user.require(capability), Ok(()));

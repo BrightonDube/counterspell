@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use hmac::{Hmac, Mac};
 use sha2::Sha256;
-use time::Date;
 
 use super::{config::Redacted, errors::AuthError};
 use crate::ratelimit::{Decision, Limiter, RateLimiter};
@@ -16,16 +15,6 @@ use crate::ratelimit::{Decision, Limiter, RateLimiter};
 /// One kind of auth request that is limited.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Action {
-    /// A magic sign-in link is requested.
-    Magic,
-    /// A registration is started.
-    Register,
-    /// A password reset is requested.
-    Reset,
-    /// An email address is added to a signed-in account.
-    LinkEmail,
-    /// A verification link is opened.
-    Verify,
     /// A password sign-in fails.
     LoginFailure,
     /// A provider sign-in or link flow starts.
@@ -39,8 +28,6 @@ pub enum Action {
 /// Whom a limit counts: an address, an IP, an address and IP pair, or a user.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Scope {
-    /// The normalised email address.
-    Email,
     /// The client IP address.
     Ip,
     /// The email address and the client IP together.
@@ -53,11 +40,6 @@ impl Action {
     /// The short name used in the Valkey key.
     fn name(self) -> &'static str {
         match self {
-            Self::Magic => "magic",
-            Self::Register => "register",
-            Self::Reset => "reset",
-            Self::LinkEmail => "link_email",
-            Self::Verify => "verify",
             Self::LoginFailure => "login",
             Self::OAuthStart => "oauth_start",
             Self::LinkStart => "link_start",
@@ -65,25 +47,10 @@ impl Action {
         }
     }
 
-    /// Mail actions stop when the counter store is down.
-    fn fails_closed(self) -> bool {
-        matches!(
-            self,
-            Self::Magic | Self::Register | Self::Reset | Self::LinkEmail | Self::Security
-        )
-    }
-
     /// The limit (hits allowed) and window (seconds) for this action and scope. `None` means the
     /// pair is not used.
     fn policy(self, scope: Scope) -> Option<(u64, u64)> {
         match (self, scope) {
-            (Self::Magic | Self::Register | Self::Reset | Self::LinkEmail, Scope::Email) => {
-                Some((3, 3600))
-            }
-            (Self::Magic | Self::Register | Self::Reset | Self::LinkEmail, Scope::Ip) => {
-                Some((10, 3600))
-            }
-            (Self::Verify, Scope::Ip) => Some((30, 600)),
             (Self::LoginFailure, Scope::EmailAndIp) => Some((5, 900)),
             (Self::LoginFailure, Scope::Ip) => Some((20, 900)),
             (Self::OAuthStart, Scope::Ip) => Some((20, 600)),
@@ -97,7 +64,6 @@ impl Action {
 impl Scope {
     fn name(self) -> &'static str {
         match self {
-            Self::Email => "email",
             Self::Ip => "ip",
             Self::EmailAndIp => "email_ip",
             Self::User => "user",
@@ -105,7 +71,7 @@ impl Scope {
     }
 }
 
-/// Counts auth requests against their limits, and checks the global daily mail cap.
+/// Counts auth requests against their limits.
 #[derive(Clone)]
 pub struct AuthLimiter {
     limiter: Limiter,
@@ -146,8 +112,9 @@ impl AuthLimiter {
     ///
     /// # Errors
     ///
-    /// Returns [`AuthError::RateLimited`] over the limit, [`AuthError::EmailUnavailable`] for a
-    /// mail action when the counter store is down, and [`AuthError::Internal`] for an unknown pair.
+    /// Returns [`AuthError::RateLimited`] over the limit,
+    /// [`AuthError::SecurityUnavailable`] for a security action when the counter store is down,
+    /// and [`AuthError::Internal`] for an unknown pair.
     pub async fn hit(&self, action: Action, scope: Scope, identity: &str) -> Result<(), AuthError> {
         let Some((limit, window)) = action.policy(scope) else {
             return Err(AuthError::Internal);
@@ -162,7 +129,6 @@ impl AuthLimiter {
             Decision::SkippedFailOpen if action == Action::Security => {
                 Err(AuthError::SecurityUnavailable)
             }
-            Decision::SkippedFailOpen if action.fails_closed() => Err(AuthError::EmailUnavailable),
             Decision::Allowed { .. } | Decision::SkippedFailOpen => Ok(()),
         }
     }
@@ -172,8 +138,9 @@ impl AuthLimiter {
     ///
     /// # Errors
     ///
-    /// Returns [`AuthError::RateLimited`] at or over the limit, [`AuthError::EmailUnavailable`] for
-    /// a mail action when the store is down, and [`AuthError::Internal`] for an unknown pair.
+    /// Returns [`AuthError::RateLimited`] at or over the limit,
+    /// [`AuthError::SecurityUnavailable`] for a security action when the store is down, and
+    /// [`AuthError::Internal`] for an unknown pair.
     pub async fn check(
         &self,
         action: Action,
@@ -189,40 +156,7 @@ impl AuthLimiter {
                 retry_after_seconds: window,
             }),
             None if action == Action::Security => Err(AuthError::SecurityUnavailable),
-            None if action.fails_closed() => Err(AuthError::EmailUnavailable),
             Some(_) | None => Ok(()),
         }
-    }
-
-    /// Counts one mail for the global daily cap. The key holds the UTC date, so the count starts
-    /// again on the next UTC day.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`AuthError::EmailUnavailable`] when the cap is reached or the counter store is down.
-    pub async fn hit_daily_mail_cap(&self, today: Date, cap: u32) -> Result<(), AuthError> {
-        let key = format!("rl:auth:mail:day:{}", today.to_calendar_date_string());
-        match self.limiter.hit(&key, u64::from(cap), 2 * 86_400).await {
-            Decision::Allowed { .. } => Ok(()),
-            Decision::Limited { .. } | Decision::SkippedFailOpen => {
-                Err(AuthError::EmailUnavailable)
-            }
-        }
-    }
-}
-
-/// Text form of a date as `yyyymmdd`, for example `20261113`.
-trait CalendarText {
-    fn to_calendar_date_string(self) -> String;
-}
-
-impl CalendarText for Date {
-    fn to_calendar_date_string(self) -> String {
-        format!(
-            "{:04}{:02}{:02}",
-            self.year(),
-            u8::from(self.month()),
-            self.day()
-        )
     }
 }

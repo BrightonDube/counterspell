@@ -1,6 +1,6 @@
 //! Builds the auth state from validated configuration and starts its background tasks.
 //!
-//! This is the only place that chooses concrete adapters (mail transport, OAuth providers and the
+//! This is the only place that chooses concrete adapters (OAuth providers and the
 //! clock). The rest of the auth code receives them through [`AuthState`]. Nothing here touches
 //! the database or the network, so the state can be built in tests.
 
@@ -14,16 +14,15 @@ use crate::{
     auth::{
         cleanup::spawn_cleanup,
         clock::{Clock, SystemClock},
-        config::{AuthConfig, MailTransport},
+        config::AuthConfig,
         cookies::CookieSettings,
         demo::{seed_demo, spawn_daily_reset},
-        email::{EmailAddress, EmailSender, GuardedSender, LogSender, ResendSender},
         handlers::config::PublicSettings,
         limits::AuthLimiter,
         oauth::{github::GithubProvider, google::GoogleProvider, OAuthProvider},
         password::HashGate,
         security::SecuritySettings,
-        AuthState, MailPort,
+        AuthState,
     },
     client_ip::TrustedProxies,
     ratelimit::Limiter,
@@ -32,22 +31,12 @@ use crate::{
 /// Why the auth state could not be built. Each message names the problem and never a secret.
 #[derive(Debug, Clone, PartialEq, Eq, Error)]
 pub enum SetupError {
-    /// Mail is set to Resend, but its key or sender address is missing.
-    #[error("MAIL_TRANSPORT is resend but RESEND_API_KEY or MAIL_FROM is missing")]
-    MissingMailSettings,
-    /// The mail sender or its HTTP client could not be built.
-    #[error("the mail sender could not be built")]
-    Mail,
     /// An OAuth provider adapter could not be built.
     #[error("an OAuth provider could not be built")]
     OAuth,
-    /// The demo account address is not a valid email address.
-    #[error("DEMO_ACCOUNT_EMAIL is not a valid email address")]
-    DemoEmail,
 }
 
-/// Builds the auth state for the server. Mail is guarded by the daily cap and the demo address,
-/// and only the providers with client settings are enabled.
+/// Builds the auth state for the server. Only the providers with client settings are enabled.
 ///
 /// # Errors
 ///
@@ -60,14 +49,6 @@ pub fn build_state(
 ) -> Result<AuthState, SetupError> {
     let clock: Arc<dyn Clock> = Arc::new(SystemClock);
     let limits = AuthLimiter::new(limiter, &config.session_secret);
-    let demo_email = config
-        .demo
-        .as_ref()
-        .map(|demo| EmailAddress::parse(&demo.email))
-        .transpose()
-        .map_err(|_| SetupError::DemoEmail)?;
-    // Email sign-in is optional: with no mail provider configured the state keeps mail unwired
-    // and the mail routes answer email_unavailable.
     let mut state = AuthState::new(
         pool,
         clock,
@@ -82,51 +63,7 @@ pub fn build_state(
         &config.public_base_url,
         config.session_secret.expose(),
     ));
-    let state = match &config.mail {
-        Some(mail_config) => {
-            let transport = mail_transport(mail_config, config.app_env)?;
-            let sender = Arc::new(GuardedSender::new(
-                transport,
-                state.limits.clone(),
-                config.email_daily_cap,
-                demo_email.clone(),
-                state.clock.clone(),
-            ));
-            state.with_mail(MailPort {
-                sender,
-                public_base_url: config.public_base_url.clone(),
-                demo_email,
-            })
-        }
-        None => state,
-    };
     Ok(state)
-}
-
-/// The mail sender for the configured transport. The log transport is refused in production by
-/// [`LogSender::new`].
-fn mail_transport(
-    config: &crate::auth::config::MailConfig,
-    app_env: crate::auth::config::AppEnv,
-) -> Result<Arc<dyn EmailSender>, SetupError> {
-    match config.transport {
-        MailTransport::Resend => {
-            let key = config
-                .resend_api_key
-                .clone()
-                .ok_or(SetupError::MissingMailSettings)?;
-            let from = config
-                .mail_from
-                .clone()
-                .ok_or(SetupError::MissingMailSettings)?;
-            let sender = ResendSender::production(key, from).map_err(|_| SetupError::Mail)?;
-            Ok(Arc::new(sender))
-        }
-        MailTransport::Log => {
-            let sender = LogSender::new(app_env).map_err(|_| SetupError::Mail)?;
-            Ok(Arc::new(sender))
-        }
-    }
 }
 
 /// One adapter for each provider that has client settings.

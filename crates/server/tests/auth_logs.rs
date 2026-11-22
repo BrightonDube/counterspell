@@ -28,14 +28,14 @@ use counterspell_server::{
         clock::ManualClock,
         config::Redacted,
         cookies::CookieSettings,
-        email::{EmailAddress, EmailSender, MemorySender, OutgoingMail, ResendSender},
+        email::EmailAddress,
         limits::AuthLimiter,
         oauth::{
             fake::FakeProvider, github::GithubProvider, Credentials, Endpoints, OAuthProvider,
             ProviderError, ProviderId, ProviderProfile,
         },
         password::HashGate,
-        AuthState, MailPort,
+        AuthState,
     },
     client_ip::TrustedProxies,
     ratelimit::{Limiter, MemoryLimiter},
@@ -91,9 +91,9 @@ fn shared_logs() -> &'static Capture {
     })
 }
 
+// test-change: ACC-1
 struct Harness {
     app: Router,
-    mail: Arc<MemorySender>,
 }
 
 fn harness(pool: &PgPool) -> Harness {
@@ -104,8 +104,6 @@ fn harness(pool: &PgPool) -> Harness {
         Limiter::Memory(Arc::new(MemoryLimiter::default())),
         &Redacted::new(vec![5_u8; 32]),
     );
-    let mail = Arc::new(MemorySender::default());
-    let sender: Arc<dyn EmailSender> = mail.clone();
     let state = AuthState::new(
         pool.clone(),
         clock.clone(),
@@ -113,16 +111,10 @@ fn harness(pool: &PgPool) -> Harness {
         limits,
         HashGate::new(4, StdDuration::from_secs(2)),
         TrustedProxies::parse("10.0.0.0/8").expect("valid trusted proxies"),
-    )
-    .with_mail(MailPort {
-        sender,
-        public_base_url: "https://counterspell.example".to_owned(),
-        demo_email: Some(EmailAddress::parse("demo@example.co").expect("valid demo address")),
-    });
+    );
     let peer = SocketAddr::from(([203, 0, 113, 9], 40_000));
     Harness {
         app: counterspell_server::auth::router(state).layer(MockConnectInfo(peer)),
-        mail,
     }
 }
 
@@ -160,162 +152,56 @@ async fn read(response: Response) -> (StatusCode, HeaderMap) {
     (status, headers)
 }
 
-/// Waits until the mail count grows past `before` and returns the newest message's text.
-async fn next_mail(mail: &MemorySender, before: usize) -> String {
-    for _ in 0..300 {
-        let sent = mail.sent();
-        if sent.len() > before {
-            return sent.last().expect("a message").text.clone();
-        }
-        tokio::time::sleep(StdDuration::from_millis(10)).await;
-    }
-    panic!("no mail arrived");
-}
-
-/// Pulls the raw token out of the fragment of a link.
-fn token_from(text: &str) -> String {
-    let start = text
-        .find("#token=")
-        .expect("the link carries the token in its fragment")
-        + "#token=".len();
-    text[start..]
-        .chars()
-        .take_while(|c| c.is_ascii_alphanumeric() || *c == '-' || *c == '_')
-        .collect()
-}
-
-/// The session cookie value a response set.
-fn session_value(headers: &HeaderMap) -> String {
-    headers
-        .get_all(header::SET_COOKIE)
-        .iter()
-        .filter_map(|value| value.to_str().ok())
-        .find_map(|cookie| {
-            cookie
-                .strip_prefix("cs_session=")
-                .map(|rest| rest.split(';').next().unwrap_or_default().to_owned())
-        })
-        .expect("a session cookie was set")
-}
-
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
+// test-change: ACC-1
 async fn pg_no_auth_flow_writes_a_secret_to_the_logs(pool: PgPool) {
     let logs = shared_logs();
     tracing::info!("{SENTINEL}");
     let h = harness(&pool);
     let mut secrets: Vec<String> = Vec::new();
 
-    // Magic link: request, then verify.
-    let magic_email = "canary.magic@example.co";
-    secrets.push(magic_email.to_owned());
-    let before = h.mail.sent().len();
-    let (status, _) = read(
-        call(
-            &h.app,
-            Method::POST,
-            "/api/auth/email/magic",
-            Some(json!({ "email": magic_email })),
-            None,
-        )
-        .await,
-    )
-    .await;
-    assert_eq!(status, StatusCode::ACCEPTED);
-    let magic_token = token_from(&next_mail(&h.mail, before).await);
-    secrets.push(magic_token.clone());
-    let (status, headers) = read(
-        call(
-            &h.app,
-            Method::POST,
-            "/api/auth/email/verify",
-            Some(json!({ "token": magic_token })),
-            None,
-        )
-        .await,
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK, "the magic link signs in");
-    secrets.push(session_value(&headers));
-
-    // Password: register (mail proves the address), verify, then sign in again.
-    let password_email = "canary.password@example.co";
+    // Password sign-in is accepted only for the demo address; a wrong password and a
+    // non-demo address both refuse the same way.
     let password = "Canary-Passphrase-7731"; // gitleaks:allow (test canary, not a credential)
-    secrets.push(password_email.to_owned());
     secrets.push(password.to_owned());
-    let before = h.mail.sent().len();
-    let (status, _) = read(
-        call(
-            &h.app,
-            Method::POST,
-            "/api/auth/register",
-            Some(json!({ "email": password_email, "password": password })),
-            None,
+    for email in ["canary.demo@example.co", "canary.other@example.co"] {
+        secrets.push(email.to_owned());
+        let (status, _) = read(
+            call(
+                &h.app,
+                Method::POST,
+                "/api/auth/login",
+                Some(json!({ "email": email, "password": password })),
+                None,
+            )
+            .await,
         )
-        .await,
-    )
-    .await;
-    assert_eq!(status, StatusCode::ACCEPTED);
-    let register_token = token_from(&next_mail(&h.mail, before).await);
-    secrets.push(register_token.clone());
-    let (status, _) = read(
-        call(
-            &h.app,
-            Method::POST,
-            "/api/auth/email/verify",
-            Some(json!({ "token": register_token })),
-            None,
-        )
-        .await,
-    )
-    .await;
-    assert!(status.is_success(), "the registration verifies: {status}");
+        .await;
+        assert_eq!(status, StatusCode::UNAUTHORIZED, "{email} cannot sign in");
+    }
 
-    let (status, headers) = read(
-        call(
-            &h.app,
-            Method::POST,
-            "/api/auth/login",
-            Some(json!({ "email": password_email, "password": password })),
-            None,
+    // The retired email routes do not exist.
+    for path in [
+        "/api/auth/email/magic",
+        "/api/auth/email/verify",
+        "/api/auth/register",
+        "/api/auth/password/reset",
+        "/api/auth/link/email",
+    ] {
+        let (status, _) = read(
+            call(
+                &h.app,
+                Method::POST,
+                path,
+                Some(json!({ "email": "canary.retired@example.co" })),
+                None,
+            )
+            .await,
         )
-        .await,
-    )
-    .await;
-    assert_eq!(status, StatusCode::OK, "the password signs in");
-    let password_session = session_value(&headers);
-    secrets.push(password_session.clone());
-
-    // Password reset request for the existing account.
-    let before = h.mail.sent().len();
-    let (status, _) = read(
-        call(
-            &h.app,
-            Method::POST,
-            "/api/auth/password/reset",
-            Some(json!({ "email": password_email })),
-            None,
-        )
-        .await,
-    )
-    .await;
-    assert_eq!(status, StatusCode::ACCEPTED);
-    let reset_token = token_from(&next_mail(&h.mail, before).await);
-    secrets.push(reset_token);
-
-    // Logout everywhere, with the signed-in cookie.
-    let (status, _) = read(
-        call(
-            &h.app,
-            Method::POST,
-            "/api/auth/logout-all",
-            None,
-            Some(&password_session),
-        )
-        .await,
-    )
-    .await;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+        .await;
+        assert_eq!(status, StatusCode::NOT_FOUND, "{path} is retired");
+    }
 
     let captured = logs.text();
     assert!(
@@ -634,50 +520,6 @@ async fn auth_logs_github_exchange_keeps_secret_and_token_out_of_logs() {
         assert!(
             !captured.contains(secret),
             "a GitHub value reached the logs: {secret}"
-        );
-    }
-}
-
-/// Canary values for the mail sender. The API key must never be logged, and neither must the
-/// recipient or the response body of a failed send.
-const RESEND_KEY: &str = "re_canary_resend_key_5e8a";
-const RESEND_RECIPIENT: &str = "canary.resend@example.co";
-const RESEND_BODY: &str = "canary-resend-response-body-0c7d";
-
-#[tokio::test]
-async fn auth_logs_resend_failure_keeps_key_and_address_out_of_logs() {
-    let logs = shared_logs();
-    tracing::info!("{SENTINEL}");
-    let server = MockServer::start().await;
-    Mock::given(method("POST"))
-        .respond_with(ResponseTemplate::new(500).set_body_string(RESEND_BODY))
-        .mount(&server)
-        .await;
-    let sender = ResendSender::new(
-        Redacted::new(RESEND_KEY.to_owned()),
-        "Counterspell <no-reply@counterspell.example>".to_owned(),
-        &server.uri(),
-    )
-    .expect("the sender builds");
-    let mail = OutgoingMail {
-        to: EmailAddress::parse(RESEND_RECIPIENT).expect("an address"),
-        subject: "Sign in to Counterspell".to_owned(),
-        text: "Open the link to sign in.".to_owned(),
-        html: "<p>Open the link to sign in.</p>".to_owned(),
-        idempotency_key: "canary-idempotency-1".to_owned(), // gitleaks:allow (test canary, not a credential)
-    };
-
-    assert!(
-        sender.send(mail).await.is_err(),
-        "a server error twice is a failed send"
-    );
-
-    let captured = logs.text();
-    assert!(captured.contains(SENTINEL), "the capture must see events");
-    for secret in [RESEND_KEY, RESEND_RECIPIENT, RESEND_BODY] {
-        assert!(
-            !captured.contains(secret),
-            "a mail value reached the logs: {secret}"
         );
     }
 }

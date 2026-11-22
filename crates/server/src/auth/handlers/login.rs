@@ -73,6 +73,12 @@ pub async fn login(
         .check(Action::LoginFailure, Scope::Ip, &ip)
         .await?;
 
+    // Email sign-in is retired: only the configured demo address may use a password.
+    if state.settings.demo_email() != Some(email.as_str()) {
+        let _ = state.hashes.verify_dummy(request.password.clone()).await;
+        return Err(refuse(&state, &ip, Some(&pair)).await);
+    }
+
     let row: Option<(Uuid, Option<String>)> =
         sqlx::query_as("SELECT id, password_hash FROM users WHERE email = $1")
             .bind(email.as_str())

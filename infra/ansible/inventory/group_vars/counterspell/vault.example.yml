@@ -4,7 +4,7 @@
 # The password file lives outside the repository. Pass the same flag to ansible-playbook.
 # The app role templates the four service env files from these names. The database passwords are
 # generated once with Ansible's `password` lookup and stored here; never type them by hand.
-# Mail is optional: with no RESEND_API_KEY/MAIL_FROM the server starts with OAuth sign-in only.
+# Email sign-in is retired: the server offers OAuth, passkeys and the demo account only.
 vault_postgres_password:
 vault_cs_server_password:
 vault_cs_judge_password:

@@ -16,7 +16,7 @@
 - **Live results:** the worker writes one event per test to a Postgres `run_events` table with a per-run sequence number, and the browser receives them via **Server-Sent Events** with `Last-Event-ID` replay. [D] [D 12 Nov]
 - **Ghost-input engine (`counterspell-engine`, Rust library)**: seeded generation, then the reference solution versus the user's code, then shrinking to a **minimized counterexample** (the smallest failing input *found* within the budget, not a proven global minimum). It runs **server-side only** and executes code only through the judge's sandbox. [D] [D 12 Nov] The same crate powers **`counterspell-mcp`** (Rust MCP server, `rmcp`) for Kiro; its code-running tools go through the same sandbox and judge, never directly on the developer's machine. [D 12 Nov]
 - **Data:** **Postgres** (truth, job queue and run events) and **Valkey** (cache and rate limits only), on one **OVH VPS-2 (4 vCPU, 8 GB, 75 GB NVMe, €8.49/month ex. VAT)**. [D] [D 12 Nov]
-- **Auth built into Axum:** GitHub and Google OAuth, plus email (magic link, or password with Argon2id). Mail goes through **Resend**. [D] **No automatic account linking by matching email**; a signed-in user links a provider themselves, with verification. A demo account is provided. [D 12 Nov]
+- **Auth built into Axum:** GitHub and Google OAuth, passkeys, and a demo account. [D] **No automatic account linking by matching email**; a signed-in user links a provider themselves. Email sign-in (magic link and password) is retired [D 22 Nov]; only the demo account keeps a password. [D 12 Nov]
 - **Frontend:** SvelteKit (static adapter), **Bits UI**, **Tailwind**, **GSAP** and **Monaco** (custom "Crypt" theme). Chess uses **chess.js** with **cm-chessboard** (MIT). [D]
 - **Look:** "Steel Night". Steel-blue base, subtle moss grey-green accent, candle amber second accent, bright green only for pass and red only for failures. Geist and JetBrains Mono. A cinematic landing page and a calm IDE. Dark mode only at launch, with tokens ready for light mode (§16). [D]
 - **Efficiency Familiar (§8b):** a jack-o'-lantern docked in the IDE with 5 moods (furious → laughing). **Its mood is set only by measured facts** on Run/Submit: correctness plus observed scaling against `reference_complexity`, with a confidence level. It says "looks quadratic", never "optimal". An LLM writes its speech-bubble hint, labelled as an AI hint, and can't change the verdict or mood. A live typing guess is a stretch goal and never changes the mood. [D 12 Nov]
@@ -31,7 +31,7 @@
 ### 1.1 Functional (MVP = submitted on Dec 4)
 | # | Requirement | MVP | Later |
 |---|---|---|---|
-| F1 | Sign up / log in: GitHub, Google, email (magic link + password). No automatic linking by email; user-initiated linking only. Demo account [D 12 Nov] | ✅ | org SSO |
+| F1 | Sign up / log in: GitHub, Google, passkey. No automatic linking by email; user-initiated linking only. Demo account [D 12 Nov]; email sign-in retired [D 22 Nov] | ✅ | org SSO |
 | F2 | Problem catalogue: tracks ("Crypts") → concepts → problems, filters | ✅ 10 polished problems [D 12 Nov] | 150+, community packs |
 | F3 | VS Code-style IDE: Monaco, language picker, Run (samples), Submit (hidden), console, test panel with per-test pass/fail streamed live | ✅ Python + JS; Java + C++ stretch [D 12 Nov] | more languages via config |
 | F4 | **Ghost input**: on a wrong submit, find a failing input and shrink it to a **minimized counterexample**, then show input / expected / got | ✅ hero | trees/graphs |
@@ -80,7 +80,7 @@ flowchart LR
       subgraph SRV["counterspell-server (Axum, 1 binary)"]
         STATIC[Static files<br/>ServeDir]
         API[REST API]
-        AUTH[Auth: OAuth2, magic link,<br/>Argon2id, sessions]
+        AUTH[Auth: OAuth2, passkeys,<br/>sessions]
         SSE[SSE endpoint]
         HINT[Hint service<br/>OpenAI-compatible client]
       end
@@ -98,7 +98,6 @@ flowchart LR
   end
   LLM1[(OpenAI gpt-6-luna)]
   LLM2[(Groq gpt-oss-20b)]
-  RS[(Resend email)]
   GH[(GitHub / Google OAuth)]
   KIRO[Kiro IDE/CLI] -->|stdio| MCP["counterspell-mcp<br/>(dev machine, no direct execution)"]
   MCP --> ENG2[counterspell-engine +<br/>judge sandbox runner]
@@ -457,9 +456,8 @@ Browser checks are UX only and can be skipped (for example with curl). The serve
 | Method & path | Purpose |
 |---|---|
 | `GET /api/auth/oauth/{github,google}/start` → `/callback` | OAuth2 auth-code + PKCE + `state`. Signs in by provider identity only. **No automatic linking by matching email** [D 12 Nov]: if the provider email belongs to another account, the user is told to sign in with the original method and link from settings |
-| `POST /api/auth/link/{github,google}/start` → `/callback`, `POST /api/auth/link/email` | User-initiated linking while signed in: OAuth with a link-intent `state` bound to the session, or a verification email (`link_email` token). Links only after verification succeeds [D 12 Nov] |
-| `POST /api/auth/email/magic` / `GET /api/auth/email/verify?token=` | Magic link: a single-use token valid for 15 minutes, stored hashed |
-| `POST /api/auth/register` / `POST /api/auth/login` / `POST /api/auth/password/reset` | Email and password (Argon2id), verification email via Resend |
+| `POST /api/auth/link/{github,google}/start` → `/callback` | User-initiated provider linking while signed in: OAuth with a link-intent `state` bound to the session [D 12 Nov]. Email linking is retired with email sign-in [D 22 Nov] |
+| `POST /api/auth/login` | Password sign-in for the configured demo account only; every other address gets the same `invalid_credentials` refusal as a wrong password [D 22 Nov] |
 | `POST /api/auth/logout`, `GET /api/me` | session |
 | Demo account [D 12 Nov] | a seeded demo user signs in through `POST /api/auth/login`; credentials go in the private field of the external submission form, and the sign-in page has a "Try the demo account" link. The demo user can't link providers, change credentials or delete the account; its data resets daily [E]. Normal rate limits apply |
 | `GET /api/languages` | from languages.toml (name, version, limits) for the IDE picker and the `/environment` page |
@@ -583,7 +581,7 @@ Run `cargo deny check licenses` in CI with an allow-list of MIT, Apache-2.0, BSD
 | Ghost engine is unreliable on some problem shapes | Med / high | Only ship problems whose schema the engine supports. Use proptest on the engine. Pack validator checks that the reference passes |
 | OVH VPS-2 unavailable or price change | Low / med | OVH VPS-1 (4 GB) with concurrency 1–2, or Contabo Cloud VPS 4 on a 1-month term (see the VPS research of 11 Nov). Any 8 GB VPS works because it's all Compose |
 | LLM cost abuse | Low / med | Quotas, cache, global cap, provider dashboard spend limits |
-| Email deliverability (magic links) | Med / med | Verified domain in Resend (SPF/DKIM). Password login as a fallback |
+| OAuth provider availability | Med / med | Sign-in also offered by the other provider and by passkeys |
 | Kiro credits run out | Med / high | About 1,700 credits left (grant already redeemed). Pick models by credit multiplier, keep tasks small, command hooks only, track the checkpoints in the playbook; overflow UI polish to other coding tools (disclosed). |
 | Familiar gives a wrong or noisy efficiency verdict | Med / med | mood from measured facts only, "looks quadratic" wording and no "optimal" claim [D 12 Nov], medians, size ratios, 3-way fit agreement, confidence gating (low confidence never drops more than 1 mood), same-language baselines, stored samples, and an honest "how it judges" popover |
 | Familiar's LLM speech bubble hallucinates | Med / low | Grounded only on code + measured results + reference complexity, labelled "AI hint", can't change verdict or mood, templated fallback [D 12 Nov] |
