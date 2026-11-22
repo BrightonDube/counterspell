@@ -176,37 +176,50 @@ function namesIn(node: GuessNode, out: Set<string>): Set<string> {
   return out;
 }
 
-function hasHalvingOp(node: GuessNode): boolean {
+function assignsIn(node: GuessNode, out: GuessNode[] = []): GuessNode[] {
+  if (node.type === 'assign') out.push(node);
+  for (const child of node.children) assignsIn(child, out);
+  return out;
+}
+
+// A `//`, `/`, or `>>` by a constant whose other operand mentions one of the
+// target names — `(lo + hi) // 2` halves the `lo`/`hi` range, `10 // 2` and
+// `k // 2` shrink nobody's bound.
+function hasHalvingOpOn(node: GuessNode, targets: Set<string>): boolean {
   if (
     node.type === 'binary_op' &&
     ['//', '/', '>>'].includes(node.text) &&
-    node.children.some((operand) => operand.type === 'literal')
+    node.children.some((operand) => operand.type === 'literal') &&
+    node.children.some((operand) =>
+      [...namesIn(operand, new Set())].some((name) => targets.has(name))
+    )
   ) {
     return true;
   }
-  return node.children.some(hasHalvingOp);
+  return node.children.some((child) => hasHalvingOpOn(child, targets));
 }
 
 // True when a `while` body shrinks a variable the condition tests by a
 // geometric factor — `x = x // 2`, `x >>= 1`, or the binary-search shape where
-// a bound var takes `mid` and `mid` came from a halving. An unrelated division
-// (`half = n // 2; n = n - 1`) is not a halving loop.
+// a bound var takes `mid` and `mid` came from a halving, including updates
+// nested inside `if`/`else`. An unrelated division (`half = n // 2; n = n - 1`)
+// or a constant decrement (`n = n - (10 // 2)`) is not a halving loop.
 function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
   if (!cond) return false;
   const condNames = namesIn(cond, new Set());
+  const assigns = body.flatMap((node) => assignsIn(node));
   const halvingValues = new Set<string>();
-  for (const node of body) {
-    if (node.type === 'assign' && node.children.some(hasHalvingOp)) {
+  for (const node of assigns) {
+    if (node.children.some((value) => hasHalvingOpOn(value, condNames))) {
       halvingValues.add(node.text);
     }
   }
-  return body.some(
+  return assigns.some(
     (node) =>
-      node.type === 'assign' &&
       condNames.has(node.text) &&
       node.children.some(
         (value) =>
-          hasHalvingOp(value) ||
+          hasHalvingOpOn(value, condNames) ||
           [...namesIn(value, new Set())].some((name) => halvingValues.has(name))
       )
   );

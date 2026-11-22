@@ -351,3 +351,56 @@ describe('cost model edge cases', () => {
     expect(guess.confidence).toBe('low');
   });
 });
+
+const ifNode = (
+  cond: GuessNode,
+  then: GuessNode[],
+  otherwise: GuessNode[] = []
+): GuessNode => ({
+  type: 'if',
+  text: '',
+  children: [cond, ...then, ...otherwise]
+});
+
+// while lo < hi:
+//     mid = (lo + hi) // 2
+//     if a[mid] < t: lo = mid + 1
+//     else:          hi = mid
+const NESTED_BINARY_SEARCH = fn(
+  'bsearch2',
+  ['a', 't'],
+  [
+    assign('lo', lit()),
+    assign('hi', lit()),
+    whileLoop(cmp('<', [id('lo'), id('hi')]), [
+      assign('mid', op('//', [op('+', [id('lo'), id('hi')]), lit()])),
+      ifNode(
+        cmp('<', [call('get', [id('a'), id('mid')]), id('t')]),
+        [assign('lo', op('+', [id('mid'), lit()]))],
+        [assign('hi', id('mid'))]
+      )
+    ])
+  ]
+);
+
+// while n > 0:
+//     n = n - (10 // 2)   (constant decrement, not a geometric shrink)
+const CONSTANT_DIVIDE_DECREMENT = fn(
+  'step_down',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('n', op('-', [id('n'), op('//', [lit(), lit()])]))
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('reads a binary search whose bound updates sit inside if/else', () => {
+    expect(analyze(NESTED_BINARY_SEARCH).guess_class).toBe('log n');
+  });
+
+  it('does not read a constant division in the decrement as halving', () => {
+    expect(analyze(CONSTANT_DIVIDE_DECREMENT).guess_class).toBe('n');
+  });
+});
