@@ -406,7 +406,7 @@ Conventions for every task (same as `run-lifecycle`):
   - Depends on: grimoire-packs T28.
   - Verify: `docs/kiro-log/problem-catalogue-blockers.md` records the approval.
 
-- [ ] **C40 [GATE] [HUMAN] [SUPERVISED] (30 min) Rotate hidden values that are in public git history**
+- [x] **C40 [GATE] [HUMAN] [SUPERVISED] (30 min) Rotate hidden values that are in public git history**
   - Before any new hidden file is written, Brighton records each retired hidden value's SHA-256 under `[[retired]]` in the private `retired-values.toml`. The rotated pack work (new curated cases, new generator seed, `pack_version` bump) then goes through the normal stages. Each rotated slug gets a `[[rotated]]` record. Brighton approves the rotated packs (grimoire-packs T28, pack-authoring PIP-35).
   - Brighton decides separately whether public git history is rewritten (design open question 21). This spec never force-pushes or rewrites history.
   - Depends on: C00a, grimoire-packs T28.
