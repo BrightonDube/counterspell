@@ -231,6 +231,39 @@ async fn a_sample_test_event_carries_its_public_detail() {
 }
 
 #[tokio::test]
+async fn a_sample_test_event_carries_bounded_stderr_and_the_hidden_test_does_not() {
+    let (dir, catalog) = shipped_catalogue(false);
+    let backend = FakeBackend::new();
+    backend.script_program([
+        Behaviour::Stderr(b"debug from sample\n".to_vec()),
+        answer(1, &json!([0, 1])),
+        Behaviour::Stderr(b"hidden diagnostic must not be shown\n".to_vec()),
+        answer(2, &json!([0, 1])),
+    ]);
+    let executor = executor(catalog, &backend, dir.path().join("languages.toml"));
+    let (ctx, log, _stop) = RecordingContext::with_stop(1);
+
+    executor
+        .execute(input(RunMode::Submit), ctx)
+        .await
+        .expect("the run completes");
+
+    let events = log.events();
+    let sample = events[1].payload();
+    assert_eq!(sample["stderr"], json!("debug from sample\n"));
+    let hidden = events[2].payload();
+    assert_eq!(
+        hidden,
+        json!({
+            "ordinal": 2,
+            "verdict": "pass",
+            "time_ms": hidden["time_ms"],
+            "sample": false
+        })
+    );
+}
+
+#[tokio::test]
 async fn the_stop_signal_ends_the_run_as_stopped_with_cleanup() {
     let (dir, catalog) = shipped_catalogue(false);
     let backend = FakeBackend::new();

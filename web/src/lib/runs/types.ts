@@ -112,6 +112,7 @@ export interface SampleTest {
   input: string;
   expected: string;
   got: string;
+  stderr?: string;
 }
 
 export type PublicTest = HiddenTest | SampleTest;
@@ -175,12 +176,14 @@ export function parsePublicTest(raw: unknown, path = 'test'): PublicTest {
     timeMs: readInt(record, 'time_ms', path, 0, MAX_TIME_MS)
   };
   if (record.sample === true) {
+    const stderr = readOptionalString(record, 'stderr', path);
     return {
       sample: true,
       ...common,
       input: readString(record, 'input', path),
       expected: readString(record, 'expected', path),
-      got: readString(record, 'got', path)
+      got: readString(record, 'got', path),
+      ...(stderr !== undefined ? { stderr } : {})
     };
   }
   if (record.sample !== false) {
@@ -213,7 +216,8 @@ export function parseReadTest(raw: unknown, path = 'test'): PublicTest {
       sample: true,
       input: detail.input,
       expected: detail.expected,
-      got: detail.got
+      got: detail.got,
+      stderr: detail.stderr
     },
     path
   );

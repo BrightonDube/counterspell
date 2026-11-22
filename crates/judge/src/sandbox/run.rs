@@ -212,10 +212,9 @@ pub async fn execute_run_and_keep<B: Backend>(
             ));
         };
 
-        let Some((verdict, elapsed, container_alive, answer)) =
-            run_test(open, &mut io, &test, &settings, stop)
-                .await?
-                .into_ran()
+        let Some(ran) = run_test(open, &mut io, &test, &settings, stop)
+            .await?
+            .into_ran()
         else {
             progress.stopped = true;
             break;
@@ -223,7 +222,7 @@ pub async fn execute_run_and_keep<B: Backend>(
 
         // Any end other than an answer has already removed the container. Drop the handle and
         // open a fresh one for the next test.
-        if container_alive {
+        if ran.container_alive {
             progress.consecutive_abnormal = 0;
         } else {
             current = None;
@@ -232,11 +231,15 @@ pub async fn execute_run_and_keep<B: Backend>(
         progress.timings.push(TestTiming {
             ordinal: test.ordinal,
             sample: test.sample,
-            elapsed,
+            elapsed: ran.elapsed,
         });
-        progress.executed.push(match answer {
-            Some(line) => ExecutedTest::with_answer(test.ordinal, verdict, line),
-            None => ExecutedTest::new(test.ordinal, verdict),
+        let executed = match ran.answer {
+            Some(line) => ExecutedTest::with_answer(test.ordinal, ran.verdict, line),
+            None => ExecutedTest::new(test.ordinal, ran.verdict),
+        };
+        progress.executed.push(match ran.stderr {
+            Some(stderr) => executed.with_stderr(stderr),
+            None => executed,
         });
     }
 
@@ -257,29 +260,30 @@ pub async fn execute_run_and_keep<B: Backend>(
 
 /// What one test's call produced.
 enum Step {
-    /// The test ran to a verdict. `container_alive` is false when the call ended the container.
-    Ran {
-        verdict: TestVerdict,
-        elapsed: Duration,
-        container_alive: bool,
-        /// The answer line the program printed, when it answered. Kept for a sample
-        /// test's public record.
-        answer: Option<Vec<u8>>,
-    },
+    /// The test ran to a verdict.
+    Ran(RanTest),
     /// The stop signal ended the call. The test has no verdict.
     Stopped,
 }
 
+/// The parts of a test call that finished normally or abnormally.
+struct RanTest {
+    verdict: TestVerdict,
+    elapsed: Duration,
+    /// `container_alive` is false when the call ended the container.
+    container_alive: bool,
+    /// The answer line the program printed, when it answered. Kept for a sample
+    /// test's public record.
+    answer: Option<Vec<u8>>,
+    /// The bounded stderr a sample test wrote during its call.
+    stderr: Option<Vec<u8>>,
+}
+
 impl Step {
     /// The parts of a ran test, or `None` when the run was stopped.
-    fn into_ran(self) -> Option<(TestVerdict, Duration, bool, Option<Vec<u8>>)> {
+    fn into_ran(self) -> Option<RanTest> {
         match self {
-            Self::Ran {
-                verdict,
-                elapsed,
-                container_alive,
-                answer,
-            } => Some((verdict, elapsed, container_alive, answer)),
+            Self::Ran(ran) => Some(ran),
             Self::Stopped => None,
         }
     }
@@ -301,6 +305,7 @@ async fn run_test<S: BackendSession + 'static>(
     let started = Instant::now();
     let facts = run_call(open, io, u64::from(test.ordinal), &test.args, limits, stop).await?;
     let elapsed = started.elapsed();
+    let stderr = io.take_stderr();
     let container_alive = matches!(facts, CallFacts::Answer { .. });
     let (verdict, answer) = match facts {
         CallFacts::Answer { line, .. } => (
@@ -324,12 +329,13 @@ async fn run_test<S: BackendSession + 'static>(
         CallFacts::DriverExited { .. } => (TestVerdict::RuntimeError, None),
         CallFacts::Stopped => return Ok(Step::Stopped),
     };
-    Ok(Step::Ran {
+    Ok(Step::Ran(RanTest {
         verdict,
         elapsed,
         container_alive,
         answer,
-    })
+        stderr: test.sample.then_some(stderr),
+    }))
 }
 
 /// Opens the next container, numbering it so its name is unique within the run.

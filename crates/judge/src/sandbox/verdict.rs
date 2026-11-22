@@ -45,6 +45,9 @@ pub struct ExecutedTest {
     /// program printed. The executor decides what is emitted; a hidden test's answer is
     /// never in a public record.
     answer: Option<Vec<u8>>,
+    /// The bounded stderr a sample test wrote before its call ended. Hidden tests never
+    /// carry it into the records.
+    stderr: Option<Vec<u8>>,
 }
 
 impl ExecutedTest {
@@ -55,6 +58,7 @@ impl ExecutedTest {
             ordinal,
             verdict,
             answer: None,
+            stderr: None,
         }
     }
 
@@ -65,7 +69,17 @@ impl ExecutedTest {
             ordinal,
             verdict,
             answer: Some(answer),
+            stderr: None,
         }
+    }
+
+    /// Adds the sample test's bounded stderr.
+    #[must_use]
+    pub fn with_stderr(mut self, stderr: Vec<u8>) -> Self {
+        if !stderr.is_empty() {
+            self.stderr = Some(stderr);
+        }
+        self
     }
 
     /// The test's position in the problem.
@@ -84,6 +98,12 @@ impl ExecutedTest {
     #[must_use]
     pub fn answer(&self) -> Option<&[u8]> {
         self.answer.as_deref()
+    }
+
+    /// The sample test's bounded stderr, when it wrote any.
+    #[must_use]
+    pub fn stderr(&self) -> Option<&[u8]> {
+        self.stderr.as_deref()
     }
 }
 

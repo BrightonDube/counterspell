@@ -151,6 +151,16 @@ impl StderrBuffer {
         out
     }
 
+    /// Returns the stored text and clears the buffer for the next call.
+    pub fn take_rendered(&mut self) -> Vec<u8> {
+        let out = self.rendered();
+        self.stored.clear();
+        self.truncated = false;
+        self.current.clear();
+        self.last_line = None;
+        out
+    }
+
     /// The last non-empty complete line, capped at 4 KiB. An unterminated final line is not used.
     #[must_use]
     pub fn last_line(&self) -> Option<&[u8]> {
