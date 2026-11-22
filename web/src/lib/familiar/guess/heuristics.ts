@@ -113,6 +113,10 @@ const KNOWN_CALLS = new Set([
 const LINEAR_METHODS = new Set([
   'contains',
   'find',
+  'findindex',
+  'indexOf',
+  'findIndex',
+  'lastIndexOf',
   'includes',
   'index',
   'indexof',
@@ -123,7 +127,7 @@ const LINEAR_METHODS = new Set([
   'unshift'
 ]);
 
-const SORT_CALLS = new Set(['sort', 'sorted', 'sort_by', 'sortby']);
+const SORT_CALLS = new Set(['sort', 'sorted', 'sort_by', 'sortby', 'toSorted']);
 const MEMO_DECORATORS = new Set([
   'cache',
   'lru_cache',

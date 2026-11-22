@@ -72,9 +72,7 @@ function callNode(node: SyntaxNode): GuessNode {
       callee.childForFieldName('property');
     return {
       type: 'member_call',
-      // Method names lower-case so JS `indexOf`/`findIndex` match the
-      // heuristics' lowercase linear-method vocabulary.
-      text: (attr?.text ?? callee.text).toLowerCase(),
+      text: attr?.text ?? callee.text,
       children: [...(recv ? [mapExpr(recv)] : []), ...argNodes]
     };
   }
