@@ -46,7 +46,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 2: workspace console and load health
 
-- [ ] **T05 [S] (30 min) Extend public sample console detail safely**
+- [x] **T05 [S] (30 min) Extend public sample console detail safely**
   - Files: `crates/common/src/events.rs`, `crates/judge/src/sandbox/{records.rs,sandbox_executor.rs}`, `crates/judge/src/queue/finish.rs`, server read-model mapping and canary tests.
   - Extend the trusted public sample detail only if needed so bounded stderr can reach the browser for sample tests. Keep hidden tests unable to carry input/expected/stdout/stderr. If stdout is not separately represented, keep the existing `got` semantics and do not fabricate a channel.
   - Verify: failing common/judge/server contract tests first; hidden canary rows still have no output fields; caps are preserved.
