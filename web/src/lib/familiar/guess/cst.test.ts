@@ -150,6 +150,14 @@ describe('cst mapping: javascript', () => {
     expect(guess.guess_class).toBe('n^2');
   });
 
+  it('counts array traversals inside a loop as a linear step', async () => {
+    const guess = await guessFor(
+      'javascript',
+      'function f(nums) {\n  for (const x of nums) {\n    nums.reverse();\n  }\n}\n'
+    );
+    expect(guess.guess_class).toBe('n^2');
+  });
+
   it('keeps nesting in unbraced loops and branches', async () => {
     const guess = await guessFor(
       'javascript',

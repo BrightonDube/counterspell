@@ -197,7 +197,26 @@ const LINEAR_METHODS = new Set([
   'remove',
   'shift',
   'splice',
-  'unshift'
+  'unshift',
+  // Per-element traversals: member calls only, so Python's lazy `map(...)` and
+  // `filter(...)` builtins stay known-but-not-linear while `xs.map(f)` counts.
+  'map',
+  'filter',
+  'forEach',
+  'reduce',
+  'reduceRight',
+  'every',
+  'some',
+  'join',
+  'concat',
+  'reverse',
+  'flat',
+  'flatMap',
+  'fill',
+  'copyWithin',
+  'slice',
+  'toReversed',
+  'toSpliced'
 ]);
 
 const SORT_CALLS = new Set(['sort', 'sorted', 'sort_by', 'sortby', 'toSorted']);
