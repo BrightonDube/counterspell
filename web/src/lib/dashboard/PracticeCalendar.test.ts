@@ -22,9 +22,9 @@ describe('PracticeCalendar', () => {
         '2 practice days in the last 35 days. Most recent: 2026-11-15.'
       )
     ).toBeTruthy();
-    expect(
-      screen.getByLabelText('2026-11-15, practice day, today')
-    ).toBeTruthy();
+    const todayCell = screen.getByLabelText('2026-11-15, practice day, today');
+    expect(todayCell).toBeTruthy();
+    expect(todayCell.className).toContain('forced-colors:underline');
     expect(screen.getByLabelText('2026-11-01, practice day')).toBeTruthy();
     expect(screen.getByText('Today')).toBeTruthy();
     expect(screen.getByText('Practised')).toBeTruthy();

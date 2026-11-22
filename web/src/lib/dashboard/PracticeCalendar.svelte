@@ -47,7 +47,11 @@
               day.active
                 ? 'border-accent-moss/50 bg-accent-moss/20 font-semibold text-accent-moss'
                 : 'border-border bg-raised/70 text-text-muted'
-            } ${day.today ? 'ring-2 ring-accent-candle ring-offset-1 ring-offset-surface' : ''}`}
+            } ${
+              day.today
+                ? 'ring-2 ring-accent-candle ring-offset-1 ring-offset-surface forced-colors:underline forced-colors:decoration-2'
+                : ''
+            }`}
           >
             {day.label}
           </div>
