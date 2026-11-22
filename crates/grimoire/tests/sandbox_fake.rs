@@ -121,6 +121,30 @@ fn empty_min_model(input: &Value) -> ProgramResult {
     reference_model(input)
 }
 
+/// Wrong answer: position pairs are deduplicated by their sorted values, so
+/// different positions forming the same value pair count once.
+fn deduplicate_pair_values_model(input: &Value) -> ProgramResult {
+    let (values, target) = arguments(input);
+    let mut pairs = std::collections::HashSet::new();
+    for i in 0..values.len() {
+        for j in i + 1..values.len() {
+            if values[i] + values[j] == target {
+                pairs.insert((values[i].min(values[j]), values[i].max(values[j])));
+            }
+        }
+    }
+    ProgramResult::Returned(json!(pairs.len()))
+}
+
+/// Wrong answer: a negative target is discarded, though a pair of negatives can reach it.
+fn discard_negative_target_model(input: &Value) -> ProgramResult {
+    let (_, target) = arguments(input);
+    if target < 0 {
+        return ProgramResult::Returned(json!(0));
+    }
+    reference_model(input)
+}
+
 /// A reference that fails on every input, to show the hidden-input check fires.
 fn always_crashes_model(_input: &Value) -> ProgramResult {
     ProgramResult::Crashed {
@@ -336,7 +360,7 @@ fn run_sandbox(root: &Path, runner: &mut ModelRunner) -> Report {
 
 /// `run_sandbox` for a starter pack, which is split across the public tree and
 /// the private checkout. `None` means no private checkout is available.
-fn run_sandbox_pair(root: &Path, runner: &mut ModelRunner) -> Option<Report> {
+fn run_sandbox_pair(root: &Path, runner: &mut dyn PackRunner) -> Option<Report> {
     let private_root = std::env::var("COUNTERSPELL_PACKS_PRIVATE_ROOT")
         .ok()
         .map(PathBuf::from)
@@ -633,6 +657,37 @@ fn longest_run_empty_first(input: &Value) -> ProgramResult {
     ProgramResult::Returned(json!(best))
 }
 
+/// Wrong answer: only runs of the first letter are counted, so the best run of
+/// another letter is missed.
+fn longest_run_prefer_first(input: &Value) -> ProgramResult {
+    let text = text_argument(input);
+    let Some(&first) = text.first() else {
+        return ProgramResult::Returned(json!(0));
+    };
+    let mut best = 0;
+    let mut current = 0;
+    for ch in text {
+        if ch == first {
+            current += 1;
+        } else {
+            current = 0;
+        }
+        best = best.max(current);
+    }
+    ProgramResult::Returned(json!(best))
+}
+
+/// Wrong answer: the highest letter frequency is returned, though separated
+/// appearances of one letter do not form a run.
+fn longest_run_frequency(input: &Value) -> ProgramResult {
+    let mut counts: HashMap<char, i64> = HashMap::new();
+    for ch in text_argument(input) {
+        *counts.entry(ch).or_insert(0) += 1;
+    }
+    let best = counts.values().copied().max().unwrap_or(0);
+    ProgramResult::Returned(json!(best))
+}
+
 /// Sums the diagonal cells, after applying `transform` to each one.
 fn diagonal_sum(grid: &[Vec<i64>], transform: fn(i64) -> i64) -> i64 {
     let cols = grid.first().map_or(0, Vec::len);
@@ -665,36 +720,68 @@ fn diagonal_assumes_square(input: &Value) -> ProgramResult {
     ProgramResult::Returned(json!(total))
 }
 
+/// Wrong answer: the walk stops at the first zero on the diagonal, though zero
+/// contributes nothing and later diagonal cells still count.
+fn diagonal_stop_at_zero(input: &Value) -> ProgramResult {
+    let mut total = 0;
+    for (index, row) in grid_argument(input).iter().enumerate() {
+        if index < row.len() {
+            let cell = row[index];
+            if cell == 0 {
+                break;
+            }
+            total += cell;
+        }
+    }
+    ProgramResult::Returned(json!(total))
+}
+
+/// Wrong answer: every row's first cell is summed instead of the diagonal cell.
+fn diagonal_first_column(input: &Value) -> ProgramResult {
+    let total: i64 = grid_argument(input)
+        .iter()
+        .filter(|row| !row.is_empty())
+        .map(|row| row[0])
+        .sum();
+    ProgramResult::Returned(json!(total))
+}
+
 /// The reference and the incorrect models for one starter pack, keyed by program path.
 fn starter_models(slug: &str) -> (Model, Vec<(&'static str, Model)>) {
     match slug {
         "count-pairs" => (
             reference_model,
             vec![
-                ("incorrect/same-index.py", same_index_model as Model),
-                ("incorrect/empty-min.py", empty_min_model as Model),
+                (
+                    "incorrect/deduplicate-pair-values.py",
+                    deduplicate_pair_values_model as Model,
+                ),
+                (
+                    "incorrect/discard-negative-target.py",
+                    discard_negative_target_model as Model,
+                ),
             ],
         ),
         "longest-run-length" => (
             longest_run_reference,
             vec![
                 (
-                    "incorrect/forgot-last-run.py",
-                    longest_run_forgot_last as Model,
+                    "incorrect/prefer-first-character.py",
+                    longest_run_prefer_first as Model,
                 ),
                 (
-                    "incorrect/empty-first-char.py",
-                    longest_run_empty_first as Model,
+                    "incorrect/total-character-frequency.py",
+                    longest_run_frequency as Model,
                 ),
             ],
         ),
         "diagonal-total" => (
             diagonal_reference,
             vec![
-                ("incorrect/abs-diagonal.py", diagonal_abs as Model),
+                ("incorrect/stop-at-zero.py", diagonal_stop_at_zero as Model),
                 (
-                    "incorrect/assumes-square.py",
-                    diagonal_assumes_square as Model,
+                    "incorrect/sum-first-column.py",
+                    diagonal_first_column as Model,
                 ),
             ],
         ),
@@ -702,11 +789,34 @@ fn starter_models(slug: &str) -> (Model, Vec<(&'static str, Model)>) {
     }
 }
 
+/// Timings that match each starter pack's declared `reference_complexity`, so the
+/// sandbox pair tests exercise the bench stage instead of faulting on
+/// "bench is not modelled". The points are unused for packs with no `[bench]` table.
+fn starter_bench_points(slug: &str) -> Vec<(u64, u64)> {
+    // count-pairs declares n^2 over sizes [128, 512, 2048, 4096]: time is 10 * n^2.
+    // The fallback is 100 * n for any starter that later declares a linear bench.
+    let multiplier = if slug == "count-pairs" { 10 } else { 100 };
+    [128_u64, 512, 2048, 4096]
+        .iter()
+        .map(|&n| {
+            let median = if slug == "count-pairs" {
+                multiplier * n * n
+            } else {
+                multiplier * n
+            };
+            (n, median)
+        })
+        .collect()
+}
+
 #[test]
 fn starter_packs_pass_every_sandbox_check_with_the_model_runner() {
     for slug in STARTERS {
         let (reference, programs) = starter_models(slug);
-        let mut runner = ModelRunner::new(reference, &programs);
+        let mut runner = TimedRunner {
+            inner: ModelRunner::new(reference, &programs),
+            points: starter_bench_points(slug),
+        };
 
         let Some(report) = run_sandbox_pair(&starter_dir(slug), &mut runner) else {
             eprintln!("skipping {slug}: no counterspell-packs-private checkout");
@@ -727,7 +837,10 @@ fn starter_ghosts_stop_reproducing_when_their_program_is_correct() {
             .iter()
             .map(|(path, _)| (*path, reference))
             .collect();
-        let mut runner = ModelRunner::new(reference, &correct);
+        let mut runner = TimedRunner {
+            inner: ModelRunner::new(reference, &correct),
+            points: starter_bench_points(slug),
+        };
 
         let Some(report) = run_sandbox_pair(&starter_dir(slug), &mut runner) else {
             eprintln!("skipping {slug}: no counterspell-packs-private checkout");
