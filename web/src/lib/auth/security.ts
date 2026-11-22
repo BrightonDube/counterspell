@@ -12,6 +12,8 @@ type Destination = { return_to: string };
 type SignInResult = Partial<Destination> & { two_factor_required?: boolean };
 type PasskeyFlow<Options> = { flow_id: string; publicKey: Options };
 
+const PASSKEY_SIGN_IN_TIMEOUT_MS = 60_000;
+
 function post<T>(path: string, body: unknown): Promise<T> {
   return request(`/api/auth/${path}`, { method: 'POST', body });
 }
@@ -153,13 +155,25 @@ export async function signInWithPasskey(returnTo: string) {
   const { flow_id, publicKey } = await post<
     PasskeyFlow<PublicKeyCredentialRequestOptionsJSON>
   >('passkeys/login/start', { return_to: returnTo });
-  const credential = await navigator.credentials.get({
-    publicKey: requestOptions(publicKey)
-  });
-  return post<SignInResult>('passkeys/login/finish', {
-    flow_id,
-    credential: serialize(credential)
-  });
+  const options = requestOptions(publicKey);
+  const timeout = Math.min(
+    options.timeout ?? PASSKEY_SIGN_IN_TIMEOUT_MS,
+    PASSKEY_SIGN_IN_TIMEOUT_MS
+  );
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeout);
+  try {
+    const credential = await navigator.credentials.get({
+      publicKey: { ...options, timeout },
+      signal: controller.signal
+    });
+    return post<SignInResult>('passkeys/login/finish', {
+      flow_id,
+      credential: serialize(credential)
+    });
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 export function authProblem(failure: unknown) {
