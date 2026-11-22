@@ -12,6 +12,7 @@ pub const GRIMOIRE_VERSION: &str = "0.1.0";
 pub mod codes;
 pub mod generator;
 pub mod ghosts;
+pub mod hidden;
 pub mod hints;
 pub mod limits;
 pub mod meta;

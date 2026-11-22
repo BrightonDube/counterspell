@@ -14,6 +14,7 @@ use std::time::Duration;
 
 use counterspell_engine::{Comparator, FailureKind, Schema, ENGINE_VERSION, GENERATOR_VERSION};
 use counterspell_grimoire::ghosts::{sandbox_ghosts, SandboxGhost};
+use counterspell_grimoire::hidden::curated_cases;
 use counterspell_grimoire::hints::AuthoredLadder;
 use counterspell_grimoire::meta::Meta;
 use counterspell_grimoire::record::ProblemRecord;
@@ -373,27 +374,6 @@ fn kind_name(kind: FailureKind) -> String {
     .to_string()
 }
 
-/// One `[[case]]` entry in a private `hidden.toml`.
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct HiddenCase {
-    /// The authored input (the argument tuple).
-    input: Value,
-    /// The authored expected value, verified by the sandbox fill before storage.
-    expected: Value,
-    /// The author's note; parsed and never reported.
-    #[allow(dead_code)]
-    why: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-#[serde(deny_unknown_fields)]
-struct HiddenFile {
-    /// The curated hidden cases.
-    #[serde(default, rename = "case")]
-    cases: Vec<HiddenCase>,
-}
-
 /// Resolve (seed, ) from the private . Under X1
 /// generator settings are private-only; a missing or invalid file refuses.
 fn generator_settings(files: &PackFiles) -> Result<(u64, u64), AssembleError> {
@@ -501,16 +481,7 @@ pub fn assemble_sandbox(
 ) -> Result<SandboxPackData, AssembleError> {
     let curated = files
         .text_any_utf8("hidden.toml")?
-        .map(|text| {
-            toml::from_str::<HiddenFile>(text)
-                .map(|file| {
-                    file.cases
-                        .into_iter()
-                        .map(|case| (case.input, case.expected))
-                        .collect::<Vec<_>>()
-                })
-                .map_err(|_| AssembleError::HiddenInvalid)
-        })
+        .map(|text| curated_cases(text).map_err(|_| AssembleError::HiddenInvalid))
         .transpose()?
         .unwrap_or_default();
 

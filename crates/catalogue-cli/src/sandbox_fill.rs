@@ -20,19 +20,18 @@
 use std::collections::HashSet;
 use std::time::Duration;
 
-use counterspell_engine::classify::{classify, Classification, Observation};
-use counterspell_engine::generate::{CandidateStream, GeneratorConfig, Origin};
-use counterspell_engine::{Comparator, ProgramResult, Schema};
+use counterspell_engine::{Comparator, Schema};
 use counterspell_grimoire::ghosts::SandboxGhost;
-use counterspell_grimoire::runner::{PackRunner, RunnerError, Target};
-use counterspell_grimoire::samples::accepts_return;
-use counterspell_grimoire::signature::LaunchType;
+use counterspell_grimoire::runner::{PackRunner, RunnerError};
+use counterspell_grimoire::sandbox::{
+    run_checks, Finding, Generated, HiddenSource, RetiredCheck, SandboxInputs, Scope,
+};
 use serde_json::Value;
 
 use sqlx::PgPool;
 
 use counterspell_judge::catalogue::retired::{
-    canonical_hash, canonical_json, check_retired, RetiredFile, RetiredRefusal,
+    canonical_hash, check_retired, RetiredFile, RetiredRefusal,
 };
 use counterspell_judge::catalogue::write::{
     sandbox_gate, write_sandbox, GateOutcome, SandboxImport, SandboxOutcome, WriteError,
@@ -132,20 +131,11 @@ pub struct SandboxCheck<'a> {
     pub image_digest: &'a str,
 }
 
-/// Whether a reference result is a well-shaped return for the declared launch type.
-/// Unwraps a well-shaped `Returned` answer; anything else is `None`.
-fn returned_shaped(return_kind: Option<LaunchType>, result: ProgramResult) -> Option<Value> {
-    match result {
-        ProgramResult::Returned(value)
-            if return_kind.is_some_and(|kind| accepts_return(kind, &value)) =>
-        {
-            Some(value)
-        }
-        _ => None,
-    }
-}
-
 /// Runs the SBX-01..03 checks on `check` and returns the produced hidden cases.
+///
+/// The checks are Grimoire's [`run_checks`] under [`Scope::FirstError`], the same code
+/// `validate` runs, so the hidden set stored here is the one the validator checked.
+/// After a recorded rotation, a generated case whose hash is retired is drawn again.
 ///
 /// # Errors
 ///
@@ -155,77 +145,50 @@ pub fn sandbox_fill(
     check: &SandboxCheck<'_>,
     runner: &mut dyn PackRunner,
 ) -> Result<FillOutcome, RunnerError> {
-    let return_kind = LaunchType::parse(check.returns);
-
-    // SBX-01 for the public samples: the reference must return each authored value.
-    for (index, (input, expected)) in check.examples.iter().enumerate() {
-        let result = runner.run(Target::Reference, input, check.limit)?;
-        let agrees = matches!(
-            &result,
-            ProgramResult::Returned(got) if check.comparator.equal(expected, got)
-        );
-        if !agrees {
-            return Ok(FillOutcome::Refused(FillRefusal::AuthoredDisagrees {
-                source: CaseSource::Sample,
-                index,
-            }));
-        }
+    let rotated = check
+        .retired
+        .rotated
+        .iter()
+        .any(|record| record.slug == check.slug && record.pack_version == check.pack_version);
+    let retired: HashSet<&str> = check
+        .retired
+        .retired
+        .iter()
+        .filter(|entry| entry.slug == check.slug)
+        .map(|entry| entry.sha256.as_str())
+        .collect();
+    // An approved rotation can resample a leaked generated value. Curated cases and the
+    // finished set still pass through the fail-closed retired-value check below.
+    let is_retired = |input: &Value, expected: &Value| {
+        retired.contains(hex(&canonical_hash(input, expected)).as_str())
+    };
+    let inputs = SandboxInputs {
+        comparator: check.comparator,
+        returns: check.returns,
+        limit: check.limit,
+        schema: &check.schema,
+        samples: check.examples,
+        curated: check.curated,
+        generated: Some(Generated {
+            seed: check.seed,
+            count: check.hidden_count,
+            retired: rotated.then_some(&is_retired as RetiredCheck<'_>),
+        }),
+        ghosts: check.ghosts,
+    };
+    let outcome = run_checks(&inputs, Scope::FirstError, runner)?;
+    if let Some(refusal) = outcome.findings.iter().find_map(refusal_for) {
+        return Ok(FillOutcome::Refused(refusal));
     }
-
-    let mut hidden: Vec<HiddenFill> = Vec::with_capacity(check.curated.len() + check.hidden_count);
-    let mut seen: HashSet<String> = HashSet::new();
-
-    // Curated cases are authored like samples (SBX-01 verifies the claimed answer);
-    // the reference must also produce a well-shaped value (SBX-02). The stored
-    // expected is the reference's own answer, not the authored claim.
-    for (index, (input, authored)) in check.curated.iter().enumerate() {
-        let result = runner.run(Target::Reference, input, check.limit)?;
-        let Some(expected) = returned_shaped(return_kind, result) else {
-            return Ok(FillOutcome::Refused(FillRefusal::ReferenceFailed {
-                source: CaseSource::Curated,
-                index,
-            }));
-        };
-        if !check.comparator.equal(authored, &expected) {
-            return Ok(FillOutcome::Refused(FillRefusal::AuthoredDisagrees {
-                source: CaseSource::Curated,
-                index,
-            }));
-        }
-        seen.insert(canonical_json(input));
-        hidden.push(HiddenFill {
-            source: CaseSource::Curated,
-            input: input.clone(),
-            expected,
-        });
-    }
-
-    // SBX-02 generated cases: the seeded stream yields unique candidates; a curated
-    // duplicate is skipped so no hidden case repeats.
-    match fill_generated(check, runner, return_kind, &mut seen) {
-        Ok(cases) => hidden.extend(cases),
-        Err(FillFault::Runner(error)) => return Err(error),
-        Err(FillFault::Refuse(refusal)) => return Ok(FillOutcome::Refused(refusal)),
-    }
-
-    // SBX-03: every known ghost must reproduce its recorded failure on its program.
-    for ghost in check.ghosts {
-        let known = &ghost.known;
-        let user = runner.run(Target::Program(&ghost.program), &known.input, check.limit)?;
-        let reference = runner.run(Target::Reference, &known.input, check.limit)?;
-        let observation = Observation { user, reference };
-        let reproduces = match classify(&observation, &check.comparator) {
-            Classification::Fail(predicate) => {
-                known.matches(&known.input, &predicate, &observation.user)
-            }
-            _ => false,
-        };
-        if !reproduces {
-            return Ok(FillOutcome::Refused(FillRefusal::GhostNotReproduced {
-                ghost_id: known.id.clone(),
-            }));
-        }
-    }
+    let hidden: Vec<HiddenFill> = outcome
+        .hidden
+        .into_iter()
+        .map(|case| HiddenFill {
+            source: case_source(case.source),
+            input: case.input,
+            expected: case.expected,
+        })
+        .collect();
 
     // CAT-PT8/PT13: every produced case is hashed and checked against the retired
     // list. A refusal names only a hash prefix.
@@ -244,89 +207,38 @@ pub fn sandbox_fill(
     }))
 }
 
-/// Why a fill step stopped: a runner fault, or a refusal the caller reports.
-enum FillFault {
-    /// `RunnerError`, propagated as `Err` for the exit-2 path.
-    Runner(RunnerError),
-    /// A pack refusal, reported as `Ok(Refused(..))`.
-    Refuse(FillRefusal),
+/// The import refusal for a finding. The SBX-04 warning never refuses a pack.
+fn refusal_for(finding: &Finding) -> Option<FillRefusal> {
+    Some(match finding {
+        Finding::SampleDisagrees { index } => FillRefusal::AuthoredDisagrees {
+            source: CaseSource::Sample,
+            index: *index,
+        },
+        Finding::CuratedDisagrees { index } => FillRefusal::AuthoredDisagrees {
+            source: CaseSource::Curated,
+            index: *index,
+        },
+        Finding::ReferenceFailed { source, index } => FillRefusal::ReferenceFailed {
+            source: case_source(*source),
+            index: *index,
+        },
+        Finding::TooFewGenerated { wanted, got } => FillRefusal::TooFewCandidates {
+            wanted: *wanted,
+            got: *got,
+        },
+        Finding::GhostNotReproduced { id, .. } => FillRefusal::GhostNotReproduced {
+            ghost_id: id.clone(),
+        },
+        Finding::GhostNotMinimal { .. } => return None,
+    })
 }
 
-impl From<RunnerError> for FillFault {
-    fn from(error: RunnerError) -> Self {
-        Self::Runner(error)
+/// The catalogue case source for a Grimoire hidden source.
+fn case_source(source: HiddenSource) -> CaseSource {
+    match source {
+        HiddenSource::Curated => CaseSource::Curated,
+        HiddenSource::Generated => CaseSource::Generated,
     }
-}
-
-/// SBX-02: runs the reference on `hidden_count` unique generated inputs and returns
-/// the produced cases. `seen` carries the curated inputs so a generated value that
-/// repeats one is skipped instead of duplicated.
-fn fill_generated(
-    check: &SandboxCheck<'_>,
-    runner: &mut dyn PackRunner,
-    return_kind: Option<LaunchType>,
-    seen: &mut HashSet<String>,
-) -> Result<Vec<HiddenFill>, FillFault> {
-    let stream = CandidateStream::new(
-        check.schema.clone(),
-        check.seed,
-        Vec::new(),
-        Vec::new(),
-        GeneratorConfig::default(),
-    );
-    let mut cases: Vec<HiddenFill> = Vec::with_capacity(check.hidden_count);
-    let rotated = check
-        .retired
-        .rotated
-        .iter()
-        .any(|record| record.slug == check.slug && record.pack_version == check.pack_version);
-    // The stream yields unique candidates; a tiny domain could otherwise loop on
-    // duplicates forever, so the attempt count is bounded before the shortfall check.
-    let attempts = check.hidden_count.saturating_mul(8).max(16);
-    // The enumerated prefix is independent of the seed. After a recorded rotation,
-    // consume it without selecting it so the stream also excludes those inputs from its seeded tail.
-    let candidates = stream.filter(|candidate| !rotated || candidate.origin == Origin::Generated);
-    let retired: HashSet<&str> = check
-        .retired
-        .retired
-        .iter()
-        .filter(|entry| rotated && entry.slug == check.slug)
-        .map(|entry| entry.sha256.as_str())
-        .collect();
-    for candidate in candidates.take(attempts) {
-        if cases.len() == check.hidden_count {
-            break;
-        }
-        let input = candidate.value;
-        if !seen.insert(canonical_json(&input)) {
-            continue;
-        }
-        let result = runner.run(Target::Reference, &input, check.limit)?;
-        let Some(expected) = returned_shaped(return_kind, result) else {
-            return Err(FillFault::Refuse(FillRefusal::ReferenceFailed {
-                source: CaseSource::Generated,
-                index: cases.len(),
-            }));
-        };
-        // An approved rotation can resample a leaked generated value. Curated cases
-        // and the finished set still pass through the fail-closed retired-value check.
-        if !retired.is_empty() && retired.contains(hex(&canonical_hash(&input, &expected)).as_str())
-        {
-            continue;
-        }
-        cases.push(HiddenFill {
-            source: CaseSource::Generated,
-            input,
-            expected,
-        });
-    }
-    if cases.len() < check.hidden_count {
-        return Err(FillFault::Refuse(FillRefusal::TooFewCandidates {
-            wanted: check.hidden_count,
-            got: cases.len(),
-        }));
-    }
-    Ok(cases)
 }
 
 /// A private-tree snapshot for `validate-sandbox` (C18, CAT-I16, CAT-PT10).

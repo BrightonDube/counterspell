@@ -1,15 +1,18 @@
-//! Sandbox checks through `PackRunner` (SBX-01 to SBX-04).
+//! Sandbox checks through `PackRunner` (SBX-01 to SBX-04, SBX-09).
 //!
 //! These checks run only after every static check passes, so a broken pack never
 //! reaches a runner. The runner is the only way pack code runs. This module asks it
 //! for results and compares them with the authored data.
 //!
-//! Hidden test inputs are generated in memory and only the shape of the reference's
-//! result is checked. Their expected values are never written out, and no hidden
-//! input appears in a diagnostic.
+//! [`run_checks`] is the one implementation of the code-running pack checks. The
+//! validator ([`check`]) and the catalogue import both call it, so the hidden set a
+//! pack is validated against is the hidden set the import stores. Hidden inputs are
+//! generated in memory. Their expected values are never written out by this module,
+//! and no hidden input appears in a finding or a diagnostic.
 
 use crate::codes;
 use crate::ghosts::{self, SandboxGhost};
+use crate::hidden;
 use crate::meta::{Bench, Meta};
 use crate::pack::Pack;
 use crate::report::{Diagnostic, Report};
@@ -20,14 +23,15 @@ use counterspell_engine::complexity::{
     bench_seed, fit, sized_input, Class as EngineClass, FitConfig, Mode as EngineMode,
     Point as EnginePoint,
 };
-use counterspell_engine::generate::{CandidateStream, GeneratorConfig};
+use counterspell_engine::generate::{CandidateStream, GeneratorConfig, Origin};
 use counterspell_engine::shrink::{shrink, Probe};
 use counterspell_engine::{
-    classify, compare_size, Budget, Classification, FailureKind, FailurePredicate, Observation,
-    ProgramResult,
+    classify, compare_size, Budget, Classification, Comparator, FailureKind, FailurePredicate,
+    Observation, ProgramResult, Schema,
 };
 use serde_json::Value;
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::io;
 use std::time::Duration;
 
@@ -52,7 +56,381 @@ impl SandboxFault {
     }
 }
 
-/// Runs SBX-01 to SBX-04 against `pack`. Stops early only on a runner fault.
+/// Says whether a generated case is retired, from its input and the reference's answer.
+pub type RetiredCheck<'a> = &'a dyn Fn(&Value, &Value) -> bool;
+
+/// The seeded, generated part of the hidden set.
+pub struct Generated<'a> {
+    /// The candidate-stream seed.
+    pub seed: u64,
+    /// How many generated hidden cases to produce.
+    pub count: usize,
+    /// `Some` after a recorded rotation. The seed-independent enumerated prefix is then
+    /// skipped, and a generated case the predicate marks retired (by input and the
+    /// reference's answer) is drawn again.
+    pub retired: Option<RetiredCheck<'a>>,
+}
+
+/// Everything the code-running checks need for one pack version, already parsed.
+pub struct SandboxInputs<'a> {
+    /// The pack comparator.
+    pub comparator: Comparator,
+    /// The launch return-type name (`int`, `list[int]`, …) for the shape check.
+    pub returns: &'a str,
+    /// The per-call time limit from `limits.time_ms`.
+    pub limit: Duration,
+    /// The engine input schema: the candidates' domain and the shrinker's.
+    pub schema: &'a Schema,
+    /// The public samples `(input, expected)`.
+    pub samples: &'a [(Value, Value)],
+    /// The curated hidden cases `(input, authored expected)` from `hidden.toml`.
+    pub curated: &'a [(Value, Value)],
+    /// The generated hidden cases, or `None` when the pack declares no generator.
+    pub generated: Option<Generated<'a>>,
+    /// The known ghosts to reproduce.
+    pub ghosts: &'a [SandboxGhost],
+}
+
+/// How far [`run_checks`] goes.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Scope {
+    /// Stop at the first error and skip the warning-only minimality check (the import).
+    FirstError,
+    /// Run every check, SBX-04 included, and report every finding (the validator).
+    Everything,
+}
+
+/// Which hidden case a finding or a produced case belongs to.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum HiddenSource {
+    /// A curated case from `hidden.toml`.
+    Curated,
+    /// A case generated from the seeded candidate stream.
+    Generated,
+}
+
+/// One hidden case and the reference's own answer for it.
+#[derive(Clone, Debug, PartialEq)]
+pub struct HiddenCase {
+    /// Where the input came from.
+    pub source: HiddenSource,
+    /// The case input.
+    pub input: Value,
+    /// The reference's answer. For a curated case it equals the authored value under the
+    /// comparator, or the case is a finding instead.
+    pub expected: Value,
+}
+
+/// One pack problem found by [`run_checks`]. Findings carry indices and ids only, never a
+/// hidden value.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Finding {
+    /// SBX-01: the reference does not return this sample's expected value.
+    SampleDisagrees {
+        /// The sample's index.
+        index: usize,
+    },
+    /// SBX-09: the reference does not return this curated case's expected value.
+    CuratedDisagrees {
+        /// The curated case's index in `hidden.toml`.
+        index: usize,
+    },
+    /// SBX-02: the reference crashes, times out or returns the wrong shape on a hidden input.
+    ReferenceFailed {
+        /// Curated or generated.
+        source: HiddenSource,
+        /// The case's index inside its own list.
+        index: usize,
+    },
+    /// The candidate stream holds fewer unique inputs than `hidden_count` asks for.
+    TooFewGenerated {
+        /// The requested number of generated cases.
+        wanted: usize,
+        /// How many unique inputs the stream produced.
+        got: usize,
+    },
+    /// SBX-03: a known ghost does not reproduce its recorded failure.
+    GhostNotReproduced {
+        /// The ghost's index in `known_ghosts.toml`.
+        index: usize,
+        /// The ghost's id.
+        id: String,
+    },
+    /// SBX-04 (warning): a smaller input fails the same way as this known ghost.
+    GhostNotMinimal {
+        /// The ghost's index in `known_ghosts.toml`.
+        index: usize,
+        /// The ghost's id.
+        id: String,
+    },
+}
+
+impl Finding {
+    /// Whether this finding fails the pack. Only SBX-04 is a warning.
+    #[must_use]
+    pub fn is_error(&self) -> bool {
+        !matches!(self, Self::GhostNotMinimal { .. })
+    }
+}
+
+/// What [`run_checks`] found and the hidden cases the reference answered.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct SandboxOutcome {
+    /// Every finding, in check order: samples, curated, generated, ghosts.
+    pub findings: Vec<Finding>,
+    /// The hidden set in write order: curated first, then generated.
+    pub hidden: Vec<HiddenCase>,
+}
+
+/// Runs the code-running pack checks through `runner`.
+///
+/// The checks run in a fixed order: samples (SBX-01), curated cases (SBX-02, SBX-09),
+/// generated cases (SBX-02 and the shortfall), then known ghosts (SBX-03, and SBX-04
+/// under [`Scope::Everything`]). A generated input that repeats a curated input is drawn
+/// again, so no hidden case repeats.
+///
+/// # Errors
+///
+/// Returns the first [`RunnerError`]. A runner fault is infrastructure, never a finding.
+pub fn run_checks(
+    inputs: &SandboxInputs<'_>,
+    scope: Scope,
+    runner: &mut dyn PackRunner,
+) -> Result<SandboxOutcome, RunnerError> {
+    let mut run = Run {
+        inputs,
+        scope,
+        runner,
+        return_kind: LaunchType::parse(inputs.returns),
+        seen: HashSet::new(),
+        outcome: SandboxOutcome::default(),
+    };
+    let _stopped = run.samples()? || run.curated()? || run.generated()? || run.ghosts()?;
+    Ok(run.outcome)
+}
+
+/// One [`run_checks`] call in progress. Each stage returns `true` when the scope says stop.
+struct Run<'i, 'r> {
+    inputs: &'i SandboxInputs<'i>,
+    scope: Scope,
+    runner: &'r mut dyn PackRunner,
+    return_kind: Option<LaunchType>,
+    /// Hidden inputs already in the set, as compact JSON text. `serde_json` keeps object
+    /// keys sorted, so equal values have equal text.
+    seen: HashSet<String>,
+    outcome: SandboxOutcome,
+}
+
+impl Run<'_, '_> {
+    /// Records a finding; `true` when the scope stops at it.
+    fn found(&mut self, finding: Finding) -> bool {
+        let stop = self.scope == Scope::FirstError && finding.is_error();
+        self.outcome.findings.push(finding);
+        stop
+    }
+
+    /// Runs the reference on `input` within the pack limit.
+    fn reference(&mut self, input: &Value) -> Result<ProgramResult, RunnerError> {
+        self.runner.run(Target::Reference, input, self.inputs.limit)
+    }
+
+    /// The reference's answer when it is a well-shaped return for the declared type.
+    fn shaped(&self, result: ProgramResult) -> Option<Value> {
+        match result {
+            ProgramResult::Returned(value)
+                if self
+                    .return_kind
+                    .is_some_and(|kind| accepts_return(kind, &value)) =>
+            {
+                Some(value)
+            }
+            _ => None,
+        }
+    }
+
+    /// SBX-01: the reference must return each sample's expected value.
+    fn samples(&mut self) -> Result<bool, RunnerError> {
+        for (index, (input, expected)) in self.inputs.samples.iter().enumerate() {
+            let result = self.reference(input)?;
+            let agrees = matches!(
+                &result,
+                ProgramResult::Returned(got) if self.inputs.comparator.equal(expected, got)
+            );
+            if !agrees && self.found(Finding::SampleDisagrees { index }) {
+                return Ok(true);
+            }
+        }
+        Ok(false)
+    }
+
+    /// SBX-02 and SBX-09: each curated case must get a well-shaped answer equal to the
+    /// authored one. The stored expected value is the reference's own answer.
+    fn curated(&mut self) -> Result<bool, RunnerError> {
+        for (index, (input, authored)) in self.inputs.curated.iter().enumerate() {
+            self.seen.insert(input.to_string());
+            let result = self.reference(input)?;
+            let Some(expected) = self.shaped(result) else {
+                let finding = Finding::ReferenceFailed {
+                    source: HiddenSource::Curated,
+                    index,
+                };
+                if self.found(finding) {
+                    return Ok(true);
+                }
+                continue;
+            };
+            if !self.inputs.comparator.equal(authored, &expected) {
+                if self.found(Finding::CuratedDisagrees { index }) {
+                    return Ok(true);
+                }
+                continue;
+            }
+            self.outcome.hidden.push(HiddenCase {
+                source: HiddenSource::Curated,
+                input: input.clone(),
+                expected,
+            });
+        }
+        Ok(false)
+    }
+
+    /// SBX-02 on `count` unique generated inputs, then the shortfall check.
+    fn generated(&mut self) -> Result<bool, RunnerError> {
+        let Some(generated) = &self.inputs.generated else {
+            return Ok(false);
+        };
+        let rotated = generated.retired.is_some();
+        let stream = CandidateStream::new(
+            self.inputs.schema.clone(),
+            generated.seed,
+            Vec::new(),
+            Vec::new(),
+            GeneratorConfig::default(),
+        );
+        // The enumerated prefix is independent of the seed. After a recorded rotation,
+        // consume it without selecting it, so the seeded tail also excludes those inputs.
+        let candidates =
+            stream.filter(|candidate| !rotated || candidate.origin == Origin::Generated);
+        // The stream yields unique candidates; a tiny domain could otherwise loop on
+        // duplicates forever, so the attempt count is bounded before the shortfall check.
+        let attempts = generated.count.saturating_mul(8).max(16);
+        let mut tried = 0_usize;
+        for candidate in candidates.take(attempts) {
+            if tried == generated.count {
+                break;
+            }
+            let input = candidate.value;
+            if !self.seen.insert(input.to_string()) {
+                continue;
+            }
+            let result = self.reference(&input)?;
+            let Some(expected) = self.shaped(result) else {
+                let finding = Finding::ReferenceFailed {
+                    source: HiddenSource::Generated,
+                    index: tried,
+                };
+                tried += 1;
+                if self.found(finding) {
+                    return Ok(true);
+                }
+                continue;
+            };
+            if generated
+                .retired
+                .is_some_and(|retired| retired(&input, &expected))
+            {
+                continue;
+            }
+            tried += 1;
+            self.outcome.hidden.push(HiddenCase {
+                source: HiddenSource::Generated,
+                input,
+                expected,
+            });
+        }
+        if tried < generated.count {
+            let finding = Finding::TooFewGenerated {
+                wanted: generated.count,
+                got: tried,
+            };
+            return Ok(self.found(finding));
+        }
+        Ok(false)
+    }
+
+    /// SBX-03 for each known ghost, and SBX-04 under [`Scope::Everything`].
+    fn ghosts(&mut self) -> Result<bool, RunnerError> {
+        for (index, ghost) in self.inputs.ghosts.iter().enumerate() {
+            let known = &ghost.known;
+            let observation = self.observe(&ghost.program, &known.input)?;
+            let predicate = match classify(&observation, &self.inputs.comparator) {
+                Classification::Fail(predicate)
+                    if known.matches(&known.input, &predicate, &observation.user) =>
+                {
+                    predicate
+                }
+                _ => {
+                    let id = known.id.clone();
+                    if self.found(Finding::GhostNotReproduced { index, id }) {
+                        return Ok(true);
+                    }
+                    continue;
+                }
+            };
+            // The engine does not shrink timeouts, so there is nothing to minimise.
+            if self.scope == Scope::Everything
+                && known.kind != FailureKind::Timeout
+                && !self.minimal(ghost, &predicate)?
+            {
+                let id = known.id.clone();
+                self.found(Finding::GhostNotMinimal { index, id });
+            }
+        }
+        Ok(false)
+    }
+
+    /// SBX-04: `false` when the shrinker finds a smaller input that fails the same way.
+    fn minimal(
+        &mut self,
+        ghost: &SandboxGhost,
+        predicate: &FailurePredicate,
+    ) -> Result<bool, RunnerError> {
+        let comparator = self.inputs.comparator;
+        let mut fault = None;
+        let outcome = shrink(
+            self.inputs.schema,
+            ghost.known.input.clone(),
+            Budget::default().max_shrink_evals,
+            &mut |candidate: &Value| match self.observe(&ghost.program, candidate) {
+                Ok(observation)
+                    if classify(&observation, &comparator)
+                        == Classification::Fail(predicate.clone()) =>
+                {
+                    Probe::Keep
+                }
+                Ok(_) => Probe::Reject,
+                Err(error) => {
+                    fault = Some(error);
+                    Probe::Stop
+                }
+            },
+        );
+        if let Some(error) = fault {
+            return Err(error);
+        }
+        Ok(compare_size(&outcome.value, &ghost.known.input) != Ordering::Less)
+    }
+
+    /// Runs the program and the reference on one input, each within the pack limit.
+    fn observe(&mut self, program: &str, input: &Value) -> Result<Observation, RunnerError> {
+        let limit = self.inputs.limit;
+        let user = self.runner.run(Target::Program(program), input, limit)?;
+        let reference = self.runner.run(Target::Reference, input, limit)?;
+        Ok(Observation { user, reference })
+    }
+}
+
+/// Runs the sandbox checks on `pack` for the validator and pushes their diagnostics.
 ///
 /// Callers must run the static checks first. The time limit comes from
 /// `meta.limits`, which the static checks have already range-checked.
@@ -67,185 +445,113 @@ pub fn check(
     report: &mut Report,
 ) -> Result<(), RunnerError> {
     let limit = Duration::from_millis(u64::try_from(meta.limits.time_ms).unwrap_or_default());
-    check_samples(meta, runner, limit, report)?;
-    check_hidden(meta, runner, limit, report)?;
-    if let Some(bench) = &meta.bench {
-        check_bench(meta, bench, runner, limit, report)?;
-    }
+    let samples: Vec<(Value, Value)> = meta
+        .samples
+        .iter()
+        .map(|sample| (sample.input.clone(), sample.expected.clone()))
+        .collect();
+    let curated = match pack.text(hidden::HIDDEN_FILE).map(hidden::curated_cases) {
+        None => Vec::new(),
+        Some(Ok(cases)) => cases,
+        Some(Err(message)) => {
+            report.push(Diagnostic::new(
+                codes::SBX_09,
+                hidden::HIDDEN_FILE,
+                None,
+                format!("hidden.toml does not parse, so its cases cannot be checked: {message}"),
+            ));
+            Vec::new()
+        }
+    };
     let ghosts = pack
         .text("known_ghosts.toml")
         .map(ghosts::sandbox_ghosts)
         .unwrap_or_default();
-    for (index, ghost) in ghosts.iter().enumerate() {
-        check_ghost(index, ghost, meta, runner, limit, report)?;
+    let generated = meta.generator.as_ref().and_then(|generator| {
+        Some(Generated {
+            seed: u64::try_from(generator.seed).ok()?,
+            count: usize::try_from(generator.hidden_count).ok()?,
+            retired: None,
+        })
+    });
+    let inputs = SandboxInputs {
+        comparator: meta.engine_comparator(),
+        returns: &meta.returns,
+        limit,
+        schema: &meta.input_schema,
+        samples: &samples,
+        curated: &curated,
+        generated,
+        ghosts: &ghosts,
+    };
+    let outcome = run_checks(&inputs, Scope::Everything, runner)?;
+    for finding in &outcome.findings {
+        report.push(diagnostic(finding));
+    }
+    if let Some(bench) = &meta.bench {
+        check_bench(meta, bench, runner, limit, report)?;
     }
     Ok(())
 }
 
-/// SBX-01: the reference must return each authored sample's expected value.
-fn check_samples(
-    meta: &Meta,
-    runner: &mut dyn PackRunner,
-    limit: Duration,
-    report: &mut Report,
-) -> Result<(), RunnerError> {
-    let comparator = meta.engine_comparator();
-    for (index, sample) in meta.samples.iter().enumerate() {
-        let result = runner.run(Target::Reference, &sample.input, limit)?;
-        let agrees = matches!(
-            &result,
-            ProgramResult::Returned(got) if comparator.equal(&sample.expected, got)
-        );
-        if !agrees {
-            report.push(Diagnostic::new(
-                codes::SBX_01,
-                "meta.toml",
-                Some(&format!("/samples/{index}/expected")),
-                "the reference does not return this sample's expected value",
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// SBX-02: the reference must return a value of the declared shape on every hidden input.
-///
-/// Hidden inputs come from the engine's seeded stream, in memory. The check looks
-/// at the shape of each result only.
-fn check_hidden(
-    meta: &Meta,
-    runner: &mut dyn PackRunner,
-    limit: Duration,
-    report: &mut Report,
-) -> Result<(), RunnerError> {
-    let Some(generator) = meta.generator.as_ref() else {
-        return Ok(());
-    };
-    let (Ok(seed), Ok(count)) = (
-        u64::try_from(generator.seed),
-        usize::try_from(generator.hidden_count),
-    ) else {
-        return Ok(());
-    };
-    let return_kind = LaunchType::parse(&meta.returns);
-    let stream = CandidateStream::new(
-        meta.input_schema.clone(),
-        seed,
-        Vec::new(),
-        Vec::new(),
-        GeneratorConfig::default(),
-    );
-    for (index, candidate) in stream.take(count).enumerate() {
-        let result = runner.run(Target::Reference, &candidate.value, limit)?;
-        let shaped = matches!(
-            &result,
-            ProgramResult::Returned(value)
-                if return_kind.is_some_and(|kind| accepts_return(kind, value))
-        );
-        if !shaped {
-            report.push(Diagnostic::new(
-                codes::SBX_02,
-                "meta.toml",
-                Some("/generator"),
-                format!(
-                    "the reference crashes, times out or returns the wrong shape on hidden test {}",
-                    index + 1
-                ),
-            ));
-        }
-    }
-    Ok(())
-}
-
-/// SBX-03 and SBX-04 for one known ghost.
-fn check_ghost(
-    index: usize,
-    ghost: &SandboxGhost,
-    meta: &Meta,
-    runner: &mut dyn PackRunner,
-    limit: Duration,
-    report: &mut Report,
-) -> Result<(), RunnerError> {
-    let known = &ghost.known;
-    let comparator = meta.engine_comparator();
-    let observation = observe(runner, &ghost.program, &known.input, limit)?;
-    let predicate = match classify(&observation, &comparator) {
-        Classification::Fail(predicate)
-            if known.matches(&known.input, &predicate, &observation.user) =>
-        {
-            predicate
-        }
-        _ => {
-            report.push(Diagnostic::new(
-                codes::SBX_03,
-                "known_ghosts.toml",
-                Some(&format!("/ghost/{index}")),
-                "the known ghost does not reproduce its recorded failure",
-            ));
-            return Ok(());
-        }
-    };
-    // The engine does not shrink timeouts, so there is nothing to minimise.
-    if known.kind == FailureKind::Timeout {
-        return Ok(());
-    }
-    check_minimal(index, ghost, &predicate, meta, runner, limit, report)
-}
-
-/// SBX-04: a ghost is not minimal when the shrinker finds a smaller input that fails the same way.
-fn check_minimal(
-    index: usize,
-    ghost: &SandboxGhost,
-    predicate: &FailurePredicate,
-    meta: &Meta,
-    runner: &mut dyn PackRunner,
-    limit: Duration,
-    report: &mut Report,
-) -> Result<(), RunnerError> {
-    let comparator = meta.engine_comparator();
-    let mut fault = None;
-    let outcome = shrink(
-        &meta.input_schema,
-        ghost.known.input.clone(),
-        Budget::default().max_shrink_evals,
-        &mut |candidate: &Value| match observe(runner, &ghost.program, candidate, limit) {
-            Ok(observation)
-                if classify(&observation, &comparator)
-                    == Classification::Fail(predicate.clone()) =>
-            {
-                Probe::Keep
-            }
-            Ok(_) => Probe::Reject,
-            Err(error) => {
-                fault = Some(error);
-                Probe::Stop
-            }
-        },
-    );
-    if let Some(error) = fault {
-        return Err(error);
-    }
-    if compare_size(&outcome.value, &ghost.known.input) == Ordering::Less {
-        report.push(Diagnostic::new(
+/// The validator diagnostic for one finding.
+fn diagnostic(finding: &Finding) -> Diagnostic {
+    match finding {
+        Finding::SampleDisagrees { index } => Diagnostic::new(
+            codes::SBX_01,
+            "meta.toml",
+            Some(&format!("/samples/{index}/expected")),
+            "the reference does not return this sample's expected value",
+        ),
+        Finding::CuratedDisagrees { index } => Diagnostic::new(
+            codes::SBX_09,
+            hidden::HIDDEN_FILE,
+            Some(&format!("/case/{index}/expected")),
+            "the reference does not return this curated case's expected value",
+        ),
+        Finding::ReferenceFailed {
+            source: HiddenSource::Curated,
+            index,
+        } => Diagnostic::new(
+            codes::SBX_02,
+            hidden::HIDDEN_FILE,
+            Some(&format!("/case/{index}")),
+            format!(
+                "the reference crashes, times out or returns the wrong shape on curated case {}",
+                index + 1
+            ),
+        ),
+        Finding::ReferenceFailed {
+            source: HiddenSource::Generated,
+            index,
+        } => Diagnostic::new(
+            codes::SBX_02,
+            "meta.toml",
+            Some("/generator"),
+            format!(
+                "the reference crashes, times out or returns the wrong shape on hidden test {}",
+                index + 1
+            ),
+        ),
+        Finding::TooFewGenerated { wanted, got } => Diagnostic::new(
+            codes::GEN_01,
+            "generator.toml",
+            Some("/generator/hidden_count"),
+            format!("the generator yields only {got} unique hidden inputs, but hidden_count asks for {wanted}"),
+        ),
+        Finding::GhostNotReproduced { index, .. } => Diagnostic::new(
+            codes::SBX_03,
+            "known_ghosts.toml",
+            Some(&format!("/ghost/{index}")),
+            "the known ghost does not reproduce its recorded failure",
+        ),
+        Finding::GhostNotMinimal { index, .. } => Diagnostic::new(
             codes::SBX_04,
             "known_ghosts.toml",
             Some(&format!("/ghost/{index}/input")),
             "a smaller input fails the same way, so this known ghost is not minimal",
-        ));
+        ),
     }
-    Ok(())
-}
-
-/// Runs the user's program and the reference on one input, each within `limit`.
-fn observe(
-    runner: &mut dyn PackRunner,
-    program: &str,
-    input: &Value,
-    limit: Duration,
-) -> Result<Observation, RunnerError> {
-    let user = runner.run(Target::Program(program), input, limit)?;
-    let reference = runner.run(Target::Reference, input, limit)?;
-    Ok(Observation { user, reference })
 }
 
 /// Times the reference on the declared bench sizes and checks the measured class (BEN-01, SBX-05).

@@ -330,6 +330,11 @@ impl TempPack {
                 .map_or_else(|| default_text(name), |(_, text)| text.clone());
             pack.write(name, &text);
         }
+        for (name, text) in overrides {
+            if !pack.root().join(name).exists() {
+                pack.write(name, text);
+            }
+        }
         pack
     }
 
@@ -434,6 +439,43 @@ fn reference_that_fails_on_hidden_inputs_is_sbx_02() {
     let report = run_sandbox(&pack.root(), &mut runner);
 
     assert!(codes(&report).contains(&"SBX-02"));
+}
+
+#[test]
+fn curated_hidden_cases_the_reference_agrees_with_pass() {
+    // The reference counts one pair in [1, 1] summing to 2.
+    let hidden = "[[case]]\ninput = [[1, 1], 2]\nexpected = 1\n".to_owned();
+    let pack = TempPack::new("curated-ok", &[("hidden.toml", hidden)]);
+    let mut runner = ModelRunner::new(
+        reference_model,
+        &[
+            ("incorrect/same-index.py", same_index_model),
+            ("incorrect/empty-min.py", empty_min_model),
+        ],
+    );
+
+    let report = run_sandbox(&pack.root(), &mut runner);
+
+    assert_eq!(codes(&report), Vec::<&str>::new());
+}
+
+#[test]
+fn curated_hidden_case_the_reference_disagrees_with_is_sbx_09() {
+    // The reference counts one pair in [1, 1] summing to 2, not the authored 5.
+    let hidden = "[[case]]\ninput = [[1, 1], 2]\nexpected = 5\n".to_owned();
+    let pack = TempPack::new("curated-bad", &[("hidden.toml", hidden)]);
+    let mut runner = ModelRunner::new(
+        reference_model,
+        &[
+            ("incorrect/same-index.py", same_index_model),
+            ("incorrect/empty-min.py", empty_min_model),
+        ],
+    );
+
+    let report = run_sandbox(&pack.root(), &mut runner);
+
+    assert_eq!(codes(&report), ["SBX-09"]);
+    assert!(report.has_errors());
 }
 
 #[test]
