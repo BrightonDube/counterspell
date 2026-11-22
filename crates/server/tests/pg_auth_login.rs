@@ -67,8 +67,9 @@ fn gate() -> HashGate {
     HashGate::new(4, StdDuration::from_secs(2))
 }
 
-/// Inserts the demo account (`is_demo`, verified, `Some` password) or a regular user (`None`
-/// password) at `handle@example.co`. The `demo` address goes in verbatim.
+/// Inserts a verified user with a password (`Some`) or without one (`None`). The `demo` handle
+/// gets the configured demo address; the login gate keys on the address, not the `is_demo` flag
+/// (which only `cs_seed_demo_user` may set).
 // test-change: ACC-1
 async fn demo_or_user(pool: &PgPool, handle: &str, password: Option<&str>) -> UserId {
     let hash = password.map(|p| hash_password(p).expect("hash"));
@@ -78,13 +79,12 @@ async fn demo_or_user(pool: &PgPool, handle: &str, password: Option<&str>) -> Us
         format!("{handle}@example.co")
     };
     let (id,): (Uuid,) = sqlx::query_as(
-        "INSERT INTO users (email, email_verified_at, password_hash, handle, display_name, is_demo)
-         VALUES ($1, now(), $2, $3, $3, $4) RETURNING id",
+        "INSERT INTO users (email, email_verified_at, password_hash, handle, display_name)
+         VALUES ($1, now(), $2, $3, $3) RETURNING id",
     )
     .bind(&email)
     .bind(hash)
     .bind(handle)
-    .bind(handle == "demo")
     .fetch_one(pool)
     .await
     .expect("insert user");
