@@ -548,3 +548,56 @@ describe('cost model edge cases', () => {
     expect(analyze(HALVING_THEN_DECREMENT).guess_class).toBe('n');
   });
 });
+
+// while n > 1:
+//     half = n // 2
+//     n = n - (half % 2) - 1   (only a parity peek — still a countdown)
+const PARITY_DECREMENT = fn(
+  'parity_step',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('half', op('//', [id('n'), lit('2')])),
+      assign(
+        'n',
+        op('-', [op('-', [id('n'), op('%', [id('half'), lit('2')])]), lit('1')])
+      )
+    ])
+  ]
+);
+
+// while n > 1: n = (n * 2) // 4    (net shrink 1/2 — genuinely logarithmic)
+const DOUBLE_THEN_QUARTER = fn(
+  'double_quarter',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('n', op('//', [op('*', [id('n'), lit('2')]), lit('4')]))
+    ])
+  ]
+);
+
+// while n > 1: n = (n // 4) * 2    (net shrink 1/2 — genuinely logarithmic)
+const QUARTER_THEN_DOUBLE = fn(
+  'quarter_double',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('n', op('*', [op('//', [id('n'), lit('4')]), lit('2')]))
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('does not read a parity check on a halved value as halving', () => {
+    expect(analyze(PARITY_DECREMENT).guess_class).toBe('n');
+  });
+
+  it('reads (n * 2) // 4 as a geometric shrink', () => {
+    expect(analyze(DOUBLE_THEN_QUARTER).guess_class).toBe('log n');
+  });
+
+  it('reads (n // 4) * 2 as a geometric shrink', () => {
+    expect(analyze(QUARTER_THEN_DOUBLE).guess_class).toBe('log n');
+  });
+});
