@@ -404,3 +404,42 @@ describe('cost model edge cases', () => {
     expect(analyze(CONSTANT_DIVIDE_DECREMENT).guess_class).toBe('n');
   });
 });
+
+// while n > 0:
+//     def helper():
+//         n = n // 2     (uncalled helper — not this loop's update)
+//     n = n - 1
+const NESTED_FN_DIVISION = fn(
+  'countdown2',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      fn('helper', [], [assign('n', op('//', [id('n'), lit()]))]),
+      assign('n', op('-', [id('n'), lit()]))
+    ])
+  ]
+);
+
+// while n > 0:
+//     previous = n
+//     n = previous // 2   (halving through a temporary copy)
+const ALIASED_HALVING = fn(
+  'halve_alias',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit()]), [
+      assign('previous', id('n')),
+      assign('n', op('//', [id('previous'), lit()]))
+    ])
+  ]
+);
+
+describe('cost model edge cases', () => {
+  it('ignores an uncalled nested helper when pricing the loop', () => {
+    expect(analyze(NESTED_FN_DIVISION).guess_class).toBe('n');
+  });
+
+  it('reads a halving applied through a temporary copy', () => {
+    expect(analyze(ALIASED_HALVING).guess_class).toBe('log n');
+  });
+});

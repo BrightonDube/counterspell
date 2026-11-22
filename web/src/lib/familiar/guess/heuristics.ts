@@ -177,40 +177,58 @@ function namesIn(node: GuessNode, out: Set<string>): Set<string> {
 }
 
 function assignsIn(node: GuessNode, out: GuessNode[] = []): GuessNode[] {
+  if (node.type === 'function') return out; // an uncalled helper is not an update
   if (node.type === 'assign') out.push(node);
   for (const child of node.children) assignsIn(child, out);
   return out;
 }
 
-// A `//`, `/`, or `>>` by a constant whose other operand mentions one of the
-// target names — `(lo + hi) // 2` halves the `lo`/`hi` range, `10 // 2` and
-// `k // 2` shrink nobody's bound.
-function hasHalvingOpOn(node: GuessNode, targets: Set<string>): boolean {
-  if (
-    node.type === 'binary_op' &&
-    ['//', '/', '>>'].includes(node.text) &&
-    node.children.some((operand) => operand.type === 'literal') &&
-    node.children.some((operand) =>
+// A `//`, `/`, or `>>` by a constant whose dividend mentions one of the
+// target names — `x // 2`, `(lo + hi) // 2`. Nesting deeper than the root
+// (the `k // 2` inside `n = n - (k // 2)`) does not count: the bound must be
+// replaced by a fraction of itself, not reduced by a constant.
+function isHalvingValue(value: GuessNode, targets: Set<string>): boolean {
+  return (
+    value.type === 'binary_op' &&
+    ['//', '/', '>>'].includes(value.text) &&
+    value.children.some((operand) => operand.type === 'literal') &&
+    value.children.some((operand) =>
       [...namesIn(operand, new Set())].some((name) => targets.has(name))
     )
-  ) {
-    return true;
-  }
-  return node.children.some((child) => hasHalvingOpOn(child, targets));
+  );
 }
 
 // True when a `while` body shrinks a variable the condition tests by a
-// geometric factor — `x = x // 2`, `x >>= 1`, or the binary-search shape where
-// a bound var takes `mid` and `mid` came from a halving, including updates
-// nested inside `if`/`else`. An unrelated division (`half = n // 2; n = n - 1`)
-// or a constant decrement (`n = n - (10 // 2)`) is not a halving loop.
+// geometric factor — `x = x // 2`, `x >>= 1`, `previous = n; n = previous // 2`
+// — or the binary-search shape where a bound var takes `mid` and `mid` came
+// from a halving, including updates nested inside `if`/`else`. An unrelated
+// division (`half = n // 2; n = n - 1`) or a constant decrement
+// (`n = n - (10 // 2)`) is not a halving loop.
 function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
   if (!cond) return false;
   const condNames = namesIn(cond, new Set());
   const assigns = body.flatMap((node) => assignsIn(node));
+  // Condition vars plus anything a copy points back at: `previous = n` makes
+  // `previous // 2` a halving of `n`.
+  const derived = new Set(condNames);
+  let grew = true;
+  while (grew) {
+    grew = false;
+    for (const node of assigns) {
+      if (
+        !derived.has(node.text) &&
+        node.children.some(
+          (value) => value.type === 'name' && derived.has(value.text)
+        )
+      ) {
+        derived.add(node.text);
+        grew = true;
+      }
+    }
+  }
   const halvingValues = new Set<string>();
   for (const node of assigns) {
-    if (node.children.some((value) => hasHalvingOpOn(value, condNames))) {
+    if (node.children.some((value) => isHalvingValue(value, derived))) {
       halvingValues.add(node.text);
     }
   }
@@ -219,7 +237,7 @@ function halvesBound(cond: GuessNode | undefined, body: GuessNode[]): boolean {
       condNames.has(node.text) &&
       node.children.some(
         (value) =>
-          hasHalvingOpOn(value, condNames) ||
+          isHalvingValue(value, derived) ||
           [...namesIn(value, new Set())].some((name) => halvingValues.has(name))
       )
   );
