@@ -55,7 +55,8 @@ fn every_driver_marks_call_boundaries_and_mirrors_stderr_live() {
     let java = driver("java/Driver.java");
     assert!(java.contains("CALL_STDERR_MARKER"));
     assert!(java.contains("BoundedErr"));
-    assert!(java.contains("mirror.write"));
+    assert!(java.contains("activeErr"));
+    assert!(java.contains("REAL_ERR.write"));
 
     let cpp = driver("cpp/driver.cpp");
     assert!(cpp.contains("CALL_STDERR_MARKER"));

@@ -533,15 +533,13 @@ public final class Driver {
                 + " with the signature's Java types");
     }
 
-    /** A tee that keeps the sandbox's first-64KiB stderr copy and mirrors live bytes. */
+    private static final PrintStream REAL_ERR = System.err;
+    private static volatile BoundedErr activeErr;
+
+    /** Keeps the sandbox's first-64KiB stderr copy for the call that owns it. */
     static final class BoundedErr extends ByteArrayOutputStream {
-        private final PrintStream mirror;
         private boolean truncated;
-        BoundedErr(PrintStream mirror) {
-            this.mirror = mirror;
-        }
         @Override public synchronized void write(int b) {
-            mirror.write(b);
             if (size() < STDERR_CAP) {
                 super.write(b);
             } else {
@@ -549,7 +547,6 @@ public final class Driver {
             }
         }
         @Override public synchronized void write(byte[] bytes, int offset, int length) {
-            mirror.write(bytes, offset, length);
             int take = Math.min(length, STDERR_CAP - size());
             if (take > 0) {
                 super.write(bytes, offset, take);
@@ -561,28 +558,49 @@ public final class Driver {
         }
     }
 
+    /** Mirrors stderr live and routes it to the call currently owning the capture. */
+    static final class RoutedErr extends ByteArrayOutputStream {
+        @Override public synchronized void write(int b) {
+            REAL_ERR.write(b);
+            BoundedErr capture = activeErr;
+            if (capture != null) {
+                capture.write(b);
+            }
+        }
+        @Override public synchronized void write(byte[] bytes, int offset, int length) {
+            REAL_ERR.write(bytes, offset, length);
+            BoundedErr capture = activeErr;
+            if (capture != null) {
+                capture.write(bytes, offset, length);
+            }
+        }
+    }
+
+    private static final PrintStream ERR = new PrintStream(
+            new RoutedErr(), true, StandardCharsets.UTF_8);
+
     /** Hides stdout and stdin and captures stderr while user code runs. */
     static final class Quiet implements AutoCloseable {
         private final PrintStream savedOut;
         private final java.io.InputStream savedIn;
-        private final PrintStream savedErr;
         private final BoundedErr capturedErr;
         Quiet() {
             savedOut = System.out;
             savedIn = System.in;
-            savedErr = System.err;
-            capturedErr = new BoundedErr(savedErr);
+            capturedErr = new BoundedErr();
             System.setOut(new PrintStream(new ByteArrayOutputStream(), true, StandardCharsets.UTF_8));
             System.setIn(new ByteArrayInputStream(new byte[0]));
-            System.setErr(new PrintStream(capturedErr, true, StandardCharsets.UTF_8));
+            System.setErr(ERR);
+            activeErr = capturedErr;
         }
         String stderr() {
             return capturedErr.text();
         }
         @Override public void close() {
+            activeErr = null;
             System.setOut(savedOut);
             System.setIn(savedIn);
-            System.setErr(savedErr);
+            System.setErr(ERR);
         }
     }
 
@@ -646,6 +664,7 @@ public final class Driver {
             System.exit(EXIT_PROTOCOL);
         }
         try {
+            System.setErr(ERR);
             Signature signature = loadSignature();
             Method function = resolveFunction(signature);
             serve(function, signature);
