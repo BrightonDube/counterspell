@@ -236,6 +236,22 @@ function boundFactor(node: GuessNode, targets: Set<string>): number {
     return boundFactor(node.children[0], targets) / Math.max(divisor, 1);
   }
   if (node.text === '%') return 0;
+  if (node.text === '+') {
+    const factors = node.children.map((child) => boundFactor(child, targets));
+    if (factors.some((factor) => !Number.isFinite(factor))) return Infinity;
+    const fractions = factors.filter((factor) => factor < 1);
+    // Bound terms accumulate only as fractions of the bound: `n // 4 +
+    // n // 4` sums to `n // 2`, while `lo + hi` stays bound-scale — its
+    // dominant term keeps coefficient 1, and `lo + (hi - lo) // 2` reads
+    // as a half of the remaining distance.
+    if (factors.every((factor) => factor < 1)) {
+      return fractions.reduce((acc, factor) => acc + factor, 0);
+    }
+    if (fractions.length > 0) {
+      return fractions.reduce((acc, factor) => acc + factor, 0);
+    }
+    return Math.max(0, ...factors);
+  }
   return Math.max(
     0,
     ...node.children.map((child) => boundFactor(child, targets))
@@ -384,6 +400,7 @@ function referencesBarely(
       .filter((child) => child.type === 'literal')
       .reduce((acc, child) => acc * numeric(child), 1);
     const transparent =
+      nameFactor > 0 &&
       nameFactor * literalProduct < 1 &&
       node.children.every(
         (child) =>
@@ -410,7 +427,11 @@ function referencesBarely(
     (node.type === 'name' || node.type === 'member') &&
     node.text === name
   ) {
-    return !targetInValue || seenMinus || allowPlus;
+    return (
+      nameFactor > 0 &&
+      nameFactor < 1 &&
+      (!targetInValue || seenMinus || allowPlus)
+    );
   }
   return node.children.some((child) =>
     referencesBarely(

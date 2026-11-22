@@ -350,6 +350,39 @@ const SCALED_QUARTER = fn(
   ]
 );
 
+// while n > 1:
+//     q = n // 4 + n // 4
+//     n = q * 2   (two quarters summed then doubled restores n)
+const SUMMED_QUARTERS = fn(
+  'summed_quarters',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign(
+        'q',
+        op('+', [op('//', [id('n'), lit('4')]), op('//', [id('n'), lit('4')])])
+      ),
+      assign('n', op('*', [id('q'), lit('2')]))
+    ])
+  ]
+);
+
+// while n > 1:
+//     k = 1
+//     half = (n // 2) // k
+//     n = half * 2 - 1   (unknown divisor, doubling restores n)
+const NESTED_UNKNOWN_DIVISOR = fn(
+  'nested_unknown_div',
+  ['n'],
+  [
+    whileLoop(cmp('>', [id('n'), lit('1')]), [
+      assign('k', lit('1')),
+      assign('half', op('//', [op('//', [id('n'), lit('2')]), id('k')])),
+      assign('n', op('-', [op('*', [id('half'), lit('2')]), lit('1')]))
+    ])
+  ]
+);
+
 describe('cost model edge cases', () => {
   it('reads a sort in the iterable as preprocessing: n log n', () => {
     expect(analyze(SORT_IN_ITERABLE).guess_class).toBe('n log n');
@@ -765,5 +798,12 @@ describe('cost model edge cases', () => {
   });
   it('reads half * 2 of a quarter as a geometric shrink', () => {
     expect(analyze(SCALED_QUARTER).guess_class).toBe('log n');
+  });
+  it('does not read summed quarters doubled as a shrink', () => {
+    expect(analyze(SUMMED_QUARTERS).guess_class).toBe('n');
+  });
+
+  it('does not read a nested unknown divisor scaled back as a shrink', () => {
+    expect(analyze(NESTED_UNKNOWN_DIVISOR).guess_class).toBe('n');
   });
 });
