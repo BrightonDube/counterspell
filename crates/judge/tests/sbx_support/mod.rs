@@ -61,12 +61,11 @@ fn repo_root() -> PathBuf {
 /// accepts the catalogue. The sandbox run itself always uses the real driver file.
 pub fn catalogue() -> (TempDir, LanguageCatalog) {
     let text = include_str!("../../../../languages/languages.toml");
-    catalogue_text(text, &[])
+    catalogue_text(text)
 }
 
-/// The shipped catalogue with the named languages flipped to `enabled = true`. Used by the
-/// stretch suites: Java and C++ stay disabled for users until T16's full pass, but tests must
-/// see them as enabled.
+/// The shipped catalogue with the named languages flipped to `enabled = true`, for tests
+/// that run ahead of a language's public enablement.
 pub fn catalogue_enabled(extra: &[&str]) -> (TempDir, LanguageCatalog) {
     let mut text = include_str!("../../../../languages/languages.toml").to_string();
     for lang in extra {
@@ -81,10 +80,10 @@ pub fn catalogue_enabled(extra: &[&str]) -> (TempDir, LanguageCatalog) {
         assert!(block.contains("enabled = true"), "[{lang}] becomes enabled");
         text.replace_range(start..end, &block);
     }
-    catalogue_text(&text, &[])
+    catalogue_text(&text)
 }
 
-fn catalogue_text(text: &str, _stub: &[&str]) -> (TempDir, LanguageCatalog) {
+fn catalogue_text(text: &str) -> (TempDir, LanguageCatalog) {
     let dir = TempDir::new().expect("a temp dir for the stub drivers");
     for driver in [
         "drivers/python/driver.py",

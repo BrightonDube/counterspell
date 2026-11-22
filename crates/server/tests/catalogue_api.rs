@@ -208,6 +208,7 @@ fn language_keys_match_the_allow_list_exactly() {
 
 #[test]
 fn launch_catalogue_lists_the_accepted_languages() {
+    // test-change: IDE-1 (T16 enabled Java and C++; the accepted set now lists all four)
     let catalogue = counterspell_server::seams::LanguageCatalog::launch(65_536);
     let ids: Vec<&str> = catalogue
         .entries()

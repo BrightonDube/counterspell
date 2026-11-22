@@ -777,6 +777,7 @@ impl Backend for BollardBackend {
             id,
             api_timeout: self.api_timeout,
             image,
+            labels: spec.policy.labels.clone(),
         })
     }
 
@@ -821,8 +822,12 @@ pub struct BollardSession {
     id: String,
     api_timeout: Duration,
     /// What the pinned image declares. The daemon merges its environment and labels into
-    /// the container, so the read-back must tolerate them (see `without_image_env`).
+    /// the container, so the read-back must tolerate them (see `without_image_env`
+    /// and `without_image_labels`).
     image: ImageDetails,
+    /// The labels this session asked for at create time. Read-back keeps them even
+    /// when the image declares an identical label, matching `verify_readback`.
+    labels: BTreeMap<String, String>,
 }
 
 impl BackendSession for BollardSession {
@@ -843,7 +848,7 @@ impl BackendSession for BollardSession {
         let mut read = from_inspect(&inspect)
             .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))?;
         read.env = without_image_env(read.env, &self.image.env);
-        read.labels = without_image_labels(read.labels, &BTreeMap::new(), &self.image.labels);
+        read.labels = without_image_labels(read.labels, &self.labels, &self.image.labels);
         Ok(read)
     }
 

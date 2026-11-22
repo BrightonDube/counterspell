@@ -76,6 +76,16 @@ fn cases() -> Vec<Case> {
             calls: vec![json!([1])],
         },
         Case {
+            name: "invalid values",
+            python: "def f(n):\n    return n\n",
+            java: "public class Solution {\n    public static long f(long n) { return n; }\n}\n",
+            cpp: "long long f(long long n) { return n; }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(f(from_json<long long>(args[0])));\n}\n",
+            signature: signature("f", &[("n", int())], &int()),
+            // A string, a null and a float where the signature says int: every driver
+            // must fail the call the same way instead of coercing a wrong answer.
+            calls: vec![json!(["x"]), json!([null]), json!([1.5])],
+        },
+        Case {
             name: "wrong argument count",
             python: "def f(n):\n    return n\n",
             java: "public class Solution {\n    public static long f(long n) { return n; }\n}\n",
@@ -172,17 +182,18 @@ async fn sbx_stretch_deep_recursion_fits_the_configured_stack() {
     let (_dir, catalog) = catalogue_enabled(&["java", "cpp"]);
     let sig = signature("depth", &[("n", int())], &int());
     // The T14 sizing evidence: linear recursion to depth n, as linked-list and
-    // tree-depth problems take. 50_000 frames fits the configured -Xss14m.
+    // tree-depth problems take. 50_000 frames fits the configured -Xss14m and the
+    // C++ frame budget.
     for (lang, source) in [
         ("java", "public class Solution {\n    public static long depth(long n) { return n <= 0 ? 0 : 1 + depth(n - 1); }\n}\n"),
         ("cpp", "long long depth(long long n) { return n <= 0 ? 0 : 1 + depth(n - 1); }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(depth(from_json<long long>(args[0])));\n}\n"),
     ] {
         let (session, driver) = start_on(&catalog, lang, source, sig.clone(), Mode::Normal).await;
         let mut driver = driver.unwrap_or_else(|err| panic!("{lang} compiles: {err}"));
-        let reply = ask(&mut driver, 0, json!([5_000])).await;
+        let reply = ask(&mut driver, 0, json!([50_000])).await;
         assert!(
             matches!(reply, Reply::Answer(_)),
-            "{lang} answers a 5_000-deep recursion: {reply:?}"
+            "{lang} answers a 50_000-deep recursion: {reply:?}"
         );
         finish(session).await;
     }

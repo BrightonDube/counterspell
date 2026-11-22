@@ -143,6 +143,8 @@ fn accepts_tabs_and_both_kinds_of_line_ending() {
 
 #[test]
 fn rejects_an_unsupported_language() {
+    // test-change: IDE-1 (Java and C++ are supported after T16; "rust" is the
+    // unsupported stand-in now)
     let error =
         validate_source("rust", "fn main() {}\n", LIMIT).expect_err("rust is not supported");
 

@@ -35,6 +35,7 @@ async fn production_catalogue_publishes_no_problems() {
 
 #[test]
 fn launch_catalogue_offers_python_javascript_java_and_cpp() {
+    // test-change: IDE-1 (T16 enabled Java and C++; the accepted set now lists all four)
     let catalogue = LanguageCatalog::launch(65_536);
 
     let python = catalogue.find("python").expect("python is enabled");

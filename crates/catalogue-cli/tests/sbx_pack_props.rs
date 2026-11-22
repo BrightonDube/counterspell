@@ -30,7 +30,12 @@ use counterspell_judge::sandbox::oracle::SandboxOracle;
 use serde_json::Value;
 
 /// The enabled languages and their fixture file extensions.
-const FIXTURE_LANGS: [(&str, &str); 2] = [("python", "py"), ("javascript", "js")];
+const FIXTURE_LANGS: [(&str, &str); 4] = [
+    ("python", "py"),
+    ("javascript", "js"),
+    ("java", "java"),
+    ("cpp", "cpp"),
+];
 /// Per-call deadline handed to the oracle, matching the sbx scenario bound.
 const CALL_LIMIT: Duration = Duration::from_secs(2);
 
