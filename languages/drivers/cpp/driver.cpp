@@ -479,7 +479,12 @@ static bool conforms(const JSONValue& value, const TypeDescriptor& descriptor) {
     if (std::holds_alternative<std::nullptr_t>(value.value)) {
         return descriptor.kind == "null" || descriptor.nullable;
     }
-    if (descriptor.kind == "int") return std::holds_alternative<long long>(value.value);
+    if (descriptor.kind == "int") {
+        // The same exact-integer range as the Python and JavaScript drivers (2^53 - 1).
+        constexpr long long max_safe_integer = (1LL << 53) - 1;
+        auto* p = std::get_if<long long>(&value.value);
+        return p && *p >= -max_safe_integer && *p <= max_safe_integer;
+    }
     if (descriptor.kind == "float") {
         auto* p = std::get_if<double>(&value.value);
         return p && std::isfinite(*p);
