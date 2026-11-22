@@ -21,7 +21,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Requirements: CP-1, CP-3.
   - PR alone: yes.
 
-- [ ] **T02 [S] (30 min) Animate settings without changing layout**
+- [x] **T02 [S] (30 min) Animate settings without changing layout**
   - Files: `web/src/routes/settings/account/+page.svelte`, account/settings CSS, component tests.
   - Animate the existing crypt key on hover/focus (short turn + glow), give provider-link activation a bounded key/unlock affordance, and add at most small existing object art where it does not reorder content. Keep every section and control in place.
   - Verify: tests assert classes/ARIA are unchanged and output order is preserved; manual visual check at desktop and 375 px.
