@@ -141,4 +141,33 @@ describe('cst mapping: javascript', () => {
     );
     expect(guess.guess_class).not.toBe('n^2');
   });
+
+  it('reads indexOf inside a loop as a linear step', async () => {
+    const guess = await guessFor(
+      'javascript',
+      'function f(nums, t) {\n  for (const x of nums) {\n    if (nums.indexOf(x) === t) return x;\n  }\n}\n'
+    );
+    expect(guess.guess_class).toBe('n^2');
+  });
+
+  it('keeps nesting in unbraced loops and branches', async () => {
+    const guess = await guessFor(
+      'javascript',
+      'function f(nums) {\n  for (const x of nums)\n    for (const y of nums)\n      if (x === y) console.log(x);\n}\n'
+    );
+    expect(guess.guess_class).toBe('n^2');
+  });
+
+  it('keeps signals inside parentheses', async () => {
+    const halving = await guessFor(
+      'javascript',
+      'function f(n) {\n  while (n > 1) {\n    n = (n - (n % 2)) / 2;\n  }\n}\n'
+    );
+    expect(halving.guess_class).toBe('log n');
+    const recursion = await guessFor(
+      'javascript',
+      'function fib(n) {\n  return (fib(n - 1)) + (fib(n - 2));\n}\n'
+    );
+    expect(recursion.guess_class).toBe('2^n');
+  });
 });

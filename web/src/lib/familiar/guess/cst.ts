@@ -72,8 +72,10 @@ function callNode(node: SyntaxNode): GuessNode {
       callee.childForFieldName('property');
     return {
       type: 'member_call',
-      text: attr?.text ?? callee.text,
-      children: [...(recv ? [mapNode(recv)] : []), ...argNodes]
+      // Method names lower-case so JS `indexOf`/`findIndex` match the
+      // heuristics' lowercase linear-method vocabulary.
+      text: (attr?.text ?? callee.text).toLowerCase(),
+      children: [...(recv ? [mapExpr(recv)] : []), ...argNodes]
     };
   }
   return { type: 'call', text: callee.text, children: argNodes };
@@ -147,7 +149,9 @@ function flat(node: SyntaxNode): GuessNode {
 }
 
 export function mapNode(node: SyntaxNode): GuessNode {
-  const kids = () => node.namedChildren.map(mapNode);
+  // `flatMap(mapChild)`, not `map(mapNode)`: a wrapped child such as a
+  // parenthesized expression must flatten, not become an empty skip node.
+  const kids = () => node.namedChildren.flatMap(mapChild);
   switch (node.type) {
     case 'module':
     case 'program':
@@ -216,7 +220,7 @@ export function mapNode(node: SyntaxNode): GuessNode {
                 }
               ]
             : []),
-          ...(body ? mapChildren(body) : [])
+          ...(body ? mapChild(body) : [])
         ]
       };
     }
@@ -228,7 +232,7 @@ export function mapNode(node: SyntaxNode): GuessNode {
         text: '',
         children: [
           ...(iterable ? [mapExpr(iterable)] : []),
-          ...(body ? mapChildren(body) : [])
+          ...(body ? mapChild(body) : [])
         ]
       };
     }
@@ -242,7 +246,7 @@ export function mapNode(node: SyntaxNode): GuessNode {
         text: '',
         children: [
           ...(cond ? [mapExpr(cond)] : []),
-          ...(body ? mapChildren(body) : [])
+          ...(body ? mapChild(body) : [])
         ]
       };
     }
@@ -256,8 +260,8 @@ export function mapNode(node: SyntaxNode): GuessNode {
         text: '',
         children: [
           ...(cond ? [mapExpr(cond)] : []),
-          ...(consequence ? mapChildren(consequence) : []),
-          ...(alternative ? mapChildren(alternative) : [])
+          ...(consequence ? mapChild(consequence) : []),
+          ...(alternative ? mapChild(alternative) : [])
         ]
       };
     }
@@ -288,7 +292,7 @@ export function mapNode(node: SyntaxNode): GuessNode {
             text: operator,
             children: [
               { type: 'name', text: name, children: [] },
-              ...(right ? [mapNode(right)] : [])
+              ...(right ? [mapExpr(right)] : [])
             ]
           }
         ]

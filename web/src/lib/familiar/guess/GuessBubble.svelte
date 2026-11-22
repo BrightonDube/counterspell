@@ -34,6 +34,9 @@
 
   $effect(() => {
     if (!enabled || !supported) return;
+    // Read synchronously so the effect re-runs on every source change.
+    const code = source;
+    const lang = language;
     worker ??= new Worker(new URL('./worker.ts', import.meta.url), {
       type: 'module'
     });
@@ -45,7 +48,7 @@
     };
     const timer = setTimeout(() => {
       seq += 1;
-      current.postMessage({ seq, code: source, language });
+      current.postMessage({ seq, code, language: lang });
     }, DEBOUNCE_MS);
     return () => clearTimeout(timer);
   });
