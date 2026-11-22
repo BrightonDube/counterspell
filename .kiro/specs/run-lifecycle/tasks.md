@@ -416,6 +416,6 @@ Conventions for every Rust task:
 - [x] `GET /api/runs/{id}` returns one stable final result after a reload.
 - [x] VAL-1 to VAL-3 and the rate limits, active-job cap and queue-depth cap are enforced server-side; rejected requests create nothing.
 - [x] The server database role cannot forge events, results or verdicts (role test passes).
-- [ ] The 18 correctness properties P1–P18 each have a passing test, and `pg_model_interleavings` passes with its regression file committed.
+- [x] The 18 correctness properties P1–P18 each have a passing test, and `pg_model_interleavings` passes with its regression file committed.
 - [x] `pg_dod_twenty_concurrent_runs` passes; `docs/kiro-log/run-lifecycle-dod.md` records enqueue and completion latencies as separate tables, copied from the generated report.
-- [ ] fmt, Clippy (`-D warnings`), workspace tests, database tests, web checks and `cargo deny check licenses` are green in CI.
+- [x] fmt, Clippy (`-D warnings`), workspace tests, database tests, web checks and `cargo deny check licenses` are green in CI.

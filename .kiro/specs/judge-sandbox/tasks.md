@@ -336,19 +336,19 @@ Nothing here may be ticked from reasoning alone. Each item is ticked from the ev
 
 - [x] T00 signed off 14 Nov 2026 with amendments A1 to A3, open questions answered (see `design.md`, "Review decisions").
 - [x] A correct Python solution is accepted and a wrong one fails (S01, S02).
-- [ ] Every hostile scenario (S05 to S15, S26, S28) is contained within its documented limits, measured on the VPS.
-- [ ] Wall time per call is at most the limit plus 1 s; the run is decided within the run cap plus 1 s (P6, P7, S05, S17).
+- [x] Every hostile scenario (S05 to S15, S26, S28) is contained within its documented limits, measured on the VPS.
+- [x] Wall time per call is at most the limit plus 1 s; the run is decided within the run cap plus 1 s (P6, P7, S05, S17).
 - [x] No program output can forge `accepted` (P1, P2, S14).
 - [x] Visible tests run before any hidden test, and no program output is shown from the first hidden test onward (P15, S28).
 - [x] A stdout flood gives `output_limit` (S09, S11); a stderr flood is truncated with a marker and does not kill the container or change the verdict (S10, A2).
 - [x] No labelled container remains after worker recovery, including with the sweeper alone (S16, S17).
 - [x] No network connection reaches any host listener (S12), and the control result is stated.
-- [ ] Preflight passes on the VPS and fails for a weakened policy (S20).
+- [x] Preflight passes on the VPS and fails for a weakened policy (S20).
 - [x] Infrastructure failures are never reported as a user's wrong answer (P9, S21, S22).
 - [x] Concurrent runs do not harm each other (S18) and the container cap holds (S19).
 - [x] `counterspell-server` has no Docker dependency and `bollard` is confined to two files (T36).
 - [x] No host process spawning in `judge` or `mcp` production code (T36).
-- [ ] Validation vectors exist and the judge re-check passes them (T12).
-- [ ] gVisor is reported as untested unless S23 passed on the VPS.
-- [ ] `cargo fmt`, `cargo clippy -D warnings`, `cargo test --workspace` and `cargo deny check licenses` pass.
-- [ ] `verification-report.md` states what was tested, what was model-only and what was not tested.
+- [x] Validation vectors exist and the judge re-check passes them (T12).
+- [x] gVisor is reported as untested unless S23 passed on the VPS.
+- [x] `cargo fmt`, `cargo clippy -D warnings`, `cargo test --workspace` and `cargo deny check licenses` pass.
+- [x] `verification-report.md` states what was tested, what was model-only and what was not tested.

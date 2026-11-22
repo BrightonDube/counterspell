@@ -93,6 +93,8 @@ Prebuilt `sbx_*` integration test binaries (with `SANDBOX_LANGUAGES_FILE` pointi
 
 **Summary:** 19/21 suites (96/98 tests) passed on the target VPS rootless daemon; the 2 failures are test-runner packaging artifacts (missing `deploy/` dir and `cargo` on VPS), not sandbox or isolation failures.
 
+**gVisor (S23): NOT TESTED.** `SANDBOX_RUNTIME=runsc` was never configured on the VPS; runsc is absent from the host, so the gVisor leg stays unverified by design until it is provisioned.
+
 ## Security review pass (T39, 20 Nov 2026, independent reviewer: Devin)
 
 Checklist from `design.md` section 4 walked against `crates/judge/src/` at `3863ba06`:

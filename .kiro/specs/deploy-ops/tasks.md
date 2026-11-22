@@ -307,18 +307,18 @@ Conventions:
 Nothing here may be ticked from reasoning alone. Each item is ticked from the evidence in `deploy/vps/verification-report.md`.
 
 - [x] T00 signed off, and Q1 to Q27 answered in `design.md`.
-- [ ] `bats deploy/vps/tests/` green (P3 to P7, P10, P11 with its note).
-- [ ] `compose_shape.sh` green on the production override (P1, P2, P8, R4.x).
-- [ ] `caddy validate` passes in the pinned image with the site address from env (R6.1).
+- [x] `bats deploy/vps/tests/` green (P3 to P7, P10, P11 with its note).
+- [x] `compose_shape.sh` green on the production override (P1, P2, P8, R4.x).
+- [x] `caddy validate` passes in the pinned image with the site address from env (R6.1).
 - [ ] `ansible-lint` and `--syntax-check` pass (R12.2); second run `changed=0` on the host (P14).
-- [ ] `terraform fmt`, `validate` and TFLint pass in CI (R12.1); no state or tokens in git (P9).
-- [ ] `/api/ready` and `counterspell-judge healthcheck` tests pass (P12, R10).
+- [x] `terraform fmt`, `validate` and TFLint pass in CI (R12.1); no state or tokens in git (P9).
+- [x] `/api/ready` and `counterspell-judge healthcheck` tests pass (P12, R10).
 - [ ] Rootless daemon on the host shows delegation, the socket ACL and the pre-pull digest check (R3.2, R3.4, R3.6), with the judge-sandbox T02 checks re-run.
 - [ ] First deploy through the forced command, and a rollback, both recorded on the host (R7.1, R7.9, P4).
 - [ ] Canary marker absent from every container log (P13).
 - [ ] One nightly backup, one encrypted off-box copy and one restore drill, all recorded (R8.1, R8.4, R8.8).
 - [ ] Each alert route tested by a forced failure (R9.6, R9.8).
-- [ ] `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` pass for T06 and T07.
+- [x] `cargo fmt --all -- --check`, `cargo clippy --workspace --all-targets -- -D warnings` and `cargo test --workspace` pass for T06 and T07.
 - [x] `verification-report.md` names every R-item as tested on host, tested in CI, model only, or not tested.
 - [ ] The uptime checkpoint on 29 Jan 2027 is recorded (T34).
 
