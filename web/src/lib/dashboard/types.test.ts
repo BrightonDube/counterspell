@@ -9,7 +9,8 @@ const emptyDashboard = {
   streak: { current_days: 0, active_today: false, last_activity_date: null },
   weak_concepts: [],
   recent_submissions: [],
-  suggested_challenges: []
+  suggested_challenges: [],
+  activity_days: []
 };
 
 const populatedDashboard = {
@@ -59,6 +60,7 @@ const populatedDashboard = {
       finished_at: null
     }
   ],
+  activity_days: ['2026-11-15', '2026-11-14'],
   suggested_challenges: [
     {
       slug: 'pairs-four',
@@ -103,6 +105,7 @@ describe('parseDashboard', () => {
       lastFailedAt: '2026-11-14T18:20:00Z'
     });
     expect(view.suggestedChallenges[0]?.reason).toBe('practice_weak_concept');
+    expect(view.activityDays).toEqual(['2026-11-15', '2026-11-14']);
   });
 
   // Breaks if an active run shows an invented verdict or a finish time it does not have.
@@ -159,6 +162,28 @@ describe('parseDashboard', () => {
       weak_concepts: [concept, { ...concept }]
     };
     expect(() => parseDashboard(broken)).toThrow(ContractError);
+  });
+
+  // Breaks if activity dates are missing, malformed or duplicated; the calendar must never fabricate a day.
+  it('rejects missing, malformed or repeated activity days', () => {
+    const { activity_days: _days, ...missing } = populatedDashboard;
+    expect(() => parseDashboard(missing)).toThrow(ContractError);
+
+    const malformed = structuredClone(populatedDashboard);
+    malformed.activity_days = ['today'];
+    expect(() => parseDashboard(malformed)).toThrow(ContractError);
+
+    const impossible = structuredClone(populatedDashboard);
+    impossible.activity_days = ['2026-02-30'];
+    expect(() => parseDashboard(impossible)).toThrow(ContractError);
+
+    const repeated = structuredClone(populatedDashboard);
+    repeated.activity_days = ['2026-11-15', '2026-11-15'];
+    expect(() => parseDashboard(repeated)).toThrow(ContractError);
+
+    const oversized = structuredClone(populatedDashboard);
+    oversized.activity_days = Array.from({ length: 367 }, () => '2026-11-15');
+    expect(() => parseDashboard(oversized)).toThrow(ContractError);
   });
 
   // Breaks if a timestamp in another format is shown as if it were a date the server wrote.

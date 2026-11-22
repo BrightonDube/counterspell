@@ -14,6 +14,7 @@
   import NavEntry from '../nav/NavEntry.svelte';
   import AnimatedJacko from '../familiar/AnimatedJacko.svelte';
   import ProgressRing from '../art/ProgressRing.svelte';
+  import PracticeCalendar from './PracticeCalendar.svelte';
 
   let { load = loadDashboard }: { load?: () => Promise<DashboardView> } =
     $props();
@@ -50,7 +51,11 @@
   });
 
   function hasNoActivity(view: DashboardView): boolean {
-    return view.solved.total === 0 && view.recentSubmissions.length === 0;
+    return (
+      view.solved.total === 0 &&
+      view.recentSubmissions.length === 0 &&
+      view.activityDays.length === 0
+    );
   }
 
   function streakLine(view: DashboardView): string {
@@ -204,6 +209,14 @@
         <span class="text-accent-candle" aria-hidden="true">●</span>
         {streakLine(view)}
       </p>
+    </section>
+
+    <section
+      class="{PANEL} panel-in"
+      style="animation-delay: 90ms"
+      aria-labelledby="calendar-title"
+    >
+      <PracticeCalendar activityDays={view.activityDays} />
     </section>
 
     <section

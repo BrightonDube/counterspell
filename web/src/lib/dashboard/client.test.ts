@@ -16,7 +16,8 @@ const emptyDashboard = {
   streak: { current_days: 0, active_today: false, last_activity_date: null },
   weak_concepts: [],
   recent_submissions: [],
-  suggested_challenges: []
+  suggested_challenges: [],
+  activity_days: []
 };
 
 describe('loadDashboard', () => {

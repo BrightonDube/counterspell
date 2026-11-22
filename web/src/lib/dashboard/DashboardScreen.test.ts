@@ -11,7 +11,8 @@ const emptyView = parseDashboard({
   streak: { current_days: 0, active_today: false, last_activity_date: null },
   weak_concepts: [],
   recent_submissions: [],
-  suggested_challenges: []
+  suggested_challenges: [],
+  activity_days: []
 });
 
 const populatedRaw = {
@@ -61,6 +62,7 @@ const populatedRaw = {
       finished_at: null
     }
   ],
+  activity_days: ['2026-11-15', '2026-11-14'],
   suggested_challenges: [
     {
       slug: 'pairs-four',
@@ -150,6 +152,21 @@ describe('DashboardScreen', () => {
     expect(screen.getByText(/2-day streak/)).toBeTruthy();
     expect(screen.getByText('Wrong answer')).toBeTruthy();
     expect(screen.getByText('Queued')).toBeTruthy();
+  });
+
+  // Breaks if the dashboard drops the real activity calendar or its text equivalent.
+  it('shows the practice calendar with real activity days and a text summary', async () => {
+    render(DashboardScreen, { props: { load: async () => populatedView } });
+
+    expect(
+      await screen.findByRole('heading', { name: 'Practice calendar' })
+    ).toBeTruthy();
+    expect(
+      screen.getByText(
+        '2 practice days in the last 35 days. Most recent: 2026-11-15.'
+      )
+    ).toBeTruthy();
+    expect(screen.getByLabelText('2026-11-14, practice day')).toBeTruthy();
   });
 
   // Breaks if a suggestion loses its link, its reason, or shows an invented verdict on the active run.
