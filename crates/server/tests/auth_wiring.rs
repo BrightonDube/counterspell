@@ -133,6 +133,21 @@ async fn auth_wiring_the_public_auth_config_is_served_without_a_session() {
 }
 
 #[tokio::test]
+async fn auth_wiring_session_status_is_public_without_a_session() {
+    let app = app_with_auth();
+    let request = Request::builder()
+        .method(Method::GET)
+        .uri("/api/auth/session")
+        .body(Body::empty())
+        .expect("valid request");
+
+    let (status, json) = send(&app, request).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(json["signed_in"], false);
+}
+
+#[tokio::test]
 async fn auth_wiring_me_without_a_session_is_401_json() {
     let app = app_with_auth();
     let request = Request::builder()

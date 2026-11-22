@@ -1,18 +1,24 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { resolve } from '$app/paths';
-  import { session } from '../lib/auth/session.svelte.js';
+  import { onMount } from 'svelte';
+  import { getSessionStatus } from '../lib/auth/client';
   import { startScenes } from '../lib/landing/scenes';
   import { planLanding, type LandingPlan } from '../lib/landing/motion-plan';
   import GhostBeats from '../lib/landing/GhostBeats.svelte';
   import Hero from '../lib/landing/Hero.svelte';
   import SignUpCta from '../lib/landing/SignUpCta.svelte';
-  import { HEADLINE, INTRO_BODY, SUPPORT_LINE } from '../lib/landing/copy';
+  import {
+    BENEFITS,
+    HEADLINE,
+    INTRO_BODY,
+    SUPPORT_LINE
+  } from '../lib/landing/copy';
   import {
     HERO_POSTER_SIZES,
     HERO_POSTER_SRCSET
   } from '../lib/landing/hero-media';
+
   // Vite fingerprints the font, so this URL matches the one the @font-face rule in app.css uses.
   import creepsterUrl from '../../static/fonts/Creepster-Regular.woff2?url';
 
@@ -26,14 +32,12 @@
   );
 
   onMount(() => {
-    // The landing page belongs to signed-out visitors: a signed-in user goes to the dashboard.
-    session
-      .load()
-      .then(() => {
-        if (session.status === 'signed_in') return goto(resolve('/dashboard'));
+    void getSessionStatus()
+      .then((status) => {
+        if (status.signed_in) void goto(resolve('/dashboard'));
       })
       .catch(() => {
-        // A session lookup failure never blocks the public page.
+        // A signed-out visitor, or an unavailable auth API, still gets the public page.
       });
 
     const reducedMotion = window.matchMedia(
@@ -66,7 +70,7 @@
 </script>
 
 <svelte:head>
-  <title>Counterspell</title>
+  <title>Counterspell — Sharpen Your Mind with Coding Challenges</title>
   <link
     rel="preload"
     href={creepsterUrl}
@@ -74,11 +78,10 @@
     type="font/woff2"
     crossorigin="anonymous"
   />
-  <!-- The poster is the largest paint. Start it with the CSS, not after it. -->
   <link
     rel="preload"
     as="image"
-    type="image/webp"
+    type="image/avif"
     imagesrcset={HERO_POSTER_SRCSET}
     imagesizes={HERO_POSTER_SIZES}
     fetchpriority="high"
@@ -86,7 +89,7 @@
 
   <meta
     name="description"
-    content="Learn why your code breaks. Counterspell hunts the input that breaks your solution."
+    content="Challenge your thinking with coding problems, sharpen your debugging skills, and learn from mistakes. Counterspell helps you become a stronger independent problem solver."
   />
 </svelte:head>
 
@@ -104,8 +107,16 @@
       >
         {HEADLINE}
       </h2>
-      <p class="max-w-xl text-lg leading-8 text-text-muted">{SUPPORT_LINE}</p>
-      <p class="max-w-xl text-base leading-7 text-text-muted">{INTRO_BODY}</p>
+      <p class="max-w-2xl text-lg leading-8 text-text-muted">{SUPPORT_LINE}</p>
+      <p class="max-w-2xl text-base leading-7 text-text-muted">{INTRO_BODY}</p>
+      <ul class="grid max-w-2xl gap-4 sm:grid-cols-3">
+        {#each BENEFITS as benefit (benefit.heading)}
+          <li>
+            <h3 class="font-semibold text-text">{benefit.heading}</h3>
+            <p class="mt-1 text-sm leading-6 text-text-muted">{benefit.body}</p>
+          </li>
+        {/each}
+      </ul>
     </div>
     <div data-reveal>
       <GhostBeats />

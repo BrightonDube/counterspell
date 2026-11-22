@@ -205,13 +205,14 @@ pub const MUTATING_ROUTES: &[&str] = &[
     "/api/auth/passkeys/login/finish",
 ];
 
-/// The auth routes that exist so far: password and email-link sign-in, logout, logout everywhere
-/// and `GET /api/me`.
+/// The auth routes that exist so far: password and email-link sign-in, session status, logout,
+/// logout everywhere and `GET /api/me`.
 ///
 /// The cookie middleware sits on this router, so each handler can fill the cookie slot.
 pub fn router(state: AuthState) -> Router {
     let settings = state.settings.clone();
     let routes = Router::new()
+        .route("/api/auth/session", get(handlers::session::status))
         .route("/api/auth/logout", post(handlers::session::logout))
         .route("/api/auth/logout-all", post(handlers::session::logout_all))
         .route("/api/auth/login", post(handlers::login::login))

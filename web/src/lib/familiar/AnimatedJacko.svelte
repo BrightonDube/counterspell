@@ -13,9 +13,10 @@
 
 <AnimatedArt
   src="/art/familiar/jack-o-lantern-{mood}.webp"
-  srcset="/art/familiar/jack-o-lantern-{mood}-192.webp 192w, /art/familiar/jack-o-lantern-{mood}.webp 512w"
+  srcset="/art/familiar/jack-o-lantern-{mood}-96.webp 96w, /art/familiar/jack-o-lantern-{mood}-192.webp 192w, /art/familiar/jack-o-lantern-{mood}.webp 512w"
   sizes="96px"
   webm="/art/familiar/jack-o-lantern-{mood}.webm"
+  poster="/art/familiar/jack-o-lantern-{mood}-96.avif"
   {size}
   motion="breathe"
   bounce

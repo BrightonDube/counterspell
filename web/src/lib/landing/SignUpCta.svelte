@@ -4,14 +4,14 @@
   import AnimatedArt from '../art/AnimatedArt.svelte';
   import AnimatedJacko from '../familiar/AnimatedJacko.svelte';
 
-  // One call to action: 'Start practising' opens the grimoire. Sign-in lives at ENTER above.
+  // One call to action starts the first challenge. Sign-in lives at ENTER above.
   // The candle is decorative: it is hidden from assistive technology and sized so the layout does not shift.
 </script>
 
 <div class="flex flex-wrap items-center justify-center gap-6">
   <AnimatedArt
     src="/art/objects/candle-flame.webp"
-    srcset="/art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w"
+    srcset="/art/objects/candle-flame-96.webp 96w, /art/objects/candle-flame-192.webp 192w, /art/objects/candle-flame.webp 512w"
     size={96}
     sizes="96px"
     motion="flame"
