@@ -476,7 +476,7 @@ Conventions for every web task:
 
 ## Wave 6: stretch, live typing guess (only after the core is freeze-safe)
 
-- [ ] **T46 [STRETCH] [S] (25 min) Decide grammar sources and size budget**
+- [x] **T46 [STRETCH] [S] (25 min) Decide grammar sources and size budget**
   - Files: `docs/kiro-log/efficiency-familiar-guess.md`.
   - Determine where the `web-tree-sitter` runtime and the Python and JavaScript grammar `.wasm` files come from (npm package or build step), their licences (must be MIT or compatible) and sizes. Set a total budget (for example 600 KB gzip [E]).
   - Requirements: R14.1, R14.6.
