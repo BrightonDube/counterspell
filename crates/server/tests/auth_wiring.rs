@@ -108,7 +108,7 @@ async fn auth_wiring_the_public_auth_config_is_served_without_a_session() {
         json.get("demo").is_some(),
         "the config answer describes the demo account"
     );
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     // The demo account is not configured here, so the sign-in page offers providers only.
     assert_eq!(json["demo"]["enabled"], false);
     assert_eq!(json["email"]["magic_link"], false);
@@ -162,7 +162,7 @@ async fn auth_wiring_a_cross_site_write_is_refused_before_any_handler() {
 }
 
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn auth_wiring_config_never_advertises_email_sign_in() {
     let app = app_with_config(&auth_config());
     let request = Request::builder()
@@ -181,7 +181,7 @@ async fn auth_wiring_config_never_advertises_email_sign_in() {
 }
 
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn auth_wiring_the_retired_email_routes_answer_not_found() {
     let app = app_with_config(&auth_config());
     for path in [

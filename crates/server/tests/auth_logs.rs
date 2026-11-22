@@ -91,7 +91,7 @@ fn shared_logs() -> &'static Capture {
     })
 }
 
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 struct Harness {
     app: Router,
 }
@@ -154,7 +154,7 @@ async fn read(response: Response) -> (StatusCode, HeaderMap) {
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn pg_no_auth_flow_writes_a_secret_to_the_logs(pool: PgPool) {
     let logs = shared_logs();
     tracing::info!("{SENTINEL}");

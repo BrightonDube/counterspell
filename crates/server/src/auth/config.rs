@@ -296,14 +296,11 @@ fn parse_demo(vars: &HashMap<String, String>) -> Result<Option<DemoConfig>, Conf
     }
 }
 
-/// Trims and lower-cases the demo address and checks that it has one `@` and no whitespace.
+/// Trims and lower-cases the demo address and parses it the same way the login route does, so a
+/// shape the route refuses fails here at startup instead of advertising a dead account.
 fn normalise_demo_email(raw: &str) -> Result<String, ConfigError> {
     let email = raw.trim().to_lowercase();
-    let parts: Vec<&str> = email.split('@').collect();
-    let plausible = parts.len() == 2
-        && !parts[0].is_empty()
-        && !parts[1].is_empty()
-        && !email.chars().any(char::is_whitespace);
+    let plausible = super::email::EmailAddress::parse(&email).is_ok();
     if plausible {
         Ok(email)
     } else {
@@ -353,7 +350,7 @@ mod tests {
     fn a_complete_production_map_is_accepted() {
         let config = AuthConfig::from_map(&valid()).expect("valid production map");
         assert_eq!(config.app_env, AppEnv::Production);
-        // test-change: AUTH-EMAIL-REMOVAL
+        // test-change: ACC-1
         assert_eq!(config.public_base_url, "https://counterspell.example");
         assert_eq!(config.demo_reset_hour_utc, 0);
         assert!(config.github.is_none() && config.google.is_none() && config.demo.is_none());
@@ -405,7 +402,7 @@ mod tests {
     }
 
     #[test]
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     fn development_allows_http_on_localhost_only() {
         let local = with(&[
             ("APP_ENV", "development"),
@@ -493,7 +490,7 @@ mod tests {
     }
 
     #[test]
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     fn reset_hour_has_a_safe_range() {
         assert_eq!(
             invalid_name(AuthConfig::from_map(&with(&[(

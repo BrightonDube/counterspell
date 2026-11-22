@@ -74,7 +74,7 @@ impl Capabilities {
 mod tests {
     use super::*;
 
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     const ALL: [Capability; 4] = [
         Capability::LinkProvider,
         Capability::ChangeCredentials,

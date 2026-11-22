@@ -63,7 +63,7 @@ it('renders passkey and provider actions as pill-shaped sign-in fields', async (
   }
 });
 
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 it('offers the demo account sign-in when the deployment advertises it', async () => {
   const { signInWithPassword } = await import('#lib/auth/security.ts');
   render(Page);

@@ -23,7 +23,7 @@ fn limiter_in_memory() -> AuthLimiter {
 }
 
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn the_request_after_the_limit_is_refused_with_a_wait() {
     let limits = limiter_in_memory();
     for _ in 0..5 {
@@ -60,7 +60,7 @@ async fn the_request_after_the_limit_is_refused_with_a_wait() {
 }
 
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn every_identity_has_its_own_counter() {
     let limits = limiter_in_memory();
     for _ in 0..20 {
@@ -82,7 +82,7 @@ async fn every_identity_has_its_own_counter() {
 }
 
 #[test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 fn keys_hold_no_email_address_or_ip() {
     let limits = limiter_in_memory();
     let key = limits
@@ -105,7 +105,7 @@ fn keys_hold_no_email_address_or_ip() {
 #[test]
 fn the_same_key_answers_for_the_same_inputs() {
     let limits = limiter_in_memory();
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     let first = limits
         .key(Action::OAuthStart, Scope::Ip, "203.0.113.7")
         .expect("key");
@@ -118,7 +118,7 @@ fn the_same_key_answers_for_the_same_inputs() {
 #[test]
 fn an_unknown_pair_is_refused() {
     let limits = limiter_in_memory();
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     assert_eq!(
         limits.key(
             Action::OAuthStart,
@@ -130,7 +130,7 @@ fn an_unknown_pair_is_refused() {
 }
 
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn logins_fail_open_when_valkey_is_down() {
     // Nothing listens on port 1, so every Valkey call fails at once.
     let down = ValkeyLimiter::open("redis://127.0.0.1:1").expect("valid url");
@@ -157,7 +157,7 @@ async fn logins_fail_open_when_valkey_is_down() {
 
 #[ignore = "needs VALKEY_URL"]
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn valkey_auth_limits_count_in_real_valkey() {
     let url = std::env::var("VALKEY_URL").expect("VALKEY_URL must be set for this test");
     let limiter = ValkeyLimiter::open(&url).expect("valid VALKEY_URL");

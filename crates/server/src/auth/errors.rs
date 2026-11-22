@@ -216,7 +216,7 @@ mod tests {
     use super::*;
     use axum::body::to_bytes;
 
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     fn every_variant() -> Vec<AuthError> {
         vec![
             AuthError::WeakPassword,
@@ -250,7 +250,7 @@ mod tests {
 
     #[test]
     fn each_error_has_the_status_and_code_of_the_design_table() {
-        // test-change: AUTH-EMAIL-REMOVAL
+        // test-change: ACC-1
         let expected = [
             (AuthError::Unauthenticated, 401, "unauthenticated"),
             (AuthError::InvalidCredentials, 401, "invalid_credentials"),
@@ -295,7 +295,7 @@ mod tests {
     }
 
     #[tokio::test]
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     async fn the_response_body_has_only_code_and_message() {
         let response = AuthError::InvalidCredentials.into_response();
         assert_eq!(response.status(), StatusCode::UNAUTHORIZED);

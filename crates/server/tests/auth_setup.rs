@@ -14,7 +14,7 @@ use sqlx::postgres::PgPoolOptions;
 use std::sync::Arc;
 
 /// A development configuration, which needs no provider credentials.
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 fn development(extra: &[(&str, &str)]) -> HashMap<String, String> {
     let mut vars: HashMap<String, String> = [
         ("APP_ENV", "development"),
@@ -43,7 +43,7 @@ fn limiter() -> Limiter {
 }
 
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn auth_setup_builds_state_and_no_providers_without_oauth_settings() {
     let config = AuthConfig::from_map(&development(&[])).expect("a valid development config");
 
@@ -75,7 +75,7 @@ async fn auth_setup_enables_only_the_providers_that_have_credentials() {
 }
 
 #[tokio::test]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn auth_setup_reports_the_demo_account_in_the_public_settings() {
     let config = AuthConfig::from_map(&development(&[
         ("DEMO_ACCOUNT_EMAIL", "demo@example.co"),

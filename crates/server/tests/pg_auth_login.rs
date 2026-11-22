@@ -37,7 +37,7 @@ use uuid::Uuid;
 const PASSWORD: &str = "correct horse battery";
 const DEMO_EMAIL: &str = "demo@example.co";
 
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 fn app(pool: &PgPool, gate: HashGate) -> (Router, AuthState) {
     let clock = Arc::new(ManualClock::new(
         OffsetDateTime::from_unix_timestamp(1_800_000_000).expect("valid timestamp"),
@@ -69,7 +69,7 @@ fn gate() -> HashGate {
 
 /// Inserts the demo account (`is_demo`, verified, `Some` password) or a regular user (`None`
 /// password) at `handle@example.co`. The `demo` address goes in verbatim.
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn demo_or_user(pool: &PgPool, handle: &str, password: Option<&str>) -> UserId {
     let hash = password.map(|p| hash_password(p).expect("hash"));
     let email = if handle == "demo" {
@@ -116,7 +116,7 @@ async fn login(
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn pg_the_demo_password_signs_in_and_sets_a_session(pool: PgPool) {
     let user = demo_or_user(&pool, "demo", Some(PASSWORD)).await;
     let (router, _) = app(&pool, gate());
@@ -135,7 +135,7 @@ async fn pg_the_demo_password_signs_in_and_sets_a_session(pool: PgPool) {
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn pg_non_demo_unknown_and_wrong_accounts_get_identical_answers(pool: PgPool) {
     demo_or_user(&pool, "demo", Some(PASSWORD)).await;
     demo_or_user(&pool, "passwordless", None).await;
@@ -159,7 +159,7 @@ async fn pg_non_demo_unknown_and_wrong_accounts_get_identical_answers(pool: PgPo
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn pg_five_failures_are_limited_before_any_hashing(pool: PgPool) {
     demo_or_user(&pool, "demo", Some(PASSWORD)).await;
     let gate = gate();
@@ -186,7 +186,7 @@ async fn pg_five_failures_are_limited_before_any_hashing(pool: PgPool) {
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn pg_a_saturated_hash_gate_answers_busy(pool: PgPool) {
     demo_or_user(&pool, "demo", Some(PASSWORD)).await;
     let gate = HashGate::new(4, StdDuration::from_millis(50));

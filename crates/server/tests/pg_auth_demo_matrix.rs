@@ -33,7 +33,7 @@ use tower::ServiceExt;
 
 const DEMO: &str = "demo@example.co";
 
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 /// The router under test.
 struct Harness {
     app: Router,
@@ -173,7 +173,7 @@ async fn pg_auth_demo_matrix_restricted_actions_give_403_and_change_nothing(pool
 
     let before = snapshot(&pool).await;
     let mut answers = Vec::new();
-    // test-change: AUTH-EMAIL-REMOVAL
+    // test-change: ACC-1
     for (path, body) in [
         ("/api/auth/logout-all", None),
         ("/api/auth/link/github/start", None),

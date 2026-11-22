@@ -41,7 +41,7 @@ async fn user(pool: &PgPool, handle: &str) -> UserId {
 
 /// Writes a stale `email_tokens` row the way the retired token store used to: a 15-minute window
 /// starting at `issued`.
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn old_email_token(pool: &PgPool, email: &str, issued: OffsetDateTime) {
     sqlx::query(
         "INSERT INTO email_tokens (token_hash, purpose, email, created_at, expires_at)
@@ -57,7 +57,7 @@ async fn old_email_token(pool: &PgPool, email: &str, issued: OffsetDateTime) {
 
 #[ignore = "needs DATABASE_URL"]
 #[sqlx::test(migrations = "../../migrations")]
-// test-change: AUTH-EMAIL-REMOVAL
+// test-change: ACC-1
 async fn pg_auth_cleanup_removes_only_rows_that_stopped_working_a_day_ago(pool: PgPool) {
     let clock = Arc::new(ManualClock::new(start()));
     let old_user = user(&pool, "old").await;
