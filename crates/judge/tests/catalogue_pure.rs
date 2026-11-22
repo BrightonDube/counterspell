@@ -2,7 +2,7 @@
 //! C10 (constraints). No database and no filesystem.
 
 use counterspell_judge::catalogue::discover::{classify, Decision, DirEntry, SkipReason};
-use counterspell_judge::catalogue::starter::{starter, Lang, Signature, StarterError};
+use counterspell_judge::catalogue::starter::{starter, Lang, Param, Signature, StarterError};
 use counterspell_judge::catalogue::statement::constraints;
 use counterspell_judge::catalogue::taxonomy::{parse_taxonomy, TaxonomyError};
 
@@ -132,13 +132,25 @@ fn discovery_refuses_explicit_underscore_slug() {
 
 // ---- C09 starter code -------------------------------------------------------
 
+const COUNT_PAIRS_PARAMS: [Param; 2] = [
+    Param {
+        name: "values",
+        kind: "list[int]",
+    },
+    Param {
+        name: "target",
+        kind: "int",
+    },
+];
+
 #[test]
 fn starter_python_golden() {
     let code = starter(
         Lang::Python,
         &Signature {
             function_name: "count_pairs",
-            params: &["values", "target"],
+            params: &COUNT_PAIRS_PARAMS,
+            returns: "int",
         },
     )
     .expect("a valid signature must render");
@@ -154,7 +166,8 @@ fn starter_javascript_golden() {
         Lang::JavaScript,
         &Signature {
             function_name: "count_pairs",
-            params: &["values", "target"],
+            params: &COUNT_PAIRS_PARAMS,
+            returns: "int",
         },
     )
     .expect("a valid signature must render");
@@ -165,16 +178,74 @@ fn starter_javascript_golden() {
 }
 
 #[test]
+fn starter_java_golden() {
+    let code = starter(
+        Lang::Java,
+        &Signature {
+            function_name: "count_pairs",
+            params: &COUNT_PAIRS_PARAMS,
+            returns: "int",
+        },
+    )
+    .expect("a valid signature must render");
+    assert_eq!(
+        code,
+        "public class Solution {\n    public static long count_pairs(long[] values, long target) {\n        throw new UnsupportedOperationException(\"not implemented\");\n    }\n}\n"
+    );
+}
+
+#[test]
+fn starter_cpp_golden() {
+    let code = starter(
+        Lang::Cpp,
+        &Signature {
+            function_name: "count_pairs",
+            params: &COUNT_PAIRS_PARAMS,
+            returns: "int",
+        },
+    )
+    .expect("a valid signature must render");
+    assert_eq!(
+        code,
+        "long long count_pairs(std::vector<long long> values, long long target) {\n    throw std::runtime_error(\"not implemented\");\n}\n\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(count_pairs(from_json<std::vector<long long>>(args[0]), from_json<long long>(args[1])));\n}\n"
+    );
+}
+
+#[test]
 fn starter_refuses_parameter_with_space() {
     let error = starter(
         Lang::Python,
         &Signature {
             function_name: "count_pairs",
-            params: &["bad name"],
+            params: &[Param {
+                name: "bad name",
+                kind: "int",
+            }],
+            returns: "int",
         },
     )
     .expect_err("a parameter name with a space must be refused");
     assert_eq!(error, StarterError::InvalidName("bad name".to_string()));
+}
+
+#[test]
+fn starter_refuses_an_unknown_type_for_java_and_cpp() {
+    let params = [Param {
+        name: "mystery",
+        kind: "float",
+    }];
+    for lang in [Lang::Java, Lang::Cpp] {
+        let error = starter(
+            lang,
+            &Signature {
+                function_name: "f",
+                params: &params,
+                returns: "int",
+            },
+        )
+        .expect_err("a non-launch type cannot be mapped to a typed starter");
+        assert_eq!(error, StarterError::UnknownType("float".to_string()));
+    }
 }
 
 // ---- C10 constraints --------------------------------------------------------

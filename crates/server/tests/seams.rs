@@ -34,16 +34,15 @@ async fn production_catalogue_publishes_no_problems() {
 }
 
 #[test]
-fn launch_catalogue_offers_python_and_javascript_only() {
+fn launch_catalogue_offers_python_javascript_java_and_cpp() {
+    // test-change: IDE-1 (T16 enabled Java and C++; the accepted set now lists all four)
     let catalogue = LanguageCatalog::launch(65_536);
 
     let python = catalogue.find("python").expect("python is enabled");
     assert_eq!(python.max_source_bytes, 65_536);
     assert!(catalogue.find("javascript").is_some());
-    assert!(
-        catalogue.find("java").is_none(),
-        "stretch languages are off"
-    );
+    assert!(catalogue.find("java").is_some(), "java is enabled");
+    assert!(catalogue.find("cpp").is_some(), "cpp is enabled");
     assert!(
         catalogue.find("PYTHON").is_none(),
         "names are case sensitive"

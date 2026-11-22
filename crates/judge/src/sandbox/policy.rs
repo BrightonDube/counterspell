@@ -512,9 +512,13 @@ fn ulimit_is(ulimits: &[Ulimit], name: &str, value: i64) -> bool {
 
 fn scratch_options(noexec: bool) -> Vec<String> {
     let mut options = vec!["rw".to_owned(), "nosuid".to_owned(), "nodev".to_owned()];
-    if noexec {
-        options.push("noexec".to_owned());
-    }
+    // Docker's default tmpfs mount set includes noexec; a language that compiles to a
+    // native binary has to ask for exec explicitly or its output cannot run.
+    options.push(if noexec {
+        "noexec".to_owned()
+    } else {
+        "exec".to_owned()
+    });
     options.extend(strings(&["uid=65534", "gid=65534", "mode=0700"]));
     options
 }

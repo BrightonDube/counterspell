@@ -42,6 +42,8 @@ public final class Driver {
     static final String SIGNATURE_PATH = "/box/signature.json";
     static final int EXIT_PROTOCOL = 2;
     static final int EXIT_USER = 1;
+    /** The largest integer every launch driver can hold exactly (2^53 - 1, as Python and JS). */
+    static final long MAX_SAFE_INTEGER = (1L << 53) - 1;
 
     private Driver() {}
 
@@ -391,7 +393,9 @@ public final class Driver {
         }
         switch (descriptor.kind) {
             case "int":
-                return value instanceof Long;
+                return value instanceof Long
+                        && (Long) value >= -MAX_SAFE_INTEGER
+                        && (Long) value <= MAX_SAFE_INTEGER;
             case "float":
                 return value instanceof Double && Double.isFinite((Double) value);
             case "bool":

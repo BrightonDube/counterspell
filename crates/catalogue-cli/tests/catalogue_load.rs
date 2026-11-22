@@ -248,12 +248,21 @@ fn assemble_import_maps_everything() {
     assert_eq!(import.examples.len(), 2);
     assert_eq!(import.hints.len(), 4);
     assert_eq!(import.hints[0], (1, "one".to_string()));
-    assert_eq!(import.starters.len(), 2);
+    // test-change: IDE-1 (T16: starters now ship for Java and C++ too)
+    assert_eq!(import.starters.len(), 4);
     assert!(import
         .starters
         .iter()
         .any(|(lang, code)| lang == "python" && code.contains("def two_sum")));
     assert!(import.starters.iter().any(|(lang, _)| lang == "javascript"));
+    assert!(import
+        .starters
+        .iter()
+        .any(|(lang, code)| lang == "java" && code.contains("public class Solution")));
+    assert!(import
+        .starters
+        .iter()
+        .any(|(lang, code)| lang == "cpp" && code.contains("counterspell_call")));
     assert!(import.reference_code.contains("def two_sum"));
     assert_eq!(import.known_ghosts.len(), 1);
     assert_eq!(import.known_ghosts[0].ghost_id, "adds-pair");

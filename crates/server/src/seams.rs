@@ -83,24 +83,31 @@ pub struct Language {
     pub max_source_bytes: u64,
 }
 
-/// The languages the server accepts. The launch set is Python and JavaScript.
+/// The languages the server accepts: the launch set plus the stretch languages
+/// whose judge-side suites passed (language-drivers T16).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LanguageCatalog {
     languages: Vec<Language>,
 }
 
 impl LanguageCatalog {
-    /// The launch catalogue: `python` and `javascript`, each with the same source limit.
+    /// The accepted catalogue: `python`, `javascript`, `java`, and `cpp`, each
+    /// with the same source limit.
     #[must_use]
     pub fn launch(max_source_bytes: u64) -> Self {
-        let languages = [("python", "Python"), ("javascript", "JavaScript")]
-            .into_iter()
-            .map(|(name, display_name)| Language {
-                name: name.to_owned(),
-                display_name: display_name.to_owned(),
-                max_source_bytes,
-            })
-            .collect();
+        let languages = [
+            ("python", "Python"),
+            ("javascript", "JavaScript"),
+            ("java", "Java"),
+            ("cpp", "C++"),
+        ]
+        .into_iter()
+        .map(|(name, display_name)| Language {
+            name: name.to_owned(),
+            display_name: display_name.to_owned(),
+            max_source_bytes,
+        })
+        .collect();
         Self { languages }
     }
 

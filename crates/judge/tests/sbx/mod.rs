@@ -140,6 +140,41 @@ pub async fn cleared_within(
     last
 }
 
+/// Like [`drain_dead`] but scoped to one run's containers (`cs-sbx-{run}-...`),
+/// so parallel scenario tests do not trip over each other's live sessions.
+pub async fn drain_run(docker: &Docker, cfg: &SandboxConfig, run: uuid::Uuid, within: Duration) {
+    let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
+    let prefix = format!("cs-sbx-{run}-");
+    let deadline = tokio::time::Instant::now() + within;
+    loop {
+        let mut survivors = Vec::new();
+        for container in managed_containers(&backend)
+            .await
+            .into_iter()
+            .filter(|container| container.name.trim_start_matches('/').starts_with(&prefix))
+        {
+            let Ok(inspected) = docker.inspect_container(&container.id, None).await else {
+                continue;
+            };
+            if inspected
+                .state
+                .and_then(|state| state.running)
+                .unwrap_or(false)
+            {
+                survivors.push(container.name.clone());
+            }
+        }
+        if survivors.is_empty() || tokio::time::Instant::now() >= deadline {
+            assert!(
+                survivors.is_empty(),
+                "containers still running for run {run} — the program was not contained: {survivors:?}"
+            );
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(400)).await;
+    }
+}
+
 /// Asserts no managed container is still *running* within `within`, then reaps
 /// any corpses — the role the sweeper plays in production (no sweeper runs
 /// during scenario tests). Docker's removal of a killed container can lag the
@@ -271,7 +306,7 @@ pub async fn shared_executor(
 ) -> Arc<SandboxExecutor<DirProblemTests, BollardBackend>> {
     let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
     let mut states = Vec::new();
-    for name in ["python", "javascript"] {
+    for name in ["python", "javascript", "java", "cpp"] {
         if let Some(lang_def) = catalog.get(name).filter(|lang| lang.is_enabled()) {
             let state = Arc::new(PreflightState::new());
             let spec =

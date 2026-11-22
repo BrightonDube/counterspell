@@ -56,13 +56,17 @@ fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Loads the shipped `languages/languages.toml` unchanged. Each enabled language's driver
-/// file is copied from the repository, or stubbed when it does not exist yet, so the loader
+/// Loads the shipped `languages/languages.toml` unchanged. Every driver file the catalogue
+/// names is copied from the repository, or stubbed when it does not exist yet, so the loader
 /// accepts the catalogue. The sandbox run itself always uses the real driver file.
 pub fn catalogue() -> (TempDir, LanguageCatalog) {
     let text = include_str!("../../../../languages/languages.toml");
     let dir = TempDir::new().expect("a temp dir for the stub drivers");
-    for driver in ["drivers/python/driver.py", "drivers/javascript/driver.js"] {
+    let drivers = text
+        .lines()
+        .filter_map(|line| line.strip_prefix("driver = "))
+        .map(|value| value.trim().trim_matches('"'));
+    for driver in drivers {
         let target = dir.path().join(driver);
         std::fs::create_dir_all(target.parent().expect("driver path has a parent"))
             .expect("driver directory");
@@ -145,11 +149,23 @@ pub async fn start(
     signature_json: Vec<u8>,
     mode: Mode,
 ) -> (Session, Driver) {
-    let backend = sandbox_backend().await;
     let (_dir, catalog) = catalogue();
-    let language = catalog
-        .get(lang)
-        .expect("the language is in the shipped catalogue");
+    let (session, driver) = start_on(&catalog, lang, solution, signature_json, mode).await;
+    (session, driver.expect("the shipped languages compile"))
+}
+
+/// Like [`start`] but on a caller-supplied catalogue. Runs the compile step when the language
+/// defines one and returns its stderr on failure, so a compile-failure case can observe it
+/// instead of panicking.
+pub async fn start_on(
+    catalog: &LanguageCatalog,
+    lang: &str,
+    solution: &str,
+    signature_json: Vec<u8>,
+    mode: Mode,
+) -> (Session, Result<Driver, String>) {
+    let backend = sandbox_backend().await;
+    let language = catalog.get(lang).expect("the language is in the catalogue");
     let archive = run_archive(language, solution, signature_json);
 
     let spec = SessionSpec::new(
@@ -170,6 +186,19 @@ pub async fn start(
         .expect("unpack the run files");
     assert_eq!(extract.exit_code, 0, "tar -x accepts the archive");
 
+    if let Some(compile) = ExecSpec::compile(language) {
+        let built = session
+            .exec(&compile, &[])
+            .await
+            .expect("the compile step runs");
+        if built.exit_code != 0 {
+            return (
+                session,
+                Err(String::from_utf8_lossy(&built.stderr).into_owned()),
+            );
+        }
+    }
+
     let command = match mode {
         Mode::Normal => ExecSpec::driver(language),
         Mode::Bench => ExecSpec::bench(language),
@@ -178,7 +207,7 @@ pub async fn start(
         .open_driver(&command)
         .await
         .expect("the driver starts");
-    (session, driver)
+    (session, Ok(driver))
 }
 
 /// Kills and removes the container. Every test ends with this, so no container is left behind.
@@ -206,8 +235,10 @@ pub async fn ask(driver: &mut Driver, call_id: u64, args: Value) -> Reply {
             DriverEvent::Chunk(bytes) | DriverEvent::Line(bytes) => {
                 pending.extend_from_slice(&bytes);
                 if let Some(end) = pending.iter().position(|byte| *byte == b'\n') {
-                    let out = parse_answer(&pending[..end], call_id)
-                        .expect("the answer line follows the protocol");
+                    let line = String::from_utf8_lossy(&pending[..end]).into_owned();
+                    let out = parse_answer(&pending[..end], call_id).unwrap_or_else(|e| {
+                        panic!("the answer line follows the protocol: {e:?} — line: {line:?}")
+                    });
                     return Reply::Answer(out);
                 }
             }

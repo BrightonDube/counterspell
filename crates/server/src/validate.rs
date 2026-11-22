@@ -112,6 +112,8 @@ pub(crate) fn grammar_for(language: &str) -> Result<Grammar, ValidationError> {
     match language {
         "python" => Ok(tree_sitter_python::LANGUAGE.into()),
         "javascript" => Ok(tree_sitter_javascript::LANGUAGE.into()),
+        "java" => Ok(tree_sitter_java::LANGUAGE.into()),
+        "cpp" => Ok(tree_sitter_cpp::LANGUAGE.into()),
         _ => Err(ValidationError::UnsupportedLanguage),
     }
 }
