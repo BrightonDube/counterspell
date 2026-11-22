@@ -302,6 +302,8 @@ fn build_response(
         })
         .collect();
     let streak = streak_from_dates(activity_days, today);
+    let mut public_days = activity_days.to_vec();
+    public_days.sort_unstable_by(|left, right| right.cmp(left));
 
     Ok(DashboardResponse {
         solved: SolvedSummary {
@@ -335,7 +337,7 @@ fn build_response(
             .collect(),
         suggested_challenges: rank_suggestions(&candidates, &weak, SUGGESTION_LIMIT),
         review_summary: raw.review_summary.map(review_summary).transpose()?,
-        activity_days: activity_days.iter().map(|day| iso_date(*day)).collect(),
+        activity_days: public_days.iter().map(|day| iso_date(*day)).collect(),
     })
 }
 
@@ -461,7 +463,7 @@ mod tests {
         );
         assert_eq!(
             response.activity_days,
-            ["2026-11-13", "2026-11-14", "2026-11-15"]
+            ["2026-11-15", "2026-11-14", "2026-11-13"]
         );
     }
 
