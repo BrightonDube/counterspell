@@ -19,6 +19,9 @@
 // coerce kinds; the driver validates each value against the signature anyway.
 
 #include <algorithm>
+#include <atomic>
+#include <cerrno>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -26,9 +29,11 @@
 #include <fstream>
 #include <iostream>
 #include <optional>
+#include <poll.h>
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <thread>
 #include <utility>
 #include <variant>
 #include <vector>
@@ -632,48 +637,124 @@ class Quiet {
     int saved_ = -1;
 };
 
-// Sends fd 2 to an anonymous file while user code runs, then reads at most the
-// sandbox stderr cap into the call's answer. fd-level capture keeps C `fprintf`
-// and C++ `cerr` writes in the same call that emitted them.
+// Pipes fd 2 through a live reader while user code runs. It mirrors every byte
+// to real stderr for deadline diagnostics and stores the first 64KiB for the
+// answer without spending the sandbox's temporary-file budget.
 class CapturedErr {
   public:
     CapturedErr() {
         std::fflush(stderr);
         std::cerr.flush();
-        file_ = std::tmpfile();
+        int fds[2];
+        if (pipe(fds) != 0) return;
+        read_fd_ = fds[0];
+        const int flags = fcntl(read_fd_, F_GETFL, 0);
+        if (flags < 0 || fcntl(read_fd_, F_SETFL, flags | O_NONBLOCK) < 0) {
+            close(fds[0]);
+            close(fds[1]);
+            read_fd_ = -1;
+            return;
+        }
         saved_ = dup(STDERR_FILENO);
-        if (file_ != nullptr && saved_ >= 0) {
-            dup2(fileno(file_), STDERR_FILENO);
+        if (saved_ < 0 || dup2(fds[1], STDERR_FILENO) < 0) {
+            if (saved_ >= 0) close(saved_);
+            close(fds[0]);
+            close(fds[1]);
+            read_fd_ = -1;
+            saved_ = -1;
+            return;
         }
-    }
-    ~CapturedErr() {
-        std::fflush(stderr);
-        std::cerr.flush();
-        if (saved_ >= 0) {
+        close(fds[1]);
+        try {
+            worker_ = std::thread(&CapturedErr::drain, this);
+            active_ = true;
+        } catch (...) {
             dup2(saved_, STDERR_FILENO);
+            close(read_fd_);
             close(saved_);
+            read_fd_ = -1;
+            saved_ = -1;
         }
-        if (file_ != nullptr) fclose(file_);
     }
+    ~CapturedErr() { finish(); }
 
     std::string take() {
-        std::fflush(stderr);
-        std::cerr.flush();
-        if (file_ == nullptr) return {};
-        std::fflush(file_);
-        std::fseek(file_, 0, SEEK_SET);
-        std::string out;
-        out.resize(STDERR_CAP + 1);
-        const std::size_t got = std::fread(out.data(), 1, out.size(), file_);
-        const bool truncated = got > STDERR_CAP;
-        out.resize(std::min(got, STDERR_CAP));
-        if (truncated) out += STDERR_TRUNCATED;
+        finish();
+        std::string out = captured_;
+        if (truncated_) out += STDERR_TRUNCATED;
         return out;
     }
 
   private:
-    FILE* file_ = nullptr;
+    void drain() {
+        char buffer[8192];
+        std::optional<std::chrono::steady_clock::time_point> close_deadline;
+        while (true) {
+            if (closing_.load()) {
+                if (!close_deadline) {
+                    close_deadline = std::chrono::steady_clock::now() +
+                        std::chrono::milliseconds(100);
+                } else if (std::chrono::steady_clock::now() > *close_deadline) {
+                    return;
+                }
+            }
+            const ssize_t got = read(read_fd_, buffer, sizeof(buffer));
+            if (got == 0) return;
+            if (got < 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    if (closing_.load()) return;
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                    continue;
+                }
+                if (errno == EINTR) continue;
+                return;
+            }
+            const std::size_t room = STDERR_CAP - std::min(captured_.size(), STDERR_CAP);
+            const std::size_t keep = std::min<std::size_t>(room, got);
+            if (keep > 0) captured_.append(buffer, keep);
+            truncated_ |= keep < static_cast<std::size_t>(got);
+            ssize_t written = 0;
+            while (written < got) {
+                pollfd ready{saved_, POLLOUT, 0};
+                int polled;
+                do {
+                    polled = poll(&ready, 1, 10);
+                } while (polled < 0 && errno == EINTR);
+                if (polled <= 0) {
+                    if (closing_.load()) break;
+                    continue;
+                }
+                const ssize_t step = write(
+                    saved_, buffer + written,
+                    std::min<ssize_t>(4096, got - written));
+                if (step < 0 && errno == EINTR) continue;
+                if (step <= 0) break;
+                written += step;
+            }
+        }
+    }
+
+    void finish() {
+        if (!active_) return;
+        std::fflush(stderr);
+        std::cerr.flush();
+        dup2(saved_, STDERR_FILENO);
+        closing_.store(true);
+        if (worker_.joinable()) worker_.join();
+        close(read_fd_);
+        close(saved_);
+        read_fd_ = -1;
+        saved_ = -1;
+        active_ = false;
+    }
+
+    int read_fd_ = -1;
     int saved_ = -1;
+    bool active_ = false;
+    std::atomic<bool> closing_{false};
+    std::thread worker_;
+    std::string captured_;
+    bool truncated_ = false;
 };
 
 int main(int argc, char** argv) {
@@ -712,15 +793,12 @@ int main(int argc, char** argv) {
                 stderr = captured.take();
             } catch (const std::exception& e) {
                 diagnose(std::string("the solution raised an exception: ") + e.what());
-                std::cerr << stderr;
                 return 1;
             } catch (...) {
                 diagnose("the solution raised an exception");
-                std::cerr << stderr;
                 return 1;
             }
             if (!conforms(result, signature.returns)) {
-                std::cerr << stderr;
                 throw DriverFailure("the return value is not JSON-safe for the signature");
             }
             std::string answer;

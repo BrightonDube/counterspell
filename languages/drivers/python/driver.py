@@ -14,8 +14,10 @@ import io
 import json
 import math
 import os
+import select
 import sys
-import tempfile
+import threading
+import time
 import traceback
 
 PROTOCOL_VERSION = 1
@@ -55,34 +57,113 @@ class _Sink(io.TextIOBase):
 
 
 @contextlib.contextmanager
-def quiet(stderr_file=None):
-    """Hides stdout and stdin; when asked, captures every stderr byte at fd level."""
+def quiet():
+    """Hides stdout and stdin while user code runs."""
     saved_stdout, saved_stdin = sys.stdout, sys.stdin
     sys.stdout, sys.stdin = _Sink(), io.StringIO("")
-    saved_stderr_fd = None
-    if stderr_file is not None:
-        sys.stderr.flush()
-        saved_stderr_fd = os.dup(2)
-        os.dup2(stderr_file.fileno(), 2)
     try:
         yield
     finally:
-        if saved_stderr_fd is not None:
-            sys.stderr.flush()
-            os.dup2(saved_stderr_fd, 2)
-            os.close(saved_stderr_fd)
         sys.stdout, sys.stdin = saved_stdout, saved_stdin
 
 
-def read_stderr(stderr_file):
-    """Reads the captured file with the same cap the sandbox applies to stderr."""
-    stderr_file.flush()
-    stderr_file.seek(0)
-    data = stderr_file.read(STDERR_CAP + 1)
-    truncated = len(data) > STDERR_CAP
-    return data[:STDERR_CAP].decode("utf-8", errors="replace") + (
-        STDERR_TRUNCATED if truncated else ""
-    )
+class CapturedStderr:
+    """Pipes fd 2 through a live reader, mirrors it to stderr and stores the capped copy."""
+
+    def __init__(self):
+        self._data = bytearray()
+        self._data_lock = threading.Lock()
+        self._truncated = False
+        self._saved_fd = None
+        self._read_fd = None
+        self._thread = None
+        self._closing = False
+        self._close_deadline = None
+
+    def __enter__(self):
+        # Partial stderr writes need to reach the pipe immediately so a deadline
+        # does not lose the diagnostic sitting in TextIOWrapper's buffer.
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(write_through=True)
+        sys.stderr.flush()
+        self._saved_fd = os.dup(2)
+        try:
+            self._read_fd, write_fd = os.pipe()
+            try:
+                os.set_blocking(self._read_fd, False)
+                os.dup2(write_fd, 2)
+            finally:
+                os.close(write_fd)
+        except BaseException:
+            if self._read_fd is not None:
+                os.close(self._read_fd)
+                self._read_fd = None
+            os.close(self._saved_fd)
+            self._saved_fd = None
+            raise
+        self._thread = threading.Thread(target=self._drain, daemon=True)
+        self._thread.start()
+        return self
+
+    def _drain(self):
+        while True:
+            if self._closing:
+                if self._close_deadline is None:
+                    self._close_deadline = time.monotonic() + 0.1
+                elif time.monotonic() > self._close_deadline:
+                    return
+            try:
+                chunk = os.read(self._read_fd, 64 * 1024)
+            except BlockingIOError:
+                if self._closing:
+                    return
+                select.select([self._read_fd], [], [], 0.01)
+                continue
+            except OSError:
+                return
+            if not chunk:
+                return
+            with self._data_lock:
+                room = STDERR_CAP - len(self._data)
+                if room > 0:
+                    self._data.extend(chunk[:room])
+                self._truncated |= len(chunk) > room
+            offset = 0
+            while offset < len(chunk):
+                try:
+                    _, writable, _ = select.select([], [self._saved_fd], [], 0.01)
+                    if not writable:
+                        if self._closing:
+                            break
+                        continue
+                    written = os.write(self._saved_fd, chunk[offset : offset + 4096])
+                except OSError:
+                    break
+                if written <= 0:
+                    break
+                offset += written
+
+    def __exit__(self, _exc_type, _exc, _traceback):
+        sys.stderr.flush()
+        os.dup2(self._saved_fd, 2)
+        self._closing = True
+        self._thread.join(timeout=1)
+        if not self._thread.is_alive():
+            os.close(self._read_fd)
+            os.close(self._saved_fd)
+            self._saved_fd = None
+            self._read_fd = None
+            self._thread = None
+        return False
+
+    def text(self):
+        """Returns the bounded UTF-8 copy mirrored while the call ran."""
+        with self._data_lock:
+            data = bytes(self._data)
+            truncated = self._truncated
+        return data.decode("utf-8", errors="replace") + (
+            STDERR_TRUNCATED if truncated else ""
+        )
 
 
 def diagnose(message):
@@ -246,19 +327,16 @@ def load_function(signature):
 
 def call_solution(function, args):
     """Calls the user's function, capturing stderr for the answer."""
-    with tempfile.TemporaryFile() as captured_stderr:
-        try:
-            with quiet(captured_stderr):
-                result = function(*args)
-            return result, read_stderr(captured_stderr)
-        except BaseException:
-            stderr = read_stderr(captured_stderr)
-            # Same ordering: `driver:` diagnostic first, traceback tail last. Captured user
-            # stderr still belongs to this failing call and follows the diagnostic.
-            diagnose("the solution raised an exception")
-            sys.stderr.write(stderr)
-            traceback.print_exc()
-            sys.exit(EXIT_USER)
+    try:
+        with quiet(), CapturedStderr() as captured_stderr:
+            result = function(*args)
+        return result, captured_stderr.text()
+    except BaseException:
+        # User stderr was mirrored live, so timeouts and abrupt exits keep it too. The
+        # traceback tail stays last for the judge's exception diagnostic.
+        diagnose("the solution raised an exception")
+        traceback.print_exc()
+        sys.exit(EXIT_USER)
 
 
 def write_answer(stream, call_id, out, stderr):
@@ -281,9 +359,6 @@ def serve(function, signature, requests, answers):
         call_id, args = parse_call(raw, signature)
         result, stderr = call_solution(function, args)
         if not conforms(result, signature.returns):
-            if stderr:
-                sys.stderr.write(stderr)
-                sys.stderr.flush()
             raise DriverFailure("the return value is not JSON-safe for the signature")
         write_answer(answers, call_id, result, stderr)
 
