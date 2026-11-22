@@ -97,6 +97,11 @@ describe('settings account costume polish', () => {
         (heading) => heading.textContent
       )
     ).toEqual(['Sign-in methods', 'Security', 'Sessions', 'Delete account']);
+
+    const decoration = container.querySelector<HTMLImageElement>(
+      'img[src="/art/objects/cursed-crt.webp"]'
+    );
+    expect(decoration?.getAttribute('loading')).toBe('lazy');
   });
 
   // Breaks if linking another provider loses its visible key affordance or accessible name.

@@ -871,6 +871,7 @@
               height="30"
               alt=""
               aria-hidden="true"
+              loading="lazy"
             />
             <h2 id="sessions-heading">Sessions</h2>
           </div>
