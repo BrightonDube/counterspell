@@ -135,6 +135,19 @@ as the user's wrong answer.
   directly (`module.exports = function two_sum(nums, target) {...}`) or as a named property
   (`module.exports = { two_sum }`). The driver checks the named export first, then accepts a
   callable default module export when the declared function name is not an export.
+- **Java [stretch]:** the solution declares `public class Solution` with a `public static`
+  method named after the signature's function. Parameter and return types are the driver's
+  mapped Java types: `int` -> `long` (`Long` when nullable), `float` -> `double` (`Double`),
+  `bool` -> `boolean` (`Boolean`), `string` -> `String`, `list` -> a Java array of the
+  element's mapped type, `tuple` -> `Object[]`, `null` -> `Object`. The driver compiles
+  `Solution.java` and `Driver.java` together and resolves the method reflectively.
+- **C++ [stretch]:** `driver.cpp` defines the `JSONValue` variant plus `from_json`/`to_json`
+  helpers, then `#include`s `solution.cpp`. The solution defines
+  `JSONValue counterspell_call(const std::vector<JSONValue>& args)`, which converts each
+  argument with `from_json`, calls the user's typed function, and wraps the result with
+  `to_json`. Mappings: `int` -> `long long`, `float` -> `double`, `bool` -> `bool`,
+  `string` -> `std::string`, `list` -> `std::vector<T>`, `tuple` -> a fixed-length
+  `std::vector<JSONValue>`, `null` -> `JSONValue{}`.
 
 ## Bench mode
 

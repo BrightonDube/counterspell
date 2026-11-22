@@ -94,7 +94,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 
 ## Wave 3: stretch languages, only after T12 passes
 
-- [ ] **[stretch] T13 [S] (30 min) Implement the Java driver and compile path**
+- [x] **[stretch] T13 [S] (30 min) Implement the Java driver and compile path**
   - Files: `languages/drivers/java/Driver.java`, Java registry entry/configuration, and judge compile integration.
   - Implement the same protocol and signature descriptor contract, compile `Solution.java` and `Driver.java` with `javac -d /box/out`, and use `eclipse-temurin:21-jdk` with the initial `-Xss16m`, `-Xmx256m`, and SerialGC settings.
   - Depends on: T12 and the existing compile-capable sandbox runner.
@@ -108,7 +108,7 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Verify: record the selected setting and confirm it does not weaken the memory or wall-time sandbox limits.
   - Preserve: use `eclipse-temurin`, never `openjdk`; Java remains a test fixture/launch option only after approval.
 
-- [ ] **[stretch] T15 [S] (30 min) Add C++ driver and compile path**
+- [x] **[stretch] T15 [S] (30 min) Add C++ driver and compile path**
   - Files: `languages/drivers/cpp/driver.cpp`, C++ registry entry/configuration, and judge compile integration.
   - Implement the same protocol/signature contract and compile with `gcc:14`, `g++ -O2 -std=c++20`, and `/box/out` output. Keep comparison, timing, and verdict authority in the worker.
   - Depends on: T12 and the existing compile-capable sandbox runner.
