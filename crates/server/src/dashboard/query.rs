@@ -163,8 +163,7 @@ SELECT jsonb_build_object(
 ) AS dashboard,
 ARRAY(SELECT DISTINCT (finished_at AT TIME ZONE 'UTC')::date
       FROM owned_completed
-      ORDER BY 1 DESC
-      LIMIT 366) AS activity_days
+      ORDER BY 1 DESC) AS activity_days
 "#;
 
 /// Reads the dashboard for `owner` in one statement. `now` ends the streak at its UTC date and
@@ -304,6 +303,7 @@ fn build_response(
     let streak = streak_from_dates(activity_days, today);
     let mut public_days = activity_days.to_vec();
     public_days.sort_unstable_by(|left, right| right.cmp(left));
+    public_days.truncate(366);
 
     Ok(DashboardResponse {
         solved: SolvedSummary {
@@ -465,6 +465,24 @@ mod tests {
             response.activity_days,
             ["2026-11-15", "2026-11-14", "2026-11-13"]
         );
+    }
+
+    #[test]
+    fn the_public_activity_window_does_not_cap_the_streak() {
+        let today = date(2026, Month::November, 15);
+        let mut days = Vec::with_capacity(367);
+        let mut cursor = today;
+        for _ in 0..367 {
+            days.push(cursor);
+            cursor = cursor.previous_day().expect("test date has a previous day");
+        }
+
+        let response = build_response(empty_read(), &days, today).expect("maps");
+
+        assert_eq!(response.streak.current_days, 367);
+        assert_eq!(response.activity_days.len(), 366);
+        assert_eq!(response.activity_days[0], "2026-11-15");
+        assert_eq!(response.activity_days[365], "2025-11-15");
     }
 
     #[test]
