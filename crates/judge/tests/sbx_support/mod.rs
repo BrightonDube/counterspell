@@ -56,41 +56,17 @@ fn repo_root() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR")).join("../..")
 }
 
-/// Loads the shipped `languages/languages.toml` unchanged. Each enabled language's driver
-/// file is copied from the repository, or stubbed when it does not exist yet, so the loader
+/// Loads the shipped `languages/languages.toml` unchanged. Every driver file the catalogue
+/// names is copied from the repository, or stubbed when it does not exist yet, so the loader
 /// accepts the catalogue. The sandbox run itself always uses the real driver file.
 pub fn catalogue() -> (TempDir, LanguageCatalog) {
     let text = include_str!("../../../../languages/languages.toml");
-    catalogue_text(text)
-}
-
-/// The shipped catalogue with the named languages flipped to `enabled = true`, for tests
-/// that run ahead of a language's public enablement.
-pub fn catalogue_enabled(extra: &[&str]) -> (TempDir, LanguageCatalog) {
-    let mut text = include_str!("../../../../languages/languages.toml").to_string();
-    for lang in extra {
-        let section = format!("[{lang}]");
-        let start = text
-            .find(&section)
-            .unwrap_or_else(|| panic!("a [{lang}] section"));
-        let end = text[start..]
-            .find("\n[")
-            .map_or(text.len(), |offset| start + offset);
-        let block = text[start..end].replace("enabled = false", "enabled = true");
-        assert!(block.contains("enabled = true"), "[{lang}] becomes enabled");
-        text.replace_range(start..end, &block);
-    }
-    catalogue_text(&text)
-}
-
-fn catalogue_text(text: &str) -> (TempDir, LanguageCatalog) {
     let dir = TempDir::new().expect("a temp dir for the stub drivers");
-    for driver in [
-        "drivers/python/driver.py",
-        "drivers/javascript/driver.js",
-        "drivers/java/Driver.java",
-        "drivers/cpp/driver.cpp",
-    ] {
+    let drivers = text
+        .lines()
+        .filter_map(|line| line.strip_prefix("driver = "))
+        .map(|value| value.trim().trim_matches('"'));
+    for driver in drivers {
         let target = dir.path().join(driver);
         std::fs::create_dir_all(target.parent().expect("driver path has a parent"))
             .expect("driver directory");
@@ -178,9 +154,9 @@ pub async fn start(
     (session, driver.expect("the shipped languages compile"))
 }
 
-/// Like [`start`] but on a caller-supplied catalogue (the stretch tests enable Java and
-/// C++). Runs the compile step when the language defines one and reports its exit code to
-/// the caller, so a compile-failure case can observe it instead of panicking.
+/// Like [`start`] but on a caller-supplied catalogue. Runs the compile step when the language
+/// defines one and returns its stderr on failure, so a compile-failure case can observe it
+/// instead of panicking.
 pub async fn start_on(
     catalog: &LanguageCatalog,
     lang: &str,

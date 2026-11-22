@@ -308,6 +308,16 @@ struct ImageDetails {
     labels: BTreeMap<String, String>,
 }
 
+impl ImageDetails {
+    /// Drops from a read-back policy the variables and labels this image merged in, so it
+    /// compares cleanly with the policy we asked for. `our_labels` are never dropped.
+    fn strip_from(&self, read: &mut ContainerPolicy, our_labels: &BTreeMap<String, String>) {
+        read.env = without_image_env(std::mem::take(&mut read.env), &self.env);
+        read.labels =
+            without_image_labels(std::mem::take(&mut read.labels), our_labels, &self.labels);
+    }
+}
+
 async fn check_image(
     docker: &Docker,
     policy: &ContainerPolicy,
@@ -391,8 +401,7 @@ async fn verify_readback(
     .map_err(|error| InfraError::DaemonUnreachable(error.to_string()))?;
     let mut read = from_inspect(&inspect)
         .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))?;
-    read.env = without_image_env(read.env, &image.env);
-    read.labels = without_image_labels(read.labels, &policy.labels, &image.labels);
+    image.strip_from(&mut read, &policy.labels);
     if let Some(first) = read.hardening_violations().into_iter().next() {
         return Err(InfraError::PolicyReadbackMismatch(first.to_string()));
     }
@@ -768,8 +777,8 @@ impl Backend for BollardBackend {
     type Session = BollardSession;
 
     async fn create(&self, spec: &SessionSpec) -> Result<BollardSession, InfraError> {
-        // Read the image's declared environment first, so that `read_policy` can tolerate it
-        // exactly as the create-time read-back does. A failure here creates nothing.
+        // Read what the image declares first, so that `read_policy` can tolerate it exactly
+        // as the create-time read-back does. A failure here creates nothing.
         let image = check_image(&self.docker, &spec.policy, self.api_timeout).await?;
         let id = create_checked(&self.docker, &spec.policy, &spec.name, self.api_timeout).await?;
         Ok(BollardSession {
@@ -822,8 +831,7 @@ pub struct BollardSession {
     id: String,
     api_timeout: Duration,
     /// What the pinned image declares. The daemon merges its environment and labels into
-    /// the container, so the read-back must tolerate them (see `without_image_env`
-    /// and `without_image_labels`).
+    /// the container, so the read-back must tolerate them (see `ImageDetails::strip_from`).
     image: ImageDetails,
     /// The labels this session asked for at create time. Read-back keeps them even
     /// when the image declares an identical label, matching `verify_readback`.
@@ -847,8 +855,7 @@ impl BackendSession for BollardSession {
         .map_err(|error| map_error(&error))?;
         let mut read = from_inspect(&inspect)
             .map_err(|error| InfraError::PolicyReadbackMismatch(error.to_string()))?;
-        read.env = without_image_env(read.env, &self.image.env);
-        read.labels = without_image_labels(read.labels, &self.labels, &self.image.labels);
+        self.image.strip_from(&mut read, &self.labels);
         Ok(read)
     }
 

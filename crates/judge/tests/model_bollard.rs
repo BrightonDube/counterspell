@@ -6,6 +6,7 @@
 //! expects exactly one violation back.
 #![cfg(feature = "sandbox")]
 
+use std::collections::BTreeMap;
 use std::time::Duration;
 
 use bollard::models::{
@@ -14,7 +15,8 @@ use bollard::models::{
 };
 use counterspell_judge::languages::PinnedImage;
 use counterspell_judge::sandbox::bollard_backend::{
-    from_inspect, image_digest_matches, to_create_body, without_image_env, ReadbackError,
+    from_inspect, image_digest_matches, to_create_body, without_image_env, without_image_labels,
+    ReadbackError,
 };
 use counterspell_judge::sandbox::config::OciRuntime;
 use counterspell_judge::sandbox::policy::{ContainerPolicy, PolicyViolation};
@@ -449,6 +451,61 @@ fn a_fixed_key_is_never_dropped_even_when_the_image_declares_it() {
     let read = env_pairs(&[("PATH", "/usr/local/bin:/usr/local/sbin:/usr/bin:/bin")]);
 
     let kept = without_image_env(read.clone(), &image_env());
+
+    assert_eq!(kept, read);
+}
+
+fn labels(entries: &[(&str, &str)]) -> BTreeMap<String, String> {
+    entries
+        .iter()
+        .map(|(key, value)| ((*key).to_owned(), (*value).to_owned()))
+        .collect()
+}
+
+fn image_labels() -> BTreeMap<String, String> {
+    labels(&[
+        ("org.opencontainers.image.version", "21.0.5"),
+        ("counterspell.managed", "false"),
+    ])
+}
+
+#[test]
+fn labels_the_pinned_image_declares_are_tolerated_on_read_back() {
+    let read = labels(&[
+        ("counterspell.managed", "true"),
+        ("org.opencontainers.image.version", "21.0.5"),
+    ]);
+    let ours = labels(&[("counterspell.managed", "true")]);
+
+    let kept = without_image_labels(read, &ours, &image_labels());
+
+    assert_eq!(kept, ours);
+}
+
+#[test]
+fn an_injected_label_the_image_does_not_declare_is_kept_so_the_check_fails() {
+    let read = labels(&[("injected", "yes")]);
+
+    let kept = without_image_labels(read.clone(), &BTreeMap::new(), &image_labels());
+
+    assert_eq!(kept, read);
+}
+
+#[test]
+fn an_image_label_with_a_changed_value_is_kept_so_the_check_fails() {
+    let read = labels(&[("org.opencontainers.image.version", "ATTACKER")]);
+
+    let kept = without_image_labels(read.clone(), &BTreeMap::new(), &image_labels());
+
+    assert_eq!(kept, read);
+}
+
+#[test]
+fn one_of_our_labels_is_never_dropped_even_when_the_image_declares_the_same_value() {
+    let read = labels(&[("counterspell.managed", "false")]);
+    let ours = labels(&[("counterspell.managed", "true")]);
+
+    let kept = without_image_labels(read.clone(), &ours, &image_labels());
 
     assert_eq!(kept, read);
 }

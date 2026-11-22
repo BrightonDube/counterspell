@@ -19,7 +19,7 @@ use std::time::Duration;
 
 use counterspell_judge::languages::LanguageCatalog;
 use counterspell_judge::sandbox::backend::{DriverChannel, DriverEvent};
-use sbx_support::{ask, catalogue_enabled, finish, int, list_of, signature, start_on, Mode, Reply};
+use sbx_support::{ask, catalogue, finish, int, list_of, signature, start_on, Mode, Reply};
 use serde_json::{json, Value};
 
 /// One stretch case: the same function in Python, Java and C++, plus the calls to make.
@@ -123,7 +123,7 @@ async fn replies(
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned python, temurin and gcc images"]
 async fn sbx_java_and_cpp_drivers_agree_with_python_on_every_case() {
-    let (_dir, catalog) = catalogue_enabled(&["java", "cpp"]);
+    let (_dir, catalog) = catalogue();
     let mut disagreements = Vec::new();
     for case in cases() {
         for mode in [Mode::Normal, Mode::Bench] {
@@ -158,7 +158,7 @@ async fn sbx_java_and_cpp_drivers_agree_with_python_on_every_case() {
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
 async fn sbx_stretch_compile_errors_never_start_the_driver() {
-    let (_dir, catalog) = catalogue_enabled(&["java", "cpp"]);
+    let (_dir, catalog) = catalogue();
     for (lang, bad) in [
         (
             "java",
@@ -179,7 +179,7 @@ async fn sbx_stretch_compile_errors_never_start_the_driver() {
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
 async fn sbx_stretch_deep_recursion_fits_the_configured_stack() {
-    let (_dir, catalog) = catalogue_enabled(&["java", "cpp"]);
+    let (_dir, catalog) = catalogue();
     let sig = signature("depth", &[("n", int())], &int());
     // The T14 sizing evidence: linear recursion to depth n, as linked-list and
     // tree-depth problems take. 50_000 frames fits the configured -Xss14m and the
@@ -202,7 +202,7 @@ async fn sbx_stretch_deep_recursion_fits_the_configured_stack() {
 #[tokio::test]
 #[ignore = "real daemon: needs SANDBOX_DOCKER_SOCKET and the pinned temurin and gcc images"]
 async fn sbx_stretch_infinite_loop_never_answers_and_the_container_cleans_up() {
-    let (_dir, catalog) = catalogue_enabled(&["java", "cpp"]);
+    let (_dir, catalog) = catalogue();
     let sig = signature("f", &[("n", int())], &int());
     for (lang, source) in [
         ("java", "public class Solution {\n    public static long f(long n) { while (true) {} }\n}\n"),
