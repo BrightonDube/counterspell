@@ -72,6 +72,7 @@ const MAX_RECENT = 10;
 const MAX_SUGGESTIONS = 3;
 const MAX_WEAK = 10;
 const MAX_CONCEPTS = 50;
+const MAX_ACTIVITY_DAYS = 366;
 /** Counts can grow with the catalogue and the learner's history. */
 const MAX_COUNT = 1_000_000;
 /** The database column for a score is a 32-bit integer. */
@@ -132,6 +133,7 @@ export interface SuggestedChallenge {
 export interface DashboardView {
   solved: SolvedSummary;
   streak: StreakSummary;
+  activityDays: string[];
   weakConcepts: WeakConcept[];
   recentSubmissions: RecentSubmission[];
   suggestedChallenges: SuggestedChallenge[];
@@ -197,6 +199,13 @@ export function parseDashboard(raw: unknown): DashboardView {
     MAX_SUGGESTIONS,
     parseSuggestion
   );
+  const activityDays = readArray(
+    record,
+    'activity_days',
+    path,
+    MAX_ACTIVITY_DAYS,
+    parseActivityDay
+  );
   requireUnique(
     weakConcepts,
     (concept) => concept.slug,
@@ -212,6 +221,7 @@ export function parseDashboard(raw: unknown): DashboardView {
     (challenge) => challenge.slug,
     `${path}.suggested_challenges`
   );
+  requireUnique(activityDays, (day) => day, `${path}.activity_days`);
   return {
     solved: {
       total: readInt(solved, 'total', `${path}.solved`, 0, MAX_COUNT),
@@ -240,6 +250,7 @@ export function parseDashboard(raw: unknown): DashboardView {
       }
     },
     streak,
+    activityDays,
     weakConcepts,
     recentSubmissions,
     suggestedChallenges,
@@ -248,6 +259,22 @@ export function parseDashboard(raw: unknown): DashboardView {
         ? null
         : parseReviewSummary(record.review_summary, `${path}.review_summary`)
   };
+}
+
+function parseActivityDay(value: unknown, path: string): string {
+  if (typeof value !== 'string' || !DATE.test(value)) {
+    throw new ContractError(path, 'expected a UTC date');
+  }
+  const [year, month, day] = value.split('-').map(Number);
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  if (
+    parsed.getUTCFullYear() !== year ||
+    parsed.getUTCMonth() + 1 !== month ||
+    parsed.getUTCDate() !== day
+  ) {
+    throw new ContractError(path, 'expected a real UTC date');
+  }
+  return value;
 }
 
 function parseStreak(record: RawRecord, path: string): StreakSummary {

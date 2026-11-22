@@ -37,7 +37,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Requirements: CP-4.1, CP-4.2.
   - PR alone: yes.
 
-- [ ] **T04 [S] (30 min) Build the dashboard practice calendar**
+- [x] **T04 [S] (30 min) Build the dashboard practice calendar**
   - Files: `web/src/lib/dashboard/{types.ts,PracticeCalendar.svelte,calendar.ts,tests}` and `DashboardScreen.svelte`.
   - Parse and validate `activity_days`, build a recent UTC month/heatmap view, mark today and active days, and expose the same facts in text. Preserve all existing dashboard sections and only insert the calendar where it fits the current flow.
   - Verify: failing pure tests for month bucketing/UTC boundaries and component tests for empty, active, keyboard-readable and malformed-data states; `npm run check`, focused Vitest.
