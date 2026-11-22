@@ -103,7 +103,8 @@ async fn pg_new_learner_gets_the_stable_empty_dashboard(pool: PgPool) {
                 "concepts": [{"slug": "hash-maps", "name": "Hash maps"}],
                 "reason": "continue_track"
             }],
-            "review_summary": null
+            "review_summary": null,
+            "activity_days": []
         })
     );
 }
@@ -137,6 +138,8 @@ async fn pg_read_maps_one_learners_runs_and_leaves_the_other_learner_untouched(p
     assert_eq!(response.solved.by_difficulty.easy, 1);
     assert_eq!(response.streak.current_days, 2);
     assert!(response.streak.active_today);
+    // test-change: CP-4 (dashboard returns real UTC activity days for the signed-in learner)
+    assert_eq!(response.activity_days, ["2026-11-15", "2026-11-14"]);
     assert_eq!(
         response.streak.last_activity_date.as_deref(),
         Some("2026-11-15")
@@ -166,6 +169,8 @@ async fn pg_read_maps_one_learners_runs_and_leaves_the_other_learner_untouched(p
     );
     assert_eq!(other.recent_submissions.len(), 0);
     assert_eq!(other.weak_concepts.len(), 0);
+    // test-change: CP-4 (activity days are owner-scoped)
+    assert_eq!(other.activity_days, Vec::<String>::new());
     let other_suggested: Vec<&str> = other
         .suggested_challenges
         .iter()

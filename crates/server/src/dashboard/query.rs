@@ -163,7 +163,8 @@ SELECT jsonb_build_object(
 ) AS dashboard,
 ARRAY(SELECT DISTINCT (finished_at AT TIME ZONE 'UTC')::date
       FROM owned_completed
-      ORDER BY 1 DESC) AS activity_days
+      ORDER BY 1 DESC
+      LIMIT 366) AS activity_days
 "#;
 
 /// Reads the dashboard for `owner` in one statement. `now` ends the streak at its UTC date and
@@ -334,6 +335,7 @@ fn build_response(
             .collect(),
         suggested_challenges: rank_suggestions(&candidates, &weak, SUGGESTION_LIMIT),
         review_summary: raw.review_summary.map(review_summary).transpose()?,
+        activity_days: activity_days.iter().map(|day| iso_date(*day)).collect(),
     })
 }
 
@@ -422,7 +424,8 @@ mod tests {
                 "weak_concepts": [],
                 "recent_submissions": [],
                 "suggested_challenges": [],
-                "review_summary": null
+                "review_summary": null,
+                "activity_days": []
             })
         );
     }
@@ -455,6 +458,10 @@ mod tests {
                 active_today: true,
                 last_activity_date: Some("2026-11-15".to_owned()),
             }
+        );
+        assert_eq!(
+            response.activity_days,
+            ["2026-11-13", "2026-11-14", "2026-11-15"]
         );
     }
 

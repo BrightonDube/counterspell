@@ -104,9 +104,11 @@ async fn pg_active_run_has_no_verdict_and_the_response_never_carries_code(pool: 
         .map(String::as_str)
         .collect();
     keys.sort_unstable();
+    // test-change: CP-4 (the public dashboard contract includes bounded activity days)
     assert_eq!(
         keys,
         [
+            "activity_days",
             "recent_submissions",
             "review_summary",
             "solved",

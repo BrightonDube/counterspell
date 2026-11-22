@@ -30,7 +30,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 1: dashboard calendar
 
-- [ ] **T03 [S] (30 min) Return real dashboard activity days**
+- [x] **T03 [S] (30 min) Return real dashboard activity days**
   - Files: `crates/server/src/dashboard/{types.rs,query.rs,handler.rs}` and dashboard database/API tests.
   - Add a bounded `activity_days` list of UTC `YYYY-MM-DD` values derived from the authenticated user's completed Run/Submit rows. Reuse the existing dashboard query/CTEs where practical and reject another user's dates with canary tests.
   - Verify: write failing query/API tests first; duplicate days collapse, unfinished/internal-error rows do not count, user isolation holds, response stays stable.

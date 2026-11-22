@@ -23,6 +23,9 @@ pub struct DashboardResponse {
     /// The [stretch] due-review summary (dashboard-fsrs T17). `null` when no card is due.
     /// Additive: older clients can ignore it.
     pub review_summary: Option<ReviewSummary>,
+    /// UTC dates (`YYYY-MM-DD`) with at least one completed run, newest first. Bounded by the
+    /// dashboard activity window; an empty list means no completed run yet.
+    pub activity_days: Vec<String>,
 }
 
 /// The learner's spaced-repetition summary. Never fabricated: it exists only when at least one
@@ -186,7 +189,8 @@ mod tests {
                 "weak_concepts": [],
                 "recent_submissions": [],
                 "suggested_challenges": [],
-                "review_summary": null
+                "review_summary": null,
+                "activity_days": []
             })
         );
     }
