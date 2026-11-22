@@ -21,7 +21,7 @@ use counterspell_engine::complexity::{
     Point as EnginePoint,
 };
 use counterspell_engine::generate::{CandidateStream, GeneratorConfig};
-use counterspell_engine::shrink::{shrink, Probe};
+use counterspell_engine::shrink::Driver;
 use counterspell_engine::{
     classify, compare_size, Budget, Classification, FailureKind, FailurePredicate, Observation,
     ProgramResult,
@@ -203,29 +203,19 @@ fn check_minimal(
     report: &mut Report,
 ) -> Result<(), RunnerError> {
     let comparator = meta.engine_comparator();
-    let mut fault = None;
-    let outcome = shrink(
-        &meta.input_schema,
-        ghost.known.input.clone(),
-        Budget::default().max_shrink_evals,
-        &mut |candidate: &Value| match observe(runner, &ghost.program, candidate, limit) {
-            Ok(observation)
-                if classify(&observation, &comparator)
-                    == Classification::Fail(predicate.clone()) =>
-            {
-                Probe::Keep
-            }
-            Ok(_) => Probe::Reject,
-            Err(error) => {
-                fault = Some(error);
-                Probe::Stop
-            }
-        },
-    );
-    if let Some(error) = fault {
-        return Err(error);
-    }
-    if compare_size(&outcome.value, &ghost.known.input) == Ordering::Less {
+    let mut evaluate = |candidate: &Value, eval_limit: Duration| {
+        observe(runner, &ghost.program, candidate, eval_limit)
+    };
+    let mut keeps = |observation: &Observation| {
+        classify(observation, &comparator) == Classification::Fail(predicate.clone())
+    };
+    let outcome = Driver::new(&meta.input_schema, &mut evaluate, &mut keeps)
+        .eval_limit(limit)
+        .run(
+            ghost.known.input.clone(),
+            Budget::default().max_shrink_evals,
+        )?;
+    if compare_size(&outcome.shrink.value, &ghost.known.input) == Ordering::Less {
         report.push(Diagnostic::new(
             codes::SBX_04,
             "known_ghosts.toml",
