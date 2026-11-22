@@ -96,7 +96,7 @@ async fn replies(
     mode: Mode,
 ) -> Vec<Reply> {
     let (session, driver) = start_on(catalog, lang, solution, sig.to_vec(), mode).await;
-    let mut driver = driver.unwrap_or_else(|| panic!("{lang} compiles"));
+    let mut driver = driver.unwrap_or_else(|err| panic!("{lang} compiles: {err}"));
     let mut out = Vec::new();
     for (id, args) in calls.iter().enumerate() {
         let reply = ask(&mut driver, id as u64, args.clone()).await;
@@ -158,10 +158,11 @@ async fn sbx_stretch_compile_errors_never_start_the_driver() {
     ] {
         let sig = signature("f", &[("n", int())], &int());
         let (session, driver) = start_on(&catalog, lang, bad, sig, Mode::Normal).await;
-        assert!(
-            driver.is_none(),
-            "{lang} reports the compile failure instead of starting"
-        );
+        let err = match driver {
+            Err(err) => err,
+            Ok(_) => panic!("{lang} reports the compile failure instead of starting"),
+        };
+        assert!(!err.is_empty(), "{lang} compile failure carries stderr");
         finish(session).await;
     }
 }
@@ -178,7 +179,7 @@ async fn sbx_stretch_deep_recursion_fits_the_configured_stack() {
         ("cpp", "long long depth(long long n) { return n <= 0 ? 0 : 1 + depth(n - 1); }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(depth(from_json<long long>(args[0])));\n}\n"),
     ] {
         let (session, driver) = start_on(&catalog, lang, source, sig.clone(), Mode::Normal).await;
-        let mut driver = driver.unwrap_or_else(|| panic!("{lang} compiles"));
+        let mut driver = driver.unwrap_or_else(|err| panic!("{lang} compiles: {err}"));
         let reply = ask(&mut driver, 0, json!([5_000])).await;
         assert!(
             matches!(reply, Reply::Answer(_)),
@@ -198,7 +199,7 @@ async fn sbx_stretch_infinite_loop_never_answers_and_the_container_cleans_up() {
         ("cpp", "long long f(long long) { for (;;) {} }\nJSONValue counterspell_call(const std::vector<JSONValue>& args) {\n    return to_json(f(from_json<long long>(args[0])));\n}\n"),
     ] {
         let (session, driver) = start_on(&catalog, lang, source, sig.clone(), Mode::Normal).await;
-        let mut driver = driver.unwrap_or_else(|| panic!("{lang} compiles"));
+        let mut driver = driver.unwrap_or_else(|err| panic!("{lang} compiles: {err}"));
         // The driver is hung inside the call, so no answer line ever arrives; the event
         // wait itself is bounded by the shared EVENT_TIMEOUT inside `ask`, which panics
         // on expiry — for a timeout case that panic IS the proof, so poll the raw event

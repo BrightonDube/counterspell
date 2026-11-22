@@ -188,7 +188,7 @@ pub async fn start_on(
     solution: &str,
     signature_json: Vec<u8>,
     mode: Mode,
-) -> (Session, Option<Driver>) {
+) -> (Session, Result<Driver, String>) {
     let backend = sandbox_backend().await;
     let language = catalog.get(lang).expect("the language is in the catalogue");
     let archive = run_archive(language, solution, signature_json);
@@ -217,7 +217,10 @@ pub async fn start_on(
             .await
             .expect("the compile step runs");
         if built.exit_code != 0 {
-            return (session, None);
+            return (
+                session,
+                Err(String::from_utf8_lossy(&built.stderr).into_owned()),
+            );
         }
     }
 
@@ -229,7 +232,7 @@ pub async fn start_on(
         .open_driver(&command)
         .await
         .expect("the driver starts");
-    (session, Some(driver))
+    (session, Ok(driver))
 }
 
 /// Kills and removes the container. Every test ends with this, so no container is left behind.
