@@ -291,10 +291,7 @@ async fn sign_in(
     }
     let destination = sanitize_return_to(Some(flow.return_to()));
     if needs_onboarding(&state.pool, user, created).await? {
-        let query = url::form_urlencoded::Serializer::new(String::new())
-            .append_pair("return_to", &destination)
-            .finish();
-        return Ok(format!("/onboarding?{query}"));
+        return Ok(onboarding_destination(destination));
     }
     Ok(destination)
 }
@@ -448,6 +445,17 @@ async fn profile_email(
     } else {
         ProfileEmail::Free(address)
     })
+}
+
+/// Sends an incomplete profile to onboarding once, preserving an existing onboarding destination.
+fn onboarding_destination(destination: String) -> String {
+    if destination == "/onboarding" || destination.starts_with("/onboarding?") {
+        return destination;
+    }
+    let query = url::form_urlencoded::Serializer::new(String::new())
+        .append_pair("return_to", &destination)
+        .finish();
+    format!("/onboarding?{query}")
 }
 
 /// Whether this login must pass through profile onboarding.
