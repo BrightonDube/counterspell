@@ -274,6 +274,27 @@ async fn unknown_route_is_an_honest_404_with_the_spa_entry_body() {
 }
 
 #[tokio::test]
+async fn conditional_requests_on_a_miss_still_get_the_full_shell_404() {
+    // test-change: PROD-FOUND-404
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    for headers in [
+        ("if-none-match", "*"),
+        ("if-modified-since", "Wed, 01 Jan 2031 00:00:00 GMT"),
+        ("range", "bytes=0-9"),
+    ] {
+        let reply = get(address, "/no-such-route-xyz", &[headers]).await;
+
+        assert_eq!(reply.status, 404, "{headers:?}");
+        assert_eq!(reply.body, "<main>spa-entry</main>", "{headers:?}");
+    }
+
+    let reply = get(address, "/dashboard", &[("if-none-match", "*")]).await;
+    assert_ne!(reply.status, 404);
+}
+
+#[tokio::test]
 async fn missing_static_resources_are_an_honest_404() {
     // test-change: PROD-FOUND-404
     let fixture = Fixture::new();

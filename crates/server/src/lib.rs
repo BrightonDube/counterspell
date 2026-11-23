@@ -278,6 +278,23 @@ async fn static_response_policy(
     next: Next,
 ) -> Response {
     let path = request.uri().path().to_owned();
+    let mut request = request;
+    // An unknown path can only reach the fallback file, whose conditional
+    // validators would answer 304/206 without the shell body. Strip them so the
+    // rewritten 404 below always carries the app shell.
+    if !path.starts_with("/api") && !spa_routes.is_app_route(&path) {
+        let headers = request.headers_mut();
+        for name in [
+            header::IF_MATCH,
+            header::IF_NONE_MATCH,
+            header::IF_MODIFIED_SINCE,
+            header::IF_UNMODIFIED_SINCE,
+            header::RANGE,
+            header::IF_RANGE,
+        ] {
+            headers.remove(name);
+        }
+    }
     let mut response = next.run(request).await;
 
     if response.headers_mut().remove(SPA_FALLBACK_HEADER).is_some() {
