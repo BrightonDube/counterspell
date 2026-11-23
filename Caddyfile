@@ -29,15 +29,8 @@
         -Server
     }
 
-    # Fingerprinted framework assets are immutable; shipped art changes only on deploy.
-    @immutable path /_app/immutable/*
-    header @immutable Cache-Control "public, max-age=31536000, immutable"
-
-    @site_assets path /art/* /fonts/* /landing/*
-    header @site_assets Cache-Control "public, max-age=604800"
-
-    @robots path /robots.txt
-    header @robots Cache-Control "public, max-age=3600"
+    # Cache policies live at the origin: it stamps them on real files only, so a
+    # path-matched miss can never inherit a public cache header from the edge (PROD-FOUND-404).
 
     # Readiness is for the deploy script only, which calls it inside the edge network (R6.6).
     handle /api/ready {

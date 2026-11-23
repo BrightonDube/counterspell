@@ -40,11 +40,11 @@ impl SpaRoutes {
     pub fn parse(raw: &str) -> Result<Self, String> {
         let manifest: serde_json::Value = serde_json::from_str(raw)
             .map_err(|error| format!("routes.json is not valid JSON: {error}"))?;
-        let routes = manifest
+        let entries = manifest
             .get("routes")
             .and_then(serde_json::Value::as_array)
             .ok_or_else(|| "routes.json must contain a \"routes\" array".to_string())?;
-        routes
+        entries
             .iter()
             .map(|entry| {
                 let route = entry
@@ -65,7 +65,7 @@ impl SpaRoutes {
                 "route {route:?} must start with '/' and not end with one"
             ));
         }
-        route
+        let pattern = route
             .split('/')
             .skip(1)
             .map(|segment| match segment {
@@ -74,13 +74,24 @@ impl SpaRoutes {
                 "**" => Ok(Segment::Rest),
                 text => Ok(Segment::Exact(text.to_owned())),
             })
-            .collect()
+            .collect::<Result<Vec<_>, _>>()?;
+        if pattern
+            .iter()
+            .position(|segment| *segment == Segment::Rest)
+            .is_some_and(|rest| rest + 1 != pattern.len())
+        {
+            return Err(format!("route {route:?} may only use ** at the end"));
+        }
+        Ok(pattern)
     }
 
     /// True when `path` is a declared client-side route. Empty segments — including a
     /// trailing slash — are ignored, so `/dashboard/` counts as `/dashboard`.
     #[must_use]
     pub fn is_app_route(&self, path: &str) -> bool {
+        if !path.starts_with('/') {
+            return false;
+        }
         let requested: Vec<&str> = path.split('/').skip(1).filter(|s| !s.is_empty()).collect();
         self.patterns
             .iter()
@@ -98,6 +109,74 @@ impl SpaRoutes {
                 requested.first().is_some_and(|head| *head == text.as_str())
                     && Self::matches(rest, &requested[1..])
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::SpaRoutes;
+
+    fn routes() -> SpaRoutes {
+        SpaRoutes::parse(
+            r#"{"routes":["/","/dashboard","/problems/*","/docs/**","/problems"]}"#,
+        )
+        .expect("valid manifest")
+    }
+
+    #[test]
+    fn exact_and_root_routes_match() {
+        let routes = routes();
+        assert!(routes.is_app_route("/"));
+        assert!(routes.is_app_route("/dashboard"));
+        assert!(routes.is_app_route("/problems"));
+        assert!(!routes.is_app_route("/settings"));
+    }
+
+    #[test]
+    fn star_matches_exactly_one_segment() {
+        let star_only = SpaRoutes::parse(r#"{"routes":["/problems/*"]}"#).expect("valid");
+        assert!(star_only.is_app_route("/problems/two-sum"));
+        assert!(!star_only.is_app_route("/problems"));
+        assert!(!star_only.is_app_route("/problems/"));
+        assert!(!star_only.is_app_route("/problems/a/b"));
+    }
+
+    #[test]
+    fn double_star_consumes_the_rest() {
+        let routes = routes();
+        assert!(routes.is_app_route("/docs"));
+        assert!(routes.is_app_route("/docs/a"));
+        assert!(routes.is_app_route("/docs/a/b/c"));
+    }
+
+    #[test]
+    fn trailing_slashes_and_empty_segments_are_ignored() {
+        let routes = routes();
+        assert!(routes.is_app_route("/dashboard/"));
+        assert!(routes.is_app_route("/dashboard//"));
+    }
+
+    #[test]
+    fn non_slash_paths_never_match() {
+        let routes = routes();
+        assert!(!routes.is_app_route("*"));
+        assert!(!routes.is_app_route("dashboard"));
+    }
+
+    #[test]
+    fn malformed_manifests_are_rejected() {
+        for raw in [
+            "not json",
+            "{}",
+            r#"{"routes":"dashboard"}"#,
+            r#"{"routes":[42]}"#,
+            r#"{"routes":["dashboard"]}"#,
+            r#"{"routes":["/dashboard/"]}"#,
+            r#"{"routes":["/a//b"]}"#,
+            r#"{"routes":["/a/**/b"]}"#,
+        ] {
+            assert!(SpaRoutes::parse(raw).is_err(), "{raw}");
         }
     }
 }

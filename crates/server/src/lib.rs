@@ -264,28 +264,40 @@ pub fn build_router(state: AppState) -> Router {
 
 /// The static response contract: real files may receive a cache policy, and a
 /// `200.html` fallback hit keeps its 200 only for a declared SPA route — every
-/// other miss is an honest 404 (the body stays the app shell so the client can
-/// render its own not-found view). `/api` replies are never rewritten.
+/// other miss is an honest `404 no-store` (the body stays the app shell so the
+/// client can render its own not-found view). `/api` replies are never rewritten.
 async fn static_response_policy(
     State((static_dir, spa_routes)): State<(PathBuf, Arc<spa::SpaRoutes>)>,
     request: Request<Body>,
     next: Next,
 ) -> Response {
-    let path = request.uri().path().to_owned();
+    // `ServeDir` percent-decodes the request path before looking it up, so every
+    // check here works on the decoded form too — a file served as `/landing/hero%20image.webp`
+    // is still a real file, and `%61pi/health` still counts as `/api`.
+    let path = percent_encoding::percent_decode_str(request.uri().path())
+        .decode_utf8()
+        .map_or_else(|_| request.uri().path().to_owned(), |decoded| decoded.into_owned());
     let mut response = next.run(request).await;
+
+    if path == "/api" || path.starts_with("/api/") {
+        return response;
+    }
+
     let relative_path = Path::new(path.trim_start_matches('/'));
+    let on_disk = static_dir.join(relative_path);
     let requested_file = relative_path
         .components()
         .all(|component| matches!(component, Component::Normal(_)))
-        && static_dir.join(relative_path).is_file();
+        && (on_disk.is_file() || on_disk.join("index.html").is_file());
 
     if !requested_file
-        && !path.starts_with("/api/")
-        && path != "/api"
         && !spa_routes.is_app_route(&path)
         && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
     {
         *response.status_mut() = StatusCode::NOT_FOUND;
+        response
+            .headers_mut()
+            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
         return response;
     }
 

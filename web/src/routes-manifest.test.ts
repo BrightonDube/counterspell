@@ -18,6 +18,8 @@ function routesFromFileTree(): string[] {
         let segment: string | null = entry.name;
         if (segment.startsWith('(') && segment.endsWith(')')) segment = null;
         else if (segment.startsWith('[...')) segment = '**';
+        // `[[optional]]` params collapse to '*' here: the manifest grammar cannot
+        // express "zero or one segment", so such a route would 404 its bare form.
         else if (segment.startsWith('[')) segment = '*';
         walk(
           join(dir, entry.name),
@@ -42,15 +44,22 @@ describe('static/routes.json', () => {
   });
 
   it('contains only clean absolute route patterns', () => {
+    // Mirrors the server's grammar in crates/server/src/spa.rs.
     for (const route of manifest.routes) {
       expect(route, route).toMatch(/^\//);
       expect(route, route).not.toContain('//');
-      for (const segment of route.split('/').slice(1).filter(Boolean)) {
-        expect(segment, route).not.toBe('');
+      if (route !== '/') {
+        expect(route, route).not.toMatch(/\/$/);
+      }
+      const segments = route.split('/').slice(1).filter(Boolean);
+      for (const segment of segments) {
         if (segment.includes('*')) {
           expect(['*', '**'], route).toContain(segment);
         }
       }
+      const rest = segments.indexOf('**');
+      expect(rest === -1 || rest === segments.length - 1, route).toBe(true);
     }
+    expect(new Set(manifest.routes).size).toBe(manifest.routes.length);
   });
 });

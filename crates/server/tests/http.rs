@@ -126,7 +126,10 @@ async fn missing_immutable_asset_is_a_404_and_is_never_cached() {
     assert_eq!(reply.status, 404);
     assert_eq!(reply.body, "<main>spa-entry</main>");
     assert!(
-        !reply.headers.to_lowercase().contains("cache-control:"),
+        reply
+            .headers
+            .to_lowercase()
+            .contains("cache-control: no-store"),
         "{}",
         reply.headers
     );
@@ -168,10 +171,10 @@ async fn immutable_cache_policy_survives_revalidation_without_caching_the_fallba
 
     assert_eq!(revalidated_fallback.status, 404);
     assert!(
-        !revalidated_fallback
+        revalidated_fallback
             .headers
             .to_lowercase()
-            .contains("cache-control:"),
+            .contains("cache-control: no-store"),
         "{}",
         revalidated_fallback.headers
     );
@@ -205,10 +208,37 @@ async fn traversal_path_cannot_probe_files_outside_the_static_directory() {
     assert_eq!(reply.status, 404);
     assert_eq!(reply.body, "<main>spa-entry</main>");
     assert!(
-        !reply.headers.to_lowercase().contains("cache-control:"),
+        reply
+            .headers
+            .to_lowercase()
+            .contains("cache-control: no-store"),
         "{}",
         reply.headers
     );
+}
+
+#[tokio::test]
+async fn percent_encoded_asset_names_still_serve_the_real_file() {
+    // test-change: PROD-FOUND-404
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/landing/hero%20image.webp", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    assert_eq!(reply.body, "spaced-landing");
+}
+
+#[tokio::test]
+async fn directory_index_html_is_served_like_the_file() {
+    // test-change: PROD-FOUND-404
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/docs/", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    assert_eq!(reply.body, "<main>docs-index</main>");
 }
 
 #[tokio::test]
@@ -222,6 +252,14 @@ async fn unknown_route_is_an_honest_404_with_the_spa_entry_body() {
 
         assert_eq!(reply.status, 404, "{path}");
         assert_eq!(reply.body, "<main>spa-entry</main>", "{path}");
+        assert!(
+            reply
+                .headers
+                .to_lowercase()
+                .contains("cache-control: no-store"),
+            "{path}: {}",
+            reply.headers
+        );
     }
 }
 
@@ -241,6 +279,14 @@ async fn missing_static_resources_are_an_honest_404() {
         let reply = get(address, path, &[]).await;
 
         assert_eq!(reply.status, 404, "{path}");
+        assert!(
+            reply
+                .headers
+                .to_lowercase()
+                .contains("cache-control: no-store"),
+            "{path}: {}",
+            reply.headers
+        );
     }
 }
 
