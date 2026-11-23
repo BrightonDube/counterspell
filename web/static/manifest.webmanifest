@@ -1,0 +1,18 @@
+{
+  "name": "Counterspell",
+  "short_name": "Counterspell",
+  "description": "Challenge your thinking with coding problems, sharpen your debugging skills, and learn from mistakes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080d0e",
+  "theme_color": "#d9a25b",
+  "icons": [
+    {
+      "src": "/landing/moon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
