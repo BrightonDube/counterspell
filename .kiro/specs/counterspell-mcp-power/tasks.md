@@ -119,19 +119,21 @@ All tasks below are implementation tasks for the design above. No task is being 
   - Depends on: T04 and T12.
   - Verify: static `validate_pack` passes after the intentional implementation bug is present.
 
-- [ ] **T16 [S] (30 min) Run the scripted Kiro find/fix/re-verify session**
+- [x] **T16 [S] (30 min) Run the scripted Kiro find/fix/re-verify session — WAIVED**
   - Files: the dogfood implementation under the pack; later evidence paths under `docs/`.
   - Have Kiro explicitly call `find_ghost_input`, inspect the returned minimized counterexample/shrink trace, fix the buggy implementation, call `validate_pack`, and call `find_ghost_input` again.
   - Preserve: all execution goes through the sandbox runner; the session states the bounded/minimized meaning honestly.
   - Depends on: T10, T14, and T15.
   - Verify: first hunt finds the intended failure; validation passes after the fix; second hunt returns no counterexample within budget or the approved stronger verified-pass result.
+  - **Waiver:** Brighton confirmed on 2026-11-22 that he has no Kiro credit, so the scripted Kiro session cannot be run. This checkbox records the explicit waiver rather than fabricated evidence.
 
-- [ ] **T17 [S] (20 min) Save scrubbed dogfood evidence**
+- [x] **T17 [S] (20 min) Save scrubbed dogfood evidence — WAIVED**
   - Files: `docs/kiro-log/chats/counterspell-mcp-dogfood.*`, `docs/media/kiro/mcp-dogfood-*.png`, and `docs/KIRO_USAGE.md`.
   - Export the chat, capture the MCP call/shrink result/fix/re-verification/Power install screenshots, scrub secrets and hidden data, and add factual links and claims to the usage document.
   - Preserve: evidence must show actual behavior, not fabricated results; do not commit credentials or private values.
   - Depends on: T16 and the Power import test in T11.
   - Verify: artifacts exist at the documented paths, are readable, contain no secrets, and support the video sequence.
+  - **Waiver:** superseded by the T16 waiver. No chat export or screenshots should be invented.
 
 ## Wave 6: final verification
 
@@ -169,7 +171,7 @@ All tasks below are implementation tasks for the design above. No task is being 
 - [x] `kiro-power/` contains the required Agent Plugins manifest, MCP registration, and both skills.
 - [x] `.kiro/settings/mcp.json` matches the Power server and approval policy.
 - [x] The private dogfood pack is original, underscore-prefixed, and excluded from the public catalogue.
-- [ ] Kiro evidence shows find → minimized counterexample → fix → validate → re-hunt and Power installation.
-- [ ] Chat export, screenshots, and `docs/KIRO_USAGE.md` links are scrubbed and factual.
-- [ ] Protocol, serialization, boundary, fake-runner, refusal, Power, static-pack, and real-sandbox tests pass.
+- [x] Kiro evidence requirement is explicitly waived because Brighton has no Kiro credit; no fabricated find → fix → re-hunt evidence is claimed.
+- [x] Chat export and screenshot requirement is explicitly waived with T16/T17; `docs/KIRO_USAGE.md` contains only factual prior usage.
+- [x] Protocol, serialization, boundary, fake-runner, refusal, Power, static-pack, and real-sandbox tests pass.
 - [x] Rust lessons are recorded for every implementation task that changes Rust.

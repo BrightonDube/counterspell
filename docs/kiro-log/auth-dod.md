@@ -31,21 +31,28 @@ PROPTEST_CASES=512. The remaining P-items are covered by unit and integration te
 auth modules (oauth, magic link, session, link, verify, delete) — all green in the
 workspace run.
 
-## Manual VPS checklist — NOT TESTED
+## Manual VPS checklist — 2026-11-23 update
 
-No production VPS exists yet (deploy-ops T23 is Brighton's). These items are recorded as
-not run, per the task's own instruction to log failures/gaps rather than silently pass:
+The original note predated production deployment and email-auth removal. The applicable
+live checks were later observed on `https://counterspel.online` from Brighton's signed-in
+browser:
 
-- GitHub sign-in — NOT TESTED
-- Google sign-in — NOT TESTED
-- Magic link through Resend (SPF/DKIM) — NOT TESTED
-- Link GitHub / Google to a magic-link account — NOT TESTED
-- Add email to an OAuth-only account — NOT TESTED
-- Google sign-in matching an existing email -> `account_exists` — NOT TESTED
+- GitHub sign-in/account identity — PASS
+- Google sign-in/account identity — PASS
+- Account settings after OAuth sign-in — PASS
+- Magic link through Resend (SPF/DKIM) — SUPERSEDED: email auth was removed in favour of
+  OAuth plus the demo-password path
+- Link GitHub / Google to a magic-link account — SUPERSEDED: magic-link accounts no longer
+  exist in production
+- Add email to an OAuth-only account — SUPERSEDED: email collection is no longer a sign-in
+  requirement
+- Google sign-in matching an existing email -> `account_exists` — covered by the auth model
+  tests; not separately repeated in the browser
 - logout-all from a second browser — NOT TESTED
-- Demo account restrictions — NOT TESTED
-- Next-day demo reset — NOT TESTED
+- Demo account restrictions — NOT TESTED in the live browser
+- Next-day demo reset — NOT TESTED against the live clock
 
 The local equivalent legs were run on the dev stack during T33/T34 verification: the
-magic-link flow completes end to end on the real server (link in dev log, verify -> session
-cookie -> /api/me 200), and the run SSE heartbeat re-checks auth mid-stream.
+magic-link flow completed end to end before email auth was retired (link in dev log,
+verify -> session cookie -> /api/me 200), and the run SSE heartbeat re-checks auth
+mid-stream.
