@@ -376,6 +376,32 @@ async fn declared_spa_routes_still_fall_back_to_the_spa_entry() {
 }
 
 #[tokio::test]
+async fn liveness_is_documented_json_and_never_spa_html() {
+    // test-change: PROD-FOUND-HEALTH
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/api/health", &[]).await;
+    assert_eq!(reply.status, 200);
+    assert!(
+        reply
+            .headers
+            .to_lowercase()
+            .contains("content-type: application/json"),
+        "{}",
+        reply.headers
+    );
+    assert!(reply.body.contains("\"status\":\"ok\""), "{}", reply.body);
+
+    // Anything outside /api must never pass for a health reply: these paths are
+    // not declared SPA routes, so they are honest 404s, not the app shell at 200.
+    for path in ["/health", "/ready", "/healthz", "/readiness"] {
+        let reply = get(address, path, &[]).await;
+        assert_eq!(reply.status, 404, "{path}");
+    }
+}
+
+#[tokio::test]
 async fn root_serves_the_prerendered_landing_page_not_the_fallback() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
