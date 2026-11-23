@@ -18,6 +18,8 @@ pub enum Capability {
     DeleteAccount,
     /// Sign out of every session at once.
     LogoutEverywhere,
+    /// Edit the account's learner profile.
+    EditProfile,
 }
 
 /// The actions an account may take. The UI reads this same struct from `/api/me`.
@@ -35,6 +37,8 @@ pub struct Capabilities {
     pub delete_account: bool,
     /// May sign out everywhere.
     pub logout_everywhere: bool,
+    /// May edit the account profile.
+    pub edit_profile: bool,
 }
 
 impl Capabilities {
@@ -47,6 +51,7 @@ impl Capabilities {
             change_credentials: granted,
             delete_account: granted,
             logout_everywhere: granted,
+            edit_profile: granted,
         }
     }
 
@@ -61,6 +66,7 @@ impl Capabilities {
             Capability::ChangeCredentials => self.change_credentials,
             Capability::DeleteAccount => self.delete_account,
             Capability::LogoutEverywhere => self.logout_everywhere,
+            Capability::EditProfile => self.edit_profile,
         };
         if granted {
             Ok(())
@@ -75,11 +81,12 @@ mod tests {
     use super::*;
 
     // test-change: ACC-1
-    const ALL: [Capability; 4] = [
+    const ALL: [Capability; 5] = [
         Capability::LinkProvider,
         Capability::ChangeCredentials,
         Capability::DeleteAccount,
         Capability::LogoutEverywhere,
+        Capability::EditProfile,
     ];
 
     #[test]
@@ -90,9 +97,10 @@ mod tests {
                 demo.link_provider,
                 demo.change_credentials,
                 demo.delete_account,
-                demo.logout_everywhere
+                demo.logout_everywhere,
+                demo.edit_profile
             ],
-            [false; 4]
+            [false; 5]
         );
         for capability in ALL {
             assert_eq!(
@@ -110,9 +118,10 @@ mod tests {
                 user.link_provider,
                 user.change_credentials,
                 user.delete_account,
-                user.logout_everywhere
+                user.logout_everywhere,
+                user.edit_profile
             ],
-            [true; 4]
+            [true; 5]
         );
         for capability in ALL {
             assert_eq!(user.require(capability), Ok(()));

@@ -251,8 +251,12 @@ async fn pg_auth_demo_matrix_every_listed_mutating_route_exists_for_a_session(po
     let session = session_for(&pool, &h.clock, demo).await;
 
     for path in MUTATING_ROUTES {
-        let (status, _, _) =
-            call(&h.app, Method::POST, path, Some(json!({})), Some(&session)).await;
+        let method = if *path == "/api/me/profile" {
+            Method::PATCH
+        } else {
+            Method::POST
+        };
+        let (status, _, _) = call(&h.app, method, path, Some(json!({})), Some(&session)).await;
         assert_ne!(
             status,
             StatusCode::NOT_FOUND,
@@ -261,7 +265,7 @@ async fn pg_auth_demo_matrix_every_listed_mutating_route_exists_for_a_session(po
         assert_ne!(
             status,
             StatusCode::METHOD_NOT_ALLOWED,
-            "{path} must accept POST"
+            "{path} must accept its mutating method"
         );
     }
 }

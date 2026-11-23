@@ -146,6 +146,22 @@ async fn auth_wiring_me_without_a_session_is_401_json() {
 }
 
 #[tokio::test]
+async fn auth_wiring_profile_patch_without_a_session_is_401_json() {
+    let app = app_with_auth();
+    let request = Request::builder()
+        .method(Method::PATCH)
+        .uri("/api/me/profile")
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(Body::from(r#"{"display_name":"Brighton","country":"ZA"}"#))
+        .expect("valid request");
+
+    let (status, json) = send(&app, request).await;
+
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(json["code"], "unauthenticated");
+}
+
+#[tokio::test]
 async fn auth_wiring_a_cross_site_write_is_refused_before_any_handler() {
     let app = app_with_auth();
     let request = Request::builder()

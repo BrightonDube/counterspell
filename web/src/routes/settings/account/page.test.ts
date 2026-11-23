@@ -29,6 +29,20 @@ vi.mock('#lib/auth/client.js', () => ({
   }),
   logout: vi.fn(),
   logoutEverywhere: vi.fn(),
+  patchProfile: vi.fn().mockResolvedValue({
+    user: {
+      handle: 'witch-hunter',
+      display_name: 'Night Walker',
+      email: 'witch@example.com',
+      country: 'ZA',
+      profile_complete: true,
+      avatar_url: '/art/creatures/skull-green-eyes.webp',
+      avatar_editable: false,
+      providers: ['github'],
+      is_demo: false
+    },
+    capabilities: { edit_profile: true }
+  }),
   startProviderLink: vi.fn().mockResolvedValue(undefined)
 }));
 vi.mock('#lib/auth/delete-account.js', () => ({
@@ -60,12 +74,17 @@ vi.mock('#lib/auth/session.svelte.js', () => ({
       display_name: 'Witch Hunter',
       email: 'witch@example.com',
       providers: ['github'],
+      country: 'ZA',
+      profile_complete: true,
+      avatar_url: '/art/creatures/skull-green-eyes.webp',
+      avatar_editable: false,
       is_demo: false
     },
     capabilities: {
       link_provider: true,
       logout_everywhere: true,
-      delete_account: true
+      delete_account: true,
+      edit_profile: true
     },
     load: vi.fn().mockResolvedValue(undefined)
   }
@@ -102,6 +121,17 @@ describe('settings account costume polish', () => {
       'img[src="/art/objects/cursed-crt.webp"]'
     );
     expect(decoration?.getAttribute('loading')).toBe('lazy');
+
+    const avatar = container.querySelector<HTMLImageElement>(
+      'img.profile-avatar[src="/art/creatures/skull-green-eyes.webp"]'
+    );
+    expect(avatar).not.toBeNull();
+    expect(screen.getByRole('button', { name: 'Edit profile' })).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Avatar upload is unavailable until storage is configured/
+      )
+    ).toBeTruthy();
   });
 
   // Breaks if linking another provider loses its visible key affordance or accessible name.
