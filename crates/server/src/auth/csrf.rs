@@ -10,16 +10,28 @@ use std::sync::Arc;
 use axum::{
     body::{to_bytes, Body},
     extract::{Request, State},
-    http::{header, HeaderMap, HeaderValue, Method},
+    http::{header, HeaderMap, HeaderValue, Method, StatusCode},
     middleware::{self, Next},
     response::{IntoResponse, Response},
     Router,
 };
 
-use super::errors::AuthError;
+use sha2::{Digest, Sha256};
+
+use super::{cookies::read_cookie, errors::AuthError};
 
 /// The largest body an auth route reads, in bytes (16 KiB).
 pub const MAX_AUTH_BODY_BYTES: usize = 16 * 1024;
+
+/// Catalogue GET paths whose successful replies hold no user-specific data for an anonymous
+/// caller — signed-in callers get per-user progress on the same paths, so the cookie decides.
+const PUBLIC_GET_PATHS: &[&str] = &["/api/problems", "/api/languages"];
+
+/// How long a shared cache may keep an anonymous catalogue reply (5 minutes).
+const PUBLIC_CATALOGUE_MAX_AGE: &str = "public, max-age=300";
+
+/// Bound on the body read to compute the catalogue ETag (8 MiB is far beyond any catalogue page).
+const MAX_CATALOGUE_BODY_BYTES: usize = 8 * 1024 * 1024;
 
 /// The site's own origin, such as `https://counterspell.example`, taken from the public base URL.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -96,13 +108,55 @@ pub async fn origin_guard(
     }
 }
 
-/// Adds `Cache-Control: no-store` to every response, so account data is never cached.
-pub async fn no_store(request: Request, next: Next) -> Response {
+/// Adds `Cache-Control: no-store` to every response, so account data is never cached — except
+/// anonymous `GET`s on the public catalogue paths. Those carry no user-specific data, so they get
+/// bounded shared caching plus a revalidating ETag; `Vary: Cookie` keeps a signed-in caller from
+/// reusing the anonymous entry.
+pub async fn cache_policy(request: Request, next: Next) -> Response {
+    let headers = request.headers();
+    let public_get = request.method() == Method::GET
+        && PUBLIC_GET_PATHS.iter().any(|public| {
+            let path = request.uri().path();
+            path == *public
+                || path
+                    .strip_prefix(*public)
+                    .is_some_and(|rest| rest.starts_with('/'))
+        })
+        && read_cookie(headers, "__Host-cs_session").is_none()
+        && read_cookie(headers, "cs_session").is_none();
+    let validator = headers.get(header::IF_NONE_MATCH).cloned();
     let mut response = next.run(request).await;
-    response
-        .headers_mut()
-        .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-    response
+    if !public_get || !response.status().is_success() {
+        response
+            .headers_mut()
+            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        return response;
+    }
+    catalogue_response(response, validator).await
+}
+
+/// Stamps the public cache headers and an ETag on a catalogue reply, honouring `If-None-Match`.
+async fn catalogue_response(response: Response, validator: Option<HeaderValue>) -> Response {
+    let (mut parts, body) = response.into_parts();
+    let Ok(bytes) = to_bytes(body, MAX_CATALOGUE_BODY_BYTES).await else {
+        return (StatusCode::INTERNAL_SERVER_ERROR, "catalogue body too large").into_response();
+    };
+    let etag = HeaderValue::from_str(&format!("\"{}\"", hex::encode(Sha256::digest(bytes))))
+        .expect("hex etag is a valid header value");
+    parts.headers.insert(header::VARY, HeaderValue::from_static("Cookie"));
+    parts.headers.insert(
+        header::CACHE_CONTROL,
+        HeaderValue::from_static(PUBLIC_CATALOGUE_MAX_AGE),
+    );
+    parts
+        .headers
+        .insert(header::ETAG, etag.clone());
+    if validator == Some(etag) {
+        parts.status = StatusCode::NOT_MODIFIED;
+        parts.headers.remove(header::CONTENT_LENGTH);
+        return Response::from_parts(parts, Body::empty());
+    }
+    Response::from_parts(parts, Body::from(bytes))
 }
 
 /// Adds `Referrer-Policy: no-referrer` to redirects, so the next page does not see this URL.
@@ -124,7 +178,7 @@ where
 {
     router
         .layer(middleware::from_fn_with_state(origin, origin_guard))
-        .layer(middleware::from_fn(no_store))
+        .layer(middleware::from_fn(cache_policy))
         .layer(middleware::from_fn(no_referrer_on_redirects))
 }
 
