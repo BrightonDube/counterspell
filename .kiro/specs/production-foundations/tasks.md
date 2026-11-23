@@ -6,7 +6,7 @@
 - [x] **PF04 Make health and readiness monitoring unambiguous**
 - [x] **PF05 Add privacy-safe public catalogue revalidation**
 - [ ] **PF06 Repair `www` TLS and redirect to the apex [HUMAN if DNS or edge access is required]**
-- [ ] **PF07 Inventory CSP violations in report-only mode**
+- [x] **PF07 Inventory CSP violations in report-only mode**
 - [ ] **PF08 Enforce the stable CSP directives with rollback protection**
 - [ ] **PF09 Run router, edge, browser and live production verification**
 
