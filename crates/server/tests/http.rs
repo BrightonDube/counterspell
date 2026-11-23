@@ -333,7 +333,7 @@ async fn published_web_resources_are_real_files_not_fallback_404s() {
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
     for (path, type_marker, body_marker) in [
-        ("/sitemap.xml", "text/xml", "<urlset"),
+        ("/sitemap.xml", "application/xml", "<urlset"),
         (
             "/manifest.webmanifest",
             "application/manifest+json",
