@@ -306,7 +306,12 @@ async fn declared_spa_routes_still_fall_back_to_the_spa_entry() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
-    for path in ["/dashboard", "/problems/two-sum", "/dashboard/", "/problems/a%2Fb"] {
+    for path in [
+        "/dashboard",
+        "/problems/two-sum",
+        "/dashboard/",
+        "/problems/a%2Fb",
+    ] {
         let reply = get(address, path, &[]).await;
 
         assert_eq!(reply.status, 200, "{path}");

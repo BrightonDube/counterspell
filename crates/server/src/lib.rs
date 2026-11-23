@@ -25,7 +25,7 @@ pub mod spa;
 pub mod testkit;
 pub mod validate;
 
-use std::{convert::Infallible, io, path::Path, sync::Arc};
+use std::{io, path::Path, sync::Arc};
 
 use axum::{
     body::Body,
@@ -41,11 +41,10 @@ use axum::{
 };
 use serde_json::{json, Value};
 use sqlx::PgPool;
-use tower::ServiceExt;
 use tower_http::{
     limit::RequestBodyLimitLayer,
     services::{ServeDir, ServeFile},
-    set_header::SetResponseHeaderLayer,
+    set_header::{SetResponseHeader, SetResponseHeaderLayer},
 };
 
 use crate::{
@@ -199,20 +198,11 @@ const SPA_FALLBACK_HEADER: HeaderName = HeaderName::from_static("x-counterspell-
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
     let index_file = static_dir.join(SPA_FALLBACK_FILE);
-    let serve_file = ServeFile::new(index_file);
-    let spa_entry = tower::service_fn(move |request: Request<Body>| {
-        let file = serve_file.clone();
-        async move {
-            let mut response = file
-                .oneshot(request)
-                .await
-                .expect("serving the SPA entry file cannot fail");
-            response
-                .headers_mut()
-                .insert(SPA_FALLBACK_HEADER, HeaderValue::from_static("1"));
-            Ok::<Response, Infallible>(response)
-        }
-    });
+    let spa_entry = SetResponseHeader::overriding(
+        ServeFile::new(index_file),
+        SPA_FALLBACK_HEADER,
+        HeaderValue::from_static("1"),
+    );
     let static_files = ServeDir::new(static_dir.clone()).fallback(spa_entry);
     let spa_routes = spa::SpaRoutes::load(&static_dir).unwrap_or_else(|error| {
         tracing::warn!(
