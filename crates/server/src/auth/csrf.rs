@@ -139,18 +139,22 @@ pub async fn cache_policy(request: Request, next: Next) -> Response {
 async fn catalogue_response(response: Response, validator: Option<HeaderValue>) -> Response {
     let (mut parts, body) = response.into_parts();
     let Ok(bytes) = to_bytes(body, MAX_CATALOGUE_BODY_BYTES).await else {
-        return (StatusCode::INTERNAL_SERVER_ERROR, "catalogue body too large").into_response();
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "catalogue body too large",
+        )
+            .into_response();
     };
-    let etag = HeaderValue::from_str(&format!("\"{}\"", hex::encode(Sha256::digest(bytes))))
+    let etag = HeaderValue::from_str(&format!("\"{}\"", hex::encode(Sha256::digest(&bytes))))
         .expect("hex etag is a valid header value");
-    parts.headers.insert(header::VARY, HeaderValue::from_static("Cookie"));
+    parts
+        .headers
+        .insert(header::VARY, HeaderValue::from_static("Cookie"));
     parts.headers.insert(
         header::CACHE_CONTROL,
         HeaderValue::from_static(PUBLIC_CATALOGUE_MAX_AGE),
     );
-    parts
-        .headers
-        .insert(header::ETAG, etag.clone());
+    parts.headers.insert(header::ETAG, etag.clone());
     if validator == Some(etag) {
         parts.status = StatusCode::NOT_MODIFIED;
         parts.headers.remove(header::CONTENT_LENGTH);
