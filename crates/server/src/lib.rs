@@ -24,13 +24,18 @@ pub mod seams;
 pub mod testkit;
 pub mod validate;
 
-use std::{io, path::Path, sync::Arc};
+use std::{
+    io,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use axum::{
     body::Body,
+    extract::State,
     http::{
         header::{self, HeaderName},
-        HeaderValue, Request,
+        HeaderValue, Request, StatusCode,
     },
     middleware::{self, Next},
     response::Response,
@@ -192,7 +197,7 @@ pub const SPA_FALLBACK_FILE: &str = "200.html";
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
     let index_file = static_dir.join(SPA_FALLBACK_FILE);
-    let static_files = ServeDir::new(static_dir).fallback(ServeFile::new(index_file));
+    let static_files = ServeDir::new(static_dir.clone()).fallback(ServeFile::new(index_file));
     let body_limit =
         usize::try_from(state.config.limits.request_body_limit_bytes).unwrap_or(usize::MAX);
 
@@ -239,7 +244,10 @@ pub fn build_router(state: AppState) -> Router {
     };
 
     api.fallback_service(static_files)
-        .layer(middleware::from_fn(add_static_cache_policy))
+        .layer(middleware::from_fn_with_state(
+            static_dir,
+            add_static_cache_policy,
+        ))
         .layer(RequestBodyLimitLayer::new(body_limit))
         .layer(SetResponseHeaderLayer::overriding(
             HeaderName::from_static("x-content-type-options"),
@@ -247,16 +255,18 @@ pub fn build_router(state: AppState) -> Router {
         ))
 }
 
-async fn add_static_cache_policy(request: Request<Body>, next: Next) -> Response {
+async fn add_static_cache_policy(
+    State(static_dir): State<PathBuf>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
     let path = request.uri().path().to_owned();
     let mut response = next.run(request).await;
-    let is_html = response
-        .headers()
-        .get(header::CONTENT_TYPE)
-        .and_then(|value| value.to_str().ok())
-        .is_some_and(|value| value.starts_with("text/html"));
+    let requested_file = static_dir.join(path.trim_start_matches('/')).is_file();
 
-    if response.status().is_success() && !is_html {
+    if requested_file
+        && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
+    {
         let policy = if path.starts_with("/_app/immutable/") {
             Some("public, max-age=31536000, immutable")
         } else if path.starts_with("/art/")

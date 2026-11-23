@@ -5,6 +5,13 @@ mod support;
 use counterspell_server::build_router;
 use support::{get, serve, state_for, Fixture};
 
+fn header_value<'a>(headers: &'a str, name: &str) -> Option<&'a str> {
+    headers.lines().find_map(|line| {
+        let (header_name, value) = line.split_once(':')?;
+        header_name.eq_ignore_ascii_case(name).then(|| value.trim())
+    })
+}
+
 #[tokio::test]
 async fn health_reports_ok_as_json() {
     let fixture = Fixture::new();
@@ -122,6 +129,51 @@ async fn spa_fallback_is_not_cached_as_an_immutable_asset() {
         !reply.headers.to_lowercase().contains("cache-control:"),
         "{}",
         reply.headers
+    );
+}
+
+#[tokio::test]
+async fn immutable_cache_policy_survives_revalidation_without_caching_the_fallback() {
+    // test-change: OPS-PERF-STATIC-CACHE
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let asset = get(address, "/_app/immutable/app.js", &[]).await;
+    let asset_etag = header_value(&asset.headers, "etag").expect("asset etag");
+    let revalidated_asset = get(
+        address,
+        "/_app/immutable/app.js",
+        &[("If-None-Match", asset_etag)],
+    )
+    .await;
+
+    assert_eq!(revalidated_asset.status, 304);
+    assert!(
+        revalidated_asset
+            .headers
+            .to_lowercase()
+            .contains("cache-control: public, max-age=31536000, immutable"),
+        "{}",
+        revalidated_asset.headers
+    );
+
+    let fallback = get(address, "/_app/immutable/missing.js", &[]).await;
+    let fallback_etag = header_value(&fallback.headers, "etag").expect("fallback etag");
+    let revalidated_fallback = get(
+        address,
+        "/_app/immutable/missing.js",
+        &[("If-None-Match", fallback_etag)],
+    )
+    .await;
+
+    assert_eq!(revalidated_fallback.status, 304);
+    assert!(
+        !revalidated_fallback
+            .headers
+            .to_lowercase()
+            .contains("cache-control:"),
+        "{}",
+        revalidated_fallback.headers
     );
 }
 
