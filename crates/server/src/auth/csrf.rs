@@ -30,7 +30,7 @@ const PUBLIC_GET_PATHS: &[&str] = &["/api/problems", "/api/languages"];
 /// How long a shared cache may keep an anonymous catalogue reply (5 minutes).
 const PUBLIC_CATALOGUE_MAX_AGE: &str = "public, max-age=300";
 
-/// Bound on the body read to compute the catalogue ETag (8 MiB is far beyond any catalogue page).
+/// Bound on the body read to compute the catalogue `ETag` (8 MiB is far beyond any catalogue page).
 const MAX_CATALOGUE_BODY_BYTES: usize = 8 * 1024 * 1024;
 
 /// The site's own origin, such as `https://counterspell.example`, taken from the public base URL.
@@ -110,7 +110,7 @@ pub async fn origin_guard(
 
 /// Adds `Cache-Control: no-store` to every response, so account data is never cached — except
 /// anonymous `GET`s on the public catalogue paths. Those carry no user-specific data, so they get
-/// bounded shared caching plus a revalidating ETag; `Vary: Cookie` keeps a signed-in caller from
+/// bounded shared caching plus a revalidating `ETag`; `Vary: Cookie` keeps a signed-in caller from
 /// reusing the anonymous entry.
 pub async fn cache_policy(request: Request, next: Next) -> Response {
     let headers = request.headers();
@@ -135,7 +135,7 @@ pub async fn cache_policy(request: Request, next: Next) -> Response {
     catalogue_response(response, validator).await
 }
 
-/// Stamps the public cache headers and an ETag on a catalogue reply, honouring `If-None-Match`.
+/// Stamps the public cache headers and an `ETag` on a catalogue reply, honouring `If-None-Match`.
 async fn catalogue_response(response: Response, validator: Option<HeaderValue>) -> Response {
     let (mut parts, body) = response.into_parts();
     let Ok(bytes) = to_bytes(body, MAX_CATALOGUE_BODY_BYTES).await else {
