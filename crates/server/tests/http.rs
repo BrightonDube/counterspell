@@ -320,7 +320,11 @@ async fn published_web_resources_are_real_files_not_fallback_404s() {
     // test-change: PROD-FOUND-RESOURCES
     let fixture = Fixture::new();
     let web_static = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../web/static");
-    for resource in ["sitemap.xml", "manifest.webmanifest", ".well-known/security.txt"] {
+    for resource in [
+        "sitemap.xml",
+        "manifest.webmanifest",
+        ".well-known/security.txt",
+    ] {
         let target = fixture.dir.join(resource);
         std::fs::create_dir_all(target.parent().expect("resource dir")).expect("mkdir");
         std::fs::copy(web_static.join(resource), &target)
@@ -329,8 +333,12 @@ async fn published_web_resources_are_real_files_not_fallback_404s() {
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
     for (path, type_marker, body_marker) in [
-        ("/sitemap.xml", "xml", "<urlset"),
-        ("/manifest.webmanifest", "manifest+json", "\"name\""),
+        ("/sitemap.xml", "text/xml", "<urlset"),
+        (
+            "/manifest.webmanifest",
+            "application/manifest+json",
+            "\"name\"",
+        ),
         ("/.well-known/security.txt", "text/plain", "Contact:"),
     ] {
         let reply = get(address, path, &[]).await;
