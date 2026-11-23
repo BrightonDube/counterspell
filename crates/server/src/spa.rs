@@ -87,14 +87,22 @@ impl SpaRoutes {
 
     /// True when `path` is a declared client-side route. A single trailing slash
     /// is ignored (`/dashboard/` counts as `/dashboard`); interior empty segments
-    /// do not, so `/settings//account` is not a route.
+    /// do not, so `/settings//account` is not a route. Path segments are
+    /// percent-decoded like SvelteKit's router (`/%64ashboard` is `/dashboard`),
+    /// but a segment that would decode to something containing `/` or `%` keeps
+    /// its raw form, so encoded separators (`/break%2Fmemory`) and double
+    /// encodings never create routes the client does not have.
     #[must_use]
     pub fn is_app_route(&self, path: &str) -> bool {
         if !path.starts_with('/') {
             return false;
         }
-        let mut requested: Vec<&str> = path.split('/').skip(1).collect();
-        if requested.last() == Some(&"") {
+        let mut requested: Vec<std::borrow::Cow<'_, str>> = path
+            .split('/')
+            .skip(1)
+            .map(Self::decode_segment)
+            .collect();
+        if requested.last().is_some_and(|last| last.is_empty()) {
             requested.pop();
         }
         self.patterns
@@ -102,7 +110,17 @@ impl SpaRoutes {
             .any(|pattern| Self::matches(pattern, &requested))
     }
 
-    fn matches(pattern: &[Segment], requested: &[&str]) -> bool {
+    /// Decodes a path segment for route matching. Keeps the raw segment when
+    /// decoding is impossible or would smuggle a `/` or `%` across a boundary
+    /// the router already drew.
+    fn decode_segment(segment: &str) -> std::borrow::Cow<'_, str> {
+        match percent_encoding::percent_decode_str(segment).decode_utf8() {
+            Ok(decoded) if !decoded.contains('/') && !decoded.contains('%') => decoded,
+            _ => std::borrow::Cow::Borrowed(segment),
+        }
+    }
+
+    fn matches(pattern: &[Segment], requested: &[std::borrow::Cow<'_, str>]) -> bool {
         match pattern.split_first() {
             None => requested.is_empty(),
             Some((Segment::Rest, _)) => true,
@@ -110,7 +128,9 @@ impl SpaRoutes {
                 !requested.is_empty() && Self::matches(rest, &requested[1..])
             }
             Some((Segment::Exact(text), rest)) => {
-                requested.first().is_some_and(|head| *head == text.as_str())
+                requested
+                    .first()
+                    .is_some_and(|head| **head == text.as_str())
                     && Self::matches(rest, &requested[1..])
             }
         }
@@ -158,6 +178,16 @@ mod tests {
         assert!(routes.is_app_route("/dashboard/"));
         assert!(!routes.is_app_route("/dashboard//"));
         assert!(!routes.is_app_route("//dashboard"));
+    }
+
+    #[test]
+    fn decoded_segments_match_but_encoded_separators_do_not() {
+        let routes = routes();
+        assert!(routes.is_app_route("/%64ashboard"));
+        assert!(routes.is_app_route("/problems/two%2Dsum"));
+        assert!(!routes.is_app_route("/break%2Fmemory"));
+        assert!(!routes.is_app_route("/%2Fdocs/a"));
+        assert!(!routes.is_app_route("/%2526ashboard"));
     }
 
     #[test]
