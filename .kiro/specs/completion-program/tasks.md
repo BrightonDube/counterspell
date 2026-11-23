@@ -13,6 +13,7 @@
 ## Wave 0: close active work
 
 - [x] **CP00 Live-verify static cache policies**
+  - Evidence: [static cache production verification](verification.md).
   - Immutable assets return `public, max-age=31536000, immutable`.
   - Art, fonts and landing assets return `public, max-age=604800`.
   - `robots.txt` returns `public, max-age=3600`.
@@ -55,14 +56,15 @@
 
 - [ ] **CP20 Run the full public production audit**
 - [ ] **CP21 Run the full authenticated production audit**
-- [ ] **CP22 Verify 200-pack count, 40/40/20 difficulty and four-language coverage**
+- [ ] **CP22 Verify the 200 new packs contain 80 easy, 80 medium and 40 hard packs with four-language coverage**
 - [ ] **CP23 Record human-gated infrastructure and operational evidence**
 - [ ] **CP24 Reconcile every child-spec checkbox against direct evidence**
-- [ ] **CP25 Publish the final Kiro and hackathon evidence summary**
+- [ ] **CP25 Publish the final production verification summary**
 
 ## Dependency frontier
 
 - CP01 to CP09 complete before implementation starts.
+- Production audit tasks PA01 and PA02 complete before CP10 starts.
 - CP10 blocks CP11 to CP15 where they depend on corrected production contracts.
 - CP11 completes before new catalogue publication.
 - CP12 completes before final UI performance baselines.

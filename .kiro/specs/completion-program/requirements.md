@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Finish Counterspell as a fast, reliable, accessible, secure and memorable Costume Contest entry. This program turns verified production and authenticated audit findings, the agreed workspace and break-room art direction, and the 200-pack Grimoire goal into ordered, independently verifiable work.
+Finish Counterspell as a fast, reliable, accessible, secure and memorable product. This program turns verified production and authenticated audit findings, the agreed workspace and break-room art direction, and the 200-pack Grimoire goal into ordered, independently verifiable work.
 
 ## Fixed decisions
 
@@ -16,7 +16,6 @@ Finish Counterspell as a fast, reliable, accessible, secure and memorable Costum
 - Require Python, JavaScript, Java and C++ starters before any new pack is published.
 - Keep `crates/judge/` and the separate rootless sandbox daemon as the untrusted-code security boundary.
 - Use the supplied Duolingo chess screenshot only as visual inspiration. Counterspell artwork and interaction must remain original.
-- Keep commit authorship under Brighton Dube's configured Git identity. Keep hackathon reporting accurate about Kiro and supporting tools.
 
 ## Program requirements
 

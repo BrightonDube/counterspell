@@ -8,3 +8,4 @@
 - [ ] **WP06 Add lightweight workspace costume motion and guard optional targets**
 - [ ] **WP07 Verify reduced motion, keyboard use and all editor controls**
 - [ ] **WP08 Record before and after local and production evidence**
+- [ ] **WP09 Decide, document and verify the production source-map policy**

@@ -7,4 +7,4 @@
 - [ ] **AQ05 Correct chess authentication copy**
 - [ ] **AQ06 Consolidate session reads and expected anonymous states**
 - [ ] **AQ07 Stabilise puzzle and affected media layout**
-- [ ] **AQ08 Run axe, keyboard, console, network and Lighthouse verification**
+- [ ] **AQ08 Run axe, manual contrast, keyboard, console, network and Lighthouse verification**
