@@ -31,7 +31,7 @@ axum-extra = { version = "0.12.6", features = ["cookie"] }
 fsrs = "7.0.0"
 futures-util = "0.3.34"
 argon2 = "0.5.3"
-hmac = "0.12.1"
+hmac = "0.13.0"
 rand = "0.9.5"
 base64 = "0.23.1"
 hex = "0.4.3"
