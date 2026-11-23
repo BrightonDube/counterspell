@@ -24,10 +24,21 @@ pub mod seams;
 pub mod testkit;
 pub mod validate;
 
-use std::{io, path::Path, sync::Arc};
+use std::{
+    io,
+    path::{Component, Path, PathBuf},
+    sync::Arc,
+};
 
 use axum::{
-    http::{header::HeaderName, HeaderValue},
+    body::Body,
+    extract::State,
+    http::{
+        header::{self, HeaderName},
+        HeaderValue, Request, StatusCode,
+    },
+    middleware::{self, Next},
+    response::Response,
     routing::{any, get, post},
     Json, Router,
 };
@@ -186,7 +197,7 @@ pub const SPA_FALLBACK_FILE: &str = "200.html";
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
     let index_file = static_dir.join(SPA_FALLBACK_FILE);
-    let static_files = ServeDir::new(static_dir).fallback(ServeFile::new(index_file));
+    let static_files = ServeDir::new(static_dir.clone()).fallback(ServeFile::new(index_file));
     let body_limit =
         usize::try_from(state.config.limits.request_body_limit_bytes).unwrap_or(usize::MAX);
 
@@ -233,11 +244,53 @@ pub fn build_router(state: AppState) -> Router {
     };
 
     api.fallback_service(static_files)
+        .layer(middleware::from_fn_with_state(
+            static_dir,
+            add_static_cache_policy,
+        ))
         .layer(RequestBodyLimitLayer::new(body_limit))
         .layer(SetResponseHeaderLayer::overriding(
             HeaderName::from_static("x-content-type-options"),
             HeaderValue::from_static("nosniff"),
         ))
+}
+
+async fn add_static_cache_policy(
+    State(static_dir): State<PathBuf>,
+    request: Request<Body>,
+    next: Next,
+) -> Response {
+    let path = request.uri().path().to_owned();
+    let mut response = next.run(request).await;
+    let relative_path = Path::new(path.trim_start_matches('/'));
+    let requested_file = relative_path
+        .components()
+        .all(|component| matches!(component, Component::Normal(_)))
+        && static_dir.join(relative_path).is_file();
+
+    if requested_file
+        && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
+    {
+        let policy = if path.starts_with("/_app/immutable/") {
+            Some("public, max-age=31536000, immutable")
+        } else if path.starts_with("/art/")
+            || path.starts_with("/fonts/")
+            || path.starts_with("/landing/")
+        {
+            Some("public, max-age=604800")
+        } else if path == "/robots.txt" {
+            Some("public, max-age=3600")
+        } else {
+            None
+        };
+        if let Some(policy) = policy {
+            response
+                .headers_mut()
+                .insert(header::CACHE_CONTROL, HeaderValue::from_static(policy));
+        }
+    }
+
+    response
 }
 
 async fn health() -> Json<Value> {
