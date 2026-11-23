@@ -85,14 +85,18 @@ impl SpaRoutes {
         Ok(pattern)
     }
 
-    /// True when `path` is a declared client-side route. Empty segments — including a
-    /// trailing slash — are ignored, so `/dashboard/` counts as `/dashboard`.
+    /// True when `path` is a declared client-side route. A single trailing slash
+    /// is ignored (`/dashboard/` counts as `/dashboard`); interior empty segments
+    /// do not, so `/settings//account` is not a route.
     #[must_use]
     pub fn is_app_route(&self, path: &str) -> bool {
         if !path.starts_with('/') {
             return false;
         }
-        let requested: Vec<&str> = path.split('/').skip(1).filter(|s| !s.is_empty()).collect();
+        let mut requested: Vec<&str> = path.split('/').skip(1).collect();
+        if requested.last() == Some(&"") {
+            requested.pop();
+        }
         self.patterns
             .iter()
             .any(|pattern| Self::matches(pattern, &requested))
@@ -149,10 +153,11 @@ mod tests {
     }
 
     #[test]
-    fn trailing_slashes_and_empty_segments_are_ignored() {
+    fn a_trailing_slash_is_ignored_but_empty_segments_do_not_match() {
         let routes = routes();
         assert!(routes.is_app_route("/dashboard/"));
-        assert!(routes.is_app_route("/dashboard//"));
+        assert!(!routes.is_app_route("/dashboard//"));
+        assert!(!routes.is_app_route("//dashboard"));
     }
 
     #[test]

@@ -25,11 +25,7 @@ pub mod spa;
 pub mod testkit;
 pub mod validate;
 
-use std::{
-    io,
-    path::{Component, Path, PathBuf},
-    sync::Arc,
-};
+use std::{convert::Infallible, io, path::Path, sync::Arc};
 
 use axum::{
     body::Body,
@@ -45,6 +41,7 @@ use axum::{
 };
 use serde_json::{json, Value};
 use sqlx::PgPool;
+use tower::ServiceExt;
 use tower_http::{
     limit::RequestBodyLimitLayer,
     services::{ServeDir, ServeFile},
@@ -192,13 +189,31 @@ impl AppState {
 /// File name of the single-page fallback. The `SvelteKit` static adapter writes it, so `/` keeps its own prerendered `index.html`.
 pub const SPA_FALLBACK_FILE: &str = "200.html";
 
+/// Marks responses that came from the SPA entry file, so the policy layer can
+/// tell a fallback hit from a real file without re-deriving the request path.
+const SPA_FALLBACK_HEADER: HeaderName = HeaderName::from_static("x-counterspell-spa-fallback");
+
 /// Builds the router: `/api/*` routes, then the static web app with its single-page fallback.
 ///
 /// Unknown `/api/*` paths return a JSON `404`, never the HTML fallback.
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
     let index_file = static_dir.join(SPA_FALLBACK_FILE);
-    let static_files = ServeDir::new(static_dir.clone()).fallback(ServeFile::new(index_file));
+    let serve_file = ServeFile::new(index_file);
+    let spa_entry = tower::service_fn(move |request: Request<Body>| {
+        let file = serve_file.clone();
+        async move {
+            let mut response = file
+                .oneshot(request)
+                .await
+                .expect("serving the SPA entry file cannot fail");
+            response
+                .headers_mut()
+                .insert(SPA_FALLBACK_HEADER, HeaderValue::from_static("1"));
+            Ok::<Response, Infallible>(response)
+        }
+    });
+    let static_files = ServeDir::new(static_dir.clone()).fallback(spa_entry);
     let spa_routes = spa::SpaRoutes::load(&static_dir).unwrap_or_else(|error| {
         tracing::warn!(
             "SPA route manifest unavailable ({error}); every fallback hit will be a 404"
@@ -252,7 +267,7 @@ pub fn build_router(state: AppState) -> Router {
 
     api.fallback_service(static_files)
         .layer(middleware::from_fn_with_state(
-            (static_dir, Arc::new(spa_routes)),
+            Arc::new(spa_routes),
             static_response_policy,
         ))
         .layer(RequestBodyLimitLayer::new(body_limit))
@@ -265,56 +280,42 @@ pub fn build_router(state: AppState) -> Router {
 /// The static response contract: real files may receive a cache policy, and a
 /// `200.html` fallback hit keeps its 200 only for a declared SPA route — every
 /// other miss is an honest `404 no-store` (the body stays the app shell so the
-/// client can render its own not-found view). `/api` replies are never rewritten.
+/// client can render its own not-found view). The fallback service marks its
+/// own replies, so this layer never has to guess what the static layer served.
 async fn static_response_policy(
-    State((static_dir, spa_routes)): State<(PathBuf, Arc<spa::SpaRoutes>)>,
+    State(spa_routes): State<Arc<spa::SpaRoutes>>,
     request: Request<Body>,
     next: Next,
 ) -> Response {
-    // `ServeDir` percent-decodes the request path before looking it up, so every
-    // check here works on the decoded form too — a file served as `/landing/hero%20image.webp`
-    // is still a real file, and `%61pi/health` still counts as `/api`.
-    let path = percent_encoding::percent_decode_str(request.uri().path())
-        .decode_utf8()
-        .map_or_else(
-            |_| request.uri().path().to_owned(),
-            std::borrow::Cow::into_owned,
-        );
+    let path = request.uri().path().to_owned();
     let mut response = next.run(request).await;
 
-    if path == "/api" || path.starts_with("/api/") {
+    if response.headers_mut().remove(SPA_FALLBACK_HEADER).is_some() {
+        if !spa_routes.is_app_route(&path)
+            && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
+        {
+            *response.status_mut() = StatusCode::NOT_FOUND;
+            response
+                .headers_mut()
+                .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        }
         return response;
     }
 
-    let relative_path = Path::new(path.trim_start_matches('/'));
-    let on_disk = static_dir.join(relative_path);
-    let requested_file = relative_path
-        .components()
-        .all(|component| matches!(component, Component::Normal(_)))
-        && (on_disk.is_file() || on_disk.join("index.html").is_file());
-
-    if !requested_file
-        && !spa_routes.is_app_route(&path)
-        && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
-    {
-        *response.status_mut() = StatusCode::NOT_FOUND;
-        response
-            .headers_mut()
-            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
-        return response;
-    }
-
-    if requested_file
-        && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
-    {
-        let policy = if path.starts_with("/_app/immutable/") {
+    if response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED {
+        // `ServeDir` percent-decodes before the disk lookup, so the policy
+        // branches are keyed by the decoded path it actually served.
+        let decoded_path = percent_encoding::percent_decode_str(&path)
+            .decode_utf8()
+            .map_or_else(|_| path.clone(), std::borrow::Cow::into_owned);
+        let policy = if decoded_path.starts_with("/_app/immutable/") {
             Some("public, max-age=31536000, immutable")
-        } else if path.starts_with("/art/")
-            || path.starts_with("/fonts/")
-            || path.starts_with("/landing/")
+        } else if decoded_path.starts_with("/art/")
+            || decoded_path.starts_with("/fonts/")
+            || decoded_path.starts_with("/landing/")
         {
             Some("public, max-age=604800")
-        } else if path == "/robots.txt" {
+        } else if decoded_path == "/robots.txt" {
             Some("public, max-age=3600")
         } else {
             None

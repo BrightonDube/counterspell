@@ -247,7 +247,17 @@ async fn unknown_route_is_an_honest_404_with_the_spa_entry_body() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
-    for path in ["/runs/123", "/no-such-route-xyz", "/problems/a/b"] {
+    for path in [
+        "/runs/123",
+        "/no-such-route-xyz",
+        "/problems/a/b",
+        // Router semantics keep encoded separators and interior empties honest:
+        // none of these are declared routes, files or API paths.
+        "/%61pi/health",
+        "/break%2Fmemory",
+        "/dashboard//",
+        "/%2Flanding/moon.svg",
+    ] {
         let reply = get(address, path, &[]).await;
 
         assert_eq!(reply.status, 404, "{path}");
@@ -296,7 +306,7 @@ async fn declared_spa_routes_still_fall_back_to_the_spa_entry() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
-    for path in ["/dashboard", "/problems/two-sum", "/dashboard/"] {
+    for path in ["/dashboard", "/problems/two-sum", "/dashboard/", "/problems/a%2Fb"] {
         let reply = get(address, path, &[]).await;
 
         assert_eq!(reply.status, 200, "{path}");
