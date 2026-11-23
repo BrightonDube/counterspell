@@ -278,7 +278,7 @@ async fn static_response_policy(
         .decode_utf8()
         .map_or_else(
             |_| request.uri().path().to_owned(),
-            |decoded| decoded.into_owned(),
+            std::borrow::Cow::into_owned,
         );
     let mut response = next.run(request).await;
 
