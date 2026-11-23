@@ -4,7 +4,8 @@
 // Usage: npm run build && node e2e-prototype-check.mjs
 //        (E2E_EXECUTABLE / E2E_CHANNEL as in e2e-shell-check.mjs; E2E_BASE to test another server)
 // Without E2E_BASE it serves build/ itself, falling back to 200.html for
-// unknown routes the same way the Rust server does.
+// unknown routes. (The Rust server only falls back for declared routes in
+// routes.json and answers 404 otherwise; this dev server skips that check.)
 // Prints PASS/FAIL per check and exits non-zero on any failure.
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';

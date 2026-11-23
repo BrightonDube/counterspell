@@ -493,7 +493,7 @@ Browser checks are UX only and can be skipped (for example with curl). The serve
 - **Host:** **OVH VPS-2 2027** (4 vCore, 8 GB, 75 GB NVMe), month-to-month, in an EU datacentre (DE or GRA/RBX), per the VPS research of 11 Nov [D 12 Nov]. Ubuntu LTS (or OVH's Debian 12 image), Docker Engine and the Compose plugin for the main daemon, plus a **rootless Docker daemon for sandboxes only**, run as a systemd user service of an unprivileged `sandbox` user. Sandbox images are pre-pulled into that daemon.
 - **`docker-compose.yml` services:**
   - `caddy` on ports 80/443, with volumes `caddy_data` and `caddy_config`;
-  - `server`, built from a multi-stage Dockerfile (`cargo build --release` plus `npm run build`), with the SvelteKit `build/` copied into the image and served by `ServeDir` and an SPA fallback;
+  - `server`, built from a multi-stage Dockerfile (`cargo build --release` plus `npm run build`), with the SvelteKit `build/` copied into the image and served by `ServeDir` and an SPA fallback (fallback hits keep 200 only for declared routes in `routes.json`; everything else answers an honest `404 no-store`);
   - `judge`, which mounts **only the rootless sandbox daemon's socket** (never the main Docker socket), is on an internal network only, has no published ports and gets only its own DB URL (limited Postgres role) [D 12 Nov];
   - `postgres:17` with the `pgdata` volume, on an internal network only;
   - `valkey/valkey:8` for cache and rate limits only (no persistence needed), on an internal network only;

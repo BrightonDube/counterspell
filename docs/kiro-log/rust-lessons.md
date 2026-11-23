@@ -1615,3 +1615,6 @@ A trait can give a method a default body, so existing types keep working and onl
 
 ## hints G2: collecting every error, and `format!` with named values
 The validator pushes one `Diagnostic` per problem into a `Report` instead of returning at the first one, so an author sees every rung to fix in a single run. `format!("rung {rung}: ...")` reads the variable straight from scope, and `{MAX_FENCE_LINES}` does the same for a `const`, so the message and the check can never disagree about the number. `str::lines()` borrows slices of the original text, so scanning for code blocks copies nothing.
+
+## production-foundations PF02: a middleware that sees the whole reply
+`from_fn_with_state` hands the middleware owned state (a `(PathBuf, Arc<SpaRoutes>)` tuple) plus the `Request`, and `next.run(request).await` yields the `Response` — so one layer can inspect a request, let the rest of the stack answer, then rewrite the reply. `ServeDir` percent-decodes a URI before looking it up on disk, so the middleware decodes with `percent_decode_str` too, and `Cow<str>` (from `decode_utf8`) borrows the original text when nothing was encoded instead of cloning. `#[must_use]` on `is_app_route` is a compiler-checked contract: clippy flags a `pub` method whose return value a caller could silently drop.

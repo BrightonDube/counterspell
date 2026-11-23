@@ -1,0 +1,16 @@
+{
+  "routes": [
+    "/",
+    "/break",
+    "/break/bot",
+    "/break/memory",
+    "/break/puzzle",
+    "/dashboard",
+    "/login",
+    "/onboarding",
+    "/problems",
+    "/problems/*",
+    "/prototype/ide-workspace",
+    "/settings/account"
+  ]
+}

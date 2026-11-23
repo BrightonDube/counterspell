@@ -20,22 +20,19 @@ pub mod ratelimit;
 pub mod reviews;
 pub mod runs;
 pub mod seams;
+pub mod spa;
 #[cfg(feature = "testkit")]
 pub mod testkit;
 pub mod validate;
 
-use std::{
-    io,
-    path::{Component, Path, PathBuf},
-    sync::Arc,
-};
+use std::{io, path::Path, sync::Arc};
 
 use axum::{
     body::Body,
     extract::State,
     http::{
         header::{self, HeaderName},
-        HeaderValue, Request, StatusCode,
+        HeaderValue, Method, Request, StatusCode,
     },
     middleware::{self, Next},
     response::Response,
@@ -44,10 +41,11 @@ use axum::{
 };
 use serde_json::{json, Value};
 use sqlx::PgPool;
+use tower::ServiceExt;
 use tower_http::{
     limit::RequestBodyLimitLayer,
     services::{ServeDir, ServeFile},
-    set_header::SetResponseHeaderLayer,
+    set_header::{SetResponseHeader, SetResponseHeaderLayer},
 };
 
 use crate::{
@@ -191,13 +189,29 @@ impl AppState {
 /// File name of the single-page fallback. The `SvelteKit` static adapter writes it, so `/` keeps its own prerendered `index.html`.
 pub const SPA_FALLBACK_FILE: &str = "200.html";
 
+/// Marks responses that came from the SPA entry file, so the policy layer can
+/// tell a fallback hit from a real file without re-deriving the request path.
+const SPA_FALLBACK_HEADER: HeaderName = HeaderName::from_static("x-counterspell-spa-fallback");
+
 /// Builds the router: `/api/*` routes, then the static web app with its single-page fallback.
 ///
 /// Unknown `/api/*` paths return a JSON `404`, never the HTML fallback.
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
     let index_file = static_dir.join(SPA_FALLBACK_FILE);
-    let static_files = ServeDir::new(static_dir.clone()).fallback(ServeFile::new(index_file));
+    let entry_file = ServeFile::new(index_file);
+    let spa_entry = SetResponseHeader::overriding(
+        entry_file.clone(),
+        SPA_FALLBACK_HEADER,
+        HeaderValue::from_static("1"),
+    );
+    let static_files = ServeDir::new(static_dir.clone()).fallback(spa_entry);
+    let spa_routes = spa::SpaRoutes::load(&static_dir).unwrap_or_else(|error| {
+        tracing::warn!(
+            "SPA route manifest unavailable ({error}); every fallback hit will be a 404"
+        );
+        spa::SpaRoutes::default()
+    });
     let body_limit =
         usize::try_from(state.config.limits.request_body_limit_bytes).unwrap_or(usize::MAX);
 
@@ -245,8 +259,11 @@ pub fn build_router(state: AppState) -> Router {
 
     api.fallback_service(static_files)
         .layer(middleware::from_fn_with_state(
-            static_dir,
-            add_static_cache_policy,
+            StaticFallback {
+                routes: Arc::new(spa_routes),
+                entry_file,
+            },
+            static_response_policy,
         ))
         .layer(RequestBodyLimitLayer::new(body_limit))
         .layer(SetResponseHeaderLayer::overriding(
@@ -255,30 +272,71 @@ pub fn build_router(state: AppState) -> Router {
         ))
 }
 
-async fn add_static_cache_policy(
-    State(static_dir): State<PathBuf>,
+/// The static response contract: real files may receive a cache policy, and a
+/// `200.html` fallback hit keeps its 200 only for a declared SPA route — every
+/// other miss is an honest `404 no-store` (the body stays the app shell so the
+/// client can render its own not-found view). The fallback service marks its
+/// own replies, so this layer never has to guess what the static layer served.
+///
+/// `entry_file` re-serves the shell when a conditional miss answered 304/206
+/// without a body.
+#[derive(Clone)]
+struct StaticFallback {
+    routes: Arc<spa::SpaRoutes>,
+    entry_file: ServeFile,
+}
+
+async fn static_response_policy(
+    State(fallback): State<StaticFallback>,
     request: Request<Body>,
     next: Next,
 ) -> Response {
     let path = request.uri().path().to_owned();
+    let wants_body = request.method() != Method::HEAD;
     let mut response = next.run(request).await;
-    let relative_path = Path::new(path.trim_start_matches('/'));
-    let requested_file = relative_path
-        .components()
-        .all(|component| matches!(component, Component::Normal(_)))
-        && static_dir.join(relative_path).is_file();
 
-    if requested_file
-        && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
-    {
-        let policy = if path.starts_with("/_app/immutable/") {
+    if response.headers_mut().remove(SPA_FALLBACK_HEADER).is_some() {
+        let status = response.status();
+        if !fallback.routes.is_app_route(&path)
+            && (status.is_success() || status == StatusCode::NOT_MODIFIED)
+        {
+            if wants_body && status != StatusCode::OK {
+                // A conditional miss answered 304/206 without the shell body;
+                // re-serve the entry file so the 404 renders the app.
+                response = fallback
+                    .entry_file
+                    .clone()
+                    .oneshot(
+                        Request::get("/")
+                            .body(Body::empty())
+                            .expect("valid request"),
+                    )
+                    .await
+                    .expect("serving the SPA entry file cannot fail")
+                    .map(Body::new);
+            }
+            *response.status_mut() = StatusCode::NOT_FOUND;
+            response
+                .headers_mut()
+                .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        }
+        return response;
+    }
+
+    if response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED {
+        // `ServeDir` percent-decodes before the disk lookup, so the policy
+        // branches are keyed by the decoded path it actually served.
+        let decoded_path = percent_encoding::percent_decode_str(&path)
+            .decode_utf8()
+            .map_or_else(|_| path.clone(), std::borrow::Cow::into_owned);
+        let policy = if decoded_path.starts_with("/_app/immutable/") {
             Some("public, max-age=31536000, immutable")
-        } else if path.starts_with("/art/")
-            || path.starts_with("/fonts/")
-            || path.starts_with("/landing/")
+        } else if decoded_path.starts_with("/art/")
+            || decoded_path.starts_with("/fonts/")
+            || decoded_path.starts_with("/landing/")
         {
             Some("public, max-age=604800")
-        } else if path == "/robots.txt" {
+        } else if decoded_path == "/robots.txt" {
             Some("public, max-age=3600")
         } else {
             None
@@ -301,11 +359,13 @@ async fn api_not_found() -> ApiError {
     ApiError::not_found("API route not found")
 }
 
-/// Checks that the static directory and its SPA fallback file (`200.html`) exist, so a bad deploy fails at start-up.
+/// Checks that the static directory, its SPA fallback file (`200.html`) and its
+/// route manifest (`routes.json`) exist, so a bad deploy fails at start-up.
 ///
 /// # Errors
 ///
-/// Returns an error naming the missing path when the directory or the entry file is absent.
+/// Returns an error naming the missing path when the directory, the entry file
+/// or the manifest is absent or malformed.
 pub fn ensure_static_files(static_dir: &Path) -> Result<(), io::Error> {
     let metadata = std::fs::metadata(static_dir).map_err(|error| {
         io::Error::new(
@@ -339,6 +399,23 @@ pub fn ensure_static_files(static_dir: &Path) -> Result<(), io::Error> {
             format!("SPA fallback {} is not a file", index_file.display()),
         ));
     }
+
+    let manifest_file = static_dir.join(spa::ROUTES_MANIFEST);
+    let raw_manifest = std::fs::read_to_string(&manifest_file).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!(
+                "SPA route manifest {} is unavailable: {error}",
+                manifest_file.display()
+            ),
+        )
+    })?;
+    spa::SpaRoutes::parse(&raw_manifest).map_err(|message| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{}: {message}", manifest_file.display()),
+        )
+    })?;
 
     Ok(())
 }
