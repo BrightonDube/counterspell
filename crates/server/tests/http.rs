@@ -50,6 +50,82 @@ async fn existing_static_file_is_served() {
 }
 
 #[tokio::test]
+async fn immutable_build_assets_receive_a_year_cache_policy() {
+    // test-change: OPS-PERF-STATIC-CACHE
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/_app/immutable/app.js", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    assert!(
+        reply
+            .headers
+            .to_lowercase()
+            .contains("cache-control: public, max-age=31536000, immutable"),
+        "{}",
+        reply.headers
+    );
+}
+
+#[tokio::test]
+async fn named_site_assets_receive_a_week_cache_policy() {
+    // test-change: OPS-PERF-STATIC-CACHE
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    for path in ["/art/ghost.png", "/fonts/coven.woff2", "/landing/hero.webp"] {
+        let reply = get(address, path, &[]).await;
+
+        assert_eq!(reply.status, 200, "{path}");
+        assert!(
+            reply
+                .headers
+                .to_lowercase()
+                .contains("cache-control: public, max-age=604800"),
+            "{path}: {}",
+            reply.headers
+        );
+    }
+}
+
+#[tokio::test]
+async fn robots_receives_a_short_cache_policy() {
+    // test-change: OPS-PERF-STATIC-CACHE
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/robots.txt", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    assert!(
+        reply
+            .headers
+            .to_lowercase()
+            .contains("cache-control: public, max-age=3600"),
+        "{}",
+        reply.headers
+    );
+}
+
+#[tokio::test]
+async fn spa_fallback_is_not_cached_as_an_immutable_asset() {
+    // test-change: OPS-PERF-STATIC-CACHE
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/_app/immutable/missing.js", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    assert_eq!(reply.body, "<main>spa-entry</main>");
+    assert!(
+        !reply.headers.to_lowercase().contains("cache-control:"),
+        "{}",
+        reply.headers
+    );
+}
+
+#[tokio::test]
 async fn unknown_page_falls_back_to_the_spa_entry() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;

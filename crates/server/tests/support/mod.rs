@@ -44,6 +44,14 @@ impl Fixture {
         std::fs::write(dir.join("index.html"), "<main>landing</main>").expect("index");
         std::fs::write(dir.join("200.html"), "<main>spa-entry</main>").expect("fallback");
         std::fs::write(dir.join("asset.txt"), "plain-asset").expect("asset");
+        for path in ["_app/immutable", "art", "fonts", "landing"] {
+            std::fs::create_dir_all(dir.join(path)).expect("asset fixture dir");
+        }
+        std::fs::write(dir.join("_app/immutable/app.js"), "immutable").expect("immutable asset");
+        std::fs::write(dir.join("art/ghost.png"), "art").expect("art asset");
+        std::fs::write(dir.join("fonts/coven.woff2"), "font").expect("font asset");
+        std::fs::write(dir.join("landing/hero.webp"), "landing").expect("landing asset");
+        std::fs::write(dir.join("robots.txt"), "User-agent: *").expect("robots");
         Self { dir }
     }
 }

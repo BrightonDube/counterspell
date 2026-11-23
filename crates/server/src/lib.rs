@@ -27,7 +27,13 @@ pub mod validate;
 use std::{io, path::Path, sync::Arc};
 
 use axum::{
-    http::{header::HeaderName, HeaderValue},
+    body::Body,
+    http::{
+        header::{self, HeaderName},
+        HeaderValue, Request,
+    },
+    middleware::{self, Next},
+    response::Response,
     routing::{any, get, post},
     Json, Router,
 };
@@ -233,11 +239,44 @@ pub fn build_router(state: AppState) -> Router {
     };
 
     api.fallback_service(static_files)
+        .layer(middleware::from_fn(add_static_cache_policy))
         .layer(RequestBodyLimitLayer::new(body_limit))
         .layer(SetResponseHeaderLayer::overriding(
             HeaderName::from_static("x-content-type-options"),
             HeaderValue::from_static("nosniff"),
         ))
+}
+
+async fn add_static_cache_policy(request: Request<Body>, next: Next) -> Response {
+    let path = request.uri().path().to_owned();
+    let mut response = next.run(request).await;
+    let is_html = response
+        .headers()
+        .get(header::CONTENT_TYPE)
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|value| value.starts_with("text/html"));
+
+    if response.status().is_success() && !is_html {
+        let policy = if path.starts_with("/_app/immutable/") {
+            Some("public, max-age=31536000, immutable")
+        } else if path.starts_with("/art/")
+            || path.starts_with("/fonts/")
+            || path.starts_with("/landing/")
+        {
+            Some("public, max-age=604800")
+        } else if path == "/robots.txt" {
+            Some("public, max-age=3600")
+        } else {
+            None
+        };
+        if let Some(policy) = policy {
+            response
+                .headers_mut()
+                .insert(header::CACHE_CONTROL, HeaderValue::from_static(policy));
+        }
+    }
+
+    response
 }
 
 async fn health() -> Json<Value> {
