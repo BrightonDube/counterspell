@@ -32,7 +32,7 @@ use axum::{
     extract::State,
     http::{
         header::{self, HeaderName},
-        HeaderValue, Request, StatusCode,
+        HeaderValue, Method, Request, StatusCode,
     },
     middleware::{self, Next},
     response::Response,
@@ -41,6 +41,7 @@ use axum::{
 };
 use serde_json::{json, Value};
 use sqlx::PgPool;
+use tower::ServiceExt;
 use tower_http::{
     limit::RequestBodyLimitLayer,
     services::{ServeDir, ServeFile},
@@ -198,8 +199,9 @@ const SPA_FALLBACK_HEADER: HeaderName = HeaderName::from_static("x-counterspell-
 pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
     let index_file = static_dir.join(SPA_FALLBACK_FILE);
+    let entry_file = ServeFile::new(index_file);
     let spa_entry = SetResponseHeader::overriding(
-        ServeFile::new(index_file),
+        entry_file.clone(),
         SPA_FALLBACK_HEADER,
         HeaderValue::from_static("1"),
     );
@@ -257,7 +259,10 @@ pub fn build_router(state: AppState) -> Router {
 
     api.fallback_service(static_files)
         .layer(middleware::from_fn_with_state(
-            Arc::new(spa_routes),
+            StaticFallback {
+                routes: Arc::new(spa_routes),
+                entry_file,
+            },
             static_response_policy,
         ))
         .layer(RequestBodyLimitLayer::new(body_limit))
@@ -272,35 +277,39 @@ pub fn build_router(state: AppState) -> Router {
 /// other miss is an honest `404 no-store` (the body stays the app shell so the
 /// client can render its own not-found view). The fallback service marks its
 /// own replies, so this layer never has to guess what the static layer served.
+///
+/// `entry_file` re-serves the shell when a conditional miss answered 304/206
+/// without a body.
+#[derive(Clone)]
+struct StaticFallback {
+    routes: Arc<spa::SpaRoutes>,
+    entry_file: ServeFile,
+}
+
 async fn static_response_policy(
-    State(spa_routes): State<Arc<spa::SpaRoutes>>,
+    State(fallback): State<StaticFallback>,
     request: Request<Body>,
     next: Next,
 ) -> Response {
     let path = request.uri().path().to_owned();
-    let mut request = request;
-    // An unknown path can only reach the fallback file, whose conditional
-    // validators would answer 304/206 without the shell body. Strip them so the
-    // rewritten 404 below always carries the app shell.
-    if !path.starts_with("/api") && !spa_routes.is_app_route(&path) {
-        let headers = request.headers_mut();
-        for name in [
-            header::IF_MATCH,
-            header::IF_NONE_MATCH,
-            header::IF_MODIFIED_SINCE,
-            header::IF_UNMODIFIED_SINCE,
-            header::RANGE,
-            header::IF_RANGE,
-        ] {
-            headers.remove(name);
-        }
-    }
+    let wants_body = request.method() != Method::HEAD;
     let mut response = next.run(request).await;
 
     if response.headers_mut().remove(SPA_FALLBACK_HEADER).is_some() {
-        if !spa_routes.is_app_route(&path)
-            && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
+        let status = response.status();
+        if !fallback.routes.is_app_route(&path)
+            && (status.is_success() || status == StatusCode::NOT_MODIFIED)
         {
+            if wants_body && status != StatusCode::OK {
+                // A conditional miss answered 304/206 without the shell body;
+                // re-serve the entry file so the 404 renders the app.
+                response = fallback
+                    .entry_file
+                    .clone()
+                    .oneshot(Request::get("/").body(Body::empty()).expect("valid request"))
+                    .await
+                    .expect("serving the SPA entry file cannot fail");
+            }
             *response.status_mut() = StatusCode::NOT_FOUND;
             response
                 .headers_mut()
