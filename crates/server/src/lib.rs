@@ -50,7 +50,7 @@ use tower_http::{
 
 use crate::{
     auth::{
-        csrf::{apply_api_hardening, WebOrigin},
+        csrf::{apply_api_hardening, cache_policy, WebOrigin},
         resolver::SessionUserResolver,
         AuthState,
     },
@@ -254,7 +254,9 @@ pub fn build_router(state: AppState) -> Router {
         .with_state(state);
     let api = match hardening {
         Some((auth, origin)) => apply_api_hardening(api.merge(auth::router(auth)), origin),
-        None => api,
+        // Without auth there are no sessions, but the cache contract still applies: anonymous
+        // catalogue GETs stay shareable and everything else keeps `no-store`.
+        None => api.layer(middleware::from_fn(cache_policy)),
     };
 
     api.fallback_service(static_files)
