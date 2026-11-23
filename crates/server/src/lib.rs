@@ -276,7 +276,10 @@ async fn static_response_policy(
     // is still a real file, and `%61pi/health` still counts as `/api`.
     let path = percent_encoding::percent_decode_str(request.uri().path())
         .decode_utf8()
-        .map_or_else(|_| request.uri().path().to_owned(), |decoded| decoded.into_owned());
+        .map_or_else(
+            |_| request.uri().path().to_owned(),
+            |decoded| decoded.into_owned(),
+        );
     let mut response = next.run(request).await;
 
     if path == "/api" || path.starts_with("/api/") {

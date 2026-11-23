@@ -118,10 +118,8 @@ mod tests {
     use super::SpaRoutes;
 
     fn routes() -> SpaRoutes {
-        SpaRoutes::parse(
-            r#"{"routes":["/","/dashboard","/problems/*","/docs/**","/problems"]}"#,
-        )
-        .expect("valid manifest")
+        SpaRoutes::parse(r#"{"routes":["/","/dashboard","/problems/*","/docs/**","/problems"]}"#)
+            .expect("valid manifest")
     }
 
     #[test]

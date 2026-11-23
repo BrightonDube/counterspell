@@ -54,8 +54,7 @@ impl Fixture {
         std::fs::write(dir.join("landing/hero image.webp"), "spaced-landing")
             .expect("spaced landing asset");
         std::fs::create_dir_all(dir.join("docs")).expect("docs fixture dir");
-        std::fs::write(dir.join("docs/index.html"), "<main>docs-index</main>")
-            .expect("docs index");
+        std::fs::write(dir.join("docs/index.html"), "<main>docs-index</main>").expect("docs index");
         std::fs::write(dir.join("robots.txt"), "User-agent: *").expect("robots");
         std::fs::write(
             dir.join("routes.json"),
