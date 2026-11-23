@@ -52,6 +52,11 @@ impl Fixture {
         std::fs::write(dir.join("fonts/coven.woff2"), "font").expect("font asset");
         std::fs::write(dir.join("landing/hero.webp"), "landing").expect("landing asset");
         std::fs::write(dir.join("robots.txt"), "User-agent: *").expect("robots");
+        std::fs::write(
+            dir.join("routes.json"),
+            r#"{"routes":["/","/dashboard","/problems","/problems/*"]}"#,
+        )
+        .expect("routes manifest");
         Self { dir }
     }
 }

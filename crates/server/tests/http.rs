@@ -116,14 +116,14 @@ async fn robots_receives_a_short_cache_policy() {
 }
 
 #[tokio::test]
-async fn spa_fallback_is_not_cached_as_an_immutable_asset() {
-    // test-change: OPS-PERF-STATIC-CACHE
+async fn missing_immutable_asset_is_a_404_and_is_never_cached() {
+    // test-change: OPS-PERF-STATIC-CACHE, PROD-FOUND-404
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
     let reply = get(address, "/_app/immutable/missing.js", &[]).await;
 
-    assert_eq!(reply.status, 200);
+    assert_eq!(reply.status, 404);
     assert_eq!(reply.body, "<main>spa-entry</main>");
     assert!(
         !reply.headers.to_lowercase().contains("cache-control:"),
@@ -166,7 +166,7 @@ async fn immutable_cache_policy_survives_revalidation_without_caching_the_fallba
     )
     .await;
 
-    assert_eq!(revalidated_fallback.status, 304);
+    assert_eq!(revalidated_fallback.status, 404);
     assert!(
         !revalidated_fallback
             .headers
@@ -202,7 +202,7 @@ async fn traversal_path_cannot_probe_files_outside_the_static_directory() {
     .await;
     std::fs::remove_file(secret_path).expect("remove outside fixture");
 
-    assert_eq!(reply.status, 200);
+    assert_eq!(reply.status, 404);
     assert_eq!(reply.body, "<main>spa-entry</main>");
     assert!(
         !reply.headers.to_lowercase().contains("cache-control:"),
@@ -212,14 +212,50 @@ async fn traversal_path_cannot_probe_files_outside_the_static_directory() {
 }
 
 #[tokio::test]
-async fn unknown_page_falls_back_to_the_spa_entry() {
+async fn unknown_route_is_an_honest_404_with_the_spa_entry_body() {
+    // test-change: PROD-FOUND-404
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
-    let reply = get(address, "/runs/123", &[]).await;
+    for path in ["/runs/123", "/no-such-route-xyz", "/problems/a/b"] {
+        let reply = get(address, path, &[]).await;
 
-    assert_eq!(reply.status, 200);
-    assert_eq!(reply.body, "<main>spa-entry</main>");
+        assert_eq!(reply.status, 404, "{path}");
+        assert_eq!(reply.body, "<main>spa-entry</main>", "{path}");
+    }
+}
+
+#[tokio::test]
+async fn missing_static_resources_are_an_honest_404() {
+    // test-change: PROD-FOUND-404
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    for path in [
+        "/definitely-missing-asset.png",
+        "/sitemap.xml",
+        "/manifest.webmanifest",
+        "/.well-known/security.txt",
+        "/security.txt",
+    ] {
+        let reply = get(address, path, &[]).await;
+
+        assert_eq!(reply.status, 404, "{path}");
+    }
+}
+
+#[tokio::test]
+async fn declared_spa_routes_still_fall_back_to_the_spa_entry() {
+    // test-change: PROD-FOUND-404
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    for path in ["/dashboard", "/problems/two-sum", "/dashboard/"] {
+        let reply = get(address, path, &[]).await;
+
+        assert_eq!(reply.status, 200, "{path}");
+        assert_eq!(reply.body, "<main>spa-entry</main>", "{path}");
+    }
 }
 
 #[tokio::test]
@@ -259,4 +295,16 @@ fn startup_check_requires_the_spa_fallback_file() {
         .expect_err("a directory without 200.html must fail the start-up check");
 
     assert!(error.to_string().contains("200.html"), "{error}");
+}
+
+#[test]
+fn startup_check_requires_the_spa_route_manifest() {
+    // test-change: PROD-FOUND-404
+    let fixture = Fixture::new();
+    std::fs::remove_file(fixture.dir.join("routes.json")).expect("remove manifest");
+
+    let error = counterspell_server::ensure_static_files(&fixture.dir)
+        .expect_err("a directory without routes.json must fail the start-up check");
+
+    assert!(error.to_string().contains("routes.json"), "{error}");
 }
