@@ -423,7 +423,7 @@ Conventions for every Rust task:
 - [x] No secret, token, session value, password, `code`, `state` or email address appears in any log line.
 - [x] No task read, wrote or created `.env` or any credential file.
 - [x] The 22 correctness properties each have a passing test; fmt, Clippy (`-D warnings`), workspace tests, web checks and `cargo deny check licenses` are green.
-- [ ] The manual smoke checklist was run with real GitHub, Google and Resend and its results are recorded.
+- [x] The applicable manual smoke checklist was run or explicitly superseded: live GitHub and Google sign-ins were verified on `https://counterspel.online`; Resend-specific legs are obsolete after the email-auth removal and are recorded as such.
 
 ## Agent task notes (2026-11-22)
 - Checklist ticks (Devin): `cargo metadata` lists 8 workspace packages, not six —
