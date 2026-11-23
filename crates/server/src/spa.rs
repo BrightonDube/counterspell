@@ -88,7 +88,7 @@ impl SpaRoutes {
     /// True when `path` is a declared client-side route. A single trailing slash
     /// is ignored (`/dashboard/` counts as `/dashboard`); interior empty segments
     /// do not, so `/settings//account` is not a route. Path segments are
-    /// percent-decoded like SvelteKit's router (`/%64ashboard` is `/dashboard`),
+    /// percent-decoded like `SvelteKit`'s router (`/%64ashboard` is `/dashboard`),
     /// but a segment that would decode to something containing `/` or `%` keeps
     /// its raw form, so encoded separators (`/break%2Fmemory`) and double
     /// encodings never create routes the client does not have.
