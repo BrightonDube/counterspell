@@ -33,7 +33,7 @@ check_cache() {
   curl --silent --show-error --dump-header "$headers" --output /dev/null "$url"
   grep -E "^HTTP/[0-9.]+ 200" "$headers"
   grep -Fi "cache-control: $policy" "$headers"
-  grep -Fi "content-type: $content_type" "$headers"
+  tr -d '\r' < "$headers" | grep -Fxi "content-type: $content_type"
   etag="$(awk 'BEGIN { IGNORECASE=1 } /^etag:/ { sub(/\r$/, ""); sub(/^etag:[[:space:]]*/, ""); print; exit }' "$headers")"
   curl --silent --show-error --dump-header - --output /dev/null \
     --header "If-None-Match: $etag" "$url" |
