@@ -28,27 +28,29 @@ set -euo pipefail
 check_cache() {
   url="$1"
   policy="$2"
+  content_type="$3"
   headers="$(mktemp)"
   curl --silent --show-error --dump-header "$headers" --output /dev/null "$url"
-  grep -F "HTTP/2 200" "$headers"
+  grep -E "^HTTP/[0-9.]+ 200" "$headers"
   grep -Fi "cache-control: $policy" "$headers"
+  grep -Fi "content-type: $content_type" "$headers"
   etag="$(awk 'BEGIN { IGNORECASE=1 } /^etag:/ { sub(/\r$/, ""); sub(/^etag:[[:space:]]*/, ""); print; exit }' "$headers")"
   curl --silent --show-error --dump-header - --output /dev/null \
     --header "If-None-Match: $etag" "$url" |
-    grep -E "HTTP/2 304|cache-control: $policy"
+    grep -E "^HTTP/[0-9.]+ 304|cache-control: $policy"
   rm -f "$headers"
 }
 
 check_cache "https://counterspel.online/_app/immutable/assets/0.C4p2jNMc.css" \
-  "public, max-age=31536000, immutable"
+  "public, max-age=31536000, immutable" "text/css"
 check_cache "https://counterspel.online/art/creatures/skull-green-eyes.webp" \
-  "public, max-age=604800"
+  "public, max-age=604800" "image/webp"
 check_cache "https://counterspel.online/fonts/Creepster-Regular.woff2" \
-  "public, max-age=604800"
+  "public, max-age=604800" "font/woff2"
 check_cache "https://counterspel.online/landing/moon.svg" \
-  "public, max-age=604800"
+  "public, max-age=604800" "image/svg+xml"
 check_cache "https://counterspel.online/robots.txt" \
-  "public, max-age=3600"
+  "public, max-age=3600" "text/plain"
 
 for path in \
   "/_app/immutable/assets/definitely-missing.css" \
