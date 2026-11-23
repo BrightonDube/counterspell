@@ -1,7 +1,7 @@
 # Production Foundations Tasks
 
 - [x] **PF01 Diagnose and test unknown static and route status behaviour**
-- [ ] **PF02 Return honest 404 responses without breaking valid Svelte routes**
+- [x] **PF02 Return honest 404 responses without breaking valid Svelte routes**
 - [ ] **PF03 Publish sitemap, web manifest and security.txt**
 - [ ] **PF04 Make health and readiness monitoring unambiguous**
 - [ ] **PF05 Add privacy-safe public catalogue revalidation**

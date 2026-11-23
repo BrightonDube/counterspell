@@ -20,6 +20,7 @@ pub mod ratelimit;
 pub mod reviews;
 pub mod runs;
 pub mod seams;
+pub mod spa;
 #[cfg(feature = "testkit")]
 pub mod testkit;
 pub mod validate;
@@ -198,6 +199,12 @@ pub fn build_router(state: AppState) -> Router {
     let static_dir = state.config.static_dir.clone();
     let index_file = static_dir.join(SPA_FALLBACK_FILE);
     let static_files = ServeDir::new(static_dir.clone()).fallback(ServeFile::new(index_file));
+    let spa_routes = spa::SpaRoutes::load(&static_dir).unwrap_or_else(|error| {
+        tracing::warn!(
+            "SPA route manifest unavailable ({error}); every fallback hit will be a 404"
+        );
+        spa::SpaRoutes::default()
+    });
     let body_limit =
         usize::try_from(state.config.limits.request_body_limit_bytes).unwrap_or(usize::MAX);
 
@@ -245,8 +252,8 @@ pub fn build_router(state: AppState) -> Router {
 
     api.fallback_service(static_files)
         .layer(middleware::from_fn_with_state(
-            static_dir,
-            add_static_cache_policy,
+            (static_dir, Arc::new(spa_routes)),
+            static_response_policy,
         ))
         .layer(RequestBodyLimitLayer::new(body_limit))
         .layer(SetResponseHeaderLayer::overriding(
@@ -255,8 +262,12 @@ pub fn build_router(state: AppState) -> Router {
         ))
 }
 
-async fn add_static_cache_policy(
-    State(static_dir): State<PathBuf>,
+/// The static response contract: real files may receive a cache policy, and a
+/// `200.html` fallback hit keeps its 200 only for a declared SPA route — every
+/// other miss is an honest 404 (the body stays the app shell so the client can
+/// render its own not-found view). `/api` replies are never rewritten.
+async fn static_response_policy(
+    State((static_dir, spa_routes)): State<(PathBuf, Arc<spa::SpaRoutes>)>,
     request: Request<Body>,
     next: Next,
 ) -> Response {
@@ -267,6 +278,16 @@ async fn add_static_cache_policy(
         .components()
         .all(|component| matches!(component, Component::Normal(_)))
         && static_dir.join(relative_path).is_file();
+
+    if !requested_file
+        && !path.starts_with("/api/")
+        && path != "/api"
+        && !spa_routes.is_app_route(&path)
+        && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
+    {
+        *response.status_mut() = StatusCode::NOT_FOUND;
+        return response;
+    }
 
     if requested_file
         && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)
@@ -301,11 +322,13 @@ async fn api_not_found() -> ApiError {
     ApiError::not_found("API route not found")
 }
 
-/// Checks that the static directory and its SPA fallback file (`200.html`) exist, so a bad deploy fails at start-up.
+/// Checks that the static directory, its SPA fallback file (`200.html`) and its
+/// route manifest (`routes.json`) exist, so a bad deploy fails at start-up.
 ///
 /// # Errors
 ///
-/// Returns an error naming the missing path when the directory or the entry file is absent.
+/// Returns an error naming the missing path when the directory, the entry file
+/// or the manifest is absent or malformed.
 pub fn ensure_static_files(static_dir: &Path) -> Result<(), io::Error> {
     let metadata = std::fs::metadata(static_dir).map_err(|error| {
         io::Error::new(
@@ -339,6 +362,23 @@ pub fn ensure_static_files(static_dir: &Path) -> Result<(), io::Error> {
             format!("SPA fallback {} is not a file", index_file.display()),
         ));
     }
+
+    let manifest_file = static_dir.join(spa::ROUTES_MANIFEST);
+    let raw_manifest = std::fs::read_to_string(&manifest_file).map_err(|error| {
+        io::Error::new(
+            error.kind(),
+            format!(
+                "SPA route manifest {} is unavailable: {error}",
+                manifest_file.display()
+            ),
+        )
+    })?;
+    spa::SpaRoutes::parse(&raw_manifest).map_err(|message| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("{}: {message}", manifest_file.display()),
+        )
+    })?;
 
     Ok(())
 }
