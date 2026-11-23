@@ -484,7 +484,7 @@ Conventions for every web task:
   - Verify: sources, licences and sizes recorded; if the budget cannot be met, record that the stretch is dropped.
   - Preserve: nothing is added to the build yet.
 
-- [ ] **T47 [STRETCH] [P] (30 min) Pure heuristics**
+- [x] **T47 [STRETCH] [P] (30 min) Pure heuristics**
   - Files: `web/src/lib/familiar/guess/heuristics.ts`, tests.
   - Implement the signals from the design over a small syntax-tree interface (so tests use plain objects): loop depth over input-dependent iterables, linear search or `remove`/`insert(0)` in a loop, sort then a pass, halving loops, multi-self-call recursion without memo. Return `{ guess_class, confidence: "low" | "med", reasons[] }`.
   - Tests: golden snippets for the common shapes (double loop, hash map single pass, sort then scan, binary search, naive Fibonacci); reasons are non-empty whenever a class is returned; never above `med`; deterministic.
