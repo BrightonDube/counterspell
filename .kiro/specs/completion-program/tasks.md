@@ -22,16 +22,16 @@
 
 ## Wave 1: specifications
 
-- [ ] **CP01 Publish this umbrella specification**
-- [ ] **CP02 Create the production audit fixes child spec**
-- [ ] **CP02a Create the production foundations child spec**
-- [ ] **CP03 Create the language consistency child spec**
-- [ ] **CP04 Create the accessibility, SEO and authenticated quality child spec**
-- [ ] **CP05 Create the workspace performance and costume child spec**
-- [ ] **CP06 Create the Lantern Recall polish child spec**
-- [ ] **CP07 Create the themed chess experience child spec**
-- [ ] **CP08 Create catalogue batch child specs 01 through 20**
-- [ ] **CP09 Review the child-spec dependency graph and implementation frontier**
+- [x] **CP01 Publish this umbrella specification**
+- [x] **CP02 Create the production audit fixes child spec**
+- [x] **CP02a Create the production foundations child spec**
+- [x] **CP03 Create the language consistency child spec**
+- [x] **CP04 Create the accessibility, SEO and authenticated quality child spec**
+- [x] **CP05 Create the workspace performance and costume child spec**
+- [x] **CP06 Create the Lantern Recall polish child spec**
+- [x] **CP07 Create the themed chess experience child spec**
+- [x] **CP08 Create catalogue batch child specs 01 through 20**
+- [x] **CP09 Review the child-spec dependency graph and implementation frontier**
 
 ## Wave 2: reliability and product foundations
 
