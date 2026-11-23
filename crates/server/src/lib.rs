@@ -308,7 +308,8 @@ async fn static_response_policy(
                     .clone()
                     .oneshot(Request::get("/").body(Body::empty()).expect("valid request"))
                     .await
-                    .expect("serving the SPA entry file cannot fail");
+                    .expect("serving the SPA entry file cannot fail")
+                    .map(Body::new);
             }
             *response.status_mut() = StatusCode::NOT_FOUND;
             response
