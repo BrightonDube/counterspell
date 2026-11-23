@@ -35,7 +35,7 @@ events captured with `disposition: report`:
 | Probe | Violated directive | Would block under enforcement |
 |---|---|---|
 | Inline `<script>` element | `script-src-elem` | Yes — **this is the SvelteKit bootstrap mechanism** |
-| External `<script src>` | `script-src-elem` | Yes — desired |
+| Cross-origin `<script src>` | `script-src-elem` | Yes — desired |
 | Inline event handler (`onclick=`) | `script-src-attr` | Yes — desired |
 | Cross-origin `fetch` | `connect-src` | Yes — desired |
 | Cross-origin `<img>` | `img-src` | Yes — desired |
@@ -94,5 +94,7 @@ refuse. This is the recorded **Q17 decision for Brighton** in
 - Signed-in routes were probed signed-out; authenticated surfaces (dashboard, settings,
   onboarding) share the same `200.html` shell, so no new violation classes are expected —
   PF08 Stage 0 reporting will confirm.
-- `eval` did not produce a report-mode violation in the probe; irrelevant since no code
-  path uses it.
+- `eval('true')` executed under report-only and produced no `securitypolicyviolation`
+  event — Chromium does not report engine-level `eval` violations in report mode. Under
+  enforcement `eval` would be refused by `script-src 'self'`, which is safe: no code
+  path in `src/` uses it, so `'unsafe-eval'` is not needed.
