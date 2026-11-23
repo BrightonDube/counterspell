@@ -127,7 +127,7 @@ impl SpaRoutes {
             Some((Segment::Exact(text), rest)) => {
                 requested
                     .first()
-                    .is_some_and(|head| **head == text.as_str())
+                    .is_some_and(|head| **head == *text.as_str())
                     && Self::matches(rest, &requested[1..])
             }
         }
