@@ -402,6 +402,51 @@ async fn liveness_is_documented_json_and_never_spa_html() {
 }
 
 #[tokio::test]
+async fn anonymous_catalogue_gets_are_publicly_cacheable() {
+    // test-change: PROD-FOUND-CACHE
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(address, "/api/languages", &[]).await;
+    assert_eq!(reply.status, 200);
+    let headers = reply.headers.to_lowercase();
+    assert!(
+        headers.contains("cache-control: public, max-age=300"),
+        "{headers}"
+    );
+    assert!(headers.contains("vary: cookie"), "{headers}");
+    let etag = header_value(&reply.headers, "etag").expect("catalogue etag");
+
+    let revalidated = get(address, "/api/languages", &[("If-None-Match", etag)]).await;
+    assert_eq!(revalidated.status, 304);
+    assert!(
+        revalidated
+            .headers
+            .to_lowercase()
+            .contains("cache-control: public, max-age=300"),
+        "{}",
+        revalidated.headers
+    );
+
+    // A session cookie means per-user data could ride along: never cache it.
+    let authed = get(
+        address,
+        "/api/languages",
+        &[("Cookie", "__Host-cs_session=abc123")],
+    )
+    .await;
+    assert_eq!(authed.status, 200);
+    assert!(
+        authed
+            .headers
+            .to_lowercase()
+            .contains("cache-control: no-store"),
+        "{}",
+        authed.headers
+    );
+}
+
+#[tokio::test]
 async fn root_serves_the_prerendered_landing_page_not_the_fallback() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
