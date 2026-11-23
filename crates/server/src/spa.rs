@@ -79,6 +79,7 @@ impl SpaRoutes {
 
     /// True when `path` is a declared client-side route. Empty segments — including a
     /// trailing slash — are ignored, so `/dashboard/` counts as `/dashboard`.
+    #[must_use]
     pub fn is_app_route(&self, path: &str) -> bool {
         let requested: Vec<&str> = path.split('/').skip(1).filter(|s| !s.is_empty()).collect();
         self.patterns
