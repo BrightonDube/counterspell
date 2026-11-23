@@ -26,7 +26,7 @@ pub mod validate;
 
 use std::{
     io,
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     sync::Arc,
 };
 
@@ -262,7 +262,11 @@ async fn add_static_cache_policy(
 ) -> Response {
     let path = request.uri().path().to_owned();
     let mut response = next.run(request).await;
-    let requested_file = static_dir.join(path.trim_start_matches('/')).is_file();
+    let relative_path = Path::new(path.trim_start_matches('/'));
+    let requested_file = relative_path
+        .components()
+        .all(|component| matches!(component, Component::Normal(_)))
+        && static_dir.join(relative_path).is_file();
 
     if requested_file
         && (response.status().is_success() || response.status() == StatusCode::NOT_MODIFIED)

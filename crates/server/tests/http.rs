@@ -178,6 +178,40 @@ async fn immutable_cache_policy_survives_revalidation_without_caching_the_fallba
 }
 
 #[tokio::test]
+async fn traversal_path_cannot_probe_files_outside_the_static_directory() {
+    // test-change: OPS-PERF-STATIC-CACHE
+    let fixture = Fixture::new();
+    let parent = fixture.dir.parent().expect("fixture parent");
+    let secret_name = format!(
+        "{}-outside.txt",
+        fixture
+            .dir
+            .file_name()
+            .expect("fixture name")
+            .to_string_lossy()
+    );
+    let secret_path = parent.join(&secret_name);
+    std::fs::write(&secret_path, "outside").expect("outside fixture");
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let reply = get(
+        address,
+        &format!("/_app/immutable/../../../{secret_name}"),
+        &[],
+    )
+    .await;
+    std::fs::remove_file(secret_path).expect("remove outside fixture");
+
+    assert_eq!(reply.status, 200);
+    assert_eq!(reply.body, "<main>spa-entry</main>");
+    assert!(
+        !reply.headers.to_lowercase().contains("cache-control:"),
+        "{}",
+        reply.headers
+    );
+}
+
+#[tokio::test]
 async fn unknown_page_falls_back_to_the_spa_entry() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
