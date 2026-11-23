@@ -306,7 +306,11 @@ async fn static_response_policy(
                 response = fallback
                     .entry_file
                     .clone()
-                    .oneshot(Request::get("/").body(Body::empty()).expect("valid request"))
+                    .oneshot(
+                        Request::get("/")
+                            .body(Body::empty())
+                            .expect("valid request"),
+                    )
                     .await
                     .expect("serving the SPA entry file cannot fail")
                     .map(Body::new);
