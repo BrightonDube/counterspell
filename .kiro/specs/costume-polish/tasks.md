@@ -69,7 +69,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Wave 3: freeze-safe polish checkpoint
 
-- [ ] **T08 [S] (30 min) Costume-polish verification and code organisation**
+- [x] **T08 [S] (30 min) Costume-polish verification and code organisation**
   - Files: only fixes and this spec's checklist.
   - Re-read the touched modules with the codebase-design vocabulary; extract a shared component/helper only when two or more concrete callers justify it. Verify desktop/mobile visual checks, keyboard paths, reduced motion, live deployment and no stray worktrees.
   - Verify: full focused web suite, touched Rust tests, build, CI and Devin Review are green; all CP requirements are checked below.
@@ -78,10 +78,10 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 
 ## Completion checklist
 
-- [ ] Asset use is counted, existing, bounded and non-jack-o'-lantern for nav.
-- [ ] Settings key and provider interaction are animated without layout changes.
-- [ ] Dashboard renders a real activity calendar with text equivalent.
-- [ ] Workspace console is expandable/collapsible and public-output safe.
-- [ ] Run/Submit, tests, ghost, autopsy, hints and measured Familiar are unchanged.
-- [ ] Reduced motion, keyboard access, 200% zoom and 44 px targets pass.
-- [ ] Each merged task was verified on `https://counterspel.online`.
+- [x] Asset use is counted, existing, bounded and non-jack-o'-lantern for nav.
+- [x] Settings key and provider interaction are animated without layout changes.
+- [x] Dashboard renders a real activity calendar with text equivalent.
+- [x] Workspace console is expandable/collapsible and public-output safe.
+- [x] Run/Submit, tests, ghost, autopsy, hints and measured Familiar are unchanged.
+- [x] Reduced motion, keyboard access, 200% zoom and 44 px targets pass.
+- [x] Each merged task was verified on `https://counterspel.online`.

@@ -24,7 +24,7 @@ function truncate(text: string): string {
   return text.slice(0, OUTPUT_DISPLAY_CHARS) + TRUNCATED_MARK;
 }
 
-/** Builds compile, stdout and stderr blocks in the order the judge produced them. */
+/** Builds compile and sample output/stderr blocks in test order. */
 export function buildConsoleEntries(input: ConsoleInput): ConsoleEntry[] {
   const entries: ConsoleEntry[] = [];
   if (input.terminal?.kind === 'done' && input.terminal.compileOutput) {
