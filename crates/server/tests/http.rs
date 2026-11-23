@@ -300,13 +300,7 @@ async fn missing_static_resources_are_an_honest_404() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
-    for path in [
-        "/definitely-missing-asset.png",
-        "/sitemap.xml",
-        "/manifest.webmanifest",
-        "/.well-known/security.txt",
-        "/security.txt",
-    ] {
+    for path in ["/definitely-missing-asset.png", "/security.txt"] {
         let reply = get(address, path, &[]).await;
 
         assert_eq!(reply.status, 404, "{path}");
@@ -318,6 +312,47 @@ async fn missing_static_resources_are_an_honest_404() {
             "{path}: {}",
             reply.headers
         );
+    }
+}
+
+#[tokio::test]
+async fn published_web_resources_are_real_files_not_fallback_404s() {
+    // test-change: PROD-FOUND-RESOURCES
+    let fixture = Fixture::new();
+    let web_static = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../web/static");
+    for resource in [
+        "sitemap.xml",
+        "manifest.webmanifest",
+        ".well-known/security.txt",
+    ] {
+        let target = fixture.dir.join(resource);
+        std::fs::create_dir_all(target.parent().expect("resource dir")).expect("mkdir");
+        std::fs::copy(web_static.join(resource), &target)
+            .unwrap_or_else(|error| panic!("copy {resource}: {error}"));
+    }
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    for (path, type_marker, body_marker) in [
+        ("/sitemap.xml", "application/xml", "<urlset"),
+        (
+            "/manifest.webmanifest",
+            "application/manifest+json",
+            "\"name\"",
+        ),
+        ("/.well-known/security.txt", "text/plain", "Contact:"),
+    ] {
+        let reply = get(address, path, &[]).await;
+
+        assert_eq!(reply.status, 200, "{path}");
+        assert!(
+            reply
+                .headers
+                .to_lowercase()
+                .contains(&format!("content-type: {type_marker}")),
+            "{path}: {}",
+            reply.headers
+        );
+        assert!(reply.body.contains(body_marker), "{path}: {}", reply.body);
     }
 }
 

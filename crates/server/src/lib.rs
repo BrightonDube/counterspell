@@ -329,6 +329,14 @@ async fn static_response_policy(
         let decoded_path = percent_encoding::percent_decode_str(&path)
             .decode_utf8()
             .map_or_else(|_| path.clone(), std::borrow::Cow::into_owned);
+        // sitemaps.org registers the sitemap type as application/xml; mime_guess
+        // answers text/xml for every .xml, so pin the served type here.
+        if decoded_path == "/sitemap.xml" {
+            response.headers_mut().insert(
+                header::CONTENT_TYPE,
+                HeaderValue::from_static("application/xml"),
+            );
+        }
         let policy = if decoded_path.starts_with("/_app/immutable/") {
             Some("public, max-age=31536000, immutable")
         } else if decoded_path.starts_with("/art/")
