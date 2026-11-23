@@ -269,12 +269,13 @@ async fn sign_in(
         .map_err(|_| Refusal::Failed)?;
     let owner = identity_owner(&state.pool, flow.provider(), &profile.provider_user_id).await?;
     let email = profile_email(&state.pool, profile.verified_email.clone()).await?;
-    let user = match decide_oauth_login(owner, email) {
-        OAuthDecision::SignIn(user) => user,
+    let (user, created) = match decide_oauth_login(owner, email) {
+        OAuthDecision::SignIn(user) => (user, false),
         OAuthDecision::RefuseEmailTaken => return Err(Refusal::AccountExists),
-        OAuthDecision::CreateAccount { email } => {
-            create_account(state, flow.provider(), &profile, email).await?
-        }
+        OAuthDecision::CreateAccount { email } => (
+            create_account(state, flow.provider(), &profile, email).await?,
+            true,
+        ),
     };
 
     let method = match flow.provider() {
@@ -288,7 +289,11 @@ async fn sign_in(
     if pending {
         return Ok(crate::auth::security::STEP_UP_PATH.to_owned());
     }
-    Ok(sanitize_return_to(Some(flow.return_to())))
+    let destination = sanitize_return_to(Some(flow.return_to()));
+    if needs_onboarding(&state.pool, user, created).await? {
+        return Ok(onboarding_destination(destination));
+    }
+    Ok(destination)
 }
 
 /// Links the provider identity to the signed-in account that started the flow. Only the very
@@ -440,6 +445,31 @@ async fn profile_email(
     } else {
         ProfileEmail::Free(address)
     })
+}
+
+/// Sends an incomplete profile to onboarding once, preserving an existing onboarding destination.
+fn onboarding_destination(destination: String) -> String {
+    if destination == "/onboarding" || destination.starts_with("/onboarding?") {
+        return destination;
+    }
+    let query = url::form_urlencoded::Serializer::new(String::new())
+        .append_pair("return_to", &destination)
+        .finish();
+    format!("/onboarding?{query}")
+}
+
+/// Whether this login must pass through profile onboarding.
+async fn needs_onboarding(pool: &PgPool, user: UserId, created: bool) -> Result<bool, Refusal> {
+    if created {
+        return Ok(true);
+    }
+    let (incomplete,): (bool,) =
+        sqlx::query_as("SELECT profile_completed_at IS NULL FROM users WHERE id = $1")
+            .bind(user.as_uuid())
+            .fetch_one(pool)
+            .await
+            .map_err(|_| Refusal::Failed)?;
+    Ok(incomplete)
 }
 
 /// Creates the account and its identity in one transaction. A unique violation (another request

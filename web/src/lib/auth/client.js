@@ -51,6 +51,12 @@ export const getConfig = () => request('/api/auth/config');
 export const getSessionStatus = () => request('/api/auth/session');
 /** `GET /api/me`: the signed-in user and capabilities. */
 export const getMe = () => request('/api/me');
+/**
+ * `PATCH /api/me/profile`: update the signed-in learner's profile.
+ * @param {{ display_name: string, country: string | null }} profile
+ */
+export const patchProfile = (profile) =>
+  request('/api/me/profile', { method: 'PATCH', body: profile });
 /** `POST /api/auth/logout`: ends this browser's session. */
 export const logout = () => request('/api/auth/logout', { method: 'POST' });
 /** `POST /api/auth/logout-all`: ends every session of the user. */

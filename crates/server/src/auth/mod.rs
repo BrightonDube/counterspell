@@ -20,6 +20,7 @@ pub mod limits;
 pub mod oauth;
 mod passkeys;
 pub mod password;
+pub mod profile;
 pub mod resolver;
 pub mod return_to;
 mod security;
@@ -158,6 +159,7 @@ pub const MUTATING_ROUTES: &[&str] = &[
     "/api/auth/passkeys/register/finish",
     "/api/auth/passkeys/login/start",
     "/api/auth/passkeys/login/finish",
+    "/api/me/profile",
 ];
 
 /// The auth routes that exist so far: password and email-link sign-in, session status, logout,
@@ -208,6 +210,10 @@ pub fn router(state: AuthState) -> Router {
         .route(
             "/api/me",
             get(handlers::me::me).delete(handlers::delete::delete_account),
+        )
+        .route(
+            "/api/me/profile",
+            axum::routing::patch(handlers::profile::update),
         )
         .layer(middleware::from_fn(cookies::session_cookie))
         .with_state(state);

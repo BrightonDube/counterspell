@@ -176,13 +176,15 @@ async fn pg_auth_oauth_model_a_new_identity_creates_one_account_then_signs_in_to
 
     let (status, headers, _) = sign_in(&app, "c1").await;
     assert_eq!(status, StatusCode::SEE_OTHER);
-    assert_eq!(location(&headers), "/problems");
+    // test-change: PO-2.1
+    assert_eq!(location(&headers), "/onboarding?return_to=%2Fproblems");
     assert!(cookie_value(&headers, "cs_session").is_some());
     assert_eq!(count(&pool, "users").await, 1);
     assert_eq!(count(&pool, "identities").await, 1);
 
     let (_, second, _) = sign_in(&app, "c1").await;
-    assert_eq!(location(&second), "/problems");
+    // test-change: PO-2.1
+    assert_eq!(location(&second), "/onboarding?return_to=%2Fproblems");
     assert_eq!(
         count(&pool, "users").await,
         1,
@@ -223,7 +225,8 @@ async fn pg_auth_oauth_model_a_replayed_state_fails(pool: PgPool) {
     let (state, binding) = start(&app, "github", "/").await;
     let query = format!("code=c3&state={state}");
     let (_, _, first) = back(&app, "github", &query, Some(&binding)).await;
-    assert_eq!(first, "/");
+    // test-change: PO-2.1
+    assert_eq!(first, "/onboarding?return_to=%2F");
 
     let (_, _, second) = back(&app, "github", &query, Some(&binding)).await;
 

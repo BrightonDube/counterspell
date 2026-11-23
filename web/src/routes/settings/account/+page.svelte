@@ -24,6 +24,7 @@
     startTotp,
     supportsPasskeys
   } from '#lib/auth/security.ts';
+  import ProfileForm from '#lib/auth/ProfileForm.svelte';
   import SecurityIcon from '#lib/auth/SecurityIcon.svelte';
   import { session } from '#lib/auth/session.svelte.js';
   import AppShell from '#lib/shell/AppShell.svelte';
@@ -69,6 +70,7 @@
   let removingPasskey = $state('');
   let confirmRemovePasskey = $state<HTMLButtonElement>();
   let deleteOpen = $state(false);
+  let profileOpen = $state(false);
   let deleteInput = $state<HTMLInputElement>();
   let deleteAction = $state<HTMLButtonElement>();
   let confirmText = $state('');
@@ -385,22 +387,44 @@
         (provider) => !linkedProviders.includes(provider)
       )}
       <div class="identity">
-        <div class="min-w-0">
-          <h2
-            class="text-xl font-semibold tracking-tight [overflow-wrap:anywhere]"
-          >
-            {user.display_name || user.handle}
-          </h2>
-          <p
-            class="mt-1 text-sm text-accent-moss-strong [overflow-wrap:anywhere]"
-          >
-            @{user.handle}
-          </p>
-          {#if user.email}
-            <p class="mt-1 text-sm text-text-muted [overflow-wrap:anywhere]">
-              {user.email}
+        <div class="profile-identity">
+          <img
+            class="profile-avatar"
+            src={user.avatar_url || '/art/creatures/skull-green-eyes.webp'}
+            width="88"
+            height="88"
+            alt=""
+          />
+          <div class="min-w-0">
+            <h2
+              class="text-xl font-semibold tracking-tight [overflow-wrap:anywhere]"
+            >
+              {user.display_name || user.handle}
+            </h2>
+            <p
+              class="mt-1 text-sm text-accent-moss-strong [overflow-wrap:anywhere]"
+            >
+              @{user.handle}
             </p>
-          {/if}
+            {#if user.email}
+              <p class="mt-1 text-sm text-text-muted [overflow-wrap:anywhere]">
+                {user.email}
+              </p>
+            {/if}
+            <p class="mt-2 text-sm text-text-muted">
+              {user.country || 'Country not set'} · Avatar upload is unavailable until
+              storage is configured.
+            </p>
+            {#if can.edit_profile}
+              <button
+                class={button}
+                type="button"
+                onclick={() => (profileOpen = !profileOpen)}
+              >
+                {profileOpen ? 'Close profile' : 'Edit profile'}
+              </button>
+            {/if}
+          </div>
         </div>
         <!-- The costume key is a deliberate focus target so keyboard users get the same cue. -->
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
@@ -422,6 +446,11 @@
           />
         </span>
       </div>
+      {#if profileOpen && can.edit_profile}
+        <div class="profile-panel">
+          <ProfileForm />
+        </div>
+      {/if}
 
       <section class="section" aria-labelledby="sign-in-methods">
         <header>
@@ -998,6 +1027,30 @@
     );
     border: 1px solid var(--border-strong);
     border-radius: 0.75rem;
+  }
+
+  .profile-identity {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 1rem;
+  }
+
+  .profile-avatar {
+    flex: none;
+    inline-size: clamp(4rem, 14vw, 5.5rem);
+    block-size: auto;
+    filter: drop-shadow(
+      0 0 0.5rem color-mix(in srgb, var(--accent-candle) 40%, transparent)
+    );
+  }
+
+  .profile-panel {
+    margin-block-start: 0.875rem;
+    padding: 1rem;
+    border: 1px solid var(--border-strong);
+    border-radius: 0.5rem;
+    background: var(--surface);
   }
 
   .crypt-key-wrap {

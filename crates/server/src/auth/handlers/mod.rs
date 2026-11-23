@@ -7,4 +7,5 @@ pub mod link;
 pub mod login;
 pub mod me;
 pub mod oauth;
+pub mod profile;
 pub mod session;

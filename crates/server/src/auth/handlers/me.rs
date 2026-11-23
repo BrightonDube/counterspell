@@ -13,6 +13,7 @@ use crate::auth::{
     capabilities::Capabilities,
     errors::{database, AuthError},
     extract::AuthUser,
+    profile::AVATAR_URL,
     AuthState,
 };
 
@@ -27,11 +28,21 @@ pub struct MeUser {
     pub display_name: String,
     /// The verified email address, when there is one.
     pub email: Option<String>,
+    /// The learner's country code, when saved.
+    pub country: Option<String>,
+    /// Whether onboarding has been completed.
+    pub profile_complete: bool,
+    /// The fixed placeholder avatar path.
+    pub avatar_url: &'static str,
+    /// Avatar upload is unavailable until object storage exists.
+    pub avatar_editable: bool,
     /// Whether this is the demo account.
     pub is_demo: bool,
     /// The linked sign-in providers, for example `github`.
     pub providers: Vec<String>,
 }
+
+type UserRow = (String, String, Option<String>, Option<String>, bool, bool);
 
 /// The body of `GET /api/me`.
 #[derive(Debug, Serialize)]
@@ -49,34 +60,50 @@ pub struct MeView {
 /// Returns [`AuthError::Unauthenticated`] when the account no longer exists, and
 /// [`AuthError::Internal`] when the database fails.
 pub async fn me(State(state): State<AuthState>, user: AuthUser) -> Result<Response, AuthError> {
-    let row: Option<(String, String, Option<String>, bool)> = sqlx::query_as(
-        "SELECT handle::text, display_name, email::text, is_demo FROM users WHERE id = $1",
+    let view = me_view(&state, user.user_id).await?;
+    Ok(([(header::CACHE_CONTROL, "no-store")], Json(view)).into_response())
+}
+
+/// Reads the signed-in user's `/api/me` view for both the read and patch handlers.
+///
+/// # Errors
+///
+/// Returns [`AuthError::Unauthenticated`] when the account no longer exists, and
+/// [`AuthError::Internal`] when the database fails.
+pub(crate) async fn me_view(state: &AuthState, user_id: UserId) -> Result<MeView, AuthError> {
+    let row: Option<UserRow> = sqlx::query_as(
+        "SELECT handle::text, display_name, email::text, country,
+                    profile_completed_at IS NOT NULL, is_demo
+             FROM users WHERE id = $1",
     )
-    .bind(user.user_id.as_uuid())
+    .bind(user_id.as_uuid())
     .fetch_optional(&state.pool)
     .await
     .map_err(database)?;
-    let Some((handle, display_name, email, is_demo)) = row else {
+    let Some((handle, display_name, email, country, profile_complete, is_demo)) = row else {
         return Err(AuthError::Unauthenticated);
     };
 
     let providers: Vec<(String,)> =
         sqlx::query_as("SELECT provider FROM identities WHERE user_id = $1 ORDER BY provider")
-            .bind(user.user_id.as_uuid())
+            .bind(user_id.as_uuid())
             .fetch_all(&state.pool)
             .await
             .map_err(database)?;
 
-    let view = MeView {
+    Ok(MeView {
         user: MeUser {
-            id: user.user_id,
+            id: user_id,
             handle,
             display_name,
             email,
+            country,
+            profile_complete,
+            avatar_url: AVATAR_URL,
+            avatar_editable: false,
             is_demo,
             providers: providers.into_iter().map(|(name,)| name).collect(),
         },
         capabilities: Capabilities::for_user(is_demo),
-    };
-    Ok(([(header::CACHE_CONTROL, "no-store")], Json(view)).into_response())
+    })
 }
