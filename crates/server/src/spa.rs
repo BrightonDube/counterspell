@@ -97,11 +97,8 @@ impl SpaRoutes {
         if !path.starts_with('/') {
             return false;
         }
-        let mut requested: Vec<std::borrow::Cow<'_, str>> = path
-            .split('/')
-            .skip(1)
-            .map(Self::decode_segment)
-            .collect();
+        let mut requested: Vec<std::borrow::Cow<'_, str>> =
+            path.split('/').skip(1).map(Self::decode_segment).collect();
         if requested.last().is_some_and(|last| last.is_empty()) {
             requested.pop();
         }
