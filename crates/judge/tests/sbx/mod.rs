@@ -146,13 +146,16 @@ pub async fn drain_run(docker: &Docker, cfg: &SandboxConfig, run: uuid::Uuid, wi
     let backend = BollardBackend::new(docker.clone(), cfg.api_timeout);
     let prefix = format!("cs-sbx-{run}-");
     let deadline = tokio::time::Instant::now() + within;
+    let mut survivors = Vec::new();
+    let mut leftovers: Vec<ManagedContainer>;
     loop {
-        let mut survivors = Vec::new();
-        for container in managed_containers(&backend)
+        survivors.clear();
+        leftovers = managed_containers(&backend)
             .await
             .into_iter()
             .filter(|container| container.name.trim_start_matches('/').starts_with(&prefix))
-        {
+            .collect();
+        for container in &leftovers {
             let Ok(inspected) = docker.inspect_container(&container.id, None).await else {
                 continue;
             };
@@ -165,14 +168,19 @@ pub async fn drain_run(docker: &Docker, cfg: &SandboxConfig, run: uuid::Uuid, wi
             }
         }
         if survivors.is_empty() || tokio::time::Instant::now() >= deadline {
-            assert!(
-                survivors.is_empty(),
-                "containers still running for run {run} — the program was not contained: {survivors:?}"
-            );
             break;
         }
         tokio::time::sleep(Duration::from_millis(400)).await;
     }
+    // test-change: R10.1 (a stopped run container is still a managed leftover;
+    // the run-scoped drain reaps it like the sweeper instead of leaving it)
+    for container in &leftovers {
+        let _ = backend.remove_managed(&container.id).await;
+    }
+    assert!(
+        survivors.is_empty(),
+        "containers still running for run {run} — the program was not contained: {survivors:?}"
+    );
 }
 
 /// Asserts no managed container is still *running* within `within`, then reaps
