@@ -32,13 +32,16 @@ check_cache() {
   headers="$(mktemp)"
   curl --silent --show-error --dump-header "$headers" --output /dev/null "$url"
   grep -E "^HTTP/[0-9.]+ 200" "$headers"
-  grep -Fi "cache-control: $policy" "$headers"
+  tr -d '\r' < "$headers" | grep -Fxi "cache-control: $policy"
   tr -d '\r' < "$headers" | grep -Fxi "content-type: $content_type"
   etag="$(awk 'BEGIN { IGNORECASE=1 } /^etag:/ { sub(/\r$/, ""); sub(/^etag:[[:space:]]*/, ""); print; exit }' "$headers")"
-  curl --silent --show-error --dump-header - --output /dev/null \
-    --header "If-None-Match: $etag" "$url" |
-    grep -E "^HTTP/[0-9.]+ 304|cache-control: $policy"
-  rm -f "$headers"
+  revalidation_headers="$(mktemp)"
+  curl --silent --show-error --dump-header "$revalidation_headers" --output /dev/null \
+    --header "If-None-Match: $etag" "$url"
+  grep -E "^HTTP/[0-9.]+ 304" "$revalidation_headers"
+  tr -d '\r' < "$revalidation_headers" |
+    grep -Fxi "cache-control: $policy"
+  rm -f "$headers" "$revalidation_headers"
 }
 
 check_cache "https://counterspel.online/_app/immutable/assets/0.C4p2jNMc.css" \
@@ -57,8 +60,14 @@ for path in \
   "/art/%2e%2e/robots.txt" \
   "/art/%2E%2E/robots.txt"
 do
-  test -z "$(curl --silent --show-error --dump-header - --output /dev/null \
-    "https://counterspel.online${path}" |
-    grep -i '^cache-control:')"
+  headers="$(mktemp)"
+  curl --silent --show-error --dump-header "$headers" --output /dev/null \
+    "https://counterspel.online${path}"
+  grep -E "^HTTP/[0-9.]+ 200" "$headers"
+  tr -d '\r' < "$headers" | grep -Fxi "content-type: text/html"
+  if grep -qi '^cache-control:' "$headers"; then
+    exit 1
+  fi
+  rm -f "$headers"
 done
 ```
