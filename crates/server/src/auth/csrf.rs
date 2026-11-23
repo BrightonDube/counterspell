@@ -136,17 +136,22 @@ pub async fn cache_policy(request: Request, next: Next) -> Response {
 }
 
 /// Stamps the public cache headers and an `ETag` on a catalogue reply, honouring `If-None-Match`.
+/// The tag is weak because the edge re-encodes (compresses) the body — strong tags get rewritten
+/// downstream and would never match a returning `If-None-Match`.
 async fn catalogue_response(response: Response, validator: Option<HeaderValue>) -> Response {
     let (mut parts, body) = response.into_parts();
     let Ok(bytes) = to_bytes(body, MAX_CATALOGUE_BODY_BYTES).await else {
-        return (
+        let mut error = (
             StatusCode::INTERNAL_SERVER_ERROR,
             "catalogue body too large",
         )
             .into_response();
+        error
+            .headers_mut()
+            .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+        return error;
     };
-    let etag = HeaderValue::from_str(&format!("\"{}\"", hex::encode(Sha256::digest(&bytes))))
-        .expect("hex etag is a valid header value");
+    let etag = format!("W/\"{}\"", hex::encode(Sha256::digest(&bytes)));
     parts
         .headers
         .insert(header::VARY, HeaderValue::from_static("Cookie"));
@@ -154,13 +159,51 @@ async fn catalogue_response(response: Response, validator: Option<HeaderValue>) 
         header::CACHE_CONTROL,
         HeaderValue::from_static(PUBLIC_CATALOGUE_MAX_AGE),
     );
-    parts.headers.insert(header::ETAG, etag.clone());
-    if validator == Some(etag) {
+    parts.headers.insert(
+        header::ETAG,
+        HeaderValue::from_str(&etag).expect("hex etag is a valid header value"),
+    );
+    let revalidated = validator
+        .as_ref()
+        .and_then(|value| value.to_str().ok())
+        .is_some_and(|field| validator_matches(field, &etag));
+    if revalidated {
         parts.status = StatusCode::NOT_MODIFIED;
         parts.headers.remove(header::CONTENT_LENGTH);
         return Response::from_parts(parts, Body::empty());
     }
     Response::from_parts(parts, Body::from(bytes))
+}
+
+/// Whether an `If-None-Match` field selects this reply: `*` or any list entry equal to the tag,
+/// compared weakly (the `W/` prefix is ignored on both sides, per RFC 9110).
+#[must_use]
+fn validator_matches(field: &str, etag: &str) -> bool {
+    let ours = etag.strip_prefix("W/").unwrap_or(etag);
+    split_entity_tags(field).iter().any(|candidate| {
+        let candidate = candidate.trim();
+        candidate == "*" || candidate.strip_prefix("W/").unwrap_or(candidate) == ours
+    })
+}
+
+/// Splits a header list on commas outside quotes — an entity-tag may itself contain a comma.
+#[must_use]
+fn split_entity_tags(field: &str) -> Vec<&str> {
+    let mut tags = Vec::new();
+    let mut quoted = false;
+    let mut start = 0;
+    for (index, byte) in field.bytes().enumerate() {
+        match byte {
+            b'"' => quoted = !quoted,
+            b',' if !quoted => {
+                tags.push(&field[start..index]);
+                start = index + 1;
+            }
+            _ => {}
+        }
+    }
+    tags.push(&field[start..]);
+    tags
 }
 
 /// Adds `Referrer-Policy: no-referrer` to redirects, so the next page does not see this URL.

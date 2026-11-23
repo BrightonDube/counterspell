@@ -428,6 +428,20 @@ async fn anonymous_catalogue_gets_are_publicly_cacheable() {
         revalidated.headers
     );
 
+    // `*` and list forms of If-None-Match revalidate the same way; a foreign tag does not.
+    let wildcard = get(address, "/api/languages", &[("If-None-Match", "*")]).await;
+    assert_eq!(wildcard.status, 304);
+    let list = format!("\"deadbeef\", {etag}");
+    let listed = get(address, "/api/languages", &[("If-None-Match", &list)]).await;
+    assert_eq!(listed.status, 304);
+    let stale = get(
+        address,
+        "/api/languages",
+        &[("If-None-Match", "\"deadbeef\"")],
+    )
+    .await;
+    assert_eq!(stale.status, 200);
+
     // A session cookie means per-user data could ride along: never cache it.
     let authed = get(
         address,
