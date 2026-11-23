@@ -49,7 +49,7 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
   - Requirements: PO-2.3–PO-2.5, PO-4.3.
   - PR alone: yes.
 
-- [ ] **T06 [S] (20 min) Verify profile-onboarding and tick the spec**
+- [x] **T06 [S] (20 min) Verify profile-onboarding and tick the spec**
   - Files: only fixes and this spec's checklist.
   - Re-read touched modules with the codebase-design vocabulary; keep the shared seam only because onboarding and settings both call it. Verify desktop/mobile, keyboard paths, live deployment and no stray worktrees.
   - Verify: focused Rust tests, full web suite, `npm run check`, lint/format, build, CI and Devin Review are green; all PO requirements are checked below.
@@ -64,4 +64,4 @@ All tasks below are implementation tasks for `requirements.md` and `design.md`. 
 - [x] New OAuth accounts land on onboarding before the requested destination.
 - [x] Account settings and onboarding share the same profile form and API seam.
 - [x] Avatar upload is absent but explicitly marked unavailable.
-- [ ] Focused backend tests, web tests, checks, build, CI, review and live verification pass.
+- [x] Focused backend tests, web tests, checks, build, CI, review and live verification pass.
