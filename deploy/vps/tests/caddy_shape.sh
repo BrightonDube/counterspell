@@ -95,6 +95,18 @@ else
   fail "shared edge needs a www.<site> block that 301s to the apex (PF06, AUD-02)"
 fi
 
+# R6.3 applies to every response, including the www 301s: the www site needs the same header set.
+www_block="$(sed -n '/www\.{{ caddy_site_address }} {/,/^}/p' "$SHARED_CADDYFILE")"
+if printf '%s' "$www_block" | grep -Fq 'Strict-Transport-Security' \
+  && printf '%s' "$www_block" | grep -Fq 'X-Content-Type-Options' \
+  && printf '%s' "$www_block" | grep -Fq 'X-Frame-Options' \
+  && printf '%s' "$www_block" | grep -Fq 'Content-Security-Policy' \
+  && printf '%s' "$www_block" | grep -Fq -- '-Server'; then
+  pass "www redirect responses carry the R6.3 header set"
+else
+  fail "the www site must send the R6.3 headers and remove Server on its redirects"
+fi
+
 expect 'encode zstd gzip' "compression is kept for normal routes"
 
 if ((failures > 0)); then
