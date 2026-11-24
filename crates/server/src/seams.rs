@@ -126,8 +126,14 @@ impl LanguageCatalog {
     ///
     /// Order is the launch order (python first — it is the workspace's default pick), with any
     /// future catalogue names appended in the file's own order.
+    ///
+    /// `server_cap` is the operator's `MAX_SOURCE_BYTES`: a configured cap below a driver's own
+    /// limit stays the effective limit, so an operator override is never widened.
     #[must_use]
-    pub fn from_enabled(catalogue: &counterspell_common::languages::LanguageCatalog) -> Self {
+    pub fn from_enabled(
+        catalogue: &counterspell_common::languages::LanguageCatalog,
+        server_cap: u64,
+    ) -> Self {
         let mut names: Vec<&str> = catalogue.names().collect();
         names.sort_by_key(|name| {
             LAUNCH_ORDER
@@ -142,7 +148,7 @@ impl LanguageCatalog {
                 definition.is_enabled().then(|| Language {
                     name: name.to_owned(),
                     display_name: display_name(name).to_owned(),
-                    max_source_bytes: definition.max_source_bytes(),
+                    max_source_bytes: definition.max_source_bytes().min(server_cap),
                 })
             })
             .collect();
@@ -222,7 +228,7 @@ mod tests {
     #[test]
     fn from_enabled_lists_only_enabled_drivers_with_their_own_limits() {
         let judge = catalogue_with("java", "cpp");
-        let catalogue = LanguageCatalog::from_enabled(&judge);
+        let catalogue = LanguageCatalog::from_enabled(&judge, 65_536);
 
         let names: Vec<&str> = catalogue
             .entries()
@@ -243,6 +249,18 @@ mod tests {
     }
 
     #[test]
+    fn from_enabled_keeps_a_configured_cap_below_the_driver_limit() {
+        let judge = catalogue_with("java", "cpp");
+        let catalogue = LanguageCatalog::from_enabled(&judge, 512);
+
+        let java = catalogue.find("java").expect("java listed");
+        assert_eq!(
+            java.max_source_bytes, 512,
+            "the operator's cap is a ceiling, not a floor"
+        );
+    }
+
+    #[test]
     fn from_enabled_over_the_repo_catalogue_lists_all_four_drivers() {
         let path = std::path::Path::new(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -250,7 +268,7 @@ mod tests {
         ));
         let judge = counterspell_common::languages::LanguageCatalog::load(path)
             .expect("repo catalogue loads");
-        let catalogue = LanguageCatalog::from_enabled(&judge);
+        let catalogue = LanguageCatalog::from_enabled(&judge, 65_536);
 
         let names: Vec<&str> = catalogue
             .entries()

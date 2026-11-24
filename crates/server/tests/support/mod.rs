@@ -206,8 +206,10 @@ pub fn state_for(static_dir: &std::path::Path) -> AppState {
     let judge_catalogue =
         counterspell_common::languages::LanguageCatalog::load(std::path::Path::new(catalogue_file))
             .expect("repo language catalogue loads");
-    AppState::new(lazy_pool(), config_for(static_dir), limiter).with_languages(
-        counterspell_server::seams::LanguageCatalog::from_enabled(&judge_catalogue),
+    let config = config_for(static_dir);
+    let source_cap = config.limits.max_source_bytes;
+    AppState::new(lazy_pool(), config, limiter).with_languages(
+        counterspell_server::seams::LanguageCatalog::from_enabled(&judge_catalogue, source_cap),
     )
 }
 
