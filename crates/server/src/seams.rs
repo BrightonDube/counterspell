@@ -139,10 +139,15 @@ impl LanguageCatalog {
     /// then clamps each driver's own limit, so an operator override is never widened. When it is
     /// `None` every driver keeps its declared limit — the 64 KiB figure in config is a default,
     /// not a ceiling (system-design source-size contract).
+    ///
+    /// Two bounds always apply so an advertised limit stays reachable:
+    /// `request_body_limit_bytes / 2` preserves the launch 2:1 source-to-body headroom, and
+    /// [`MAX_ADVERTISED_SOURCE_BYTES`] keeps every entry inside the API/client contract range.
     #[must_use]
     pub fn from_enabled(
         catalogue: &counterspell_common::languages::LanguageCatalog,
         server_cap: Option<u64>,
+        request_body_limit_bytes: u64,
     ) -> Self {
         let mut names: Vec<&str> = catalogue.names().collect();
         names.sort_by_key(|name| {
@@ -151,6 +156,7 @@ impl LanguageCatalog {
                 .position(|known| known == name)
                 .unwrap_or(LAUNCH_ORDER.len())
         });
+        let reachable_cap = (request_body_limit_bytes / 2).min(MAX_ADVERTISED_SOURCE_BYTES);
         let languages = names
             .into_iter()
             .filter_map(|name| {
@@ -161,7 +167,8 @@ impl LanguageCatalog {
                         name: name.to_owned(),
                         display_name: display_name(name).to_owned(),
                         max_source_bytes: server_cap
-                            .map_or(driver_limit, |cap| driver_limit.min(cap)),
+                            .map_or(driver_limit, |cap| driver_limit.min(cap))
+                            .min(reachable_cap),
                     }
                 })
             })
@@ -185,6 +192,11 @@ impl LanguageCatalog {
 
 /// The product order for the accepted languages: python leads, matching `launch`.
 const LAUNCH_ORDER: [&str; 4] = ["python", "javascript", "java", "cpp"];
+
+/// The largest source limit the API may advertise: `MAX_SOURCE_BYTES` config range and the
+/// client's `parseLanguageSummary` both bound accepted values at 1 MiB, so a driver declaring
+/// more would make the whole `/api/languages` response unparseable (LC03).
+const MAX_ADVERTISED_SOURCE_BYTES: u64 = 1_048_576;
 
 /// The human-facing label for a catalogue language name; unknown names keep their id.
 fn display_name(name: &str) -> &str {
@@ -242,7 +254,7 @@ mod tests {
     #[test]
     fn from_enabled_lists_only_enabled_drivers_with_their_own_limits() {
         let judge = catalogue_with("java", "cpp");
-        let catalogue = LanguageCatalog::from_enabled(&judge, Some(65_536));
+        let catalogue = LanguageCatalog::from_enabled(&judge, Some(65_536), 131_072);
 
         let names: Vec<&str> = catalogue
             .entries()
@@ -265,7 +277,7 @@ mod tests {
     #[test]
     fn from_enabled_keeps_a_configured_cap_below_the_driver_limit() {
         let judge = catalogue_with("java", "cpp");
-        let catalogue = LanguageCatalog::from_enabled(&judge, Some(512));
+        let catalogue = LanguageCatalog::from_enabled(&judge, Some(512), 131_072);
 
         let java = catalogue.find("java").expect("java listed");
         assert_eq!(
@@ -277,12 +289,41 @@ mod tests {
     #[test]
     fn from_enabled_lets_a_wider_driver_limit_stand_when_no_cap_is_set() {
         let judge = catalogue_with("java", "cpp");
-        let catalogue = LanguageCatalog::from_enabled(&judge, None);
+        let catalogue = LanguageCatalog::from_enabled(&judge, None, 131_072);
 
         let java = catalogue.find("java").expect("java listed");
         assert_eq!(
             java.max_source_bytes, 1234,
             "unset MAX_SOURCE_BYTES is not a ceiling — the driver's declared limit applies"
+        );
+    }
+
+    #[test]
+    fn from_enabled_never_advertises_above_the_request_capacity() {
+        // A 2 MiB driver limit against the default 128 KiB request body: no source near
+        // the driver limit fits the body, so the advertised limit drops to half the body
+        // (the launch 2:1 source-to-body invariant).
+        let base = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../languages"));
+        let text = "[java]\nenabled = true\nimage = \"python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90\"\nfile = \"sol.py\"\ndriver = \"drivers/python/driver.py\"\ncompile = []\nrun = [\"python3\", \"main.py\"]\nbench_args = []\nmem_mb = 64\ntime_ms_per_test = 1000\nmax_time_ms_per_test = 5000\ncompile_budget_ms = 5000\nmax_source_bytes = 2097152\nexec_scratch = false\nprotocol_version = 1\n";
+        let judge = counterspell_common::languages::LanguageCatalog::parse(text, base)
+            .expect("synthetic catalogue parses");
+        let catalogue = LanguageCatalog::from_enabled(&judge, None, 131_072);
+        let java = catalogue.find("java").expect("java listed");
+        assert_eq!(java.max_source_bytes, 65_536);
+    }
+
+    #[test]
+    fn from_enabled_never_advertises_above_the_client_contract_bound() {
+        let base = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../languages"));
+        let text = "[java]\nenabled = true\nimage = \"python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90\"\nfile = \"sol.py\"\ndriver = \"drivers/python/driver.py\"\ncompile = []\nrun = [\"python3\", \"main.py\"]\nbench_args = []\nmem_mb = 64\ntime_ms_per_test = 1000\nmax_time_ms_per_test = 5000\ncompile_budget_ms = 5000\nmax_source_bytes = 2097152\nexec_scratch = false\nprotocol_version = 1\n";
+        let judge = counterspell_common::languages::LanguageCatalog::parse(text, base)
+            .expect("synthetic catalogue parses");
+        let catalogue = LanguageCatalog::from_enabled(&judge, None, 4_194_304);
+
+        let java = catalogue.find("java").expect("java listed");
+        assert_eq!(
+            java.max_source_bytes, 1_048_576,
+            "the client rejects advertised limits above 1 MiB"
         );
     }
 
@@ -294,7 +335,7 @@ mod tests {
         ));
         let judge = counterspell_common::languages::LanguageCatalog::load(path)
             .expect("repo catalogue loads");
-        let catalogue = LanguageCatalog::from_enabled(&judge, Some(65_536));
+        let catalogue = LanguageCatalog::from_enabled(&judge, Some(65_536), 131_072);
 
         let names: Vec<&str> = catalogue
             .entries()

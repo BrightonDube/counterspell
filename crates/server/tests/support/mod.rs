@@ -208,8 +208,13 @@ pub fn state_for(static_dir: &std::path::Path) -> AppState {
             .expect("repo language catalogue loads");
     let config = config_for(static_dir);
     let source_cap = config.limits.max_source_bytes;
+    let body_limit = config.limits.request_body_limit_bytes;
     AppState::new(lazy_pool(), config, limiter).with_languages(
-        counterspell_server::seams::LanguageCatalog::from_enabled(&judge_catalogue, source_cap),
+        counterspell_server::seams::LanguageCatalog::from_enabled(
+            &judge_catalogue,
+            source_cap,
+            body_limit,
+        ),
     )
 }
 

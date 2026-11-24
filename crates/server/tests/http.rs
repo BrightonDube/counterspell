@@ -576,7 +576,7 @@ protocol_version = 1
     let judge = counterspell_common::languages::LanguageCatalog::parse(text, &fixture.dir)
         .expect("catalogue parses");
     let state = state_for(&fixture.dir).with_languages(
-        counterspell_server::seams::LanguageCatalog::from_enabled(&judge, Some(65_536)),
+        counterspell_server::seams::LanguageCatalog::from_enabled(&judge, Some(65_536), 131_072),
     );
     let address = serve(build_router(state)).await;
 

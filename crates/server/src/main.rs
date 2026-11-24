@@ -90,6 +90,7 @@ async fn main() -> Result<(), io::Error> {
     let languages = counterspell_server::seams::LanguageCatalog::from_enabled(
         &judge_catalogue,
         config.limits.max_source_bytes,
+        config.limits.request_body_limit_bytes,
     );
     let state = AppState::new(pool, config, limiter)
         .with_languages(languages)
