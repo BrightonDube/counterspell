@@ -117,10 +117,11 @@ pub async fn origin_guard(
 /// Adds `Cache-Control: no-store` to every response, so account data is never cached — except
 /// anonymous `GET`s on the public catalogue paths. Those carry no user-specific data, so they get
 /// bounded shared caching plus a revalidating `ETag`; `Vary: Cookie` keeps a signed-in caller from
-/// reusing the anonymous entry.
+/// reusing the anonymous entry. `HEAD` mirrors the `GET` policy so shared caches and probes see
+/// honest headers (RFC 9110 §9.3.2).
 pub async fn cache_policy(request: Request, next: Next) -> Response {
     let headers = request.headers();
-    let public_get = request.method() == Method::GET
+    let public_get = matches!(request.method(), &Method::GET | &Method::HEAD)
         && PUBLIC_GET_PATHS.iter().any(|public| {
             let path = request.uri().path();
             path == *public

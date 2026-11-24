@@ -3,7 +3,7 @@
 mod support;
 
 use counterspell_server::build_router;
-use support::{get, serve, state_for, Fixture};
+use support::{get, head, serve, state_for, Fixture};
 
 fn header_value<'a>(headers: &'a str, name: &str) -> Option<&'a str> {
     headers.lines().find_map(|line| {
@@ -457,6 +457,30 @@ async fn anonymous_catalogue_gets_are_publicly_cacheable() {
             .contains("cache-control: no-store"),
         "{}",
         authed.headers
+    );
+}
+
+#[tokio::test]
+async fn catalogue_head_mirrors_the_get_cache_policy() {
+    // test-change: PROD-FOUND-CACHE-HEAD — a HEAD must carry the same caching headers
+    // as the GET it mirrors, or shared caches and probes see a dishonest `no-store`.
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let get_reply = get(address, "/api/languages", &[]).await;
+    let head_reply = head(address, "/api/languages", &[]).await;
+
+    assert_eq!(head_reply.status, 200);
+    assert_eq!(
+        header_value(&head_reply.headers, "cache-control"),
+        header_value(&get_reply.headers, "cache-control"),
+        "HEAD and GET cache policies diverged: {:?} vs {:?}",
+        head_reply.headers,
+        get_reply.headers
+    );
+    assert_eq!(
+        header_value(&head_reply.headers, "etag"),
+        header_value(&get_reply.headers, "etag"),
     );
 }
 
