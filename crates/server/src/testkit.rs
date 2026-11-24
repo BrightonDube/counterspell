@@ -69,15 +69,29 @@ impl UserResolver for BearerTestResolver {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InMemoryProblems {
     slugs: Vec<String>,
+    languages: Option<Vec<String>>,
 }
 
 impl InMemoryProblems {
-    /// Publishes exactly the given slugs.
+    /// Publishes exactly the given slugs, each supporting every language.
     #[must_use]
     pub fn new(slugs: &[&str]) -> Self {
         Self {
             slugs: slugs.iter().map(|slug| (*slug).to_owned()).collect(),
+            languages: None,
         }
+    }
+
+    /// Restricts the starter languages every published slug offers.
+    #[must_use]
+    pub fn with_languages(mut self, languages: &[&str]) -> Self {
+        self.languages = Some(
+            languages
+                .iter()
+                .map(|language| (*language).to_owned())
+                .collect(),
+        );
+        self
     }
 }
 
@@ -91,6 +105,12 @@ impl ProblemLookup for InMemoryProblems {
                 slug: slug.to_owned(),
                 version: 1,
             })
+    }
+
+    async fn supports_language(&self, _problem: &ProblemRef, lang: &str) -> bool {
+        self.languages
+            .as_ref()
+            .is_none_or(|languages| languages.iter().any(|known| known == lang))
     }
 }
 

@@ -251,6 +251,26 @@ fn ghost_body_missing(problem: &str, lang: &str, code: &str, ghost: &Value) -> S
 }
 
 #[tokio::test]
+async fn ghost_run_rejects_a_problem_language_pair_without_starter() {
+    // LC05: the ghost path applies the same problem-language contract as normal runs.
+    let fixture = Fixture::new();
+    let state = app_state(lazy_pool(), config_with(&fixture.dir, &[]))
+        .with_problems(InMemoryProblems::new(&["two-sum"]).with_languages(&["python"]));
+    let address = serve(build_router(state)).await;
+
+    let reply = submit(
+        address,
+        1,
+        None,
+        &ghost_body("two-sum", "java", "class S {}\n", SOURCE, &json!([1, 2])),
+    )
+    .await;
+
+    assert_eq!(reply.status, 400);
+    assert_eq!(error_code(&reply), "unsupported_language");
+}
+
+#[tokio::test]
 async fn ghost_run_requires_a_signed_in_user() {
     let fixture = Fixture::new();
     let state = app_state(lazy_pool(), config_with(&fixture.dir, &[]));

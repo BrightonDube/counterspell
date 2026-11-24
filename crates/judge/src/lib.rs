@@ -12,7 +12,9 @@ pub mod config;
 pub mod executor;
 pub mod familiar;
 pub mod health;
-pub mod languages;
+// The catalogue file lives in counterspell-common so the server can read the enabled-driver
+// contract without reaching the sandbox boundary (language-consistency LC03).
+pub use counterspell_common::languages;
 pub mod problem_store;
 pub mod queue;
 pub mod sandbox;

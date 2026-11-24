@@ -76,7 +76,20 @@ async fn main() -> Result<(), io::Error> {
             "VALKEY_URL is not a valid Valkey URL",
         )
     })?;
+    // The accepted languages come from the judge's own catalogue file, so a disabled driver is
+    // never advertised or run (LC03). A bad or missing file is a startup failure, not a silent list.
+    let judge_catalogue = counterspell_common::languages::LanguageCatalog::load(
+        &config.languages_file,
+    )
+    .map_err(|error| {
+        io::Error::new(
+            io::ErrorKind::InvalidData,
+            format!("LANGUAGES_FILE failed to load: {error}"),
+        )
+    })?;
+    let languages = counterspell_server::seams::LanguageCatalog::from_enabled(&judge_catalogue);
     let state = AppState::new(pool, config, limiter)
+        .with_languages(languages)
         .with_hints(hints)
         .with_familiar_attempt(attempt)
         .with_auth(auth, &auth_config.public_base_url)

@@ -58,6 +58,10 @@ pub struct ServerConfig {
     pub port: u16,
     /// Directory with the built static web app.
     pub static_dir: PathBuf,
+
+    /// The judge language catalogue (`languages/languages.toml`); only enabled
+    /// drivers are advertised and accepted (LC03).
+    pub languages_file: PathBuf,
     /// Postgres connection URL. Secret: never printed.
     pub database_url: String,
     /// Valkey connection URL. Secret: never printed.
@@ -90,6 +94,7 @@ impl fmt::Debug for ServerConfig {
             .field("host", &self.host)
             .field("port", &self.port)
             .field("static_dir", &self.static_dir)
+            .field("languages_file", &self.languages_file)
             .field("database_url", &"<redacted>")
             .field("valkey_url", &"<redacted>")
             .field("limits", &self.limits)
@@ -122,6 +127,9 @@ impl ServerConfig {
         let port = u16::try_from(port).map_err(|_| invalid("PORT", "must be 65535 or lower"))?;
         let static_dir =
             PathBuf::from(lookup("STATIC_DIR").unwrap_or_else(|| "web/build".to_owned()));
+        let languages_file = PathBuf::from(
+            lookup("LANGUAGES_FILE").unwrap_or_else(|| "languages/languages.toml".to_owned()),
+        );
 
         let limits = RunLimits {
             run_rate_user: ranged(&lookup, "RUN_RATE_USER", 30, 1, 10_000)?,
@@ -155,6 +163,7 @@ impl ServerConfig {
             host,
             port,
             static_dir,
+            languages_file,
             database_url,
             valkey_url,
             limits,

@@ -165,6 +165,14 @@ impl AppState {
         self
     }
 
+    /// Replaces the accepted language catalogue. `main` builds it from the judge's
+    /// `LANGUAGES_FILE` so disabled drivers are never advertised or accepted (LC03).
+    #[must_use]
+    pub fn with_languages(mut self, languages: LanguageCatalog) -> Self {
+        self.languages = Arc::new(languages);
+        self
+    }
+
     /// Replaces the dependencies that readiness pings. Used by tests with fake dependencies.
     #[must_use]
     pub fn with_readiness(mut self, probes: Vec<Arc<dyn health::Probe>>) -> Self {

@@ -41,4 +41,23 @@ impl ProblemLookup for PgProblemLookup {
             }
         }
     }
+
+    async fn supports_language(&self, problem: &ProblemRef, lang: &str) -> bool {
+        let row: Result<bool, sqlx::Error> = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM problem_starters \
+             WHERE problem_slug = $1 AND version = $2 AND lang = $3)",
+        )
+        .bind(&problem.slug)
+        .bind(problem.version)
+        .bind(lang)
+        .fetch_one(&self.pool)
+        .await;
+        match row {
+            Ok(supported) => supported,
+            Err(error) => {
+                tracing::error!(error = %error, "starter lookup failed; treating the pair as unsupported");
+                false
+            }
+        }
+    }
 }

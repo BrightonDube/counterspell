@@ -7,7 +7,8 @@ mod catalogue_support;
 use catalogue_support as s;
 use sqlx::PgPool;
 
-/// Builds a version with the given example and hint counts, one concept tag, and optionally a sandbox fill.
+/// Builds a version with the given example and hint counts, one concept tag, all four launch
+/// starters, and optionally a sandbox fill.
 async fn build(pool: &PgPool, examples: i32, hints: i32, sandboxed: bool) {
     s::track(pool, "arrays").await.expect("track");
     s::problem(pool, "two-sum", "arrays")
@@ -21,6 +22,9 @@ async fn build(pool: &PgPool, examples: i32, hints: i32, sandboxed: bool) {
         .await
         .expect("examples");
     s::hints(pool, "two-sum", 1, hints).await.expect("hints");
+    s::starters(pool, "two-sum", 1, &["python", "javascript", "java", "cpp"])
+        .await
+        .expect("starters");
     if sandboxed {
         s::hidden_test(pool, "two-sum", 1, 1)
             .await
@@ -116,4 +120,50 @@ async fn pg_catalogue_publish_gate_unknown_track_refused_by_key(pool: PgPool) {
         .await
         .expect_err("an unknown track must be refused");
     assert_eq!(s::code(&error), "23503", "got: {}", s::message(&error));
+}
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_catalogue_publish_gate_missing_starter_refused(pool: PgPool) {
+    // LC06: a publishable version needs a starter for every launch language; this
+    // version is otherwise complete but carries only three.
+    s::track(&pool, "arrays").await.expect("track");
+    s::problem(&pool, "three-starters", "arrays")
+        .await
+        .expect("problem");
+    s::version(&pool, "three-starters", 1)
+        .await
+        .expect("version");
+    s::tag_concept(&pool, "three-starters", "hash-maps")
+        .await
+        .expect("concept");
+    s::examples(&pool, "three-starters", 1, 2)
+        .await
+        .expect("examples");
+    s::hints(&pool, "three-starters", 1, 4)
+        .await
+        .expect("hints");
+    s::starters(
+        &pool,
+        "three-starters",
+        1,
+        &["python", "javascript", "java"],
+    )
+    .await
+    .expect("three starters");
+    s::hidden_test(&pool, "three-starters", 1, 1)
+        .await
+        .expect("hidden test");
+    s::sandbox_fill(&pool, "three-starters", 1)
+        .await
+        .expect("fill");
+
+    let error = s::publish(&pool, "three-starters", 1)
+        .await
+        .expect_err("a version missing a starter must not publish (LC06)");
+    assert!(
+        s::message(&error).contains("starter"),
+        "got: {}",
+        s::message(&error)
+    );
 }

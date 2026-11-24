@@ -29,6 +29,14 @@ async fn build(pool: &PgPool, version: i32, sandboxed: bool) {
         .await
         .expect("examples");
     s::hints(pool, "two-sum", version, 4).await.expect("hints");
+    s::starters(
+        pool,
+        "two-sum",
+        version,
+        &["python", "javascript", "java", "cpp"],
+    )
+    .await
+    .expect("starters");
     if sandboxed {
         s::hidden_test(pool, "two-sum", version, 1)
             .await
@@ -66,6 +74,14 @@ async fn pg_publish_defaults_to_latest_validated(pool: PgPool) {
     s::version(&pool, "two-sum", 2).await.expect("version 2");
     s::examples(&pool, "two-sum", 2, 2).await.expect("examples");
     s::hints(&pool, "two-sum", 2, 4).await.expect("hints");
+    s::starters(
+        &pool,
+        "two-sum",
+        2,
+        &["python", "javascript", "java", "cpp"],
+    )
+    .await
+    .expect("starters");
     s::hidden_test(&pool, "two-sum", 2, 1)
         .await
         .expect("hidden");
