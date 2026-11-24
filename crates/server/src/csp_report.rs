@@ -14,6 +14,8 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde_json::{Map, Value};
+use sha2::{Digest, Sha256};
+use url::Url;
 
 use crate::{
     client_ip::client_ip,
@@ -48,12 +50,13 @@ pub async fn receive(
 ) -> Response {
     let (parts, body) = request.into_parts();
     let client = client_ip(peer.ip(), &parts.headers, &state.config.trusted_proxies);
+    let digest = Sha256::digest(client.to_string().as_bytes());
     if let Decision::Limited {
         retry_after_seconds,
     } = state
         .limiter
         .hit(
-            &format!("rl:csp-report:{client}"),
+            &format!("rl:csp-report:{digest:x}"),
             REPORTS_PER_MINUTE_PER_IP,
             60,
         )
@@ -122,11 +125,26 @@ fn clip(text: &str) -> &str {
     &text[..end]
 }
 
+/// A URL field with the query, fragment and credentials removed — pages that carry tokens in the
+/// URL (verify links, OAuth callbacks) must never write them to the log. Values that are not URLs
+/// (`inline`, `eval`, `data`) pass through unchanged.
+fn sanitized_url(text: &str) -> String {
+    let Ok(mut url) = Url::parse(text) else {
+        return clip(text).to_owned();
+    };
+    url.set_query(None);
+    url.set_fragment(None);
+    let _ = url.set_username("");
+    let _ = url.set_password(None);
+    clip(url.as_str()).to_owned()
+}
+
 fn log_report(report: &Map<String, Value>) {
+    // Debug formatting escapes control characters, so a padded report cannot forge log lines.
     tracing::info!(
         target: "csp-report",
-        document = %clip(field(report, &["document-uri", "documentURI", "url"])),
-        directive = %clip(field(
+        document = ?sanitized_url(field(report, &["document-uri", "documentURI", "documentURL", "url"])),
+        directive = ?clip(field(
             report,
             &[
                 "effective-directive",
@@ -135,9 +153,9 @@ fn log_report(report: &Map<String, Value>) {
                 "violatedDirective",
             ],
         )),
-        blocked = %clip(field(report, &["blocked-uri", "blockedURI", "blockedURL"])),
-        disposition = %clip(field(report, &["disposition"])),
-        source = %clip(field(report, &["source-file", "sourceFile", "sourceURL"])),
+        blocked = ?sanitized_url(field(report, &["blocked-uri", "blockedURI", "blockedURL"])),
+        disposition = ?clip(field(report, &["disposition"])),
+        source = ?sanitized_url(field(report, &["source-file", "sourceFile", "sourceURL"])),
         "csp violation report"
     );
 }

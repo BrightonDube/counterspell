@@ -56,6 +56,11 @@ if printf '%s' "$enforced" | grep -q "script-src\|default-src"; then
 else
   pass "the enforcing CSP leaves scripts to the report-only policy"
 fi
+if printf '%s' "$enforced" | grep -Fq 'report-uri /api/csp-report'; then
+  pass "the enforcing CSP reports violations too"
+else
+  fail "the enforcing CSP needs report-uri /api/csp-report or enforced blocks are invisible"
+fi
 shared_csp="$(grep -F 'Content-Security' "$SHARED_CADDYFILE")"
 if printf '%s' "$shared_csp" | grep -Fq 'Content-Security-Policy "style-src' \
   && printf '%s' "$shared_csp" | grep -Fq 'Content-Security-Policy-Report-Only' \
