@@ -108,6 +108,54 @@ async fn a_post_with_a_cookie_and_no_origin_headers_is_refused() {
 }
 
 #[tokio::test]
+async fn a_csp_report_post_is_exempt_from_the_origin_guard() {
+    // test-change: PROD-FOUND-CSP-REPORT
+    // Browsers send violation reports without Origin or Sec-Fetch-Site and may attach the session
+    // cookie. The endpoint is a bounded data sink, so this one path skips the CSRF check.
+    let counter = Arc::new(AtomicUsize::new(0));
+    let origin = Arc::new(WebOrigin::from_base_url(BASE).expect("valid base URL"));
+    let probe = Router::new()
+        .route("/api/csp-report", post(count))
+        .with_state(counter.clone());
+    let router = apply_api_hardening(probe, origin);
+
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/csp-report")
+        .header(header::CONTENT_TYPE, "application/csp-report")
+        .header("cookie", "cs_session=abc")
+        .body(Body::from("{}"))
+        .expect("request");
+    let (status, _) = send(&router, request).await;
+
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(counter.load(Ordering::SeqCst), 1);
+}
+
+#[tokio::test]
+async fn a_neighbouring_path_keeps_the_full_origin_guard() {
+    // The exemption must be exact: /api/csp-reportX still requires the usual proof.
+    let counter = Arc::new(AtomicUsize::new(0));
+    let origin = Arc::new(WebOrigin::from_base_url(BASE).expect("valid base URL"));
+    let probe = Router::new()
+        .route("/api/csp-reportx", post(count))
+        .with_state(counter.clone());
+    let router = apply_api_hardening(probe, origin);
+
+    let request = Request::builder()
+        .method(Method::POST)
+        .uri("/api/csp-reportx")
+        .header(header::CONTENT_TYPE, "application/json")
+        .header("cookie", "cs_session=abc")
+        .body(Body::from("{}"))
+        .expect("request");
+    let (status, _) = send(&router, request).await;
+
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(counter.load(Ordering::SeqCst), 0);
+}
+
+#[tokio::test]
 async fn a_get_is_never_blocked_by_the_origin_guard() {
     let counter = Arc::new(AtomicUsize::new(0));
     let router = hardened(counter.clone());

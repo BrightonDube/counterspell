@@ -16,16 +16,19 @@
         }
     }
 
-    # Security headers on every response (R6.3). The Content-Security-Policy is report-only until the
-    # Q17 decision: the SvelteKit build inlines a bootstrap script, so an enforced policy needs a
-    # hash or nonce strategy first. Violations are reported, not blocked.
+    # Security headers on every response (R6.3). PF08 stage 1: every non-script directive is
+    # enforced. `script-src` stays report-only until the Q17 decision, because the SvelteKit build
+    # inlines a bootstrap script — an enforced `default-src` would block it via fallback, so the
+    # enforced policy names no default-src either. The report-only policy keeps the full goal
+    # policy, so its reports keep inventorying every remaining violation.
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options "nosniff"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
         X-Frame-Options "DENY"
-        Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+        Content-Security-Policy "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; media-src 'self' blob:; frame-src 'none'; object-src 'none'; manifest-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report"
+        Content-Security-Policy-Report-Only "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; worker-src 'self' blob:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; report-uri /api/csp-report"
         -Server
     }
 
