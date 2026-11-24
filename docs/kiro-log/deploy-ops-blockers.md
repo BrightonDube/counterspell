@@ -79,6 +79,20 @@ Items that need Brighton, another spec, or a decision Kiro may not take alone. E
 - Needs Brighton: check fail2ban/`aa-status` from the OVH console or another network, unban or allowlist the current IP, or confirm a different SSH port. Steps 2 and 3 (check-mode plan and first deploy) wait on this.
 - All four `production` environment secrets exist: DEPLOY_HOST, DEPLOY_PORT, DEPLOY_SSH_KEY, DEPLOY_KNOWN_HOSTS. `DEPLOY_ENABLED` repository variable is not set.
 
+## Resolved: agent-side Ansible access works (24 Nov 2026)
+
+- SSH to `15.204.92.66:22` works again from this machine — the Nov 17 block was
+  transient (egress-IP dependent; `~/.ssh/config` alias `counterspell-vps` in WSL
+  Ubuntu-24.04 uses `id_ed25519`, `ansible` user, passwordless sudo).
+- `ansible-core` runs from `~/ansible-venv` in WSL; the vault file is at
+  `~/.config/counterspell/vault-pass`. The documented command works as written:
+  `ansible-playbook -i inventory/hosts.yml counterspell-shared.yml --tags caddy_site
+  --vault-password-file ~/.config/counterspell/vault-pass`.
+- Result: `caddy_site` is no longer Brighton-gated — the agent applies shared-host
+  edge changes directly (PF08 stage-1 block applied 2026-11-24; enforced CSP +
+  `report-uri` live). If port 22 ever filters again, repeat the Nov 17 diagnosis
+  (fail2ban/egress IP) rather than handing the step back to Brighton.
+
 ## Unblock decisions, 20 Nov 2026 (Brighton, in chat)
 
 - **PA08 (X1/X2).** Brighton approved the drafted amendment with edits; the approved
