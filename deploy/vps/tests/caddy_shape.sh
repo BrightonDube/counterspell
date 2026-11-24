@@ -48,15 +48,17 @@ expect 'report-uri /api/csp-report' "violation reports are collected (PF08 stage
 # PF08 stage 1: non-script directives are enforced; script-src stays report-only until Q17.
 expect 'Content-Security-Policy "style-src' "an enforcing CSP covers the non-script directives"
 expect "frame-ancestors 'none'" "frame-ancestors is enforced"
+expect "font-src 'self' data:" "enforced font-src allows Vite-inlined data: fonts (browser E2E finding)"
+expect "media-src 'self'" "enforced media-src allows first-party video/audio artwork"
 enforced="$(grep -F 'Content-Security-Policy "' "$CADDYFILE" | head -1)"
 if printf '%s' "$enforced" | grep -q "script-src\|default-src"; then
   fail "the enforcing CSP must not name default-src or script-src (the script-src fallback would block the inline bootstrap)"
 else
   pass "the enforcing CSP leaves scripts to the report-only policy"
 fi
-shared_csp="$(grep -Fi 'content-security' "$SHARED_CADDYFILE")"
+shared_csp="$(grep -F 'Content-Security' "$SHARED_CADDYFILE")"
 if printf '%s' "$shared_csp" | grep -Fq 'Content-Security-Policy "style-src' \
-  && printf '%s' "$shared_csp" | grep -Fiq 'content-security-policy-report-only' \
+  && printf '%s' "$shared_csp" | grep -Fq 'Content-Security-Policy-Report-Only' \
   && printf '%s' "$shared_csp" | grep -Fq 'report-uri /api/csp-report'; then
   pass "shared edge carries the enforced CSP, the report-only policy and the report URI"
 else
