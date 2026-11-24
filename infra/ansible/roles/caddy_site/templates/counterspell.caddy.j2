@@ -46,3 +46,7 @@
         reverse_proxy {{ caddy_site_upstream }}
     }
 }
+
+www.{{ caddy_site_address }} {
+    redir https://{{ caddy_site_address }}{uri} permanent
+}
