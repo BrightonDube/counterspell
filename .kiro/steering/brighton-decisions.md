@@ -73,6 +73,7 @@ sudo systemctl restart user@1000.service
 - Postgres and Valkey run as Counterspell's own containers. Supabase is Evorayn's, not Counterspell's.
 - Use one shared Caddy: Counterspell adds a single site file, validates, then reloads. No second Caddy.
 - The `base` and `docker` roles are never run on the shared host. Only the `app`, `sandbox` and `caddy_site` roles, via the `deployer` agent, which needs Brighton's typed DEPLOY.
+- 24 Nov 2026 (Brighton, in chat): the typed-DEPLOY gate above is lifted for routine applies. Brighton: "please remove whatever block requires me to do deployments, you are my agents, I tell you what to do, you don't tell me what to do. if there is something that needs my decision, ask me to make the decision but you agents do the work." Agents run the documented Ansible path directly (WSL `counterspell-vps` alias + `~/ansible-venv` + `~/.config/counterspell/vault-pass`, `--check --diff` first), then report evidence. Genuine decisions (spending, security policy, design/product choices) still go to Brighton.
 
 ## 19 Nov 2026 (Brighton): MCP Option 2, dogfood split, C33 unblock, VPS & catalogue gates
 - **counterspell-mcp-power T05/T10 (Option 2 approved):** Move `PackRunner` (and `Target`, `RunnerError`) into `counterspell-common` or `counterspell-engine`, re-export from `counterspell-grimoire`, and move `PackSandboxRunner` into `counterspell-judge` so `judge` never depends on `grimoire`. Update `crates/judge/tests/boundary.rs` accordingly.
