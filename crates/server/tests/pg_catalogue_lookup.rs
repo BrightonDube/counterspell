@@ -108,7 +108,10 @@ async fn pg_supports_language_reads_the_starter_rows(pool: PgPool) {
 
     for lang in ["python", "javascript", "java", "cpp"] {
         assert!(
-            lookup.supports_language(&problem, lang).await,
+            lookup
+                .supports_language(&problem, lang)
+                .await
+                .expect("starter query"),
             "{lang} has a starter row"
         );
     }
@@ -117,12 +120,21 @@ async fn pg_supports_language_reads_the_starter_rows(pool: PgPool) {
         slug: "count-pairs".to_owned(),
         version: 1,
     };
-    assert!(lookup.supports_language(&partial, "python").await);
-    assert!(!lookup.supports_language(&partial, "java").await);
+    assert!(lookup
+        .supports_language(&partial, "python")
+        .await
+        .expect("starter query"));
+    assert!(!lookup
+        .supports_language(&partial, "java")
+        .await
+        .expect("starter query"));
     // A stale or wrong version pin offers nothing.
     let stale = counterspell_server::seams::ProblemRef {
         slug: "two-sum".to_owned(),
         version: 99,
     };
-    assert!(!lookup.supports_language(&stale, "python").await);
+    assert!(!lookup
+        .supports_language(&stale, "python")
+        .await
+        .expect("starter query"));
 }

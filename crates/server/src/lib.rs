@@ -98,7 +98,12 @@ impl AppState {
     /// read from the catalogue through the server role (CAT-L2).
     #[must_use]
     pub fn new(pool: PgPool, config: ServerConfig, limiter: Limiter) -> Self {
-        let languages = LanguageCatalog::launch(config.limits.max_source_bytes);
+        let languages = LanguageCatalog::launch(
+            config
+                .limits
+                .max_source_bytes
+                .unwrap_or(crate::config::DEFAULT_MAX_SOURCE_BYTES),
+        );
         let problems = PgProblemLookup::new(pool.clone());
         let stream_slots = runs::streams::StreamSlots::new(config.sse.max_streams_per_user);
         let readiness = health::Readiness::new(vec![

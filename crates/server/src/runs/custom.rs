@@ -114,7 +114,7 @@ pub async fn post_ghost_run(
     if !state
         .problems
         .supports_language(&problem, &language.name)
-        .await
+        .await?
     {
         return Err(ApiError::bad_request(
             "unsupported_language",

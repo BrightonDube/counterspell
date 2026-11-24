@@ -8,7 +8,10 @@ use uuid::Uuid;
 use async_trait::async_trait;
 use sqlx::PgPool;
 
-use crate::seams::{ProblemLookup, ProblemRef, UserResolver};
+use crate::{
+    error::ApiError,
+    seams::{ProblemLookup, ProblemRef, UserResolver},
+};
 
 // test-change: CAT-F1. Test-only seeding for submissions_problem_fk.
 // test-change: CAT-F1. Test-only seeding for submissions_problem_fk.
@@ -107,10 +110,11 @@ impl ProblemLookup for InMemoryProblems {
             })
     }
 
-    async fn supports_language(&self, _problem: &ProblemRef, lang: &str) -> bool {
-        self.languages
+    async fn supports_language(&self, _problem: &ProblemRef, lang: &str) -> Result<bool, ApiError> {
+        Ok(self
+            .languages
             .as_ref()
-            .is_none_or(|languages| languages.iter().any(|known| known == lang))
+            .is_none_or(|languages| languages.iter().any(|known| known == lang)))
     }
 }
 

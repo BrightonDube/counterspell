@@ -27,7 +27,7 @@ fn limits(active_cap: u64, queue_depth_max: u64) -> RunLimits {
         run_rate_ip: 100,
         run_active_cap: active_cap,
         queue_depth_max,
-        max_source_bytes: 65_536,
+        max_source_bytes: Some(65_536),
         request_body_limit_bytes: 131_072,
     }
 }

@@ -27,8 +27,20 @@ fn defaults_apply_when_only_required_urls_are_set() {
     assert_eq!(config.limits.run_rate_ip, 100);
     assert_eq!(config.limits.run_active_cap, 3);
     assert_eq!(config.limits.queue_depth_max, 200);
-    assert_eq!(config.limits.max_source_bytes, 65_536);
+    assert_eq!(
+        config.limits.max_source_bytes, None,
+        "unset MAX_SOURCE_BYTES is no ceiling — each driver's own limit applies"
+    );
     assert_eq!(config.limits.request_body_limit_bytes, 131_072);
+}
+
+#[test]
+fn a_configured_max_source_bytes_is_the_operator_ceiling() {
+    let mut pairs = REQUIRED.to_vec();
+    pairs.push(("MAX_SOURCE_BYTES", "32768"));
+    let config = ServerConfig::from_lookup(lookup(&pairs)).expect("config loads");
+
+    assert_eq!(config.limits.max_source_bytes, Some(32_768));
 }
 
 #[test]

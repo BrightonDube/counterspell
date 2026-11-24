@@ -61,7 +61,11 @@ pub trait ProblemLookup: Send + Sync {
 
     /// Whether `problem`'s published version offers `lang` — that is, a starter row exists for it.
     /// The caller has already checked that `lang` is an enabled catalogue language (LC05).
-    async fn supports_language(&self, problem: &ProblemRef, lang: &str) -> bool;
+    ///
+    /// # Errors
+    /// Returns [`ApiError::internal`] when the backing store cannot answer: a lookup failure must
+    /// not reach the client as `400 unsupported_language`, which would blame a valid request.
+    async fn supports_language(&self, problem: &ProblemRef, lang: &str) -> Result<bool, ApiError>;
 }
 
 /// The production catalogue until the grimoire import lands. It publishes nothing, so every run
@@ -75,8 +79,12 @@ impl ProblemLookup for EmptyCatalogue {
         None
     }
 
-    async fn supports_language(&self, _problem: &ProblemRef, _lang: &str) -> bool {
-        false
+    async fn supports_language(
+        &self,
+        _problem: &ProblemRef,
+        _lang: &str,
+    ) -> Result<bool, ApiError> {
+        Ok(false)
     }
 }
 
@@ -127,12 +135,14 @@ impl LanguageCatalog {
     /// Order is the launch order (python first — it is the workspace's default pick), with any
     /// future catalogue names appended in the file's own order.
     ///
-    /// `server_cap` is the operator's `MAX_SOURCE_BYTES`: a configured cap below a driver's own
-    /// limit stays the effective limit, so an operator override is never widened.
+    /// `server_cap` is `Some` only when the operator explicitly set `MAX_SOURCE_BYTES`: the cap
+    /// then clamps each driver's own limit, so an operator override is never widened. When it is
+    /// `None` every driver keeps its declared limit — the 64 KiB figure in config is a default,
+    /// not a ceiling (system-design source-size contract).
     #[must_use]
     pub fn from_enabled(
         catalogue: &counterspell_common::languages::LanguageCatalog,
-        server_cap: u64,
+        server_cap: Option<u64>,
     ) -> Self {
         let mut names: Vec<&str> = catalogue.names().collect();
         names.sort_by_key(|name| {
@@ -145,10 +155,14 @@ impl LanguageCatalog {
             .into_iter()
             .filter_map(|name| {
                 let definition = catalogue.get(name)?;
-                definition.is_enabled().then(|| Language {
-                    name: name.to_owned(),
-                    display_name: display_name(name).to_owned(),
-                    max_source_bytes: definition.max_source_bytes().min(server_cap),
+                definition.is_enabled().then(|| {
+                    let driver_limit = definition.max_source_bytes();
+                    Language {
+                        name: name.to_owned(),
+                        display_name: display_name(name).to_owned(),
+                        max_source_bytes: server_cap
+                            .map_or(driver_limit, |cap| driver_limit.min(cap)),
+                    }
                 })
             })
             .collect();
@@ -228,7 +242,7 @@ mod tests {
     #[test]
     fn from_enabled_lists_only_enabled_drivers_with_their_own_limits() {
         let judge = catalogue_with("java", "cpp");
-        let catalogue = LanguageCatalog::from_enabled(&judge, 65_536);
+        let catalogue = LanguageCatalog::from_enabled(&judge, Some(65_536));
 
         let names: Vec<&str> = catalogue
             .entries()
@@ -251,12 +265,24 @@ mod tests {
     #[test]
     fn from_enabled_keeps_a_configured_cap_below_the_driver_limit() {
         let judge = catalogue_with("java", "cpp");
-        let catalogue = LanguageCatalog::from_enabled(&judge, 512);
+        let catalogue = LanguageCatalog::from_enabled(&judge, Some(512));
 
         let java = catalogue.find("java").expect("java listed");
         assert_eq!(
             java.max_source_bytes, 512,
             "the operator's cap is a ceiling, not a floor"
+        );
+    }
+
+    #[test]
+    fn from_enabled_lets_a_wider_driver_limit_stand_when_no_cap_is_set() {
+        let judge = catalogue_with("java", "cpp");
+        let catalogue = LanguageCatalog::from_enabled(&judge, None);
+
+        let java = catalogue.find("java").expect("java listed");
+        assert_eq!(
+            java.max_source_bytes, 1234,
+            "unset MAX_SOURCE_BYTES is not a ceiling — the driver's declared limit applies"
         );
     }
 
@@ -268,7 +294,7 @@ mod tests {
         ));
         let judge = counterspell_common::languages::LanguageCatalog::load(path)
             .expect("repo catalogue loads");
-        let catalogue = LanguageCatalog::from_enabled(&judge, 65_536);
+        let catalogue = LanguageCatalog::from_enabled(&judge, Some(65_536));
 
         let names: Vec<&str> = catalogue
             .entries()
