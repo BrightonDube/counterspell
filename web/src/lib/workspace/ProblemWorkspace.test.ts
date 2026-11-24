@@ -91,6 +91,27 @@ describe('ProblemWorkspace', () => {
     }
   });
 
+  // Breaks if the picker offers a language the problem has no starter for — choosing it would
+  // open a blank editor, exactly the LC01 mismatch this spec fixes.
+  it('offers only the languages the problem enables', async () => {
+    api.loadProblem.mockResolvedValue(problem);
+    api.loadLanguages.mockResolvedValue([
+      ...languages,
+      { id: 'java', displayName: 'Java', maxSourceBytes: 65536 },
+      { id: 'cpp', displayName: 'C++', maxSourceBytes: 65536 }
+    ]);
+    render(ProblemWorkspace, { props: { slug: 'two-sum' } });
+
+    const select = await waitFor(() =>
+      screen.getByRole('combobox', { name: 'Language' })
+    );
+    const options = Array.from(select.querySelectorAll('option')).map(
+      (option) => option.textContent
+    );
+    expect(options).toEqual(['Python']);
+    expect(screen.queryByRole('option', { name: 'Java' })).toBeNull();
+  });
+
   // Breaks if a missing problem shows a blank page or a raw error instead of the server's safe message.
   it('shows the safe message for a problem that does not exist', async () => {
     api.loadProblem.mockRejectedValue(

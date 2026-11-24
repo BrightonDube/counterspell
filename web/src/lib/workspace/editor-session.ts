@@ -52,9 +52,6 @@ export function createEditorSession(
   options: EditorSessionOptions
 ): EditorSession {
   const storage = options.storage ?? NO_STORAGE;
-  const limits = new Map(
-    options.languages.map((language) => [language.id, language.maxSourceBytes])
-  );
   const sources = new Map<string, string>();
   const statuses = new Map<string, SessionStatus>();
   const savers = new Map<string, DraftSaver>();
@@ -97,12 +94,7 @@ export function createEditorSession(
     source(language) {
       const known = sources.get(language);
       if (known !== undefined) return known;
-      const restored = loadDraft(
-        storage,
-        options.slug,
-        language,
-        limits.get(language) ?? 0
-      );
+      const restored = loadDraft(storage, options.slug, language);
       const initial = restored?.source ?? options.starters[language] ?? '';
       sources.set(language, initial);
       return initial;

@@ -117,6 +117,27 @@ pub async fn tag_concept(pool: &PgPool, slug: &str, concept: &str) -> Result<(),
     Ok(())
 }
 
+/// Inserts one starter row per given language id.
+pub async fn starters(
+    pool: &PgPool,
+    slug: &str,
+    version: i32,
+    langs: &[&str],
+) -> Result<(), sqlx::Error> {
+    for lang in langs {
+        sqlx::query(
+            "INSERT INTO problem_starters (problem_slug, version, lang, code) \
+             VALUES ($1, $2, $3, 'def solve(): pass')",
+        )
+        .bind(slug)
+        .bind(version)
+        .bind(lang)
+        .execute(pool)
+        .await?;
+    }
+    Ok(())
+}
+
 /// Inserts one hidden test. The input carries a canary string, never real data.
 pub async fn hidden_test(pool: &PgPool, slug: &str, version: i32, ordinal: i32) -> Step {
     sqlx::query(

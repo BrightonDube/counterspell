@@ -48,7 +48,7 @@ async fn pg_catalogue_import_idempotent(pool: PgPool) {
     let after_first = counts(&pool).await;
     assert_eq!(
         after_first,
-        (1, 1, 2, 2, 4, 1, 1, 1),
+        (1, 1, 2, 4, 4, 1, 1, 1),
         "one row per child table, one event"
     );
 

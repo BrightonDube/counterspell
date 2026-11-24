@@ -195,9 +195,27 @@ async fn exchange(address: SocketAddr, request: &str) -> Reply {
 }
 
 /// Builds the app state for tests with no database and an in-memory rate limiter.
+/// The language catalogue is the repo's real `languages/languages.toml`, so tests
+/// exercise the same enabled-driver contract production uses (LC03).
 pub fn state_for(static_dir: &std::path::Path) -> AppState {
     let limiter = Limiter::Memory(Arc::new(MemoryLimiter::default()));
-    AppState::new(lazy_pool(), config_for(static_dir), limiter)
+    let catalogue_file = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../languages/languages.toml"
+    );
+    let judge_catalogue =
+        counterspell_common::languages::LanguageCatalog::load(std::path::Path::new(catalogue_file))
+            .expect("repo language catalogue loads");
+    let config = config_for(static_dir);
+    let source_cap = config.limits.max_source_bytes;
+    let body_limit = config.limits.request_body_limit_bytes;
+    AppState::new(lazy_pool(), config, limiter).with_languages(
+        counterspell_server::seams::LanguageCatalog::from_enabled(
+            &judge_catalogue,
+            source_cap,
+            body_limit,
+        ),
+    )
 }
 
 /// Publishes `two-sum` version 1 through the judge's fixture, so that a run can be queued for it

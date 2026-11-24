@@ -32,6 +32,9 @@ pub enum ConfigError {
     },
 }
 
+/// The source-size default the driver catalogue documents (system-design source-size contract).
+pub const DEFAULT_MAX_SOURCE_BYTES: u64 = 65_536;
+
 /// Limits on run submissions, counted per user and per IP.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RunLimits {
@@ -43,8 +46,10 @@ pub struct RunLimits {
     pub run_active_cap: u64,
     /// Queued runs allowed across all users before new submissions get `queue_full`.
     pub queue_depth_max: u64,
-    /// Largest accepted source size, in bytes.
-    pub max_source_bytes: u64,
+    /// The operator's source-size ceiling, or `None` when `MAX_SOURCE_BYTES` is unset — each
+    /// driver's own catalogue limit then applies unchanged, so a per-language limit wider than
+    /// [`DEFAULT_MAX_SOURCE_BYTES`] stays allowed (language-consistency LC03).
+    pub max_source_bytes: Option<u64>,
     /// Largest accepted HTTP request body, in bytes.
     pub request_body_limit_bytes: u64,
 }
@@ -58,6 +63,10 @@ pub struct ServerConfig {
     pub port: u16,
     /// Directory with the built static web app.
     pub static_dir: PathBuf,
+
+    /// The judge language catalogue (`languages/languages.toml`); only enabled
+    /// drivers are advertised and accepted (LC03).
+    pub languages_file: PathBuf,
     /// Postgres connection URL. Secret: never printed.
     pub database_url: String,
     /// Valkey connection URL. Secret: never printed.
@@ -90,6 +99,7 @@ impl fmt::Debug for ServerConfig {
             .field("host", &self.host)
             .field("port", &self.port)
             .field("static_dir", &self.static_dir)
+            .field("languages_file", &self.languages_file)
             .field("database_url", &"<redacted>")
             .field("valkey_url", &"<redacted>")
             .field("limits", &self.limits)
@@ -122,13 +132,28 @@ impl ServerConfig {
         let port = u16::try_from(port).map_err(|_| invalid("PORT", "must be 65535 or lower"))?;
         let static_dir =
             PathBuf::from(lookup("STATIC_DIR").unwrap_or_else(|| "web/build".to_owned()));
+        let languages_file = PathBuf::from(
+            lookup("LANGUAGES_FILE").unwrap_or_else(|| "languages/languages.toml".to_owned()),
+        );
 
         let limits = RunLimits {
             run_rate_user: ranged(&lookup, "RUN_RATE_USER", 30, 1, 10_000)?,
             run_rate_ip: ranged(&lookup, "RUN_RATE_IP", 100, 1, 100_000)?,
             run_active_cap: ranged(&lookup, "RUN_ACTIVE_CAP_PER_USER", 3, 1, 100)?,
             queue_depth_max: ranged(&lookup, "RUN_QUEUE_DEPTH_MAX", 200, 1, 100_000)?,
-            max_source_bytes: ranged(&lookup, "MAX_SOURCE_BYTES", 65_536, 1, 1_048_576)?,
+            // `MAX_SOURCE_BYTES` is an explicit operator ceiling only: when it is unset there is
+            // no clamp and each driver's own catalogue limit stands (LC03).
+            max_source_bytes: if lookup("MAX_SOURCE_BYTES").is_some() {
+                Some(ranged(
+                    &lookup,
+                    "MAX_SOURCE_BYTES",
+                    DEFAULT_MAX_SOURCE_BYTES,
+                    1,
+                    1_048_576,
+                )?)
+            } else {
+                None
+            },
             request_body_limit_bytes: ranged(
                 &lookup,
                 "REQUEST_BODY_LIMIT_BYTES",
@@ -155,6 +180,7 @@ impl ServerConfig {
             host,
             port,
             static_dir,
+            languages_file,
             database_url,
             valkey_url,
             limits,

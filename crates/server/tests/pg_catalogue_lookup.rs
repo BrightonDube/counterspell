@@ -88,3 +88,53 @@ async fn pg_server_role_can_read_problems_but_not_hidden_tables(pool: PgPool) {
         );
     }
 }
+
+#[ignore = "needs DATABASE_URL"]
+#[sqlx::test(migrations = "../../migrations")]
+async fn pg_supports_language_reads_the_starter_rows(pool: PgPool) {
+    // LC05: the published fixture carries all four launch starters; an unpublished
+    // two-starter version and a wrong version pin answer false.
+    insert_published_fixture(&pool, "two-sum", 1)
+        .await
+        .expect("published fixture");
+    insert_static_fixture(&pool, "count-pairs", 1)
+        .await
+        .expect("static fixture");
+    let lookup = PgProblemLookup::new(pool.clone());
+    let problem = lookup
+        .published("two-sum")
+        .await
+        .expect("two-sum published");
+
+    for lang in ["python", "javascript", "java", "cpp"] {
+        assert!(
+            lookup
+                .supports_language(&problem, lang)
+                .await
+                .expect("starter query"),
+            "{lang} has a starter row"
+        );
+    }
+    // `count-pairs` exists but only offers python and javascript.
+    let partial = counterspell_server::seams::ProblemRef {
+        slug: "count-pairs".to_owned(),
+        version: 1,
+    };
+    assert!(lookup
+        .supports_language(&partial, "python")
+        .await
+        .expect("starter query"));
+    assert!(!lookup
+        .supports_language(&partial, "java")
+        .await
+        .expect("starter query"));
+    // A stale or wrong version pin offers nothing.
+    let stale = counterspell_server::seams::ProblemRef {
+        slug: "two-sum".to_owned(),
+        version: 99,
+    };
+    assert!(!lookup
+        .supports_language(&stale, "python")
+        .await
+        .expect("starter query"));
+}

@@ -534,3 +534,59 @@ fn startup_check_requires_the_spa_route_manifest() {
 
     assert!(error.to_string().contains("routes.json"), "{error}");
 }
+
+#[tokio::test]
+async fn languages_endpoint_lists_only_enabled_drivers() {
+    // LC03: the accepted catalogue derives from the judge file — a disabled driver is unlisted.
+    let fixture = Fixture::new();
+    std::fs::write(fixture.dir.join("driver.py"), "# driver\n").expect("driver file");
+    let text = r#"
+[python]
+enabled = true
+image = "python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90"
+file = "sol.py"
+driver = "driver.py"
+compile = []
+run = ["python3", "driver.py"]
+bench_args = []
+mem_mb = 64
+time_ms_per_test = 1000
+max_time_ms_per_test = 5000
+compile_budget_ms = 5000
+max_source_bytes = 65536
+exec_scratch = false
+protocol_version = 1
+
+[java]
+enabled = false
+image = "eclipse-temurin:21-jdk@sha256:0a3f329821dcadf54b2a3033a15e2e9f007069a9db43d7f51897e6b80e726b07"
+file = "Sol.java"
+driver = "Driver.java"
+compile = []
+run = ["java", "Driver.java"]
+bench_args = []
+mem_mb = 256
+time_ms_per_test = 1000
+max_time_ms_per_test = 5000
+compile_budget_ms = 10000
+max_source_bytes = 65536
+exec_scratch = true
+protocol_version = 1
+"#;
+    let judge = counterspell_common::languages::LanguageCatalog::parse(text, &fixture.dir)
+        .expect("catalogue parses");
+    let state = state_for(&fixture.dir).with_languages(
+        counterspell_server::seams::LanguageCatalog::from_enabled(&judge, Some(65_536), 131_072),
+    );
+    let address = serve(build_router(state)).await;
+
+    let reply = get(address, "/api/languages", &[]).await;
+
+    assert_eq!(reply.status, 200);
+    assert!(reply.body.contains(r#""id":"python""#), "{}", reply.body);
+    assert!(
+        !reply.body.contains(r#""id":"java""#),
+        "disabled drivers must not be advertised: {}",
+        reply.body
+    );
+}

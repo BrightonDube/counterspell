@@ -98,7 +98,12 @@ impl AppState {
     /// read from the catalogue through the server role (CAT-L2).
     #[must_use]
     pub fn new(pool: PgPool, config: ServerConfig, limiter: Limiter) -> Self {
-        let languages = LanguageCatalog::launch(config.limits.max_source_bytes);
+        let languages = LanguageCatalog::launch(
+            config
+                .limits
+                .max_source_bytes
+                .unwrap_or(crate::config::DEFAULT_MAX_SOURCE_BYTES),
+        );
         let problems = PgProblemLookup::new(pool.clone());
         let stream_slots = runs::streams::StreamSlots::new(config.sse.max_streams_per_user);
         let readiness = health::Readiness::new(vec![
@@ -162,6 +167,14 @@ impl AppState {
     #[must_use]
     pub fn with_problems(mut self, problems: impl ProblemLookup + 'static) -> Self {
         self.problems = Arc::new(problems);
+        self
+    }
+
+    /// Replaces the accepted language catalogue. `main` builds it from the judge's
+    /// `LANGUAGES_FILE` so disabled drivers are never advertised or accepted (LC03).
+    #[must_use]
+    pub fn with_languages(mut self, languages: LanguageCatalog) -> Self {
+        self.languages = Arc::new(languages);
         self
     }
 

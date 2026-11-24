@@ -170,10 +170,15 @@ async fn pg_detail_returns_the_pinned_public_fields(pool: PgPool) {
     );
     assert_eq!(body["signature"]["return_type"], "list[int]");
     assert_eq!(body["limits"], json!({"time_ms": 2000, "mem_mb": 256}));
-    assert_eq!(body["enabled_languages"], json!(["javascript", "python"]));
+    // Every starter row for the pinned version is enabled (LC03: starter ∩ driver).
+    assert_eq!(
+        body["enabled_languages"],
+        json!(["cpp", "java", "javascript", "python"])
+    );
     assert_eq!(body["hint_count"], 4);
-    assert!(body["starters"]["python"].is_string());
-    assert!(body["starters"]["javascript"].is_string());
+    for lang in ["python", "javascript", "java", "cpp"] {
+        assert!(body["starters"][lang].is_string(), "{lang} starter");
+    }
 }
 
 #[ignore = "needs DATABASE_URL"]

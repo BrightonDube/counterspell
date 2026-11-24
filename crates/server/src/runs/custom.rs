@@ -104,11 +104,21 @@ pub async fn post_ghost_run(
         .ok_or_else(|| ApiError::bad_request("invalid_request", "lang is not supported."))?;
     validate_source(&language.name, &request.code, language.max_source_bytes)?;
 
-    if state.problems.published(&request.problem).await.is_none() {
+    let Some(problem) = state.problems.published(&request.problem).await else {
         return Err(ApiError::new(
             StatusCode::NOT_FOUND,
             "unknown_problem",
             "No published problem has that name.",
+        ));
+    };
+    if !state
+        .problems
+        .supports_language(&problem, &language.name)
+        .await?
+    {
+        return Err(ApiError::bad_request(
+            "unsupported_language",
+            "This problem does not offer that language.",
         ));
     }
 

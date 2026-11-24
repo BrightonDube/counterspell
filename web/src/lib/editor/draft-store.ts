@@ -1,7 +1,5 @@
 // Local draft persistence keyed by problem slug and language. Stores only the learner's own source text.
 // Never stores run events, hidden data, prompts or secrets. Storage failures keep the source in memory.
-import { byteLength } from '../contract';
-
 /** Bump this when the stored shape changes, so old entries are ignored rather than misread. */
 export const DRAFT_SCHEMA_VERSION = 1;
 
@@ -40,14 +38,15 @@ function readSource(raw: string): string | null {
 }
 
 /**
- * Restores a saved source. Returns null when there is none, storage cannot be read, or the source is
- * over `maxBytes`. A corrupted entry is removed so the next load starts clean.
+ * Restores a saved source. Returns null when there is none or storage cannot be read. A
+ * corrupted entry is removed so the next load starts clean. Size is never a restore
+ * condition: the submission check owns the current limit, and dropping a draft saved under
+ * a higher cap would let the starter overwrite it on the next edit.
  */
 export function loadDraft(
   storage: DraftStorage,
   slug: string,
-  language: string,
-  maxBytes: number
+  language: string
 ): { source: string } | null {
   const key = draftKey(slug, language);
   let raw: string | null;
@@ -66,7 +65,6 @@ export function loadDraft(
     }
     return null;
   }
-  if (byteLength(source) > maxBytes) return null;
   return { source };
 }
 

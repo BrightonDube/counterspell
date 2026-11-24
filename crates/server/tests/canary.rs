@@ -110,7 +110,7 @@ fn limits() -> RunLimits {
         run_rate_ip: 100,
         run_active_cap: 10,
         queue_depth_max: 200,
-        max_source_bytes: 65_536,
+        max_source_bytes: Some(65_536),
         request_body_limit_bytes: 131_072,
     }
 }

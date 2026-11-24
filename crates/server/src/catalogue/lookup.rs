@@ -3,7 +3,10 @@
 use async_trait::async_trait;
 use sqlx::PgPool;
 
-use crate::seams::{ProblemLookup, ProblemRef};
+use crate::{
+    error::ApiError,
+    seams::{ProblemLookup, ProblemRef},
+};
 
 /// Reads the published version of a problem from the `problems` table.
 ///
@@ -38,6 +41,25 @@ impl ProblemLookup for PgProblemLookup {
             Err(error) => {
                 tracing::error!(error = %error, "catalogue lookup failed; treating the problem as unpublished");
                 None
+            }
+        }
+    }
+
+    async fn supports_language(&self, problem: &ProblemRef, lang: &str) -> Result<bool, ApiError> {
+        let row: Result<bool, sqlx::Error> = sqlx::query_scalar(
+            "SELECT EXISTS(SELECT 1 FROM problem_starters \
+             WHERE problem_slug = $1 AND version = $2 AND lang = $3)",
+        )
+        .bind(&problem.slug)
+        .bind(problem.version)
+        .bind(lang)
+        .fetch_one(&self.pool)
+        .await;
+        match row {
+            Ok(supported) => Ok(supported),
+            Err(error) => {
+                tracing::error!(error = %error, "starter lookup failed");
+                Err(ApiError::internal(error))
             }
         }
     }

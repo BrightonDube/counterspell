@@ -26,7 +26,14 @@
     Promise.all([loadProblem(requested, options), loadLanguages(options)])
       .then(([problem, languages]) => {
         if (!controller.signal.aborted) {
-          state = { kind: 'ready', problem, languages };
+          // The picker may only offer languages this problem actually supports — a starter row
+          // plus an enabled driver — or selecting one shows a blank editor (LC01/LC04).
+          const enabled = new Set(problem.enabledLanguages);
+          state = {
+            kind: 'ready',
+            problem,
+            languages: languages.filter((language) => enabled.has(language.id))
+          };
           markWorkspace('problem-detail-loaded');
         }
       })

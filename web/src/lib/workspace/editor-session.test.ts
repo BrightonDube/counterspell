@@ -130,8 +130,10 @@ describe('createEditorSession', () => {
     expect(statuses).toEqual(['pending', 'failed']);
   });
 
-  // Breaks if an oversized draft is restored, so the learner would see code the server then refuses.
-  it('ignores a stored draft larger than the language limit', () => {
+  // Breaks if a draft saved under a higher cap is dropped after the advertised limit shrinks:
+  // the editor would show the starter and the next edit would overwrite the real draft.
+  // Restoration is size-agnostic; the submission check blocks oversized runs instead.
+  it('restores a draft saved under a higher limit instead of overwriting it', () => {
     const storage = memoryStorage({
       [draftKey('two-sum', 'python')]: JSON.stringify({
         v: 1,
@@ -145,7 +147,7 @@ describe('createEditorSession', () => {
       starters: STARTERS,
       debounceMs: 400
     });
-    expect(session.source('python')).toBe(STARTERS.python);
+    expect(session.source('python')).toBe('x'.repeat(70000));
   });
 
   // Breaks if a corrupted entry crashes the editor instead of starting from the starter.

@@ -153,6 +153,18 @@ pub async fn insert_published_fixture(
     .bind(json!(CANARY_GHOST))
     .execute(pool)
     .await?;
+    // The publish gate requires a starter for every launch language (LC06); the static fixture
+    // carries python and javascript, so a published fixture adds the java and cpp rows here.
+    for lang in ["java", "cpp"] {
+        sqlx::query(
+            "INSERT INTO problem_starters (problem_slug, version, lang, code) VALUES ($1, $2, $3, 'def solve(): pass')",
+        )
+        .bind(slug)
+        .bind(version)
+        .bind(lang)
+        .execute(pool)
+        .await?;
+    }
     sqlx::query(
         "UPDATE problem_versions SET sandbox_validated_at = now(), sandbox_image_digest = 'sha256:testkit' \
          WHERE problem_slug = $1 AND version = $2",
@@ -254,6 +266,14 @@ pub fn static_import(version: i32, body_hash: u8, statement: &str) -> StaticImpo
                 "javascript".to_string(),
                 "function twoSum(values, target) {\n  throw new Error('not implemented');\n}\n"
                     .to_string(),
+            ),
+            (
+                "java".to_string(),
+                "public class Solution {\n    public static long[] twoSum(long[] values, long target) {\n        throw new UnsupportedOperationException(\"not implemented\");\n    }\n}\n".to_string(),
+            ),
+            (
+                "cpp".to_string(),
+                "std::vector<long long> twoSum(std::vector<long long> values, long long target) {\n    throw std::runtime_error(\"not implemented\");\n}\n".to_string(),
             ),
         ],
         hints: (1..=4)

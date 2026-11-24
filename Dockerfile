@@ -29,6 +29,9 @@ RUN apt-get update \
     && useradd --system --uid 10001 --gid counterspell --no-create-home counterspell
 COPY --from=rust-builder /app/target/release/counterspell-server /usr/local/bin/counterspell-server
 COPY --from=web-builder /app/web/build /app/web/build
+# The accepted-language contract: the server reads the same TOML the judge enforces (LC03).
+WORKDIR /app
+COPY languages/ ./languages/
 
 ENV HOST=0.0.0.0 \
     PORT=8080 \

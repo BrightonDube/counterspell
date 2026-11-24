@@ -226,6 +226,35 @@ async fn validation_rejects_without_side_effects() {
 }
 
 #[tokio::test]
+async fn run_rejects_a_problem_language_pair_without_starter() {
+    // LC05: `two-sum` only offers python here; asking for java must fail 400, not enqueue.
+    let fixture = Fixture::new();
+    let state = app_state(lazy_pool(), config_with(&fixture.dir, &[]))
+        .with_problems(InMemoryProblems::new(&["two-sum"]).with_languages(&["python"]));
+    let address = serve(build_router(state)).await;
+
+    let reply = submit(
+        address,
+        1,
+        None,
+        &run_body("two-sum", "java", "class S {}\n", "submit"),
+    )
+    .await;
+    let python = submit(
+        address,
+        1,
+        None,
+        &run_body("two-sum", "python", "print(1)\n", "submit"),
+    )
+    .await;
+
+    assert_eq!(reply.status, 400);
+    assert_eq!(error_code(&reply), "unsupported_language");
+    // The supported pair is untouched by the new check (it only fails later, at the queue).
+    assert_ne!(error_code(&python), "unsupported_language");
+}
+
+#[tokio::test]
 async fn validation_errors_use_the_documented_status() {
     let fixture = Fixture::new();
     let state = app_state(lazy_pool(), config_with(&fixture.dir, &[]));
