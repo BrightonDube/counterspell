@@ -8,7 +8,14 @@
   import type { LanguageSummary, ProblemDetail } from '../api/types';
   import WorkspaceShell from './WorkspaceShell.svelte';
 
-  let { slug }: { slug: string } = $props();
+  let {
+    slug,
+    onready
+  }: {
+    slug: string;
+    /** Lets the route write the real title/description once the problem arrives (AQ01). */
+    onready?: (problem: ProblemDetail) => void;
+  } = $props();
 
   type LoadState =
     | { kind: 'loading' }
@@ -35,6 +42,7 @@
             languages: languages.filter((language) => enabled.has(language.id))
           };
           markWorkspace('problem-detail-loaded');
+          onready?.(problem);
         }
       })
       .catch((error: unknown) => {

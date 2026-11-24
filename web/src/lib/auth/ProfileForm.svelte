@@ -130,7 +130,9 @@
 
   button:disabled {
     cursor: not-allowed;
-    opacity: 0.6;
+    border-color: var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
   }
 
   .profile-status {

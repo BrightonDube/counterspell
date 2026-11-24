@@ -15,15 +15,18 @@
   }: {
     title: string;
     description: string;
-    /** The route path, e.g. `/problems`. */
-    path: string;
+    /**
+     * The route path, e.g. `/problems`. Omit on error routes — a 404 must not
+     * canonicalise whatever URL was requested.
+     */
+    path?: string;
     /** Social-card image path on the site origin. */
     image?: string;
     /** Set false on routes that should not be shared (account screens). */
     social?: boolean;
   } = $props();
 
-  const url = $derived(`${SITE}${path}`);
+  const url = $derived(path === undefined ? undefined : `${SITE}${path}`);
   const imageUrl = $derived(
     image.startsWith('http') ? image : `${SITE}${image}`
   );
@@ -32,11 +35,11 @@
 <svelte:head>
   <title>{title}</title>
   <meta name="description" content={description} />
-  <link rel="canonical" href={url} />
+  {#if url}<link rel="canonical" href={url} />{/if}
   {#if social}
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={url} />
+    {#if url}<meta property="og:url" content={url} />{/if}
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="Counterspell" />
     <meta property="og:image" content={imageUrl} />

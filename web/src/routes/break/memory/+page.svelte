@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { checkPress, level, newRound } from '#lib/break/memory.js';
   import { saveScore } from '#lib/break/api.js';
+  import Seo from '../../../lib/seo/Seo.svelte';
 
   const TILES = 9;
   /** @type {number[]} */
@@ -94,7 +95,11 @@
   });
 </script>
 
-<svelte:head><title>Lantern recall - Break room</title></svelte:head>
+<Seo
+  title="Lantern recall · Counterspell"
+  description="Repeat the growing sequence of nine lanterns — a memory game in the break room."
+  path="/break/memory"
+/>
 
 <AppShell>
   <div class="mx-auto max-w-md space-y-4">
@@ -134,7 +139,7 @@
         {phase === 'idle' ? 'Start' : 'Restart'}
       </button>
       <a
-        class="self-center text-sm text-text-muted underline"
+        class="inline-flex min-h-6 items-center self-center text-sm text-text-muted underline"
         href={resolve('/break')}
       >
         Back to the break room

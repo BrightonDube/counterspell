@@ -7,7 +7,9 @@
   import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
   import { saveScore } from '#lib/break/api.js';
+  import { session } from '#lib/auth/session.svelte.js';
   import BotWorker from '#lib/break/bot.worker.js?worker';
+  import Seo from '../../../lib/seo/Seo.svelte';
 
   /** @type {HTMLDivElement | undefined} */
   let boardEl = $state();
@@ -23,6 +25,7 @@
   let playing = $state(false);
   let fallbackNote = $state('');
   let seed = String(Date.now());
+  let signedIn = $state(false);
 
   function refreshStatus() {
     statusLine = `${game.turn() === 'w' ? 'White' : 'Black'} to move. FEN ${game.fen()}`;
@@ -30,19 +33,21 @@
       playing = false;
       const won = game.turn() !== userColor;
       status = won ? 'You win. Well played.' : 'The bot wins this one.';
-      void saveScore({
-        game: 'chess_bot',
-        result: won ? 'win' : 'loss',
-        moves: game.moveNumber()
-      });
+      if (signedIn)
+        void saveScore({
+          game: 'chess_bot',
+          result: won ? 'win' : 'loss',
+          moves: game.moveNumber()
+        });
     } else if (game.isDraw() || game.isStalemate()) {
       playing = false;
       status = 'A draw.';
-      void saveScore({
-        game: 'chess_bot',
-        result: 'draw',
-        moves: game.moveNumber()
-      });
+      if (signedIn)
+        void saveScore({
+          game: 'chess_bot',
+          result: 'draw',
+          moves: game.moveNumber()
+        });
     }
   }
 
@@ -91,6 +96,11 @@
   onDestroy(() => worker?.terminate());
 
   onMount(() => {
+    // Session copy is honest about who is playing: anonymous players see the
+    // sign-in nudge; signed-in players never get told their result is unsaved.
+    void session.load().then(() => {
+      signedIn = session.status === 'signed_in';
+    });
     if (!boardEl) return;
     try {
       worker = new BotWorker();
@@ -119,7 +129,11 @@
   });
 </script>
 
-<svelte:head><title>Chess bot - Break room</title></svelte:head>
+<Seo
+  title="Chess bot · Counterspell"
+  description="A casual game of chess against a small local engine in the break room."
+  path="/break/bot"
+/>
 
 <AppShell>
   <div class="mx-auto max-w-2xl space-y-4">
@@ -138,7 +152,12 @@
         Play Black
       </button>
     </div>
-    <div bind:this={boardEl} class="break-board max-w-md"></div>
+    <div
+      bind:this={boardEl}
+      class="break-board max-w-md"
+      role="img"
+      aria-label="Chessboard"
+    ></div>
     <output class="block text-sm text-text-muted" aria-live="polite">
       {statusLine}
     </output>
@@ -146,8 +165,20 @@
     {#if fallbackNote}<p role="status" class="text-sm text-text-muted">
         {fallbackNote}
       </p>{/if}
-    <p class="text-sm text-text-muted">Signed-out results are not saved.</p>
-    <a class="text-sm text-text-muted underline" href={resolve('/break')}>
+    {#if session.status === 'signed_out'}
+      <p class="text-sm text-text-muted">
+        <a
+          class="text-accent underline"
+          href={resolve('/login?return_to=/break/bot')}
+          >Sign in</a
+        >
+        to save your results.
+      </p>
+    {/if}
+    <a
+      class="inline-flex min-h-6 items-center text-sm text-text-muted underline"
+      href={resolve('/break')}
+    >
       Back to the break room
     </a>
   </div>

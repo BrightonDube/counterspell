@@ -205,6 +205,78 @@ describe('session store (T29)', () => {
     expect(session.status).toBe('signed_out');
   });
 
+  // Breaks if a second load() re-asks /api/me when the status is already known —
+  // onboarding and account each call load on mount, and the duplicate request is AUD-20.
+  it('serves a resolved status without asking the server again', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ user: { handle: 'thandi' }, capabilities: {} }),
+          { status: 200 }
+        )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const session = new SessionStore();
+    await session.load();
+    await session.load();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(session.status).toBe('signed_in');
+  });
+
+  // Breaks if two mounts racing load() both fire /api/me — concurrent callers must share one request.
+  it('shares one in-flight request across concurrent loads', async () => {
+    /** @type {((value: Response) => void) | undefined} */
+    let resolveFetch;
+    const fetchMock = vi.fn(
+      () => new Promise((resolve) => (resolveFetch = resolve))
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const session = new SessionStore();
+    const first = session.load();
+    const second = session.load();
+    resolveFetch?.(
+      new Response(JSON.stringify({ user: {}, capabilities: {} }), {
+        status: 200
+      })
+    );
+    await Promise.all([first, second]);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  // Breaks if clear() leaves a stale resolved status — after sign-out the next
+  // load must consult the server again.
+  it('asks the server again after the session is cleared', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ user: { handle: 'thandi' }, capabilities: {} }),
+          { status: 200 }
+        )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const session = new SessionStore();
+    await session.load();
+    session.clear();
+    await session.load();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  // Breaks if a caller cannot force a refresh — dedup must never hide a stale answer.
+  it('re-asks the server when forced', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({ user: { handle: 'thandi' }, capabilities: {} }),
+          { status: 200 }
+        )
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    const session = new SessionStore();
+    await session.load();
+    await session.load({ force: true });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
   it('clears its user when it is cleared', () => {
     const session = new SessionStore();
     session.user = { handle: 'thandi' };

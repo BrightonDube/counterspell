@@ -7,6 +7,7 @@
   import ProfileForm from '#lib/auth/ProfileForm.svelte';
   import { postAuthTarget, returnToFromQuery } from '#lib/auth/return-to.js';
   import { session } from '#lib/auth/session.svelte.js';
+  import Seo from '#lib/seo/Seo.svelte';
 
   let loading = $state(true);
   let problem = $state('');
@@ -37,9 +38,12 @@
   });
 </script>
 
-<svelte:head>
-  <title>Set up your profile | Counterspell</title>
-</svelte:head>
+<Seo
+  title="Set up your profile · Counterspell"
+  description="Choose the name Counterspell shows on your progress and runs."
+  path="/onboarding"
+  social={false}
+/>
 
 <main class="onboarding">
   <section class="card">

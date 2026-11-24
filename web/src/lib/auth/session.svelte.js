@@ -22,11 +22,27 @@ export class SessionStore {
    */
   status = $state('unknown');
 
+  /** @type {Promise<void> | null} */
+  #inflight = null;
+
   /**
    * Asks the server who is signed in. A `401` means signed out, which is a normal answer, not an error.
    * Other failures are thrown to the caller.
+   *
+   * A resolved status is served from memory and concurrent callers share one request (AUD-20):
+   * onboarding and account each call `load()` on mount and must not issue a second `GET /api/me`.
+   * Pass `{ force: true }` to consult the server again after a state-changing action.
+   *
+   * @param {{ force?: boolean }} [options]
    */
-  async load() {
+  load({ force = false } = {}) {
+    if (this.#inflight) return this.#inflight;
+    if (this.status !== 'unknown' && !force) return Promise.resolve();
+    this.#inflight = this.#fetch();
+    return this.#inflight;
+  }
+
+  async #fetch() {
     try {
       const data = await getMe();
       this.user = data.user;
@@ -34,11 +50,14 @@ export class SessionStore {
       this.status = 'signed_in';
     } catch (error) {
       if (error instanceof AuthApiError && error.status === 401) {
-        this.clear();
+        this.user = null;
+        this.capabilities = null;
         this.status = 'signed_out';
         return;
       }
       throw error;
+    } finally {
+      this.#inflight = null;
     }
   }
 
@@ -46,6 +65,7 @@ export class SessionStore {
   clear() {
     this.user = null;
     this.capabilities = null;
+    this.status = 'unknown';
   }
 }
 

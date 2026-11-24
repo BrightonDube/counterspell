@@ -1,8 +1,9 @@
 // Tests for the dashboard screen states (dashboard-fsrs T09, DASH-9). The request is injected, so no test calls
 // the network. Each test names the break it catches.
 import { cleanup, fireEvent, render, screen } from '@testing-library/svelte';
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiRequestError } from '../api/client';
+import { session } from '../auth/session.svelte.js';
 import { parseDashboard, type DashboardView } from './types';
 import DashboardScreen from './DashboardScreen.svelte';
 
@@ -93,7 +94,18 @@ function unavailable(): ApiRequestError {
 }
 
 describe('DashboardScreen', () => {
-  afterEach(() => cleanup());
+  // These tests drive the dashboard's own request, so the shared session reads
+  // as signed in — session.load() resolves instantly and nothing hits fetch.
+  beforeEach(() => {
+    session.status = 'signed_in';
+  });
+
+  afterEach(() => {
+    cleanup();
+    session.user = null;
+    session.capabilities = null;
+    session.status = 'unknown';
+  });
 
   // Breaks if the page shows nothing while the request is in flight, so the learner cannot tell it is loading.
   it('shows a loading message while the dashboard is being fetched', () => {
@@ -101,6 +113,18 @@ describe('DashboardScreen', () => {
       props: { load: () => new Promise<DashboardView>(() => {}) }
     });
     expect(screen.getByText('Loading dashboard')).toBeTruthy();
+  });
+
+  // Breaks if a known-signed-out visit still fires the dashboard request — the
+  // session answer already says who is visiting; probing costs a console-noisy 401 (AUD-19/AUD-20).
+  it('skips the dashboard request entirely when the session says signed out', async () => {
+    session.status = 'signed_out';
+    const load = vi.fn(() => Promise.resolve(populatedView));
+    render(DashboardScreen, { props: { load } });
+
+    const link = await screen.findByRole('link', { name: 'Sign in' });
+    expect(link.getAttribute('href')).toBe('/login?return_to=/dashboard');
+    expect(load).not.toHaveBeenCalled();
   });
 
   // Breaks if a signed-out visitor gets an error instead of a link back into sign-in.
@@ -152,6 +176,17 @@ describe('DashboardScreen', () => {
     expect(screen.getByText(/2-day streak/)).toBeTruthy();
     expect(screen.getByText('Wrong answer')).toBeTruthy();
     expect(screen.getByText('Queued')).toBeTruthy();
+  });
+
+  // Breaks if the calendar is wrapped in a labelled region AND declares its own
+  // region — two landmarks with the same name fail axe landmark-unique (AUD-16).
+  it('exposes the practice calendar as exactly one named region', async () => {
+    render(DashboardScreen, { props: { load: async () => populatedView } });
+
+    await screen.findByRole('heading', { name: 'Practice calendar' });
+    expect(
+      screen.getAllByRole('region', { name: 'Practice calendar' })
+    ).toHaveLength(1);
   });
 
   // Breaks if the dashboard drops the real activity calendar or its text equivalent.

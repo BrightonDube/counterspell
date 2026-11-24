@@ -10,7 +10,7 @@
   const calendar = $derived(buildPracticeCalendar(activityDays, today));
 </script>
 
-<div class="space-y-4" role="region" aria-labelledby="calendar-title">
+<div class="space-y-4">
   <div class="flex flex-wrap items-center justify-between gap-3">
     <h2 id="calendar-title" class="text-lg font-semibold">Practice calendar</h2>
     <div class="flex items-center gap-4 text-xs text-text-muted">

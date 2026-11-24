@@ -7,6 +7,7 @@
   import 'cm-chessboard/assets/chessboard.css';
   import { fetchDaily, saveScore } from '#lib/break/api.js';
   import { newPuzzle, tryMove } from '#lib/break/puzzle.js';
+  import Seo from '../../../lib/seo/Seo.svelte';
 
   /** @type {HTMLDivElement | undefined} */
   let boardEl = $state();
@@ -102,7 +103,11 @@
   });
 </script>
 
-<svelte:head><title>Daily puzzle - Break room</title></svelte:head>
+<Seo
+  title="Daily puzzle · Counterspell"
+  description="One chess puzzle a day, picked for you. Solve it in the break room."
+  path="/break/puzzle"
+/>
 
 <AppShell>
   <div class="mx-auto max-w-2xl space-y-4">
@@ -121,6 +126,8 @@
       bind:this={boardEl}
       class="break-board max-w-md"
       data-testid="board"
+      role="img"
+      aria-label="Chessboard"
     ></div>
     <output class="block text-sm text-text-muted" aria-live="polite">
       {statusLine}
@@ -159,7 +166,10 @@
         Play
       </button>
     </form>
-    <a class="text-sm text-text-muted underline" href={resolve('/break')}>
+    <a
+      class="inline-flex min-h-6 items-center text-sm text-text-muted underline"
+      href={resolve('/break')}
+    >
       Back to the break room
     </a>
   </div>

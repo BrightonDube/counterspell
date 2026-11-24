@@ -28,6 +28,7 @@
   import SecurityIcon from '#lib/auth/SecurityIcon.svelte';
   import { session } from '#lib/auth/session.svelte.js';
   import AppShell from '#lib/shell/AppShell.svelte';
+  import Seo from '#lib/seo/Seo.svelte';
 
   type Area =
     'account' | 'methods' | 'totp' | 'passkeys' | 'sessions' | 'delete';
@@ -327,9 +328,12 @@
   }
 </script>
 
-<svelte:head>
-  <title>Account · Counterspell</title>
-</svelte:head>
+<Seo
+  title="Account · Counterspell"
+  description="Manage your Counterspell profile, sign-in methods and account settings."
+  path="/settings/account"
+  social={false}
+/>
 
 {#snippet feedback(area: Area)}
   {#if issue?.area === area}
