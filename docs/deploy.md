@@ -50,5 +50,12 @@ the sandbox AppArmor or rootless setup, or the Caddy site block. Image and code 
 Ansible; they ship through the deploy path above. The playbook runs only the `app`, `sandbox` and
 `caddy_site` roles — never `base` or `docker` — and is guarded by `shared_host`.
 
+This is an agent-runnable step, not a Brighton-only step: Ansible, the operator key
+(`~/.ssh/config` alias `counterspell-vps`) and the vault file live in WSL Ubuntu-24.04
+on this machine (see `docs/kiro-log/deploy-ops-blockers.md`, 24 Nov 2026). For a
+Caddy-only change add `--tags caddy_site`; run `--check --diff` first to see the plan.
+If port 22 is filtered, suspect an egress-IP block (fail2ban) rather than handing
+the step back to Brighton.
+
 Rotating a secret: change it in the vault, re-run Ansible to rewrite the env file, then re-deploy
 (or `ssh … "status"` to confirm the release record is intact).
