@@ -37,7 +37,13 @@
     `catalogue_publish_gate()` with the four-launch-language starter check;
     `insert_published_fixture` and `static_import` now carry all four starters
     like real packs.
-- [ ] **LC07 Run four-driver sandbox and live workspace verification**
+- [x] **LC07 Run four-driver sandbox and live workspace verification**
   - Sandbox-driver proof is environment-gated (`SANDBOX_DOCKER_SOCKET`): the
-    `sbx_*` and `pa27` suites run in CI's sandbox job; live workspace
-    verification follows the merge deploy.
+    `sbx_*` and `pa27` suites ran in CI's sandbox job on `7873cdc2` (green,
+    non-blocking suite) and on every prior head.
+  - Live verification on `5473a5f1` (deployed 2026-11-24): `GET /api/health`
+    → `{"status":"ok"}`; `GET /api/languages` → all four drivers in launch
+    order with 65536 limits; `GET /api/problems/count-pairs` exposes
+    `enabled_languages: ["javascript","python"]` — the exact starter
+    intersection, so the workspace picker can no longer offer Java/C++ with
+    blank editors on under-staffed problems.

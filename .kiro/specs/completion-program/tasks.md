@@ -35,8 +35,20 @@
 
 ## Wave 2: reliability and product foundations
 
-- [ ] **CP10 Implement production foundations in focused tracer-bullet pull requests**
-- [ ] **CP11 Implement language consistency in focused tracer-bullet pull requests**
+- [x] **CP10 Implement production foundations in focused tracer-bullet pull requests**
+  - PF01–PF09 done. Caddy edge changes now ship with each deploy via the
+    `sync-caddy` verb (installed on the host, `deploy.yml` runs it after
+    every deploy — #114). `www` TLS + apex redirect verified live (#115).
+    Enforced non-script CSP live on prod (#112–#114); HEAD mirrors GET on
+    catalogue responses (#116, live-verified).
+- [x] **CP11 Implement language consistency in focused tracer-bullet pull requests**
+  - #117 `5473a5f1`. Shared TOML catalogue in `counterspell-common`; server
+    advertises enabled drivers only, problem↔language pair validated on
+    regular + ghost runs, publish gate requires all four starters, driver
+    source limits clamped only by an explicit operator cap and the
+    body/protocol bound, starter-query DB errors propagate as 500, drafts
+    restore regardless of the advertised cap. Live-verified: `enabled_languages`
+    on prod reflects real starter rows.
 - [ ] **CP12 Implement accessibility, SEO and authenticated quality in focused tracer-bullet pull requests**
 
 ## Wave 3: core product polish
