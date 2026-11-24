@@ -69,7 +69,7 @@ describe('ProblemWorkspace', () => {
 
     await waitFor(() =>
       expect(
-        screen.getByRole('heading', { level: 2, name: 'Two Sum' })
+        screen.getByRole('heading', { level: 1, name: 'Two Sum' })
       ).toBeTruthy()
     );
     expect(screen.getByRole('region', { name: 'Editor' })).toBeTruthy();
@@ -110,6 +110,32 @@ describe('ProblemWorkspace', () => {
     );
     expect(options).toEqual(['Python']);
     expect(screen.queryByRole('option', { name: 'Java' })).toBeNull();
+  });
+
+  // Breaks if the problem route loses its one descriptive h1 (AUD-13) — the
+  // whole app reads this heading, and it is what search results should show.
+  it('renders the problem title as the page h1', async () => {
+    api.loadProblem.mockResolvedValue(problem);
+    api.loadLanguages.mockResolvedValue(languages);
+    render(ProblemWorkspace, { props: { slug: 'two-sum' } });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Two Sum' })
+      ).toBeTruthy()
+    );
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+  });
+
+  // Breaks if the route stops handing the loaded problem upward — the page needs it
+  // to write the real title and description into the head (AQ01/AUD-12).
+  it('reports the loaded problem to the page for route metadata', async () => {
+    api.loadProblem.mockResolvedValue(problem);
+    api.loadLanguages.mockResolvedValue(languages);
+    const onready = vi.fn();
+    render(ProblemWorkspace, { props: { slug: 'two-sum', onready } });
+
+    await waitFor(() => expect(onready).toHaveBeenCalledWith(problem));
   });
 
   // Breaks if a missing problem shows a blank page or a raw error instead of the server's safe message.

@@ -23,6 +23,7 @@
     verifyTwoFactor
   } from '#lib/auth/security.ts';
   import SecurityIcon from '#lib/auth/SecurityIcon.svelte';
+  import Seo from '#lib/seo/Seo.svelte';
   import { session } from '#lib/auth/session.svelte.js';
   import { WORDMARK, TAGLINE } from '#lib/landing/copy.js';
 
@@ -163,13 +164,11 @@
   }
 </script>
 
-<svelte:head>
-  <title>Sign in · Counterspell</title>
-  <meta
-    name="description"
-    content="Sign in to Counterspell to track your progress and pick up where you left off."
-  />
-</svelte:head>
+<Seo
+  title="Sign in · Counterspell"
+  description="Sign in to Counterspell to track your progress and pick up where you left off."
+  path="/login"
+/>
 
 <main
   class="relative flex min-h-screen flex-col overflow-hidden bg-bg text-text"

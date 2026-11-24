@@ -18,6 +18,7 @@
     HERO_POSTER_SIZES,
     HERO_POSTER_SRCSET
   } from '../lib/landing/hero-media';
+  import Seo from '../lib/seo/Seo.svelte';
 
   // Vite fingerprints the font, so this URL matches the one the @font-face rule in app.css uses.
   import creepsterUrl from '../../static/fonts/Creepster-Regular.woff2?url';
@@ -69,8 +70,13 @@
   });
 </script>
 
+<Seo
+  title="Counterspell — Sharpen Your Mind with Coding Challenges"
+  description="Challenge your thinking with coding problems, sharpen your debugging skills, and learn from mistakes. Counterspell helps you become a stronger independent problem solver."
+  path="/"
+  image="/art/landing/hero-moon-living-poster-1920.webp"
+/>
 <svelte:head>
-  <title>Counterspell — Sharpen Your Mind with Coding Challenges</title>
   <link
     rel="preload"
     href={creepsterUrl}
@@ -85,11 +91,6 @@
     imagesrcset={HERO_POSTER_SRCSET}
     imagesizes={HERO_POSTER_SIZES}
     fetchpriority="high"
-  />
-
-  <meta
-    name="description"
-    content="Challenge your thinking with coding problems, sharpen your debugging skills, and learn from mistakes. Counterspell helps you become a stronger independent problem solver."
   />
 </svelte:head>
 
