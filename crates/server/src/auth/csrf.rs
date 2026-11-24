@@ -93,6 +93,12 @@ pub async fn origin_guard(
     request: Request,
     next: Next,
 ) -> Response {
+    // Browser CSP reports carry no Origin/Sec-Fetch proof and may attach the session cookie.
+    // This one path is a bounded, rate-limited data sink — a forged POST can only write a
+    // clipped log line — so it is exempt from the CSRF check by exact path and method.
+    if request.method() == Method::POST && request.uri().path() == crate::csp_report::PATH {
+        return next.run(request).await;
+    }
     let headers = request.headers();
     let allowed = origin_allowed(
         request.method(),

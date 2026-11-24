@@ -11,6 +11,7 @@ pub mod breakroom;
 pub mod catalogue;
 pub mod client_ip;
 pub mod config;
+pub mod csp_report;
 pub mod dashboard;
 pub mod error;
 pub mod familiar;
@@ -248,6 +249,7 @@ pub fn build_router(state: AppState) -> Router {
             "/api/me/familiar",
             get(familiar::api::get_prefs).patch(familiar::api::patch_prefs),
         )
+        .route(csp_report::PATH, post(csp_report::receive))
         .route("/api", any(api_not_found))
         .nest("/api/breakroom", breakroom::router())
         .route("/api/{*path}", any(api_not_found))

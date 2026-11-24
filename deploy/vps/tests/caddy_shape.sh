@@ -43,6 +43,7 @@ expect 'Referrer-Policy' "Referrer-Policy header"
 expect 'Permissions-Policy' "Permissions-Policy header"
 expect 'X-Frame-Options "DENY"' "X-Frame-Options header"
 expect 'Content-Security-Policy' "Content-Security-Policy header (report-only until Q17 is decided)"
+expect 'report-uri /api/csp-report' "violation reports are collected (PF08 stage 0)"
 expect '-Server' "Server header is removed"
 
 # Compression stays on the normal routes.
