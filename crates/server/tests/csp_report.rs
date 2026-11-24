@@ -106,12 +106,12 @@ async fn a_get_is_not_allowed() {
 
 #[tokio::test]
 async fn bursts_past_the_limit_are_throttled() {
-    // A public write endpoint must bound its log volume: one shared bucket allows a
+    // A public write endpoint must bound its log volume: the per-IP bucket allows a
     // burst, then refuses with 429 until the window resets.
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;
 
-    for _ in 0..60 {
+    for _ in 0..30 {
         let reply = post(
             address,
             "/api/csp-report",
@@ -129,4 +129,30 @@ async fn bursts_past_the_limit_are_throttled() {
     )
     .await;
     assert_eq!(reply.status, 429);
+}
+
+#[tokio::test]
+async fn one_client_cannot_starve_others() {
+    // The burst limit is per client IP, so one noisy caller cannot exhaust the bucket
+    // real browsers draw from. The test peer is trusted, so X-Forwarded-For is honoured.
+    let fixture = Fixture::new();
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    let noisy = [
+        ("Content-Type", "application/csp-report"),
+        ("X-Forwarded-For", "203.0.113.10"),
+    ];
+    for _ in 0..30 {
+        let reply = post(address, "/api/csp-report", &noisy, report_body()).await;
+        assert_eq!(reply.status, 204);
+    }
+    let reply = post(address, "/api/csp-report", &noisy, report_body()).await;
+    assert_eq!(reply.status, 429);
+
+    let other = [
+        ("Content-Type", "application/csp-report"),
+        ("X-Forwarded-For", "203.0.113.11"),
+    ];
+    let reply = post(address, "/api/csp-report", &other, report_body()).await;
+    assert_eq!(reply.status, 204);
 }
