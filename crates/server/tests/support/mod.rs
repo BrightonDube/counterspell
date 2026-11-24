@@ -125,6 +125,21 @@ pub async fn get(address: SocketAddr, path: &str, headers: &[(&str, &str)]) -> R
     exchange(address, &request).await
 }
 
+/// Sends a `HEAD` with extra headers and reads the whole reply.
+pub async fn head(address: SocketAddr, path: &str, headers: &[(&str, &str)]) -> Reply {
+    let mut request = String::from("HEAD ");
+    request.push_str(path);
+    request.push_str(" HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n");
+    for (name, value) in headers {
+        request.push_str(name);
+        request.push_str(": ");
+        request.push_str(value);
+        request.push_str("\r\n");
+    }
+    request.push_str("\r\n");
+    exchange(address, &request).await
+}
+
 /// Sends a `POST` with a JSON body and extra headers, and reads the whole reply.
 pub async fn post(address: SocketAddr, path: &str, headers: &[(&str, &str)], body: &str) -> Reply {
     let mut request = format!(
