@@ -86,6 +86,27 @@ else
   fail "shared edge needs a readiness handler and auth query redaction"
 fi
 
+# PF06: the shared edge redirects www to the apex over TLS (AUD-02). The block is prod-only —
+# the local Caddyfile uses the :80 site-address variable, so no www site is asserted there.
+if grep -Fq 'www.{{ caddy_site_address }} {' "$SHARED_CADDYFILE" \
+  && grep -Fq 'redir https://{{ caddy_site_address }}{uri} permanent' "$SHARED_CADDYFILE"; then
+  pass "shared edge redirects www.<site> to the apex permanently"
+else
+  fail "shared edge needs a www.<site> block that 301s to the apex (PF06, AUD-02)"
+fi
+
+# R6.3 applies to every response, including the www 301s: the www site needs the same header set.
+www_block="$(sed -n '/www\.{{ caddy_site_address }} {/,/^}/p' "$SHARED_CADDYFILE")"
+if printf '%s' "$www_block" | grep -Fq 'Strict-Transport-Security' \
+  && printf '%s' "$www_block" | grep -Fq 'X-Content-Type-Options' \
+  && printf '%s' "$www_block" | grep -Fq 'X-Frame-Options' \
+  && printf '%s' "$www_block" | grep -Fq 'Content-Security-Policy' \
+  && printf '%s' "$www_block" | grep -Fq -- '-Server'; then
+  pass "www redirect responses carry the R6.3 header set"
+else
+  fail "the www site must send the R6.3 headers and remove Server on its redirects"
+fi
+
 expect 'encode zstd gzip' "compression is kept for normal routes"
 
 if ((failures > 0)); then
