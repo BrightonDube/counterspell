@@ -123,10 +123,20 @@ impl LanguageCatalog {
     /// enabled driver are listed, so a disabled stretch language is never advertised or accepted
     /// (language-consistency LC03). Source limits come from the same file the executor enforces.
     /// The parser lives in `counterspell-common` — the server never depends on the judge.
+    ///
+    /// Order is the launch order (python first — it is the workspace's default pick), with any
+    /// future catalogue names appended in the file's own order.
     #[must_use]
     pub fn from_enabled(catalogue: &counterspell_common::languages::LanguageCatalog) -> Self {
-        let languages = catalogue
-            .names()
+        let mut names: Vec<&str> = catalogue.names().collect();
+        names.sort_by_key(|name| {
+            LAUNCH_ORDER
+                .iter()
+                .position(|known| known == name)
+                .unwrap_or(LAUNCH_ORDER.len())
+        });
+        let languages = names
+            .into_iter()
             .filter_map(|name| {
                 let definition = catalogue.get(name)?;
                 definition.is_enabled().then(|| Language {
@@ -152,6 +162,9 @@ impl LanguageCatalog {
         &self.languages
     }
 }
+
+/// The product order for the accepted languages: python leads, matching `launch`.
+const LAUNCH_ORDER: [&str; 4] = ["python", "javascript", "java", "cpp"];
 
 /// The human-facing label for a catalogue language name; unknown names keep their id.
 fn display_name(name: &str) -> &str {
@@ -187,34 +200,28 @@ impl FromRequestParts<AppState> for CurrentUser {
 #[cfg(test)]
 mod tests {
     use super::LanguageCatalog;
-    use std::fs;
 
-    /// Writes a minimal valid `languages.toml` with `enabled`/`disabled` entries.
-    /// The enabled entry needs a real driver file under the base directory.
+    /// Builds a catalogue from a synthetic `languages.toml` with one enabled and one disabled
+    /// entry. The enabled entry's driver must exist, so the base directory is the repo's real
+    /// `languages/` tree — no temp directory (insecure-predictable-path rule).
     fn catalogue_with(
         enabled_name: &str,
         disabled_name: &str,
-    ) -> (
-        std::path::PathBuf,
-        counterspell_common::languages::LanguageCatalog,
-    ) {
-        let base = std::env::temp_dir().join(format!("lc-seams-{}", std::process::id()));
-        fs::create_dir_all(&base).expect("temp dir");
-        fs::write(base.join("driver.py"), "# driver\n").expect("driver file");
+    ) -> counterspell_common::languages::LanguageCatalog {
+        let base = std::path::Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/../../languages"));
         let entry = |name: &str, enabled: bool, source_cap: u64| {
             format!(
-                "[{name}]\nenabled = {enabled}\nimage = \"python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90\"\nfile = \"sol.py\"\ndriver = \"driver.py\"\ncompile = []\nrun = [\"python3\", \"driver.py\"]\nbench_args = []\nmem_mb = 64\ntime_ms_per_test = 1000\nmax_time_ms_per_test = 5000\ncompile_budget_ms = 5000\nmax_source_bytes = {source_cap}\nexec_scratch = false\nprotocol_version = 1\n"
+                "[{name}]\nenabled = {enabled}\nimage = \"python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90\"\nfile = \"sol.py\"\ndriver = \"drivers/python/driver.py\"\ncompile = []\nrun = [\"python3\", \"main.py\"]\nbench_args = []\nmem_mb = 64\ntime_ms_per_test = 1000\nmax_time_ms_per_test = 5000\ncompile_budget_ms = 5000\nmax_source_bytes = {source_cap}\nexec_scratch = false\nprotocol_version = 1\n"
             )
         };
         let text = entry(enabled_name, true, 1234) + &entry(disabled_name, false, 99);
-        let catalogue = counterspell_common::languages::LanguageCatalog::parse(&text, &base)
-            .expect("synthetic catalogue parses");
-        (base, catalogue)
+        counterspell_common::languages::LanguageCatalog::parse(&text, base)
+            .expect("synthetic catalogue parses")
     }
 
     #[test]
     fn from_enabled_lists_only_enabled_drivers_with_their_own_limits() {
-        let (_base, judge) = catalogue_with("java", "cpp");
+        let judge = catalogue_with("java", "cpp");
         let catalogue = LanguageCatalog::from_enabled(&judge);
 
         let names: Vec<&str> = catalogue
@@ -250,6 +257,10 @@ mod tests {
             .iter()
             .map(|lang| lang.name.as_str())
             .collect();
-        assert_eq!(names, ["cpp", "java", "javascript", "python"]);
+        assert_eq!(
+            names,
+            ["python", "javascript", "java", "cpp"],
+            "launch order, python first"
+        );
     }
 }
