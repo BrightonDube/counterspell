@@ -67,7 +67,11 @@ async fn an_unreadable_body_is_a_400() {
     .await;
 
     assert_eq!(reply.status, 400, "{} {}", reply.headers, reply.body);
-    assert!(reply.body.contains(r#""code":"invalid_report""#), "{}", reply.body);
+    assert!(
+        reply.body.contains(r#""code":"invalid_report""#),
+        "{}",
+        reply.body
+    );
 }
 
 #[tokio::test]
