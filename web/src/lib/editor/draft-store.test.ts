@@ -66,10 +66,10 @@ describe('saving and restoring drafts', () => {
     });
     saver.schedule('def two_sum(nums): return []');
     vi.runAllTimers();
-    expect(loadDraft(storage, 'two-sum', 'python', 65_536)).toEqual({
+    expect(loadDraft(storage, 'two-sum', 'python')).toEqual({
       source: 'def two_sum(nums): return []'
     });
-    expect(loadDraft(storage, 'two-sum', 'javascript', 65_536)).toBeNull();
+    expect(loadDraft(storage, 'two-sum', 'javascript')).toBeNull();
   });
 
   // Breaks if rapid typing writes to storage on every keystroke instead of once after the pause.
@@ -91,7 +91,7 @@ describe('saving and restoring drafts', () => {
     expect(setItem).not.toHaveBeenCalled();
     vi.advanceTimersByTime(1);
     expect(setItem).toHaveBeenCalledTimes(1);
-    expect(loadDraft(storage, 'two-sum', 'python', 65_536)?.source).toBe('abc');
+    expect(loadDraft(storage, 'two-sum', 'python')?.source).toBe('abc');
   });
 
   // Breaks if a full storage quota discards the learner's source instead of keeping it in memory.
@@ -112,19 +112,20 @@ describe('saving and restoring drafts', () => {
   // Breaks if an unreadable storage (for example private mode) throws into the editor and blocks typing.
   it('treats unreadable storage as no draft', () => {
     const storage = memoryStorage({ failReads: true });
-    expect(loadDraft(storage, 'two-sum', 'python', 65_536)).toBeNull();
+    expect(loadDraft(storage, 'two-sum', 'python')).toBeNull();
   });
 
   // Breaks if a corrupted entry is kept forever, so the learner never gets a working starter back.
   it('removes a corrupted entry and returns no draft', () => {
     const storage = memoryStorage();
     storage.entries.set(draftKey('two-sum', 'python'), '{not json');
-    expect(loadDraft(storage, 'two-sum', 'python', 65_536)).toBeNull();
+    expect(loadDraft(storage, 'two-sum', 'python')).toBeNull();
     expect(storage.entries.has(draftKey('two-sum', 'python'))).toBe(false);
   });
 
-  // Breaks if a stored source larger than the byte limit is restored and sent past the editor cap.
-  it('ignores a stored source over the byte limit', () => {
+  // Breaks if a cap reduction makes a saved draft vanish: restore owns no size limit — the
+  // submission check does — so the draft survives and is never silently overwritten by a starter.
+  it('restores a stored source even when it exceeds the current run limit', () => {
     const storage = memoryStorage();
     const saver = createDraftSaver({
       storage,
@@ -134,7 +135,9 @@ describe('saving and restoring drafts', () => {
     });
     saver.schedule('x'.repeat(100));
     vi.runAllTimers();
-    expect(loadDraft(storage, 'two-sum', 'python', 50)).toBeNull();
+    expect(loadDraft(storage, 'two-sum', 'python')).toEqual({
+      source: 'x'.repeat(100)
+    });
   });
 });
 
