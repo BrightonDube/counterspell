@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The rack is sorted, so one look at the middle mark tells you which half can hold the target."
+
+[[hint]]
+rung = 2
+text = "Keep `lo` and `hi` bounds; each step halves the candidates. A miss ends with `lo == hi`."
+
+[[hint]]
+rung = 3
+text = "```\nlo, hi = 0, len(embers)\nwhile lo < hi:\n    mid = (lo + hi) // 2\n```"
+
+[[hint]]
+rung = 4
+text = "After the loop, `lo` is where the target would sit; return it only when `lo` is in range and `embers[lo]` equals the target."

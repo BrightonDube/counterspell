@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The answer equals the position where `toll` would first fit — everything before it is strictly smaller."
+
+[[hint]]
+rung = 2
+text = "Run a lower-bound walk: skip marks below the toll, fold onto marks at or past it."
+
+[[hint]]
+rung = 3
+text = "```\nif marks[mid] < toll:\n    lo = mid + 1\nelse: hi = mid\n```"
+
+[[hint]]
+rung = 4
+text = "Return `lo` itself; it already counts the smaller marks."

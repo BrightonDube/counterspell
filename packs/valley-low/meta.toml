@@ -1,0 +1,40 @@
+slug = "valley-low"
+title = "The Valley Low"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["arrays", "binary-search"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "lowest_mark"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(log n) break-point halving and O(1) space."
+
+[[params]]
+name = "rotated"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 1, max_len = 40, min = 0, max = 99, unique = true },
+]
+
+[[samples]]
+input = [[5, 7, 9, 1, 3]]
+expected = 1
+
+[[samples]]
+input = [[3, 4, 5, 6, 7]]
+expected = 3
+
+[[samples]]
+input = [[2, 1]]
+expected = 1

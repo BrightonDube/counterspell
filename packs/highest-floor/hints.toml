@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Find the first step above `reach`; the step just before it is the answer — if one exists."
+
+[[hint]]
+rung = 2
+text = "An upper-bound walk skips steps at most the reach and folds onto higher ones; `lo` ends past the last fitting step."
+
+[[hint]]
+rung = 3
+text = "```\nif steps[mid] <= reach:\n    lo = mid + 1\nelse: hi = mid\n```"
+
+[[hint]]
+rung = 4
+text = "Return `steps[lo - 1]` when `lo > 0`, else `-1`."

@@ -62,3 +62,91 @@
 - three-rune-windows: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- ember-index: static stages S0-S9
+- ember-index: S9 FAILED (0 findings); review needed
+--- first-clear: static stages S0-S9
+- first-clear: S9 FAILED (0 findings); review needed
+--- count-below: static stages S0-S9
+- count-below: S9 FAILED (0 findings); review needed
+--- highest-floor: static stages S0-S9
+- highest-floor: S9 FAILED (0 findings); review needed
+--- ember-edges: static stages S0-S9
+- ember-edges: S9 FAILED (0 findings); review needed
+--- peak-torch: static stages S0-S9
+- peak-torch: S9 FAILED (0 findings); review needed
+--- rotated-pantry: static stages S0-S9
+- rotated-pantry: S9 FAILED (0 findings); review needed
+--- brew-pace: static stages S0-S9
+- brew-pace: S9 FAILED (0 findings); review needed
+--- valley-low: static stages S0-S9
+- valley-low: S9 FAILED (0 findings); review needed
+--- even-offering: static stages S0-S9
+- even-offering: S9 FAILED (0 findings); review needed
+
+Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- ember-index: static stages S0-S9
+- ember-index: S9 passed; S10/S11 pending_judge
+- ember-index: review round 1 recorded
+- ember-index: review round 2 recorded
+- ember-index: review round 3 recorded
+- ember-index: awaiting_approval (Brighton gate; no approval.toml written here)
+--- first-clear: static stages S0-S9
+- first-clear: S9 passed; S10/S11 pending_judge
+- first-clear: review round 1 recorded
+- first-clear: review round 2 recorded
+- first-clear: review round 3 recorded
+- first-clear: awaiting_approval (Brighton gate; no approval.toml written here)
+--- count-below: static stages S0-S9
+- count-below: S9 passed; S10/S11 pending_judge
+- count-below: review round 1 recorded
+- count-below: review round 2 recorded
+- count-below: review round 3 recorded
+- count-below: awaiting_approval (Brighton gate; no approval.toml written here)
+--- highest-floor: static stages S0-S9
+- highest-floor: S9 passed; S10/S11 pending_judge
+- highest-floor: review round 1 recorded
+- highest-floor: review round 2 recorded
+- highest-floor: review round 3 recorded
+- highest-floor: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-edges: static stages S0-S9
+- ember-edges: S9 passed; S10/S11 pending_judge
+- ember-edges: review round 1 recorded
+- ember-edges: review round 2 recorded
+- ember-edges: review round 3 recorded
+- ember-edges: awaiting_approval (Brighton gate; no approval.toml written here)
+--- peak-torch: static stages S0-S9
+- peak-torch: S9 passed; S10/S11 pending_judge
+- peak-torch: review round 1 recorded
+- peak-torch: review round 2 recorded
+- peak-torch: review round 3 recorded
+- peak-torch: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rotated-pantry: static stages S0-S9
+- rotated-pantry: S9 passed; S10/S11 pending_judge
+- rotated-pantry: review round 1 recorded
+- rotated-pantry: review round 2 recorded
+- rotated-pantry: review round 3 recorded
+- rotated-pantry: awaiting_approval (Brighton gate; no approval.toml written here)
+--- brew-pace: static stages S0-S9
+- brew-pace: S9 passed; S10/S11 pending_judge
+- brew-pace: review round 1 recorded
+- brew-pace: review round 2 recorded
+- brew-pace: review round 3 recorded
+- brew-pace: awaiting_approval (Brighton gate; no approval.toml written here)
+--- valley-low: static stages S0-S9
+- valley-low: S9 passed; S10/S11 pending_judge
+- valley-low: review round 1 recorded
+- valley-low: review round 2 recorded
+- valley-low: review round 3 recorded
+- valley-low: awaiting_approval (Brighton gate; no approval.toml written here)
+--- even-offering: static stages S0-S9
+- even-offering: S9 passed; S10/S11 pending_judge
+- even-offering: review round 1 recorded
+- even-offering: review round 2 recorded
+- even-offering: review round 3 recorded
+- even-offering: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

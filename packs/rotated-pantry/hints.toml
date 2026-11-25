@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Whichever half of the range holds the break, the other half is still cleanly sorted."
+
+[[hint]]
+rung = 2
+text = "Probe the middle: if `stores[lo] <= stores[mid]`, the left half is ordered — check whether the target sits inside it."
+
+[[hint]]
+rung = 3
+text = "```\nif stores[lo] <= stores[mid]: lo = mid + 1\nelse: hi = mid - 1\n```"
+
+[[hint]]
+rung = 4
+text = "Narrow into the ordered half when the target is inside it; otherwise search the broken half."

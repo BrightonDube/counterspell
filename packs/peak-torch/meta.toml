@@ -1,0 +1,40 @@
+slug = "peak-torch"
+title = "The Peak Torch"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "binary-search"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "peak_torch"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(log n) neighbour-probe halving and O(1) space."
+
+[[params]]
+name = "heights"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 2, max_len = 40, min = 0, max = 99 },
+]
+
+[[samples]]
+input = [[1, 4, 7, 9, 6, 3]]
+expected = 3
+
+[[samples]]
+input = [[2, 5, 1]]
+expected = 1
+
+[[samples]]
+input = [[9, 1]]
+expected = 0

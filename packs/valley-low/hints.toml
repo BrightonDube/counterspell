@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The smallest mark sits exactly where the order breaks; compare each probe with the last mark."
+
+[[hint]]
+rung = 2
+text = "When `rotated[mid] > rotated[hi]` the break is right of mid; otherwise it is at or left of mid."
+
+[[hint]]
+rung = 3
+text = "```\nif rotated[mid] > rotated[hi]:\n    lo = mid + 1\nelse: hi = mid\n```"
+
+[[hint]]
+rung = 4
+text = "The loop ends on the first mark of the second block — return `rotated[lo]`."

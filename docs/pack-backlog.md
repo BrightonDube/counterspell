@@ -136,3 +136,20 @@ maps (min-varied, thrifty-pane), look-back and sum-bounded windows
 (drift-alarm, harvest-quota) and the monotonic-deque peak plus
 count-the-tail arguments (gale-peaks, three-rune-windows). Ghosts tempt
 boundary off-by-ones, wrong-width slides and count-vs-measure confusion.
+
+## Batch 05 — binary search and ordered decision spaces
+
+Ten packs on exact lookup, boundaries, rotated order and answer-space search.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| ember-index | The Ember Index | easy | arrays |
+| first-clear | First Clear Morning | easy | arrays |
+| count-below | Count Below | easy | arrays |
+| highest-floor | The Highest Floor | easy | arrays |
+| ember-edges | Ember Edges | medium | arrays |
+| peak-torch | Peak of the Torches | medium | arrays |
+| rotated-pantry | The Rotated Pantry | medium | arrays |
+| brew-pace | The Brew Pace | medium | arrays |
+| valley-low | The Valley Low | hard | arrays |
+| even-offering | The Even Offering | hard | arrays |

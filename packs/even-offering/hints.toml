@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A larger cap can only make the split easier — feasibility is monotone in the cap."
+
+[[hint]]
+rung = 2
+text = "Check a cap greedily: fill each keeper's run until the next bowl would overflow it, then count the runs."
+
+[[hint]]
+rung = 3
+text = "```\nfor v in offers:\n    if cur + v > cap: need += 1; cur = 0\n    cur += v\n```"
+
+[[hint]]
+rung = 4
+text = "Search the cap from `max(offers)` to `sum(offers)`; the first feasible cap is the answer."
