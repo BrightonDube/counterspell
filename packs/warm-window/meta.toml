@@ -1,0 +1,43 @@
+slug = "warm-window"
+title = "The Warm Window"
+status = "draft"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "sliding-window", "scanning"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "warmest_window"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) time for one pass sliding the window sum and O(1) extra space."
+
+[[params]]
+name = "readings"
+type = "list[int]"
+[[params]]
+name = "width"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 }, { type = "int", min = 1, max = 40 },
+]
+
+[[samples]]
+input = [[3, 1, 4, 1, 5], 2]
+expected = 6
+
+[[samples]]
+input = [[2, 2, 2], 4]
+expected = 0
+
+[[samples]]
+input = [[7], 1]
+expected = 7

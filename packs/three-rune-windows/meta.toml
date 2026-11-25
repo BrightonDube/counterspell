@@ -1,0 +1,40 @@
+slug = "three-rune-windows"
+title = "The Three-Rune Windows"
+status = "draft"
+difficulty = "hard"
+track = "strings"
+concepts = ["strings", "sliding-window", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "count_varied"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n^2) time scanning each start for its earliest covering end and O(1) extra space."
+
+[[params]]
+name = "inscription"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abc", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["abc"]
+expected = 1
+
+[[samples]]
+input = ["abcabc"]
+expected = 10
+
+[[samples]]
+input = ["aaa"]
+expected = 0

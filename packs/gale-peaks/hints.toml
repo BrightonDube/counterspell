@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Recomputing `max` inside every window works, but a leaving peak can be forgotten."
+
+[[hint]]
+rung = 2
+text = "Keep candidate indices in a deque: drop entries the new reading tops, and drop any index that falls out of the window — the front is always the peak."
+
+[[hint]]
+rung = 3
+text = "```\nwhile dq and a[dq[-1]] <= v: pop\npop front if dq[0] <= i - w\npeak = a[dq[0]]\n```"
+
+[[hint]]
+rung = 4
+text = "Report a peak only once the window is full — after index `width - 1` — and none when `width` beats the log length."

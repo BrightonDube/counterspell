@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A fragment must be contiguous; it cannot skip over runes it does not want."
+
+[[hint]]
+rung = 2
+text = "Grow the right end until all three runes are inside, then shrink the left end while all three remain — that shrink is where the shortest fragments hide."
+
+[[hint]]
+rung = 3
+text = "```\nexpand right until covered\nshrink left while covered\nbest = min(best, right - left + 1)\n```"
+
+[[hint]]
+rung = 4
+text = "If `a`, `b` or `c` never appears at all, no fragment can hold all three, so return `0`."

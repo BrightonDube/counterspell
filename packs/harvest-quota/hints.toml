@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Every mark is positive, so a run that overflows the quota can only shrink from its left end to fit."
+
+[[hint]]
+rung = 2
+text = "Grow the right end adding marks; while the sum tops the quota, subtract marks leaving at the left. Each settled window is the longest ending at that right."
+
+[[hint]]
+rung = 3
+text = "```\ntotal += marks[right]\nwhile total > quota: total -= marks[left]; left += 1\nbest = max(best, right - left + 1)\n```"
+
+[[hint]]
+rung = 4
+text = "A mark heavier than the quota can never sit in any run — the window slides past it."

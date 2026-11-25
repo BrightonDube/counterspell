@@ -1,0 +1,40 @@
+slug = "thrifty-pane"
+title = "The Thrifty Pane"
+status = "draft"
+difficulty = "medium"
+track = "strings"
+concepts = ["strings", "sliding-window", "frequency-maps"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "longest_thrifty"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) time with a two-end window holding at most two rune kinds and O(1) extra space."
+
+[[params]]
+name = "pane"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abc", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["aabcc"]
+expected = 3
+
+[[samples]]
+input = ["aaa"]
+expected = 3
+
+[[samples]]
+input = ["abcabc"]
+expected = 2

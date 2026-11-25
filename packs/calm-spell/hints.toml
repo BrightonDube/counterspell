@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A spell ends wherever a `#` lands; count the stretch since the last crack."
+
+[[hint]]
+rung = 2
+text = "Walk the runes, grow the current stretch on `a` or `b`, and reset it to `0` on `#`."
+
+[[hint]]
+rung = 3
+text = "```\ncur = 0 on '#'\ncur += 1 otherwise\nbest = max(best, cur)\n```"
+
+[[hint]]
+rung = 4
+text = "A chant of only cracks keeps every stretch at `0`, and so does an empty chant."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Every pane that starts at the same place and reaches past its first complete end is complete — count them in one step."
+
+[[hint]]
+rung = 2
+text = "For each start, find the earliest end that holds all three runes; everything from that end to the band's edge completes a pane, then move to the next start."
+
+[[hint]]
+rung = 3
+text = "```\nfor each left:\n  find earliest covering right\n  total += n - right\n```"
+
+[[hint]]
+rung = 4
+text = "A band missing any of the three runes completes zero panes."
