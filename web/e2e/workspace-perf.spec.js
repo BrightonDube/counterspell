@@ -21,7 +21,13 @@ const OUT_FILE =
 
 // Ceilings the regression tests enforce, on the fixed profile above.
 const SHELL_INTERACTIVE_MS = 3000;
-const SCRIPT_BYTES_BEFORE_EDITOR = 2_700_000;
+// Monaco's editor core is ~2.64 MB of script — the floor for `monaco-ready`.
+// The 3.0 MB ceiling leaves room for the app shell (~260 kB measured) while
+// still catching eagerly re-added language packs or contribs (~+500 kB each).
+const SCRIPT_BYTES_BEFORE_EDITOR = 3_000_000;
+// The shell's own critical path is cheap: entry + layout + route chunks
+// measured ≈172 kB. A 350 kB ceiling catches route-graph bloat early.
+const SCRIPT_BYTES_BEFORE_SHELL = 350_000;
 
 /** Instruments one page under the fixed mobile profile and returns its waterfall. */
 async function measure(page, context, url) {
@@ -63,15 +69,20 @@ async function measure(page, context, url) {
   await page.goto(url, { waitUntil: 'networkidle' });
   // Monaco loads after first paint; wait for its mark rather than a fixed delay.
   await page
-    .waitForFunction(() => performance.getEntriesByName('monaco-ready').length > 0, {
-      timeout: 60_000
-    })
+    .waitForFunction(
+      () => performance.getEntriesByName('monaco-ready').length > 0,
+      {
+        timeout: 60_000
+      }
+    )
     .catch(() => {});
   await page.waitForLoadState('networkidle').catch(() => {});
 
   const measured = await page.evaluate(() => {
     const marks = Object.fromEntries(
-      performance.getEntriesByType('mark').map((m) => [m.name, Math.round(m.startTime)])
+      performance
+        .getEntriesByType('mark')
+        .map((m) => [m.name, Math.round(m.startTime)])
     );
     const nav = performance.getEntriesByType('navigation')[0];
     return {
@@ -109,23 +120,41 @@ function writeBaseline(finished, measured) {
     apiCalls: finished
       .filter((r) => r.url.includes('/api/'))
       .map((r) => ({ url: new URL(r.url).pathname, bytes: r.bytes })),
+    // Start offsets relative to navigation — the critical-path evidence WP01
+    // needs: what the editor shell waits on, in order.
+    waterfall: finished
+      .sort((a, b) => a.wallTime - b.wallTime)
+      .map((r) => ({
+        start: Math.round((r.wallTime - measured.navStartEpoch / 1000) * 1000),
+        type: r.type,
+        bytes: r.bytes,
+        url: r.url.startsWith('http') ? new URL(r.url).pathname : r.url
+      })),
     topTransfers: finished
       .sort((a, b) => b.bytes - a.bytes)
       .slice(0, 15)
-      .map((r) => ({ url: r.url.split('/').pop(), type: r.type, bytes: r.bytes }))
+      .map((r) => ({
+        url: r.url.split('/').pop(),
+        type: r.type,
+        bytes: r.bytes
+      }))
   };
   mkdirSync(dirname(OUT_FILE), { recursive: true });
   writeFileSync(OUT_FILE, JSON.stringify(report, null, 2));
   return report;
 }
 
-test('workspace readiness ordering under mobile shaping', async ({ page, context }) => {
+test('workspace readiness ordering under mobile shaping', async ({
+  page,
+  context
+}) => {
   const { finished, requests, measured } = await measure(
     page,
     context,
     URL_UNDER_TEST
   );
   const report = writeBaseline(finished, measured);
+  // eslint-disable-next-line no-console -- the artifact summary belongs in test output
   console.log(
     `workspace: ${finished.length} requests, ${(report.totals.bytes / 1024).toFixed(0)}k, ` +
       `CLS ${measured.cls?.toFixed(3) ?? '?'}, marks ${JSON.stringify(measured.marks)}`
@@ -143,8 +172,21 @@ test('workspace readiness ordering under mobile shaping', async ({ page, context
     `shell interactive at ${measured.marks['workspace-shell-interactive']}ms > ${SHELL_INTERACTIVE_MS}ms`
   ).toBeLessThan(SHELL_INTERACTIVE_MS);
 
-  const editorReadyEpoch =
-    measured.navStartEpoch + measured.marks['monaco-ready'] / 1000;
+  // wallTime (CDP) is epoch seconds; timeOrigin/marks are milliseconds.
+  const navStartSec = measured.navStartEpoch / 1000;
+  const editorReadyEpoch = navStartSec + measured.marks['monaco-ready'] / 1000;
+  const shellEpoch =
+    navStartSec + measured.marks['workspace-shell-interactive'] / 1000;
+
+  // Stage 1 budget: scripts fetched for the shell itself stay small — the
+  // heavy Monaco download belongs to stage 2, not the interactive mark.
+  const shellScriptBytes = finished
+    .filter((r) => r.wallTime <= shellEpoch && r.type === 'Script')
+    .reduce((sum, r) => sum + r.bytes, 0);
+  expect(
+    shellScriptBytes,
+    `${(shellScriptBytes / 1024).toFixed(0)}kB of script before the shell mark`
+  ).toBeLessThan(SCRIPT_BYTES_BEFORE_SHELL);
   // Ordering is judged on when requests STARTED — a still-streaming video never
   // reaches loadingFinished, so check every observed request, not only finished
   // ones.
@@ -196,10 +238,11 @@ test('workspace controls still run and answer under the deferred schedule', asyn
   // The editor's run path is stage 1/2 function: it must work the moment the
   // controls are visible, regardless of what deferred behind it.
   await page.getByRole('button', { name: 'Run samples' }).click();
-  await expect(
-    page.getByRole('region', { name: 'Results' })
-  ).toContainText(/queued|compiling|running|accepted|rejected|wrong answer/i, {
-    timeout: 30_000
-  });
+  await expect(page.getByRole('region', { name: 'Results' })).toContainText(
+    /queued|compiling|running|accepted|rejected|wrong answer/i,
+    {
+      timeout: 30_000
+    }
+  );
   await context.close();
 });

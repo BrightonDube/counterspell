@@ -5,7 +5,8 @@ import type { LanguageSummary, ProblemDetail } from '../api/types';
 
 vi.mock('../editor/monaco-loader', () => ({
   CRYPT_THEME_NAME: 'crypt',
-  loadMonaco: () => new Promise(() => {})
+  loadMonaco: () => new Promise(() => {}),
+  loadMonacoLanguage: () => Promise.resolve()
 }));
 
 import EditorPanel from './EditorPanel.svelte';

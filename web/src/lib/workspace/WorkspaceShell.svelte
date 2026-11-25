@@ -25,8 +25,17 @@
   } from '../familiar/familiar-state';
   import { requestAuthoredHint, type AuthoredHint } from '../api/hints';
   import { requestSpeechOnce } from '../familiar/bubble/request';
-  import Familiar from '../familiar/Familiar.svelte';
+  // Familiar loads as a stage-4 atmosphere chunk: it mounts only after the
+  // editor is usable, so its code and media never sit on the critical path.
+  let familiarChunk: ReturnType<typeof importFamiliar> | undefined;
+  function importFamiliar() {
+    return import('../familiar/Familiar.svelte');
+  }
+  function loadFamiliar() {
+    return (familiarChunk ??= importFamiliar());
+  }
   import { runOutcomeLabel, statusLabel } from './test-rows';
+  import { session as authSession } from '../auth/session.svelte.js';
   import AutopsyCard from './AutopsyCard.svelte';
   import ConsolePanel from './ConsolePanel.svelte';
   import { buildConsoleEntries } from './console-view';
@@ -60,6 +69,7 @@
     languages,
     layout,
     reducedMotion,
+    atmosphere,
     sessionDeps = browserRunSessionDeps,
     familiarDeps = {
       loadPreferences,
@@ -72,6 +82,9 @@
     languages: LanguageSummary[];
     layout?: LayoutMode;
     reducedMotion?: boolean;
+    /** Force the stage-4 atmosphere (Familiar, guess bubble) on. Tests inject
+     * this; production derives it from the `monaco-ready` mark. */
+    atmosphere?: boolean;
     sessionDeps?: RunSessionDeps;
     familiarDeps?: FamiliarDeps;
     /** Asks for one authored hint rung. Tests inject a fake. */
@@ -175,6 +188,36 @@
 
   onDestroy(() => session.cancel());
 
+  // Stage-4 atmosphere waits for stage 2: the Familiar, its media and the
+  // preference fetch mount only once the editor is usable. The performance mark
+  // is the ordering signal so no props have to be drilled; a generous fallback
+  // keeps the mascot reachable even if the editor never reports ready.
+  let atmosphereReady = $state(false);
+  const atmosphereOn = $derived(atmosphere ?? atmosphereReady);
+  onMount(() => {
+    if (atmosphere || typeof PerformanceObserver === 'undefined') {
+      // Forced (tests) and environments without the API get the atmosphere eagerly.
+      atmosphereReady = true;
+      return;
+    }
+    if (performance.getEntriesByName('monaco-ready').length > 0) {
+      atmosphereReady = true;
+      return;
+    }
+    const observer = new PerformanceObserver((list) => {
+      if (list.getEntries().some((e) => e.name === 'monaco-ready')) {
+        atmosphereReady = true;
+        observer.disconnect();
+      }
+    });
+    observer.observe({ type: 'mark' });
+    const fallback = setTimeout(() => (atmosphereReady = true), 30_000);
+    return () => {
+      observer.disconnect();
+      clearTimeout(fallback);
+    };
+  });
+
   // Timing marks for the browser performance check. Fixed names only; no run id or source.
   onMount(() => markWorkspace('workspace-shell-interactive'));
   const runMarks = createRunMarks();
@@ -205,9 +248,12 @@
   });
 
   // Mute/hide choices. Saved through the API; a failed save keeps the local choice.
+  // Signed-out visits never ask — the 401 is expected noise, and the request is
+  // not part of the shell anyway, so it waits for the atmosphere stage.
   let prefs = $state<FamiliarPrefs>({ muted: false, hidden: false });
   let prefsTouched = false;
   $effect(() => {
+    if (!atmosphereOn || authSession.status !== 'signed_in') return;
     untrack(() => familiarDeps)
       .loadPreferences()
       .then((loaded) => {
@@ -220,6 +266,8 @@
     // Keep the speech choice the server sent. The Familiar panel only changes mute and hide.
     prefs = { ...prefs, ...next };
     prefsTouched = true;
+    // A signed-out toggle stays local — the save endpoint needs a session.
+    if (authSession.status !== 'signed_in') return;
     familiarDeps.savePreferences(next).catch(() => {});
   }
 
@@ -229,6 +277,8 @@
   let speechRunId = '';
   $effect(() => {
     if (runs.phase !== 'finished' || runs.runId === undefined) return;
+    // The speech endpoint needs a session — a signed-out finish never asks.
+    if (authSession.status !== 'signed_in') return;
     // Speech off means the page never asks, so the code is not sent anywhere.
     if (prefs.speech === 'off') return;
     const runId = runs.runId;
@@ -397,13 +447,17 @@
   {#if runs.phase === 'finished' && runs.runId !== undefined}
     <HintPanel {ladder} onNext={onNextHint} />
   {/if}
-  <Familiar
-    measured={familiar}
-    {prefs}
-    {speech}
-    reducedMotion={motion.value}
-    {onPrefsChange}
-  />
+  {#if atmosphereOn}
+    {#await loadFamiliar() then { default: Familiar }}
+      <Familiar
+        measured={familiar}
+        {prefs}
+        {speech}
+        reducedMotion={motion.value}
+        {onPrefsChange}
+      />
+    {/await}
+  {/if}
 {/snippet}
 
 {#snippet problemAside()}
@@ -434,6 +488,7 @@
     {languages}
     busy={inProgress}
     {canRerunGhost}
+    atmosphere={atmosphereOn}
     onRequest={requestRun}
   />
   <ConsolePanel
@@ -442,6 +497,11 @@
     onToggle={toggleConsole}
   />
 {/snippet}
+
+<!-- Costume layer: one candle-glow hairline along the frame's top edge. Pure
+     decoration — aria-hidden, pointer-events none, and no script ever queries
+     it, so its absence can never produce a console warning. -->
+<div class="workspace-ember" aria-hidden="true"></div>
 
 {#if mode === 'tablet'}
   <div class="flex flex-col gap-4">

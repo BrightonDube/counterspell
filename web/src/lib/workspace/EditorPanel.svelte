@@ -13,13 +13,13 @@
     type SessionStatus
   } from './editor-session';
   import RunControls from './RunControls.svelte';
-  import GuessBubble from '../familiar/guess/GuessBubble.svelte';
 
   let {
     problem,
     languages,
     busy = false,
     canRerunGhost = false,
+    atmosphere = true,
     onRequest
   }: {
     problem: ProblemDetail;
@@ -28,6 +28,8 @@
     busy?: boolean;
     /** Whether the last finished run produced a stored ghost that can be rerun. */
     canRerunGhost?: boolean;
+    /** Stage-4 atmosphere gate: the guess bubble mounts only after the editor is usable. */
+    atmosphere?: boolean;
     onRequest?: (request: RunRequest) => void;
   } = $props();
 
@@ -150,7 +152,11 @@
       onSubmit={() => request('submit')}
       onRerunGhost={requestGhost}
     />
-    <GuessBubble source={liveSource} language={current} />
+    {#if atmosphere}
+      {#await import('../familiar/guess/GuessBubble.svelte') then { default: GuessBubble }}
+        <GuessBubble source={liveSource} language={current} />
+      {/await}
+    {/if}
   {:else}
     <p class="text-sm text-text-muted">
       No language is enabled for this problem.

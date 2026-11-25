@@ -232,3 +232,35 @@ body {
     opacity: 0.98;
   }
 }
+
+/* Workspace costume: a thin candle-light hairline that drifts and breathes
+   along the top of the workspace frame (WP06). Transform and opacity only, so
+   it stays on the compositor; the global reduced-motion collapse stills it. */
+@keyframes ember-drift {
+  0%,
+  100% {
+    transform: translateX(-8%) scaleX(0.6);
+    opacity: 0.18;
+  }
+  50% {
+    transform: translateX(8%) scaleX(1);
+    opacity: 0.5;
+  }
+}
+.workspace-ember {
+  position: absolute;
+  top: 0;
+  inset-inline: 0;
+  block-size: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--accent-candle),
+    var(--accent-candle-glow),
+    var(--accent-candle),
+    transparent
+  );
+  transform-origin: center;
+  animation: ember-drift 9s ease-in-out infinite;
+}

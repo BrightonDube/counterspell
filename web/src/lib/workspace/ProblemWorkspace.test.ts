@@ -13,7 +13,8 @@ vi.mock('../api/problems', () => ({ loadProblem: api.loadProblem }));
 vi.mock('../api/languages', () => ({ loadLanguages: api.loadLanguages }));
 vi.mock('../editor/monaco-loader', () => ({
   CRYPT_THEME_NAME: 'crypt',
-  loadMonaco: () => new Promise(() => {})
+  loadMonaco: () => new Promise(() => {}),
+  loadMonacoLanguage: () => Promise.resolve()
 }));
 
 import ProblemWorkspace from './ProblemWorkspace.svelte';
