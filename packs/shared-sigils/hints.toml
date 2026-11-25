@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Both columns are ordered, so a mark can only meet its twin by walking both heads together."
+
+[[hint]]
+rung = 2
+text = "Advance whichever head is smaller; equal heads share a mark."
+
+[[hint]]
+rung = 3
+text = "```\nwhile both columns hold marks\nadvance the smaller head; on\nequal heads record it once\n```"
+
+[[hint]]
+rung = 4
+text = "Keep a finger on each column; step the smaller head, and when the heads agree, record the mark only if it was not just recorded, then step both."

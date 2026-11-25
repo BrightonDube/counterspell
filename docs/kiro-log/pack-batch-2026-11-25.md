@@ -87,3 +87,54 @@ review-and-approval round.
   sandbox. The session row was deleted after the check.
 
 Codes and counts only - no hidden values are logged.
+
+# pack-batch run 2026-11-25 (batch 02)
+
+Batch 02 — ten original packs on the arrays track, two-pointer and
+sequence-scan theme (completion-program CP16): sigil-dedup, ember-drift,
+twin-tides, candle-compact, harbour-depths, sorted-embers, shared-sigils,
+closest-quota, triad-rite, flood-line.
+
+## S9 static validation (validate <pack> --deny-warnings)
+
+All ten assembled trees report 0 errors, 0 warnings. Review fixes during
+the round: rung-3 code fences trimmed to three lines on seven packs
+(HNT-02), concept tags completed on harbour-depths, flood-line and
+triad-rite (KNG-05), a banned minimality phrase reworded on
+closest-quota (KNG-02), and one schema-out-of-range ghost input
+corrected (KNG-02). Review round 2: `sorted = true` added to every
+ordered array in the six sorted-input packs (Devin finding on PR #129);
+validation and the sandbox suite re-ran clean.
+
+## S10/S11 sandbox run (sbx_batch02, real rootless daemon)
+
+Daemon `unix:///run/user/1000/docker.sock`, identity-verified rootless.
+Image `python:3.13-slim@sha256:e48f59cdba69a3cbd9ed2cf0f348d90d45a8d350d98134cf1070bc106ee9ed90`.
+`cargo test -p counterspell-catalogue-cli --features sandbox --test
+sbx_batch02 -- --ignored --test-threads=1` — 1 passed (~45s).
+
+| slug | S10 fill | S11 ghosts | S11 reference |
+|---|---|---|---|
+| sigil-dedup | filled | 2 counterexamples found | not-found |
+| ember-drift | filled | 2 counterexamples found | not-found |
+| twin-tides | filled | 2 counterexamples found | not-found |
+| candle-compact | filled | 2 counterexamples found | not-found |
+| harbour-depths | filled | 2 counterexamples found | not-found |
+| sorted-embers | filled | 2 counterexamples found | not-found |
+| shared-sigils | filled | 2 counterexamples found | not-found |
+| closest-quota | filled | 2 counterexamples found | not-found |
+| triad-rite | filled | 2 counterexamples found | not-found |
+| flood-line | filled | 2 counterexamples found | not-found |
+
+One curated-input bug found by S10 itself: candle-compact's final hidden
+case was missing its second argument; fixed and re-validated.
+
+## Review round
+
+Ten reviewer inputs prepared under `target/pack-review/`; ten summaries
+written to `docs/pack-reviews/` and all passed `SUM-01`. The pack secret
+scan over the new public trees and summaries is clean.
+
+All ten approved under the delegated publication instruction of
+21 November 2026: `status = "published"` in this commit; `approval.toml`
+per slug lands in the private repo stamped with this commit's hash.

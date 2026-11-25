@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Fix one candle and the rite becomes a pair rite on the candles after it."
+
+[[hint]]
+rung = 2
+text = "For each fixed mark, weigh the ends of what remains and step toward the missing sum."
+
+[[hint]]
+rung = 3
+text = "```\nfor each mark, walk the ends\nof the rest; on a hit count\nrun times run of the ends\n```"
+
+[[hint]]
+rung = 4
+text = "Fix mark i, then walk left and right inward; when the pair hits the missing sum, count how many copies of each end mark stand there and multiply — unless both ends share one mark, where every pairing inside the run counts."

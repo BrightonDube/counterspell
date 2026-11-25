@@ -1,0 +1,45 @@
+slug = "twin-tides"
+title = "The Twin Tides"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "two-pointers", "merging", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "merge_tides"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "The reference reads the smaller of the two table heads until both tables are spent. It runs in O(n + m) time and O(n + m) space for the merged table."
+
+[[params]]
+name = "first"
+type = "list[int]"
+
+[[params]]
+name = "second"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 20, min = 0, max = 99, sorted = true },
+  { type = "int_array", min_len = 0, max_len = 20, min = 0, max = 99, sorted = true },
+]
+
+[[samples]]
+input = [[1, 3], [2, 4]]
+expected = [1, 2, 3, 4]
+
+[[samples]]
+input = [[], [5]]
+expected = [5]
+
+[[samples]]
+input = [[1, 1], [1]]
+expected = [1, 1, 1]

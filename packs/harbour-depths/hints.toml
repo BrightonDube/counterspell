@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The widest pair is tempting, but a taller lower post can beat a wider gap."
+
+[[hint]]
+rung = 2
+text = "Start with the two end posts, then move whichever post is lower inward."
+
+[[hint]]
+rung = 3
+text = "```\nhold the end posts; while\napart: measure the water,\nmove the lower post inward\n```"
+
+[[hint]]
+rung = 4
+text = "Keep one finger on each end. The lower post bounds the water, so stepping it inward is the only move that can improve on it; record the best measure seen."

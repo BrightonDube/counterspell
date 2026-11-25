@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The biggest square hides at one of the two ends, never in the middle."
+
+[[hint]]
+rung = 2
+text = "Fill the answer from the back, always taking the end with the greater magnitude."
+
+[[hint]]
+rung = 3
+text = "```\nfingers on both ends\nfill from the back; take\nthe bigger square each time\n```"
+
+[[hint]]
+rung = 4
+text = "Compare the squares at both ends, write the larger at the back of the answer, and step that end inward until the ends meet."

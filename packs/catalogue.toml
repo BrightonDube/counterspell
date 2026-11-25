@@ -65,3 +65,19 @@ name = "Grouping"
 [[concepts]]
 slug = "hashing"
 name = "Hashing"
+
+[[concepts]]
+slug = "two-pointers"
+name = "Two Pointers"
+
+[[concepts]]
+slug = "partitioning"
+name = "Partitioning"
+
+[[concepts]]
+slug = "deduplication"
+name = "Deduplication"
+
+[[concepts]]
+slug = "merging"
+name = "Merging"

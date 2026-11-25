@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Because the column is sorted, a mark repeats only beside itself."
+
+[[hint]]
+rung = 2
+text = "Walk the column once and count a mark only when it differs from the mark just before it."
+
+[[hint]]
+rung = 3
+text = "```\nkeep the last mark seen\ncount a mark when it differs\n  from the last seen\n```"
+
+[[hint]]
+rung = 4
+text = "Start the count at nothing and remember the previous mark; whenever the current mark is new, count it and remember it."
