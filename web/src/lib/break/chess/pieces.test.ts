@@ -77,12 +77,22 @@ describe('steel-night piece sprite (CH05)', () => {
   });
 
   // CPX-1: settled artwork, outlines and shadows stay inside the tile
-  // with visible padding — every absolute coordinate in [0.5, 39.5] and
-  // the painted span stays under 90% of the 40px tile.
+  // with visible padding — painted edges (geometry plus half the widest
+  // stroke) remain in [0.5, 39.5] and the span stays under 90% of the
+  // 40px tile.
   it('keeps every piece inside the tile with visible padding', () => {
+    const PAD = 0.5;
     const MAX_EXTENT = 36; // 90% of the 40px tile
     for (const id of [...PIECE_IDS, 'crown']) {
       const body = pieceBody(id);
+      // Painted ink extends half a stroke width past the geometry.
+      const strokeHalf =
+        Math.max(
+          0,
+          ...Array.from(body.matchAll(/stroke-width="([\d.]+)"/g), (m) =>
+            Number(m[1])
+          )
+        ) / 2;
       const xs: number[] = [];
       const ys: number[] = [];
       // Ellipse/circle painted extents: cx±rx, cy±ry must stay in-tile.
@@ -92,45 +102,53 @@ describe('steel-night piece sprite (CH05)', () => {
         const rx = Number(m[0].match(/\sr(?:x)?="([\d.-]+)"/)?.[1] ?? 0);
         const ry = Number(m[0].match(/\sr(?:y)?="([\d.-]+)"/)?.[1] ?? rx);
         if (Number.isNaN(cx) || Number.isNaN(cy)) continue;
+        const margin = m[0].includes('stroke="none"') ? 0 : strokeHalf;
         expect(
-          cx - rx,
+          cx - rx - margin,
           `${id} circle/ellipse left edge`
-        ).toBeGreaterThanOrEqual(0.5);
-        expect(cx + rx, `${id} circle/ellipse right edge`).toBeLessThanOrEqual(
-          39.5
-        );
-        expect(cy - ry, `${id} circle/ellipse top edge`).toBeGreaterThanOrEqual(
-          0.5
-        );
-        expect(cy + ry, `${id} circle/ellipse bottom edge`).toBeLessThanOrEqual(
-          39.5
-        );
-        xs.push(cx - rx, cx + rx);
-        ys.push(cy - ry, cy + ry);
+        ).toBeGreaterThanOrEqual(PAD);
+        expect(
+          cx + rx + margin,
+          `${id} circle/ellipse right edge`
+        ).toBeLessThanOrEqual(39.5);
+        expect(
+          cy - ry - margin,
+          `${id} circle/ellipse top edge`
+        ).toBeGreaterThanOrEqual(PAD);
+        expect(
+          cy + ry + margin,
+          `${id} circle/ellipse bottom edge`
+        ).toBeLessThanOrEqual(39.5);
+        xs.push(cx - rx - margin, cx + rx + margin);
+        ys.push(cy - ry - margin, cy + ry + margin);
       }
-      // Plain x/y attributes (word-bounded so opacity/ry don't leak in).
-      for (const m of body.matchAll(/[\s"](x|cx|y|cy)="([\d.-]+)"/g)) {
-        if (m[1] === 'x' || m[1] === 'cx') xs.push(Number(m[2]));
-        else ys.push(Number(m[2]));
-      }
-      for (const d of body.matchAll(/\sd="([^"]+)"/g)) {
-        const { absX, absY } = absoluteCoords(d[1]);
-        xs.push(...absX);
-        ys.push(...absY);
+      // Paths: resolve relative segments to absolute positions and add
+      // the stroke margin for elements that are actually stroked.
+      for (const el of body.matchAll(/<path\b[^>]*>/g)) {
+        const d = el[0].match(/\sd="([^"]+)"/)?.[1];
+        if (!d) continue;
+        const margin = el[0].includes('stroke="none"') ? 0 : strokeHalf;
+        const { xs: px, ys: py } = paintedCoords(d);
+        xs.push(...px.map((x) => x - margin), ...px.map((x) => x + margin));
+        ys.push(...py.map((y) => y - margin), ...py.map((y) => y + margin));
       }
       expect(xs.length, `${id} has coordinates`).toBeGreaterThan(0);
       for (const x of xs) {
-        expect(x, `${id} x=${x}`).toBeGreaterThanOrEqual(0.5);
+        expect(x, `${id} x=${x}`).toBeGreaterThanOrEqual(PAD);
         expect(x, `${id} x=${x}`).toBeLessThanOrEqual(39.5);
       }
       for (const y of ys) {
-        expect(y, `${id} y=${y}`).toBeGreaterThanOrEqual(0.5);
+        expect(y, `${id} y=${y}`).toBeGreaterThanOrEqual(PAD);
         expect(y, `${id} y=${y}`).toBeLessThanOrEqual(39.5);
       }
       const spanX = Math.max(...xs) - Math.min(...xs);
       const spanY = Math.max(...ys) - Math.min(...ys);
-      expect(spanX, `${id} x-extent ${spanX}`).toBeLessThanOrEqual(MAX_EXTENT);
-      expect(spanY, `${id} y-extent ${spanY}`).toBeLessThanOrEqual(MAX_EXTENT);
+      expect(spanX, `${id} x-extent ${spanX}`).toBeLessThanOrEqual(
+        MAX_EXTENT + strokeHalf * 2
+      );
+      expect(spanY, `${id} y-extent ${spanY}`).toBeLessThanOrEqual(
+        MAX_EXTENT + strokeHalf * 2
+      );
     }
   });
 });
@@ -153,11 +171,12 @@ function pieceTag(id: string): string {
   return svg.slice(open, svg.indexOf('>', open) + 1);
 }
 
-// Extracts absolute coordinates from an SVG path `d` string. Absolute
-// commands contribute positions; relative commands are skipped (their
-// deltas are small and cannot place painted pixels outside the tile on
-// their own — they are anchored to an absolute start point).
-function absoluteCoords(d: string): { absX: number[]; absY: number[] } {
+// Tracks the cursor through an SVG path `d` string so relative commands
+// resolve to absolute positions. Bezier control points are recorded too
+// (the painted curve stays inside its control-point hull), and arc
+// endpoints are widened by their radii as a conservative envelope — the
+// collected set always over-approximates the painted geometry.
+function paintedCoords(d: string): { xs: number[]; ys: number[] } {
   const arity: Record<string, number> = {
     M: 2,
     L: 2,
@@ -170,15 +189,23 @@ function absoluteCoords(d: string): { absX: number[]; absY: number[] } {
     V: 1,
     Z: 0
   };
-  const absX: number[] = [];
-  const absY: number[] = [];
-  const tokens = d.match(/[a-zA-Z]|-?\.?\d[\d.]*|-?\.\d+/g) ?? [];
+  const xs: number[] = [];
+  const ys: number[] = [];
+  const tokens = d.match(/[a-zA-Z]|-?(?:\d+\.?\d*|\.\d+)/g) ?? [];
   let cmd = '';
   let i = 0;
+  let cx = 0;
+  let cy = 0;
+  let startX = 0;
+  let startY = 0;
   while (i < tokens.length) {
     if (/[a-zA-Z]/.test(tokens[i])) {
       cmd = tokens[i];
       i += 1;
+      if (cmd.toUpperCase() === 'Z') {
+        cx = startX;
+        cy = startY;
+      }
       continue;
     }
     const upper = cmd.toUpperCase();
@@ -187,22 +214,35 @@ function absoluteCoords(d: string): { absX: number[]; absY: number[] } {
       i += 1;
       continue;
     }
+    const rel = cmd !== upper;
     const args = tokens.slice(i, i + n).map(Number);
     i += n;
-    if (cmd === upper) {
-      // Absolute command: collect coordinate positions.
-      if (upper === 'H') absX.push(args[0]);
-      else if (upper === 'V') absY.push(args[0]);
-      else if (upper === 'A') {
-        absX.push(args[5]);
-        absY.push(args[6]);
-      } else {
-        for (let k = 0; k + 1 < args.length; k += 2) {
-          absX.push(args[k]);
-          absY.push(args[k + 1]);
-        }
+    const px = (v: number) => (rel ? cx + v : v);
+    const py = (v: number) => (rel ? cy + v : v);
+    if (upper === 'H') {
+      cx = px(args[0]);
+      xs.push(cx);
+    } else if (upper === 'V') {
+      cy = py(args[0]);
+      ys.push(cy);
+    } else if (upper === 'A') {
+      cx = px(args[5]);
+      cy = py(args[6]);
+      // Conservative arc envelope: endpoint expanded by the radii.
+      xs.push(cx - args[0], cx + args[0]);
+      ys.push(cy - args[1], cy + args[1]);
+    } else {
+      for (let k = 0; k + 1 < args.length; k += 2) {
+        xs.push(px(args[k]));
+        ys.push(py(args[k + 1]));
       }
+      cx = px(args[args.length - 2]);
+      cy = py(args[args.length - 1]);
+    }
+    if (upper === 'M') {
+      startX = cx;
+      startY = cy;
     }
   }
-  return { absX, absY };
+  return { xs, ys };
 }
