@@ -71,6 +71,7 @@ async function measure(page, context, url) {
   await page
     .waitForFunction(
       () => performance.getEntriesByName('monaco-ready').length > 0,
+      undefined,
       {
         timeout: 60_000
       }
@@ -148,6 +149,8 @@ test('workspace readiness ordering under mobile shaping', async ({
   page,
   context
 }) => {
+  // measure() waits on monaco-ready which lands ~18s under the mobile profile.
+  test.setTimeout(120_000);
   const { finished, requests, measured } = await measure(
     page,
     context,

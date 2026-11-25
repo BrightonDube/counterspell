@@ -200,7 +200,15 @@
       atmosphereReady = true;
       return;
     }
-    if (performance.getEntriesByName('monaco-ready').length > 0) {
+    // Marks survive for the document's life: only a monaco-ready created after
+    // THIS shell mounted counts — an earlier editor's mark must not open the
+    // atmosphere before the current editor is usable.
+    const mountedAt = performance.now();
+    const freshReady = () =>
+      performance
+        .getEntriesByName('monaco-ready')
+        .some((e) => e.startTime >= mountedAt);
+    if (freshReady()) {
       atmosphereReady = true;
       return;
     }

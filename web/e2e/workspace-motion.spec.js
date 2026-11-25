@@ -20,6 +20,8 @@ const RESULT_ACTIVE =
 test('reduced motion stills the costume and skips animated media', async ({
   browser
 }) => {
+  // The monaco-ready wait below can legitimately take ~20s under shaping.
+  test.setTimeout(90_000);
   const context = await browser.newContext({ reducedMotion: 'reduce' });
   const page = await context.newPage();
   await page.goto(URL_UNDER_TEST);
@@ -38,8 +40,10 @@ test('reduced motion stills the costume and skips animated media', async ({
   // scripted testserver never emits — the video-fallback half of this contract
   // lives in AnimatedArt.test.ts instead. What the browser CAN prove here: the
   // atmosphere stage defers and the workspace still reaches a usable shell.
+  // waitForFunction's second parameter is predicate data — options go third.
   await page.waitForFunction(
     () => performance.getEntriesByName('monaco-ready').length > 0,
+    undefined,
     { timeout: 60_000 }
   );
   await expect(page.getByRole('region', { name: 'Editor' })).toBeVisible();
@@ -58,13 +62,29 @@ test('keyboard shortcuts run and submit from the editor controls', async ({
   await expect(run).toBeEnabled({ timeout: 30_000 });
 
   // Ctrl+Enter is the documented run shortcut; focus starts on the page body.
+  // Wait for its POST — the Results region must reflect a NEW operation, not a
+  // retained one.
+  const runRequest = page.waitForRequest(
+    (r) =>
+      r.method() === 'POST' &&
+      r.url().includes('/api/runs') &&
+      r.postDataJSON()?.mode === 'run'
+  );
   await page.locator('body').click();
   await page.keyboard.press('Control+Enter');
+  await runRequest;
   await expect(results).toContainText(RESULT_ACTIVE, { timeout: 30_000 });
 
   // Ctrl+Shift+Enter submits — wait for the first run to release the controls.
   await expect(run).toBeEnabled({ timeout: 30_000 });
+  const submitRequest = page.waitForRequest(
+    (r) =>
+      r.method() === 'POST' &&
+      r.url().includes('/api/runs') &&
+      r.postDataJSON()?.mode === 'submit'
+  );
   await page.keyboard.press('Control+Shift+Enter');
+  await submitRequest;
   await expect(results).toContainText(RESULT_ACTIVE, { timeout: 30_000 });
   await context.close();
 });
@@ -98,7 +118,16 @@ test('every primary editor control answers', async ({ browser }) => {
   await run.click();
   await expect(results).toContainText(RESULT_ACTIVE, { timeout: 30_000 });
   await expect(submit).toBeEnabled({ timeout: 30_000 });
+  // Submit must queue a NEW operation — a retained completed result would
+  // otherwise satisfy the assertion even if the button did nothing.
+  const submitRequest = page.waitForRequest(
+    (r) =>
+      r.method() === 'POST' &&
+      r.url().includes('/api/runs') &&
+      r.postDataJSON()?.mode === 'submit'
+  );
   await submit.click();
+  await submitRequest;
   await expect(results).toContainText(RESULT_ACTIVE, { timeout: 30_000 });
   await context.close();
 });
