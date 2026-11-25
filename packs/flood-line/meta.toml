@@ -1,0 +1,40 @@
+slug = "flood-line"
+title = "The Flood Line"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["arrays", "two-pointers", "prefixes", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "trapped_water"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference walks both ends inward, keeping the tallest bound seen on each side, and pours the difference at every post. It runs in O(n) time and O(1) extra space."
+
+[[params]]
+name = "heights"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 9 },
+]
+
+[[samples]]
+input = [[3, 0, 1, 0, 3]]
+expected = 8
+
+[[samples]]
+input = [[1, 2, 3]]
+expected = 0
+
+[[samples]]
+input = [[2, 0, 2]]
+expected = 2

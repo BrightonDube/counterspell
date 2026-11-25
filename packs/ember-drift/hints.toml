@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The lit embers must keep their order, so swapping ends for ends will not do."
+
+[[hint]]
+rung = 2
+text = "Keep a write spot for the next lit ember and walk every mark once."
+
+[[hint]]
+rung = 3
+text = "```\nwrite each lit mark at the\n  next free spot; then\nfill the tail with dark\n```"
+
+[[hint]]
+rung = 4
+text = "Build the answer with a write cursor that only accepts lit marks, counting dark marks as they pass; append one dark mark for each dark mark counted."

@@ -1,0 +1,45 @@
+slug = "triad-rite"
+title = "The Triad Rite"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["arrays", "two-pointers", "pairs", "nested-loops", "deduplication"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "triads_at_quota"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference fixes each mark in turn and walks an opposing pair over the rest, counting whole runs when the two ends share a mark. It runs in O(n²) time and O(1) extra space."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[[params]]
+name = "quota"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 30 },
+  { type = "int", min = 0, max = 90 },
+]
+
+[[samples]]
+input = [[2, 2, 2, 2], 6]
+expected = 4
+
+[[samples]]
+input = [[1, 2, 3], 6]
+expected = 1
+
+[[samples]]
+input = [[0, 5, 10], 14]
+expected = 0

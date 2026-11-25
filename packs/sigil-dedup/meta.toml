@@ -1,0 +1,40 @@
+slug = "sigil-dedup"
+title = "The Sigil Tally"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "two-pointers", "deduplication", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "distinct_sigils"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference walks the column once, counting a mark only when it differs from the one before it. It runs in O(n) time and O(1) extra space."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 },
+]
+
+[[samples]]
+input = [[1, 1, 2, 3, 3]]
+expected = 3
+
+[[samples]]
+input = [[4, 4, 4, 4]]
+expected = 1
+
+[[samples]]
+input = [[2, 5, 7]]
+expected = 3

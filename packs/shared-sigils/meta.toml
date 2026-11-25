@@ -1,0 +1,45 @@
+slug = "shared-sigils"
+title = "The Shared Sigils"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "two-pointers", "merging", "deduplication"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "shared_marks"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "The reference walks both columns at once, advancing the smaller head and recording each equal mark once. It runs in O(n + m) time and O(n + m) space for the answer."
+
+[[params]]
+name = "first"
+type = "list[int]"
+
+[[params]]
+name = "second"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 20, min = 0, max = 99 },
+  { type = "int_array", min_len = 0, max_len = 20, min = 0, max = 99 },
+]
+
+[[samples]]
+input = [[1, 1, 2, 4], [1, 2, 2, 3]]
+expected = [1, 2]
+
+[[samples]]
+input = [[5], [5]]
+expected = [5]
+
+[[samples]]
+input = [[1, 2], [3, 4]]
+expected = []

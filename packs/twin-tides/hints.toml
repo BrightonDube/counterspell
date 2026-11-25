@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Both tables are already ordered, so the next height is always one of two places."
+
+[[hint]]
+rung = 2
+text = "Keep a finger on each table and copy whichever height is smaller."
+
+[[hint]]
+rung = 3
+text = "```\nwhile both tables have entries\n  copy the smaller head\nappend what remains\n```"
+
+[[hint]]
+rung = 4
+text = "Walk one cursor per table, always copying the smaller head into the answer; when one table empties, append whatever the other still holds."

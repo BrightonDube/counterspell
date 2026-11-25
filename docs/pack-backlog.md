@@ -47,3 +47,32 @@ twin-echoes, sigil-groups, prefix-echoes, harvest-tally and twin-ledgers —
 plus a prefix-information hash-indexed hard pack (equal-embers), tempting
 quadratic ghosts (harvest-tally, warden-sums, equal-embers, prefix-echoes)
 and large-count handling (harvest-tally, warden-sums).
+
+## Catalogue batch 02 — two pointers
+
+Ten original ideas for batch 02 (completion-program CP16): four easy, four
+medium, two hard. Every concept below exists in `packs/catalogue.toml`
+(TAX-01), and no slug is already used by a pack (SLUG-01). The theme is
+opposing scans, partitioning, deduplication and pair or triplet
+relationships; supported call types stay `int`, `str`, `list[int]` and
+`list[list[int]]`.
+
+| Slug | Track | Concepts | Difficulty | Original idea | Planned ghost kinds |
+|---|---|---|---|---|---|
+| sigil-dedup | arrays | arrays, two-pointers, deduplication | easy | A sorted tally of sigil marks holds repeats; report how many distinct marks it carries. | counting-all-entries, off-by-one-write-index |
+| ember-drift | arrays | arrays, two-pointers, partitioning | easy | Drift every dark lantern to the far end while the lit order stays. | unstable-partition, overwriting-unread |
+| twin-tides | arrays | arrays, two-pointers, merging | easy | Merge two sorted tide tables into one ordered table. | stopping-at-first-end, comparing-wrong-heads |
+| candle-compact | arrays | arrays, two-pointers, edge-cases | easy | Remove every entry equal to the cursed sigil; report how many candles remain. | keeping-count-not-compacting, index-drift |
+| harbour-depths | arrays | arrays, two-pointers, pairs | medium | Two walls and a gap: find the deepest water the harbour line can hold between any two marks. | shrinking-both-ends, wrong-area-formula |
+| sorted-embers | arrays | arrays, two-pointers, edge-cases | medium | Ember readings arrive sorted with negatives; return their squares sorted. | squaring-in-place-order, appending-backwards |
+| shared-sigils | arrays | arrays, two-pointers, merging | medium | Two sorted sigil lists; report the markings they share, in order, without repeats. | advancing-both-on-mismatch, repeating-shared-mark |
+| closest-quota | arrays | arrays, two-pointers, pairs | medium | Sorted marks and a quota; find the pair sum nearest the quota. | stopping-at-first-pair, signed-vs-absolute-gap |
+| triad-rite | arrays | arrays, two-pointers, nested-loops | hard | Count the triads in a sorted tally whose three marks sum to the quota exactly. | counting-permutations, skipping-duplicate-triads |
+| flood-line | arrays | arrays, two-pointers, prefixes | hard | After the storm, measure how much rain the wall line traps between its posts. | min-vs-max-walls, recomputing-every-gap |
+
+Balance check: 10 arrays track; 4 easy, 4 medium, 2 hard. The batch asks for
+opposing scans (twin-tides, sorted-embers, harbour-depths, flood-line),
+partitioning and deduplication (ember-drift, candle-compact, sigil-dedup,
+shared-sigils) and pair or triplet relationships (closest-quota,
+harbour-depths, triad-rite). Quadratic ghosts tempt a rescan in
+harbour-depths, flood-line and triad-rite.

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Water at a post is set by the tallest wall on its left and the tallest wall on its right."
+
+[[hint]]
+rung = 2
+text = "The lower of the two bounds decides — so whichever end is shorter is already bound by the other side's tallest wall."
+
+[[hint]]
+rung = 3
+text = "```\nfingers on both ends, bound\nremembered each side; pour\nat the shorter end each time\n```"
+
+[[hint]]
+rung = 4
+text = "Walk both ends inward, remembering the tallest seen on each side; always pour at the shorter end, adding its bound minus its own height, and step that end inward."

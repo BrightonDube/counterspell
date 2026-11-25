@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The column is ordered, so raising the sum means stepping a small mark up, and lowering it means stepping a large mark down."
+
+[[hint]]
+rung = 2
+text = "Weigh the two end marks, then step the end that moves the sum toward the quota."
+
+[[hint]]
+rung = 3
+text = "```\nfingers on both ends; under\nthe quota step small up,\nelse step the large end down\n```"
+
+[[hint]]
+rung = 4
+text = "Keep a finger on each end; when the pair sum falls short of the quota move the left finger up, otherwise move the right finger down, and remember the nearest sum seen, preferring the smaller on ties."

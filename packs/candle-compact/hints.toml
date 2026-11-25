@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Only the marks that differ from the cursed sigil get to stay."
+
+[[hint]]
+rung = 2
+text = "Keep a write spot for the next surviving candle and walk the row once."
+
+[[hint]]
+rung = 3
+text = "```\nwrite each surviving mark\nat the next free spot;\nreport where it lands\n```"
+
+[[hint]]
+rung = 4
+text = "Walk the row with a write cursor; every mark that differs from the cursed sigil takes the next free spot, and the cursor's final position is the count."

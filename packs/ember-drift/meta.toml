@@ -1,0 +1,40 @@
+slug = "ember-drift"
+title = "The Ember Drift"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "two-pointers", "partitioning"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "drift_dark"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "The reference copies lit marks to a write cursor in one pass and fills the tail with dark marks. It runs in O(n) time and O(n) space for the returned shelf."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 9 },
+]
+
+[[samples]]
+input = [[1, 0, 2, 0, 3]]
+expected = [1, 2, 3, 0, 0]
+
+[[samples]]
+input = [[0, 0]]
+expected = [0, 0]
+
+[[samples]]
+input = [[4, 5]]
+expected = [4, 5]
