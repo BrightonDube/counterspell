@@ -1,6 +1,6 @@
 # Review summary: shared-sigils
 
-Round 1, content hash 80dc082b3f3a. Written for a non-expert reader. One page.
+Round 1, content hash c2a084a2842f. Written for a non-expert reader. One page.
 
 ## What the problem asks
 Two grimoires each keep a column of sigil marks, smallest first. Return the marks both carry, in order, each listed once.

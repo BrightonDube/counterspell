@@ -1,6 +1,6 @@
 # Review summary: twin-tides
 
-Round 1, content hash 07b7326e1dfa. Written for a non-expert reader. One page.
+Round 1, content hash ec5438b85079. Written for a non-expert reader. One page.
 
 ## What the problem asks
 Two tide tables each list water heights, smallest first. Merge them into one ordered table holding every height from both.

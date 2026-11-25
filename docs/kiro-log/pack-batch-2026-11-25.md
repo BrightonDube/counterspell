@@ -101,8 +101,10 @@ All ten assembled trees report 0 errors, 0 warnings. Review fixes during
 the round: rung-3 code fences trimmed to three lines on seven packs
 (HNT-02), concept tags completed on harbour-depths, flood-line and
 triad-rite (KNG-05), a banned minimality phrase reworded on
-closest-quota (KNG-04), and one schema-out-of-range ghost input
-corrected (KNG-02).
+closest-quota (KNG-02), and one schema-out-of-range ghost input
+corrected (KNG-02). Review round 2: `sorted = true` added to every
+ordered array in the six sorted-input packs (Devin finding on PR #129);
+validation and the sandbox suite re-ran clean.
 
 ## S10/S11 sandbox run (sbx_batch02, real rootless daemon)
 

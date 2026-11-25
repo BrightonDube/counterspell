@@ -1,6 +1,6 @@
 # Review summary: sorted-embers
 
-Round 1, content hash 27667e7eea73. Written for a non-expert reader. One page.
+Round 1, content hash da5d1eeb7f40. Written for a non-expert reader. One page.
 
 ## What the problem asks
 Ember readings arrive ordered smallest first and some run below zero. Return every reading squared, still ordered smallest first.

@@ -24,7 +24,7 @@ mem_mb = 256
 [input_schema]
 type = "tuple"
 items = [
-  { type = "int_array", min_len = 0, max_len = 40, min = -9, max = 9 },
+  { type = "int_array", min_len = 0, max_len = 40, min = -9, max = 9, sorted = true },
 ]
 
 [[samples]]
