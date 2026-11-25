@@ -172,12 +172,12 @@ describe('session store (T29)', () => {
   function answerPaths(answers) {
     const fetchMock = vi.fn(async (input) => {
       const raw = typeof input === 'string' ? input : input.url;
-      const path = raw.startsWith('http')
-        ? new URL(raw).pathname
-        : raw;
+      const path = raw.startsWith('http') ? new URL(raw).pathname : raw;
       const answer = answers[path];
       return new Response(
-        answer ? JSON.stringify(answer.body) : JSON.stringify({ code: 'not_found' }),
+        answer
+          ? JSON.stringify(answer.body)
+          : JSON.stringify({ code: 'not_found' }),
         {
           status: answer ? (answer.status ?? 200) : 404,
           headers: { 'content-type': 'application/json' }
@@ -364,4 +364,3 @@ describe('linkedMessage (T32)', () => {
     expect(linkedMessage('')).toBeNull();
   });
 });
-

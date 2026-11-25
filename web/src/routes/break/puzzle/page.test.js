@@ -1,12 +1,20 @@
 // AUD-19: an anonymous solve must not POST the score — the endpoint answers 401
 // and the browser logs it. The sign-in nudge shows without the request.
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({ fetchDaily: vi.fn(), saveScore: vi.fn() }));
 
 vi.mock('#lib/break/api.js', () => api);
-vi.mock('$app/paths', () => ({ resolve: (/** @type {string} */ path) => path }));
+vi.mock('$app/paths', () => ({
+  resolve: (/** @type {string} */ path) => path
+}));
 vi.mock('$app/state', () => ({
   page: { url: new URL('https://counterspel.online/break/puzzle') }
 }));
@@ -67,7 +75,11 @@ describe('daily puzzle session handling', () => {
   it('posts the score for a signed-in solve', async () => {
     session.status = 'signed_in';
     api.fetchDaily.mockResolvedValue(DAILY);
-    api.saveScore.mockResolvedValue({ ok: true, status: 'recorded', score: 42 });
+    api.saveScore.mockResolvedValue({
+      ok: true,
+      status: 'recorded',
+      score: 42
+    });
     render(PuzzlePage);
 
     await solvePuzzle();

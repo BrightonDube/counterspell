@@ -26,7 +26,11 @@ pub mod spa;
 pub mod testkit;
 pub mod validate;
 
-use std::{io, path::{Path, PathBuf}, sync::Arc};
+use std::{
+    io,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use axum::{
     body::Body,

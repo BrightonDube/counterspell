@@ -8,7 +8,9 @@
   let problem = $state<ProblemDetail | undefined>();
 
   const title = $derived(
-    problem ? `${problem.title} · Counterspell` : 'Problem workspace · Counterspell'
+    problem
+      ? `${problem.title} · Counterspell`
+      : 'Problem workspace · Counterspell'
   );
   const description = $derived(
     problem

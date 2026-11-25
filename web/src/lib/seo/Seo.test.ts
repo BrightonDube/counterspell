@@ -11,7 +11,9 @@ const meta = (selector: string) =>
 describe('Seo', () => {
   beforeEach(() => {
     head()
-      .querySelectorAll('title, meta[name="description"], link[rel="canonical"], meta[property^="og:"], meta[name^="twitter:"]')
+      .querySelectorAll(
+        'title, meta[name="description"], link[rel="canonical"], meta[property^="og:"], meta[name^="twitter:"]'
+      )
       .forEach((el) => el.remove());
   });
   afterEach(cleanup);
@@ -45,9 +47,7 @@ describe('Seo', () => {
     );
     expect(meta('meta[name="twitter:card"]')).toBe('summary_large_image');
     expect(meta('meta[name="twitter:title"]')).toBe('Counterspell');
-    expect(meta('meta[name="twitter:description"]')).toBe(
-      'Sharpen your mind.'
-    );
+    expect(meta('meta[name="twitter:description"]')).toBe('Sharpen your mind.');
     expect(meta('meta[name="twitter:image"]')).toMatch(
       /^https:\/\/counterspel\.online\//
     );

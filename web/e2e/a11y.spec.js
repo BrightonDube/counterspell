@@ -136,7 +136,9 @@ test('a signed-out visit to the break room issues no scores request and only exp
   ).toEqual([]);
 });
 
-test('the session answer is fetched once, not per consumer', async ({ page }) => {
+test('the session answer is fetched once, not per consumer', async ({
+  page
+}) => {
   const probes = [];
   page.on('request', (r) => {
     if (r.url().includes('/api/auth/session')) probes.push(r.url());

@@ -118,7 +118,10 @@
     <div aria-live="polite" class="min-h-6 text-sm">{announce}</div>
     {#if signedOut}
       <p class="text-sm text-text-muted">
-        <a class="text-accent underline" href={resolve('/login?return_to=/break/memory')}>
+        <a
+          class="text-accent underline"
+          href={resolve('/login?return_to=/break/memory')}
+        >
           Sign in
         </a>
         to save your score.

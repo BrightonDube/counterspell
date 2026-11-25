@@ -128,9 +128,12 @@ async fn main() {
         .expect("bind test port");
     let address = listener.local_addr().expect("address");
     println!("testserver listening on http://{address}");
-    axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-        .await
-        .expect("serve");
+    axum::serve(
+        listener,
+        app.into_make_service_with_connect_info::<SocketAddr>(),
+    )
+    .await
+    .expect("serve");
     let _keep = stop_tx;
 }
 

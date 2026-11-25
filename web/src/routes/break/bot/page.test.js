@@ -7,7 +7,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const api = vi.hoisted(() => ({ saveScore: vi.fn() }));
 
 vi.mock('#lib/break/api.js', () => api);
-vi.mock('$app/paths', () => ({ resolve: (/** @type {string} */ path) => path }));
+vi.mock('$app/paths', () => ({
+  resolve: (/** @type {string} */ path) => path
+}));
 vi.mock('$app/state', () => ({
   page: { url: new URL('https://counterspel.online/break/bot') }
 }));
@@ -50,9 +52,7 @@ describe('chess bot session copy', () => {
     render(BotPage);
     await screen.findByRole('heading', { name: 'Chess bot' });
     await waitFor(() =>
-      expect(
-        screen.queryByText(/Signed-out results are not saved/i)
-      ).toBeNull()
+      expect(screen.queryByText(/Signed-out results are not saved/i)).toBeNull()
     );
   });
 

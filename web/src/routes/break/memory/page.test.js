@@ -1,12 +1,20 @@
 // AUD-19: an anonymous player losing a Lantern recall round must not trigger a
 // scores POST — the endpoint answers 401 and the browser logs it as noise.
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/svelte';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from '@testing-library/svelte';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({ saveScore: vi.fn() }));
 
 vi.mock('#lib/break/api.js', () => api);
-vi.mock('$app/paths', () => ({ resolve: (/** @type {string} */ path) => path }));
+vi.mock('$app/paths', () => ({
+  resolve: (/** @type {string} */ path) => path
+}));
 vi.mock('$app/state', () => ({
   page: { url: new URL('https://counterspel.online/break/memory') }
 }));

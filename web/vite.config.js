@@ -12,7 +12,10 @@ export default defineConfig({
   // mainFields matter: cm-chessboard ships `main: null` and only exposes its
   // entry through the browser/module fields.
   resolve: process.env.VITEST
-    ? { conditions: ['browser'], mainFields: ['browser', 'module', 'jsnext:main'] }
+    ? {
+        conditions: ['browser'],
+        mainFields: ['browser', 'module', 'jsnext:main']
+      }
     : undefined,
   test: {
     environment: 'happy-dom',

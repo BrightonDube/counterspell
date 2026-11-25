@@ -110,7 +110,7 @@ it('clears the cached session before navigating after a successful sign-in', asy
 
   await waitFor(() => expect(goto).toHaveBeenCalled());
   expect(session.clear).toHaveBeenCalled();
-  expect(
-    vi.mocked(session.clear).mock.invocationCallOrder[0]
-  ).toBeLessThan(vi.mocked(goto).mock.invocationCallOrder[0]);
+  expect(vi.mocked(session.clear).mock.invocationCallOrder[0]).toBeLessThan(
+    vi.mocked(goto).mock.invocationCallOrder[0]
+  );
 });

@@ -10,7 +10,9 @@ const api = vi.hoisted(() => ({
 }));
 
 vi.mock('#lib/break/api.js', () => api);
-vi.mock('$app/paths', () => ({ resolve: (/** @type {string} */ path) => path }));
+vi.mock('$app/paths', () => ({
+  resolve: (/** @type {string} */ path) => path
+}));
 vi.mock('$app/state', () => ({
   page: { url: new URL('https://counterspel.online/break') }
 }));

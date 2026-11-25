@@ -180,8 +180,9 @@
         <a
           class="text-accent underline"
           href={resolve('/login?return_to=/break/bot')}
-          >Sign in</a
         >
+          Sign in
+        </a>
         to save your results.
       </p>
     {/if}
