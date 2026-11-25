@@ -1,6 +1,6 @@
 # Review summary: equal-embers
 
-Round 1, content hash 273e0bc86299. Written for a non-expert reader. One page.
+Round 1, content hash 284c36e79b1c. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A hearth holds ember marks of two kinds. A span is balanced when it holds as many marks of one kind as the other. Given the marks, return the length of the longest balanced span.
