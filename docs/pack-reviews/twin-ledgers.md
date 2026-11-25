@@ -12,7 +12,7 @@ The learner must sum repeated keys into per-ledger maps, then join on shared key
 One ghost compares ledger rows position by position; another keeps only a repeated key's last row instead of summing them. Each is the smallest failing input the engine found within its budget, not the smallest possible one.
 
 ## What could still be wrong
-No unresolved pack issue was raised. One review fix added the indexing concept tag a ghost legitimately uses.
+No unresolved pack issue was raised. Review fixes added the indexing concept tag a ghost legitimately uses and aligned the stated bounds with the matrix schema.
 
 ## The scores in words
 - Correctness: strong, every sample and hidden result agrees in the sandbox.
