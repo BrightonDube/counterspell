@@ -1,0 +1,45 @@
+slug = "warden-sums"
+title = "The Warden's Sums"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["arrays", "prefixes", "frequency-maps", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "ritual_spans"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference keeps a running prefix sum and asks a tally map how often the needed earlier prefix occurred. It runs in O(n) time and O(n) extra space."
+
+[[params]]
+name = "readings"
+type = "list[int]"
+
+[[params]]
+name = "quota"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 50, min = -50, max = 50 },
+  { type = "int", min = -500, max = 500 },
+]
+
+[[samples]]
+input = [[1, -1, 1, -1], 0]
+expected = 4
+
+[[samples]]
+input = [[2, 0, 2], 4]
+expected = 1
+
+[[samples]]
+input = [[3, 3], 3]
+expected = 2

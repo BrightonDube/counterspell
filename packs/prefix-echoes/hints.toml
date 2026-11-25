@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each question only sees the opening stretch of the log — the rest does not count."
+
+[[hint]]
+rung = 2
+text = "For every question, walk only the first entries it names and tally the chosen mark."
+
+[[hint]]
+rung = 3
+text = "```\nfor each question\n  read its stretch and its mark\n  count the mark in that stretch\n```"
+
+[[hint]]
+rung = 4
+text = "Slice the log at the named stretch before counting; keep one answer per question in order."

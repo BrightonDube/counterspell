@@ -1,0 +1,40 @@
+slug = "twin-echoes"
+title = "Twin Echoes"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "frequency-maps", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "repeating_echoes"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference tallies each marking once and counts the tallies of at least two. It runs in O(n) time and O(k) extra space for k distinct markings."
+
+[[params]]
+name = "echoes"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 50 },
+]
+
+[[samples]]
+input = [[4, 1, 4, 2, 1]]
+expected = 2
+
+[[samples]]
+input = [[3, 3, 3]]
+expected = 1
+
+[[samples]]
+input = [[1, 2, 3]]
+expected = 0

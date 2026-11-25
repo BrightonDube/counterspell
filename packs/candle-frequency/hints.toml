@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "You cannot pick a winner until you know how often each size was logged."
+
+[[hint]]
+rung = 2
+text = "Tally every size once, then choose the smallest size among those that share the top tally."
+
+[[hint]]
+rung = 3
+text = "```\ntally each size\nkeep the size with the top tally\n  prefer the smaller size on a tie\n```"
+
+[[hint]]
+rung = 4
+text = "While scanning the tallies, replace the current winner only when a size is logged more often, or equally often but smaller."

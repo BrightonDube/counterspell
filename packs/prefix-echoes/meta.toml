@@ -1,0 +1,45 @@
+slug = "prefix-echoes"
+title = "Prefix Echoes"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "prefixes", "indexing"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "prefix_counts"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "The reference answers each question by counting the bounded prefix. It runs in O(q·n) time and uses O(q) extra space for the answers."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[[params]]
+name = "queries"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 40 },
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 40 },
+]
+
+[[samples]]
+input = [[4, 4, 2, 4], [[2, 4], [4, 2]]]
+expected = [2, 1]
+
+[[samples]]
+input = [[1, 2], [[0, 1]]]
+expected = [0]
+
+[[samples]]
+input = [[9, 9, 9], [[3, 9], [2, 7]]]
+expected = [3, 0]

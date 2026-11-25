@@ -1,0 +1,40 @@
+slug = "tide-table"
+title = "The Tide Table"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "scanning", "edge-cases", "indexing"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "first_drop"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference scans the hourly readings once and returns at the first drop. It runs in O(n) time and O(1) extra space."
+
+[[params]]
+name = "heights"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 48, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[3, 5, 5, 2]]
+expected = 3
+
+[[samples]]
+input = [[1, 2, 3]]
+expected = -1
+
+[[samples]]
+input = [[7]]
+expected = -1

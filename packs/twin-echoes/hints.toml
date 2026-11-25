@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A marking echoes only if you have seen it before — count markings, not echoes."
+
+[[hint]]
+rung = 2
+text = "Tally every marking, then count the tallies that reach the echo threshold."
+
+[[hint]]
+rung = 3
+text = "```\ntally each marking\nfor each tally\n  count it when it repeats\n```"
+
+[[hint]]
+rung = 4
+text = "After tallying, each distinct marking adds to the answer exactly once when its tally is at least the echo threshold of two."

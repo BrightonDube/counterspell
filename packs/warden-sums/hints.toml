@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Negative readings mean a run can reach the quota, leave it, and return to it."
+
+[[hint]]
+rung = 2
+text = "Keep a running total of everything chalked so far; a run is ritual when the current total minus the quota was once an earlier total."
+
+[[hint]]
+rung = 3
+text = "```\nwalk once, tallying running sums\nat each step ask how often the needed earlier sum appeared\nthen record the new sum\n```"
+
+[[hint]]
+rung = 4
+text = "Seed the tally with the empty prefix so a ritual run that begins at the first reading is counted too."
