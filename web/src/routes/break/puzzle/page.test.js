@@ -20,7 +20,9 @@ vi.mock('$app/state', () => ({
 }));
 const boardMock = vi.hoisted(() => ({
   /** @type {Record<string, any> | undefined} */
-  props: undefined
+  props: undefined,
+  /** @type {[any, string][]} */
+  added: /** @type {[any, string][]} */ ([])
 }));
 
 vi.mock('cm-chessboard', () => ({
@@ -34,22 +36,21 @@ vi.mock('cm-chessboard', () => ({
     }
     setPosition() {}
     enableMoveInput() {}
+    /** @param {any} type @param {string} square */
+    addMarker(type, square) {
+      boardMock.added.push([type, square]);
+    }
+    removeMarkers() {}
   },
   INPUT_EVENT_TYPE: { validateMoveInput: 'validateMoveInput' }
 }));
 vi.mock('cm-chessboard/assets/chessboard.css', () => ({}));
-vi.mock('cm-chessboard/assets/pieces/standard.svg?url', () => ({
-  default: 'pieces.svg'
-}));
 vi.mock('cm-chessboard/src/extensions/markers/Markers.js', () => ({
   Markers: function Markers() {},
-  MARKER_TYPE: { frame: { class: 'marker-frame', slice: 'markerFrame' } }
-}));
-vi.mock('#lib/break/chess/pieces-steel-night.svg?url', () => ({
-  default: '/assets/pieces-steel-night.svg'
-}));
-vi.mock('cm-chessboard/assets/extensions/markers/markers.svg?url', () => ({
-  default: '/assets/markers.svg'
+  MARKER_TYPE: {
+    frame: { class: 'marker-frame', slice: 'markerFrame' },
+    framePrimary: { class: 'marker-frame-primary', slice: 'markerFrame' }
+  }
 }));
 
 import { session } from '#lib/auth/session.svelte.js';
@@ -78,6 +79,7 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   boardMock.props = undefined;
+  boardMock.added.length = 0;
   session.user = null;
   session.capabilities = null;
   session.status = 'unknown';
@@ -139,5 +141,24 @@ describe('steel-night board presentation (CH02–CH06)', () => {
     const skull = container.querySelector('.skull-sentinel');
     expect(skull).toBeTruthy();
     expect(skull?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('frames the opponent opening and the applied solution moves', async () => {
+    session.status = 'signed_in';
+    api.fetchDaily.mockResolvedValue(DAILY);
+    render(PuzzlePage);
+    await screen.findByText('Your move.');
+    const frame = { class: 'marker-frame-primary', slice: 'markerFrame' };
+    // The automatic opening move (e2e4) is framed once the board mounts.
+    await waitFor(() => {
+      expect(boardMock.added).toContainEqual([frame, 'e2']);
+      expect(boardMock.added).toContainEqual([frame, 'e4']);
+    });
+    boardMock.added.length = 0;
+    await solvePuzzle();
+    await waitFor(() => {
+      expect(boardMock.added).toContainEqual([frame, 'e7']);
+      expect(boardMock.added).toContainEqual([frame, 'e5']);
+    });
   });
 });

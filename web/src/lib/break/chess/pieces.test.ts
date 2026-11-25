@@ -8,7 +8,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const file = resolve(here, 'pieces-steel-night.svg');
+// The sprite ships as a same-origin static file (cm-chessboard XHRs it).
+const file = resolve(here, '../../../../static/break/pieces-steel-night.svg');
 const svg = readFileSync(file, 'utf8');
 
 const PIECE_IDS = [

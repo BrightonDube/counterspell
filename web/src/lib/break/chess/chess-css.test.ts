@@ -22,6 +22,16 @@ describe('chess board sizing (CH03)', () => {
     expect(cap, 'max-inline-size').not.toBeNull();
     expect(Number(cap?.[1])).toBeGreaterThanOrEqual(560);
   });
+
+  it('floors the board so short viewports never collapse it to zero', () => {
+    const rule = css.match(/\.break-board\s*\{([^}]*)\}/);
+    const body = rule?.[1] ?? '';
+    // 100dvh - 20rem is <=0 under a 320px-tall viewport; a clamp floor keeps
+    // squares tappable and lets the page scroll instead.
+    expect(body).toMatch(/clamp\(\s*(\d+)px/);
+    const floor = body.match(/clamp\(\s*(\d+)px/);
+    expect(Number(floor?.[1])).toBeGreaterThanOrEqual(240);
+  });
 });
 
 describe('steel-night board theme (CH04)', () => {
@@ -49,6 +59,11 @@ describe('steel-night board theme (CH04)', () => {
     );
     expect(css).toMatch(
       /\.cm-chessboard\.steel-night[^}]*\.marker-dot[^}]*fill:\s*var\(--/
+    );
+    // The last-move frame is a distinct primary type — it must read as a
+    // deliberate highlight, not the ephemeral input frame.
+    expect(css).toMatch(
+      /\.cm-chessboard\.steel-night[^}]*\.marker-frame-primary[^}]*(stroke|fill):\s*var\(--/
     );
   });
 });

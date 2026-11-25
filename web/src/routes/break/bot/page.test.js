@@ -21,7 +21,13 @@ vi.mock('$app/state', () => ({
 }));
 const boardMock = vi.hoisted(() => ({
   /** @type {Record<string, any> | undefined} */
-  props: undefined
+  props: undefined,
+  /** @type {((event: any) => boolean) | undefined} */
+  inputHandler: undefined,
+  /** @type {[any, string][]} */
+  added: /** @type {[any, string][]} */ ([]),
+  /** @type {any[]} */
+  removed: /** @type {any[]} */ ([])
 }));
 
 vi.mock('cm-chessboard', () => ({
@@ -34,26 +40,39 @@ vi.mock('cm-chessboard', () => ({
       boardMock.props = props;
     }
     setPosition() {}
-    enableMoveInput() {}
+    /** @param {(event: any) => boolean} handler */
+    enableMoveInput(handler) {
+      boardMock.inputHandler = handler;
+    }
+    /** @param {any} type @param {string} square */
+    addMarker(type, square) {
+      boardMock.added.push([type, square]);
+    }
+    /** @param {any} type */
+    removeMarkers(type) {
+      boardMock.removed.push(type);
+    }
   },
   INPUT_EVENT_TYPE: { validateMoveInput: 'validateMoveInput' }
 }));
 vi.mock('cm-chessboard/assets/chessboard.css', () => ({}));
-vi.mock('cm-chessboard/assets/pieces/standard.svg?url', () => ({
-  default: 'pieces.svg'
-}));
 vi.mock('cm-chessboard/src/extensions/markers/Markers.js', () => ({
   Markers: function Markers() {},
-  MARKER_TYPE: { frame: { class: 'marker-frame', slice: 'markerFrame' } }
+  MARKER_TYPE: {
+    frame: { class: 'marker-frame', slice: 'markerFrame' },
+    framePrimary: { class: 'marker-frame-primary', slice: 'markerFrame' }
+  }
 }));
-vi.mock('#lib/break/chess/pieces-steel-night.svg?url', () => ({
-  default: '/assets/pieces-steel-night.svg'
+const workerMock = vi.hoisted(() => ({
+  /** @type {{ onmessage?: (event: any) => void } | undefined} */
+  instance: undefined
 }));
-vi.mock('cm-chessboard/assets/extensions/markers/markers.svg?url', () => ({
-  default: '/assets/markers.svg'
-}));
+
 vi.mock('#lib/break/bot.worker.js?worker', () => ({
   default: class {
+    constructor() {
+      workerMock.instance = /** @type {any} */ (this);
+    }
     postMessage() {}
     terminate() {}
   }
@@ -70,6 +89,10 @@ afterEach(() => {
   cleanup();
   vi.clearAllMocks();
   boardMock.props = undefined;
+  boardMock.inputHandler = undefined;
+  boardMock.added.length = 0;
+  boardMock.removed.length = 0;
+  workerMock.instance = undefined;
   session.user = null;
   session.capabilities = null;
   session.status = 'unknown';
@@ -132,5 +155,44 @@ describe('steel-night board presentation (CH02–CH06)', () => {
     expect(skull).toBeTruthy();
     expect(skull?.getAttribute('aria-hidden')).toBe('true');
     expect(skull?.getAttribute('loading')).toBe('lazy');
+  });
+
+  it('frames the accepted user move and the bot reply', async () => {
+    session.status = 'signed_in';
+    render(BotPage);
+    await screen.findByRole('img', { name: 'Chessboard' });
+    await waitFor(() => expect(boardMock.inputHandler).toBeTypeOf('function'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Play White' }));
+    const frame = { class: 'marker-frame-primary', slice: 'markerFrame' };
+    const accepted = boardMock.inputHandler?.({
+      type: 'validateMoveInput',
+      squareFrom: 'e2',
+      squareTo: 'e4',
+      chessboard: {}
+    });
+    expect(accepted).toBe(true);
+    expect(boardMock.added).toContainEqual([frame, 'e2']);
+    expect(boardMock.added).toContainEqual([frame, 'e4']);
+    // The worker's reply lands through onmessage and must be framed too.
+    await waitFor(() =>
+      expect(workerMock.instance?.onmessage).toBeTypeOf('function')
+    );
+    workerMock.instance?.onmessage?.({ data: { ok: true, uci: 'e7e5' } });
+    await waitFor(() => {
+      expect(boardMock.added).toContainEqual([frame, 'e7']);
+      expect(boardMock.added).toContainEqual([frame, 'e5']);
+    });
+  });
+
+  it('clears the last-move frame when a new game starts', async () => {
+    session.status = 'signed_in';
+    render(BotPage);
+    await screen.findByRole('img', { name: 'Chessboard' });
+    await waitFor(() => expect(boardMock.inputHandler).toBeTypeOf('function'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Play White' }));
+    expect(boardMock.removed).toContainEqual({
+      class: 'marker-frame-primary',
+      slice: 'markerFrame'
+    });
   });
 });

@@ -4,7 +4,11 @@
   import { onMount, onDestroy } from 'svelte';
   import { Chess } from 'chess.js';
   import 'cm-chessboard/assets/chessboard.css';
-  import { mountThemedBoard } from '#lib/break/chess/theme.js';
+  import {
+    clearLastMove,
+    mountThemedBoard,
+    showLastMove
+  } from '#lib/break/chess/theme.js';
   import SkullSentinel from '#lib/break/chess/SkullSentinel.svelte';
   import { saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
@@ -65,7 +69,10 @@
     if (!worker) {
       const moves = game.moves({ verbose: true });
       const pick = moves[Math.floor(Math.random() * moves.length)];
-      if (pick) game.move(pick);
+      if (pick) {
+        game.move(pick);
+        showLastMove(board, pick.from, pick.to);
+      }
       fallbackNote = 'Bot is resting, a simple move was played.';
       board?.setPosition(game.fen(), true);
       refreshStatus();
@@ -79,10 +86,14 @@
           to: data.uci.slice(2, 4),
           promotion: data.uci[4]
         });
+        showLastMove(board, data.uci.slice(0, 2), data.uci.slice(2, 4));
       } else {
         const moves = game.moves({ verbose: true });
         const pick = moves[Math.floor(Math.random() * moves.length)];
-        if (pick) game.move(pick);
+        if (pick) {
+          game.move(pick);
+          showLastMove(board, pick.from, pick.to);
+        }
         fallbackNote = 'Bot is resting, a simple move was played.';
       }
       board?.setPosition(game.fen(), true);
@@ -95,6 +106,7 @@
   function start(color) {
     userColor = color;
     game = new Chess();
+    clearLastMove(board);
     board?.setPosition(game.fen());
     playing = true;
     status = color === 'w' ? 'Your move.' : 'The bot opens.';
@@ -132,6 +144,7 @@
         promotion: 'q'
       });
       if (!move) return false;
+      showLastMove(board, move.from, move.to);
       board?.setPosition(game.fen(), true);
       refreshStatus();
       if (playing && game.turn() !== userColor) setTimeout(botMove, 50);

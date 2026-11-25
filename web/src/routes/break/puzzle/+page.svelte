@@ -3,7 +3,7 @@
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
   import 'cm-chessboard/assets/chessboard.css';
-  import { mountThemedBoard } from '#lib/break/chess/theme.js';
+  import { mountThemedBoard, showLastMove } from '#lib/break/chess/theme.js';
   import SkullSentinel from '#lib/break/chess/SkullSentinel.svelte';
   import { fetchDaily, saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
@@ -29,14 +29,22 @@
     statusLine = `${puzzleState.game.turn() === 'w' ? 'White' : 'Black'} to move. FEN ${puzzleState.game.fen()}`;
   }
 
+  /** Frames the latest applied move — user move or auto opponent reply. */
+  function frameLastMove() {
+    const last = puzzleState?.game.history({ verbose: true }).at(-1);
+    if (last) showLastMove(board, last.from, last.to);
+  }
+
   /** @param {string} input */
   function apply(input) {
     if (!puzzleState) return;
     const before = puzzleState.game.fen();
     const { feedback: fb } = tryMove(puzzleState, input);
     feedback = fb;
-    if (puzzleState.game.fen() !== before)
+    if (puzzleState.game.fen() !== before) {
+      frameLastMove();
       board?.setPosition(puzzleState.game.fen(), true);
+    }
     refreshStatus();
     if (puzzleState.status === 'solved' && puzzleMeta) void recordScore();
   }
@@ -106,6 +114,7 @@
     );
     if (!themed) return;
     board = themed;
+    frameLastMove(); // the puzzle's automatic opening move
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!puzzleState) return false;
