@@ -1,7 +1,7 @@
 // Shared cm-chessboard presentation for the bot and puzzle routes (CH03–CH05):
 // one Steel Night theme class, the original piece sprite, framed coordinates
 // and the last-move marker — so both boards look and behave identically.
-import piecesSpriteUrl from '#lib/chess/pieces-steel-night.svg?url';
+import piecesSpriteUrl from '#lib/break/chess/pieces-steel-night.svg?url';
 import markersSpriteUrl from 'cm-chessboard/assets/extensions/markers/markers.svg?url';
 
 /** Style contract shared by every Counterspell board. */

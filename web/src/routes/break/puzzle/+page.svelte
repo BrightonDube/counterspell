@@ -3,8 +3,8 @@
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
   import 'cm-chessboard/assets/chessboard.css';
-  import { mountThemedBoard } from '#lib/chess/theme.js';
-  import SkullSentinel from '#lib/chess/SkullSentinel.svelte';
+  import { mountThemedBoard } from '#lib/break/chess/theme.js';
+  import SkullSentinel from '#lib/break/chess/SkullSentinel.svelte';
   import { fetchDaily, saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
   import { newPuzzle, tryMove } from '#lib/break/puzzle.js';
@@ -99,7 +99,7 @@
     const solution = daily.puzzle.moves.split(' ');
     puzzleState = newPuzzle(daily.puzzle.fen, solution);
     // Shared Steel Night mount: theme class, piece sprite, markers extension
-    // and the aria-hidden svg fix all live in #lib/chess/theme.js (CH02–CH05).
+    // and the aria-hidden svg fix all live in #lib/break/chess/theme.js (CH02–CH05).
     const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
       boardEl,
       puzzleState.game.fen()

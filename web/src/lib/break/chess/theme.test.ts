@@ -3,7 +3,7 @@
 // bounded animation. Both routes must consume this object unchanged.
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('#lib/chess/pieces-steel-night.svg?url', () => ({
+vi.mock('#lib/break/chess/pieces-steel-night.svg?url', () => ({
   default: '/assets/pieces-steel-night.svg'
 }));
 vi.mock('cm-chessboard/assets/extensions/markers/markers.svg?url', () => ({

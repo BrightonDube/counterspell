@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const css = readFileSync(resolve(here, '../../app.css'), 'utf8');
+const css = readFileSync(resolve(here, '../../../app.css'), 'utf8');
 
 describe('chess board sizing (CH03)', () => {
   it('bounds the board by content width and viewport height', () => {

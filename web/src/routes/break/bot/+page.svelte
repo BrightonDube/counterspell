@@ -4,8 +4,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { Chess } from 'chess.js';
   import 'cm-chessboard/assets/chessboard.css';
-  import { mountThemedBoard } from '#lib/chess/theme.js';
-  import SkullSentinel from '#lib/chess/SkullSentinel.svelte';
+  import { mountThemedBoard } from '#lib/break/chess/theme.js';
+  import SkullSentinel from '#lib/break/chess/SkullSentinel.svelte';
   import { saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
   import BotWorker from '#lib/break/bot.worker.js?worker';
@@ -111,7 +111,7 @@
     if (!boardEl) return;
     const container = boardEl;
     // Shared Steel Night mount: theme class, piece sprite, markers extension
-    // and the aria-hidden svg fix all live in #lib/chess/theme.js (CH02–CH05).
+    // and the aria-hidden svg fix all live in #lib/break/chess/theme.js (CH02–CH05).
     const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
       container,
       game.fen()
