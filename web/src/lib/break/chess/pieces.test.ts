@@ -31,17 +31,13 @@ describe('steel-night piece sprite (CH05)', () => {
   it('is a single 40px-tile SVG sprite with every piece id', () => {
     expect(svg).toMatch(/<svg[^>]*viewBox="0 0 40 40"/);
     for (const id of [...PIECE_IDS, 'crown']) {
-      expect(svg, id).toMatch(new RegExp(`<g[^>]*id="${id}"`));
+      expect(svg, id).toContain(`<g id="${id}"`);
     }
   });
 
   it('gives every piece the 2.5D vocabulary: outline, highlight, shadow', () => {
     for (const id of PIECE_IDS) {
-      const piece = svg.match(
-        new RegExp(`<g[^>]*id="${id}"[^>]*>([\\s\\S]*?)</g>`)
-      );
-      expect(piece, id).not.toBeNull();
-      const body = piece?.[1] ?? '';
+      const body = pieceBody(id);
       expect(body, `${id} outline`).toMatch(/stroke=/);
       expect(body, `${id} highlight`).toMatch(/class="hi"/);
       expect(body, `${id} shadow`).toMatch(/class="sh"/);
@@ -61,9 +57,7 @@ describe('steel-night piece sprite (CH05)', () => {
     for (const id of PIECE_IDS) {
       const body = pieceBody(id);
       const want = id.startsWith('w') ? 'ivory' : 'obsidian';
-      expect(body, `${id} body fill`).toMatch(
-        new RegExp(`fill="url\\(#${want}`)
-      );
+      expect(body, `${id} body fill`).toContain(`fill="url(#${want}`);
     }
   });
 
@@ -72,7 +66,7 @@ describe('steel-night piece sprite (CH05)', () => {
   it('edges black pieces in steel, keeps candle-gold on white only', () => {
     for (const id of PIECE_IDS) {
       const body = pieceBody(id);
-      const group = svg.match(new RegExp(`<g[^>]*id="${id}"[^>]*>`))?.[0] ?? '';
+      const group = pieceTag(id);
       if (id.startsWith('b')) {
         expect(group, `${id} steel edge`).toMatch(/stroke="#a8bacd"/);
         expect(body, `${id} no gold fill`).not.toMatch(/url\(#gold/);
@@ -141,12 +135,22 @@ describe('steel-night piece sprite (CH05)', () => {
   });
 });
 
+// String-sliced group extraction — no dynamic RegExp (ReDoS guard).
 function pieceBody(id: string): string {
-  const piece = svg.match(
-    new RegExp(`<g[^>]*id="${id}"[^>]*>([\\s\\S]*?)</g>`)
-  );
-  expect(piece, id).not.toBeNull();
-  return piece?.[1] ?? '';
+  const at = svg.indexOf(`id="${id}"`);
+  expect(at, id).toBeGreaterThanOrEqual(0);
+  const openEnd = svg.indexOf('>', at) + 1;
+  const close = svg.indexOf('</g>', openEnd);
+  expect(close, id).toBeGreaterThan(openEnd);
+  return svg.slice(openEnd, close);
+}
+
+function pieceTag(id: string): string {
+  const at = svg.indexOf(`id="${id}"`);
+  expect(at, id).toBeGreaterThanOrEqual(0);
+  const open = svg.lastIndexOf('<g', at);
+  expect(open, id).toBeGreaterThanOrEqual(0);
+  return svg.slice(open, svg.indexOf('>', open) + 1);
 }
 
 // Extracts absolute coordinates from an SVG path `d` string. Absolute
