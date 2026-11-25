@@ -1,6 +1,6 @@
 # Review summary: harvest-tally
 
-Round 1, content hash 73c0bd1ad926. Written for a non-expert reader. One page.
+Round 1, content hash 4de1d88de0d2. Written for a non-expert reader. One page.
 
 ## What the problem asks
 Granary rows hold sacks, one count per row. The feast pairs each sack with sacks from different rows; return how many distinct cross-row sack pairs exist. The tally can be very large.
