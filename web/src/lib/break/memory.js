@@ -1,6 +1,23 @@
 // Lantern recall: a 3x3 sequence memory game. Pure logic; the page renders it.
 
 /**
+ * Deterministic themed image per tile (LR03): tile i always shows the same
+ * artwork, so the nine URLs stay stable and warm in the HTTP cache across
+ * rounds and visits. The page renders them lazily, decorative-only.
+ */
+export const TILE_ART = [
+  '/art/objects/lantern-flame.webp',
+  '/art/objects/candle-flame.webp',
+  '/art/objects/cauldron.webp',
+  '/art/objects/coffin.webp',
+  '/art/objects/crypt-key.webp',
+  '/art/objects/crystal-ball.webp',
+  '/art/objects/grimoire.webp',
+  '/art/objects/hourglass.webp',
+  '/art/objects/tombstone.webp'
+];
+
+/**
  * Adds one random tile in 0..8 to the sequence.
  * @param {number[]} sequence
  * @param {() => number} [rng]
