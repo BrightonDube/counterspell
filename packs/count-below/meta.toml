@@ -1,0 +1,43 @@
+slug = "count-below"
+title = "The Count Below"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "binary-search", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "count_below"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(log n) lower-bound walk and O(1) space."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+[[params]]
+name = "toll"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99, sorted = true }, { type = "int", min = 0, max = 99 },
+]
+
+[[samples]]
+input = [[1, 2, 2, 4, 7], 4]
+expected = 3
+
+[[samples]]
+input = [[1, 2, 2, 4, 7], 9]
+expected = 5
+
+[[samples]]
+input = [[], 5]
+expected = 0

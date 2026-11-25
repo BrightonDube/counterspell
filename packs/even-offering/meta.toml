@@ -1,0 +1,43 @@
+slug = "even-offering"
+title = "The Even Offering"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["arrays", "binary-search", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "smallest_largest"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log s) cap search with a greedy scan, O(1) space."
+
+[[params]]
+name = "offers"
+type = "list[int]"
+[[params]]
+name = "parts"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 1, max_len = 40, min = 1, max = 99 }, { type = "int", min = 1, max = 40 },
+]
+
+[[samples]]
+input = [[2, 3, 1, 4, 1], 2]
+expected = 6
+
+[[samples]]
+input = [[7, 7, 7], 3]
+expected = 7
+
+[[samples]]
+input = [[1, 2, 3], 1]
+expected = 6

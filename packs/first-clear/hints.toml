@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "You want the first lantern that is not too short — everything before it can be discarded in halves."
+
+[[hint]]
+rung = 2
+text = "Move `lo` past lanterns below the mark and `hi` down onto qualifying ones."
+
+[[hint]]
+rung = 3
+text = "```\nif heights[mid] < mark:\n    lo = mid + 1\nelse: hi = mid\n```"
+
+[[hint]]
+rung = 4
+text = "Return `lo` as-is — when nothing clears, `lo` already equals the count."

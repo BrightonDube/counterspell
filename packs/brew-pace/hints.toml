@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A bigger pace can only help — feasibility is monotone, so the smallest working pace is searchable."
+
+[[hint]]
+rung = 2
+text = "Check a pace by summing `ceil(brew / pace)` hours over the row and comparing with the deadline."
+
+[[hint]]
+rung = 3
+text = "```\nneed = sum(ceil(t / pace) for t in brews)\nif need <= hours: hi = mid\nelse: lo = mid + 1\n```"
+
+[[hint]]
+rung = 4
+text = "Search `pace` from `1` to `max(brews)`; the loop ends on the smallest working pace."

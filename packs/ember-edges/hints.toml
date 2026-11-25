@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Two boundary walks answer this: the first position at `target`, and the first position past it."
+
+[[hint]]
+rung = 2
+text = "Search `target` for the left edge; search `target + 1` for the first position that no longer holds it."
+
+[[hint]]
+rung = 3
+text = "```\ndef lower(mark):\n    # first index with embers[i] >= mark\n    ...\n```"
+
+[[hint]]
+rung = 4
+text = "When the left edge lands past the end or on a different mark, the run is absent — return `[-1, -1]`."

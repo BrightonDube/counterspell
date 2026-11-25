@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Probe a position and its right neighbour: if the next torch is taller, the crest lies to the right."
+
+[[hint]]
+rung = 2
+text = "When the next torch is shorter, the probe stands on the falling side — the crest is at or left of it."
+
+[[hint]]
+rung = 3
+text = "```\nif heights[mid] < heights[mid + 1]:\n    lo = mid + 1\nelse: hi = mid\n```"
+
+[[hint]]
+rung = 4
+text = "The loop ends with `lo == hi` on the crest itself."
