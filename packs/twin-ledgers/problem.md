@@ -14,4 +14,4 @@ Return the number of keys whose totals agree in both ledgers, as an integer.
 Key `1` totals `5` in the first ledger and `4 + 1` in the second, so it agrees. Keys `2` and `3` appear in one ledger only.
 
 ## Constraints
-Each ledger has at most 20 rows. Each key is from `0` to `50`; each amount is from `0` to `40`.
+Each ledger has at most 20 rows. Each key and amount is from `0` to `50`.
