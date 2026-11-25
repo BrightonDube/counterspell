@@ -1,6 +1,6 @@
 slug = "bead-run"
 title = "The Bead Run"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "strings"
 concepts = ["strings", "scanning", "counting", "edge-cases"]

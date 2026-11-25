@@ -1,6 +1,6 @@
 slug = "min-varied"
 title = "The Varied Fragment"
-status = "draft"
+status = "published"
 difficulty = "medium"
 track = "strings"
 concepts = ["strings", "sliding-window", "frequency-maps"]

@@ -1,6 +1,6 @@
 slug = "thrifty-pane"
 title = "The Thrifty Pane"
-status = "draft"
+status = "published"
 difficulty = "medium"
 track = "strings"
 concepts = ["strings", "sliding-window", "frequency-maps"]

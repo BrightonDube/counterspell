@@ -1,6 +1,6 @@
 slug = "drift-alarm"
 title = "The Drift Alarm"
-status = "draft"
+status = "published"
 difficulty = "medium"
 track = "arrays"
 concepts = ["arrays", "sliding-window", "streaming"]

@@ -1,6 +1,6 @@
 slug = "warm-window"
 title = "The Warm Window"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "arrays"
 concepts = ["arrays", "sliding-window", "scanning"]

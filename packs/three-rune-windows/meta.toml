@@ -1,6 +1,6 @@
 slug = "three-rune-windows"
 title = "The Three-Rune Windows"
-status = "draft"
+status = "published"
 difficulty = "hard"
 track = "strings"
 concepts = ["strings", "sliding-window", "counting"]

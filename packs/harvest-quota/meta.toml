@@ -1,6 +1,6 @@
 slug = "harvest-quota"
 title = "The Harvest Quota"
-status = "draft"
+status = "published"
 difficulty = "medium"
 track = "arrays"
 concepts = ["arrays", "sliding-window", "prefixes", "edge-cases"]

@@ -1,6 +1,6 @@
 slug = "quiet-hours"
 title = "The Quiet Hours"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "arrays"
 concepts = ["arrays", "sliding-window", "counting", "edge-cases"]

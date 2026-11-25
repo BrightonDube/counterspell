@@ -1,6 +1,6 @@
 slug = "gale-peaks"
 title = "The Gale Peaks"
-status = "draft"
+status = "published"
 difficulty = "hard"
 track = "arrays"
 concepts = ["arrays", "sliding-window", "queues"]

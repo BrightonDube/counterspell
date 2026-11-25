@@ -1,6 +1,6 @@
 slug = "calm-spell"
 title = "The Calm Spell"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "strings"
 concepts = ["strings", "scanning", "edge-cases", "counting"]
