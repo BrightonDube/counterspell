@@ -3,8 +3,13 @@
   import { resolve } from '$app/paths';
   import { onMount, onDestroy } from 'svelte';
   import { Chess } from 'chess.js';
-  import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
+  import {
+    clearLastMove,
+    mountThemedBoard,
+    showLastMove
+  } from '#lib/break/chess/theme.js';
+  import SkullSentinel from '#lib/break/chess/SkullSentinel.svelte';
   import { saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
   import BotWorker from '#lib/break/bot.worker.js?worker';
@@ -64,7 +69,10 @@
     if (!worker) {
       const moves = game.moves({ verbose: true });
       const pick = moves[Math.floor(Math.random() * moves.length)];
-      if (pick) game.move(pick);
+      if (pick) {
+        game.move(pick);
+        showLastMove(board, pick.from, pick.to);
+      }
       fallbackNote = 'Bot is resting, a simple move was played.';
       board?.setPosition(game.fen(), true);
       refreshStatus();
@@ -78,10 +86,14 @@
           to: data.uci.slice(2, 4),
           promotion: data.uci[4]
         });
+        showLastMove(board, data.uci.slice(0, 2), data.uci.slice(2, 4));
       } else {
         const moves = game.moves({ verbose: true });
         const pick = moves[Math.floor(Math.random() * moves.length)];
-        if (pick) game.move(pick);
+        if (pick) {
+          game.move(pick);
+          showLastMove(board, pick.from, pick.to);
+        }
         fallbackNote = 'Bot is resting, a simple move was played.';
       }
       board?.setPosition(game.fen(), true);
@@ -94,6 +106,7 @@
   function start(color) {
     userColor = color;
     game = new Chess();
+    clearLastMove(board);
     board?.setPosition(game.fen());
     playing = true;
     status = color === 'w' ? 'Your move.' : 'The bot opens.';
@@ -109,22 +122,23 @@
     void session.load().catch(() => {});
     if (!boardEl) return;
     const container = boardEl;
-    // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it
-    // lazily keeps the route server-renderable (Seo head + static markup).
-    const { Chessboard, INPUT_EVENT_TYPE } = await import('cm-chessboard');
-    if (!container.isConnected) return;
+    // Shared Steel Night mount: theme class, piece sprite, markers extension
+    // and the aria-hidden svg fix all live in #lib/break/chess/theme.js (CH02–CH05).
+    const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
+      container,
+      () => game.fen()
+    );
+    if (!themed) return;
     try {
       worker = new BotWorker();
     } catch {
       worker = undefined;
     }
-    board = new Chessboard(container, {
-      position: game.fen(),
-      style: { pieces: { file: piecesUrl } }
-    });
-    // The container already carries the accessible name; the injected svg is
-    // decorative chrome and must not surface as a second, unnamed img.
-    container.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+    board = themed;
+    // A game can start while the imports were pending (Play Black's fallback
+    // opening) — surface that move's frame on the fresh board.
+    const last = game.history({ verbose: true }).at(-1);
+    if (last) showLastMove(board, last.from, last.to);
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!playing || game.turn() !== userColor) return false;
@@ -134,6 +148,7 @@
         promotion: 'q'
       });
       if (!move) return false;
+      showLastMove(board, move.from, move.to);
       board?.setPosition(game.fen(), true);
       refreshStatus();
       if (playing && game.turn() !== userColor) setTimeout(botMove, 50);
@@ -150,7 +165,7 @@
 />
 
 <AppShell>
-  <div class="mx-auto max-w-2xl space-y-4">
+  <div class="mx-auto max-w-3xl space-y-4">
     <h1 class="text-2xl font-bold">Chess bot</h1>
     <div class="flex gap-2">
       <button
@@ -166,9 +181,12 @@
         Play Black
       </button>
     </div>
+    {#if playing}
+      <SkullSentinel />
+    {/if}
     <div
       bind:this={boardEl}
-      class="break-board max-w-md"
+      class="break-board"
       role="img"
       aria-label="Chessboard"
     ></div>

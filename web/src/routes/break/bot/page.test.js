@@ -1,7 +1,13 @@
 // Tests for the chess-bot page's session-aware copy (AQ05/AUD-18): the sign-in
 // nudge is for anonymous visitors only — a signed-in player must never be told
 // their results are not saved.
-import { cleanup, render, screen, waitFor } from '@testing-library/svelte';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor
+} from '@testing-library/svelte';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const api = vi.hoisted(() => ({ saveScore: vi.fn() }));
@@ -13,19 +19,83 @@ vi.mock('$app/paths', () => ({
 vi.mock('$app/state', () => ({
   page: { url: new URL('https://counterspel.online/break/bot') }
 }));
+const boardMock = vi.hoisted(() => ({
+  /** @type {Record<string, any> | undefined} */
+  props: undefined,
+  /** @type {((event: any) => boolean) | undefined} */
+  inputHandler: undefined,
+  /** @type {[any, string][]} */
+  added: /** @type {[any, string][]} */ ([]),
+  /** @type {any[]} */
+  removed: /** @type {any[]} */ ([])
+}));
+
 vi.mock('cm-chessboard', () => ({
   Chessboard: class {
+    /**
+     * @param {HTMLElement} _el
+     * @param {Record<string, any>} props
+     */
+    constructor(_el, props) {
+      boardMock.props = props;
+    }
     setPosition() {}
-    enableMoveInput() {}
+    /** @param {(event: any) => boolean} handler */
+    enableMoveInput(handler) {
+      boardMock.inputHandler = handler;
+    }
+    /** @param {any} type @param {string} square */
+    addMarker(type, square) {
+      boardMock.added.push([type, square]);
+    }
+    /** @param {any} type */
+    removeMarkers(type) {
+      boardMock.removed.push(type);
+    }
   },
   INPUT_EVENT_TYPE: { validateMoveInput: 'validateMoveInput' }
 }));
 vi.mock('cm-chessboard/assets/chessboard.css', () => ({}));
-vi.mock('cm-chessboard/assets/pieces/standard.svg?url', () => ({
-  default: 'pieces.svg'
+vi.mock('cm-chessboard/src/extensions/markers/Markers.js', () => ({
+  Markers: function Markers() {},
+  MARKER_TYPE: {
+    frame: { class: 'marker-frame', slice: 'markerFrame' },
+    framePrimary: { class: 'marker-frame-primary', slice: 'markerFrame' }
+  }
 }));
+const themeMock = vi.hoisted(() => ({
+  /** @type {Promise<void> | undefined} */
+  gate: undefined,
+  called: false
+}));
+
+vi.mock('#lib/break/chess/theme.js', async (importOriginal) => {
+  const actual = /** @type {typeof import('#lib/break/chess/theme.js')} */ (
+    await importOriginal()
+  );
+  return {
+    ...actual,
+    mountThemedBoard: async (
+      /** @type {HTMLElement | undefined} */ el,
+      /** @type {string | (() => string)} */ position,
+      /** @type {'w' | 'b'} */ orientation
+    ) => {
+      themeMock.called = true;
+      await themeMock.gate;
+      return actual.mountThemedBoard(el, position, orientation);
+    }
+  };
+});
+const workerMock = vi.hoisted(() => ({
+  /** @type {{ onmessage?: (event: any) => void } | undefined} */
+  instance: undefined
+}));
+
 vi.mock('#lib/break/bot.worker.js?worker', () => ({
   default: class {
+    constructor() {
+      workerMock.instance = /** @type {any} */ (this);
+    }
     postMessage() {}
     terminate() {}
   }
@@ -41,6 +111,13 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  boardMock.props = undefined;
+  boardMock.inputHandler = undefined;
+  boardMock.added.length = 0;
+  boardMock.removed.length = 0;
+  workerMock.instance = undefined;
+  themeMock.gate = undefined;
+  themeMock.called = false;
   session.user = null;
   session.capabilities = null;
   session.status = 'unknown';
@@ -79,5 +156,87 @@ describe('chess bot session copy', () => {
     render(BotPage);
     await screen.findByRole('heading', { name: 'Chess bot' });
     expect(screen.getByRole('img', { name: 'Chessboard' })).toBeTruthy();
+  });
+});
+
+describe('steel-night board presentation (CH02–CH06)', () => {
+  it('mounts the board with the shared steel-night style and markers', async () => {
+    session.status = 'signed_in';
+    render(BotPage);
+    await screen.findByRole('img', { name: 'Chessboard' });
+    await waitFor(() => expect(boardMock.props).toBeTruthy());
+    expect(boardMock.props?.style?.cssClass).toBe('steel-night');
+    expect(boardMock.props?.style?.pieces?.file).toMatch(/steel-night.*\.svg$/);
+    expect(boardMock.props?.extensions?.length).toBeGreaterThan(0);
+  });
+
+  it('shows the skull opponent only while play is active', async () => {
+    session.status = 'signed_in';
+    const { container } = render(BotPage);
+    await screen.findByRole('img', { name: 'Chessboard' });
+    expect(container.querySelector('.skull-sentinel')).toBeNull();
+    await fireEvent.click(screen.getByRole('button', { name: 'Play White' }));
+    const skull = container.querySelector('.skull-sentinel');
+    expect(skull).toBeTruthy();
+    expect(skull?.getAttribute('aria-hidden')).toBe('true');
+    expect(skull?.getAttribute('loading')).toBe('lazy');
+  });
+
+  it('frames the accepted user move and the bot reply', async () => {
+    session.status = 'signed_in';
+    render(BotPage);
+    await screen.findByRole('img', { name: 'Chessboard' });
+    await waitFor(() => expect(boardMock.inputHandler).toBeTypeOf('function'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Play White' }));
+    const frame = { class: 'marker-frame-primary', slice: 'markerFrame' };
+    const accepted = boardMock.inputHandler?.({
+      type: 'validateMoveInput',
+      squareFrom: 'e2',
+      squareTo: 'e4',
+      chessboard: {}
+    });
+    expect(accepted).toBe(true);
+    expect(boardMock.added).toContainEqual([frame, 'e2']);
+    expect(boardMock.added).toContainEqual([frame, 'e4']);
+    // The worker's reply lands through onmessage and must be framed too.
+    await waitFor(() =>
+      expect(workerMock.instance?.onmessage).toBeTypeOf('function')
+    );
+    workerMock.instance?.onmessage?.({ data: { ok: true, uci: 'e7e5' } });
+    await waitFor(() => {
+      expect(boardMock.added).toContainEqual([frame, 'e7']);
+      expect(boardMock.added).toContainEqual([frame, 'e5']);
+    });
+  });
+
+  it('clears the last-move frame when a new game starts', async () => {
+    session.status = 'signed_in';
+    render(BotPage);
+    await screen.findByRole('img', { name: 'Chessboard' });
+    await waitFor(() => expect(boardMock.inputHandler).toBeTypeOf('function'));
+    await fireEvent.click(screen.getByRole('button', { name: 'Play White' }));
+    expect(boardMock.removed).toContainEqual({
+      class: 'marker-frame-primary',
+      slice: 'markerFrame'
+    });
+  });
+
+  it('syncs a game started while the board imports are pending', async () => {
+    session.status = 'signed_in';
+    /** @type {() => void} */
+    let release = () => {};
+    themeMock.gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    render(BotPage);
+    // Play Black while the lazy board import is in flight: the bot's
+    // fallback opening applies immediately, so the freshly mounted board
+    // must show Black to move — and frame that reply — not the startpos.
+    await waitFor(() => expect(themeMock.called).toBe(true));
+    await fireEvent.click(screen.getByRole('button', { name: 'Play Black' }));
+    release();
+    await waitFor(() => expect(boardMock.props).toBeTruthy());
+    expect(boardMock.props?.position).toContain(' b ');
+    await waitFor(() => expect(boardMock.added.length).toBe(2));
   });
 });

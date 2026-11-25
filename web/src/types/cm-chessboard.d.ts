@@ -26,5 +26,14 @@ declare module 'cm-chessboard' {
     ): void;
     disableMoveInput(): void;
     destroy(): void;
+    /** Attached by the Markers extension at mount. */
+    addMarker?(
+      markerType: { class: string; slice: string },
+      square: string
+    ): void;
+    removeMarkers?(
+      markerType?: { class: string; slice: string },
+      square?: string
+    ): void;
   }
 }
