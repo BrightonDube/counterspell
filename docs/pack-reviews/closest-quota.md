@@ -1,6 +1,6 @@
 # Review summary: closest-quota
 
-Round 1, content hash 0455b4edb4b4. Written for a non-expert reader. One page.
+Round 1, content hash 9df7aa1191d5. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A rite needs a quota and a sorted column of marks is weighed in pairs. Return the pair sum nearest the quota; ties return the smaller sum.

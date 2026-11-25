@@ -138,3 +138,14 @@ scan over the new public trees and summaries is clean.
 All ten approved under the delegated publication instruction of
 21 November 2026: `status = "published"` in this commit; `approval.toml`
 per slug lands in the private repo stamped with this commit's hash.
+
+## Review round 3 (private-repo PIP-12 fix)
+
+Devin review on the private approvals PR found five curated hidden cases
+duplicating public samples (flood-line 2, closest-quota 1, harbour-depths
+1, sigil-dedup 1, triad-rite 1). Each was replaced with a distinct
+schema-valid input whose expected value was re-derived from the pack's
+reference; `sbx_batch02` was re-run and passed 45.12s. The five affected
+approvals were restamped with canonical manifest hashes computed over git
+blob bytes, and the five review summaries now record the fresh assembly
+hashes (private PR #8, this commit).

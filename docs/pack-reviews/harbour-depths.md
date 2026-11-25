@@ -1,6 +1,6 @@
 # Review summary: harbour-depths
 
-Round 1, content hash f2c822ca3bb8. Written for a non-expert reader. One page.
+Round 1, content hash 8edc9d1b9dab. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A harbour wall is a row of posts with heights; water held between two posts fills to the lower post's height across the gap. Return the most water any pair of posts can hold.

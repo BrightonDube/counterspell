@@ -1,6 +1,6 @@
 # Review summary: triad-rite
 
-Round 1, content hash abb6a1627c88. Written for a non-expert reader. One page.
+Round 1, content hash 8191314a4099. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A rite needs three candles whose marks sum to a quota. The sorted column may repeat marks, and every choice of three different candles counts as its own triad. Return the count.
