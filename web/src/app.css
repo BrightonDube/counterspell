@@ -112,6 +112,93 @@ body {
   }
 }
 
+/* A chessboard is always a square: reserve the space before cm-chessboard mounts
+   so the puzzle and bot pages do not shift layout as the board appears (AQ07).
+   Sizing is bounded by BOTH content width and viewport height (CH03): the board
+   takes the smaller of the column and ~72dvh, capped so wide screens get real
+   size without pushing controls off-screen. */
+.break-board {
+  inline-size: min(100%, calc(100dvh - 20rem));
+  max-inline-size: 640px;
+  aspect-ratio: 1;
+  margin-inline: auto;
+}
+
+/* Steel Night board theme for cm-chessboard (CH04): squares, frame,
+   coordinates and move-state markers all come from palette tokens. */
+.cm-chessboard.steel-night .board .square.white {
+  fill: var(--accent-moss);
+}
+.cm-chessboard.steel-night .board .square.black {
+  fill: var(--accent-moss-deep);
+}
+.cm-chessboard.steel-night.border-type-frame .board .border {
+  fill: var(--border);
+}
+.cm-chessboard.steel-night.border-type-frame .board .border-inner {
+  fill: var(--border-strong);
+  stroke: var(--border-strong);
+  stroke-width: 0.7%;
+}
+.cm-chessboard.steel-night .coordinates .coordinate {
+  fill: var(--text-muted);
+}
+.cm-chessboard.steel-night .coordinates .coordinate.black {
+  fill: var(--text);
+}
+.cm-chessboard.steel-night .coordinates .coordinate.white {
+  fill: var(--accent-moss-deep);
+}
+.cm-chessboard.steel-night .markers .marker.marker-frame {
+  stroke: var(--accent-candle);
+  stroke-width: 1.8px;
+  opacity: 0.6;
+}
+.cm-chessboard.steel-night .markers .marker.marker-dot {
+  fill: var(--accent-candle-glow);
+  opacity: 0.55;
+}
+.cm-chessboard.steel-night .markers .marker.marker-bevel,
+.cm-chessboard.steel-night .markers .marker.marker-square {
+  fill: var(--accent-candle);
+  opacity: 0.2;
+}
+.cm-chessboard.steel-night .markers .marker.marker-circle-danger,
+.cm-chessboard.steel-night .markers .marker.marker-circle-danger-filled {
+  stroke: var(--danger);
+  fill: var(--danger);
+}
+
+/* The skull opponent (CH06): a quiet sentinel above the board. Motion is a
+   long-paused hover — mostly still, with a slow drift every cycle — on the
+   compositor only. The global reduced-motion collapse stills it. */
+@keyframes skull-hover {
+  0%,
+  72%,
+  100% {
+    transform: translateY(0);
+  }
+  78% {
+    transform: translateY(-7px);
+  }
+  86% {
+    transform: translateY(-5px);
+  }
+  92% {
+    transform: translateY(0);
+  }
+}
+.skull-sentinel {
+  display: block;
+  inline-size: 96px;
+  block-size: 96px;
+  margin-inline: auto;
+  pointer-events: none;
+  user-select: none;
+  animation: skull-hover 12s ease-in-out infinite;
+  filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.45));
+}
+
 /* landing: begin */
 .cta {
   transition-duration: 200ms;
@@ -173,13 +260,6 @@ body {
   );
   background-size: 600px 100%;
   animation: skeleton-shimmer 1.4s linear infinite;
-}
-
-/* A chessboard is always a square: reserve the space before cm-chessboard mounts
-   so the puzzle and bot pages do not shift layout as the board appears (AQ07). */
-.break-board {
-  inline-size: 100%;
-  aspect-ratio: 1;
 }
 
 /* Shared motion vocabulary for art assets (AnimatedArt, the familiar mascot). */

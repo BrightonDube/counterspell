@@ -18,8 +18,20 @@ vi.mock('$app/paths', () => ({
 vi.mock('$app/state', () => ({
   page: { url: new URL('https://counterspel.online/break/puzzle') }
 }));
+const boardMock = vi.hoisted(() => ({
+  /** @type {Record<string, any> | undefined} */
+  props: undefined
+}));
+
 vi.mock('cm-chessboard', () => ({
   Chessboard: class {
+    /**
+     * @param {HTMLElement} _el
+     * @param {Record<string, any>} props
+     */
+    constructor(_el, props) {
+      boardMock.props = props;
+    }
     setPosition() {}
     enableMoveInput() {}
   },
@@ -28,6 +40,16 @@ vi.mock('cm-chessboard', () => ({
 vi.mock('cm-chessboard/assets/chessboard.css', () => ({}));
 vi.mock('cm-chessboard/assets/pieces/standard.svg?url', () => ({
   default: 'pieces.svg'
+}));
+vi.mock('cm-chessboard/src/extensions/markers/Markers.js', () => ({
+  Markers: function Markers() {},
+  MARKER_TYPE: { frame: { class: 'marker-frame', slice: 'markerFrame' } }
+}));
+vi.mock('#lib/chess/pieces-steel-night.svg?url', () => ({
+  default: '/assets/pieces-steel-night.svg'
+}));
+vi.mock('cm-chessboard/assets/extensions/markers/markers.svg?url', () => ({
+  default: '/assets/markers.svg'
 }));
 
 import { session } from '#lib/auth/session.svelte.js';
@@ -55,6 +77,7 @@ async function solvePuzzle() {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  boardMock.props = undefined;
   session.user = null;
   session.capabilities = null;
   session.status = 'unknown';
@@ -92,5 +115,29 @@ describe('daily puzzle session handling', () => {
       mistakes: 0
     });
     await screen.findByText('Score saved: 42.');
+  });
+});
+
+describe('steel-night board presentation (CH02–CH06)', () => {
+  it('mounts the board with the shared steel-night style and markers', async () => {
+    session.status = 'signed_in';
+    api.fetchDaily.mockResolvedValue(DAILY);
+    render(PuzzlePage);
+    await screen.findByRole('img', { name: 'Chessboard' });
+    await waitFor(() => expect(boardMock.props).toBeTruthy());
+    expect(boardMock.props?.style?.cssClass).toBe('steel-night');
+    expect(boardMock.props?.style?.pieces?.file).toMatch(/steel-night.*\.svg$/);
+    expect(boardMock.props?.extensions?.length).toBeGreaterThan(0);
+  });
+
+  it('shows the skull opponent while the puzzle is playable', async () => {
+    session.status = 'signed_in';
+    api.fetchDaily.mockResolvedValue(DAILY);
+    const { container } = render(PuzzlePage);
+    expect(container.querySelector('.skull-sentinel')).toBeNull();
+    await screen.findByText('Your move.');
+    const skull = container.querySelector('.skull-sentinel');
+    expect(skull).toBeTruthy();
+    expect(skull?.getAttribute('aria-hidden')).toBe('true');
   });
 });

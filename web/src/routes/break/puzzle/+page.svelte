@@ -2,8 +2,9 @@
   import AppShell from '../../../lib/shell/AppShell.svelte';
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
-  import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
+  import { mountThemedBoard } from '#lib/chess/theme.js';
+  import SkullSentinel from '#lib/chess/SkullSentinel.svelte';
   import { fetchDaily, saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
   import { newPuzzle, tryMove } from '#lib/break/puzzle.js';
@@ -97,17 +98,14 @@
     puzzleMeta = /** @type {any} */ (daily);
     const solution = daily.puzzle.moves.split(' ');
     puzzleState = newPuzzle(daily.puzzle.fen, solution);
-    // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it
-    // lazily keeps the route server-renderable (Seo head + static markup).
-    const { Chessboard, INPUT_EVENT_TYPE } = await import('cm-chessboard');
-    if (!boardEl?.isConnected) return;
-    board = new Chessboard(boardEl, {
-      position: puzzleState.game.fen(),
-      style: { pieces: { file: piecesUrl } }
-    });
-    // The container already carries the accessible name; the injected svg is
-    // decorative chrome and must not surface as a second, unnamed img.
-    boardEl.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+    // Shared Steel Night mount: theme class, piece sprite, markers extension
+    // and the aria-hidden svg fix all live in #lib/chess/theme.js (CH02–CH05).
+    const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
+      boardEl,
+      puzzleState.game.fen()
+    );
+    if (!themed) return;
+    board = themed;
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!puzzleState) return false;
@@ -133,7 +131,7 @@
 />
 
 <AppShell>
-  <div class="mx-auto max-w-2xl space-y-4">
+  <div class="mx-auto max-w-3xl space-y-4">
     <h1 class="text-2xl font-bold">Daily chess puzzle</h1>
     {#if puzzleMeta}
       <p class="text-sm text-text-muted">
@@ -145,9 +143,12 @@
         {/if}
       </p>
     {/if}
+    {#if puzzleState?.status === 'playing'}
+      <SkullSentinel />
+    {/if}
     <div
       bind:this={boardEl}
-      class="break-board max-w-md"
+      class="break-board"
       data-testid="board"
       role="img"
       aria-label="Chessboard"

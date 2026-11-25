@@ -3,8 +3,9 @@
   import { resolve } from '$app/paths';
   import { onMount, onDestroy } from 'svelte';
   import { Chess } from 'chess.js';
-  import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
+  import { mountThemedBoard } from '#lib/chess/theme.js';
+  import SkullSentinel from '#lib/chess/SkullSentinel.svelte';
   import { saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
   import BotWorker from '#lib/break/bot.worker.js?worker';
@@ -109,22 +110,19 @@
     void session.load().catch(() => {});
     if (!boardEl) return;
     const container = boardEl;
-    // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it
-    // lazily keeps the route server-renderable (Seo head + static markup).
-    const { Chessboard, INPUT_EVENT_TYPE } = await import('cm-chessboard');
-    if (!container.isConnected) return;
+    // Shared Steel Night mount: theme class, piece sprite, markers extension
+    // and the aria-hidden svg fix all live in #lib/chess/theme.js (CH02–CH05).
+    const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
+      container,
+      game.fen()
+    );
+    if (!themed) return;
     try {
       worker = new BotWorker();
     } catch {
       worker = undefined;
     }
-    board = new Chessboard(container, {
-      position: game.fen(),
-      style: { pieces: { file: piecesUrl } }
-    });
-    // The container already carries the accessible name; the injected svg is
-    // decorative chrome and must not surface as a second, unnamed img.
-    container.querySelector('svg')?.setAttribute('aria-hidden', 'true');
+    board = themed;
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!playing || game.turn() !== userColor) return false;
@@ -150,7 +148,7 @@
 />
 
 <AppShell>
-  <div class="mx-auto max-w-2xl space-y-4">
+  <div class="mx-auto max-w-3xl space-y-4">
     <h1 class="text-2xl font-bold">Chess bot</h1>
     <div class="flex gap-2">
       <button
@@ -166,9 +164,12 @@
         Play Black
       </button>
     </div>
+    {#if playing}
+      <SkullSentinel />
+    {/if}
     <div
       bind:this={boardEl}
-      class="break-board max-w-md"
+      class="break-board"
       role="img"
       aria-label="Chessboard"
     ></div>
