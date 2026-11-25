@@ -7,6 +7,12 @@
   const slug = $derived(page.params.slug ?? '');
   let problem = $state<ProblemDetail | undefined>();
 
+  // Navigating to another slug must drop the previous problem — otherwise the
+  // title/description keep naming it while the next one loads.
+  $effect(() => {
+    if (slug) problem = undefined;
+  });
+
   const title = $derived(
     problem
       ? `${problem.title} · Counterspell`

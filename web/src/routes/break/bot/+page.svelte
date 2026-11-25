@@ -24,7 +24,6 @@
   let playing = $state(false);
   let fallbackNote = $state('');
   let seed = String(Date.now());
-  let signedIn = $state(false);
 
   function refreshStatus() {
     statusLine = `${game.turn() === 'w' ? 'White' : 'Black'} to move. FEN ${game.fen()}`;
@@ -32,22 +31,32 @@
       playing = false;
       const won = game.turn() !== userColor;
       status = won ? 'You win. Well played.' : 'The bot wins this one.';
-      if (signedIn)
-        void saveScore({
-          game: 'chess_bot',
-          result: won ? 'win' : 'loss',
-          moves: game.moveNumber()
-        });
+      void recordEnd({
+        game: 'chess_bot',
+        result: won ? 'win' : 'loss',
+        moves: game.moveNumber()
+      });
     } else if (game.isDraw() || game.isStalemate()) {
       playing = false;
       status = 'A draw.';
-      if (signedIn)
-        void saveScore({
-          game: 'chess_bot',
-          result: 'draw',
-          moves: game.moveNumber()
-        });
+      void recordEnd({
+        game: 'chess_bot',
+        result: 'draw',
+        moves: game.moveNumber()
+      });
     }
+  }
+
+  // Await the session answer before deciding — a probe still in flight must
+  // not drop a signed-in player's result (AUD-19/AUD-20).
+  /** @param {Record<string, unknown>} payload */
+  function recordEnd(payload) {
+    void session
+      .load()
+      .then(() => {
+        if (session.status === 'signed_in') void saveScore(payload);
+      })
+      .catch(() => {});
   }
 
   function botMove() {
@@ -97,12 +106,7 @@
   onMount(async () => {
     // Session copy is honest about who is playing: anonymous players see the
     // sign-in nudge; signed-in players never get told their result is unsaved.
-    void session
-      .load()
-      .then(() => {
-        signedIn = session.status === 'signed_in';
-      })
-      .catch(() => {});
+    void session.load().catch(() => {});
     if (!boardEl) return;
     const container = boardEl;
     // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it

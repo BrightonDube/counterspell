@@ -146,7 +146,9 @@ test('the session answer is fetched once, not per consumer', async ({
   });
   await page.goto('/dashboard');
   await page.waitForLoadState('networkidle');
-  expect(probes.length).toBeLessThanOrEqual(1);
+  // Exactly one status probe — a missing one means session resolution was lost,
+  // a second one means dedup regressed.
+  expect(probes).toEqual([expect.stringContaining('/api/auth/session')]);
 });
 
 test('the chess bot board does not shift layout while it mounts', async ({

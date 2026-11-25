@@ -43,8 +43,16 @@
   async function recordScore() {
     if (!puzzleState || !puzzleMeta) return;
     // A signed-out player must never trigger the scores endpoint — the 401 is
-    // expected noise, so the session answer is awaited before the request.
-    await session.load().catch(() => {});
+    // expected noise, so the session answer is awaited before the request. A
+    // failed probe is a retryable error, not a sign-in nudge.
+    const sessionOk = await session.load().then(
+      () => true,
+      () => false
+    );
+    if (!sessionOk) {
+      saveResult = 'Could not check your session — the score was not saved.';
+      return;
+    }
     if (session.status !== 'signed_in') {
       signedOut = true;
       saveResult = 'Sign in to save your score.';

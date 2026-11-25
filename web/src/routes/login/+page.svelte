@@ -65,7 +65,7 @@
       void focusCode();
     } else {
       void session
-        .load()
+        .load({ force: true })
         .then(() => {
           if (session.status === 'signed_in' && !busy && !twoFactor) {
             return goToDestination(returnTo);

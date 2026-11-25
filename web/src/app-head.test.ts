@@ -27,10 +27,11 @@ describe('landing document head', () => {
     expect(appHtml).not.toContain('hero-moon');
   });
 
-  // Routes served through the SPA fallback (e.g. /problems/[slug]) render this
-  // shell — it must never reach a crawler literally untitled (AUD-12).
-  it('ships a default title and description for fallback-served routes', () => {
-    expect(appHtml).toContain('<title>');
-    expect(appHtml).toContain('name="description"');
+  // A static <title>/<meta description> would land before %sveltekit.head% and
+  // win over every route's Seo tags — the shell must leave head metadata to the
+  // routes (AUD-12).
+  it('does not shadow route metadata with a static title or description', () => {
+    expect(appHtml).not.toContain('<title>');
+    expect(appHtml).not.toContain('name="description"');
   });
 });

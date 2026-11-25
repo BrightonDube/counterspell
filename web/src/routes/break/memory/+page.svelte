@@ -21,6 +21,7 @@
   let flashKind = $state('');
   let focusIdx = $state(0);
   let signedOut = $state(false);
+  let saveError = $state('');
   /** @type {HTMLButtonElement[]} */
   let tileEls = [];
   let reduced = false;
@@ -62,13 +63,7 @@
       phase = 'over';
       const lvl = level(sequence);
       announce = `Wrong, game over at level ${lvl}.`;
-      // A signed-out player must never trigger the scores endpoint — the 401
-      // is expected noise, so the answer is checked before the request.
-      if (session.status === 'signed_in') {
-        void saveScore({ game: 'brain', level: lvl });
-      } else {
-        signedOut = true;
-      }
+      void finalizeScore(lvl);
     } else {
       flashKind = 'correct';
       announce = verdict === 'round_done' ? 'Correct. Next round.' : 'Correct.';
@@ -78,6 +73,25 @@
       }
     }
     setTimeout(() => (flashTile = -1), 400);
+  }
+
+  // Await the session answer before deciding — a probe still in flight must not
+  // drop a signed-in player's score, and an anonymous player must never trigger
+  // the scores endpoint's expected 401 (AUD-19/AUD-20).
+  /** @param {number} lvl */
+  function finalizeScore(lvl) {
+    void session
+      .load()
+      .then(() => {
+        if (session.status === 'signed_in') {
+          void saveScore({ game: 'brain', level: lvl });
+        } else {
+          signedOut = true;
+        }
+      })
+      .catch(() => {
+        saveError = 'Could not check your session — the score was not saved.';
+      });
   }
 
   /** @param {KeyboardEvent} event @param {number} i */
@@ -126,6 +140,9 @@
         </a>
         to save your score.
       </p>
+    {/if}
+    {#if saveError}
+      <p role="alert" class="text-sm text-danger">{saveError}</p>
     {/if}
     <div class="grid grid-cols-3 gap-2" role="group" aria-label="Memory tiles">
       {#each Array(TILES) as _, i (i)}

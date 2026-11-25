@@ -51,9 +51,12 @@ describe('chess bot session copy', () => {
     session.status = 'signed_in';
     render(BotPage);
     await screen.findByRole('heading', { name: 'Chess bot' });
-    await waitFor(() =>
-      expect(screen.queryByText(/Signed-out results are not saved/i)).toBeNull()
-    );
+    await waitFor(() => {
+      expect(
+        screen.queryByText(/Signed-out results are not saved/i)
+      ).toBeNull();
+      expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull();
+    });
   });
 
   it('invites an anonymous player to sign in', async () => {
