@@ -34,7 +34,9 @@ export type SpeechResult =
 /** The Familiar's own API calls. The workspace injects fakes in tests. */
 export interface FamiliarDeps {
   loadPreferences(): Promise<FamiliarPrefs | null>;
-  savePreferences(prefs: FamiliarPrefs): Promise<{ synced: boolean }>;
+  /** The server merges named fields into the stored prefs, so saves send only
+   * the fields the learner actually changed. */
+  savePreferences(prefs: Partial<FamiliarPrefs>): Promise<{ synced: boolean }>;
   requestSpeech(runId: string): Promise<SpeechResult>;
 }
 
@@ -93,7 +95,7 @@ export async function requestSpeech(
 
 /** Saves the mute and hide choices. A failed save reports `synced: false` and keeps the local choice. */
 export async function savePreferences(
-  prefs: FamiliarPrefs,
+  prefs: Partial<FamiliarPrefs>,
   options: RequestOptions = {}
 ): Promise<{ synced: boolean }> {
   try {

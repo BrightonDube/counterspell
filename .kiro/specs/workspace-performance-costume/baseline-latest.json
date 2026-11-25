@@ -7,27 +7,27 @@
   "url": "/problems/two-sum",
   "measured": {
     "marks": {
-      "problem-detail-loaded": 2832,
-      "workspace-shell-interactive": 2877,
-      "monaco-ready": 17258
+      "problem-detail-loaded": 2829,
+      "workspace-shell-interactive": 2870,
+      "monaco-ready": 17571
     },
-    "navStartEpoch": 1795576156260.8,
+    "navStartEpoch": 1795578830952.2,
     "navigation": {
-      "responseEnd": 167,
-      "domContentLoaded": 199,
-      "load": 201
+      "responseEnd": 160,
+      "domContentLoaded": 177,
+      "load": 179
     },
     "cls": 0.0003810706190797889
   },
   "totals": {
-    "requests": 42,
-    "bytes": 3184683,
+    "requests": 53,
+    "bytes": 3297742,
     "byType": {
-      "Document": 2157,
-      "Script": 2904675,
+      "Document": 2159,
+      "Script": 3010713,
       "Other": 1012,
-      "Stylesheet": 184125,
-      "Fetch": 1477,
+      "Stylesheet": 190992,
+      "Fetch": 1629,
       "Font": 91237
     }
   },
@@ -39,260 +39,330 @@
     {
       "url": "/api/languages",
       "bytes": 541
+    },
+    {
+      "url": "/api/auth/session",
+      "bytes": 152
     }
   ],
   "waterfall": [
     {
-      "start": 1,
+      "start": 0,
       "type": "Document",
-      "bytes": 2157,
+      "bytes": 2159,
       "url": "/problems/two-sum"
     },
     {
-      "start": 194,
+      "start": 175,
       "type": "Script",
       "bytes": 840,
       "url": "/_app/immutable/entry/start.OFsPskFf.js"
     },
     {
-      "start": 250,
+      "start": 210,
       "type": "Other",
       "bytes": 1012,
       "url": "/landing/moon.svg"
     },
     {
-      "start": 370,
+      "start": 359,
       "type": "Script",
       "bytes": 355,
       "url": "/_app/immutable/entry/payload.DSmR2FwN.js"
     },
     {
-      "start": 370,
+      "start": 360,
       "type": "Script",
       "bytes": 1923,
       "url": "/_app/immutable/chunks/DclECHGd.js"
     },
     {
-      "start": 575,
+      "start": 561,
       "type": "Script",
       "bytes": 342,
       "url": "/_app/immutable/chunks/DxC6IHQR.js"
     },
     {
-      "start": 577,
+      "start": 562,
       "type": "Script",
       "bytes": 42291,
       "url": "/_app/immutable/chunks/B4U1mhKG.js"
     },
     {
-      "start": 578,
+      "start": 563,
       "type": "Script",
       "bytes": 47299,
       "url": "/_app/immutable/chunks/CMlJRBxf.js"
     },
     {
-      "start": 578,
+      "start": 564,
       "type": "Script",
       "bytes": 6565,
       "url": "/_app/immutable/chunks/BR-fiqzd.js"
     },
     {
-      "start": 579,
+      "start": 565,
       "type": "Script",
       "bytes": 4084,
-      "url": "/_app/immutable/entry/app.B-u9YWH3.js"
+      "url": "/_app/immutable/entry/app.DtpyaXuP.js"
     },
     {
-      "start": 1273,
+      "start": 1260,
       "type": "Script",
       "bytes": 724,
-      "url": "/_app/immutable/nodes/0.ePqGESRj.js"
+      "url": "/_app/immutable/nodes/0.0kZlQH8q.js"
     },
     {
-      "start": 1274,
+      "start": 1261,
       "type": "Script",
       "bytes": 995,
       "url": "/_app/immutable/chunks/BEyettsY.js"
     },
     {
-      "start": 1275,
+      "start": 1262,
       "type": "Script",
       "bytes": 5474,
       "url": "/_app/immutable/chunks/Bqhih1g-.js"
     },
     {
-      "start": 1276,
+      "start": 1263,
       "type": "Stylesheet",
-      "bytes": 83456,
-      "url": "/_app/immutable/assets/0.Bbhptt_l.css"
+      "bytes": 83870,
+      "url": "/_app/immutable/assets/0.Bo1G03Ns.css"
     },
     {
-      "start": 1277,
+      "start": 1264,
       "type": "Script",
       "bytes": 2178,
       "url": "/_app/immutable/nodes/1.DuzgvsMY.js"
     },
     {
-      "start": 1278,
+      "start": 1265,
       "type": "Script",
       "bytes": 329,
       "url": "/_app/immutable/chunks/CAR7ENn0.js"
     },
     {
-      "start": 1279,
+      "start": 1266,
       "type": "Script",
       "bytes": 312,
       "url": "/_app/immutable/chunks/B6yt6qjJ.js"
     },
     {
-      "start": 1279,
+      "start": 1267,
       "type": "Script",
       "bytes": 312,
       "url": "/_app/immutable/chunks/VjpCb4D6.js"
     },
     {
-      "start": 1280,
+      "start": 1268,
       "type": "Script",
       "bytes": 1685,
       "url": "/_app/immutable/chunks/kwi2eJW-.js"
     },
     {
-      "start": 1954,
+      "start": 1940,
       "type": "Font",
       "bytes": 69779,
       "url": "/_app/immutable/assets/Geist-Variable.BNK-hTUD.woff2"
     },
     {
-      "start": 2007,
+      "start": 1987,
       "type": "Script",
-      "bytes": 58439,
-      "url": "/_app/immutable/nodes/11.DXXUr1ea.js"
+      "bytes": 58795,
+      "url": "/_app/immutable/nodes/11.DxpGW-Io.js"
     },
     {
-      "start": 2011,
+      "start": 1989,
       "type": "Script",
       "bytes": 1591,
       "url": "/_app/immutable/chunks/BBq0xE-F.js"
     },
     {
-      "start": 2013,
+      "start": 1990,
       "type": "Script",
       "bytes": 1301,
       "url": "/_app/immutable/chunks/Bj51uwER.js"
     },
     {
-      "start": 2014,
+      "start": 1990,
       "type": "Script",
       "bytes": 1257,
       "url": "/_app/immutable/chunks/C7Jpj7Qn.js"
     },
     {
-      "start": 2015,
+      "start": 1990,
       "type": "Script",
       "bytes": 1878,
       "url": "/_app/immutable/chunks/BIPzjaNG.js"
     },
     {
-      "start": 2016,
+      "start": 1990,
       "type": "Stylesheet",
       "bytes": 712,
       "url": "/_app/immutable/assets/11.DJ1bCA_r.css"
     },
     {
-      "start": 2029,
+      "start": 1996,
       "type": "Fetch",
       "bytes": 936,
       "url": "/api/problems/two-sum"
     },
     {
-      "start": 2030,
+      "start": 1998,
       "type": "Fetch",
       "bytes": 541,
       "url": "/api/languages"
     },
     {
-      "start": 2880,
+      "start": 2873,
       "type": "Script",
       "bytes": 1712774,
       "url": "/_app/immutable/chunks/Bud_316e.js"
     },
     {
-      "start": 2884,
+      "start": 2875,
       "type": "Script",
       "bytes": 279962,
       "url": "/_app/immutable/chunks/DJPCHVyS.js"
     },
     {
-      "start": 2885,
+      "start": 2876,
       "type": "Script",
       "bytes": 649750,
       "url": "/_app/immutable/chunks/q7Qs31SZ.js"
     },
     {
-      "start": 2886,
+      "start": 2876,
       "type": "Script",
       "bytes": 73931,
       "url": "/_app/immutable/chunks/IsqCst71.js"
     },
     {
-      "start": 2886,
+      "start": 2877,
       "type": "Script",
       "bytes": 1097,
       "url": "/_app/immutable/chunks/CddjyklS.js"
     },
     {
-      "start": 2888,
+      "start": 2878,
       "type": "Stylesheet",
       "bytes": 337,
       "url": "/_app/immutable/assets/aria.BQ0Fa-r7.css"
     },
     {
-      "start": 2889,
+      "start": 2879,
       "type": "Stylesheet",
       "bytes": 16146,
       "url": "/_app/immutable/assets/accessibility.B7Cy09uO.css"
     },
     {
-      "start": 2890,
+      "start": 2880,
       "type": "Script",
       "bytes": 658,
       "url": "/_app/immutable/chunks/29ck4YJ8.js"
     },
     {
-      "start": 2891,
+      "start": 2881,
       "type": "Script",
       "bytes": 614,
       "url": "/_app/immutable/chunks/DLP9zJKa.js"
     },
     {
-      "start": 2892,
+      "start": 2883,
       "type": "Stylesheet",
       "bytes": 83474,
       "url": "/_app/immutable/assets/editor.J-Jc3epe.css"
     },
     {
-      "start": 2894,
+      "start": 2886,
       "type": "Script",
       "bytes": 954,
       "url": "/_app/immutable/chunks/CGx9SKio.js"
     },
     {
-      "start": 2895,
+      "start": 2887,
       "type": "Script",
       "bytes": 1024,
       "url": "/_app/immutable/chunks/C8Vhj1vr.js"
     },
     {
-      "start": 2912,
+      "start": 2889,
+      "type": "Script",
+      "bytes": 79720,
+      "url": "/_app/immutable/chunks/B2q0S1A8.js"
+    },
+    {
+      "start": 2890,
+      "type": "Stylesheet",
+      "bytes": 5894,
+      "url": "/_app/immutable/assets/findController.jHPjua6R.css"
+    },
+    {
+      "start": 2891,
+      "type": "Script",
+      "bytes": 10757,
+      "url": "/_app/immutable/chunks/DR3TSgg5.js"
+    },
+    {
+      "start": 2892,
+      "type": "Script",
+      "bytes": 1096,
+      "url": "/_app/immutable/chunks/CupEW2xL.js"
+    },
+    {
+      "start": 2909,
       "type": "Font",
       "bytes": 21458,
       "url": "/_app/immutable/assets/jetbrains-mono-latin-400-normal.V6pRDFza.woff2"
     },
     {
-      "start": 17263,
+      "start": 17575,
       "type": "Script",
       "bytes": 3737,
       "url": "/_app/immutable/chunks/CNFnWOyB.js"
+    },
+    {
+      "start": 17651,
+      "type": "Script",
+      "bytes": 1852,
+      "url": "/_app/immutable/chunks/DQ-iNSaE.js"
+    },
+    {
+      "start": 17655,
+      "type": "Script",
+      "bytes": 10097,
+      "url": "/_app/immutable/chunks/Xyh8gLWn.js"
+    },
+    {
+      "start": 17656,
+      "type": "Stylesheet",
+      "bytes": 559,
+      "url": "/_app/immutable/assets/Familiar.DvpQXzlN.css"
+    },
+    {
+      "start": 17659,
+      "type": "Fetch",
+      "bytes": 152,
+      "url": "/api/auth/session"
+    },
+    {
+      "start": 17665,
+      "type": "Script",
+      "bytes": 1006,
+      "url": "/_app/immutable/chunks/DIb1hirW.js"
+    },
+    {
+      "start": 17667,
+      "type": "Script",
+      "bytes": 529,
+      "url": "/_app/immutable/chunks/Co6U7MGa.js"
+    },
+    {
+      "start": 17668,
+      "type": "Script",
+      "bytes": 625,
+      "url": "/_app/immutable/chunks/B_YmD4hQ.js"
     }
   ],
   "topTransfers": [
@@ -312,14 +382,19 @@
       "bytes": 279962
     },
     {
+      "url": "0.Bo1G03Ns.css",
+      "type": "Stylesheet",
+      "bytes": 83870
+    },
+    {
       "url": "editor.J-Jc3epe.css",
       "type": "Stylesheet",
       "bytes": 83474
     },
     {
-      "url": "0.Bbhptt_l.css",
-      "type": "Stylesheet",
-      "bytes": 83456
+      "url": "B2q0S1A8.js",
+      "type": "Script",
+      "bytes": 79720
     },
     {
       "url": "IsqCst71.js",
@@ -332,9 +407,9 @@
       "bytes": 69779
     },
     {
-      "url": "11.DXXUr1ea.js",
+      "url": "11.DxpGW-Io.js",
       "type": "Script",
-      "bytes": 58439
+      "bytes": 58795
     },
     {
       "url": "CMlJRBxf.js",
@@ -357,19 +432,14 @@
       "bytes": 16146
     },
     {
-      "url": "BR-fiqzd.js",
+      "url": "DR3TSgg5.js",
       "type": "Script",
-      "bytes": 6565
+      "bytes": 10757
     },
     {
-      "url": "Bqhih1g-.js",
+      "url": "Xyh8gLWn.js",
       "type": "Script",
-      "bytes": 5474
-    },
-    {
-      "url": "app.B-u9YWH3.js",
-      "type": "Script",
-      "bytes": 4084
+      "bytes": 10097
     }
   ]
 }

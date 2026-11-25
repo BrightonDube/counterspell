@@ -29,6 +29,7 @@ vi.mock('../runs/api', async (importOriginal) => {
 
 import { startRunAction } from '../runs/api';
 import { session } from '../auth/session.svelte.js';
+import type { FamiliarPrefs } from '../api/familiar';
 import { initialRunState, type RunStreamState } from '../runs/reducer';
 import { parseRunView } from '../runs/types';
 import type { GhostView } from '../ghost/types';
@@ -38,6 +39,7 @@ import WorkspaceShell from './WorkspaceShell.svelte';
 afterEach(() => {
   cleanup();
   session.status = 'unknown';
+  vi.restoreAllMocks();
 });
 
 /** A minimal wrong-answer ghost, as the trusted judge's stream payload parses it. */
@@ -469,6 +471,69 @@ describe('WorkspaceShell', () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
     expect(loadPreferences).not.toHaveBeenCalled();
     expect(requestSpeech).not.toHaveBeenCalled();
+  });
+
+  // Breaks if a direct signed-in visit leaves the store at `unknown` — the
+  // Familiar gates would stay shut forever even though a cookie session exists.
+  it('resolves an unknown session before gating Familiar requests', async () => {
+    session.status = 'unknown';
+    const loadSpy = vi.spyOn(session, 'load').mockImplementation(async () => {
+      session.status = 'signed_in';
+    });
+    const loadPreferences = vi.fn(() =>
+      Promise.resolve({ muted: false, hidden: false })
+    );
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        atmosphere: true,
+        familiarDeps: {
+          loadPreferences,
+          savePreferences: vi.fn(() => Promise.resolve({ synced: true })),
+          requestSpeech: vi.fn(() =>
+            Promise.resolve({ kind: 'unavailable' as const, text: '' })
+          )
+        }
+      }
+    });
+    await vi.waitFor(() => expect(loadSpy).toHaveBeenCalled());
+    await vi.waitFor(() => expect(loadPreferences).toHaveBeenCalled());
+  });
+
+  // Breaks if a toggle that beats the preference read sends the untouched
+  // sibling field and clobbers its saved value — the server merges every
+  // named field, so only the changed one may go.
+  it('sends only the changed field when a toggle beats the preference read', async () => {
+    session.status = 'signed_in';
+    let resolveLoad: (prefs: FamiliarPrefs | null) => void = () => {};
+    const pending = new Promise<FamiliarPrefs | null>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const savePreferences = vi.fn(() => Promise.resolve({ synced: true }));
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        atmosphere: true,
+        familiarDeps: {
+          loadPreferences: () => pending,
+          savePreferences,
+          requestSpeech: vi.fn(() =>
+            Promise.resolve({ kind: 'unavailable' as const, text: '' })
+          )
+        }
+      }
+    });
+    await fireEvent.click(await screen.findByRole('button', { name: 'Mute' }));
+    expect(savePreferences).toHaveBeenCalledWith({ muted: true });
+    // The late read still applies the field the learner never touched.
+    resolveLoad({ muted: false, hidden: true, speech: 'off' });
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Show' })).toBeTruthy();
+    });
   });
 
   // Breaks if the authored ladder is not reachable from the workspace, so a learner who fails

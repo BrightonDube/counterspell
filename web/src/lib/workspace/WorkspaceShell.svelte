@@ -249,26 +249,51 @@
 
   // Mute/hide choices. Saved through the API; a failed save keeps the local choice.
   // Signed-out visits never ask — the 401 is expected noise, and the request is
-  // not part of the shell anyway, so it waits for the atmosphere stage.
+  // not part of the shell anyway, so it waits for the atmosphere stage. A direct
+  // workspace visit has no AppShell to resolve the store, so an `unknown` status
+  // is asked once here — the probe endpoint answers 200 signed in or out.
   let prefs = $state<FamiliarPrefs>({ muted: false, hidden: false });
-  let prefsTouched = false;
+  // Per-field touches: a toggle that beats the pending read wins that field, and
+  // the late read still applies the fields the learner never touched.
+  const prefsTouched = { muted: false, hidden: false };
   $effect(() => {
-    if (!atmosphereOn || authSession.status !== 'signed_in') return;
+    if (!atmosphereOn) return;
+    if (authSession.status === 'unknown') {
+      authSession.load().catch(() => {});
+      return;
+    }
+    if (authSession.status !== 'signed_in') return;
     untrack(() => familiarDeps)
       .loadPreferences()
       .then((loaded) => {
-        if (loaded !== null && !prefsTouched) prefs = loaded;
+        if (loaded === null) return;
+        prefs = {
+          ...loaded,
+          muted: prefsTouched.muted ? prefs.muted : loaded.muted,
+          hidden: prefsTouched.hidden ? prefs.hidden : loaded.hidden
+        };
       })
       .catch(() => {});
   });
 
   function onPrefsChange(next: FamiliarPrefs): void {
-    // Keep the speech choice the server sent. The Familiar panel only changes mute and hide.
-    prefs = { ...prefs, ...next };
-    prefsTouched = true;
+    // The server merges every named field, so a toggle may only send the field
+    // it changed — otherwise a pending read's default would clobber the saved
+    // sibling preference.
+    const changed: Partial<FamiliarPrefs> = {};
+    if (next.muted !== prefs.muted) {
+      changed.muted = next.muted;
+      prefsTouched.muted = true;
+    }
+    if (next.hidden !== prefs.hidden) {
+      changed.hidden = next.hidden;
+      prefsTouched.hidden = true;
+    }
+    if (changed.muted === undefined && changed.hidden === undefined) return;
+    prefs = { ...prefs, ...changed };
     // A signed-out toggle stays local — the save endpoint needs a session.
     if (authSession.status !== 'signed_in') return;
-    familiarDeps.savePreferences(next).catch(() => {});
+    familiarDeps.savePreferences(changed).catch(() => {});
   }
 
   // One speech request per finished run. The guard covers remounts and reconnects.

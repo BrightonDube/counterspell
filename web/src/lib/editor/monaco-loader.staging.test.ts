@@ -1,7 +1,8 @@
-// WP03 staging contract for the Monaco loader: the selected language is the only
-// pack on the critical path; the rest and the optional editor features prime
-// during idle. Mocked import counters make the split observable. In its own file
-// so the module registry (and the counters) start fresh.
+// WP03 staging contract for the Monaco loader: the selected language plus the
+// required editor features (find, comment, tab-focus — Monaco snapshots its
+// registry at widget construction) are the critical path; other language packs
+// prime during idle. Mocked import counters make the split observable. In its
+// own file so the module registry (and the counters) start fresh.
 import { describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({
@@ -60,20 +61,23 @@ function flushIdle(): void {
 }
 
 describe('Monaco readiness staging (WP03)', () => {
-  it('imports only the chosen language before the editor is usable', async () => {
+  it('imports the chosen language and required features before usable', async () => {
     await loadMonaco('javascript');
     expect(h.imported.javascript).toBe(1);
-    // Extras are scheduled, not fetched on the critical path.
+    // Find, comment and tab-focus are required editor features: Monaco
+    // snapshots its registry when the widget is constructed, so they must
+    // land with the core — deferring them leaves the first editor without
+    // Ctrl+F or Toggle Line Comment.
+    expect(h.imported.find).toBe(1);
+    expect(h.imported.comment).toBe(1);
+    expect(h.imported.tabfocus).toBe(1);
+    // Other language packs stay off the critical path.
     expect(h.imported.python ?? 0).toBe(0);
-    expect(h.imported.find ?? 0).toBe(0);
     flushIdle();
     await vi.dynamicImportSettled();
     expect(h.imported.python).toBe(1);
     expect(h.imported.java).toBe(1);
     expect(h.imported.cpp).toBe(1);
-    expect(h.imported.find).toBe(1);
-    expect(h.imported.comment).toBe(1);
-    expect(h.imported.tabfocus).toBe(1);
   });
 
   // A language switch before idle priming finishes still resolves its pack, and

@@ -1,7 +1,9 @@
 // Loads Monaco only when the workspace editor is needed, so the shell bundle stays small.
-// The critical path is the editor API plus the selected language's tokeniser; optional
-// language packs and editor features (find, comment, tab-focus toggle) prime during idle
-// after the editor is usable, per the workspace-performance readiness stages.
+// The critical path is the editor API, the selected language's tokeniser, and the
+// required editor features (find, comment, tab-focus): Monaco snapshots its
+// contribution and action registries when the widget is constructed, so anything
+// imported after loadMonaco resolves never reaches the first editor. Optional
+// language packs alone prime during idle, per the workspace-performance stages.
 // The Crypt theme is defined once per page, and the editor worker is created by Monaco on demand.
 import EditorWorker from 'monaco-editor/editor/editor.worker.js?worker';
 import { cryptTheme } from './crypt-theme';
@@ -19,7 +21,8 @@ const LANGUAGE_IMPORTS = {
   cpp: () => import('monaco-editor/languages/definitions/cpp/register.js')
 } as const;
 
-// Optional editor features. Typing works without them; they arrive during idle.
+// Required editor features. They load with the core so they register before
+// any editor is constructed — deferred, the first editor would never get them.
 const EXTRA_IMPORTS = [
   () => import('monaco-editor/editor/contrib/find/browser/findController.js'),
   () => import('monaco-editor/editor/contrib/comment/browser/comment.js'),
@@ -54,11 +57,10 @@ function afterIdle(callback: () => void): void {
   else setTimeout(callback, 0);
 }
 
-// Optional packs and features prime during idle once the editor is usable, so a
-// language switch or Ctrl+F still resolves quickly without blocking the shell.
+// Optional packs prime during idle once the editor is usable, so a language
+// switch still resolves quickly without blocking the shell.
 function primeExtras(): void {
   for (const id of Object.keys(LANGUAGE_IMPORTS)) void loadMonacoLanguage(id);
-  for (const extra of EXTRA_IMPORTS) void extra().catch(() => {});
 }
 
 /**
@@ -77,7 +79,8 @@ export function loadMonaco(language = 'python'): Promise<MonacoModule> {
     };
     monacoPromise = Promise.all([
       import('monaco-editor/editor/editor.api.js'),
-      loadMonacoLanguage(language)
+      loadMonacoLanguage(language),
+      ...EXTRA_IMPORTS.map((extra) => extra())
     ]).then(([monaco]) => {
       monaco.editor.defineTheme(CRYPT_THEME_NAME, cryptTheme);
       return monaco;
