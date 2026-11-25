@@ -7,5 +7,5 @@
 - [x] **WP05 Lazy-load, responsively encode and cache decorative media**
 - [x] **WP06 Add lightweight workspace costume motion and guard optional targets**
 - [x] **WP07 Verify reduced motion, keyboard use and all editor controls**
-- [ ] **WP08 Record before and after local and production evidence** — local evidence recorded in `verification-2026-11-25.md`; production evidence lands after deploy
+- [x] **WP08 Record before and after local and production evidence** — `verification-2026-11-25.md`: local before/after + post-deploy production evidence on `d2aa1086`
 - [x] **WP09 Decide, document and verify the production source-map policy**
