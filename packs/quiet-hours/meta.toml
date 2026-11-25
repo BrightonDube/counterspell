@@ -1,0 +1,43 @@
+slug = "quiet-hours"
+title = "The Quiet Hours"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "sliding-window", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "quiet_windows"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) time for one pass over the window starts and O(1) extra space."
+
+[[params]]
+name = "readings"
+type = "list[int]"
+[[params]]
+name = "quota"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 }, { type = "int", min = 0, max = 300 },
+]
+
+[[samples]]
+input = [[1, 2, 3, 4, 5], 6]
+expected = 1
+
+[[samples]]
+input = [[0, 0, 0], 0]
+expected = 1
+
+[[samples]]
+input = [[5, 5], 10]
+expected = 0

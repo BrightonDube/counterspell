@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Two rune kinds are allowed; the pane fails the moment a third kind enters."
+
+[[hint]]
+rung = 2
+text = "Slide a window: grow the right end counting rune kinds, and whenever a third kind appears move the left end until one kind leaves the window."
+
+[[hint]]
+rung = 3
+text = "```\nwhile distinct > 2:\n  drop pane[left]\n  left += 1\n```"
+
+[[hint]]
+rung = 4
+text = "A strip that already uses at most two kinds returns its full length, and the empty strip returns `0`."

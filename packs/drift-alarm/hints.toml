@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Only hours at index `width` or later can ring; earlier hours have no full look-back."
+
+[[hint]]
+rung = 2
+text = "For each hour compare its reading to the maximum of the `width` readings just before it — strictly above rings."
+
+[[hint]]
+rung = 3
+text = "```\nfor i in range(w, n):\n  if a[i] > max(a[i-w:i]):\n    alarms += 1\n```"
+
+[[hint]]
+rung = 4
+text = "The comparison must be strict: matching the look-back peak does not ring the alarm."

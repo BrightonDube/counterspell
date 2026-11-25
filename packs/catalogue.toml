@@ -97,3 +97,11 @@ name = "Simulation"
 [[concepts]]
 slug = "parsing"
 name = "Parsing"
+
+[[concepts]]
+slug = "sliding-window"
+name = "Sliding Window"
+
+[[concepts]]
+slug = "streaming"
+name = "Streaming"

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Track the run you are inside: it grows while the bead matches the previous one and restarts otherwise."
+
+[[hint]]
+rung = 2
+text = "Keep the best run seen so far; update it whenever the current run stretches."
+
+[[hint]]
+rung = 3
+text = "```\nrun = run + 1 if same\n  else 1\nbest = max(best, run)\n```"
+
+[[hint]]
+rung = 4
+text = "An empty strand never starts a run, so its answer is `0`."

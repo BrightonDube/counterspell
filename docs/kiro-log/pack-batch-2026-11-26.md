@@ -1,0 +1,64 @@
+# pack-batch run 2026-11-26
+
+--- warm-window: static stages S0-S9
+- warm-window: S9 passed; S10/S11 pending_judge
+- warm-window: review round 1 recorded
+- warm-window: review round 2 recorded
+- warm-window: review round 3 recorded
+- warm-window: awaiting_approval (Brighton gate; no approval.toml written here)
+--- quiet-hours: static stages S0-S9
+- quiet-hours: S9 passed; S10/S11 pending_judge
+- quiet-hours: review round 1 recorded
+- quiet-hours: review round 2 recorded
+- quiet-hours: review round 3 recorded
+- quiet-hours: awaiting_approval (Brighton gate; no approval.toml written here)
+--- bead-run: static stages S0-S9
+- bead-run: S9 passed; S10/S11 pending_judge
+- bead-run: review round 1 recorded
+- bead-run: review round 2 recorded
+- bead-run: review round 3 recorded
+- bead-run: awaiting_approval (Brighton gate; no approval.toml written here)
+--- calm-spell: static stages S0-S9
+- calm-spell: S9 passed; S10/S11 pending_judge
+- calm-spell: review round 1 recorded
+- calm-spell: review round 2 recorded
+- calm-spell: review round 3 recorded
+- calm-spell: awaiting_approval (Brighton gate; no approval.toml written here)
+--- min-varied: static stages S0-S9
+- min-varied: S9 passed; S10/S11 pending_judge
+- min-varied: review round 1 recorded
+- min-varied: review round 2 recorded
+- min-varied: review round 3 recorded
+- min-varied: awaiting_approval (Brighton gate; no approval.toml written here)
+--- thrifty-pane: static stages S0-S9
+- thrifty-pane: S9 passed; S10/S11 pending_judge
+- thrifty-pane: review round 1 recorded
+- thrifty-pane: review round 2 recorded
+- thrifty-pane: review round 3 recorded
+- thrifty-pane: awaiting_approval (Brighton gate; no approval.toml written here)
+--- drift-alarm: static stages S0-S9
+- drift-alarm: S9 passed; S10/S11 pending_judge
+- drift-alarm: review round 1 recorded
+- drift-alarm: review round 2 recorded
+- drift-alarm: review round 3 recorded
+- drift-alarm: awaiting_approval (Brighton gate; no approval.toml written here)
+--- harvest-quota: static stages S0-S9
+- harvest-quota: S9 passed; S10/S11 pending_judge
+- harvest-quota: review round 1 recorded
+- harvest-quota: review round 2 recorded
+- harvest-quota: review round 3 recorded
+- harvest-quota: awaiting_approval (Brighton gate; no approval.toml written here)
+--- gale-peaks: static stages S0-S9
+- gale-peaks: S9 passed; S10/S11 pending_judge
+- gale-peaks: review round 1 recorded
+- gale-peaks: review round 2 recorded
+- gale-peaks: review round 3 recorded
+- gale-peaks: awaiting_approval (Brighton gate; no approval.toml written here)
+--- three-rune-windows: static stages S0-S9
+- three-rune-windows: S9 passed; S10/S11 pending_judge
+- three-rune-windows: review round 1 recorded
+- three-rune-windows: review round 2 recorded
+- three-rune-windows: review round 3 recorded
+- three-rune-windows: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

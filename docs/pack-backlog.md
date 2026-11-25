@@ -106,3 +106,33 @@ monotonic structure (next-lantern, wall-span) and bounded repair or
 longest-valid analysis (min-add, longest-rite). Ghosts tempt the wrong
 reservation order, missing empty-structure checks and depth-vs-count
 confusion.
+
+## Catalogue batch 04 — sliding windows and streaming statistics
+
+Ten original ideas for batch 04 (completion-program CP16): four easy, four
+medium, two hard. New concepts sliding-window / streaming were added to
+`packs/catalogue.toml` (TAX-01); no slug is already used by a pack
+(SLUG-01). Supported call types stay `int`, `str`, `list[int]` and
+`list[list[int]]`. Every semantic is defined for arbitrary in-schema
+input, so generated hidden cases are always meaningful.
+
+| Slug | Track | Concepts | Difficulty | Original idea | Planned ghost kinds |
+|---|---|---|---|---|---|
+| warm-window | arrays | arrays, sliding-window, scanning | easy | Largest sum over any `width` consecutive readings (`0` when the log is shorter). | first-window-only, dropping-last-window, max-reading |
+| quiet-hours | arrays | arrays, sliding-window, counting, edge-cases | easy | Count three-hour stretches whose readings add to no more than the quota. | strict-vs-inclusive-quota, partial-edge-windows, wrong-width |
+| bead-run | strings | strings, scanning, counting, edge-cases | easy | Longest run of one repeated bead on an `a`/`b` strand. | most-frequent-not-run, final-run-only, counting-groups |
+| calm-spell | strings | strings, scanning, edge-cases, counting | easy | Longest stretch of an `a`/`b`/`#` chant with no `#` inside. | total-non-crack-count, first-spell-only, last-spell-only |
+| min-varied | strings | strings, sliding-window, frequency-maps | medium | Shortest fragment of an `a`-`d` frieze holding at least one `a`, `b` and `c` (`0` when none). | length-three-only, distinct-count, longest-window |
+| thrifty-pane | strings | strings, sliding-window, frequency-maps | medium | Longest pane of an `a`/`b`/`c` strip showing at most two rune kinds. | at-most-three, same-rune-runs, all-or-nothing |
+| drift-alarm | arrays | arrays, sliding-window, streaming | medium | Count hours whose reading tops every reading in the previous `width` hours. | self-inclusive-window, non-strict, any-not-all |
+| harvest-quota | arrays | arrays, sliding-window, prefixes, edge-cases | medium | Longest run of vine marks summing to no more than the quota. | strict-quota, prefix-only, counting-windows |
+| gale-peaks | arrays | arrays, sliding-window, queues | hard | The peak reading of every `width`-hour gust window, in order. | first-reading-as-peak, stale-peak, last-window-only |
+| three-rune-windows | strings | strings, sliding-window, counting | hard | Count contiguous panes of an `a`/`b`/`c` band showing all three runes. | fixed-length-three, presence-only, off-by-one-tail |
+
+Balance check: 5 strings track, 5 arrays track; 4 easy, 4 medium, 2 hard.
+Covers fixed-width aggregation (warm-window, quiet-hours), run and
+segment scanning (bead-run, calm-spell), variable windows over frequency
+maps (min-varied, thrifty-pane), look-back and sum-bounded windows
+(drift-alarm, harvest-quota) and the monotonic-deque peak plus
+count-the-tail arguments (gale-peaks, three-rune-windows). Ghosts tempt
+boundary off-by-ones, wrong-width slides and count-vs-measure confusion.

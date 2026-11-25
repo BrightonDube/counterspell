@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Only windows of exactly `width` readings count; shorter leftovers at the end are not windows."
+
+[[hint]]
+rung = 2
+text = "Slide the window one step at a time: add the reading that enters and subtract the one that leaves."
+
+[[hint]]
+rung = 3
+text = "```\ntotal += in - out\nbest = max(best, total)\n```"
+
+[[hint]]
+rung = 4
+text = "When fewer than `width` readings exist there is no complete window, so the answer is `0`."

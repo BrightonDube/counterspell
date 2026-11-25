@@ -1,0 +1,40 @@
+slug = "min-varied"
+title = "The Varied Fragment"
+status = "published"
+difficulty = "medium"
+track = "strings"
+concepts = ["strings", "sliding-window", "frequency-maps"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "shortest_varied"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) time with a two-end window that counts the runes it holds and O(1) extra space."
+
+[[params]]
+name = "inscription"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcd", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["abc"]
+expected = 3
+
+[[samples]]
+input = ["aabbc"]
+expected = 4
+
+[[samples]]
+input = ["ddd"]
+expected = 0

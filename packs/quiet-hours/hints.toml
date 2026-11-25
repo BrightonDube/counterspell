@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A stretch always spans exactly three hours; a sum equal to the quota still counts as quiet."
+
+[[hint]]
+rung = 2
+text = "Check every start position from `0` up to `len - 3` and add the three readings there."
+
+[[hint]]
+rung = 3
+text = "```\nfor i in range(n - 2):\n  if a[i]+a[i+1]+a[i+2] <= quota:\n    quiet += 1\n```"
+
+[[hint]]
+rung = 4
+text = "Logs shorter than three hours produce no stretches, so the count stays `0`."
