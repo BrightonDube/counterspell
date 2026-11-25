@@ -56,6 +56,26 @@ Local verification: `node scripts/verify-artifact.mjs` → clean; `find web/buil
 -name "*.map"` → 0 files. Production re-verification (no `.map` reachable at
 counterspel.online) lands in the post-deploy check for this PR.
 
-## Still pending
+## Production evidence (post-deploy, `d2aa1086`)
 
-- Production evidence for this spec is appended after deploy verification.
+Deploy workflow succeeded on the merge commit. Verified against
+`https://counterspel.online`:
+
+- `GET /api/health` → `{"status":"ok"}`.
+- Edge headers present: `Strict-Transport-Security: max-age=31536000;
+  includeSubDomains`, `X-Content-Type-Options: nosniff`.
+- `GET /api/problems` → 200 with the live catalogue; `GET
+  /api/problems/count-pairs` → 200 problem detail (the `two-sum` slug used
+  by the e2e fixture is test-only and correctly 404s in production).
+- `GET /problems/count-pairs` serves the SPA shell with the fresh
+  `_app/immutable` chunk graph — the warm-fetch layout path is live.
+- Source-map policy: `.map` URLs under `_app/immutable/` 404 and served
+  chunks contain no `sourceMappingURL` reference — WP09 verified in
+  production.
+
+Review round on PR #120: 3 Devin findings (familiar session gating on
+direct visits, partial-preference clobbering, Monaco required-contribution
+staging) fixed in `cb423cae` with regression tests; 3 CodeRabbit minors
+(request-level run assertions, `waitForFunction` options slot, stale
+`monaco-ready` mark scoping) fixed in `d5edf5dd`. Final head: 34 CI checks
+green, review marks resolved, squash-merged `d2aa1086`.
