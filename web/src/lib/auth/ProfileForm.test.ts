@@ -125,6 +125,25 @@ describe('ProfileForm', () => {
       })
     );
     unmount();
+    // A CLDR alias that resolves to a picker name (UK -> United Kingdom)
+    // must still display verbatim so saving cannot shadow it with GB.
+    mustUser().country = 'uk';
+    const { unmount: unmountAlias } = render(ProfileForm);
+    const aliasCountry = screen
+      .getAllByLabelText('Country')
+      .at(-1) as HTMLInputElement;
+    expect(aliasCountry.value).toBe('UK');
+    const aliasSave = screen
+      .getAllByRole('button', { name: 'Save profile' })
+      .at(-1);
+    if (aliasSave) await fireEvent.click(aliasSave);
+    await waitFor(() =>
+      expect(patchProfile).toHaveBeenLastCalledWith({
+        display_name: 'Night Walker',
+        country: 'uk'
+      })
+    );
+    unmountAlias();
     mustUser().country = 'ZA';
   });
 

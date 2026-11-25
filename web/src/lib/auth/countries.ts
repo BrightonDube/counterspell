@@ -263,11 +263,16 @@ const regionNames =
     ? new Intl.DisplayNames(['en'], { type: 'region' })
     : null;
 
-// Readable display name for a stored country code. Unknown or legacy
-// codes are returned verbatim — they must never silently change.
+const maintainedCodes = new Set<string>(COUNTRY_CODES);
+
+// Readable display name for a stored country code. Codes outside the
+// maintained list — including CLDR aliases such as UK that resolve to a
+// name — are returned verbatim so a stored value can never be shadowed
+// by a picker option and silently rewritten on save.
 export function countryName(code: string): string {
   if (!/^[a-zA-Z]{2}$/.test(code)) return code;
   const upper = code.toUpperCase();
+  if (!maintainedCodes.has(upper)) return upper;
   try {
     const name = regionNames?.of(upper);
     // CLDR answers "Unknown Region" for unassigned codes and may echo

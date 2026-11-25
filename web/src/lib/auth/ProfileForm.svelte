@@ -108,7 +108,9 @@
   />
   <datalist id="profile-countries">
     {#each COUNTRIES as entry (entry.code)}
-      <option value={entry.name}>{entry.code}</option>
+      <option value={entry.name} label={entry.name}>
+        {entry.code}
+      </option>
     {/each}
   </datalist>
 
