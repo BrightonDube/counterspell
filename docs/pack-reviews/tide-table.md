@@ -1,6 +1,6 @@
 # Review summary: tide-table
 
-Round 1, content hash 40edf4bce171. Written for a non-expert reader. One page.
+Round 1, content hash ad337cbc5e6c. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A keeper logs the tide height each hour. Given the readings in order, return the position of the first hour lower than the hour before it, or report that the tide never drops.

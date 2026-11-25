@@ -1,6 +1,6 @@
 # Review summary: warden-sums
 
-Round 1, content hash 8dd0cccb557e. Written for a non-expert reader. One page.
+Round 1, content hash 4d89284a0c8e. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A warden chalks integer readings that may be negative. A run of days is ritual when its readings sum to the quota exactly. Given the readings and the quota, return how many contiguous runs are ritual.

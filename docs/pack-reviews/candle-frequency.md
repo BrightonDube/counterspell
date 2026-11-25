@@ -1,6 +1,6 @@
 # Review summary: candle-frequency
 
-Round 1, content hash fe405d144993. Written for a non-expert reader. One page.
+Round 1, content hash 4396fff0f3e7. Written for a non-expert reader. One page.
 
 ## What the problem asks
 The vault ledger lists the burn size of every candle inspected. Given the sizes in order, return the size that was logged most often; a tie goes to the smallest size, and an empty ledger scores zero.

@@ -1,6 +1,6 @@
 # Review summary: sigil-groups
 
-Round 1, content hash 0dbc813ab3b7. Written for a non-expert reader. One page.
+Round 1, content hash 520c9873b030. Written for a non-expert reader. One page.
 
 ## What the problem asks
 Every rune marking carries a sigil, the sum of its decimal digits. Given the markings, group them by sigil and return the size of the largest group.

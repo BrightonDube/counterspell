@@ -1,6 +1,6 @@
 # Review summary: twin-ledgers
 
-Round 1, content hash 7bc902c70738. Written for a non-expert reader. One page.
+Round 1, content hash a9429679c00d. Written for a non-expert reader. One page.
 
 ## What the problem asks
 Two vault ledgers list rows of key and amount, and a key can appear on many rows. Total each key per ledger, then return how many keys agree across both ledgers; a key in only one ledger never counts.

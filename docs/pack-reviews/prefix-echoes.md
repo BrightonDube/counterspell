@@ -1,6 +1,6 @@
 # Review summary: prefix-echoes
 
-Round 1, content hash 8fcd81224b3b. Written for a non-expert reader. One page.
+Round 1, content hash cdd607a61664. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A gatekeeper's log lists marks, and each question names a stretch and a mark. For every question in order, return how many times that mark appears among the first so-many marks of the log. A stretch beyond the log counts the whole log.
