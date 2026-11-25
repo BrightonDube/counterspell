@@ -52,6 +52,44 @@ export function clearLastMove(board) {
 }
 
 /**
+ * In-flight orientation turns per board. cm-chessboard 8.x drops a
+ * `setOrientation` call outright while a turn is queued (`boardTurning`
+ * guard + console warning), so a colour picked during a pending turn would
+ * silently never apply. Requests are serialized here instead: each call
+ * chains behind the in-flight one and re-issues with the newest side.
+ * @type {WeakMap<object, Promise<void>>}
+ */
+const pendingTurns = new WeakMap();
+
+/**
+ * Flips the board so `color` plays from the bottom. cm-chessboard exposes
+ * `setOrientation` at runtime but its shipped types omit it, so the call
+ * goes through a narrow structural type here.
+ * @param {import('cm-chessboard').Chessboard | undefined} board
+ * @param {'w' | 'b'} color
+ */
+export function setBoardOrientation(board, color) {
+  /** @type {any} */
+  const mutable = board;
+  if (!board || !mutable.setOrientation) return;
+  const pending = pendingTurns.get(board);
+  if (pending) {
+    pendingTurns.set(
+      board,
+      pending.finally(() => setBoardOrientation(board, color))
+    );
+    return;
+  }
+  if (mutable.getOrientation?.() === color) return;
+  pendingTurns.set(
+    board,
+    Promise.resolve(mutable.setOrientation(color))
+      .catch(() => {})
+      .finally(() => pendingTurns.delete(board))
+  );
+}
+
+/**
  * Mounts a themed board in `container`. cm-chessboard ships `main: null`, so
  * both imports stay lazy — the routes remain server-renderable. The Markers
  * extension adds the selection frames on top.

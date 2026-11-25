@@ -111,7 +111,9 @@
     const state = puzzleState;
     const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
       boardEl,
-      () => state.game.fen()
+      () => state.game.fen(),
+      // The solver's side is bottom-most, matching puzzle convention.
+      state.game.turn() === 'w' ? 'w' : 'b'
     );
     if (!themed) return;
     board = themed;
