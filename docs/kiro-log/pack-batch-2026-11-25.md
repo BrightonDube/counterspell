@@ -149,3 +149,27 @@ reference; `sbx_batch02` was re-run and passed 45.12s. The five affected
 approvals were restamped with canonical manifest hashes computed over git
 blob bytes, and the five review summaries now record the fresh assembly
 hashes (private PR #8, this commit).
+
+## Import and publish — batch 02 (production)
+
+`counterspell-catalogue import --packs <public> --private-root <private>
+--deny-warnings` ran on the prod host inside the server image
+(`021e939b`) against the prod rootless sandbox daemon. All ten batch-02
+packs reported `created version=1`; every batch-01 and earlier pack
+reported `unchanged`; the three rotated starters refused
+`version_not_bumped` as before. Each of the ten then went through
+`publish` (`created version=1`). Approval hashes matched the importer's
+canonical manifest on the first pass — they were computed over git blob
+bytes via `scripts/pack-content-hash-git.py`.
+
+## Production verification (B02-06)
+
+- `GET /api/problems` serves 25 problems including all ten batch-02
+  slugs with correct tracks, difficulties and concepts.
+- `GET /api/problems/sigil-dedup` and `/flood-line` return full
+  statements and samples.
+- A temporary `ops-verify-b02` account submitted a real `submit` run for
+  `sigil-dedup` (Python known-correct fixture): `94c2556f`, accepted
+  27/27 in 274ms through the prod rootless sandbox.
+- Cleanup: ops session and user row deleted; all staging, env file,
+  scripts and logs removed from the host (verified empty).
