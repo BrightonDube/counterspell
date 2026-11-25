@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Depth is how many `(` are still waiting for their `)` — track a count of open layers."
+
+[[hint]]
+rung = 2
+text = "On `(` the count grows and the record may deepen; on `)` the count shrinks only if a layer is truly open."
+
+[[hint]]
+rung = 3
+text = "```\nopen: depth += 1, mark the\n  deepest seen\nclose: depth -= 1 if depth > 0\n```"
+
+[[hint]]
+rung = 4
+text = "A stray `)` with no layer open is ignored — it does not push the count below zero."

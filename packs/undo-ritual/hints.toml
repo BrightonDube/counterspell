@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Written runes behave like a stack — the last one standing is the one a `#` erases."
+
+[[hint]]
+rung = 2
+text = "Append runes; on `#` drop the last written rune if any is still standing."
+
+[[hint]]
+rung = 3
+text = "```\non rune: append; on #:\n  drop the last if present\nanswer = what stands\n```"
+
+[[hint]]
+rung = 4
+text = "Join the surviving runes at the end — a `#` on an empty page changes nothing."

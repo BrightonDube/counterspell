@@ -1,0 +1,40 @@
+slug = "rune-brackets"
+title = "The Rune Inscription"
+status = "draft"
+difficulty = "easy"
+track = "strings"
+concepts = ["strings", "stacks", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "nested_runes"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) time for one pass over the runes and O(n) space for the stack of openers."
+
+[[params]]
+name = "inscription"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "()[]{}", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["()[]{}"]
+expected = 1
+
+[[samples]]
+input = ["([)]"]
+expected = 0
+
+[[samples]]
+input = ["((()))"]
+expected = 1

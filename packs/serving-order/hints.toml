@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A line serves whoever waited longest — first in, first out."
+
+[[hint]]
+rung = 2
+text = "Collect every mark a `0` actually serves; a `0` on an empty line records nothing."
+
+[[hint]]
+rung = 3
+text = "```\non mark: join; on zero:\n  move the front to served\nanswer = the served list\n```"
+
+[[hint]]
+rung = 4
+text = "The marks still waiting at the end never appear — only what was truly served."

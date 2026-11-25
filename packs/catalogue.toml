@@ -81,3 +81,19 @@ name = "Deduplication"
 [[concepts]]
 slug = "merging"
 name = "Merging"
+
+[[concepts]]
+slug = "stacks"
+name = "Stacks"
+
+[[concepts]]
+slug = "queues"
+name = "Queues"
+
+[[concepts]]
+slug = "simulation"
+name = "Simulation"
+
+[[concepts]]
+slug = "parsing"
+name = "Parsing"

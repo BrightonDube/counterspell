@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Count the open layers as you walk; an insertion is owed whenever a `)` has no layer to close."
+
+[[hint]]
+rung = 2
+text = "Track two debts: stranded closers that each need a `(` earlier, and layers still open that each need a `)` later."
+
+[[hint]]
+rung = 3
+text = "```\nstray close: debt += 1\nanswer = debt + layers\n  still open at the end\n```"
+
+[[hint]]
+rung = 4
+text = "The two debts can never cancel each other — a `)` inserted early cannot close a layer opened late."

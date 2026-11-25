@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Marks join at the back and servings leave from the front — the order a line keeps is first in, first out."
+
+[[hint]]
+rung = 2
+text = "Count a serving only when a `0` lands while a mark is still waiting; a `0` on an empty line serves nothing."
+
+[[hint]]
+rung = 3
+text = "```\non mark: join; on zero:\n  serve the front if waiting\nanswer = the count\n```"
+
+[[hint]]
+rung = 4
+text = "The marks themselves do not matter to the count — only whether a `0` found someone still in line."

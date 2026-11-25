@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Marks above zero are laid on top; a `0` lifts the top away — the stack holds only what is still waiting."
+
+[[hint]]
+rung = 2
+text = "Walk the sequence once, pushing each mark and popping on every `0`; a `0` on a bare stack changes nothing."
+
+[[hint]]
+rung = 3
+text = "```\non mark: push; on zero\n  pop unless the stack is bare\nanswer = the top mark or -1\n```"
+
+[[hint]]
+rung = 4
+text = "When the sequence ends the mark on top is the answer — a bare stack means nothing survived, so return `-1`."
