@@ -137,6 +137,43 @@ describe('settings account costume polish', () => {
     expect(screen.queryByText(/storage is configured/i)).toBeNull();
   });
 
+  // CPX-2: name is the primary identity heading, @handle is distinct,
+  // the country renders as a readable name, and email lives once in
+  // private account details — not in the identity block.
+  it('presents name-first identity with a readable country', async () => {
+    const { container } = render(Page);
+
+    await screen.findByRole('heading', { name: 'Witch Hunter' });
+    const identityBlock = container.querySelector('.profile-identity');
+    expect(identityBlock).not.toBeNull();
+    expect(identityBlock?.textContent).toContain('@witch-hunter');
+    expect(identityBlock?.textContent).toContain('South Africa');
+    expect(identityBlock?.textContent).not.toContain('witch@example.com');
+    // Avatar is circular and sits above the text (first child on mobile).
+    const avatar = identityBlock?.querySelector('img.profile-avatar');
+    expect(avatar?.getAttribute('src')).toBe(
+      '/art/creatures/skull-green-eyes.webp'
+    );
+
+    // Email appears exactly once, inside private account details.
+    const details = container.querySelector('.account-details');
+    expect(details?.textContent).toContain('witch@example.com');
+    expect(container.textContent?.match(/witch@example\.com/g)).toHaveLength(1);
+  });
+
+  // CPX-2: an unset country is omitted rather than showing a raw code.
+  it('omits the country row when no country is set', async () => {
+    const { session } = await import('#lib/auth/session.svelte.js');
+    (session.user as Record<string, unknown>).country = null;
+    const { container } = render(Page);
+
+    await screen.findByRole('heading', { name: 'Witch Hunter' });
+    const identityBlock = container.querySelector('.profile-identity');
+    expect(identityBlock?.textContent).not.toContain('South Africa');
+    expect(identityBlock?.textContent).not.toContain('Country');
+    (session.user as Record<string, unknown>).country = 'ZA';
+  });
+
   // Breaks if linking another provider loses its visible key affordance or accessible name.
   it('gives an unlinked provider a bounded key/unlock activation affordance', async () => {
     render(Page);

@@ -61,8 +61,8 @@
       />
       <h1>Set up your profile</h1>
       <p class="intro">
-        Tell Counterspell what to call you. The skull is your placeholder
-        avatar; uploads arrive after avatar storage is configured.
+        Tell Counterspell what to call you — the name shown on your progress and
+        runs. The skull keeps watch as your avatar.
       </p>
       <ProfileForm
         submitLabel="Continue"
@@ -93,6 +93,7 @@
   .avatar {
     inline-size: 6rem;
     block-size: 6rem;
+    border-radius: 50%;
     filter: drop-shadow(
       0 0 0.7rem color-mix(in srgb, var(--accent-candle) 45%, transparent)
     );
