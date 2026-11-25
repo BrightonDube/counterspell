@@ -108,9 +108,10 @@
     puzzleState = newPuzzle(daily.puzzle.fen, solution);
     // Shared Steel Night mount: theme class, piece sprite, markers extension
     // and the aria-hidden svg fix all live in #lib/break/chess/theme.js (CH02–CH05).
+    const state = puzzleState;
     const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
       boardEl,
-      puzzleState.game.fen()
+      () => state.game.fen()
     );
     if (!themed) return;
     board = themed;

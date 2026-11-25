@@ -56,7 +56,9 @@ export function clearLastMove(board) {
  * both imports stay lazy — the routes remain server-renderable. The Markers
  * extension adds the selection frames on top.
  * @param {HTMLElement | undefined} container
- * @param {string} position FEN to show
+ * @param {string | (() => string)} position FEN to show — a getter is
+ *   evaluated only after the lazy imports resolve, so a game that advanced
+ *   during the wait still mounts its current position.
  * @param {'w' | 'b'} [orientation]
  */
 export async function mountThemedBoard(container, position, orientation = 'w') {
@@ -65,6 +67,7 @@ export async function mountThemedBoard(container, position, orientation = 'w') {
     import('cm-chessboard/src/extensions/markers/Markers.js').catch(() => null)
   ]);
   if (!container?.isConnected) return { board: undefined, INPUT_EVENT_TYPE };
+  const fen = typeof position === 'function' ? position() : position;
   const extensions = markers
     ? [
         {
@@ -77,7 +80,7 @@ export async function mountThemedBoard(container, position, orientation = 'w') {
       ]
     : [];
   const board = new Chessboard(container, {
-    position,
+    position: fen,
     orientation,
     assetsUrl: '',
     // cm-chessboard mutates props.style (defaults like cssClass are assigned

@@ -126,7 +126,7 @@
     // and the aria-hidden svg fix all live in #lib/break/chess/theme.js (CH02–CH05).
     const { board: themed, INPUT_EVENT_TYPE } = await mountThemedBoard(
       container,
-      game.fen()
+      () => game.fen()
     );
     if (!themed) return;
     try {
@@ -135,6 +135,10 @@
       worker = undefined;
     }
     board = themed;
+    // A game can start while the imports were pending (Play Black's fallback
+    // opening) — surface that move's frame on the fresh board.
+    const last = game.history({ verbose: true }).at(-1);
+    if (last) showLastMove(board, last.from, last.to);
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!playing || game.turn() !== userColor) return false;

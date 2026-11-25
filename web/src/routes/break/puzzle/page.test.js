@@ -52,6 +52,29 @@ vi.mock('cm-chessboard/src/extensions/markers/Markers.js', () => ({
     framePrimary: { class: 'marker-frame-primary', slice: 'markerFrame' }
   }
 }));
+const themeMock = vi.hoisted(() => ({
+  /** @type {Promise<void> | undefined} */
+  gate: undefined,
+  called: false
+}));
+
+vi.mock('#lib/break/chess/theme.js', async (importOriginal) => {
+  const actual = /** @type {typeof import('#lib/break/chess/theme.js')} */ (
+    await importOriginal()
+  );
+  return {
+    ...actual,
+    mountThemedBoard: async (
+      /** @type {HTMLElement | undefined} */ el,
+      /** @type {string | (() => string)} */ position,
+      /** @type {'w' | 'b'} */ orientation
+    ) => {
+      themeMock.called = true;
+      await themeMock.gate;
+      return actual.mountThemedBoard(el, position, orientation);
+    }
+  };
+});
 
 import { session } from '#lib/auth/session.svelte.js';
 import PuzzlePage from './+page.svelte';
@@ -80,6 +103,8 @@ afterEach(() => {
   vi.clearAllMocks();
   boardMock.props = undefined;
   boardMock.added.length = 0;
+  themeMock.gate = undefined;
+  themeMock.called = false;
   session.user = null;
   session.capabilities = null;
   session.status = 'unknown';
@@ -156,6 +181,31 @@ describe('steel-night board presentation (CH02–CH06)', () => {
     });
     boardMock.added.length = 0;
     await solvePuzzle();
+    await waitFor(() => {
+      expect(boardMock.added).toContainEqual([frame, 'e7']);
+      expect(boardMock.added).toContainEqual([frame, 'e5']);
+    });
+  });
+
+  it('syncs a solution applied while the board imports are pending', async () => {
+    session.status = 'signed_in';
+    api.fetchDaily.mockResolvedValue(DAILY);
+    /** @type {() => void} */
+    let release = () => {};
+    themeMock.gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    render(PuzzlePage);
+    // The puzzle is loaded and the text input live while the lazy board
+    // import is still in flight — a solve here must not be lost.
+    await waitFor(() => expect(themeMock.called).toBe(true));
+    await solvePuzzle();
+    release();
+    await waitFor(() => expect(boardMock.props).toBeTruthy());
+    // e7e5 solved the puzzle during the wait: the board must mount showing
+    // White to move, not the post-opening FEN captured before the imports.
+    expect(boardMock.props?.position).toContain(' w ');
+    const frame = { class: 'marker-frame-primary', slice: 'markerFrame' };
     await waitFor(() => {
       expect(boardMock.added).toContainEqual([frame, 'e7']);
       expect(boardMock.added).toContainEqual([frame, 'e5']);

@@ -63,6 +63,29 @@ vi.mock('cm-chessboard/src/extensions/markers/Markers.js', () => ({
     framePrimary: { class: 'marker-frame-primary', slice: 'markerFrame' }
   }
 }));
+const themeMock = vi.hoisted(() => ({
+  /** @type {Promise<void> | undefined} */
+  gate: undefined,
+  called: false
+}));
+
+vi.mock('#lib/break/chess/theme.js', async (importOriginal) => {
+  const actual = /** @type {typeof import('#lib/break/chess/theme.js')} */ (
+    await importOriginal()
+  );
+  return {
+    ...actual,
+    mountThemedBoard: async (
+      /** @type {HTMLElement | undefined} */ el,
+      /** @type {string | (() => string)} */ position,
+      /** @type {'w' | 'b'} */ orientation
+    ) => {
+      themeMock.called = true;
+      await themeMock.gate;
+      return actual.mountThemedBoard(el, position, orientation);
+    }
+  };
+});
 const workerMock = vi.hoisted(() => ({
   /** @type {{ onmessage?: (event: any) => void } | undefined} */
   instance: undefined
@@ -93,6 +116,8 @@ afterEach(() => {
   boardMock.added.length = 0;
   boardMock.removed.length = 0;
   workerMock.instance = undefined;
+  themeMock.gate = undefined;
+  themeMock.called = false;
   session.user = null;
   session.capabilities = null;
   session.status = 'unknown';
@@ -194,5 +219,24 @@ describe('steel-night board presentation (CH02–CH06)', () => {
       class: 'marker-frame-primary',
       slice: 'markerFrame'
     });
+  });
+
+  it('syncs a game started while the board imports are pending', async () => {
+    session.status = 'signed_in';
+    /** @type {() => void} */
+    let release = () => {};
+    themeMock.gate = new Promise((resolve) => {
+      release = resolve;
+    });
+    render(BotPage);
+    // Play Black while the lazy board import is in flight: the bot's
+    // fallback opening applies immediately, so the freshly mounted board
+    // must show Black to move — and frame that reply — not the startpos.
+    await waitFor(() => expect(themeMock.called).toBe(true));
+    await fireEvent.click(screen.getByRole('button', { name: 'Play Black' }));
+    release();
+    await waitFor(() => expect(boardMock.props).toBeTruthy());
+    expect(boardMock.props?.position).toContain(' b ');
+    await waitFor(() => expect(boardMock.added.length).toBe(2));
   });
 });

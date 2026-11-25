@@ -59,6 +59,19 @@ describe('shared chessboard presentation (CH02–CH05)', () => {
     expect(ext?.props?.sprite).toBe('/break/markers.svg');
     container.remove();
   });
+
+  it('evaluates a position getter after the lazy imports resolve', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    // A game can advance while the cm-chessboard imports are in flight —
+    // the getter must be read at mount time, not captured by the caller.
+    let fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    const pending = mountThemedBoard(container, () => fen);
+    fen = 'rnbqkbnr/pppppppp/8/8/4P3/8/PPPP1PPP/RNBQKBNR b KQkq - 0 2';
+    await pending;
+    expect(mounted.props?.position).toContain(' b ');
+    container.remove();
+  });
 });
 
 describe('last-move marker (CH04)', () => {
