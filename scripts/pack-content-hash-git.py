@@ -20,14 +20,28 @@ def blob(repo, ref, path):
 
 
 def ls_tree(repo, ref, prefix):
+    kind = subprocess.run(
+        ["git", "-C", repo, "cat-file", "-t", f"{ref}:{prefix}"],
+        capture_output=True, text=True,
+    )
+    if kind.returncode != 0 or kind.stdout.strip() != "tree":
+        raise SystemExit(f"{prefix} is not a tree at {ref}")
     out = subprocess.run(
-        ["git", "-C", repo, "ls-tree", "-r", "--name-only", ref, "--", prefix],
-        capture_output=True, check=True, text=True,
-    ).stdout.split()
+        ["git", "-C", repo, "ls-tree", "-r", "-z", "--name-only", ref, "--", prefix],
+        capture_output=True, check=True,
+    ).stdout
     files = {}
-    for path in out:
+    for raw in out.split(b"\x00"):
+        if not raw:
+            continue
+        try:
+            path = raw.decode("utf-8")
+        except UnicodeDecodeError:
+            continue
         rel = path[len(prefix):].lstrip("/")
         parts = rel.split("/")
+        if parts[-1].startswith("."):
+            continue
         if len(parts) == 1 or (len(parts) == 2 and parts[0] in PACK_DIRS):
             files[rel] = blob(repo, ref, path)
     return files
