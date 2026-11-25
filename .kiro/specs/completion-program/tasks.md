@@ -53,9 +53,9 @@
 
 ## Wave 3: core product polish
 
-- [ ] **CP13 Implement workspace performance and costume polish**
-- [ ] **CP14 Implement Lantern Recall image-backed reveals**
-- [ ] **CP15 Implement the responsive themed chess experience**
+- [x] **CP13 Implement workspace performance and costume polish**
+- [x] **CP14 Implement Lantern Recall image-backed reveals**
+- [x] **CP15 Implement the responsive themed chess experience**
 
 ## Wave 4: catalogue
 
