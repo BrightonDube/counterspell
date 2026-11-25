@@ -15,4 +15,5 @@ Return the list of served marks, earliest serving first.
 - `serve_order([])` returns `[]`. Nothing was ever served.
 
 ## Constraints
-The sequence has at most 40 entries.
+- The sequence has at most 40 entries.
+- Each mark is `0` or a positive number at most `99`.

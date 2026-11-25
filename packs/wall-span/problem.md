@@ -15,4 +15,5 @@ Return the largest area any run of neighbouring blocks can hold.
 - `widest_fit([])` returns `0`. An empty wall holds nothing.
 
 ## Constraints
-The wall holds at most 40 blocks.
+- The wall holds at most 40 blocks.
+- Each height is at most `9`.

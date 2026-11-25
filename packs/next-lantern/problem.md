@@ -15,4 +15,5 @@ Return a list where entry `i` is the distance from lantern `i` to the nearest st
 - `next_taller([])` returns `[]`. An empty row has nothing to report.
 
 ## Constraints
-The row holds at most 40 lanterns.
+- The row holds at most 40 lanterns.
+- Each height is at most `99`.

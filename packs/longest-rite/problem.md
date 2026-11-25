@@ -1,13 +1,13 @@
 # The Longest Sound Passage
 
 ## Task
-An inscription of `(` and `)` runes may hold broken stretches where closers and openers tangle. Inside it lies at least one sound passage — a run in which every `(` closes in order. Call `longest_nested(inscription)` and return the length of the longest sound passage.
+An inscription of `(` and `)` runes may hold broken stretches where closers and openers tangle. A sound passage is a contiguous run in which every `)` closes the `(` still open just before it and no `(` is left open when the run ends. Call `longest_nested(inscription)` and return the length of the longest sound passage, or `0` when none exists.
 
 ## Input
 A string of `(` and `)` runes. It may be empty.
 
 ## Output
-Return the length of the longest sound run inside the inscription.
+Return the length of the longest sound passage inside the inscription, or `0` when none exists.
 
 ## Examples
 - `longest_nested("(())()")` returns `6`. The whole inscription is sound.
@@ -15,4 +15,5 @@ Return the length of the longest sound run inside the inscription.
 - `longest_nested("")` returns `0`. An empty inscription holds no passage.
 
 ## Constraints
-The inscription has at most 40 runes.
+- The inscription has at most 40 runes.
+- Only `(` and `)` runes appear.

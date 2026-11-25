@@ -15,4 +15,5 @@ Return the count of marks actually served.
 - `servings([])` returns `0`. Nothing ever happened.
 
 ## Constraints
-The sequence has at most 40 entries.
+- The sequence has at most 40 entries.
+- Each mark is `0` or a positive number at most `99`.

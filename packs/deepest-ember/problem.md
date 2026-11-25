@@ -15,4 +15,5 @@ Return the largest number of layers that were ever open at once.
 - `deepest_ember(")")` returns `0`. No layer was ever opened.
 
 ## Constraints
-The inscription has at most 40 runes.
+- The inscription has at most 40 runes.
+- Only `(` and `)` runes appear.

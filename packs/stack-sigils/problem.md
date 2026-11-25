@@ -7,7 +7,7 @@ An acolyte lays numbered marks onto the sigil stack one at a time. Every mark ab
 A list of marks. Each is `0` or a positive number at most `99`.
 
 ## Output
-Return the mark on top after every step, or `-1` when the stack is bare.
+Return the mark on top after all operations, or `-1` if the stack is empty.
 
 ## Examples
 - `top_sigil([3, 7, 0])` returns `3`. The `7` is lifted, exposing the `3`.
@@ -15,4 +15,5 @@ Return the mark on top after every step, or `-1` when the stack is bare.
 - `top_sigil([4, 0, 0])` returns `-1`. Two lifts leave the stack bare.
 
 ## Constraints
-The sequence has at most 40 entries.
+- The sequence has at most 40 entries.
+- Each mark is `0` or a positive number at most `99`.

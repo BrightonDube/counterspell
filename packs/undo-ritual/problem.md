@@ -15,4 +15,5 @@ Return the text still standing after the whole chant.
 - `surviving_text("#ba")` returns `"ba"`. The leading `#` erases nothing.
 
 ## Constraints
-The chant has at most 40 runes.
+- The chant has at most 40 runes.
+- Only the runes `a`, `b`, `c` and `#` appear.

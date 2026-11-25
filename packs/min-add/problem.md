@@ -15,4 +15,5 @@ Return the smallest number of insertions that make the inscription sound.
 - `fewest_inserts("(((")` returns `3`. Each opener needs its closer.
 
 ## Constraints
-The inscription has at most 40 runes.
+- The inscription has at most 40 runes.
+- Only `(` and `)` runes appear.
