@@ -147,8 +147,22 @@ struct BearerAuthShim {
 fn bearer_session_routes(pool: PgPool) -> Router {
     Router::new()
         .route("/api/auth/session", get(session_status))
+        .route("/api/auth/config", get(auth_config))
         .route("/api/me", get(bearer_me))
         .with_state(BearerAuthShim { pool })
+}
+
+/// `GET /api/auth/config`: the testserver signs in via `Bearer` headers, so it
+/// advertises no interactive methods — the same shape production returns.
+async fn auth_config() -> impl IntoResponse {
+    (
+        [(header::CACHE_CONTROL, "no-store")],
+        Json(json!({
+            "providers": { "github": false, "google": false },
+            "email": { "magic_link": false, "password": false },
+            "demo": { "enabled": false, "email": null }
+        })),
+    )
 }
 
 async fn session_status(headers: HeaderMap) -> impl IntoResponse {
