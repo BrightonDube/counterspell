@@ -52,4 +52,38 @@ All ten approved under the delegated publication instruction of
 21 November 2026: `status = "published"` in this commit; `approval.toml`
 per slug lands in the private repo stamped with this commit's hash.
 
+## Import and publish (production catalogue)
+
+`counterspell-catalogue import --packs <public> --private-root <private>
+--deny-warnings` ran on the prod host inside the server image against the
+prod rootless sandbox daemon (`/run/user/1002/docker.sock`). All ten
+batch-01 packs reported `created version=1`; `lantern-ledger` and
+`mirror-signal` reported `unchanged`. Each slug then went through
+`publish` (`created version=1`).
+
+Approval-hash correction: the first approval stamps used a recursive
+file walk that included `fixtures/`; `build_manifest` covers top-level
+files plus `reference/` and `incorrect/` only. All thirteen stamped
+approvals were re-recorded against the correct canonical hash — approved
+content unchanged (private PR #6).
+
+Pre-existing, out of batch-01 scope: the three rotated starters
+(count-pairs, diagonal-total, longest-run-length) refuse
+`version_not_bumped` on re-import — their rotated private content
+differs from the stored version without a `pack_version` bump. They
+remain published at their stored versions; a proper bump needs its own
+review-and-approval round.
+
+## Production verification (B01-07)
+
+- `GET /api/problems` serves all 15 problems including the ten new
+  slugs with correct tracks, difficulties and concepts.
+- `GET /api/problems/<slug>` 200s for the new slugs.
+- One real production submit path verified end-to-end: an ops-verify
+  account (handle `ops-verify-cp16`, minted session, revoked after)
+  POSTed `mode=submit` for `lantern-streaks` in Python. Run
+  `aa3a0a0b-8442-4e2f-bcd1-0f4f5600c995` completed `accepted`,
+  27/27 (3 samples + 24 hidden), ~1s through the prod rootless
+  sandbox. The session row was deleted after the check.
+
 Codes and counts only - no hidden values are logged.

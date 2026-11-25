@@ -1,6 +1,6 @@
 # Review summary: lantern-streaks
 
-Round 1, content hash 90d7b07440f1. Written for a non-expert reader. One page.
+Round 1, content hash 2c01971f3332. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A row of lanterns ends a street; each is lit or dark. Given the marks in order, return how many lanterns are lit in a row at the end of the street. The count stops at the first dark lantern from the back.

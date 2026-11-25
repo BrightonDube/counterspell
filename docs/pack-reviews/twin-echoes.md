@@ -1,6 +1,6 @@
 # Review summary: twin-echoes
 
-Round 1, content hash 3a9c1ebc0828. Written for a non-expert reader. One page.
+Round 1, content hash 6d678abd0d4b. Written for a non-expert reader. One page.
 
 ## What the problem asks
 The vault walls echo markings. Given the echoes in order, return how many distinct markings appear at least twice; a marking counted many times still counts once.
