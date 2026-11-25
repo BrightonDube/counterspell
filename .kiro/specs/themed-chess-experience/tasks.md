@@ -7,4 +7,4 @@
 - [x] **CH05 Create and integrate the original lightweight 2.5D SVG pieces**
 - [x] **CH06 Add the deferred animated skull opponent**
 - [x] **CH07 Verify reduced motion, mobile sizing and keyboard access**
-- [ ] **CH08 Verify bot logic, puzzle validation and score persistence live**
+- [x] **CH08 Verify bot logic, puzzle validation and score persistence live**
