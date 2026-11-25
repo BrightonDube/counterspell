@@ -181,4 +181,28 @@ describe('themed tile reveals (LR02–LR05)', () => {
       vi.useRealTimers();
     }
   });
+
+  it('lets a later press own its full reveal — earlier timers cannot cut it', async () => {
+    vi.useFakeTimers();
+    try {
+      stubMatchMedia(true);
+      const { container } = render(MemoryPage);
+      await fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+      await vi.advanceTimersByTimeAsync(400);
+      await fireEvent.click(screen.getByRole('button', { name: 'Tile 1' }));
+      await vi.advanceTimersByTimeAsync(550); // first verdict already shown
+      await fireEvent.click(screen.getByRole('button', { name: 'Tile 2' }));
+      // The first press's cleanup fired at its own 560ms — tile 2's reveal,
+      // started at 550, must not be swept away with it.
+      await vi.advanceTimersByTimeAsync(50);
+      const revealed = container.querySelector('.tile-reveal');
+      expect(revealed?.getAttribute('aria-label')).toBe('Tile 2');
+      // Nor may tile 1's stale verdict linger once tile 2 owns the tiles.
+      expect(container.querySelector('.tile-correct')).toBeNull();
+      await vi.advanceTimersByTimeAsync(140); // 180ms after the second press
+      expect(container.querySelector('.tile-wrong')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

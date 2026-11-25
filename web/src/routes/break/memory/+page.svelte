@@ -20,6 +20,12 @@
   let flashTile = $state(-1);
   /** @type {'' | 'correct' | 'wrong'} */
   let flashKind = $state('');
+  // Each accepted press owns its own verdict/cleanup pair — a later press
+  // cancels the earlier ones so its reveal gets the full window.
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let flashTimer;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let clearTimer;
   let focusIdx = $state(0);
   let signedOut = $state(false);
   let saveError = $state('');
@@ -62,6 +68,9 @@
     // later so the player sees what the tile hid before the judgement lands.
     revealTile = i;
     const kind = verdict === 'wrong' ? 'wrong' : 'correct';
+    clearTimeout(flashTimer);
+    clearTimeout(clearTimer);
+    flashTile = -1;
     if (verdict === 'wrong') {
       phase = 'over';
       const lvl = level(sequence);
@@ -74,11 +83,11 @@
         setTimeout(showSequence, 800);
       }
     }
-    setTimeout(() => {
+    flashTimer = setTimeout(() => {
       flashTile = i;
       flashKind = kind;
     }, 180);
-    setTimeout(() => {
+    clearTimer = setTimeout(() => {
       revealTile = -1;
       flashTile = -1;
     }, 560);
