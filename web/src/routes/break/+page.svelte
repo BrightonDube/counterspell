@@ -4,6 +4,8 @@
   import { onMount } from 'svelte';
   import { resolve } from '$app/paths';
   import { fetchDaily, fetchScores } from '#lib/break/api.js';
+  import { session } from '#lib/auth/session.svelte.js';
+  import Seo from '../../lib/seo/Seo.svelte';
 
   /** @type {'loading' | 'ready' | 'not_imported' | 'error'} */
   let puzzle = $state('loading');
@@ -18,6 +20,10 @@
       : daily.code === 'not_imported'
         ? 'not_imported'
         : 'error';
+    // Signed out is a normal answer here, not an error — the session already
+    // knows, so the scores endpoint is never probed with an expected 401.
+    await session.load().catch(() => {});
+    if (session.status !== 'signed_in') return;
     const own = await fetchScores();
     if (own.ok) {
       signedIn = true;
@@ -26,7 +32,11 @@
   });
 </script>
 
-<svelte:head><title>Break room</title></svelte:head>
+<Seo
+  title="Break room · Counterspell"
+  description="A few ungraded games — a daily chess puzzle, a small local bot and lantern recall."
+  path="/break"
+/>
 
 <AppShell>
   <div class="mx-auto max-w-3xl space-y-8">

@@ -1,8 +1,10 @@
 <script lang="ts">
   // The signed-in learner's dashboard. It loads once, shows one of four phases (loading, signed out, error or
   // the data), and retries on request. Every status is written in words. Colour only adds emphasis.
+  import { untrack } from 'svelte';
   import { resolve } from '$app/paths';
   import { ApiRequestError } from '../api/client';
+  import { session } from '../auth/session.svelte.js';
   import { loadDashboard } from './client';
   import {
     cardStateLabel,
@@ -30,6 +32,14 @@
   async function refresh(): Promise<void> {
     phase = { kind: 'loading' };
     try {
+      // A known-signed-out visitor skips the dashboard request entirely — the
+      // shared session answer is enough, and no expected-401 hits the console
+      // (AUD-19/AUD-20). The check shares AppShell's in-flight request.
+      await untrack(() => session.load()).catch(() => {});
+      if (session.status === 'signed_out') {
+        phase = { kind: 'signed_out' };
+        return;
+      }
       phase = { kind: 'ready', view: await load() };
     } catch (error) {
       if (error instanceof ApiRequestError && error.status === 401) {

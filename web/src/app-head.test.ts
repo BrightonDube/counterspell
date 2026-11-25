@@ -26,4 +26,12 @@ describe('landing document head', () => {
   it('keeps the global document head free of landing art', () => {
     expect(appHtml).not.toContain('hero-moon');
   });
+
+  // A static <title>/<meta description> would land before %sveltekit.head% and
+  // win over every route's Seo tags — the shell must leave head metadata to the
+  // routes (AUD-12).
+  it('does not shadow route metadata with a static title or description', () => {
+    expect(appHtml).not.toContain('<title>');
+    expect(appHtml).not.toContain('name="description"');
+  });
 });

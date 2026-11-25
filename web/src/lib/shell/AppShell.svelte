@@ -4,8 +4,17 @@
   // the Creepster wordmark as the way home.
   import { resolve } from '$app/paths';
   import { page } from '$app/state';
+  import { onMount } from 'svelte';
+  import { session } from '../auth/session.svelte.js';
 
   let { children }: { children?: import('svelte').Snippet } = $props();
+
+  // Resolve the session once for every shell-wrapped route. Pages reuse this
+  // answer instead of probing their own auth state (AUD-20); a failed check is
+  // not fatal — each page still handles its own API errors.
+  onMount(() => {
+    void session.load().catch(() => {});
+  });
 </script>
 
 <main class="relative min-h-screen overflow-hidden bg-bg text-text">

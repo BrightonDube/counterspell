@@ -31,7 +31,7 @@
   <nav aria-label="Breadcrumb" class="text-sm text-text-muted">
     <a
       href={resolve('/problems')}
-      class="transition-colors hover:text-accent-candle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+      class="inline-flex min-h-6 items-center transition-colors hover:text-accent-candle focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
     >
       &larr; Grimoire
     </a>
@@ -39,7 +39,7 @@
   </nav>
 
   <header class="flex flex-col gap-2">
-    <h2 id="problem-title" class="text-xl font-semibold">{problem.title}</h2>
+    <h1 id="problem-title" class="text-xl font-semibold">{problem.title}</h1>
     <p class="text-sm text-text-muted">
       Difficulty:
       <span

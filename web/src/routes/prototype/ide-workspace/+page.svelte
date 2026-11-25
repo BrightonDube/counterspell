@@ -3,6 +3,7 @@
     FIXTURE_PROBLEM,
     PROTOTYPE_BANNER
   } from '../../../lib/prototype/fixtures';
+  import Seo from '../../../lib/seo/Seo.svelte';
 
   let note = $state('');
 
@@ -12,9 +13,12 @@
   }
 </script>
 
-<svelte:head>
-  <title>Prototype: IDE workspace</title>
-</svelte:head>
+<Seo
+  title="Prototype: IDE workspace · Counterspell"
+  description="Static fixture of the Counterspell workspace layout."
+  path="/prototype/ide-workspace"
+  social={false}
+/>
 
 <main class="min-h-screen bg-bg px-6 py-10 text-text sm:px-10">
   <p

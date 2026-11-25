@@ -4,6 +4,8 @@
   import { onMount } from 'svelte';
   import { checkPress, level, newRound } from '#lib/break/memory.js';
   import { saveScore } from '#lib/break/api.js';
+  import { session } from '#lib/auth/session.svelte.js';
+  import Seo from '../../../lib/seo/Seo.svelte';
 
   const TILES = 9;
   /** @type {number[]} */
@@ -18,6 +20,8 @@
   /** @type {'' | 'correct' | 'wrong'} */
   let flashKind = $state('');
   let focusIdx = $state(0);
+  let signedOut = $state(false);
+  let saveError = $state('');
   /** @type {HTMLButtonElement[]} */
   let tileEls = [];
   let reduced = false;
@@ -59,7 +63,7 @@
       phase = 'over';
       const lvl = level(sequence);
       announce = `Wrong, game over at level ${lvl}.`;
-      void saveScore({ game: 'brain', level: lvl });
+      void finalizeScore(lvl);
     } else {
       flashKind = 'correct';
       announce = verdict === 'round_done' ? 'Correct. Next round.' : 'Correct.';
@@ -69,6 +73,25 @@
       }
     }
     setTimeout(() => (flashTile = -1), 400);
+  }
+
+  // Await the session answer before deciding — a probe still in flight must not
+  // drop a signed-in player's score, and an anonymous player must never trigger
+  // the scores endpoint's expected 401 (AUD-19/AUD-20).
+  /** @param {number} lvl */
+  function finalizeScore(lvl) {
+    void session
+      .load()
+      .then(() => {
+        if (session.status === 'signed_in') {
+          void saveScore({ game: 'brain', level: lvl });
+        } else {
+          signedOut = true;
+        }
+      })
+      .catch(() => {
+        saveError = 'Could not check your session — the score was not saved.';
+      });
   }
 
   /** @param {KeyboardEvent} event @param {number} i */
@@ -94,7 +117,11 @@
   });
 </script>
 
-<svelte:head><title>Lantern recall - Break room</title></svelte:head>
+<Seo
+  title="Lantern recall · Counterspell"
+  description="Repeat the growing sequence of nine lanterns — a memory game in the break room."
+  path="/break/memory"
+/>
 
 <AppShell>
   <div class="mx-auto max-w-md space-y-4">
@@ -103,6 +130,20 @@
       Watch the tiles light up, then repeat the order.
     </p>
     <div aria-live="polite" class="min-h-6 text-sm">{announce}</div>
+    {#if signedOut}
+      <p class="text-sm text-text-muted">
+        <a
+          class="text-accent underline"
+          href={resolve('/login?return_to=/break/memory')}
+        >
+          Sign in
+        </a>
+        to save your score.
+      </p>
+    {/if}
+    {#if saveError}
+      <p role="alert" class="text-sm text-danger">{saveError}</p>
+    {/if}
     <div class="grid grid-cols-3 gap-2" role="group" aria-label="Memory tiles">
       {#each Array(TILES) as _, i (i)}
         <button
@@ -134,7 +175,7 @@
         {phase === 'idle' ? 'Start' : 'Restart'}
       </button>
       <a
-        class="self-center text-sm text-text-muted underline"
+        class="inline-flex min-h-6 items-center self-center text-sm text-text-muted underline"
         href={resolve('/break')}
       >
         Back to the break room

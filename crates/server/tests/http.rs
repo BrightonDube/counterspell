@@ -496,6 +496,48 @@ async fn root_serves_the_prerendered_landing_page_not_the_fallback() {
 }
 
 #[tokio::test]
+async fn prerendered_route_html_is_served_at_its_extensionless_path() {
+    // test-change: AQ01 — adapter-static writes `login.html` and `break/bot.html`,
+    // but browsers and crawlers ask for `/login` and `/break/bot`. The static
+    // layer must resolve the prerendered file before the SPA fallback answers,
+    // or every route but `/` ships the untitled shell (no title/description/
+    // canonical in the served HTML).
+    let fixture = Fixture::new();
+    std::fs::write(fixture.dir.join("login.html"), "<main>sign-in-page</main>")
+        .expect("login fixture");
+    std::fs::create_dir_all(fixture.dir.join("break")).expect("break fixture dir");
+    std::fs::write(
+        fixture.dir.join("break/bot.html"),
+        "<main>chess-bot-page</main>",
+    )
+    .expect("bot fixture");
+    let address = serve(build_router(state_for(&fixture.dir))).await;
+
+    for (path, body) in [
+        ("/login", "<main>sign-in-page</main>"),
+        ("/break/bot", "<main>chess-bot-page</main>"),
+    ] {
+        let reply = get(address, path, &[]).await;
+        assert_eq!(reply.status, 200, "{path}");
+        assert_eq!(reply.body, body, "{path} must serve its prerendered file");
+    }
+
+    // The query survives the rewrite (login carries return_to).
+    let reply = get(address, "/login?return_to=/break/bot", &[]).await;
+    assert_eq!(reply.status, 200);
+    assert_eq!(reply.body, "<main>sign-in-page</main>");
+
+    // A declared SPA route without a prerendered file still falls back.
+    let reply = get(address, "/dashboard", &[]).await;
+    assert_eq!(reply.status, 200);
+    assert_eq!(reply.body, "<main>spa-entry</main>");
+
+    // An unknown route with no prerendered file stays an honest 404.
+    let reply = get(address, "/no-such-route-xyz", &[]).await;
+    assert_eq!(reply.status, 404);
+}
+
+#[tokio::test]
 async fn every_reply_says_nosniff() {
     let fixture = Fixture::new();
     let address = serve(build_router(state_for(&fixture.dir))).await;

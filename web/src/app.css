@@ -175,6 +175,13 @@ body {
   animation: skeleton-shimmer 1.4s linear infinite;
 }
 
+/* A chessboard is always a square: reserve the space before cm-chessboard mounts
+   so the puzzle and bot pages do not shift layout as the board appears (AQ07). */
+.break-board {
+  inline-size: 100%;
+  aspect-ratio: 1;
+}
+
 /* Shared motion vocabulary for art assets (AnimatedArt, the familiar mascot). */
 @keyframes art-breathe {
   0%,

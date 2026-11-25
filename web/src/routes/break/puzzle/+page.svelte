@@ -2,15 +2,16 @@
   import AppShell from '../../../lib/shell/AppShell.svelte';
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
-  import { Chessboard, INPUT_EVENT_TYPE } from 'cm-chessboard';
   import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
   import { fetchDaily, saveScore } from '#lib/break/api.js';
+  import { session } from '#lib/auth/session.svelte.js';
   import { newPuzzle, tryMove } from '#lib/break/puzzle.js';
+  import Seo from '../../../lib/seo/Seo.svelte';
 
   /** @type {HTMLDivElement | undefined} */
   let boardEl = $state();
-  /** @type {Chessboard | undefined} */
+  /** @type {import('cm-chessboard').Chessboard | undefined} */
   let board;
   /** @type {import('#lib/break/puzzle.js').PuzzleState | undefined} */
   let puzzleState = $state();
@@ -41,6 +42,22 @@
 
   async function recordScore() {
     if (!puzzleState || !puzzleMeta) return;
+    // A signed-out player must never trigger the scores endpoint — the 401 is
+    // expected noise, so the session answer is awaited before the request. A
+    // failed probe is a retryable error, not a sign-in nudge.
+    const sessionOk = await session.load().then(
+      () => true,
+      () => false
+    );
+    if (!sessionOk) {
+      saveResult = 'Could not check your session — the score was not saved.';
+      return;
+    }
+    if (session.status !== 'signed_in') {
+      signedOut = true;
+      saveResult = 'Sign in to save your score.';
+      return;
+    }
     const res = await saveScore({
       game: 'chess_puzzle',
       date: puzzleMeta.date,
@@ -80,10 +97,17 @@
     puzzleMeta = /** @type {any} */ (daily);
     const solution = daily.puzzle.moves.split(' ');
     puzzleState = newPuzzle(daily.puzzle.fen, solution);
+    // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it
+    // lazily keeps the route server-renderable (Seo head + static markup).
+    const { Chessboard, INPUT_EVENT_TYPE } = await import('cm-chessboard');
+    if (!boardEl?.isConnected) return;
     board = new Chessboard(boardEl, {
       position: puzzleState.game.fen(),
       style: { pieces: { file: piecesUrl } }
     });
+    // The container already carries the accessible name; the injected svg is
+    // decorative chrome and must not surface as a second, unnamed img.
+    boardEl.querySelector('svg')?.setAttribute('aria-hidden', 'true');
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!puzzleState) return false;
@@ -102,7 +126,11 @@
   });
 </script>
 
-<svelte:head><title>Daily puzzle - Break room</title></svelte:head>
+<Seo
+  title="Daily puzzle · Counterspell"
+  description="One chess puzzle a day, picked for you. Solve it in the break room."
+  path="/break/puzzle"
+/>
 
 <AppShell>
   <div class="mx-auto max-w-2xl space-y-4">
@@ -121,6 +149,8 @@
       bind:this={boardEl}
       class="break-board max-w-md"
       data-testid="board"
+      role="img"
+      aria-label="Chessboard"
     ></div>
     <output class="block text-sm text-text-muted" aria-live="polite">
       {statusLine}
@@ -159,7 +189,10 @@
         Play
       </button>
     </form>
-    <a class="text-sm text-text-muted underline" href={resolve('/break')}>
+    <a
+      class="inline-flex min-h-6 items-center text-sm text-text-muted underline"
+      href={resolve('/break')}
+    >
       Back to the break room
     </a>
   </div>

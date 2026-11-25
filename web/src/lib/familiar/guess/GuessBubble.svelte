@@ -68,6 +68,7 @@
         type="checkbox"
         bind:checked={enabled}
         aria-label="Live complexity guess"
+        class="h-6 w-6"
       />
       Live complexity guess
     </label>

@@ -32,7 +32,8 @@ vi.mock('#lib/auth/security.ts', () => ({
 vi.mock('#lib/auth/session.svelte.js', () => ({
   session: {
     status: 'signed_out',
-    load: vi.fn().mockResolvedValue(undefined)
+    load: vi.fn().mockResolvedValue(undefined),
+    clear: vi.fn()
   }
 }));
 
@@ -83,5 +84,33 @@ it('offers the demo account sign-in when the deployment advertises it', async ()
     'demo@example.co',
     'hunter2',
     expect.any(String)
+  );
+});
+
+// The login mount resolves the session to signed_out; an in-page sign-in must
+// drop that cached answer before navigating or the destination loops back here.
+it('clears the cached session before navigating after a successful sign-in', async () => {
+  const { signInWithPassword } = await import('#lib/auth/security.ts');
+  const { session } = await import('#lib/auth/session.svelte.js');
+  const { goto } = await import('$app/navigation');
+  vi.mocked(signInWithPassword).mockResolvedValue({
+    two_factor_required: false,
+    return_to: '/dashboard'
+  } as never);
+  render(Page);
+
+  const summary = await screen.findByText('Use the demo account');
+  await fireEvent.click(summary);
+  await fireEvent.input(screen.getByLabelText('Demo password'), {
+    target: { value: 'hunter2' }
+  });
+  await fireEvent.click(
+    screen.getByRole('button', { name: 'Sign in as the demo account' })
+  );
+
+  await waitFor(() => expect(goto).toHaveBeenCalled());
+  expect(session.clear).toHaveBeenCalled();
+  expect(vi.mocked(session.clear).mock.invocationCallOrder[0]).toBeLessThan(
+    vi.mocked(goto).mock.invocationCallOrder[0]
   );
 });

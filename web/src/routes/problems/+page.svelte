@@ -7,6 +7,7 @@
   import AppShell from '../../lib/shell/AppShell.svelte';
   import ProgressRing from '../../lib/art/ProgressRing.svelte';
   import AnimatedArt from '../../lib/art/AnimatedArt.svelte';
+  import Seo from '../../lib/seo/Seo.svelte';
 
   type ProblemCard = {
     slug: string;
@@ -103,9 +104,11 @@
       : 'border-border text-text-muted hover:border-border-strong hover:text-text');
 </script>
 
-<svelte:head>
-  <title>Problems · Counterspell</title>
-</svelte:head>
+<Seo
+  title="Problems · Counterspell"
+  description="Browse the Counterspell catalogue by track, difficulty and concept, and pick your next problem."
+  path="/problems"
+/>
 
 <AppShell>
   <div

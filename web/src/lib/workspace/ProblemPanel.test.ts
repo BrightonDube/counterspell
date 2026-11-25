@@ -37,7 +37,7 @@ describe('ProblemPanel', () => {
   it('shows the title, track, difficulty and concept tags', () => {
     render(ProblemPanel, { props: { problem: problem() } });
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Two Sum' })
+      screen.getByRole('heading', { level: 1, name: 'Two Sum' })
     ).toBeTruthy();
     expect(screen.getByText('Crypt of Arrays')).toBeTruthy();
     expect(screen.getByText('easy')).toBeTruthy();
