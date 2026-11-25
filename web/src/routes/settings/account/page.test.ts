@@ -127,11 +127,14 @@ describe('settings account costume polish', () => {
     );
     expect(avatar).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Edit profile' })).toBeTruthy();
-    expect(
-      screen.getByText(
-        /Avatar upload is unavailable until storage is configured/
-      )
-    ).toBeTruthy();
+  });
+
+  // The signed-in profile must not expose internal storage configuration.
+  it('keeps avatar storage implementation details out of the profile', async () => {
+    render(Page);
+
+    await screen.findByRole('heading', { name: 'Witch Hunter' });
+    expect(screen.queryByText(/storage is configured/i)).toBeNull();
   });
 
   // Breaks if linking another provider loses its visible key affordance or accessible name.
