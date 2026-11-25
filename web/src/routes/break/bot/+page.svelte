@@ -7,6 +7,7 @@
   import {
     clearLastMove,
     mountThemedBoard,
+    setBoardOrientation,
     showLastMove
   } from '#lib/break/chess/theme.js';
   import SkullSentinel from '#lib/break/chess/SkullSentinel.svelte';
@@ -108,6 +109,7 @@
     game = new Chess();
     clearLastMove(board);
     board?.setPosition(game.fen());
+    setBoardOrientation(board, color);
     playing = true;
     status = color === 'w' ? 'Your move.' : 'The bot opens.';
     refreshStatus();
@@ -135,6 +137,8 @@
       worker = undefined;
     }
     board = themed;
+    // A colour picked before the imports resolved still gets its side.
+    setBoardOrientation(board, userColor);
     // A game can start while the imports were pending (Play Black's fallback
     // opening) — surface that move's frame on the fresh board.
     const last = game.history({ verbose: true }).at(-1);

@@ -52,6 +52,19 @@ export function clearLastMove(board) {
 }
 
 /**
+ * Flips the board so `color` plays from the bottom. cm-chessboard exposes
+ * `setOrientation` at runtime but its shipped types omit it, so the call
+ * goes through a narrow structural type here.
+ * @param {import('cm-chessboard').Chessboard | undefined} board
+ * @param {'w' | 'b'} color
+ */
+export function setBoardOrientation(board, color) {
+  /** @type {any} */
+  const mutable = board;
+  mutable?.setOrientation?.(color);
+}
+
+/**
  * Mounts a themed board in `container`. cm-chessboard ships `main: null`, so
  * both imports stay lazy — the routes remain server-renderable. The Markers
  * extension adds the selection frames on top.
