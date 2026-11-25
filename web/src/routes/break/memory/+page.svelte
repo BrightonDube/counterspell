@@ -2,7 +2,7 @@
   import AppShell from '../../../lib/shell/AppShell.svelte';
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
-  import { checkPress, level, newRound } from '#lib/break/memory.js';
+  import { TILE_ART, checkPress, level, newRound } from '#lib/break/memory.js';
   import { saveScore } from '#lib/break/api.js';
   import { session } from '#lib/auth/session.svelte.js';
   import Seo from '../../../lib/seo/Seo.svelte';
@@ -13,12 +13,19 @@
   /** @type {number[]} */
   let presses = $state([]);
   let lit = $state(-1);
+  let revealTile = $state(-1);
   /** @type {'idle' | 'showing' | 'input' | 'over'} */
   let phase = $state('idle');
   let announce = $state('Press start to play Lantern recall.');
   let flashTile = $state(-1);
   /** @type {'' | 'correct' | 'wrong'} */
   let flashKind = $state('');
+  // Each accepted press owns its own verdict/cleanup pair — a later press
+  // cancels the earlier ones so its reveal gets the full window.
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let flashTimer;
+  /** @type {ReturnType<typeof setTimeout> | undefined} */
+  let clearTimer;
   let focusIdx = $state(0);
   let signedOut = $state(false);
   let saveError = $state('');
@@ -57,22 +64,33 @@
     if (phase !== 'input') return;
     presses = presses.concat(i);
     const verdict = checkPress(sequence, presses, presses.length - 1);
-    flashTile = i;
+    // The themed image shows first; the verdict colour washes over it a beat
+    // later so the player sees what the tile hid before the judgement lands.
+    revealTile = i;
+    const kind = verdict === 'wrong' ? 'wrong' : 'correct';
+    clearTimeout(flashTimer);
+    clearTimeout(clearTimer);
+    flashTile = -1;
     if (verdict === 'wrong') {
-      flashKind = 'wrong';
       phase = 'over';
       const lvl = level(sequence);
       announce = `Wrong, game over at level ${lvl}.`;
       void finalizeScore(lvl);
     } else {
-      flashKind = 'correct';
       announce = verdict === 'round_done' ? 'Correct. Next round.' : 'Correct.';
       if (verdict === 'round_done') {
         sequence = newRound(sequence);
         setTimeout(showSequence, 800);
       }
     }
-    setTimeout(() => (flashTile = -1), 400);
+    flashTimer = setTimeout(() => {
+      flashTile = i;
+      flashKind = kind;
+    }, 180);
+    clearTimer = setTimeout(() => {
+      revealTile = -1;
+      flashTile = -1;
+    }, 560);
   }
 
   // Await the session answer before deciding — a probe still in flight must not
@@ -153,8 +171,8 @@
           onfocus={() => (focusIdx = i)}
           onclick={() => press(i)}
           onkeydown={(e) => onKey(e, i)}
-          class="aspect-square rounded-lg border text-sm font-medium transition-colors
-          {lit === i ? 'tile-lit' : ''}
+          class="relative aspect-square overflow-hidden rounded-lg border text-sm font-medium transition-colors
+          {lit === i || revealTile === i ? 'tile-reveal' : ''}
           {flashTile === i && flashKind === 'correct' ? 'tile-correct' : ''}
           {flashTile === i && flashKind === 'wrong' ? 'tile-wrong' : ''}
           {phase === 'input'
@@ -162,7 +180,16 @@
             : 'border-border bg-raised'}"
           aria-label={'Tile ' + (i + 1)}
         >
-          {i + 1}
+          <img
+            class="tile-art"
+            src={TILE_ART[i]}
+            alt=""
+            aria-hidden="true"
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
+          />
+          <span class="tile-num">{i + 1}</span>
         </button>
       {/each}
     </div>
@@ -185,8 +212,27 @@
 </AppShell>
 
 <style>
-  .tile-lit {
-    background: var(--color-accent-candle, #f0a030);
+  .tile-art {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 160ms ease-out;
+    pointer-events: none;
+  }
+  .tile-reveal {
+    border-color: var(--color-accent-candle, #f0a030);
+  }
+  .tile-reveal .tile-art {
+    opacity: 1;
+  }
+  .tile-num {
+    position: relative;
+  }
+  .tile-reveal .tile-num {
+    opacity: 0.4;
   }
   .tile-correct {
     background: var(--color-pass, #4a9e6b);
@@ -194,8 +240,14 @@
   .tile-wrong {
     background: var(--color-danger, #c04444);
   }
+  /* The verdict colour washes through the revealed art rather than hiding it. */
+  .tile-correct .tile-art,
+  .tile-wrong .tile-art {
+    opacity: 0.45;
+  }
   @media (prefers-reduced-motion: reduce) {
-    button {
+    button,
+    .tile-art {
       transition: none;
     }
   }

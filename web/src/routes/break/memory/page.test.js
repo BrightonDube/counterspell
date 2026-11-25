@@ -32,7 +32,12 @@ vi.mock('#lib/break/memory.js', () => ({
         ? 'round_done'
         : 'correct'
       : 'wrong',
-  level: (/** @type {number[]} */ seq) => seq.length
+  level: (/** @type {number[]} */ seq) => seq.length,
+  TILE_ART: Array.from(
+    { length: 9 },
+    (/** @type {any} */ _, /** @type {number} */ i) =>
+      `/art/objects/test-${i}.webp`
+  )
 }));
 
 import { session } from '#lib/auth/session.svelte.js';
@@ -83,5 +88,121 @@ describe('lantern recall session handling', () => {
 
     await waitFor(() => expect(api.saveScore).toHaveBeenCalledTimes(1));
     expect(api.saveScore).toHaveBeenCalledWith({ game: 'brain', level: 3 });
+  });
+});
+
+describe('themed tile reveals (LR02–LR05)', () => {
+  it('renders every tile with a decorative lazy-loaded image', () => {
+    stubMatchMedia(true);
+    const { container } = render(MemoryPage);
+    const arts = container.querySelectorAll('.tile-art');
+    expect(arts.length).toBe(9);
+    for (const img of arts) {
+      expect(img.getAttribute('loading')).toBe('lazy');
+      expect(img.getAttribute('fetchpriority')).toBe('low');
+      expect(img.getAttribute('aria-hidden')).toBe('true');
+      expect(img.getAttribute('alt')).toBe('');
+      expect(img.getAttribute('src')).toMatch(/^\/art\/objects\/.+\.webp$/);
+    }
+  });
+
+  it('reveals the image beneath the lit tile during playback', async () => {
+    vi.useFakeTimers();
+    try {
+      stubMatchMedia(false);
+      const { container } = render(MemoryPage);
+      await fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+      // The mock grows every round with tile 0, so tile 1 lights first.
+      const lit = container.querySelector('.tile-reveal');
+      expect(lit).toBeTruthy();
+      expect(lit?.getAttribute('aria-label')).toBe('Tile 1');
+      await vi.advanceTimersByTimeAsync(600);
+      expect(container.querySelector('.tile-reveal')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reveals the pressed tile image before the verdict flash', async () => {
+    vi.useFakeTimers();
+    try {
+      stubMatchMedia(true);
+      const { container } = render(MemoryPage);
+      await fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+      await vi.advanceTimersByTimeAsync(400); // reduced playback → 'input'
+      await fireEvent.click(screen.getByRole('button', { name: 'Tile 1' }));
+      // The image reveals immediately; the verdict colour lands after it.
+      expect(container.querySelector('.tile-reveal')).toBeTruthy();
+      expect(container.querySelector('.tile-correct')).toBeNull();
+      expect(screen.getByText('Correct.')).toBeTruthy();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(container.querySelector('.tile-correct')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reveals the pressed tile image before wrong feedback', async () => {
+    vi.useFakeTimers();
+    try {
+      stubMatchMedia(true);
+      const { container } = render(MemoryPage);
+      await fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+      await vi.advanceTimersByTimeAsync(400);
+      await fireEvent.click(screen.getByRole('button', { name: 'Tile 2' }));
+      expect(container.querySelector('.tile-reveal')).toBeTruthy();
+      expect(container.querySelector('.tile-wrong')).toBeNull();
+      expect(screen.getByText('Wrong, game over at level 3.')).toBeTruthy();
+      await vi.advanceTimersByTimeAsync(200);
+      expect(container.querySelector('.tile-wrong')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps roving focus and keypress play intact', async () => {
+    vi.useFakeTimers();
+    try {
+      stubMatchMedia(true);
+      const { container } = render(MemoryPage);
+      await fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+      await vi.advanceTimersByTimeAsync(400);
+      const tile2 = screen.getByRole('button', { name: 'Tile 2' });
+      const tile3 = screen.getByRole('button', { name: 'Tile 3' });
+      await fireEvent.focus(tile2);
+      await fireEvent.keyDown(tile2, { key: 'ArrowRight' });
+      expect(tile3.getAttribute('tabindex')).toBe('0');
+      expect(tile2.getAttribute('tabindex')).toBe('-1');
+      // Enter presses the focused tile — the reveal still precedes feedback.
+      await fireEvent.keyDown(tile3, { key: 'Enter' });
+      expect(container.querySelector('.tile-reveal')).toBeTruthy();
+      expect(container.querySelector('.tile-wrong')).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('lets a later press own its full reveal — earlier timers cannot cut it', async () => {
+    vi.useFakeTimers();
+    try {
+      stubMatchMedia(true);
+      const { container } = render(MemoryPage);
+      await fireEvent.click(screen.getByRole('button', { name: 'Start' }));
+      await vi.advanceTimersByTimeAsync(400);
+      await fireEvent.click(screen.getByRole('button', { name: 'Tile 1' }));
+      await vi.advanceTimersByTimeAsync(550); // first verdict already shown
+      await fireEvent.click(screen.getByRole('button', { name: 'Tile 2' }));
+      // The first press's cleanup fired at its own 560ms — tile 2's reveal,
+      // started at 550, must not be swept away with it.
+      await vi.advanceTimersByTimeAsync(50);
+      const revealed = container.querySelector('.tile-reveal');
+      expect(revealed?.getAttribute('aria-label')).toBe('Tile 2');
+      // Nor may tile 1's stale verdict linger once tile 2 owns the tiles.
+      expect(container.querySelector('.tile-correct')).toBeNull();
+      await vi.advanceTimersByTimeAsync(140); // 180ms after the second press
+      expect(container.querySelector('.tile-wrong')).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
