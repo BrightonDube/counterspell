@@ -1,0 +1,40 @@
+slug = "harvest-tally"
+title = "The Harvest Tally"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "pairs", "nested-loops"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "cross_pairs"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference keeps a running sum of the later rows and adds each row's cross product once. It runs in O(n) time and O(1) extra space."
+
+[[params]]
+name = "rows"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 200, min = 0, max = 500 },
+]
+
+[[samples]]
+input = [[2, 3]]
+expected = 6
+
+[[samples]]
+input = [[1, 1, 1]]
+expected = 3
+
+[[samples]]
+input = [[4, 0, 4]]
+expected = 16

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Markings that look different can still share a sigil — ask what each marking's digits add to."
+
+[[hint]]
+rung = 2
+text = "Give each marking a signature key from its digits, then group the markings by that key and measure the groups."
+
+[[hint]]
+rung = 3
+text = "```\nfor each marking\n  key it by its digit sum\nkeep the largest tally of any key\n```"
+
+[[hint]]
+rung = 4
+text = "Tally each digit-sum key in a map while scanning; the answer is the highest tally reached."

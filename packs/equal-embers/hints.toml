@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Two symbols balance one another — treat each mark as a step that raises or lowers one running total."
+
+[[hint]]
+rung = 2
+text = "Two spans have equal counts between them when the running balance at their ends matches; remember where each balance was first reached."
+
+[[hint]]
+rung = 3
+text = "```\nmap each balance to its first position\nwalk once, updating the balance\na repeated balance marks a balanced span\n```"
+
+[[hint]]
+rung = 4
+text = "Store only the earliest index at each balance; a later visit measures the span from that first visit, which is what makes it the longest."

@@ -1,0 +1,40 @@
+slug = "sigil-groups"
+title = "Sigil Groups"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "grouping", "frequency-maps"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "largest_sigil"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference writes each marking's digit sum and tallies groups. It runs in O(n·d) time, with d the digit count, and O(k) extra space for k sigils."
+
+[[params]]
+name = "markings"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 999 },
+]
+
+[[samples]]
+input = [[47, 83, 29, 11]]
+expected = 3
+
+[[samples]]
+input = [[5, 6, 7]]
+expected = 1
+
+[[samples]]
+input = [[10, 10, 100]]
+expected = 3

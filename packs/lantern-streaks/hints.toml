@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Ask where the streak must end before you start counting."
+
+[[hint]]
+rung = 2
+text = "Walk the row from the last lantern toward the first and stop when the streak breaks."
+
+[[hint]]
+rung = 3
+text = "```\nstart with an empty count\nwalk marks from the last\n  stop on dark, else add one\n```"
+
+[[hint]]
+rung = 4
+text = "Count backward from the final mark and add one per lit lantern; the first dark mark or the start of the list ends the run."

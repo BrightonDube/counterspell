@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A sack in one row can only pair with sacks in other rows — never with a neighbour in its own."
+
+[[hint]]
+rung = 2
+text = "Walk the rows once; while walking, keep how many sacks sit in the rows still ahead."
+
+[[hint]]
+rung = 3
+text = "```\nkeep a running count of sacks ahead\nfor each row\n  add row times sacks ahead\n```"
+
+[[hint]]
+rung = 4
+text = "Subtract the current row from the running remainder before adding its product, so same-row pairs never enter the tally."

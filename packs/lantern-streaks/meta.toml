@@ -1,0 +1,40 @@
+slug = "lantern-streaks"
+title = "The Lantern Streak"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "scanning", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "lit_streak"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference walks backward from the last lantern and stops at the first dark mark. It runs in O(n) time and O(1) extra space."
+
+[[params]]
+name = "lights"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 1 },
+]
+
+[[samples]]
+input = [[1, 0, 1, 1, 1]]
+expected = 3
+
+[[samples]]
+input = [[0, 1, 1, 0]]
+expected = 0
+
+[[samples]]
+input = [[0, 0, 0]]
+expected = 0

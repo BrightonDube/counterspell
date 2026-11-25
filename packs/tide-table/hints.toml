@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A drop can only be seen by looking at two neighbouring hours."
+
+[[hint]]
+rung = 2
+text = "Compare each reading with the one before it and stop at the first hour that reads lower."
+
+[[hint]]
+rung = 3
+text = "```\nfor each hour after the first\n  if it reads lower than the hour before\n    return its position\n```"
+
+[[hint]]
+rung = 4
+text = "Walk forward and compare each reading to the previous one; a strictly smaller reading is the answer, and no such hour means the sentinel."

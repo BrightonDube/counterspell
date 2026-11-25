@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A key may be written on several rows of one ledger — compare totals, not rows."
+
+[[hint]]
+rung = 2
+text = "Sum each ledger into a per-key map, then walk one map's keys and ask the other for its total."
+
+[[hint]]
+rung = 3
+text = "```\ntally each ledger by key\nfor each key in the first\n  agree when both totals match\n```"
+
+[[hint]]
+rung = 4
+text = "A key counts only when it appears in both tallies with the same summed amount; a key in one ledger alone never counts."

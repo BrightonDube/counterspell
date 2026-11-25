@@ -1,0 +1,40 @@
+slug = "candle-frequency"
+title = "The Candle Ledger"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "frequency-maps", "scanning"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "top_burn"
+returns = "int"
+comparator = "exact"
+complexity_note = "The reference tallies each size in one pass, then keeps the smallest size at the top count. It runs in O(n) time and O(k) extra space for k distinct sizes."
+
+[[params]]
+name = "sizes"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 1, max = 9 },
+]
+
+[[samples]]
+input = [[2, 7, 2, 3, 2, 7]]
+expected = 2
+
+[[samples]]
+input = [[4, 4, 9]]
+expected = 4
+
+[[samples]]
+input = [[5, 6, 5, 6]]
+expected = 5

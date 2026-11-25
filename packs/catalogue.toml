@@ -45,3 +45,23 @@ name = "Strings"
 [[concepts]]
 slug = "scanning"
 name = "Scanning"
+
+[[concepts]]
+slug = "counting"
+name = "Counting"
+
+[[concepts]]
+slug = "frequency-maps"
+name = "Frequency Maps"
+
+[[concepts]]
+slug = "prefixes"
+name = "Prefix Information"
+
+[[concepts]]
+slug = "grouping"
+name = "Grouping"
+
+[[concepts]]
+slug = "hashing"
+name = "Hashing"
