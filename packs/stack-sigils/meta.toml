@@ -1,6 +1,6 @@
 slug = "stack-sigils"
 title = "The Sigil Stack"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "arrays"
 concepts = ["arrays", "stacks", "simulation", "edge-cases"]

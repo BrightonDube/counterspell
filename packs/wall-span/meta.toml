@@ -1,6 +1,6 @@
 slug = "wall-span"
 title = "The Widest Canvas"
-status = "draft"
+status = "published"
 difficulty = "hard"
 track = "arrays"
 concepts = ["arrays", "stacks", "scanning"]

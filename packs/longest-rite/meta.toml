@@ -1,6 +1,6 @@
 slug = "longest-rite"
 title = "The Longest Sound Passage"
-status = "draft"
+status = "published"
 difficulty = "hard"
 track = "strings"
 concepts = ["strings", "stacks", "scanning", "edge-cases"]
