@@ -1,6 +1,6 @@
 slug = "serving-order"
 title = "The Order of Servings"
-status = "draft"
+status = "published"
 difficulty = "medium"
 track = "arrays"
 concepts = ["arrays", "queues", "simulation"]

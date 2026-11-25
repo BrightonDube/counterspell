@@ -1,6 +1,6 @@
 slug = "rune-brackets"
 title = "The Rune Inscription"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "strings"
 concepts = ["strings", "stacks", "edge-cases"]

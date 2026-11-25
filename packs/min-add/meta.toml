@@ -1,6 +1,6 @@
 slug = "min-add"
 title = "Fewest New Runes"
-status = "draft"
+status = "published"
 difficulty = "medium"
 track = "strings"
 concepts = ["strings", "stacks", "counting", "edge-cases"]

@@ -1,6 +1,6 @@
 slug = "deepest-ember"
 title = "The Deepest Ember"
-status = "draft"
+status = "published"
 difficulty = "easy"
 track = "strings"
 concepts = ["strings", "stacks", "scanning", "edge-cases"]
