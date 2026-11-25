@@ -416,8 +416,7 @@
               </p>
             {/if}
             <p class="mt-2 text-sm text-text-muted">
-              {user.country || 'Country not set'} · Avatar upload is unavailable until
-              storage is configured.
+              {user.country || 'Country not set'}
             </p>
             {#if can.edit_profile}
               <button
