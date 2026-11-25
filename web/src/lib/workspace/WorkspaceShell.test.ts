@@ -11,7 +11,8 @@ import type { LanguageSummary, ProblemDetail } from '../api/types';
 
 vi.mock('../editor/monaco-loader', () => ({
   CRYPT_THEME_NAME: 'crypt',
-  loadMonaco: () => new Promise(() => {})
+  loadMonaco: () => new Promise(() => {}),
+  loadMonacoLanguage: () => Promise.resolve()
 }));
 
 // The run API is replaced so no test calls the network. The real module is kept for its other exports.
@@ -27,6 +28,8 @@ vi.mock('../runs/api', async (importOriginal) => {
 });
 
 import { startRunAction } from '../runs/api';
+import { session } from '../auth/session.svelte.js';
+import type { FamiliarPrefs } from '../api/familiar';
 import { initialRunState, type RunStreamState } from '../runs/reducer';
 import { parseRunView } from '../runs/types';
 import type { GhostView } from '../ghost/types';
@@ -35,6 +38,8 @@ import WorkspaceShell from './WorkspaceShell.svelte';
 
 afterEach(() => {
   cleanup();
+  session.status = 'unknown';
+  vi.restoreAllMocks();
 });
 
 /** A minimal wrong-answer ghost, as the trusted judge's stream payload parses it. */
@@ -151,6 +156,17 @@ describe('WorkspaceShell', () => {
     expect(screen.getByRole('complementary', { name: 'Problem' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Editor' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Results' })).toBeTruthy();
+  });
+
+  // Breaks if the costume ember is exposed to assistive tech, or missing when
+  // the Steel Night frame is supposed to wear it.
+  it('dresses the frame with a decorative ember hidden from assistive tech', () => {
+    const { container } = render(WorkspaceShell, {
+      props: { problem, languages, layout: 'desktop' }
+    });
+    const ember = container.querySelector('.workspace-ember');
+    expect(ember, 'costume ember').not.toBeNull();
+    expect(ember?.getAttribute('aria-hidden')).toBe('true');
   });
 
   // Breaks if the problem column cannot be collapsed, which leaves no room for the editor on a tablet.
@@ -330,6 +346,7 @@ describe('WorkspaceShell', () => {
 
   // Breaks if "speech off" still sends the learner's code to the server for a bubble (R11.9).
   it('does not ask for the Familiar speech when the learner turned speech off', async () => {
+    session.status = 'signed_in';
     const requestSpeech = vi.fn(() =>
       Promise.resolve({
         kind: 'ready' as const,
@@ -352,7 +369,8 @@ describe('WorkspaceShell', () => {
         languages,
         layout: 'desktop',
         sessionDeps: ghostSessionDeps(stream),
-        familiarDeps: { loadPreferences, savePreferences, requestSpeech }
+        familiarDeps: { loadPreferences, savePreferences, requestSpeech },
+        atmosphere: true
       }
     });
     await vi.waitFor(() => expect(loadPreferences).toHaveBeenCalled());
@@ -368,6 +386,7 @@ describe('WorkspaceShell', () => {
   // Breaks if the speech request fires before the terminal read, or fires more
   // than once for the same run across republished stream states.
   it('asks for the Familiar speech once, after the run finishes', async () => {
+    session.status = 'signed_in';
     const requestSpeech = vi.fn(() =>
       Promise.resolve({
         kind: 'ready' as const,
@@ -390,7 +409,8 @@ describe('WorkspaceShell', () => {
         languages,
         layout: 'desktop',
         sessionDeps: ghostSessionDeps(stream),
-        familiarDeps: { loadPreferences, savePreferences, requestSpeech }
+        familiarDeps: { loadPreferences, savePreferences, requestSpeech },
+        atmosphere: true
       }
     });
 
@@ -407,6 +427,113 @@ describe('WorkspaceShell', () => {
     });
     expect(requestSpeech).toHaveBeenCalledTimes(1);
     expect(await screen.findByText(/Looks linear\./)).toBeTruthy();
+  });
+
+  // Breaks if an anonymous visit asks for per-user familiar state: the
+  // preference and speech endpoints need a session (WP04/AUD-19).
+  it('never asks for familiar preferences or speech when signed out', async () => {
+    session.status = 'signed_out';
+    const loadPreferences = vi.fn(() => Promise.resolve(null));
+    const requestSpeech = vi.fn(() =>
+      Promise.resolve({ kind: 'unavailable' as const, text: '' })
+    );
+    const stream: RunStreamState = {
+      ...initialRunState('run-anon'),
+      status: 'completed',
+      terminal: {
+        kind: 'done',
+        verdict: 'accepted',
+        passed: 2,
+        total: 2,
+        score: 1
+      }
+    };
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        sessionDeps: ghostSessionDeps(stream, 'run-anon'),
+        familiarDeps: {
+          loadPreferences,
+          savePreferences: vi.fn(() => Promise.resolve({ synced: true })),
+          requestSpeech
+        }
+      }
+    });
+    await fireEvent.click(
+      await screen.findByRole('button', { name: 'Run samples' })
+    );
+    const announcer = await screen.findByRole('status', {
+      name: 'Run announcements'
+    });
+    await vi.waitFor(() => expect(announcer.textContent).toContain('Accepted'));
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(loadPreferences).not.toHaveBeenCalled();
+    expect(requestSpeech).not.toHaveBeenCalled();
+  });
+
+  // Breaks if a direct signed-in visit leaves the store at `unknown` — the
+  // Familiar gates would stay shut forever even though a cookie session exists.
+  it('resolves an unknown session before gating Familiar requests', async () => {
+    session.status = 'unknown';
+    const loadSpy = vi.spyOn(session, 'load').mockImplementation(async () => {
+      session.status = 'signed_in';
+    });
+    const loadPreferences = vi.fn(() =>
+      Promise.resolve({ muted: false, hidden: false })
+    );
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        atmosphere: true,
+        familiarDeps: {
+          loadPreferences,
+          savePreferences: vi.fn(() => Promise.resolve({ synced: true })),
+          requestSpeech: vi.fn(() =>
+            Promise.resolve({ kind: 'unavailable' as const, text: '' })
+          )
+        }
+      }
+    });
+    await vi.waitFor(() => expect(loadSpy).toHaveBeenCalled());
+    await vi.waitFor(() => expect(loadPreferences).toHaveBeenCalled());
+  });
+
+  // Breaks if a toggle that beats the preference read sends the untouched
+  // sibling field and clobbers its saved value — the server merges every
+  // named field, so only the changed one may go.
+  it('sends only the changed field when a toggle beats the preference read', async () => {
+    session.status = 'signed_in';
+    let resolveLoad: (prefs: FamiliarPrefs | null) => void = () => {};
+    const pending = new Promise<FamiliarPrefs | null>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const savePreferences = vi.fn(() => Promise.resolve({ synced: true }));
+    render(WorkspaceShell, {
+      props: {
+        problem,
+        languages,
+        layout: 'desktop',
+        atmosphere: true,
+        familiarDeps: {
+          loadPreferences: () => pending,
+          savePreferences,
+          requestSpeech: vi.fn(() =>
+            Promise.resolve({ kind: 'unavailable' as const, text: '' })
+          )
+        }
+      }
+    });
+    await fireEvent.click(await screen.findByRole('button', { name: 'Mute' }));
+    expect(savePreferences).toHaveBeenCalledWith({ muted: true });
+    // The late read still applies the field the learner never touched.
+    resolveLoad({ muted: false, hidden: true, speech: 'off' });
+    await vi.waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Show' })).toBeTruthy();
+    });
   });
 
   // Breaks if the authored ladder is not reachable from the workspace, so a learner who fails
@@ -611,6 +738,7 @@ describe('WorkspaceShell', () => {
   // Breaks if leaving the page and coming back to the same finished run sends a second
   // speech request (FAM-6: at most one bubble per run, whatever the page does).
   it('sends one speech request for a run across a remount', async () => {
+    session.status = 'signed_in';
     const posts: string[] = [];
     vi.stubGlobal(
       'fetch',
@@ -642,7 +770,8 @@ describe('WorkspaceShell', () => {
             problem,
             languages,
             layout: 'desktop',
-            sessionDeps: ghostSessionDeps(stream, 'run-remount')
+            sessionDeps: ghostSessionDeps(stream, 'run-remount'),
+            atmosphere: true
           }
         });
         await fireEvent.click(

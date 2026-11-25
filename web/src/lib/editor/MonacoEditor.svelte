@@ -5,7 +5,11 @@
   import { untrack } from 'svelte';
   import { SvelteMap } from 'svelte/reactivity';
   import type * as Monaco from 'monaco-editor/editor/editor.api.js';
-  import { CRYPT_THEME_NAME, loadMonaco } from './monaco-loader';
+  import {
+    CRYPT_THEME_NAME,
+    loadMonaco,
+    loadMonacoLanguage
+  } from './monaco-loader';
   import { markWorkspace } from '../performance';
 
   let {
@@ -37,7 +41,7 @@
 
     let cancelled = false;
     status = 'loading';
-    loadMonaco()
+    loadMonaco(untrack(() => language))
       .then((monaco) => {
         if (cancelled) return;
         api = monaco;
@@ -70,6 +74,9 @@
   // Shows the model for the current language. A language seen before keeps its own content.
   $effect(() => {
     const current = language;
+    // The tokeniser may still be idle-priming; the model works as plain text
+    // until the language pack registers.
+    void loadMonacoLanguage(current).catch(() => {});
     if (status !== 'ready' || !api || !editor) return;
     let model = models.get(current);
     if (!model) {

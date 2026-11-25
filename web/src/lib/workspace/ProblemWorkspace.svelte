@@ -10,9 +10,13 @@
 
   let {
     slug,
+    pending,
     onready
   }: {
     slug: string;
+    /** The route's own load() request, started at module evaluation. Direct
+     * renders (tests) omit it and the component fetches on mount instead. */
+    pending?: Promise<[ProblemDetail, LanguageSummary[]]>;
     /** Lets the route write the real title/description once the problem arrives (AQ01). */
     onready?: (problem: ProblemDetail) => void;
   } = $props();
@@ -26,11 +30,17 @@
 
   $effect(() => {
     const requested = slug;
+    const request = pending;
     const controller = new AbortController();
     const options = { signal: controller.signal };
     state = { kind: 'loading' };
 
-    Promise.all([loadProblem(requested, options), loadLanguages(options)])
+    // The route hands over a fetch it started during load(); direct renders
+    // (tests, story mounts) start their own here instead.
+    (
+      request ??
+      Promise.all([loadProblem(requested, options), loadLanguages(options)])
+    )
       .then(([problem, languages]) => {
         if (!controller.signal.aborted) {
           // The picker may only offer languages this problem actually supports — a starter row

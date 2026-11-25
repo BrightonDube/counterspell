@@ -1,0 +1,125 @@
+{
+  "profile": {
+    "viewport": "390x844",
+    "network": "150ms RTT, 1.6Mbps down, 750kbps up",
+    "cpuThrottle": "4x"
+  },
+  "url": "/problems/two-sum",
+  "measured": {
+    "marks": {
+      "problem-detail-loaded": 3034,
+      "workspace-shell-interactive": 3080,
+      "monaco-ready": 18016
+    },
+    "navStartEpoch": 1795574847344.1,
+    "navigation": {
+      "responseEnd": 180,
+      "domContentLoaded": 203,
+      "load": 204
+    },
+    "cls": 0.0003233852765534444
+  },
+  "totals": {
+    "requests": 46,
+    "bytes": 3284112,
+    "byType": {
+      "Document": 2086,
+      "Script": 2997774,
+      "Other": 1012,
+      "Stylesheet": 190292,
+      "Font": 91237,
+      "Fetch": 1711
+    }
+  },
+  "apiCalls": [
+    {
+      "url": "/api/languages",
+      "bytes": 541
+    },
+    {
+      "url": "/api/problems/two-sum",
+      "bytes": 936
+    },
+    {
+      "url": "/api/me/familiar",
+      "bytes": 234
+    }
+  ],
+  "topTransfers": [
+    {
+      "url": "DVaeJiBa.js",
+      "type": "Script",
+      "bytes": 1712774
+    },
+    {
+      "url": "q7Qs31SZ.js",
+      "type": "Script",
+      "bytes": 649750
+    },
+    {
+      "url": "DJPCHVyS.js",
+      "type": "Script",
+      "bytes": 279962
+    },
+    {
+      "url": "editor.J-Jc3epe.css",
+      "type": "Stylesheet",
+      "bytes": 83474
+    },
+    {
+      "url": "0.Bbhptt_l.css",
+      "type": "Stylesheet",
+      "bytes": 83456
+    },
+    {
+      "url": "B2q0S1A8.js",
+      "type": "Script",
+      "bytes": 79720
+    },
+    {
+      "url": "IsqCst71.js",
+      "type": "Script",
+      "bytes": 73931
+    },
+    {
+      "url": "Geist-Variable.BNK-hTUD.woff2",
+      "type": "Font",
+      "bytes": 69779
+    },
+    {
+      "url": "11.C0PeCXj2.js",
+      "type": "Script",
+      "bytes": 68995
+    },
+    {
+      "url": "BKmsVrd2.js",
+      "type": "Script",
+      "bytes": 46670
+    },
+    {
+      "url": "BhXLx64b.js",
+      "type": "Script",
+      "bytes": 41019
+    },
+    {
+      "url": "jetbrains-mono-latin-400-normal.V6pRDFza.woff2",
+      "type": "Font",
+      "bytes": 21458
+    },
+    {
+      "url": "accessibility.B7Cy09uO.css",
+      "type": "Stylesheet",
+      "bytes": 16146
+    },
+    {
+      "url": "DR3TSgg5.js",
+      "type": "Script",
+      "bytes": 10757
+    },
+    {
+      "url": "CWMRHe86.js",
+      "type": "Script",
+      "bytes": 5994
+    }
+  ]
+}

@@ -3,7 +3,8 @@
   // loop with a static poster) gets a consistent motion vocabulary — `motion` picks the
   // idle animation, `bounce` adds the hover bob, `centre` margin-centres it in its block.
   // Keyframes live in app.css so every component shares the same motion language.
-  // The still <img> stays lazy-decoded so Save-Data and reduced motion keep a cheap frame.
+  // The video element is only created while the art is visible and full motion is allowed —
+  // off-screen or reduced-motion visits never fetch the loop at all (WP05).
   import { onMount } from 'svelte';
 
   let {
@@ -30,20 +31,44 @@
     centre?: boolean;
   } = $props();
 
+  let host = $state<HTMLDivElement | undefined>();
   let video = $state<HTMLVideoElement | undefined>();
+  let visible = $state(false);
+  let reducedMotion = $state(false);
 
   onMount(() => {
-    if (
-      video &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    ) {
-      video.pause();
-      video.currentTime = 0;
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reducedMotion = media.matches;
+    const onMotion = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+    };
+    media.addEventListener('change', onMotion);
+    if (typeof IntersectionObserver === 'undefined') {
+      // Environments without the API (tests, very old browsers) treat the art
+      // as visible — the media behaves exactly as before.
+      visible = true;
+      return () => media.removeEventListener('change', onMotion);
     }
+    // The loop attaches while the art is on screen and pauses when it leaves,
+    // so no bytes or decode time are spent on media nobody can see.
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        visible = true;
+        void video?.play().catch(() => {});
+      } else {
+        video?.pause();
+      }
+    });
+    if (host) observer.observe(host);
+    return () => {
+      media.removeEventListener('change', onMotion);
+      observer.disconnect();
+    };
   });
 </script>
 
 <div
+  bind:this={host}
   aria-hidden="true"
   class="art"
   class:breathing={motion === 'breathe'}
@@ -52,7 +77,7 @@
   class:centred={centre}
   style="width: {size}px; height: {size}px"
 >
-  {#if webm}
+  {#if webm && visible && !reducedMotion}
     <video
       bind:this={video}
       autoplay

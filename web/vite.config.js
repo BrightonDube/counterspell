@@ -8,6 +8,15 @@ export default defineConfig({
     tailwindcss(),
     sveltekit({ adapter: adapter({ fallback: '200.html' }) })
   ],
+  build: {
+    // WP09 decision: production ships no source maps. Nothing consumes them —
+    // there is no error-telemetry sink to deminify stacks — and public maps
+    // would expose readable source for zero benefit. scripts/verify-artifact.mjs
+    // fails the build if a map or sourceMappingURL ever slips back in. If a
+    // telemetry sink arrives later, switch to 'hidden' and upload maps in CI —
+    // never deploy them.
+    sourcemap: false
+  },
   // Vitest must resolve the client Svelte build, not the SSR one. `browser`
   // mainFields matter: cm-chessboard ships `main: null` and only exposes its
   // entry through the browser/module fields.

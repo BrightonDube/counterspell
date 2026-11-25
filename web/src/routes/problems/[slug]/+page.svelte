@@ -3,7 +3,9 @@
   import Seo from '../../../lib/seo/Seo.svelte';
   import ProblemWorkspace from '../../../lib/workspace/ProblemWorkspace.svelte';
   import type { ProblemDetail } from '../../../lib/api/types';
+  import type { PageProps } from './$types';
 
+  let { data }: PageProps = $props();
   const slug = $derived(page.params.slug ?? '');
   let problem = $state<ProblemDetail | undefined>();
 
@@ -28,5 +30,9 @@
 <Seo {title} {description} path="/problems/{slug}" />
 
 <main class="min-h-screen bg-bg px-4 py-6 text-text sm:px-6">
-  <ProblemWorkspace {slug} onready={(p) => (problem = p)} />
+  <ProblemWorkspace
+    {slug}
+    pending={data.pending}
+    onready={(p) => (problem = p)}
+  />
 </main>

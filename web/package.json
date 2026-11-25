@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "check": "svelte-kit sync && svelte-check --tsconfig ./jsconfig.json",
-    "build": "vite build && node scripts/optimize-critical-css.mjs",
+    "build": "vite build && node scripts/optimize-critical-css.mjs && node scripts/verify-artifact.mjs",
     "dev": "vite dev",
     "preview": "vite preview",
     "prepare": "svelte-kit sync",
