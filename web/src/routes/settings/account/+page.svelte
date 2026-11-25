@@ -25,6 +25,7 @@
     supportsPasskeys
   } from '#lib/auth/security.ts';
   import ProfileForm from '#lib/auth/ProfileForm.svelte';
+  import { countryName } from '#lib/auth/countries.js';
   import SecurityIcon from '#lib/auth/SecurityIcon.svelte';
   import { session } from '#lib/auth/session.svelte.js';
   import AppShell from '#lib/shell/AppShell.svelte';
@@ -399,7 +400,7 @@
             height="88"
             alt=""
           />
-          <div class="min-w-0">
+          <div class="min-w-0 profile-text">
             <h2
               class="text-xl font-semibold tracking-tight [overflow-wrap:anywhere]"
             >
@@ -410,14 +411,11 @@
             >
               @{user.handle}
             </p>
-            {#if user.email}
+            {#if user.country}
               <p class="mt-1 text-sm text-text-muted [overflow-wrap:anywhere]">
-                {user.email}
+                {countryName(user.country)}
               </p>
             {/if}
-            <p class="mt-2 text-sm text-text-muted">
-              {user.country || 'Country not set'}
-            </p>
             {#if can.edit_profile}
               <button
                 class={button}
@@ -429,6 +427,14 @@
             {/if}
           </div>
         </div>
+        {#if user.email}
+          <dl class="account-details">
+            <div class="account-detail">
+              <dt>Email</dt>
+              <dd class="[overflow-wrap:anywhere]">{user.email}</dd>
+            </div>
+          </dl>
+        {/if}
         <!-- The costume key is a deliberate focus target so keyboard users get the same cue. -->
         <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
         <span
@@ -1043,9 +1049,63 @@
     flex: none;
     inline-size: clamp(4rem, 14vw, 5.5rem);
     block-size: auto;
+    border-radius: 50%;
     filter: drop-shadow(
       0 0 0.5rem color-mix(in srgb, var(--accent-candle) 40%, transparent)
     );
+  }
+
+  .account-details {
+    margin: 0;
+    display: grid;
+    gap: 0.25rem;
+    font-size: 0.875rem;
+  }
+
+  .account-detail {
+    display: flex;
+    gap: 0.5rem;
+    min-width: 0;
+  }
+
+  .account-detail dt {
+    color: var(--text-muted);
+  }
+
+  .account-detail dd {
+    margin: 0;
+    color: var(--text);
+  }
+
+  /* Mobile: avatar centred above the name, decorative art stays out of
+     the way; identity reads top-to-bottom without horizontal squeeze. */
+  @media (max-width: 640px) {
+    .identity {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .profile-identity {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 0.75rem;
+    }
+
+    .profile-text {
+      display: grid;
+      justify-items: center;
+      gap: 0.125rem;
+    }
+
+    .profile-text button {
+      justify-self: center;
+      margin-block-start: 0.375rem;
+    }
+
+    .crypt-key-wrap {
+      display: none;
+    }
   }
 
   .profile-panel {
