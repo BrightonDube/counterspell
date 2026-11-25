@@ -274,6 +274,37 @@ describe('session store (T29)', () => {
     expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
+  // Breaks if a load started before clear() can still write its stale answer —
+  // the late probe would resurrect signed_in for a user who just signed out,
+  // or keep signed_out for one who just signed in (the post-login loop).
+  it('does not let an in-flight load write after clear()', async () => {
+    /** @type {() => void} */
+    let release = () => {};
+    const gate = new Promise((resolve) => {
+      release = () => resolve(undefined);
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input) => {
+        const path = typeof input === 'string' ? input : input.url;
+        if (path === '/api/auth/session') {
+          await gate;
+          return new Response('{"signed_in":false}', {
+            status: 200,
+            headers: { 'content-type': 'application/json' }
+          });
+        }
+        return new Response('{"code":"not_found"}', { status: 404 });
+      })
+    );
+    const session = new SessionStore();
+    const pending = session.load();
+    session.clear();
+    release();
+    await pending;
+    expect(session.status).toBe('unknown');
+  });
+
   // Breaks if a caller cannot force a refresh — dedup must never hide a stale answer.
   it('re-asks the server when forced', async () => {
     const fetchMock = answerPaths(SIGNED_IN);

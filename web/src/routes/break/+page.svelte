@@ -22,7 +22,7 @@
         : 'error';
     // Signed out is a normal answer here, not an error — the session already
     // knows, so the scores endpoint is never probed with an expected 401.
-    await session.load();
+    await session.load().catch(() => {});
     if (session.status !== 'signed_in') return;
     const own = await fetchScores();
     if (own.ok) {

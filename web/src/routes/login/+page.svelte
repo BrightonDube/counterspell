@@ -147,20 +147,27 @@
   async function passkeySignIn() {
     const result = await signInWithPasskey(returnTo);
     if (result.two_factor_required) await showTwoFactor();
-    else await goToDestination(result.return_to ?? returnTo);
+    else await finishSignIn(result.return_to ?? returnTo);
   }
 
   async function demoSignIn() {
     const result = await signInWithPassword(email.trim(), password, returnTo);
     password = '';
     if (result.two_factor_required) await showTwoFactor();
-    else await goToDestination(result.return_to ?? returnTo);
+    else await finishSignIn(result.return_to ?? returnTo);
   }
 
   async function verifyCode() {
     const result = await verifyTwoFactor(code.trim());
     code = '';
-    await goToDestination(result.return_to);
+    await finishSignIn(result.return_to);
+  }
+
+  // The mount probe may already have resolved the session to signed_out; the
+  // cookie changed, so the destination must re-ask rather than trust the cache.
+  async function finishSignIn(target: string) {
+    session.clear();
+    await goToDestination(target);
   }
 </script>
 

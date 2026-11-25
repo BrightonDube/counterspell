@@ -26,4 +26,11 @@ describe('landing document head', () => {
   it('keeps the global document head free of landing art', () => {
     expect(appHtml).not.toContain('hero-moon');
   });
+
+  // Routes served through the SPA fallback (e.g. /problems/[slug]) render this
+  // shell — it must never reach a crawler literally untitled (AUD-12).
+  it('ships a default title and description for fallback-served routes', () => {
+    expect(appHtml).toContain('<title>');
+    expect(appHtml).toContain('name="description"');
+  });
 });

@@ -26,6 +26,12 @@ export class SessionStore {
   #inflight = null;
 
   /**
+   * Bumped by `clear()`: a fetch started before the clear must not write its
+   * stale answer over the fresh state.
+   */
+  #generation = 0;
+
+  /**
    * Asks the server who is signed in. The status probe (`GET /api/auth/session`) always answers
    * `200`, so an expected signed-out visit never produces a `401` console error (AUD-18); only a
    * confirmed session fetches `GET /api/me`. A `401` from `/api/me` still means signed out —
@@ -46,8 +52,11 @@ export class SessionStore {
   }
 
   async #fetch() {
+    const generation = this.#generation;
+    const current = () => generation === this.#generation;
     try {
       const status = await getSessionStatus();
+      if (!current()) return;
       if (!status?.signed_in) {
         this.user = null;
         this.capabilities = null;
@@ -55,10 +64,12 @@ export class SessionStore {
         return;
       }
       const data = await getMe();
+      if (!current()) return;
       this.user = data.user;
       this.capabilities = data.capabilities;
       this.status = 'signed_in';
     } catch (error) {
+      if (!current()) return;
       if (error instanceof AuthApiError && error.status === 401) {
         this.user = null;
         this.capabilities = null;
@@ -67,15 +78,17 @@ export class SessionStore {
       }
       throw error;
     } finally {
-      this.#inflight = null;
+      if (current()) this.#inflight = null;
     }
   }
 
-  /** Forgets the user and capabilities, for example after sign-out. */
+  /** Forgets the user and capabilities, for example after sign-out or sign-in. */
   clear() {
     this.user = null;
     this.capabilities = null;
     this.status = 'unknown';
+    this.#generation += 1;
+    this.#inflight = null;
   }
 }
 

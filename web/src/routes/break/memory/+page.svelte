@@ -4,6 +4,7 @@
   import { onMount } from 'svelte';
   import { checkPress, level, newRound } from '#lib/break/memory.js';
   import { saveScore } from '#lib/break/api.js';
+  import { session } from '#lib/auth/session.svelte.js';
   import Seo from '../../../lib/seo/Seo.svelte';
 
   const TILES = 9;
@@ -19,6 +20,7 @@
   /** @type {'' | 'correct' | 'wrong'} */
   let flashKind = $state('');
   let focusIdx = $state(0);
+  let signedOut = $state(false);
   /** @type {HTMLButtonElement[]} */
   let tileEls = [];
   let reduced = false;
@@ -60,7 +62,13 @@
       phase = 'over';
       const lvl = level(sequence);
       announce = `Wrong, game over at level ${lvl}.`;
-      void saveScore({ game: 'brain', level: lvl });
+      // A signed-out player must never trigger the scores endpoint — the 401
+      // is expected noise, so the answer is checked before the request.
+      if (session.status === 'signed_in') {
+        void saveScore({ game: 'brain', level: lvl });
+      } else {
+        signedOut = true;
+      }
     } else {
       flashKind = 'correct';
       announce = verdict === 'round_done' ? 'Correct. Next round.' : 'Correct.';
@@ -108,6 +116,14 @@
       Watch the tiles light up, then repeat the order.
     </p>
     <div aria-live="polite" class="min-h-6 text-sm">{announce}</div>
+    {#if signedOut}
+      <p class="text-sm text-text-muted">
+        <a class="text-accent underline" href={resolve('/login?return_to=/break/memory')}>
+          Sign in
+        </a>
+        to save your score.
+      </p>
+    {/if}
     <div class="grid grid-cols-3 gap-2" role="group" aria-label="Memory tiles">
       {#each Array(TILES) as _, i (i)}
         <button

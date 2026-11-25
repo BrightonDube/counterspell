@@ -97,20 +97,23 @@
   onMount(async () => {
     // Session copy is honest about who is playing: anonymous players see the
     // sign-in nudge; signed-in players never get told their result is unsaved.
-    void session.load().then(() => {
-      signedIn = session.status === 'signed_in';
-    });
+    void session
+      .load()
+      .then(() => {
+        signedIn = session.status === 'signed_in';
+      })
+      .catch(() => {});
     if (!boardEl) return;
     const container = boardEl;
     // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it
     // lazily keeps the route server-renderable (Seo head + static markup).
     const { Chessboard, INPUT_EVENT_TYPE } = await import('cm-chessboard');
+    if (!container.isConnected) return;
     try {
       worker = new BotWorker();
     } catch {
       worker = undefined;
     }
-    if (!container.isConnected) return;
     board = new Chessboard(container, {
       position: game.fen(),
       style: { pieces: { file: piecesUrl } }

@@ -3,6 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Fallback-served routes (e.g. /problems/[slug]) reach crawlers as this
+         shell; it must never be literally untitled. Route-level Seo replaces it. -->
+    <title>Counterspell</title>
+    <meta
+      name="description"
+      content="Counterspell — challenge your thinking with coding problems and learn from mistakes."
+    />
     <link rel="icon" type="image/svg+xml" href="/landing/moon.svg" />
     <link rel="manifest" href="/manifest.webmanifest" />
     %sveltekit.head%

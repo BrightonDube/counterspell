@@ -36,7 +36,7 @@ use counterspell_server::{
     testkit::{ensure_user, BearerTestResolver},
     AppState,
 };
-use serde_json::{json, Value};
+use serde_json::json;
 use sqlx::{postgres::PgPoolOptions, PgPool, Row};
 use tokio::{net::TcpListener, sync::watch};
 use uuid::Uuid;
@@ -151,10 +151,13 @@ fn bearer_session_routes(pool: PgPool) -> Router {
         .with_state(BearerAuthShim { pool })
 }
 
-async fn session_status(headers: HeaderMap) -> Json<Value> {
-    Json(json!({
-        "signed_in": BearerTestResolver.resolve(&headers).await.is_some()
-    }))
+async fn session_status(headers: HeaderMap) -> impl IntoResponse {
+    (
+        [(header::CACHE_CONTROL, "no-store")],
+        Json(json!({
+            "signed_in": BearerTestResolver.resolve(&headers).await.is_some()
+        })),
+    )
 }
 
 async fn bearer_me(

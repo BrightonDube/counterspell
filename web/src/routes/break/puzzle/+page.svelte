@@ -5,6 +5,7 @@
   import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
   import { fetchDaily, saveScore } from '#lib/break/api.js';
+  import { session } from '#lib/auth/session.svelte.js';
   import { newPuzzle, tryMove } from '#lib/break/puzzle.js';
   import Seo from '../../../lib/seo/Seo.svelte';
 
@@ -41,6 +42,14 @@
 
   async function recordScore() {
     if (!puzzleState || !puzzleMeta) return;
+    // A signed-out player must never trigger the scores endpoint — the 401 is
+    // expected noise, so the session answer is awaited before the request.
+    await session.load().catch(() => {});
+    if (session.status !== 'signed_in') {
+      signedOut = true;
+      saveResult = 'Sign in to save your score.';
+      return;
+    }
     const res = await saveScore({
       game: 'chess_puzzle',
       date: puzzleMeta.date,
