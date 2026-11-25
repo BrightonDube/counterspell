@@ -1,6 +1,6 @@
 # Review summary: flood-line
 
-Round 1, content hash 3f0e45bd8b50. Written for a non-expert reader. One page.
+Round 1, content hash 828f3614e514. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A wall of posts holds rainwater in its dips; each gap fills to the lower of the tallest bounds on either side, minus its own height. Return the total trapped water.

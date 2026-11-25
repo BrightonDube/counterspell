@@ -5,4 +5,4 @@
 - [x] **B02-03 Complete hints, tests, generators and known ghosts**
 - [x] **B02-04 Run static validation and pack review**
 - [x] **B02-05 Run sandbox validation for every pack**
-- [ ] **B02-06 Approve, import, publish and verify the complete batch**
+- [x] **B02-06 Approve, import, publish and verify the complete batch**

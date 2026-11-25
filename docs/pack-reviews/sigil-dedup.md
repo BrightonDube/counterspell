@@ -1,6 +1,6 @@
 # Review summary: sigil-dedup
 
-Round 1, content hash b4dafa49d314. Written for a non-expert reader. One page.
+Round 1, content hash 86834bb1a806. Written for a non-expert reader. One page.
 
 ## What the problem asks
 A warden tallies sigil marks in a column that always runs smallest first, so equal marks sit side by side. Return how many different marks the column carries.
