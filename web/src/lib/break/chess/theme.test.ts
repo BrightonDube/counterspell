@@ -26,6 +26,7 @@ import {
   LAST_MOVE_MARKER,
   clearLastMove,
   mountThemedBoard,
+  setBoardOrientation,
   showLastMove
 } from './theme.js';
 
@@ -99,5 +100,72 @@ describe('last-move marker (CH04)', () => {
   it('tolerates a missing board', () => {
     expect(() => showLastMove(undefined, 'e2', 'e4')).not.toThrow();
     expect(() => clearLastMove(undefined)).not.toThrow();
+  });
+});
+
+describe('board orientation (CPX05)', () => {
+  // cm-chessboard drops a setOrientation call while a turn is queued; the
+  // shared helper serializes requests so the newest side still applies.
+  const fakeBoard = () => {
+    const calls: string[] = [];
+    const resolvers: (() => void)[] = [];
+    const board = {
+      orientation: 'w',
+      calls,
+      resolvers,
+      getOrientation() {
+        return board.orientation;
+      },
+      setOrientation(color: string) {
+        calls.push(color);
+        return new Promise<void>((resolve) => {
+          resolvers.push(() => {
+            board.orientation = color;
+            resolve();
+          });
+        });
+      }
+    };
+    return board;
+  };
+  const flush = async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+
+  it('skips a redundant turn when the side already faces the player', () => {
+    const board = fakeBoard();
+    setBoardOrientation(board as never, 'w');
+    expect(board.calls).toEqual([]);
+  });
+
+  it('re-issues the newest side after a pending turn instead of dropping it', async () => {
+    const board = fakeBoard();
+    setBoardOrientation(board as never, 'b');
+    setBoardOrientation(board as never, 'w');
+    expect(board.calls).toEqual(['b']);
+    board.resolvers[0]?.();
+    await flush();
+    expect(board.calls).toEqual(['b', 'w']);
+    board.resolvers[1]?.();
+    await flush();
+    expect(board.orientation).toBe('w');
+  });
+
+  it('applies the queued side when it differs after the first turn', async () => {
+    const board = fakeBoard();
+    setBoardOrientation(board as never, 'b');
+    setBoardOrientation(board as never, 'b');
+    expect(board.calls).toEqual(['b']);
+    board.resolvers[0]?.();
+    await flush();
+    // The queued 'b' re-checks: the board is already 'b', so nothing re-issues.
+    expect(board.calls).toEqual(['b']);
+  });
+
+  it('tolerates a missing board and a board without setOrientation', () => {
+    expect(() => setBoardOrientation(undefined, 'b')).not.toThrow();
+    expect(() => setBoardOrientation({} as never, 'b')).not.toThrow();
   });
 });
