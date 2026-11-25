@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Keep the runes still open on a stack; a closing rune must match the one on top."
+
+[[hint]]
+rung = 2
+text = "Push each opening rune. On a closing rune the stack must not be empty and its top must be that rune's opener — anything else fails at once."
+
+[[hint]]
+rung = 3
+text = "```\nopen: push; close: pop or fail\n  when the top is not its opener\nsound = the stack ends empty\n```"
+
+[[hint]]
+rung = 4
+text = "After the last rune, anything still waiting for its closer means the inscription does not hold — the stack must end empty."

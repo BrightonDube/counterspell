@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A sound passage ends where the structure breaks — the broken runes act as fresh boundaries."
+
+[[hint]]
+rung = 2
+text = "Keep a stack of positions; seed it with a boundary before the first rune and reset it wherever a `)` has no opener to take."
+
+[[hint]]
+rung = 3
+text = "```\npush on (; on ) pop —\n  empty stack = new boundary\n  else measure the span\n```"
+
+[[hint]]
+rung = 4
+text = "Each `(` pushes its position; each `)` either pairs (measure index minus the boundary on top) or resets the boundary to itself."

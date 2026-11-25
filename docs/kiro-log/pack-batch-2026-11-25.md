@@ -173,3 +173,115 @@ bytes via `scripts/pack-content-hash-git.py`.
   27/27 in 274ms through the prod rootless sandbox.
 - Cleanup: ops session and user row deleted; all staging, env file,
   scripts and logs removed from the host (verified empty).
+# pack-batch run 2026-11-25
+
+--- rune-brackets: static stages S0-S9
+- rune-brackets: S9 FAILED (0 findings); review needed
+--- stack-sigils: static stages S0-S9
+- stack-sigils: S9 FAILED (0 findings); review needed
+--- cauldron-queue: static stages S0-S9
+- cauldron-queue: S9 FAILED (0 findings); review needed
+--- deepest-ember: static stages S0-S9
+- deepest-ember: S9 FAILED (0 findings); review needed
+--- serving-order: static stages S0-S9
+- serving-order: S9 FAILED (0 findings); review needed
+--- undo-ritual: static stages S0-S9
+- undo-ritual: S9 FAILED (0 findings); review needed
+--- min-add: static stages S0-S9
+- min-add: S9 FAILED (0 findings); review needed
+--- next-lantern: static stages S0-S9
+- next-lantern: S9 FAILED (0 findings); review needed
+--- wall-span: static stages S0-S9
+- wall-span: S9 FAILED (0 findings); review needed
+--- longest-rite: static stages S0-S9
+- longest-rite: S9 FAILED (0 findings); review needed
+
+Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-25
+
+--- rune-brackets: static stages S0-S9
+- rune-brackets: S9 FAILED (0 findings); review needed
+--- stack-sigils: static stages S0-S9
+- stack-sigils: S9 FAILED (0 findings); review needed
+--- cauldron-queue: static stages S0-S9
+- cauldron-queue: S9 FAILED (0 findings); review needed
+--- deepest-ember: static stages S0-S9
+- deepest-ember: S9 FAILED (0 findings); review needed
+--- serving-order: static stages S0-S9
+- serving-order: S9 FAILED (0 findings); review needed
+--- undo-ritual: static stages S0-S9
+- undo-ritual: S9 FAILED (0 findings); review needed
+--- min-add: static stages S0-S9
+- min-add: S9 FAILED (0 findings); review needed
+--- next-lantern: static stages S0-S9
+- next-lantern: S9 FAILED (0 findings); review needed
+--- wall-span: static stages S0-S9
+- wall-span: S9 FAILED (0 findings); review needed
+--- longest-rite: static stages S0-S9
+- longest-rite: S9 FAILED (0 findings); review needed
+
+Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-25
+
+--- rune-brackets: static stages S0-S9
+- rune-brackets: S9 passed; S10/S11 pending_judge
+- rune-brackets: review round 1 recorded
+- rune-brackets: review round 2 recorded
+- rune-brackets: review round 3 recorded
+- rune-brackets: awaiting_approval (Brighton gate; no approval.toml written here)
+--- stack-sigils: static stages S0-S9
+- stack-sigils: S9 passed; S10/S11 pending_judge
+- stack-sigils: review round 1 recorded
+- stack-sigils: review round 2 recorded
+- stack-sigils: review round 3 recorded
+- stack-sigils: awaiting_approval (Brighton gate; no approval.toml written here)
+--- cauldron-queue: static stages S0-S9
+- cauldron-queue: S9 passed; S10/S11 pending_judge
+- cauldron-queue: review round 1 recorded
+- cauldron-queue: review round 2 recorded
+- cauldron-queue: review round 3 recorded
+- cauldron-queue: awaiting_approval (Brighton gate; no approval.toml written here)
+--- deepest-ember: static stages S0-S9
+- deepest-ember: S9 passed; S10/S11 pending_judge
+- deepest-ember: review round 1 recorded
+- deepest-ember: review round 2 recorded
+- deepest-ember: review round 3 recorded
+- deepest-ember: awaiting_approval (Brighton gate; no approval.toml written here)
+--- serving-order: static stages S0-S9
+- serving-order: S9 passed; S10/S11 pending_judge
+- serving-order: review round 1 recorded
+- serving-order: review round 2 recorded
+- serving-order: review round 3 recorded
+- serving-order: awaiting_approval (Brighton gate; no approval.toml written here)
+--- undo-ritual: static stages S0-S9
+- undo-ritual: S9 passed; S10/S11 pending_judge
+- undo-ritual: review round 1 recorded
+- undo-ritual: review round 2 recorded
+- undo-ritual: review round 3 recorded
+- undo-ritual: awaiting_approval (Brighton gate; no approval.toml written here)
+--- min-add: static stages S0-S9
+- min-add: S9 passed; S10/S11 pending_judge
+- min-add: review round 1 recorded
+- min-add: review round 2 recorded
+- min-add: review round 3 recorded
+- min-add: awaiting_approval (Brighton gate; no approval.toml written here)
+--- next-lantern: static stages S0-S9
+- next-lantern: S9 passed; S10/S11 pending_judge
+- next-lantern: review round 1 recorded
+- next-lantern: review round 2 recorded
+- next-lantern: review round 3 recorded
+- next-lantern: awaiting_approval (Brighton gate; no approval.toml written here)
+--- wall-span: static stages S0-S9
+- wall-span: S9 passed; S10/S11 pending_judge
+- wall-span: review round 1 recorded
+- wall-span: review round 2 recorded
+- wall-span: review round 3 recorded
+- wall-span: awaiting_approval (Brighton gate; no approval.toml written here)
+--- longest-rite: static stages S0-S9
+- longest-rite: S9 passed; S10/S11 pending_judge
+- longest-rite: review round 1 recorded
+- longest-rite: review round 2 recorded
+- longest-rite: review round 3 recorded
+- longest-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

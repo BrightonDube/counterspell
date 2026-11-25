@@ -76,3 +76,33 @@ partitioning and deduplication (ember-drift, candle-compact, sigil-dedup,
 shared-sigils) and pair or triplet relationships (closest-quota,
 harbour-depths, triad-rite). Quadratic ghosts tempt a rescan in
 harbour-depths, flood-line and triad-rite.
+
+## Catalogue batch 03 — stacks, queues and expression processing
+
+Ten original ideas for batch 03 (completion-program CP16): four easy, four
+medium, two hard. New concepts stacks / queues / simulation / parsing were
+added to `packs/catalogue.toml` (TAX-01); no slug is already used by a pack
+(SLUG-01). Supported call types stay `int`, `str`, `list[int]` and
+`list[list[int]]`. Every semantic is defined for arbitrary in-schema input,
+so generated hidden cases are always meaningful.
+
+| Slug | Track | Concepts | Difficulty | Original idea | Planned ghost kinds |
+|---|---|---|---|---|---|
+| rune-brackets | strings | strings, stacks, edge-cases | easy | An inscription of `()[]{}` runes; report `1` when every bracket nests correctly, else `0`. | checking-only-parens, empty-is-invalid |
+| stack-sigils | arrays | arrays, stacks, simulation | easy | Marks above `0` are laid on the sigil stack and each `0` lifts one; return the top mark (`-1` when bare). | pop-before-push-order, missing-empty-check |
+| cauldron-queue | arrays | arrays, queues, simulation | easy | Marks above `0` join the cauldron line and each `0` serves the front; return how many were served (serving an empty line does nothing). | serving-the-back, counting-joins |
+| deepest-ember | strings | strings, stacks, scanning, edge-cases | easy | Scan an `()` inscription and report the deepest correctly-opened nesting ever held; a stray closer is ignored. | counting-closers-not-depth, resetting-on-stray |
+| undo-ritual | strings | strings, stacks, simulation | medium | Each `#` in the chant erases the previous surviving rune; return the inscription that remains. | erasing-the-wrong-side, index-rewind |
+| serving-order | arrays | arrays, queues, simulation, edge-cases | medium | Same line rules as cauldron-queue; return the marks served, in order, as a list. | returning-waiters-not-served, serve-before-join |
+| min-add | strings | strings, stacks, counting | medium | Report the fewest `(` or `)` insertions that would balance an `()` inscription. | balancing-length-not-structure, ignoring-surplus-openers |
+| next-lantern | arrays | arrays, stacks, scanning | medium | For each lantern, report the steps until the next strictly taller lantern; `0` when none follows. | first-smaller-not-taller, distance-to-end |
+| wall-span | arrays | arrays, stacks, edge-cases | hard | A wall line of heights; return the largest rectangular stone slab that fits inside one unbroken stretch of wall (largest rectangle under the silhouette). | min-vs-own-height, skipping-end-boundary |
+| longest-rite | strings | strings, stacks, parsing, edge-cases | hard | Report the length of the longest stretch of the `()` inscription that is correctly nested. | valid-prefix-only, missing-index-anchor |
+
+Balance check: 5 strings track, 5 arrays track; 4 easy, 4 medium, 2 hard.
+Covers nesting recognition (rune-brackets, ember-depth), stack and queue
+simulation (stack-sigils, cauldron-queue, undo-ritual, serving-order),
+monotonic structure (next-lantern, wall-span) and bounded repair or
+longest-valid analysis (min-add, longest-rite). Ghosts tempt the wrong
+reservation order, missing empty-structure checks and depth-vs-count
+confusion.

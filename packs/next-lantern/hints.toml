@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "From each lantern, look forward for the first one strictly taller — equal height does not count."
+
+[[hint]]
+rung = 2
+text = "Walk back to front keeping a stack of indices whose heights rise; each lantern pops what it towers over."
+
+[[hint]]
+rung = 3
+text = "```\nwalk right to left\npop while top is not taller\nanswer = top - index or 0\n```"
+
+[[hint]]
+rung = 4
+text = "Whatever survives on the stack after popping is the nearest taller lantern — its index minus yours is the distance."

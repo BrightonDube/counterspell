@@ -1,0 +1,40 @@
+slug = "serving-order"
+title = "The Order of Servings"
+status = "draft"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "queues", "simulation"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "serve_order"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "O(n) time for one pass over the marks and O(n) space for the line and the served list."
+
+[[params]]
+name = "ops"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 },
+]
+
+[[samples]]
+input = [[4, 3, 0, 2, 0]]
+expected = [4, 3]
+
+[[samples]]
+input = [[3, 0, 0]]
+expected = [3]
+
+[[samples]]
+input = [[]]
+expected = []

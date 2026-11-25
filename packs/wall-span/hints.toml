@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Every block can star as the canvas height — the question is how wide a run it can stretch across."
+
+[[hint]]
+rung = 2
+text = "Each block's best canvas ends at the first shorter block on either side, and a rising stack finds those edges in one pass."
+
+[[hint]]
+rung = 3
+text = "```\npush while rising; a shorter\n  block resolves pops with\n  height times span\n```"
+
+[[hint]]
+rung = 4
+text = "Work once with a stack of rising blocks; when a shorter block arrives, each popped block knows its left and right bound."
