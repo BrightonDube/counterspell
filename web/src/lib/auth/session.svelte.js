@@ -1,7 +1,7 @@
 // What the browser knows about the signed-in user (auth T29). It holds only the answer of
 // GET /api/me. It never holds a token, a password or a cookie value. The server decides every
 // capability; the UI only reads them.
-import { AuthApiError, getMe } from './client.js';
+import { AuthApiError, getMe, getSessionStatus } from './client.js';
 
 /** @typedef {'unknown' | 'signed_in' | 'signed_out'} SessionStatus */
 
@@ -26,7 +26,10 @@ export class SessionStore {
   #inflight = null;
 
   /**
-   * Asks the server who is signed in. A `401` means signed out, which is a normal answer, not an error.
+   * Asks the server who is signed in. The status probe (`GET /api/auth/session`) always answers
+   * `200`, so an expected signed-out visit never produces a `401` console error (AUD-18); only a
+   * confirmed session fetches `GET /api/me`. A `401` from `/api/me` still means signed out —
+   * for example a session that expired between the two calls.
    * Other failures are thrown to the caller.
    *
    * A resolved status is served from memory and concurrent callers share one request (AUD-20):
@@ -44,6 +47,13 @@ export class SessionStore {
 
   async #fetch() {
     try {
+      const status = await getSessionStatus();
+      if (!status?.signed_in) {
+        this.user = null;
+        this.capabilities = null;
+        this.status = 'signed_out';
+        return;
+      }
       const data = await getMe();
       this.user = data.user;
       this.capabilities = data.capabilities;

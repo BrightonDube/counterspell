@@ -3,7 +3,6 @@
   import { resolve } from '$app/paths';
   import { onMount, onDestroy } from 'svelte';
   import { Chess } from 'chess.js';
-  import { Chessboard, INPUT_EVENT_TYPE } from 'cm-chessboard';
   import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
   import { saveScore } from '#lib/break/api.js';
@@ -14,7 +13,7 @@
   /** @type {HTMLDivElement | undefined} */
   let boardEl = $state();
   let game = new Chess();
-  /** @type {Chessboard | undefined} */
+  /** @type {import('cm-chessboard').Chessboard | undefined} */
   let board;
   /** @type {Worker | undefined} */
   let worker = $state();
@@ -95,22 +94,30 @@
 
   onDestroy(() => worker?.terminate());
 
-  onMount(() => {
+  onMount(async () => {
     // Session copy is honest about who is playing: anonymous players see the
     // sign-in nudge; signed-in players never get told their result is unsaved.
     void session.load().then(() => {
       signedIn = session.status === 'signed_in';
     });
     if (!boardEl) return;
+    const container = boardEl;
+    // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it
+    // lazily keeps the route server-renderable (Seo head + static markup).
+    const { Chessboard, INPUT_EVENT_TYPE } = await import('cm-chessboard');
     try {
       worker = new BotWorker();
     } catch {
       worker = undefined;
     }
-    board = new Chessboard(boardEl, {
+    if (!container.isConnected) return;
+    board = new Chessboard(container, {
       position: game.fen(),
       style: { pieces: { file: piecesUrl } }
     });
+    // The container already carries the accessible name; the injected svg is
+    // decorative chrome and must not surface as a second, unnamed img.
+    container.querySelector('svg')?.setAttribute('aria-hidden', 'true');
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!playing || game.turn() !== userColor) return false;

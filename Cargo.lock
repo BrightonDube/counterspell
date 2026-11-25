@@ -578,6 +578,7 @@ dependencies = [
  "counterspell-common",
  "counterspell-judge",
  "counterspell-server",
+ "serde_json",
  "sqlx",
  "tokio",
  "uuid",

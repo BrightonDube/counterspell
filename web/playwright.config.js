@@ -27,7 +27,7 @@ export default defineConfig({
   webServer: {
     command: 'cargo run -q -p counterspell-testserver',
     cwd: '..',
-    url: `http://127.0.0.1:${PORT}/healthz`,
+    url: `http://127.0.0.1:${PORT}/api/health`,
     reuseExistingServer: false,
     timeout: 300_000,
     env: {

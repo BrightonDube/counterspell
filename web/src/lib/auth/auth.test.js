@@ -164,20 +164,48 @@ describe('endpoint calls (T29)', () => {
 });
 
 describe('session store (T29)', () => {
+  /**
+   * Stubs fetch by request path, so the session probe and the `/api/me` read
+   * can carry different answers.
+   * @param {Record<string, { body: unknown, status?: number }>} answers
+   */
+  function answerPaths(answers) {
+    const fetchMock = vi.fn(async (input) => {
+      const raw = typeof input === 'string' ? input : input.url;
+      const path = raw.startsWith('http')
+        ? new URL(raw).pathname
+        : raw;
+      const answer = answers[path];
+      return new Response(
+        answer ? JSON.stringify(answer.body) : JSON.stringify({ code: 'not_found' }),
+        {
+          status: answer ? (answer.status ?? 200) : 404,
+          headers: { 'content-type': 'application/json' }
+        }
+      );
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    return fetchMock;
+  }
+
+  const SIGNED_OUT = { '/api/auth/session': { body: { signed_in: false } } };
+  const SIGNED_IN = {
+    '/api/auth/session': { body: { signed_in: true } },
+    '/api/me': {
+      body: { user: { handle: 'thandi' }, capabilities: {} }
+    }
+  };
+
   it('loads the signed-in user and capabilities from GET /api/me', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({
-              user: { handle: 'thandi', is_demo: false, providers: ['github'] },
-              capabilities: { link_provider: true }
-            }),
-            { status: 200 }
-          )
-      )
-    );
+    answerPaths({
+      '/api/auth/session': { body: { signed_in: true } },
+      '/api/me': {
+        body: {
+          user: { handle: 'thandi', is_demo: false, providers: ['github'] },
+          capabilities: { link_provider: true }
+        }
+      }
+    });
     const session = new SessionStore();
     await session.load();
     expect(session.user?.handle).toBe('thandi');
@@ -185,96 +213,74 @@ describe('session store (T29)', () => {
     expect(session.status).toBe('signed_in');
   });
 
-  it('is signed out with no user after a 401', async () => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(
-            JSON.stringify({ code: 'unauthenticated', message: '' }),
-            {
-              status: 401
-            }
-          )
-      )
-    );
+  // AUD-18: the status probe always answers 200, so an expected anonymous visit
+  // must never reach /api/me or log a 401.
+  it('answers signed-out from the status probe without touching /api/me', async () => {
+    const fetchMock = answerPaths(SIGNED_OUT);
     const session = new SessionStore();
     await session.load();
     expect(session.user).toBeNull();
     expect(session.capabilities).toBeNull();
     expect(session.status).toBe('signed_out');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/auth/session',
+      expect.anything()
+    );
   });
 
-  // Breaks if a second load() re-asks /api/me when the status is already known —
+  it('is signed out when /api/me answers 401 after a signed-in probe', async () => {
+    answerPaths({
+      '/api/auth/session': { body: { signed_in: true } },
+      '/api/me': {
+        body: { code: 'unauthenticated', message: '' },
+        status: 401
+      }
+    });
+    const session = new SessionStore();
+    await session.load();
+    expect(session.status).toBe('signed_out');
+    expect(session.user).toBeNull();
+  });
+
+  // Breaks if a second load() re-asks the server when the status is already known —
   // onboarding and account each call load on mount, and the duplicate request is AUD-20.
   it('serves a resolved status without asking the server again', async () => {
-    const fetchMock = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({ user: { handle: 'thandi' }, capabilities: {} }),
-          { status: 200 }
-        )
-    );
-    vi.stubGlobal('fetch', fetchMock);
+    const fetchMock = answerPaths(SIGNED_IN);
     const session = new SessionStore();
     await session.load();
     await session.load();
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(session.status).toBe('signed_in');
   });
 
-  // Breaks if two mounts racing load() both fire /api/me — concurrent callers must share one request.
-  it('shares one in-flight request across concurrent loads', async () => {
-    /** @type {((value: Response) => void) | undefined} */
-    let resolveFetch;
-    const fetchMock = vi.fn(
-      () => new Promise((resolve) => (resolveFetch = resolve))
-    );
-    vi.stubGlobal('fetch', fetchMock);
+  // Breaks if two mounts racing load() both probe the server — concurrent callers
+  // must share the whole probe sequence.
+  it('shares one in-flight sequence across concurrent loads', async () => {
+    const fetchMock = answerPaths(SIGNED_IN);
     const session = new SessionStore();
-    const first = session.load();
-    const second = session.load();
-    resolveFetch?.(
-      new Response(JSON.stringify({ user: {}, capabilities: {} }), {
-        status: 200
-      })
-    );
-    await Promise.all([first, second]);
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await Promise.all([session.load(), session.load()]);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
   // Breaks if clear() leaves a stale resolved status — after sign-out the next
   // load must consult the server again.
   it('asks the server again after the session is cleared', async () => {
-    const fetchMock = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({ user: { handle: 'thandi' }, capabilities: {} }),
-          { status: 200 }
-        )
-    );
-    vi.stubGlobal('fetch', fetchMock);
+    const fetchMock = answerPaths(SIGNED_IN);
     const session = new SessionStore();
     await session.load();
     session.clear();
     await session.load();
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   // Breaks if a caller cannot force a refresh — dedup must never hide a stale answer.
   it('re-asks the server when forced', async () => {
-    const fetchMock = vi.fn(
-      async () =>
-        new Response(
-          JSON.stringify({ user: { handle: 'thandi' }, capabilities: {} }),
-          { status: 200 }
-        )
-    );
-    vi.stubGlobal('fetch', fetchMock);
+    const fetchMock = answerPaths(SIGNED_IN);
     const session = new SessionStore();
     await session.load();
     await session.load({ force: true });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
   it('clears its user when it is cleared', () => {
@@ -288,15 +294,7 @@ describe('session store (T29)', () => {
 
   it('never writes credentials to browser storage', async () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem');
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(
-        async () =>
-          new Response(JSON.stringify({ user: {}, capabilities: {} }), {
-            status: 200
-          })
-      )
-    );
+    answerPaths(SIGNED_IN);
     await new SessionStore().load();
     expect(setItem).not.toHaveBeenCalled();
   });
@@ -335,3 +333,4 @@ describe('linkedMessage (T32)', () => {
     expect(linkedMessage('')).toBeNull();
   });
 });
+

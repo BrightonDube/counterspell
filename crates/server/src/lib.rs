@@ -26,7 +26,7 @@ pub mod spa;
 pub mod testkit;
 pub mod validate;
 
-use std::{io, path::Path, sync::Arc};
+use std::{io, path::{Path, PathBuf}, sync::Arc};
 
 use axum::{
     body::Body,
@@ -279,6 +279,7 @@ pub fn build_router(state: AppState) -> Router {
             StaticFallback {
                 routes: Arc::new(spa_routes),
                 entry_file,
+                static_dir: static_dir.clone(),
             },
             static_response_policy,
         ))
@@ -287,6 +288,36 @@ pub fn build_router(state: AppState) -> Router {
             HeaderName::from_static("x-content-type-options"),
             HeaderValue::from_static("nosniff"),
         ))
+}
+
+/// adapter-static writes each prerendered route as `{path}.html` while browsers
+/// ask for the extensionless `{path}`: resolve the file first so crawlers see
+/// real titles and metadata, not the untitled `200.html` shell. Only `GET`/`HEAD`
+/// paths without an extension and without `..` segments are considered — a miss
+/// falls through to the declared-route fallback unchanged.
+fn resolve_prerendered_html(static_dir: &Path, mut request: Request<Body>) -> Request<Body> {
+    let path = request.uri().path();
+    let last_segment = path.rsplit('/').next().unwrap_or_default();
+    if (request.method() != Method::GET && request.method() != Method::HEAD)
+        || path.ends_with('/')
+        || last_segment.is_empty()
+        || last_segment.contains('.')
+        || path.split('/').any(|segment| segment == "..")
+    {
+        return request;
+    }
+    let candidate = static_dir.join(format!("{}.html", path.trim_start_matches('/')));
+    if !candidate.is_file() {
+        return request;
+    }
+    let rewritten = match request.uri().query() {
+        Some(query) => format!("{path}.html?{query}"),
+        None => format!("{path}.html"),
+    };
+    if let Ok(uri) = rewritten.parse() {
+        *request.uri_mut() = uri;
+    }
+    request
 }
 
 /// The static response contract: real files may receive a cache policy, and a
@@ -301,6 +332,7 @@ pub fn build_router(state: AppState) -> Router {
 struct StaticFallback {
     routes: Arc<spa::SpaRoutes>,
     entry_file: ServeFile,
+    static_dir: PathBuf,
 }
 
 async fn static_response_policy(
@@ -310,6 +342,7 @@ async fn static_response_policy(
 ) -> Response {
     let path = request.uri().path().to_owned();
     let wants_body = request.method() != Method::HEAD;
+    let request = resolve_prerendered_html(&fallback.static_dir, request);
     let mut response = next.run(request).await;
 
     if response.headers_mut().remove(SPA_FALLBACK_HEADER).is_some() {

@@ -2,7 +2,6 @@
   import AppShell from '../../../lib/shell/AppShell.svelte';
   import { resolve } from '$app/paths';
   import { onMount } from 'svelte';
-  import { Chessboard, INPUT_EVENT_TYPE } from 'cm-chessboard';
   import piecesUrl from 'cm-chessboard/assets/pieces/standard.svg?url';
   import 'cm-chessboard/assets/chessboard.css';
   import { fetchDaily, saveScore } from '#lib/break/api.js';
@@ -11,7 +10,7 @@
 
   /** @type {HTMLDivElement | undefined} */
   let boardEl = $state();
-  /** @type {Chessboard | undefined} */
+  /** @type {import('cm-chessboard').Chessboard | undefined} */
   let board;
   /** @type {import('#lib/break/puzzle.js').PuzzleState | undefined} */
   let puzzleState = $state();
@@ -81,10 +80,17 @@
     puzzleMeta = /** @type {any} */ (daily);
     const solution = daily.puzzle.moves.split(' ');
     puzzleState = newPuzzle(daily.puzzle.fen, solution);
+    // cm-chessboard ships `main: null`, so Node cannot resolve it — importing it
+    // lazily keeps the route server-renderable (Seo head + static markup).
+    const { Chessboard, INPUT_EVENT_TYPE } = await import('cm-chessboard');
+    if (!boardEl?.isConnected) return;
     board = new Chessboard(boardEl, {
       position: puzzleState.game.fen(),
       style: { pieces: { file: piecesUrl } }
     });
+    // The container already carries the accessible name; the injected svg is
+    // decorative chrome and must not surface as a second, unnamed img.
+    boardEl.querySelector('svg')?.setAttribute('aria-hidden', 'true');
     board.enableMoveInput((event) => {
       if (event.type !== INPUT_EVENT_TYPE.validateMoveInput) return true;
       if (!puzzleState) return false;
