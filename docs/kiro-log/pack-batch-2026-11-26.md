@@ -150,3 +150,131 @@ Codes and counts only - no hidden values are logged.
 - even-offering: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- chain-length: static stages S0-S9
+- chain-length: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- tail-mark: static stages S0-S9
+- tail-mark: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- lit-order: static stages S0-S9
+- lit-order: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- loop-flag: static stages S0-S9
+- loop-flag: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- reverse-order: static stages S0-S9
+- reverse-order: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- merge-glow: static stages S0-S9
+- merge-glow: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- nth-tail: static stages S0-S9
+- nth-tail: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- shared-link: static stages S0-S9
+- shared-link: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- loop-entry: static stages S0-S9
+- loop-entry: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- reorder-embers: static stages S0-S9
+- reorder-embers: S9 FAILED (0 findings); review needed
+# pack-batch run 2026-11-26
+
+--- chain-length: static stages S0-S9
+- chain-length: S9 FAILED (0 findings); review needed
+--- tail-mark: static stages S0-S9
+- tail-mark: S9 FAILED (0 findings); review needed
+--- lit-order: static stages S0-S9
+- lit-order: S9 FAILED (0 findings); review needed
+--- loop-flag: static stages S0-S9
+- loop-flag: S9 FAILED (0 findings); review needed
+--- reverse-order: static stages S0-S9
+- reverse-order: S9 FAILED (0 findings); review needed
+--- merge-glow: static stages S0-S9
+- merge-glow: S9 FAILED (0 findings); review needed
+--- nth-tail: static stages S0-S9
+- nth-tail: S9 FAILED (0 findings); review needed
+--- shared-link: static stages S0-S9
+- shared-link: S9 FAILED (0 findings); review needed
+--- loop-entry: static stages S0-S9
+- loop-entry: S9 FAILED (0 findings); review needed
+--- reorder-embers: static stages S0-S9
+- reorder-embers: S9 FAILED (0 findings); review needed
+
+Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- chain-length: static stages S0-S9
+- chain-length: S9 passed; S10/S11 pending_judge
+- chain-length: review round 1 recorded
+- chain-length: review round 2 recorded
+- chain-length: review round 3 recorded
+- chain-length: awaiting_approval (Brighton gate; no approval.toml written here)
+--- tail-mark: static stages S0-S9
+- tail-mark: S9 passed; S10/S11 pending_judge
+- tail-mark: review round 1 recorded
+- tail-mark: review round 2 recorded
+- tail-mark: review round 3 recorded
+- tail-mark: awaiting_approval (Brighton gate; no approval.toml written here)
+--- lit-order: static stages S0-S9
+- lit-order: S9 passed; S10/S11 pending_judge
+- lit-order: review round 1 recorded
+- lit-order: review round 2 recorded
+- lit-order: review round 3 recorded
+- lit-order: awaiting_approval (Brighton gate; no approval.toml written here)
+--- loop-flag: static stages S0-S9
+- loop-flag: S9 passed; S10/S11 pending_judge
+- loop-flag: review round 1 recorded
+- loop-flag: review round 2 recorded
+- loop-flag: review round 3 recorded
+- loop-flag: awaiting_approval (Brighton gate; no approval.toml written here)
+--- reverse-order: static stages S0-S9
+- reverse-order: S9 passed; S10/S11 pending_judge
+- reverse-order: review round 1 recorded
+- reverse-order: review round 2 recorded
+- reverse-order: review round 3 recorded
+- reverse-order: awaiting_approval (Brighton gate; no approval.toml written here)
+--- merge-glow: static stages S0-S9
+- merge-glow: S9 passed; S10/S11 pending_judge
+- merge-glow: review round 1 recorded
+- merge-glow: review round 2 recorded
+- merge-glow: review round 3 recorded
+- merge-glow: awaiting_approval (Brighton gate; no approval.toml written here)
+--- nth-tail: static stages S0-S9
+- nth-tail: S9 passed; S10/S11 pending_judge
+- nth-tail: review round 1 recorded
+- nth-tail: review round 2 recorded
+- nth-tail: review round 3 recorded
+- nth-tail: awaiting_approval (Brighton gate; no approval.toml written here)
+--- shared-link: static stages S0-S9
+- shared-link: S9 passed; S10/S11 pending_judge
+- shared-link: review round 1 recorded
+- shared-link: review round 2 recorded
+- shared-link: review round 3 recorded
+- shared-link: awaiting_approval (Brighton gate; no approval.toml written here)
+--- loop-entry: static stages S0-S9
+- loop-entry: S9 passed; S10/S11 pending_judge
+- loop-entry: review round 1 recorded
+- loop-entry: review round 2 recorded
+- loop-entry: review round 3 recorded
+- loop-entry: awaiting_approval (Brighton gate; no approval.toml written here)
+--- reorder-embers: static stages S0-S9
+- reorder-embers: S9 passed; S10/S11 pending_judge
+- reorder-embers: review round 1 recorded
+- reorder-embers: review round 2 recorded
+- reorder-embers: review round 3 recorded
+- reorder-embers: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

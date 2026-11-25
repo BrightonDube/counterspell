@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Collect the walk's marks, split the list in half, reverse the back half, then take alternately."
+
+[[hint]]
+rung = 2
+text = "For odd counts the front half keeps the middle mark; it pairs last."
+
+[[hint]]
+rung = 3
+text = "```\nhalf = (len(order) + 1) // 2\nfront, back = order[:half], order[half:][::-1]\n```"
+
+[[hint]]
+rung = 4
+text = "Emit `front[i]` then `back[i]` while either half still has an item."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The loop's entry is the first index the walk visits twice."
+
+[[hint]]
+rung = 2
+text = "A visited set returns the entry directly; a slow/fast pair finds the meeting cell then re-walks from 0 to locate the entry."
+
+[[hint]]
+rung = 3
+text = "```\nseen, i = set(), 0\nwhile i != -1 and i not in seen:\n    seen.add(i); i = nxt[i]\n```"
+
+[[hint]]
+rung = 4
+text = "When the walk stops, `i` is the entry index — or `-1` when the chain ended."

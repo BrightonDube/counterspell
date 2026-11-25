@@ -1,0 +1,50 @@
+slug = "shared-link"
+title = "The Shared Link"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "linked-chains", "hashing", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "shared_link"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n+m) walks and O(n) space for the visited set."
+
+[[params]]
+name = "nxt"
+type = "list[int]"
+
+[[params]]
+name = "ha"
+type = "int"
+
+[[params]]
+name = "hb"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 1, max_len = 40, min = -1, max = 39 },
+  { type = "int", min = 0, max = 39 },
+  { type = "int", min = 0, max = 39 },
+]
+
+[[samples]]
+input = [[1, 3, 4, -1, 3], 0, 2]
+expected = 3
+
+[[samples]]
+input = [[1, -1, 3, -1], 0, 2]
+expected = -1
+
+[[samples]]
+input = [[-1], 0, 0]
+expected = 0

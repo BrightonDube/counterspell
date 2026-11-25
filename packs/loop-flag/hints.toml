@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Remember every index the walk visits; stepping onto one twice means a knot."
+
+[[hint]]
+rung = 2
+text = "A plain `while` without memory loops forever on a knotted chain — carry a set."
+
+[[hint]]
+rung = 3
+text = "```\nseen, i = set(), 0\nwhile i != -1 and i not in seen:\n    seen.add(i); i = nxt[i]\n```"
+
+[[hint]]
+rung = 4
+text = "The walk loops exactly when it stops at a seen index — `i != -1` is the flag."

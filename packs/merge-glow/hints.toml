@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk both chains at once, always emitting the smaller current mark."
+
+[[hint]]
+rung = 2
+text = "When one walk ends, drain the other to its tail."
+
+[[hint]]
+rung = 3
+text = "```\nwhile i != -1 and j != -1:\n    if am[i] <= bm[j]: out.append(am[i]); i = an[i]\n    else: out.append(bm[j]); j = bn[j]\n```"
+
+[[hint]]
+rung = 4
+text = "Seed each walk at index 0 — or -1 when its chain is empty."

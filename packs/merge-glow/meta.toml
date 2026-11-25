@@ -1,0 +1,49 @@
+slug = "merge-glow"
+title = "The Merge Glow"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "linked-chains", "merging", "two-pointers"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "merge_glow"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "O(n+m) merge and O(n+m) output space."
+
+[[params]]
+name = "amarks"
+type = "list[int]"
+[[params]]
+name = "anxt"
+type = "list[int]"
+[[params]]
+name = "bmarks"
+type = "list[int]"
+[[params]]
+name = "bnxt"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 }, { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 },
+]
+
+[[samples]]
+input = [[1, 3, 5], [1, 2, -1], [2, 4], [1, -1]]
+expected = [1, 2, 3, 4, 5]
+
+[[samples]]
+input = [[], [], [7], [-1]]
+expected = [7]
+
+[[samples]]
+input = [[2, 4], [1, -1], [1, 3, 5], [1, 2, -1]]
+expected = [1, 2, 3, 4, 5]

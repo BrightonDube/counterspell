@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Follow `nxt` from index `0` until it hands you `-1`; count each step."
+
+[[hint]]
+rung = 2
+text = "Cells the walk never reaches are not part of the chain — do not count the array's length."
+
+[[hint]]
+rung = 3
+text = "```\ni, count = 0, 0\nwhile i != -1:\n    count += 1; i = nxt[i]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the count once `i` is `-1`."
