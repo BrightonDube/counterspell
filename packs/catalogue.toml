@@ -14,6 +14,10 @@ name = "Matrices"
 slug = "strings"
 name = "Strings"
 
+[[tracks]]
+slug = "math"
+name = "Mathematics"
+
 [[concepts]]
 slug = "arrays"
 name = "Arrays"
@@ -141,9 +145,6 @@ name = "Backtracking"
 [[concepts]]
 slug = "graphs"
 name = "Graphs"
-<<<<<<< Updated upstream
-=======
-
 [[concepts]]
 slug = "math"
 name = "Mathematics"
@@ -173,8 +174,6 @@ slug = "intervals"
 name = "Intervals"
 
 [[concepts]]
-
-
-[[concepts]]
 slug = "databases"
 name = "Databases and Relations"
+
