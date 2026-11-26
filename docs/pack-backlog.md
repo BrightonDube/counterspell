@@ -341,3 +341,20 @@ Ten packs on number properties, coordinate reasoning and compact binary state: d
 | corner-turns | The Corner Turns | hard | math |
 | mask-rite | The Mask Rite | hard | math |
 
+## Batch 17 — databases, SQL and data modelling
+
+Ten packs on bounded relational records: joins, grouping, keys, transaction histories, serialisability and query-planning reasoning. No live database service.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| row-join | The Row Join | easy | databases |
+| null-marks | The Null Marks | easy | databases |
+| key-count | The Key Count | easy | databases |
+| key-last | The Key Last | easy | databases |
+| group-tally | The Group Tally | medium | databases |
+| join-span | The Join Span | medium | databases |
+| depend-rite | The Depend Rite | medium | databases |
+| null-join | The Null Join | medium | databases |
+| serial-check | The Serial Check | hard | databases |
+| sched-rite | The Sched Rite | hard | databases |
+

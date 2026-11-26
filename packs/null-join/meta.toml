@@ -1,0 +1,43 @@
+slug = "null-join"
+title = "The Null Join"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["databases", "edge-cases", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "null_join"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(a*b) null-aware join count."
+
+[[params]]
+name = "a"
+type = "list[list[int]]"
+[[params]]
+name = "b"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = -1, max = 30 }, { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = -1, max = 30 },
+]
+
+[[samples]]
+input = [[[1, 5], [-1, 9]], [[-1, 3], [1, 7]]]
+expected = 1
+
+[[samples]]
+input = [[[-1, 1]], [[-1, 2]]]
+expected = 0
+
+[[samples]]
+input = [[[1, 1], [1, 2]], [[1, 3], [1, 4]]]
+expected = 4

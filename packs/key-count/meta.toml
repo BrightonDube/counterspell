@@ -1,0 +1,40 @@
+slug = "key-count"
+title = "The Key Count"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["databases", "deduplication", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "key_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(rows) distinct-key count."
+
+[[params]]
+name = "rows"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 30 },
+]
+
+[[samples]]
+input = [[[1, 5], [2, 7], [1, 9], [3, 0]]]
+expected = 3
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[[2, 2], [2, 2]]]
+expected = 1

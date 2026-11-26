@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Once a rite's stretch ends (the id changes), its id must never appear again."
+
+[[hint]]
+rung = 2
+text = "Keep a finished set: when the current id differs, the previous id is finished."
+
+[[hint]]
+rung = 3
+text = "```\nprev = None; done = set()\nif t in done: return 0\nelif t != prev: done.add(prev); prev = t\n```"
+
+[[hint]]
+rung = 4
+text = "Return 1 serial, 0 interleaved."

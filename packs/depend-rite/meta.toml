@@ -1,0 +1,40 @@
+slug = "depend-rite"
+title = "The Depend Rite"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["databases", "deduplication", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "depend_rite"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(rows) dependency check."
+
+[[params]]
+name = "rows"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 30 },
+]
+
+[[samples]]
+input = [[[1, 5], [2, 7], [1, 9]]]
+expected = 0
+
+[[samples]]
+input = [[[1, 5], [1, 5], [2, 7]]]
+expected = 1
+
+[[samples]]
+input = [[]]
+expected = 1

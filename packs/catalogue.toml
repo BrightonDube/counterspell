@@ -173,3 +173,8 @@ name = "Primes and Sieves"
 [[concepts]]
 slug = "intervals"
 name = "Intervals"
+
+[[concepts]]
+slug = "databases"
+name = "Databases and Relations"
+

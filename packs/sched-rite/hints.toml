@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Build the precedence graph; a cycle means some rite must precede itself."
+
+[[hint]]
+rung = 2
+text = "DFS with a visiting mark — re-entering a visiting node is a cycle."
+
+[[hint]]
+rung = 3
+text = "```\ndfs(u): mark u visiting; for v in adj[u]:\n  visiting v -> cycle; unvisited v -> dfs(v)\nmark u done\n```"
+
+[[hint]]
+rung = 4
+text = "Return 1 acyclic, 0 cyclic."
