@@ -1,0 +1,40 @@
+slug = "bit-count"
+title = "The Bit Count"
+status = "published"
+difficulty = "easy"
+track = "math"
+concepts = ["bits", "math", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "bit_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(bits) shift loop."
+
+[[params]]
+name = "n"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 9007199254740991 },
+]
+
+[[samples]]
+input = [13]
+expected = 3
+
+[[samples]]
+input = [0]
+expected = 0
+
+[[samples]]
+input = [255]
+expected = 8

@@ -1,0 +1,40 @@
+slug = "collinear-marks"
+title = "The Collinear Marks"
+status = "published"
+difficulty = "medium"
+track = "math"
+concepts = ["geometry", "math", "edge-cases", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "collinear_marks"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(points) cross-product scan."
+
+[[params]]
+name = "points"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 30, min_cols = 2, max_cols = 2, min = -50, max = 50 },
+]
+
+[[samples]]
+input = [[[0, 0], [1, 1], [2, 2], [0, 1]]]
+expected = 3
+
+[[samples]]
+input = [[[0, 0], [0, 0], [1, 1]]]
+expected = -1
+
+[[samples]]
+input = [[[1, 1]]]
+expected = -1

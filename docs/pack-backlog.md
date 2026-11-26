@@ -324,3 +324,20 @@ Ten packs on exchange arguments, scheduling, merging and coverage: mark covers, 
 | double-book | The Double Book | hard | matrices |
 | lantern-watch | The Lantern Watch | hard | matrices |
 
+## Batch 16 — mathematics, geometry and bits
+
+Ten packs on number properties, coordinate reasoning and compact binary state: digit rites, bit counts, quad marks, mod tolls, prime wards, collinear marks, bit isolates, rect spans, corner turns and mask rites.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| digit-rite | The Digit Rite | easy | math |
+| bit-count | The Bit Count | easy | math |
+| quad-mark | The Quad Mark | easy | math |
+| mod-toll | The Mod Toll | easy | math |
+| prime-ward | The Prime Ward | medium | math |
+| collinear-marks | The Collinear Marks | medium | math |
+| bit-isolate | The Bit Isolate | medium | math |
+| rect-span | The Rect Span | medium | math |
+| corner-turns | The Corner Turns | hard | math |
+| mask-rite | The Mask Rite | hard | math |
+

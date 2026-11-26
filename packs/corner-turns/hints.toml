@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "At each middle mark build two direction vectors; the cross product's sign names the turn."
+
+[[hint]]
+rung = 2
+text = "Positive cross = left, negative = right, zero = straight or a fold-back."
+
+[[hint]]
+rung = 3
+text = "```\nu = p[i] - p[i-1]; v = p[i+1] - p[i]\nif u.x * v.y - u.y * v.x > 0: count += 1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the left-turn count."

@@ -932,3 +932,67 @@ Codes and counts only - no hidden values are logged.
 - lantern-watch: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- digit-rite: static stages S0-S9
+- digit-rite: S9 passed; S10/S11 pending_judge
+- digit-rite: review round 1 recorded
+- digit-rite: review round 2 recorded
+- digit-rite: review round 3 recorded
+- digit-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- bit-count: static stages S0-S9
+- bit-count: S9 passed; S10/S11 pending_judge
+- bit-count: review round 1 recorded
+- bit-count: review round 2 recorded
+- bit-count: review round 3 recorded
+- bit-count: awaiting_approval (Brighton gate; no approval.toml written here)
+--- quad-mark: static stages S0-S9
+- quad-mark: S9 passed; S10/S11 pending_judge
+- quad-mark: review round 1 recorded
+- quad-mark: review round 2 recorded
+- quad-mark: review round 3 recorded
+- quad-mark: awaiting_approval (Brighton gate; no approval.toml written here)
+--- mod-toll: static stages S0-S9
+- mod-toll: S9 passed; S10/S11 pending_judge
+- mod-toll: review round 1 recorded
+- mod-toll: review round 2 recorded
+- mod-toll: review round 3 recorded
+- mod-toll: awaiting_approval (Brighton gate; no approval.toml written here)
+--- prime-ward: static stages S0-S9
+- prime-ward: S9 passed; S10/S11 pending_judge
+- prime-ward: review round 1 recorded
+- prime-ward: review round 2 recorded
+- prime-ward: review round 3 recorded
+- prime-ward: awaiting_approval (Brighton gate; no approval.toml written here)
+--- collinear-marks: static stages S0-S9
+- collinear-marks: S9 passed; S10/S11 pending_judge
+- collinear-marks: review round 1 recorded
+- collinear-marks: review round 2 recorded
+- collinear-marks: review round 3 recorded
+- collinear-marks: awaiting_approval (Brighton gate; no approval.toml written here)
+--- bit-isolate: static stages S0-S9
+- bit-isolate: S9 passed; S10/S11 pending_judge
+- bit-isolate: review round 1 recorded
+- bit-isolate: review round 2 recorded
+- bit-isolate: review round 3 recorded
+- bit-isolate: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rect-span: static stages S0-S9
+- rect-span: S9 passed; S10/S11 pending_judge
+- rect-span: review round 1 recorded
+- rect-span: review round 2 recorded
+- rect-span: review round 3 recorded
+- rect-span: awaiting_approval (Brighton gate; no approval.toml written here)
+--- corner-turns: static stages S0-S9
+- corner-turns: S9 passed; S10/S11 pending_judge
+- corner-turns: review round 1 recorded
+- corner-turns: review round 2 recorded
+- corner-turns: review round 3 recorded
+- corner-turns: awaiting_approval (Brighton gate; no approval.toml written here)
+--- mask-rite: static stages S0-S9
+- mask-rite: S9 passed; S10/S11 pending_judge
+- mask-rite: review round 1 recorded
+- mask-rite: review round 2 recorded
+- mask-rite: review round 3 recorded
+- mask-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

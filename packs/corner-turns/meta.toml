@@ -1,0 +1,40 @@
+slug = "corner-turns"
+title = "The Corner Turns"
+status = "published"
+difficulty = "hard"
+track = "math"
+concepts = ["geometry", "math", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "corner_turns"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(points) cross-product sweep."
+
+[[params]]
+name = "points"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 30, min_cols = 2, max_cols = 2, min = -50, max = 50 },
+]
+
+[[samples]]
+input = [[[0, 0], [1, 0], [1, 1]]]
+expected = 1
+
+[[samples]]
+input = [[[0, 0], [1, 0], [1, -1]]]
+expected = 0
+
+[[samples]]
+input = [[[0, 0], [1, 0], [2, 0]]]
+expected = 0

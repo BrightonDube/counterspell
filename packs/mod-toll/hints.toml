@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Add each coin into a running remainder, then normalise once: a negative remainder needs m added back."
+
+[[hint]]
+rung = 2
+text = "`total % m` is enough in Python, but the sign fix `(r + m) % m` keeps every language honest."
+
+[[hint]]
+rung = 3
+text = "```\nr = 0\nfor v in values: r += v\nreturn (r % m + m) % m\n```"
+
+[[hint]]
+rung = 4
+text = "Return the toll in 0..m-1."

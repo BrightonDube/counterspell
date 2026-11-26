@@ -1,0 +1,40 @@
+slug = "digit-rite"
+title = "The Digit Rite"
+status = "published"
+difficulty = "easy"
+track = "math"
+concepts = ["math", "digits", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "digit_rite"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(digits) division walk."
+
+[[params]]
+name = "n"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 1000000000 },
+]
+
+[[samples]]
+input = [128]
+expected = 3
+
+[[samples]]
+input = [101]
+expected = 2
+
+[[samples]]
+input = [7]
+expected = 1
