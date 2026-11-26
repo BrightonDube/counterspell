@@ -1,0 +1,43 @@
+slug = "mask-rite"
+title = "The Mask Rite"
+status = "published"
+difficulty = "hard"
+track = "math"
+concepts = ["bits", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "mask_rite"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(2^n * n) bitmask enumeration."
+
+[[params]]
+name = "weights"
+type = "list[int]"
+[[params]]
+name = "cap"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 20, min = 0, max = 30 }, { type = "int", min = 0, max = 60 },
+]
+
+[[samples]]
+input = [[1, 2, 3], 3]
+expected = 5
+
+[[samples]]
+input = [[], 0]
+expected = 1
+
+[[samples]]
+input = [[5], 3]
+expected = 1

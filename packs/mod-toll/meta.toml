@@ -1,0 +1,43 @@
+slug = "mod-toll"
+title = "The Mod Toll"
+status = "published"
+difficulty = "easy"
+track = "math"
+concepts = ["math", "modular", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "mod_toll"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(values) rolling remainder."
+
+[[params]]
+name = "values"
+type = "list[int]"
+[[params]]
+name = "m"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 30, min = -20, max = 20 }, { type = "int", min = 1, max = 20 },
+]
+
+[[samples]]
+input = [[7, 8, 9], 5]
+expected = 4
+
+[[samples]]
+input = [[-1, 2], 5]
+expected = 1
+
+[[samples]]
+input = [[], 7]
+expected = 0

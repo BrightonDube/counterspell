@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A point sits on the line when its vector from the first mark crosses the anchor vector to zero — no division needed."
+
+[[hint]]
+rung = 2
+text = "Coincident first marks define no direction at all; check for that before measuring."
+
+[[hint]]
+rung = 3
+text = "```\ndx = x1 - x0; dy = y1 - y0\non-line iff (x - x0) * dy == (y - y0) * dx\n```"
+
+[[hint]]
+rung = 4
+text = "Return the on-line count, or -1 when the line is undefined."

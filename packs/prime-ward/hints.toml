@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Mark every multiple of each prime from `p*p` upward — the unmarked numbers are the ward."
+
+[[hint]]
+rung = 2
+text = "Under 2 the ward is empty; 2 itself is prime."
+
+[[hint]]
+rung = 3
+text = "```\nsieve = all True\nfor p in 2..sqrt(n): if sieve[p]: clear multiples of p\ncount Trues in 2..n\n```"
+
+[[hint]]
+rung = 4
+text = "Return the prime count."

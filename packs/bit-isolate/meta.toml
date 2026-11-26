@@ -1,0 +1,40 @@
+slug = "bit-isolate"
+title = "The Bit Isolate"
+status = "published"
+difficulty = "medium"
+track = "math"
+concepts = ["bits", "math", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "bit_isolate"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(1) lowbit extraction."
+
+[[params]]
+name = "n"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 9007199254740991 },
+]
+
+[[samples]]
+input = [12]
+expected = 4
+
+[[samples]]
+input = [7]
+expected = 1
+
+[[samples]]
+input = [0]
+expected = 0

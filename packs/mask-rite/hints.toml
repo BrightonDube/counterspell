@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Every mask 0..2^n-1 names a lighting; add weights where the bit stands and count masks under the cap."
+
+[[hint]]
+rung = 2
+text = "Bit i tests with `(mask >> i) & 1` — the bit index picks the candle, not its value."
+
+[[hint]]
+rung = 3
+text = "```\nfor mask in range(1 << n):\n  s = sum(w[i] for i where mask>>i & 1)\n  count += s <= cap\n```"
+
+[[hint]]
+rung = 4
+text = "Return the fitting-lighting count."
