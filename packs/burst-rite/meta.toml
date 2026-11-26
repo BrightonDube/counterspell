@@ -1,0 +1,40 @@
+slug = "burst-rite"
+title = "The Burst Rite"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["systems", "simulation", "queues", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "burst_rite"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(j log j) arrival sort, O(j) sweep."
+
+[[params]]
+name = "jobs"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 16, min_cols = 2, max_cols = 2, min = 0, max = 60 },
+]
+
+[[samples]]
+input = [[[1, 4], [0, 2], [2, 3]]]
+expected = 5
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[[0, 5]]]
+expected = 0

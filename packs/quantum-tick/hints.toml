@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A slice runs min(q, remaining); arrivals landing during it queue ahead of the spender's return."
+
+[[hint]]
+rung = 2
+text = "Loop: enqueue every arrival up to the clock; pop the front; advance by min(q, rem); enqueue new arrivals; re-queue the spender last."
+
+[[hint]]
+rung = 3
+text = "```\nwhile done < n:\n  enqueue arrivals(a <= t); if empty: t = next a\n  pop; t += min(q, rem); enqueue arrivals; requeue if rem\n```"
+
+[[hint]]
+rung = 4
+text = "Return the finish-tick sum."

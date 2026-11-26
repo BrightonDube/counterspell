@@ -1,0 +1,43 @@
+slug = "alloc-rite"
+title = "The Alloc Rite"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["systems", "greedy", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "alloc_rite"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(b*r) first-fit scan."
+
+[[params]]
+name = "blocks"
+type = "list[int]"
+[[params]]
+name = "reqs"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 16, min = 0, max = 60 }, { type = "int_array", min_len = 0, max_len = 16, min = 0, max = 60 },
+]
+
+[[samples]]
+input = [[10, 4, 8], [6, 4, 8, 2, 9]]
+expected = 4
+
+[[samples]]
+input = [[4, 4, 4], [4, 4, 4, 4]]
+expected = 3
+
+[[samples]]
+input = [[], [1, 2]]
+expected = 0

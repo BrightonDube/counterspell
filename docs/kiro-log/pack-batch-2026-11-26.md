@@ -982,6 +982,8 @@
 - mask-rite: review round 3 recorded
 - mask-rite: awaiting_approval (Brighton gate; no approval.toml written here)
 
+
+
 # pack-batch run 2026-11-26
 
 --- row-join: static stages S0-S9

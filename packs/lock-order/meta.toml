@@ -1,0 +1,45 @@
+slug = "lock-order"
+title = "The Lock Order"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["systems", "edge-cases", "deduplication"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "lock_order"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(tape^2) pairwise direction check."
+
+[[params]]
+name = "wards"
+type = "list[int]"
+
+[[params]]
+name = "lens"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 1, max_len = 24, min = 0, max = 30 },
+  { type = "int_array", min_len = 1, max_len = 8, min = 1, max = 8 },
+]
+
+[[samples]]
+input = [[1, 2, 2, 1], [2, 2]]
+expected = 0
+
+[[samples]]
+input = [[1, 2, 3, 1, 3], [3, 2]]
+expected = 1
+
+[[samples]]
+input = [[1, 2, 3, 4], [2, 2]]
+expected = 1

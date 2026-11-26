@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "On a full miss, find each resident page's next use — evict the farthest (never-again counts as farthest)."
+
+[[hint]]
+rung = 2
+text = "The new page takes the evicted slot's position; ties between equally-far pages pick the earliest slot."
+
+[[hint]]
+rung = 3
+text = "```\nif full:\n  worst = argmax over slots of next_use(pages, i+1, slot_page)\n  frame[worst] = p\n```"
+
+[[hint]]
+rung = 4
+text = "Return the fault count."

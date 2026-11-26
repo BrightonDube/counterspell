@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "First fit: scan slots in order, take the first with room, shrink it — do not restore."
+
+[[hint]]
+rung = 2
+text = "A request of 0 always finds a home — every slot fits it, including size-0 slots."
+
+[[hint]]
+rung = 3
+text = "```\nfor r in reqs:\n  for i, b in enumerate(blocks):\n    if b >= r: blocks[i] -= r; granted += 1; break\n```"
+
+[[hint]]
+rung = 4
+text = "Return the granted count."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "LRU differs from FIFO on a hit: the touched page becomes the freshest, not the oldest."
+
+[[hint]]
+rung = 2
+text = "Keep an ordered list — on a hit move the page to the back; on a miss evict the front when full."
+
+[[hint]]
+rung = 3
+text = "```\nfolio = []\nfor p in pages:\n  if p in folio: move to back; else: evict front if full; append\n```"
+
+[[hint]]
+rung = 4
+text = "Return the fault count."
