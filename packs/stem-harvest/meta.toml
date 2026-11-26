@@ -1,0 +1,40 @@
+slug = "stem-harvest"
+title = "The Stem Harvest"
+status = "published"
+difficulty = "hard"
+track = "strings"
+concepts = ["strings", "prefixes", "nested-loops", "edge-cases", "tries"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "stem_depth_sum"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(k^2) prefix tests over at most k distinct words."
+
+[[params]]
+name = "words"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["car,cart,dog"]
+expected = 3
+
+[[samples]]
+input = ["a,ab,abc"]
+expected = 3
+
+[[samples]]
+input = ["cat,dog"]
+expected = 0

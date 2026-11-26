@@ -1,0 +1,40 @@
+slug = "deepest-lex"
+title = "The Deepest Lex"
+status = "published"
+difficulty = "easy"
+track = "strings"
+concepts = ["strings", "edge-cases", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "longest_word"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) scan over the dictionary with O(1) extra space."
+
+[[params]]
+name = "words"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["cat,lantern,dog"]
+expected = 7
+
+[[samples]]
+input = [""]
+expected = 0
+
+[[samples]]
+input = ["a,bb,ccc"]
+expected = 3

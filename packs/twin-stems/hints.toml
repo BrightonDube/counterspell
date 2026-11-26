@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Keep only distinct words, then for each pair check whether the shorter is a proper prefix of the longer."
+
+[[hint]]
+rung = 2
+text = "Identical entries are not a pair — the prefix must be strictly shorter."
+
+[[hint]]
+rung = 3
+text = "```\nws = sorted(set(w for w in words.split(\",\") if w))\nfor i, a in enumerate(ws): for b in ws[i + 1:]: ans += b.startswith(a) and a != b\nreturn ans\n```"
+
+[[hint]]
+rung = 4
+text = "Return the pair tally."

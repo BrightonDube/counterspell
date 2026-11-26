@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A word survives when no other distinct word has it as a proper prefix; count only distinct words."
+
+[[hint]]
+rung = 2
+text = "Repeated entries name one word — deduplicate before comparing."
+
+[[hint]]
+rung = 3
+text = "```\nws = set(w for w in words.split(\",\") if w)\nreturn sum(1 for w in ws if not any(o != w and o.startswith(w) for o in ws))\n```"
+
+[[hint]]
+rung = 4
+text = "Return the survivor count."

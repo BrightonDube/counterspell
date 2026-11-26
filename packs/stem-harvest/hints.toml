@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each distinct word, find the longest other word that is a proper prefix of it; add that word's length."
+
+[[hint]]
+rung = 2
+text = "Deduplicate first — a repeated entry still sits at one depth."
+
+[[hint]]
+rung = 3
+text = "```\nws = set(w for w in words.split(\",\") if w)\nreturn sum(max((len(o) for o in ws if o != w and w.startswith(o)), default=0) for w in ws)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the depth total."

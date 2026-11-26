@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Track which positions of `s` are reachable: position 0 always is; position p is reachable when some entry ends there from a reachable start."
+
+[[hint]]
+rung = 2
+text = "Entries may repeat freely — the same entry can close many gaps."
+
+[[hint]]
+rung = 3
+text = "```\nok = [True] + [False] * len(s)\nfor i in range(len(s) + 1): if ok[i]: for w in ws: if s.startswith(w, i): ok[i + len(w)] = True\nreturn 1 if ok[-1] else 0\n```"
+
+[[hint]]
+rung = 4
+text = "Answer `1` when the last position is reachable."

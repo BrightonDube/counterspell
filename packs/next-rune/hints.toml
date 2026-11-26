@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each entry that strictly extends `prefix`, record the rune right after the prefix end; count the distinct runes."
+
+[[hint]]
+rung = 2
+text = "An entry equal to `prefix` is a word, not a completion — it adds no rune."
+
+[[hint]]
+rung = 3
+text = "```\nnxts = set()\nfor w in words.split(\",\"): if w and w.startswith(prefix) and len(w) > len(prefix): nxts.add(w[len(prefix)])\nreturn len(nxts)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the size of the rune set."

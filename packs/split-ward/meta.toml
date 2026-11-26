@@ -1,0 +1,43 @@
+slug = "split-ward"
+title = "The Split Ward"
+status = "published"
+difficulty = "medium"
+track = "strings"
+concepts = ["strings", "prefixes", "edge-cases", "tries"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "can_segment"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n * w) reachability steps over at most w entries."
+
+[[params]]
+name = "words"
+type = "str"
+[[params]]
+name = "s"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 40 }, { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz", min_len = 0, max_len = 12 },
+]
+
+[[samples]]
+input = ["cat,dog", "catdog"]
+expected = 1
+
+[[samples]]
+input = ["cat,dog", "catbird"]
+expected = 0
+
+[[samples]]
+input = ["cat,dog", ""]
+expected = 1
