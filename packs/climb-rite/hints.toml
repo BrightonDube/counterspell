@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The last pace covers one ledge or two — the count is the sum of both finishes."
+
+[[hint]]
+rung = 2
+text = "Start with 1 way for an empty stair and 1 way for a single ledge."
+
+[[hint]]
+rung = 3
+text = "```\na = 1; b = 1\nrepeat steps-1 times: a, b = b, a + b\nreturn b\n```"
+
+[[hint]]
+rung = 4
+text = "Return the pace-order count."

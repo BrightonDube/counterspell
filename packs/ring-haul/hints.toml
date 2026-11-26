@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The ring forbids taking both ends — split it into two rows: skip the first mark, or skip the last."
+
+[[hint]]
+rung = 2
+text = "Run the linear take-or-skip on marks[1:] and marks[:-1]; the better haul wins."
+
+[[hint]]
+rung = 3
+text = "```\nline(ms): take/skip rolling best\nanswer = max(line(marks[1:]), line(marks[:-1])) — one mark rings answer themselves\n```"
+
+[[hint]]
+rung = 4
+text = "Return the ring haul."

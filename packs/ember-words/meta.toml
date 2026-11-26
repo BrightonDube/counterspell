@@ -1,0 +1,43 @@
+slug = "ember-words"
+title = "The Ember Words"
+status = "published"
+difficulty = "hard"
+track = "strings"
+concepts = ["greedy", "recursion", "strings", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "word_break"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len × embers) prefix reachability."
+
+[[params]]
+name = "text"
+type = "str"
+[[params]]
+name = "lexicon"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz", min_len = 0, max_len = 60 }, { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 200 },
+]
+
+[[samples]]
+input = ["candlelight", "candle,light"]
+expected = 1
+
+[[samples]]
+input = ["catsandog", "cats,dog,sand,and,cat"]
+expected = 0
+
+[[samples]]
+input = ["aab", "a,ab"]
+expected = 1

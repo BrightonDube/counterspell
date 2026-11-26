@@ -1,0 +1,40 @@
+slug = "toll-stairs"
+title = "The Toll Stairs"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["greedy", "edge-cases", "recursion"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "toll_stairs"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len) two-step prefix minima."
+
+[[params]]
+name = "costs"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 30, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[10, 15, 20]]
+expected = 15
+
+[[samples]]
+input = [[1, 100, 1, 1, 1, 100, 1, 1, 100, 1]]
+expected = 6

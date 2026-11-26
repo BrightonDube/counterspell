@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each glyph extends alone when it is not 0; the pair ending there extends too when it reads 10..26."
+
+[[hint]]
+rung = 2
+text = "A leading or stranded 0 zeroes the run — pairs like 10 and 20 are the only zero pairs that survive."
+
+[[hint]]
+rung = 3
+text = "```\nd[0] = 1\nd[i] += d[i-1] if glyph != '0'\nd[i] += d[i-2] if 10 <= pair <= 26\n```"
+
+[[hint]]
+rung = 4
+text = "Return the decoding count."

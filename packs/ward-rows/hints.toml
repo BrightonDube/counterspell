@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The last piece has length 1, 2 or 3 — the count sums the three shorter rows."
+
+[[hint]]
+rung = 2
+text = "Seed d[0] = 1; every shorter index that reaches i adds its count."
+
+[[hint]]
+rung = 3
+text = "```\nd[0] = 1\nfor i in 1..length: d[i] = d[i-1] + d[i-2] + d[i-3] (missing indices count 0)\nreturn d[length]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the layout count."

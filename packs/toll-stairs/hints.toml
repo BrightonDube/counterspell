@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The toll to rise above stair i is costs[i] plus the cheaper of the two stairs feeding it."
+
+[[hint]]
+rung = 2
+text = "Carry two bests: the toll reaching the previous stair and the one before it."
+
+[[hint]]
+rung = 3
+text = "```\nprev2 = 0; prev1 = costs[0]\nfor each later c: prev2, prev1 = prev1, min(prev1, prev2) + c\nreturn min(prev1, prev2)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the smallest toll to the top."

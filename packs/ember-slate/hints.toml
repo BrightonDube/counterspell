@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each mark, the best climb ending there is one more than the best climb ending at any smaller earlier glow."
+
+[[hint]]
+rung = 2
+text = "Tied glows do not climb — the step must be strictly brighter."
+
+[[hint]]
+rung = 3
+text = "```\nd[i] = 1\nfor j < i: if marks[j] < marks[i]: d[i] = max(d[i], d[j] + 1)\nreturn max(d)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the longest climb."
