@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Turn each scroll into position -> mark, then visit only the shared positions."
+
+[[hint]]
+rung = 2
+text = "A dict per scroll does it: later rows overwrite earlier ones, then sum products over shared keys."
+
+[[hint]]
+rung = 3
+text = "```\nda = {p: m for p, m in a}\nreturn sum(da[p] * db[p] for p in da if p in db)\n```"
+
+[[hint]]
+rung = 4
+text = "Rows are not promised sorted or unique — the dict handles both."

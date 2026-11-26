@@ -1,0 +1,46 @@
+slug = "token-window"
+title = "The Token Window"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "counting", "edge-cases", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "token_window"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len tokens) sliding count."
+
+[[params]]
+name = "tokens"
+type = "list[int]"
+[[params]]
+name = "w"
+type = "int"
+[[params]]
+name = "mark"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 9 }, { type = "int", min = 0, max = 30 }, { type = "int", min = 0, max = 9 },
+]
+
+[[samples]]
+input = [[1, 2, 1, 1, 2], 3, 1]
+expected = 2
+
+[[samples]]
+input = [[7, 7, 7], 2, 7]
+expected = 2
+
+[[samples]]
+input = [[1, 2, 3], 0, 1]
+expected = 0

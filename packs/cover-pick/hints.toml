@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Track `covered` as a bitset; each turn count the NEW towers every mask would light."
+
+[[hint]]
+rung = 2
+text = "new_bits(m) = bin(m & full & ~covered).count('1') — pick the argmax, tie to the lowest index."
+
+[[hint]]
+rung = 3
+text = "```\nfull = (1 << n) - 1\nbest = max(range(len(masks)), key=lambda i: bin(masks[i] & full & ~covered).count('1'))\ncovered |= masks[best] & full  # stop when the best gain is 0\n```"
+
+[[hint]]
+rung = 4
+text = "Stop when the best gain is zero — a perfect-greedy rite never burns a dead talisman."

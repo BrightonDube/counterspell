@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Total the strip, floor each mark's hundred-share, and measure what the floors dropped."
+
+[[hint]]
+rung = 2
+text = "With total S the residue is 100 - sum((x * 100) // S)."
+
+[[hint]]
+rung = 3
+text = "```\ns = sum(v)\nreturn 0 if s <= 0 else 100 - sum((x * 100) // s for x in v)\n```"
+
+[[hint]]
+rung = 4
+text = "Guard the empty or zero strip before dividing — a dead total has no shares."

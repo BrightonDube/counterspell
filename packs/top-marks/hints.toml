@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Order the marks strongest first, then take only what the quota allows."
+
+[[hint]]
+rung = 2
+text = "Sort descending and sum the first min(k, len) entries."
+
+[[hint]]
+rung = 3
+text = "```\nreturn sum(sorted(scores, reverse=True)[:k])\n```"
+
+[[hint]]
+rung = 4
+text = "A negative mark can still make the cut — sorting handles it."

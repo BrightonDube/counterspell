@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Count the mark in the first window, then slide: lose the left edge, gain the right."
+
+[[hint]]
+rung = 2
+text = "Clamp the window to the stream first — w = min(w, len(tokens))."
+
+[[hint]]
+rung = 3
+text = "```\nw = min(w, len(tokens)); cur = sum(t == mark for t in tokens[:w]); best = cur\nfor i in range(w, len(tokens)):\n    cur += (tokens[i] == mark) - (tokens[i - w] == mark); best = max(best, cur)\n```"
+
+[[hint]]
+rung = 4
+text = "A window of 0 or an empty stream both answer 0."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A leaked id is one present on both scrolls — duplicates count once."
+
+[[hint]]
+rung = 2
+text = "Build a set of the train ids, then count the test ids that land inside it."
+
+[[hint]]
+rung = 3
+text = "```\nreturn len(set(train) & set(test))\n```"
+
+[[hint]]
+rung = 4
+text = "Counting aligned pairs instead of ids is the leak to avoid — order means nothing here."

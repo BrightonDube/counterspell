@@ -187,3 +187,10 @@ slug = "databases"
 name = "Databases and Relations"
 
 
+[[concepts]]
+slug = "ai"
+name = "Machine Learning and AI"
+
+[[concepts]]
+slug = "ranking"
+name = "Ranking and Metrics"

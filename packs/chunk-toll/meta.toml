@@ -1,0 +1,46 @@
+slug = "chunk-toll"
+title = "The Chunk Toll"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["arrays", "math", "greedy", "edge-cases", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "chunk_toll"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len tokens * w) prefix DP."
+
+[[params]]
+name = "tokens"
+type = "list[int]"
+[[params]]
+name = "w"
+type = "int"
+[[params]]
+name = "base"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 60 }, { type = "int", min = 0, max = 30 }, { type = "int", min = 0, max = 50 },
+]
+
+[[samples]]
+input = [[1, 5, 2, 9], 2, 3]
+expected = 12
+
+[[samples]]
+input = [[4, 4, 4], 3, 5]
+expected = 5
+
+[[samples]]
+input = [[], 2, 3]
+expected = 0

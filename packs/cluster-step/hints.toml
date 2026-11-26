@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each point, find the hearth index with the smallest distance — ties favour the lower index."
+
+[[hint]]
+rung = 2
+text = "abs(point - c) compared in order: keep the first index that wins so ties break low."
+
+[[hint]]
+rung = 3
+text = "```\nbest = min(range(len(centroids)), key=lambda j: (abs(p - centroids[j]), j))\n# count when i >= len(labels) or labels[i] != best\n```"
+
+[[hint]]
+rung = 4
+text = "No hearths at all means every mark counts as moved; a missing label means the same."

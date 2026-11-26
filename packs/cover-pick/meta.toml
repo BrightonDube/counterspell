@@ -1,0 +1,43 @@
+slug = "cover-pick"
+title = "The Cover Pick"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["arrays", "bits", "greedy", "edge-cases", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "cover_pick"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len masks) per pick, at most n useful picks."
+
+[[params]]
+name = "n"
+type = "int"
+[[params]]
+name = "masks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 20 }, { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 1048575 },
+]
+
+[[samples]]
+input = [3, [3, 6, 1]]
+expected = 2
+
+[[samples]]
+input = [4, [15]]
+expected = 1
+
+[[samples]]
+input = [3, [0, 0]]
+expected = 0
