@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each open cell's fewest is one plus the cheaper feeder — unreachable cells stay unreachable."
+
+[[hint]]
+rung = 2
+text = "A blocked start or end means no crossing at all."
+
+[[hint]]
+rung = 3
+text = "```\nd[0][0] = 1 if open\nd[i][j] = 1 + min(reachable feeders)\n-1 when the end is unreachable\n```"
+
+[[hint]]
+rung = 4
+text = "Return the fewest cells, or -1."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Cell (i,j) holds when the scrawl's next letter can come from strand one (if i>0) or strand two (if j>0)."
+
+[[hint]]
+rung = 2
+text = "The lengths must add exactly — extra letters break the braid outright."
+
+[[hint]]
+rung = 3
+text = "```\nd[0][0] = 1\nd[i][j] |= d[i-1][j] if a[i-1]==text[i+j-1]\nd[i][j] |= d[i][j-1] if b[j-1]==text[i+j-1]\n```"
+
+[[hint]]
+rung = 4
+text = "Return 1 for an exact braid, else 0."

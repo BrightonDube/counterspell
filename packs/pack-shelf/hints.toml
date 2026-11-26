@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each keepsake, a capacity either skips it or pays its weight and keeps it."
+
+[[hint]]
+rung = 2
+text = "Walk capacities high-to-low so no keepsake is counted twice."
+
+[[hint]]
+rung = 3
+text = "```\nd[cap+1] of zeros\nfor (w,v) in items: for i from cap down to w: d[i] = max(d[i], d[i-w]+v)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the best worth."

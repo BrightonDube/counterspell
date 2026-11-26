@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Equal letters mend free; otherwise the cheapest of drop-one, add-one or swap-one."
+
+[[hint]]
+rung = 2
+text = "The borders cost their length — mending an empty scrawl is all inserts."
+
+[[hint]]
+rung = 3
+text = "```\nd[i][j] = min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]+cost)\nreturn d[n][m]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the mend count."

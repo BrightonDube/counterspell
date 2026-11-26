@@ -1,0 +1,46 @@
+slug = "ember-braid"
+title = "The Ember Braid"
+status = "published"
+difficulty = "hard"
+track = "strings"
+concepts = ["strings", "recursion", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "braid_ways"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len × len) two-strand reachability."
+
+[[params]]
+name = "text"
+type = "str"
+[[params]]
+name = "first"
+type = "str"
+[[params]]
+name = "second"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz", min_len = 0, max_len = 12 }, { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz", min_len = 0, max_len = 6 }, { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz", min_len = 0, max_len = 6 },
+]
+
+[[samples]]
+input = ["aabbcc", "abc", "abc"]
+expected = 1
+
+[[samples]]
+input = ["aab", "a", "ab"]
+expected = 1
+
+[[samples]]
+input = ["ab", "b", "a"]
+expected = 1
