@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk the whole tree once and record every node's parent in a map."
+
+[[hint]]
+rung = 2
+text = "Climb from `a` to the root collecting ancestors, then climb from `b` until you land on one."
+
+[[hint]]
+rung = 3
+text = "```\nparent = {kid: i for each edge}\nanc = {a, parent[a], ...} to root\nclimb b until b in anc; -1 if either start unreachable\n```"
+
+[[hint]]
+rung = 4
+text = "The first shared cell on `b`'s climb is the lowest ancestor."

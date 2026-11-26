@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A leaf has both child slots set to `-1`; walk from index `0` and count them."
+
+[[hint]]
+rung = 2
+text = "Only cells the walk reaches belong to the tree — do not measure the arrays' length."
+
+[[hint]]
+rung = 3
+text = "```\nseen = set(); stack = [0]\nwhile stack: i = stack.pop(); check children\nleaf when left[i] == -1 and right[i] == -1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the leaf count once the stack empties."

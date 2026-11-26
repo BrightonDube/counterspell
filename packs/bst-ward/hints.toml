@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Carry an allowed range with each node: the left bough tightens the ceiling, the right bough tightens the floor."
+
+[[hint]]
+rung = 2
+text = "Checking only parent-versus-child misses violations that sit deeper — keep the range, not the neighbour."
+
+[[hint]]
+rung = 3
+text = "```\nwork = [(0, -inf, inf)]\nfail when lo <= vals[i] <= hi is false\nleft -> (lo, vals[i]); right -> (vals[i], hi)\n```"
+
+[[hint]]
+rung = 4
+text = "Return `1` only when every visited node stays inside its range."
