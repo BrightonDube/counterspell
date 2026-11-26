@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Slice the tape into rows by lens — every ordered pair inside one row is a direction claim."
+
+[[hint]]
+rung = 2
+text = "A conflict needs the same two wards in opposite orders across any two rows."
+
+[[hint]]
+rung = 3
+text = "```\nseen = set(); at = 0\nfor L in lens: row = wards[at:at+L]; at += L\n  for i < j: conflict if (row[j], row[i]) in seen; else seen.add\n```"
+
+[[hint]]
+rung = 4
+text = "Return 1 when all claims agree."

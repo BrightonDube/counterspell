@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The mark chooses its slot by mark % c, but what stays is the tag mark // c."
+
+[[hint]]
+rung = 2
+text = "Keep one tag per slot; a hit needs the stored tag to equal the arriving tag."
+
+[[hint]]
+rung = 3
+text = "```\nslots = [-1] * c\nfor m in marks: line, tag = m % c, m // c\n  miss += slots[line] != tag; slots[line] = tag\n```"
+
+[[hint]]
+rung = 4
+text = "Return the miss count."

@@ -1,0 +1,43 @@
+slug = "page-turn"
+title = "The Page Turn"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["systems", "caching", "queues", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "page_turn"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n*f) with a membership scan per page."
+
+[[params]]
+name = "pages"
+type = "list[int]"
+[[params]]
+name = "f"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 30 }, { type = "int", min = 1, max = 6 },
+]
+
+[[samples]]
+input = [[0, 1, 2, 0, 3, 1], 2]
+expected = 6
+
+[[samples]]
+input = [[0, 1, 0, 1], 2]
+expected = 2
+
+[[samples]]
+input = [[], 3]
+expected = 0

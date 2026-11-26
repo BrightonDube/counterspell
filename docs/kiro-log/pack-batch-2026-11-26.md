@@ -995,6 +995,8 @@ Codes and counts only - no hidden values are logged.
 - mask-rite: review round 3 recorded
 - mask-rite: awaiting_approval (Brighton gate; no approval.toml written here)
 
+
+
 Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 

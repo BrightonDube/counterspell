@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each rite of b ticks needs ceil(b / q) slices — ceil(0 / q) is 0."
+
+[[hint]]
+rung = 2
+text = "ceil(b / q) is (b + q - 1) // q for positive b."
+
+[[hint]]
+rung = 3
+text = "```\ntotal = 0\nfor b in bursts: total += (b + q - 1) // q\n```"
+
+[[hint]]
+rung = 4
+text = "Return the slice total."
