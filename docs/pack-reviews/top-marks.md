@@ -9,7 +9,7 @@
 | Difficulty | easy |
 | Track | `arrays` |
 | Entry | `top_marks` |
-| Content hash | `cb76af924426e544b5166d82dd4ccf95990cb750650a9e9750a290751e0dc7d3` |
+| Content hash | `34e0dfabf6bd30a0d87c6886b11ad9ffa5f0ee6b196ca5d0f7b1d739a80a99b7` |
 
 ## Mechanic
 

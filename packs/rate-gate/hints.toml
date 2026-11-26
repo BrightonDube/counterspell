@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The bucket refills only by elapsed ticks — refill * (tick - last), never above capacity."
+
+[[hint]]
+rung = 2
+text = "At each event: fill first, then compare take against the bucket; pass means spend."
+
+[[hint]]
+rung = 3
+text = "```\nbucket, last = capacity, 0\nfor tick, take in events: bucket = min(capacity, bucket + (tick - last) * refill); last = tick\n```"
+
+[[hint]]
+rung = 4
+text = "Count an event only when take <= bucket — empty seals fail closed."

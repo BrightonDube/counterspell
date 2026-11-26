@@ -9,11 +9,11 @@
 | Difficulty | medium |
 | Track | `matrices` |
 | Entry | `hop_limit` |
-| Content hash | `735e467ea168a2b7167b4db7f733cc53ba333575d1827a3a6b4797aa07c1ce16` |
+| Content hash | `bf95779dce663a9ef395b1ed92c2977b4d4c40528892db24e57b51bc1b8e42c3` |
 
 ## Mechanic
 
-TTL-bounded flood — counting wards reached within a hop budget.
+TTL-bounded BFS — reachable marks within the hop limit.
 
 ## Review basis
 

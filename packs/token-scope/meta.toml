@@ -1,0 +1,49 @@
+slug = "token-scope"
+title = "The Token Scope"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["edge-cases", "systems", "arrays"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "scope_ok"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(r * g) membership sweep."
+
+[[params]]
+name = "required"
+type = "list[int]"
+[[params]]
+name = "granted"
+type = "list[int]"
+[[params]]
+name = "expiry"
+type = "int"
+[[params]]
+name = "now"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 8, min = 0, max = 30 }, { type = "int_array", min_len = 0, max_len = 8, min = 0, max = 30 }, { type = "int", min = -1, max = 1000 }, { type = "int", min = 0, max = 1000 },
+]
+
+[[samples]]
+input = [[1, 2], [1, 2, 3], 10, 5]
+expected = 1
+
+[[samples]]
+input = [[1, 4], [1, 2, 3], 10, 5]
+expected = 0
+
+[[samples]]
+input = [[1], [1], 10, 10]
+expected = 0

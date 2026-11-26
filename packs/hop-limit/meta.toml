@@ -1,0 +1,46 @@
+slug = "hop-limit"
+title = "The Hop Limit"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["graphs", "edge-cases", "counting", "systems"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "hop_limit"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n + links) bounded breadth walk."
+
+[[params]]
+name = "n"
+type = "int"
+[[params]]
+name = "links"
+type = "list[list[int]]"
+[[params]]
+name = "ttl"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 15 }, { type = "matrix", min_rows = 0, max_rows = 24, min_cols = 2, max_cols = 2, min = 0, max = 15 }, { type = "int", min = 0, max = 15 },
+]
+
+[[samples]]
+input = [5, [[0, 1], [1, 2], [2, 3], [3, 4]], 2]
+expected = 2
+
+[[samples]]
+input = [4, [[0, 1], [0, 2], [0, 3]], 1]
+expected = 3
+
+[[samples]]
+input = [5, [[0, 1], [1, 2], [2, 3], [3, 4]], 0]
+expected = 0

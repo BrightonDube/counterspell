@@ -9,7 +9,7 @@
 | Difficulty | hard |
 | Track | `arrays` |
 | Entry | `cover_pick` |
-| Content hash | `4179f6d6b7e136495cc4135a142f31437a571c130243f287a9ad8d6239e8d50c` |
+| Content hash | `240f03c025f8aef0e3676e5b01096ddedc998dca67ac9b09354b4a79b2bed7b6` |
 
 ## Mechanic
 

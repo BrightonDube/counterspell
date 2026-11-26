@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Quorum means strictly more than half — half itself is not enough."
+
+[[hint]]
+rung = 2
+text = "The threshold is n // 2 + 1; compare votes against it."
+
+[[hint]]
+rung = 3
+text = "```\nreturn 1 if votes >= n // 2 + 1 else 0\n```"
+
+[[hint]]
+rung = 4
+text = "An empty council or a tied council binds nothing."

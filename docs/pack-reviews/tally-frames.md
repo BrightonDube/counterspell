@@ -9,7 +9,7 @@
 | Difficulty | easy |
 | Track | `matrices` |
 | Entry | `tally_frames` |
-| Content hash | `d4e224dce9b2369868f0f9cf182d512bc2dbf05040fe1105d08d9977243a03d3` |
+| Content hash | `670fbe014363c22d139a665ff4ae916f97794809852fd6daabf0746219ef44f8` |
 
 ## Mechanic
 

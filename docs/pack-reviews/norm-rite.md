@@ -9,7 +9,7 @@
 | Difficulty | medium |
 | Track | `arrays` |
 | Entry | `norm_rite` |
-| Content hash | `7c36f8ef1482cea4d50d4dd13543cd66422857522947849836391821c0ee669e` |
+| Content hash | `49a2aa311aefdcb7a751266ad68a27695ad2284a3154beb4012a26f3a98df82f` |
 
 ## Mechanic
 

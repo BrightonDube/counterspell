@@ -374,3 +374,37 @@ Ten packs on OS and concurrency simulation: miss counts, page turns, burst rites
 | wrap-rite | The Wrap Rite | medium | arrays |
 | quantum-tick | The Quantum Tick | hard | matrices |
 | frame-rite | The Frame Rite | hard | arrays |
+
+## Batch 19 — networking, distributed systems and security
+
+Ten packs on routing, dedup, quorum, validation and defensive protocol reasoning: route counts, retry dedups, quorum votes, header checks, hop limits, vector clocks, rate gates, token scopes, split rites and nonce wards.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| route-count | The Route Count | easy | matrices |
+| retry-dedup | The Retry Dedup | easy | matrices |
+| quorum-votes | The Quorum Votes | easy | math |
+| header-check | The Header Check | easy | arrays |
+| hop-limit | The Hop Limit | medium | matrices |
+| vector-clock | The Vector Clock | medium | arrays |
+| rate-gate | The Rate Gate | medium | matrices |
+| token-scope | The Token Scope | medium | arrays |
+| split-rite | The Split Rite | hard | matrices |
+| nonce-ward | The Nonce Ward | hard | matrices |
+
+## Batch 20 — machine learning and data primitives
+
+Ten packs on ML-flavoured data primitives: dot rites, top marks, tally frames, token windows, rank gains, cluster steps, norm rites, leak checks, cover picks and chunk tolls.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| dot-rite | The Dot Rite | easy | matrices |
+| top-marks | The Top Marks | easy | arrays |
+| tally-frames | The Tally Frames | easy | matrices |
+| token-window | The Token Window | easy | arrays |
+| rank-gain | The Rank Gain | medium | arrays |
+| cluster-step | The Cluster Step | medium | arrays |
+| norm-rite | The Norm Rite | medium | arrays |
+| leak-check | The Leak Check | medium | arrays |
+| cover-pick | The Cover Pick | hard | arrays |
+| chunk-toll | The Chunk Toll | hard | arrays |

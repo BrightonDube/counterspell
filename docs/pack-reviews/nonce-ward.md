@@ -9,11 +9,11 @@
 | Difficulty | hard |
 | Track | `matrices` |
 | Entry | `nonce_ward` |
-| Content hash | `b204f224425ccf4be5fdeccc66b62147c1bca30450309ffa6930315264a17376` |
+| Content hash | `c7c12402cae2655f27f8191f151bdf25034819033db504e4b1b378ae392a4a77` |
 
 ## Mechanic
 
-Anti-replay nonce ledger — rejecting duplicate stamps within a window.
+Anti-replay nonce validation — non-increasing nonces per sender.
 
 ## Review basis
 

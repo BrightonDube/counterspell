@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The seq column orders deliveries; the rite column is what dedups."
+
+[[hint]]
+rung = 2
+text = "Keep a set of rite marks already seen; count a row only when its mark is new."
+
+[[hint]]
+rung = 3
+text = "```\nseen = set()\nfor seq, rite in log: seen.add(rite)\nreturn len(seen)\n```"
+
+[[hint]]
+rung = 4
+text = "Distinct marks, not distinct rows — retries carry the same rite."

@@ -9,11 +9,11 @@
 | Difficulty | easy |
 | Track | `math` |
 | Entry | `quorum_reached` |
-| Content hash | `4566144474083ff6ed154c72691b226299fd39b705e22c8f3f62a6c53798aa53` |
+| Content hash | `ebf9868dbc2e2c1d73cf9d52e4e955679cacf7e0db6c0e5142de0a1cd78b5454` |
 
 ## Mechanic
 
-Strict-majority quorum arithmetic over cast ballot weight.
+Strict-majority quorum check over yes-votes.
 
 ## Review basis
 

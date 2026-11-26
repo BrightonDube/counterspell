@@ -1,0 +1,43 @@
+slug = "quorum-votes"
+title = "The Quorum Votes"
+status = "published"
+difficulty = "easy"
+track = "math"
+concepts = ["math", "edge-cases", "systems"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "quorum_reached"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(1) threshold check."
+
+[[params]]
+name = "n"
+type = "int"
+[[params]]
+name = "votes"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 30 }, { type = "int", min = 0, max = 30 },
+]
+
+[[samples]]
+input = [5, 3]
+expected = 1
+
+[[samples]]
+input = [4, 2]
+expected = 0
+
+[[samples]]
+input = [0, 0]
+expected = 0
