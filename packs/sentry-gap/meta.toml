@@ -1,0 +1,46 @@
+slug = "sentry-gap"
+title = "The Sentry Gap"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["backtracking", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "sentry_ways"
+returns = "int"
+comparator = "exact"
+complexity_note = "Bounded place/skip recursion skipping gap + 1 posts."
+
+[[params]]
+name = "cells"
+type = "int"
+[[params]]
+name = "sentries"
+type = "int"
+[[params]]
+name = "gap"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 20 }, { type = "int", min = 0, max = 20 }, { type = "int", min = 0, max = 10 },
+]
+
+[[samples]]
+input = [5, 2, 1]
+expected = 6
+
+[[samples]]
+input = [4, 2, 2]
+expected = 1
+
+[[samples]]
+input = [3, 0, 1]
+expected = 1

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "At each open cell the answer is the route count right plus the route count down."
+
+[[hint]]
+rung = 2
+text = "A bricked cell admits no route — return zero there and out of bounds."
+
+[[hint]]
+rung = 3
+text = "```\ndef f(r, c):\n  if off-grid or grid[r][c] == 0: return 0\n  return 1 if last cell else f(r,c+1)+f(r+1,c)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the route count."

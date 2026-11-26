@@ -1,0 +1,43 @@
+slug = "summon-rite"
+title = "The Summon Rite"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["backtracking", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "can_summon"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(2^n) worst case; bounds keep it inside the limits."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+[[params]]
+name = "target"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 30, min = -20, max = 20 }, { type = "int", min = -40, max = 40 },
+]
+
+[[samples]]
+input = [[1, 2, 3], 3]
+expected = 1
+
+[[samples]]
+input = [[2, 4, 6], 5]
+expected = 0
+
+[[samples]]
+input = [[], 0]
+expected = 1

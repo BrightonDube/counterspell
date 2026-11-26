@@ -133,3 +133,7 @@ name = "Heaps"
 [[concepts]]
 slug = "greedy"
 name = "Greedy"
+
+[[concepts]]
+slug = "backtracking"
+name = "Backtracking"

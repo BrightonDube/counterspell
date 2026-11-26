@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "At each cell, place a guard and skip the next cell, or skip this cell."
+
+[[hint]]
+rung = 2
+text = "Placing zero guards is always exactly one way, even on an empty row."
+
+[[hint]]
+rung = 3
+text = "```\ndef f(c, g):\n  if g == 0: return 1\n  return 0 if c <= 0 else f(c-2,g-1)+f(c-1,g)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the count."

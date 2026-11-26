@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each candle is taken or left; add the two branches."
+
+[[hint]]
+rung = 2
+text = "`pick(0, 0)` is one way — picking none; `k` over `n` is none."
+
+[[hint]]
+rung = 3
+text = "```\ndef f(n, k):\n  if k < 0 or k > n: return 0\n  return 1 if k == 0 else f(n-1, k-1) + f(n-1, k)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the count."
