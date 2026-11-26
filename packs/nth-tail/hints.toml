@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk a lead pointer `n` steps ahead, then walk both until the lead ends."
+
+[[hint]]
+rung = 2
+text = "When the lead hits `-1`, the trailing pointer sits `n` before the tail."
+
+[[hint]]
+rung = 3
+text = "```\nlead = trail = 0\nfor _ in range(n):\n    if lead == -1: return -1\n```"
+
+[[hint]]
+rung = 4
+text = "Then `while lead != -1: lead = nxt[lead]; trail = nxt[trail]` and answer `marks[trail]` — seeding the walks at 0 or -1 when empty."

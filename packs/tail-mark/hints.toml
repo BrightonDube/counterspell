@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk `nxt` until it hands you `-1`; the cell you stop on is the tail."
+
+[[hint]]
+rung = 2
+text = "Keep the last index the walk visited — `marks[last]` is the answer."
+
+[[hint]]
+rung = 3
+text = "```\ni, last = 0, -1\nwhile i != -1:\n    last = i; i = nxt[i]\n```"
+
+[[hint]]
+rung = 4
+text = "For an empty chain the last index stays `-1` — return it directly."

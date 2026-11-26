@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk from `ha` collecting every index it visits, then walk from `hb` until one appears in the set."
+
+[[hint]]
+rung = 2
+text = "The heads differ — index identity, not walk position, is what can be shared."
+
+[[hint]]
+rung = 3
+text = "```\nseen, i = set(), ha\nwhile i != -1: seen.add(i); i = nxt[i]\nj = hb\n```"
+
+[[hint]]
+rung = 4
+text = "Then `while j != -1 and j not in seen: j = nxt[j]` and return `j`."

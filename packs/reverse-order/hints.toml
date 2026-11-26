@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk the chain collecting marks, then flip the list — that is the reversed order."
+
+[[hint]]
+rung = 2
+text = "The tail is the last visited index, not the last array cell."
+
+[[hint]]
+rung = 3
+text = "```\nout, i = [], 0\nwhile i != -1:\n    out.append(marks[i]); i = nxt[i]\n```"
+
+[[hint]]
+rung = 4
+text = "An empty chain returns the empty list untouched."

@@ -109,3 +109,8 @@ name = "Streaming"
 [[concepts]]
 slug = "binary-search"
 name = "Binary Search"
+
+[[concepts]]
+slug = "linked-chains"
+name = "Linked Chains"
+

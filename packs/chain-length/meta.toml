@@ -1,0 +1,40 @@
+slug = "chain-length"
+title = "The Chain Length"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "linked-chains", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "chain_length"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) walk and O(1) space."
+
+[[params]]
+name = "nxt"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 },
+]
+
+[[samples]]
+input = [[1, 2, -1]]
+expected = 3
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[1, -1, 0]]
+expected = 2

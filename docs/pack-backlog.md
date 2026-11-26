@@ -153,3 +153,21 @@ Ten packs on exact lookup, boundaries, rotated order and answer-space search.
 | brew-pace | The Brew Pace | medium | arrays |
 | valley-low | The Valley Low | hard | arrays |
 | even-offering | The Even Offering | hard | arrays |
+
+## Batch 06 — linked chains and pointer safety
+
+Ten packs on index-chain walks: counting, tails, order, loops, reversal, merging, distance-from-tail, shared tails, loop entry and re-weaving.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| chain-length | The Chain Length | easy | arrays |
+| tail-mark | The Tail Mark | easy | arrays |
+| lit-order | The Lit Order | easy | arrays |
+| loop-flag | The Loop Flag | easy | arrays |
+| reverse-order | The Reversed Order | medium | arrays |
+| merge-glow | The Merge Glow | medium | arrays |
+| nth-tail | The Nth From The Tail | medium | arrays |
+| shared-link | The Shared Link | medium | arrays |
+| loop-entry | The Loop Entry | hard | arrays |
+| reorder-embers | The Reorder Embers | hard | arrays |
+

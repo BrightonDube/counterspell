@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Append `marks[i]` at every step of the walk, not in index order."
+
+[[hint]]
+rung = 2
+text = "The walk ends when `nxt[i]` is `-1`; cells it skips never appear."
+
+[[hint]]
+rung = 3
+text = "```\nout, i = [], 0\nwhile i != -1:\n    out.append(marks[i]); i = nxt[i]\n```"
+
+[[hint]]
+rung = 4
+text = "An empty chain returns the empty list untouched."
