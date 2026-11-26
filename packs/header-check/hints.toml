@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Check every bound and fail closed — a single bad field voids the envelope."
+
+[[hint]]
+rung = 2
+text = "version in {1, 2}; sender 0..255; seq 0..65535; length 0..1500 — and all four must hold."
+
+[[hint]]
+rung = 3
+text = "```\nv, s, q, l = env\nok = v in (1, 2) and 0 <= s <= 255 and 0 <= q <= 65535 and 0 <= l <= 1500\nreturn 1 if ok else 0\n```"
+
+[[hint]]
+rung = 4
+text = "Return 1 only when the whole conjunction holds."

@@ -178,3 +178,7 @@ name = "Intervals"
 slug = "databases"
 name = "Databases and Relations"
 
+
+[[concepts]]
+slug = "systems"
+name = "Operating Systems and Concurrency"

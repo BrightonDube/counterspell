@@ -61,7 +61,6 @@
 - three-rune-windows: review round 3 recorded
 - three-rune-windows: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- ember-index: static stages S0-S9
@@ -85,7 +84,6 @@ Codes and counts only - no hidden values are logged.
 --- even-offering: static stages S0-S9
 - even-offering: S9 FAILED (0 findings); review needed
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- ember-index: static stages S0-S9
@@ -149,7 +147,6 @@ Codes and counts only - no hidden values are logged.
 - even-offering: review round 3 recorded
 - even-offering: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- chain-length: static stages S0-S9
@@ -213,7 +210,6 @@ Codes and counts only - no hidden values are logged.
 --- reorder-embers: static stages S0-S9
 - reorder-embers: S9 FAILED (0 findings); review needed
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- chain-length: static stages S0-S9
@@ -277,7 +273,6 @@ Codes and counts only - no hidden values are logged.
 - reorder-embers: review round 3 recorded
 - reorder-embers: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- leaf-lanterns: static stages S0-S9
@@ -341,7 +336,6 @@ Codes and counts only - no hidden values are logged.
 - ember-diameter: review round 3 recorded
 - ember-diameter: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- prefix-tally: static stages S0-S9
@@ -405,7 +399,6 @@ Codes and counts only - no hidden values are logged.
 - stem-harvest: review round 3 recorded
 - stem-harvest: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- ember-floor: static stages S0-S9
@@ -531,7 +524,6 @@ Codes and counts only - no hidden values are logged.
 - ember-partition: review round 3 recorded
 - ember-partition: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- signal-reach: static stages S0-S9
@@ -675,7 +667,6 @@ Codes and counts only - no hidden values are logged.
 - rune-depth: review round 3 recorded
 - rune-depth: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- rune-toll: static stages S0-S9
@@ -739,7 +730,6 @@ Codes and counts only - no hidden values are logged.
 - ebb-road: review round 3 recorded
 - ebb-road: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- climb-rite: static stages S0-S9
@@ -803,7 +793,6 @@ Codes and counts only - no hidden values are logged.
 - lit-combos: review round 3 recorded
 - lit-combos: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- grille-ways: static stages S0-S9
@@ -867,7 +856,6 @@ Codes and counts only - no hidden values are logged.
 - ember-braid: review round 3 recorded
 - ember-braid: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- mark-cover: static stages S0-S9
@@ -931,7 +919,6 @@ Codes and counts only - no hidden values are logged.
 - lantern-watch: review round 3 recorded
 - lantern-watch: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- digit-rite: static stages S0-S9
@@ -995,7 +982,6 @@ Codes and counts only - no hidden values are logged.
 - mask-rite: review round 3 recorded
 - mask-rite: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- row-join: static stages S0-S9
@@ -1019,7 +1005,6 @@ Codes and counts only - no hidden values are logged.
 --- sched-rite: static stages S0-S9
 - sched-rite: S9 FAILED (0 findings); review needed
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- row-join: static stages S0-S9
@@ -1082,5 +1067,193 @@ Codes and counts only - no hidden values are logged.
 - sched-rite: review round 2 recorded
 - sched-rite: review round 3 recorded
 - sched-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- burst-rite: static stages S0-S9
+- burst-rite: S9 passed; S10/S11 pending_judge
+- burst-rite: review round 1 recorded
+- burst-rite: review round 2 recorded
+- burst-rite: review round 3 recorded
+- burst-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- slice-count: static stages S0-S9
+- slice-count: S9 passed; S10/S11 pending_judge
+- slice-count: review round 1 recorded
+- slice-count: review round 2 recorded
+- slice-count: review round 3 recorded
+- slice-count: awaiting_approval (Brighton gate; no approval.toml written here)
+--- miss-count: static stages S0-S9
+- miss-count: S9 passed; S10/S11 pending_judge
+- miss-count: review round 1 recorded
+- miss-count: review round 2 recorded
+- miss-count: review round 3 recorded
+- miss-count: awaiting_approval (Brighton gate; no approval.toml written here)
+--- page-turn: static stages S0-S9
+- page-turn: S9 passed; S10/S11 pending_judge
+- page-turn: review round 1 recorded
+- page-turn: review round 2 recorded
+- page-turn: review round 3 recorded
+- page-turn: awaiting_approval (Brighton gate; no approval.toml written here)
+--- lru-rite: static stages S0-S9
+- lru-rite: S9 passed; S10/S11 pending_judge
+- lru-rite: review round 1 recorded
+- lru-rite: review round 2 recorded
+- lru-rite: review round 3 recorded
+- lru-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- alloc-rite: static stages S0-S9
+- alloc-rite: S9 passed; S10/S11 pending_judge
+- alloc-rite: review round 1 recorded
+- alloc-rite: review round 2 recorded
+- alloc-rite: review round 3 recorded
+- alloc-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- lock-order: static stages S0-S9
+- lock-order: S9 passed; S10/S11 pending_judge
+- lock-order: review round 1 recorded
+- lock-order: review round 2 recorded
+- lock-order: review round 3 recorded
+- lock-order: awaiting_approval (Brighton gate; no approval.toml written here)
+--- wrap-rite: static stages S0-S9
+- wrap-rite: S9 passed; S10/S11 pending_judge
+- wrap-rite: review round 1 recorded
+- wrap-rite: review round 2 recorded
+- wrap-rite: review round 3 recorded
+- wrap-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- quantum-tick: static stages S0-S9
+- quantum-tick: S9 passed; S10/S11 pending_judge
+- quantum-tick: review round 1 recorded
+- quantum-tick: review round 2 recorded
+- quantum-tick: review round 3 recorded
+- quantum-tick: awaiting_approval (Brighton gate; no approval.toml written here)
+--- frame-rite: static stages S0-S9
+- frame-rite: S9 passed; S10/S11 pending_judge
+- frame-rite: review round 1 recorded
+- frame-rite: review round 2 recorded
+- frame-rite: review round 3 recorded
+- frame-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+
+# pack-batch run 2026-11-26
+
+--- dot-rite: static stages S0-S9
+- dot-rite: S9 passed; S10/S11 pending_judge
+- dot-rite: review round 1 recorded
+- dot-rite: review round 2 recorded
+- dot-rite: review round 3 recorded
+- dot-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- top-marks: static stages S0-S9
+- top-marks: S9 passed; S10/S11 pending_judge
+- top-marks: review round 1 recorded
+- top-marks: review round 2 recorded
+- top-marks: review round 3 recorded
+- top-marks: awaiting_approval (Brighton gate; no approval.toml written here)
+--- tally-frames: static stages S0-S9
+- tally-frames: S9 passed; S10/S11 pending_judge
+- tally-frames: review round 1 recorded
+- tally-frames: review round 2 recorded
+- tally-frames: review round 3 recorded
+- tally-frames: awaiting_approval (Brighton gate; no approval.toml written here)
+--- token-window: static stages S0-S9
+- token-window: S9 passed; S10/S11 pending_judge
+- token-window: review round 1 recorded
+- token-window: review round 2 recorded
+- token-window: review round 3 recorded
+- token-window: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rank-gain: static stages S0-S9
+- rank-gain: S9 passed; S10/S11 pending_judge
+- rank-gain: review round 1 recorded
+- rank-gain: review round 2 recorded
+- rank-gain: review round 3 recorded
+- rank-gain: awaiting_approval (Brighton gate; no approval.toml written here)
+--- cluster-step: static stages S0-S9
+- cluster-step: S9 passed; S10/S11 pending_judge
+- cluster-step: review round 1 recorded
+- cluster-step: review round 2 recorded
+- cluster-step: review round 3 recorded
+- cluster-step: awaiting_approval (Brighton gate; no approval.toml written here)
+--- norm-rite: static stages S0-S9
+- norm-rite: S9 passed; S10/S11 pending_judge
+- norm-rite: review round 1 recorded
+- norm-rite: review round 2 recorded
+- norm-rite: review round 3 recorded
+- norm-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- leak-check: static stages S0-S9
+- leak-check: S9 passed; S10/S11 pending_judge
+- leak-check: review round 1 recorded
+- leak-check: review round 2 recorded
+- leak-check: review round 3 recorded
+- leak-check: awaiting_approval (Brighton gate; no approval.toml written here)
+--- cover-pick: static stages S0-S9
+- cover-pick: S9 passed; S10/S11 pending_judge
+- cover-pick: review round 1 recorded
+- cover-pick: review round 2 recorded
+- cover-pick: review round 3 recorded
+- cover-pick: awaiting_approval (Brighton gate; no approval.toml written here)
+--- chunk-toll: static stages S0-S9
+- chunk-toll: S9 passed; S10/S11 pending_judge
+- chunk-toll: review round 1 recorded
+- chunk-toll: review round 2 recorded
+- chunk-toll: review round 3 recorded
+- chunk-toll: awaiting_approval (Brighton gate; no approval.toml written here)
+
+# pack-batch run 2026-11-26
+
+--- route-count: static stages S0-S9
+- route-count: S9 passed; S10/S11 pending_judge
+- route-count: review round 1 recorded
+- route-count: review round 2 recorded
+- route-count: review round 3 recorded
+- route-count: awaiting_approval (Brighton gate; no approval.toml written here)
+--- retry-dedup: static stages S0-S9
+- retry-dedup: S9 passed; S10/S11 pending_judge
+- retry-dedup: review round 1 recorded
+- retry-dedup: review round 2 recorded
+- retry-dedup: review round 3 recorded
+- retry-dedup: awaiting_approval (Brighton gate; no approval.toml written here)
+--- quorum-votes: static stages S0-S9
+- quorum-votes: S9 passed; S10/S11 pending_judge
+- quorum-votes: review round 1 recorded
+- quorum-votes: review round 2 recorded
+- quorum-votes: review round 3 recorded
+- quorum-votes: awaiting_approval (Brighton gate; no approval.toml written here)
+--- header-check: static stages S0-S9
+- header-check: S9 passed; S10/S11 pending_judge
+- header-check: review round 1 recorded
+- header-check: review round 2 recorded
+- header-check: review round 3 recorded
+- header-check: awaiting_approval (Brighton gate; no approval.toml written here)
+--- hop-limit: static stages S0-S9
+- hop-limit: S9 passed; S10/S11 pending_judge
+- hop-limit: review round 1 recorded
+- hop-limit: review round 2 recorded
+- hop-limit: review round 3 recorded
+- hop-limit: awaiting_approval (Brighton gate; no approval.toml written here)
+--- vector-clock: static stages S0-S9
+- vector-clock: S9 passed; S10/S11 pending_judge
+- vector-clock: review round 1 recorded
+- vector-clock: review round 2 recorded
+- vector-clock: review round 3 recorded
+- vector-clock: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rate-gate: static stages S0-S9
+- rate-gate: S9 passed; S10/S11 pending_judge
+- rate-gate: review round 1 recorded
+- rate-gate: review round 2 recorded
+- rate-gate: review round 3 recorded
+- rate-gate: awaiting_approval (Brighton gate; no approval.toml written here)
+--- token-scope: static stages S0-S9
+- token-scope: S9 passed; S10/S11 pending_judge
+- token-scope: review round 1 recorded
+- token-scope: review round 2 recorded
+- token-scope: review round 3 recorded
+- token-scope: awaiting_approval (Brighton gate; no approval.toml written here)
+--- split-rite: static stages S0-S9
+- split-rite: S9 passed; S10/S11 pending_judge
+- split-rite: review round 1 recorded
+- split-rite: review round 2 recorded
+- split-rite: review round 3 recorded
+- split-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- nonce-ward: static stages S0-S9
+- nonce-ward: S9 passed; S10/S11 pending_judge
+- nonce-ward: review round 1 recorded
+- nonce-ward: review round 2 recorded
+- nonce-ward: review round 3 recorded
+- nonce-ward: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.

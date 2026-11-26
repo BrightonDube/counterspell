@@ -1,0 +1,40 @@
+slug = "retry-dedup"
+title = "The Retry Dedup"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["deduplication", "counting", "edge-cases", "systems"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "retry_dedup"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(log) set walk."
+
+[[params]]
+name = "log"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 30, min_cols = 2, max_cols = 2, min = 0, max = 900 },
+]
+
+[[samples]]
+input = [[[1, 5], [2, 5], [3, 7]]]
+expected = 2
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[[0, 4], [1, 4], [2, 4]]]
+expected = 1

@@ -1,0 +1,40 @@
+slug = "nonce-ward"
+title = "The Nonce Ward"
+status = "published"
+difficulty = "hard"
+track = "matrices"
+concepts = ["streaming", "edge-cases", "counting", "systems"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "nonce_ward"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(msgs) high-water sweep."
+
+[[params]]
+name = "msgs"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 40, min_cols = 2, max_cols = 2, min = 0, max = 500 },
+]
+
+[[samples]]
+input = [[[0, 1], [0, 2], [0, 2]]]
+expected = 1
+
+[[samples]]
+input = [[[0, 1], [1, 1], [0, 2]]]
+expected = 0
+
+[[samples]]
+input = [[[0, 3], [0, 1]]]
+expected = 1

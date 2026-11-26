@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Two conditions, both must hold: every required scope granted, and now strictly before expiry."
+
+[[hint]]
+rung = 2
+text = "A token dying at tick t is dead at t — now < expiry, not now <= expiry."
+
+[[hint]]
+rung = 3
+text = "```\nalive = now < expiry\ncovered = all(s in granted for s in required)\nreturn 1 if alive and covered else 0\n```"
+
+[[hint]]
+rung = 4
+text = "Negative expiry is already dead; empty requirements pass when the token lives."

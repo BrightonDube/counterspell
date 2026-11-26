@@ -1,0 +1,43 @@
+slug = "route-count"
+title = "The Route Count"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["graphs", "edge-cases", "counting", "systems"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "route_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n + links) breadth walk."
+
+[[params]]
+name = "n"
+type = "int"
+[[params]]
+name = "links"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 15 }, { type = "matrix", min_rows = 0, max_rows = 24, min_cols = 2, max_cols = 2, min = 0, max = 15 },
+]
+
+[[samples]]
+input = [4, [[0, 1], [1, 2]]]
+expected = 2
+
+[[samples]]
+input = [3, []]
+expected = 0
+
+[[samples]]
+input = [1, []]
+expected = 0
