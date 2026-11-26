@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The join has two conditions: keys equal AND the key is a real one."
+
+[[hint]]
+rung = 2
+text = "Marked rows are absent for joining — `-1 == -1` still does not pair."
+
+[[hint]]
+rung = 3
+text = "```\ncount += x[0] == y[0] and x[0] != -1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the joined-pair count."

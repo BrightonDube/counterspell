@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Every matching pair is a joined row — duplicates multiply, they do not merge."
+
+[[hint]]
+rung = 2
+text = "Bucket each side by key; the join size is the sum of count_a[k] * count_b[k]."
+
+[[hint]]
+rung = 3
+text = "```\nfor row_a in a:\n  for row_b in b:\n    count += row_a[0] == row_b[0]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the joined-row count."

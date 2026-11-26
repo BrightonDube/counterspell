@@ -307,3 +307,54 @@ Ten packs on paired-state DP: grille ways, ember grids, nook cells, shelf tolls,
 | grille-toll | The Grille Toll | medium | matrices |
 | vault-split | The Vault Split | hard | arrays |
 | ember-braid | The Ember Braid | hard | strings |
+## Batch 15 — greedy methods and intervals
+
+Ten packs on exchange arguments, scheduling, merging and coverage: mark covers, nest counts, gap blocks, first frees, rush slots, cover spans, relay gaps, idle stretches, double books and lantern watches.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| mark-cover | The Mark Cover | easy | matrices |
+| nest-count | The Nest Count | easy | matrices |
+| gap-blocks | The Gap Blocks | easy | matrices |
+| first-free | The First Free | easy | matrices |
+| rush-slots | The Rush Slots | medium | matrices |
+| cover-span | The Cover Span | medium | matrices |
+| relay-gap | The Relay Gap | medium | matrices |
+| idle-stretch | The Idle Stretch | medium | matrices |
+| double-book | The Double Book | hard | matrices |
+| lantern-watch | The Lantern Watch | hard | matrices |
+
+## Batch 16 — mathematics, geometry and bits
+
+Ten packs on number properties, coordinate reasoning and compact binary state: digit rites, bit counts, quad marks, mod tolls, prime wards, collinear marks, bit isolates, rect spans, corner turns and mask rites.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| digit-rite | The Digit Rite | easy | math |
+| bit-count | The Bit Count | easy | math |
+| quad-mark | The Quad Mark | easy | math |
+| mod-toll | The Mod Toll | easy | math |
+| prime-ward | The Prime Ward | medium | math |
+| collinear-marks | The Collinear Marks | medium | math |
+| bit-isolate | The Bit Isolate | medium | math |
+| rect-span | The Rect Span | medium | math |
+| corner-turns | The Corner Turns | hard | math |
+| mask-rite | The Mask Rite | hard | math |
+
+## Batch 17 — databases, SQL and data modelling
+
+Ten packs on bounded relational records: joins, grouping, keys, transaction histories, serialisability and query-planning reasoning. No live database service.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| row-join | The Row Join | easy | databases |
+| null-marks | The Null Marks | easy | databases |
+| key-count | The Key Count | easy | databases |
+| key-last | The Key Last | easy | databases |
+| group-tally | The Group Tally | medium | databases |
+| join-span | The Join Span | medium | databases |
+| depend-rite | The Depend Rite | medium | databases |
+| null-join | The Null Join | medium | databases |
+| serial-check | The Serial Check | hard | databases |
+| sched-rite | The Sched Rite | hard | databases |
+

@@ -141,3 +141,43 @@ name = "Backtracking"
 [[concepts]]
 slug = "graphs"
 name = "Graphs"
+<<<<<<< Updated upstream
+=======
+
+[[concepts]]
+slug = "math"
+name = "Mathematics"
+
+[[concepts]]
+slug = "digits"
+name = "Digit Manipulation"
+
+[[concepts]]
+slug = "bits"
+name = "Bit Manipulation"
+
+[[concepts]]
+slug = "geometry"
+name = "Geometry"
+
+[[concepts]]
+slug = "modular"
+name = "Modular Arithmetic"
+
+[[concepts]]
+slug = "primes"
+name = "Primes and Sieves"
+
+[[concepts]]
+slug = "intervals"
+name = "Intervals"
+
+[[concepts]]
+
+
+[[concepts]]
+slug = "databases"
+name = "Databases and Relations"
+
+[[concepts]]
+

@@ -1,0 +1,43 @@
+slug = "join-span"
+title = "The Join Span"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["databases", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "join_span"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(a*b) conditional join count."
+
+[[params]]
+name = "a"
+type = "list[list[int]]"
+[[params]]
+name = "b"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 30 }, { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 30 },
+]
+
+[[samples]]
+input = [[[1, 10], [1, 20]], [[1, 15], [1, 25]]]
+expected = 3
+
+[[samples]]
+input = [[[2, 5]], [[2, 4]]]
+expected = 0
+
+[[samples]]
+input = [[[1, 1]], [[1, 2]]]
+expected = 1

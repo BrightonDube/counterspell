@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk in order and let each hit overwrite — the latest write survives."
+
+[[hint]]
+rung = 2
+text = "An absent key never writes; the answer is the -1 mark."
+
+[[hint]]
+rung = 3
+text = "```\nhit = -1\nfor key, v in rows: if key == k: hit = v\nreturn hit\n```"
+
+[[hint]]
+rung = 4
+text = "Return the standing value, or -1."

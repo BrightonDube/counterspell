@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Keys repeat freely — a set holds each key once."
+
+[[hint]]
+rung = 2
+text = "The value column is a distraction here."
+
+[[hint]]
+rung = 3
+text = "```\nreturn len({k for k, v in rows})\n```"
+
+[[hint]]
+rung = 4
+text = "Return the distinct-key count."
