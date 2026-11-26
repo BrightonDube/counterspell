@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "dp[i] is the cheapest toll covering the first i tokens."
+
+[[hint]]
+rung = 2
+text = "Each cut ends a chunk: dp[i] = min over j in [i-w, i) of dp[j] + base + spread(tokens[j..i])."
+
+[[hint]]
+rung = 3
+text = "```\nw = max(w, 1)\ndp = [0] + [10**18] * n\nfor i in 1..n: for j in max(0, i-w)..i-1: dp[i] = min(dp[i], dp[j] + base + max(tokens[j:i]) - min(tokens[j:i]))\n```"
+
+[[hint]]
+rung = 4
+text = "An empty stream pays nothing; a forbidden width still cuts singles."

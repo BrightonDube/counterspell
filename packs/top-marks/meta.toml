@@ -1,0 +1,43 @@
+slug = "top-marks"
+title = "The Top Marks"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["arrays", "math", "edge-cases", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "top_marks"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) sort then prefix."
+
+[[params]]
+name = "scores"
+type = "list[int]"
+[[params]]
+name = "k"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = -100, max = 100 }, { type = "int", min = 0, max = 30 },
+]
+
+[[samples]]
+input = [[3, 9, 1, 7], 2]
+expected = 16
+
+[[samples]]
+input = [[5, 5, 5], 4]
+expected = 15
+
+[[samples]]
+input = [[], 3]
+expected = 0

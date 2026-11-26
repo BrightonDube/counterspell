@@ -1,0 +1,43 @@
+slug = "dot-rite"
+title = "The Dot Rite"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["math", "counting", "edge-cases", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "dot_sparse"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len a + len b) merge on shared positions."
+
+[[params]]
+name = "a"
+type = "list[list[int]]"
+[[params]]
+name = "b"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = -40, max = 40 }, { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = -40, max = 40 },
+]
+
+[[samples]]
+input = [[[0, 3], [2, 5]], [[0, 4], [1, 7], [2, 1]]]
+expected = 17
+
+[[samples]]
+input = [[], [[0, 1]]]
+expected = 0
+
+[[samples]]
+input = [[[3, 2]], [[0, 9]]]
+expected = 0

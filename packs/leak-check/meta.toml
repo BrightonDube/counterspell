@@ -1,0 +1,43 @@
+slug = "leak-check"
+title = "The Leak Check"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "edge-cases", "counting", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "leak_check"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n + m) set intersection."
+
+[[params]]
+name = "train"
+type = "list[int]"
+[[params]]
+name = "test"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 999 }, { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 999 },
+]
+
+[[samples]]
+input = [[1, 2, 3], [3, 4]]
+expected = 1
+
+[[samples]]
+input = [[1, 2], [3, 4]]
+expected = 0
+
+[[samples]]
+input = [[], [1]]
+expected = 0

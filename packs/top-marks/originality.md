@@ -1,0 +1,14 @@
+## Idea
+Sum of the k largest marks — a sorted-strip skim.
+
+## Why it is original
+The scribe framing, the fewer-than-k rule and the case set were written for this pack.
+
+## Patterns used
+Sort descending, then take a prefix sum.
+
+## Checklist answers
+The wording is my own (AU-1). The function takes `list[int]` and `int` and returns `int` (AU-2). Constraints match the schema (AU-3). The examples stay one line each (AU-4). Hidden cases cover empty strips, duplicates and negative marks (AU-5, AU-6). Three ghosts carry hand-traced values (AU-7). Four hint rungs follow the ladder (AU-8, AU-9). The complexity note states O(n log n) (AU-10). Reviewer items were read and met (AU-11).
+
+## Third-party text avoided
+No third-party problem statement was opened or quoted while drafting.

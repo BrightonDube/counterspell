@@ -1,0 +1,46 @@
+slug = "cluster-step"
+title = "The Cluster Step"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "math", "edge-cases", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "cluster_step"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(points * centroids) reassignment count."
+
+[[params]]
+name = "points"
+type = "list[int]"
+[[params]]
+name = "centroids"
+type = "list[int]"
+[[params]]
+name = "labels"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = -50, max = 50 }, { type = "int_array", min_len = 0, max_len = 8, min = -50, max = 50 }, { type = "int_array", min_len = 0, max_len = 24, min = -1, max = 7 },
+]
+
+[[samples]]
+input = [[0, 10, 20], [0, 20], [0, 0, 1]]
+expected = 0
+
+[[samples]]
+input = [[0, 10, 20], [0, 20], [1, 1, 1]]
+expected = 2
+
+[[samples]]
+input = [[5], [5], [0]]
+expected = 0

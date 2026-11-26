@@ -1,0 +1,40 @@
+slug = "tally-frames"
+title = "The Tally Frames"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["matrices", "counting", "edge-cases", "ai"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "tally_frames"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(rows) diagonal walk."
+
+[[params]]
+name = "m"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 4, min_cols = 0, max_cols = 4, min = 0, max = 40 },
+]
+
+[[samples]]
+input = [[[7, 2], [1, 9]]]
+expected = 16
+
+[[samples]]
+input = [[[0, 0], [0, 0]]]
+expected = 0
+
+[[samples]]
+input = [[[5]]]
+expected = 5

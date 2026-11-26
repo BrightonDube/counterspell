@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each position's weight is how far it sits from the depth cut: entry i earns rels[i] * (k - i)."
+
+[[hint]]
+rung = 2
+text = "Only positions i < min(k, len(rels)) earn anything."
+
+[[hint]]
+rung = 3
+text = "```\nreturn sum(r * (k - i) for i, r in enumerate(rels[:k]))\n```"
+
+[[hint]]
+rung = 4
+text = "A zero depth or empty strip earns nothing — the loop simply never runs."

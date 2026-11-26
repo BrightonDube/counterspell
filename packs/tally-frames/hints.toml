@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Only cells where the row and column agree count — walk the diagonal."
+
+[[hint]]
+rung = 2
+text = "Sum m[i][i] for each row index the row actually reaches."
+
+[[hint]]
+rung = 3
+text = "```\nreturn sum(m[i][i] for i in range(len(m)) if i < len(m[i]))\n```"
+
+[[hint]]
+rung = 4
+text = "A short or ragged row simply contributes nothing past its width."
