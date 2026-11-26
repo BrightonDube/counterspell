@@ -1,0 +1,46 @@
+slug = "wide-ferry"
+title = "The Wide Ferry"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["graphs", "counting", "heaps", "greedy", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "ferry_load"
+returns = "int"
+comparator = "exact"
+complexity_note = "O((n + arcs) log n) maximin walk."
+
+[[params]]
+name = "edges"
+type = "list[list[int]]"
+[[params]]
+name = "weights"
+type = "list[int]"
+[[params]]
+name = "n"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 24, min_cols = 2, max_cols = 2, min = 0, max = 8 }, { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 100000 }, { type = "int", min = 0, max = 8 },
+]
+
+[[samples]]
+input = [[[0, 1], [1, 2]], [5, 7], 3]
+expected = 5
+
+[[samples]]
+input = [[[0, 2]], [4], 3]
+expected = 4
+
+[[samples]]
+input = [[[1, 2]], [9], 3]
+expected = -1

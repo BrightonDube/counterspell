@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Count each priced arc whose toll is at most the cap — the cap is inclusive."
+
+[[hint]]
+rung = 2
+text = "Spare prices without arcs, and arcs without prices, count for nothing."
+
+[[hint]]
+rung = 3
+text = "```\ncount = 0\nfor k in range(min(len(edges), len(weights))):\n  if weights[k] <= t: count += 1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the count."

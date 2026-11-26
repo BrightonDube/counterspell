@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Union the two ends of every arc priced at most the cap; count the roots left over."
+
+[[hint]]
+rung = 2
+text = "Heavy arcs join nothing — a lone node is still an isle of one."
+
+[[hint]]
+rung = 3
+text = "```\nparent = range(n)\nunion ends of arcs with weights[k] <= t\ncount distinct roots\n```"
+
+[[hint]]
+rung = 4
+text = "Return the isle count."

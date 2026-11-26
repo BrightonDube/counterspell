@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Take the cheapest arc that joins two parts, until every node shares one part."
+
+[[hint]]
+rung = 2
+text = "If some node stays alone when the arcs run out, the web cannot be joined — answer -1."
+
+[[hint]]
+rung = 3
+text = "```\nsort priced arcs by toll\nunion ends, keep the toll when parts merge\nused == n-1 or -1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the joining toll, or -1."

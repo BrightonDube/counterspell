@@ -1,0 +1,14 @@
+## Idea
+The simplest weighted-web question — the toll ledger total — written to teach the paired-list contract.
+
+## Why it is original
+The toll wording and the price-by-position contract were written for this pack.
+
+## Patterns used
+A single aligned scan of the two lists.
+
+## Checklist answers
+The wording is my own (AU-1). The function uses two `list[list[int]]`-compatible params and an `int`, and returns `int` (AU-2). Constraints match the schema (AU-3). The examples stay one line each (AU-4). Hidden cases cover empty lists, mismatched lengths, loops and big tolls (AU-5, AU-6). Three ghosts carry hand-traced values (AU-7). Four hint rungs follow the ladder (AU-8, AU-9). The complexity note states O(arcs) (AU-10). Reviewer items were read and met (AU-11).
+
+## Third-party text avoided
+No third-party problem statement was opened or quoted while drafting.

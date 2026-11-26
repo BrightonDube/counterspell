@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk cheapest-first from node 0, keeping the best toll per node."
+
+[[hint]]
+rung = 2
+text = "Stale ledger entries can be skipped; doubled arcs just offer two prices."
+
+[[hint]]
+rung = 3
+text = "```\ndist[0] = 0; heap of (toll, node)\npop, relax each priced arc both ways\nreturn dist[n-1] or -1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the cheapest toll, or -1."

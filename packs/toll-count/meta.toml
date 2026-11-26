@@ -1,0 +1,46 @@
+slug = "toll-count"
+title = "The Toll Count"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["graphs", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "toll_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(arcs) capped count."
+
+[[params]]
+name = "edges"
+type = "list[list[int]]"
+[[params]]
+name = "weights"
+type = "list[int]"
+[[params]]
+name = "t"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 24, min_cols = 2, max_cols = 2, min = 0, max = 8 }, { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 100000 }, { type = "int", min = 0, max = 100000 },
+]
+
+[[samples]]
+input = [[[0, 1], [1, 2], [2, 3]], [5, 15, 25], 10]
+expected = 1
+
+[[samples]]
+input = [[[0, 1]], [10], 10]
+expected = 1
+
+[[samples]]
+input = [[], [], 10]
+expected = 0

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Keep the smallest price among arcs where either endpoint is node 0."
+
+[[hint]]
+rung = 2
+text = "A self-loop on node 0 counts, and a doubled arc can carry two different prices."
+
+[[hint]]
+rung = 3
+text = "```\nbest = None\nfor each priced arc (a, b, w):\n  if a == 0 or b == 0: best = min(best, w)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the cheapest toll, or -1."

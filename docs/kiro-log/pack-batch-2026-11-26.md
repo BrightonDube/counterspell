@@ -676,3 +676,195 @@ Codes and counts only - no hidden values are logged.
 - rune-depth: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- rune-toll: static stages S0-S9
+- rune-toll: S9 passed; S10/S11 pending_judge
+- rune-toll: review round 1 recorded
+- rune-toll: review round 2 recorded
+- rune-toll: review round 3 recorded
+- rune-toll: awaiting_approval (Brighton gate; no approval.toml written here)
+--- near-mark: static stages S0-S9
+- near-mark: S9 passed; S10/S11 pending_judge
+- near-mark: review round 1 recorded
+- near-mark: review round 2 recorded
+- near-mark: review round 3 recorded
+- near-mark: awaiting_approval (Brighton gate; no approval.toml written here)
+--- toll-count: static stages S0-S9
+- toll-count: S9 passed; S10/S11 pending_judge
+- toll-count: review round 1 recorded
+- toll-count: review round 2 recorded
+- toll-count: review round 3 recorded
+- toll-count: awaiting_approval (Brighton gate; no approval.toml written here)
+--- light-isles: static stages S0-S9
+- light-isles: S9 passed; S10/S11 pending_judge
+- light-isles: review round 1 recorded
+- light-isles: review round 2 recorded
+- light-isles: review round 3 recorded
+- light-isles: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-road: static stages S0-S9
+- ember-road: S9 passed; S10/S11 pending_judge
+- ember-road: review round 1 recorded
+- ember-road: review round 2 recorded
+- ember-road: review round 3 recorded
+- ember-road: awaiting_approval (Brighton gate; no approval.toml written here)
+--- wood-span: static stages S0-S9
+- wood-span: S9 passed; S10/S11 pending_judge
+- wood-span: review round 1 recorded
+- wood-span: review round 2 recorded
+- wood-span: review round 3 recorded
+- wood-span: awaiting_approval (Brighton gate; no approval.toml written here)
+--- toll-hop: static stages S0-S9
+- toll-hop: S9 passed; S10/S11 pending_judge
+- toll-hop: review round 1 recorded
+- toll-hop: review round 2 recorded
+- toll-hop: review round 3 recorded
+- toll-hop: awaiting_approval (Brighton gate; no approval.toml written here)
+--- wide-ferry: static stages S0-S9
+- wide-ferry: S9 passed; S10/S11 pending_judge
+- wide-ferry: review round 1 recorded
+- wide-ferry: review round 2 recorded
+- wide-ferry: review round 3 recorded
+- wide-ferry: awaiting_approval (Brighton gate; no approval.toml written here)
+--- chain-toll: static stages S0-S9
+- chain-toll: S9 passed; S10/S11 pending_judge
+- chain-toll: review round 1 recorded
+- chain-toll: review round 2 recorded
+- chain-toll: review round 3 recorded
+- chain-toll: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ebb-road: static stages S0-S9
+- ebb-road: S9 passed; S10/S11 pending_judge
+- ebb-road: review round 1 recorded
+- ebb-road: review round 2 recorded
+- ebb-road: review round 3 recorded
+- ebb-road: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- climb-rite: static stages S0-S9
+- climb-rite: S9 passed; S10/S11 pending_judge
+- climb-rite: review round 1 recorded
+- climb-rite: review round 2 recorded
+- climb-rite: review round 3 recorded
+- climb-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- toll-stairs: static stages S0-S9
+- toll-stairs: S9 passed; S10/S11 pending_judge
+- toll-stairs: review round 1 recorded
+- toll-stairs: review round 2 recorded
+- toll-stairs: review round 3 recorded
+- toll-stairs: awaiting_approval (Brighton gate; no approval.toml written here)
+--- calm-gaps: static stages S0-S9
+- calm-gaps: S9 passed; S10/S11 pending_judge
+- calm-gaps: review round 1 recorded
+- calm-gaps: review round 2 recorded
+- calm-gaps: review round 3 recorded
+- calm-gaps: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ward-rows: static stages S0-S9
+- ward-rows: S9 passed; S10/S11 pending_judge
+- ward-rows: review round 1 recorded
+- ward-rows: review round 2 recorded
+- ward-rows: review round 3 recorded
+- ward-rows: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ring-haul: static stages S0-S9
+- ring-haul: S9 passed; S10/S11 pending_judge
+- ring-haul: review round 1 recorded
+- ring-haul: review round 2 recorded
+- ring-haul: review round 3 recorded
+- ring-haul: awaiting_approval (Brighton gate; no approval.toml written here)
+--- candle-decode: static stages S0-S9
+- candle-decode: S9 passed; S10/S11 pending_judge
+- candle-decode: review round 1 recorded
+- candle-decode: review round 2 recorded
+- candle-decode: review round 3 recorded
+- candle-decode: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-slate: static stages S0-S9
+- ember-slate: S9 passed; S10/S11 pending_judge
+- ember-slate: review round 1 recorded
+- ember-slate: review round 2 recorded
+- ember-slate: review round 3 recorded
+- ember-slate: awaiting_approval (Brighton gate; no approval.toml written here)
+--- coin-rite: static stages S0-S9
+- coin-rite: S9 passed; S10/S11 pending_judge
+- coin-rite: review round 1 recorded
+- coin-rite: review round 2 recorded
+- coin-rite: review round 3 recorded
+- coin-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-words: static stages S0-S9
+- ember-words: S9 passed; S10/S11 pending_judge
+- ember-words: review round 1 recorded
+- ember-words: review round 2 recorded
+- ember-words: review round 3 recorded
+- ember-words: awaiting_approval (Brighton gate; no approval.toml written here)
+--- lit-combos: static stages S0-S9
+- lit-combos: S9 passed; S10/S11 pending_judge
+- lit-combos: review round 1 recorded
+- lit-combos: review round 2 recorded
+- lit-combos: review round 3 recorded
+- lit-combos: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- grille-ways: static stages S0-S9
+- grille-ways: S9 passed; S10/S11 pending_judge
+- grille-ways: review round 1 recorded
+- grille-ways: review round 2 recorded
+- grille-ways: review round 3 recorded
+- grille-ways: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-grid: static stages S0-S9
+- ember-grid: S9 passed; S10/S11 pending_judge
+- ember-grid: review round 1 recorded
+- ember-grid: review round 2 recorded
+- ember-grid: review round 3 recorded
+- ember-grid: awaiting_approval (Brighton gate; no approval.toml written here)
+--- nook-cells: static stages S0-S9
+- nook-cells: S9 passed; S10/S11 pending_judge
+- nook-cells: review round 1 recorded
+- nook-cells: review round 2 recorded
+- nook-cells: review round 3 recorded
+- nook-cells: awaiting_approval (Brighton gate; no approval.toml written here)
+--- shelf-toll: static stages S0-S9
+- shelf-toll: S9 passed; S10/S11 pending_judge
+- shelf-toll: review round 1 recorded
+- shelf-toll: review round 2 recorded
+- shelf-toll: review round 3 recorded
+- shelf-toll: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-echo: static stages S0-S9
+- ember-echo: S9 passed; S10/S11 pending_judge
+- ember-echo: review round 1 recorded
+- ember-echo: review round 2 recorded
+- ember-echo: review round 3 recorded
+- ember-echo: awaiting_approval (Brighton gate; no approval.toml written here)
+--- scrawl-edit: static stages S0-S9
+- scrawl-edit: S9 passed; S10/S11 pending_judge
+- scrawl-edit: review round 1 recorded
+- scrawl-edit: review round 2 recorded
+- scrawl-edit: review round 3 recorded
+- scrawl-edit: awaiting_approval (Brighton gate; no approval.toml written here)
+--- pack-shelf: static stages S0-S9
+- pack-shelf: S9 passed; S10/S11 pending_judge
+- pack-shelf: review round 1 recorded
+- pack-shelf: review round 2 recorded
+- pack-shelf: review round 3 recorded
+- pack-shelf: awaiting_approval (Brighton gate; no approval.toml written here)
+--- grille-toll: static stages S0-S9
+- grille-toll: S9 passed; S10/S11 pending_judge
+- grille-toll: review round 1 recorded
+- grille-toll: review round 2 recorded
+- grille-toll: review round 3 recorded
+- grille-toll: awaiting_approval (Brighton gate; no approval.toml written here)
+--- vault-split: static stages S0-S9
+- vault-split: S9 passed; S10/S11 pending_judge
+- vault-split: review round 1 recorded
+- vault-split: review round 2 recorded
+- vault-split: review round 3 recorded
+- vault-split: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-braid: static stages S0-S9
+- ember-braid: S9 passed; S10/S11 pending_judge
+- ember-braid: review round 1 recorded
+- ember-braid: review round 2 recorded
+- ember-braid: review round 3 recorded
+- ember-braid: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Track the best toll per (node, hops used) — the cap makes plain distances lie."
+
+[[hint]]
+rung = 2
+text = "A dearer direct arc can beat a cheap detour when the hops run out."
+
+[[hint]]
+rung = 3
+text = "```\ndist[node][hops]; heap of (toll, node, hops)\nrelax while hops < k\nreturn min over hops at n-1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the capped cheapest toll, or -1."
