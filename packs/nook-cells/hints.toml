@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Blocked cells carry 0 ways — they kill every path through them."
+
+[[hint]]
+rung = 2
+text = "A blocked start or end zeroes the whole nook."
+
+[[hint]]
+rung = 3
+text = "```\nd[i][j] = 0 if grid[i][j] == 0\nelse (i==0 and j==0 ? 1 : d[i-1][j] + d[i][j-1])\nreturn d[-1][-1]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the crossing count."

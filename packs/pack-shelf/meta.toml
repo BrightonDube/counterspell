@@ -1,0 +1,43 @@
+slug = "pack-shelf"
+title = "The Pack Shelf"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["greedy", "edge-cases", "recursion", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "pack_worth"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(items × cap) descending-capacity table."
+
+[[params]]
+name = "items"
+type = "list[list[int]]"
+[[params]]
+name = "cap"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 12, min_cols = 2, max_cols = 2, min = 1, max = 60 }, { type = "int", min = 0, max = 60 },
+]
+
+[[samples]]
+input = [[[1, 1]], 1]
+expected = 1
+
+[[samples]]
+input = [[[2, 3], [3, 4], [4, 5]], 5]
+expected = 7
+
+[[samples]]
+input = [[[5, 10]], 3]
+expected = 0

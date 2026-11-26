@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each cell's count is the sum of the cell above and the cell left."
+
+[[hint]]
+rung = 2
+text = "The top row and left column each have exactly one way in."
+
+[[hint]]
+rung = 3
+text = "```\nd[0][*] = d[*][0] = 1\nd[i][j] = d[i-1][j] + d[i][j-1]\nreturn d[rows-1][cols-1]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the step-order count."

@@ -1,0 +1,40 @@
+slug = "vault-split"
+title = "The Vault Split"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["greedy", "edge-cases", "recursion", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "split_diff"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len × sum) reachable table, best under half."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = 1, max = 100 },
+]
+
+[[samples]]
+input = [[1, 2, 7]]
+expected = 4
+
+[[samples]]
+input = [[1, 5, 11, 5]]
+expected = 0
+
+[[samples]]
+input = [[7, 3]]
+expected = 4

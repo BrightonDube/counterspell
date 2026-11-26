@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each pair of prefixes: equal letters extend the echo by one; otherwise keep the better drop."
+
+[[hint]]
+rung = 2
+text = "The table borders — any prefix against an empty scrawl — echo nothing."
+
+[[hint]]
+rung = 3
+text = "```\nd[i][j] = d[i-1][j-1]+1 if first[i]==second[j]\nelse max(d[i-1][j], d[i][j-1])\nreturn d[n][m]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the echo length."

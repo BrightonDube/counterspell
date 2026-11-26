@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each cell's cheapest toll is its own price plus the cheaper feeder — above or left."
+
+[[hint]]
+rung = 2
+text = "The first row and column have only one feeder each."
+
+[[hint]]
+rung = 3
+text = "```\nd[0][0] = grid[0][0]\nd[i][j] = grid[i][j] + min(d[i-1][j] if i, d[i][j-1] if j)\nreturn d[-1][-1]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the cheapest toll."

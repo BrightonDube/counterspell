@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The best share is the largest reachable sum at most half the total — the other keeper holds the rest."
+
+[[hint]]
+rung = 2
+text = "Walk each capacity downward so a mark is never spent twice."
+
+[[hint]]
+rung = 3
+text = "```\nd[0] = true\nfor m: for i from half down to m: d[i] |= d[i-m]\nanswer = total - 2*best\n```"
+
+[[hint]]
+rung = 4
+text = "Return the smallest share difference."

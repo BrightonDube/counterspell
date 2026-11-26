@@ -1,0 +1,43 @@
+slug = "grille-ways"
+title = "The Grille Ways"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["counting", "edge-cases", "recursion"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "grille_ways"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(rows × cols) additive table."
+
+[[params]]
+name = "rows"
+type = "int"
+[[params]]
+name = "cols"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 10 }, { type = "int", min = 0, max = 10 },
+]
+
+[[samples]]
+input = [1, 1]
+expected = 1
+
+[[samples]]
+input = [2, 2]
+expected = 2
+
+[[samples]]
+input = [3, 3]
+expected = 6
