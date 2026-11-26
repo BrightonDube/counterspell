@@ -9,7 +9,7 @@
 | Difficulty | hard |
 | Track | `arrays` |
 | Entry | `chunk_toll` |
-| Content hash | `6eae5d83a9a35dcf40aa1355422a7ac0c4b207ab81a81f52c66bc1009c97c8f0` |
+| Content hash | `6c3667ec6e153c51403afe7ac584b2e2846c95c4d457b39ea4b1d1ea7efe6778` |
 
 ## Mechanic
 

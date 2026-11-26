@@ -1,0 +1,46 @@
+slug = "rate-gate"
+title = "The Rate Gate"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["systems", "simulation", "edge-cases", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "rate_gate"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(events) bucket sweep."
+
+[[params]]
+name = "events"
+type = "list[list[int]]"
+[[params]]
+name = "capacity"
+type = "int"
+[[params]]
+name = "refill"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 30, min_cols = 2, max_cols = 2, min = 0, max = 200 }, { type = "int", min = 0, max = 60 }, { type = "int", min = 0, max = 60 },
+]
+
+[[samples]]
+input = [[[0, 2], [1, 2], [2, 2]], 3, 1]
+expected = 2
+
+[[samples]]
+input = [[[0, 5]], 3, 1]
+expected = 0
+
+[[samples]]
+input = [[[0, 4], [4, 4]], 4, 1]
+expected = 2

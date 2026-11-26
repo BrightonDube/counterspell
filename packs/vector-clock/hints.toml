@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Compare componentwise — track whether a ever fell behind and whether it ever ran ahead."
+
+[[hint]]
+rung = 2
+text = "One pass: flag less when a[i] < b[i], flag more when a[i] > b[i]. Both flags mean concurrent."
+
+[[hint]]
+rung = 3
+text = "```\nless = any(x < y for x, y in zip(a, b))\nmore = any(x > y for x, y in zip(a, b))\n```"
+
+[[hint]]
+rung = 4
+text = "less+more -> 2; less only -> -1; more only -> 1; neither -> 0."

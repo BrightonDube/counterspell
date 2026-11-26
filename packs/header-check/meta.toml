@@ -1,0 +1,40 @@
+slug = "header-check"
+title = "The Header Check"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["edge-cases", "systems", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "header_check"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(1) bound checks."
+
+[[params]]
+name = "env"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 4, max_len = 4, min = -1, max = 70000 },
+]
+
+[[samples]]
+input = [[1, 5, 10, 100]]
+expected = 1
+
+[[samples]]
+input = [[3, 5, 10, 100]]
+expected = 0
+
+[[samples]]
+input = [[1, 5, -1, 100]]
+expected = 0

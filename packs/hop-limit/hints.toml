@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A packet crossing a link spends one life — depth in the walk is the cost."
+
+[[hint]]
+rung = 2
+text = "BFS from 0 keeping each tower's depth; only expand towers whose depth is below ttl."
+
+[[hint]]
+rung = 3
+text = "```\ndist = {0: 0}; q = [0]\nwhile q: u = q.pop(0)\n  for v in adj[u]: if v not in dist and dist[u] < ttl: dist[v] = dist[u]+1; q.append(v)\n```"
+
+[[hint]]
+rung = 4
+text = "Return len(dist) - 1 — the source tower is not counted."

@@ -9,11 +9,11 @@
 | Difficulty | medium |
 | Track | `arrays` |
 | Entry | `clock_cmp` |
-| Content hash | `bc03dc530808ba147abc07ee296f1eecb0b78e2c559d2dc608ecdeb2eef7dca5` |
+| Content hash | `f3f8efb5a5e421bc2deb34408fe6351c8a92949c6013a3b19fd4bf733703e9cf` |
 
 ## Mechanic
 
-Component-wise vector-clock merge for causality tracking.
+Vector-clock comparison — before, after, equal or concurrent.
 
 ## Review basis
 

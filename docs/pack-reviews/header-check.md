@@ -9,11 +9,11 @@
 | Difficulty | easy |
 | Track | `arrays` |
 | Entry | `header_check` |
-| Content hash | `b7f9ee2b82c8b3b993406f14b4cc5c89026be0a0a5bce3c0dbf5d80f5eabf6f5` |
+| Content hash | `048cf083cfe50e1883de953b41bcc577c570ccb2d104396125a65c7ad1e374b2` |
 
 ## Mechanic
 
-Allowlist header validation — required names present, no forbidden names.
+Protocol header validation — fields must sit inside their ranges.
 
 ## Review basis
 

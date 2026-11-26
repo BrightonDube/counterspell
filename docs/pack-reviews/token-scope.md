@@ -9,11 +9,11 @@
 | Difficulty | medium |
 | Track | `arrays` |
 | Entry | `scope_ok` |
-| Content hash | `f16940735edbbdb8a2355516c55c74abfd5cfcb3d4628393824adda16c6c24fc` |
+| Content hash | `84ccfee4ac0f77b0a151a67ed0b17f3a52274f031d6b6345de5b00ca3fd0d1b1` |
 
 ## Mechanic
 
-Scope-set containment — checking a token's grants cover the required scope.
+Scoped-token check — expiry plus required-scope coverage.
 
 ## Review basis
 

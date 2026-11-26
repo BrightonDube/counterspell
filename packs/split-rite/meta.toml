@@ -1,0 +1,46 @@
+slug = "split-rite"
+title = "The Split Rite"
+status = "published"
+difficulty = "hard"
+track = "matrices"
+concepts = ["graphs", "edge-cases", "counting", "systems"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "split_rite"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n + links) component walk."
+
+[[params]]
+name = "n"
+type = "int"
+[[params]]
+name = "links"
+type = "list[list[int]]"
+[[params]]
+name = "down"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 15 }, { type = "matrix", min_rows = 0, max_rows = 24, min_cols = 2, max_cols = 2, min = 0, max = 15 }, { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 23 },
+]
+
+[[samples]]
+input = [6, [[0, 1], [1, 2], [2, 0], [3, 4], [4, 5], [5, 3], [2, 3]], [6]]
+expected = 0
+
+[[samples]]
+input = [7, [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 4], [3, 4]], [7]]
+expected = 1
+
+[[samples]]
+input = [5, [[0, 1], [1, 2], [2, 3], [3, 4]], []]
+expected = 1

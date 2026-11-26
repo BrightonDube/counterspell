@@ -9,11 +9,11 @@
 | Difficulty | easy |
 | Track | `matrices` |
 | Entry | `retry_dedup` |
-| Content hash | `efec49759156019e4722adbea176de5224e4ff624eb1a2f73afc4eed64302818` |
+| Content hash | `e18c16c300d572a60994a0061379750faa726dc3c4d3f78284b84e0e4cde48f1` |
 
 ## Mechanic
 
-Idempotent retry dedup — counting distinct accepted keys across delivery attempts.
+Retry deduplication — count distinct rite marks in a retried log.
 
 ## Review basis
 

@@ -9,11 +9,11 @@
 | Difficulty | hard |
 | Track | `matrices` |
 | Entry | `split_rite` |
-| Content hash | `9b961177563f86f9c26885b38bad39168a71d6bbf5f3a04a2c9161bedfe1659f` |
+| Content hash | `3d2e6abc9f4367ce23e984ca5a0fa0467801fd24104ac7ef2376d7eb3adbf98f` |
 
 ## Mechanic
 
-Partition-aware quorum — which isle still holds a strict majority after splits.
+Post-failure partition quorum — count components holding strict majority.
 
 ## Review basis
 

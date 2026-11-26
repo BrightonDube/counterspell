@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Build an adjacency list, then walk from tower 0 marking what you reach."
+
+[[hint]]
+rung = 2
+text = "A queue works: start with [0]; pop a tower, push every unmarked neighbour, counting each new mark."
+
+[[hint]]
+rung = 3
+text = "```\nadj = {i: [] for i in range(n)}\nfor a, b in links: adj[a].append(b); adj[b].append(a)\nseen = {0}; q = [0]\n```"
+
+[[hint]]
+rung = 4
+text = "Return len(seen) - 1 — tower 0 does not count itself."

@@ -9,11 +9,11 @@
 | Difficulty | easy |
 | Track | `matrices` |
 | Entry | `route_count` |
-| Content hash | `4ad04bcb02882c50ae9bd715682a1a38049eb7d3484de3926018fa6304966e81` |
+| Content hash | `9323bec8ea43eb28da47999f608dec6b22b07d70031a72e1db184db19358cf17` |
 
 ## Mechanic
 
-Reachable-node count on a bounded directed graph — BFS from the origin ward.
+BFS reachability over a small grid of towers — count reachable marks from the origin.
 
 ## Review basis
 

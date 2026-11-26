@@ -9,7 +9,7 @@
 | Difficulty | easy |
 | Track | `arrays` |
 | Entry | `token_window` |
-| Content hash | `f9aa20f282b430fd497e8b1c59d7f31e9b8b49c7f8355aa9508dcd2b66f1b631` |
+| Content hash | `dc9f8fdc8d9e6d9894a3603ce80f522a4d47bf02b5b097feff790c48eec845d8` |
 
 ## Mechanic
 

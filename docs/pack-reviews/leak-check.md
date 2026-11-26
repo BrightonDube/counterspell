@@ -9,7 +9,7 @@
 | Difficulty | medium |
 | Track | `arrays` |
 | Entry | `leak_check` |
-| Content hash | `4516b75b2948c682eaea9db815c01e9293838591da98754b7f7fa19cde342455` |
+| Content hash | `f5e6cb8c949d47f19d66f6fff9d00861bc0c4d38eb9d2dd0c27d6d207506231d` |
 
 ## Mechanic
 

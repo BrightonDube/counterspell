@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Down entries are positions in the links list — build the surviving graph first, then walk it."
+
+[[hint]]
+rung = 2
+text = "Union each surviving link; then group towers by root and compare each group's size against n / 2."
+
+[[hint]]
+rung = 3
+text = "```\nkeep = [l for i, l in enumerate(links) if i not in set(down)]\n# union-find or BFS over keep\nsize > n - size  <=>  isle binds\n```"
+
+[[hint]]
+rung = 4
+text = "An isle binds only when its size strictly exceeds half of all towers — a perfect split binds none."

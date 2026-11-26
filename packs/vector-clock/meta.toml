@@ -1,0 +1,43 @@
+slug = "vector-clock"
+title = "The Vector Clock"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["arrays", "edge-cases", "math", "systems"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "clock_cmp"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(k) flag sweep."
+
+[[params]]
+name = "a"
+type = "list[int]"
+[[params]]
+name = "b"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 6, min = 0, max = 60 }, { type = "int_array", min_len = 0, max_len = 6, min = 0, max = 60 },
+]
+
+[[samples]]
+input = [[1, 0], [2, 0]]
+expected = -1
+
+[[samples]]
+input = [[2, 0], [0, 2]]
+expected = 2
+
+[[samples]]
+input = [[1, 1], [1, 1]]
+expected = 0

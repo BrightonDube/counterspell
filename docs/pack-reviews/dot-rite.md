@@ -9,7 +9,7 @@
 | Difficulty | easy |
 | Track | `matrices` |
 | Entry | `dot_sparse` |
-| Content hash | `e50e5e688dae7410d2035a61702238e66a501528294eeb246e62aec519757b48` |
+| Content hash | `7f7ab112a2281c3b814f4bd9831fb4f03349da7fd5ef58119ba1738d18a944de` |
 
 ## Mechanic
 

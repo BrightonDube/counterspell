@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each sender keeps its own high-water mark — a message at or under it replays."
+
+[[hint]]
+rung = 2
+text = "Keep a map sender -> highest nonce; a row is a replay when nonce <= the stored mark."
+
+[[hint]]
+rung = 3
+text = "```\nhigh = {}\nfor s, n in msgs: if n <= high.get(s, -1): replays += 1 else: high[s] = n\n```"
+
+[[hint]]
+rung = 4
+text = "Different senders never share counters; equal nonces always replay."

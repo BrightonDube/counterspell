@@ -9,7 +9,7 @@
 | Difficulty | medium |
 | Track | `arrays` |
 | Entry | `cluster_step` |
-| Content hash | `9983c3ed4708b1e318abd1247bcdb18b05a4c5555043f3dd515b8e086731ac2e` |
+| Content hash | `b7fe74248ea643a184f3515552467258de16d106ee0497f955e87d6c5238391c` |
 
 ## Mechanic
 

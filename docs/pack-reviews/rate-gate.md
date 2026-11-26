@@ -9,11 +9,11 @@
 | Difficulty | medium |
 | Track | `matrices` |
 | Entry | `rate_gate` |
-| Content hash | `9170c180b014bf609a0d88284ab59b30521652e1374b30384d417c8ccdad3024` |
+| Content hash | `b8ff55ba592b2b5d9eecd663b15da39081e28edf56512ffb7ff95f9643fce9d8` |
 
 ## Mechanic
 
-Token-bucket gate — accepted versus throttled request counts.
+Token-bucket admission — accept while tokens remain, refill by rate.
 
 ## Review basis
 

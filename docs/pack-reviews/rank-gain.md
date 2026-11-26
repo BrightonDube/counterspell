@@ -9,7 +9,7 @@
 | Difficulty | medium |
 | Track | `arrays` |
 | Entry | `rank_gain` |
-| Content hash | `c19eefc3f81524be0157b35e2db3160df488d87c4518b6c4cc2410168c33399a` |
+| Content hash | `d6e2678ad7ae8c15ba366513477ef7a293aa7fe61153c3ac1aacc04003cc598b` |
 
 ## Mechanic
 
