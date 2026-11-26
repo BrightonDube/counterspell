@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk the arc list and the price list together; each position prices one arc."
+
+[[hint]]
+rung = 2
+text = "When the lists disagree in length, the unpriced arcs and spare prices count for nothing."
+
+[[hint]]
+rung = 3
+text = "```\ntotal = 0\nfor k in range(min(len(edges), len(weights))):\n  total += weights[k]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the total toll."

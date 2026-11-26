@@ -256,3 +256,54 @@ Ten packs on edge-list webs and grilles: signal reach, ember isles, lone nodes, 
 | order-count | The Order Count | medium | matrices |
 | sigil-bridge | The Sigil Bridges | hard | matrices |
 | rune-depth | The Rune Depth | hard | matrices |
+
+## Batch 12 — weighted graphs and routing
+
+Ten packs on priced webs: toll sums, near marks, capped counts, light isles, ember roads, wood spans, hop caps, wide ferries, chain tolls and ebb roads.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| rune-toll | The Rune Toll | easy | matrices |
+| near-mark | The Near Mark | easy | matrices |
+| toll-count | The Toll Count | easy | matrices |
+| light-isles | The Light Isles | easy | matrices |
+| ember-road | The Ember Road | medium | matrices |
+| wood-span | The Wood Span | medium | matrices |
+| toll-hop | The Toll Hop | medium | matrices |
+| wide-ferry | The Wide Ferry | medium | matrices |
+| chain-toll | The Chain Tolls | hard | matrices |
+| ebb-road | The Ebb Road | hard | matrices |
+
+## Batch 13 — one-dimensional dynamic programming
+
+Ten packs on linear DP: climb rites, toll stairs, calm gaps, ward rows, ring hauls, candle decodes, ember slates, coin rites, ember words and lit combos.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| climb-rite | The Climb Rite | easy | arrays |
+| toll-stairs | The Toll Stairs | easy | arrays |
+| calm-gaps | The Calm Gaps | easy | arrays |
+| ward-rows | The Ward Rows | easy | arrays |
+| ring-haul | The Ring Haul | medium | arrays |
+| candle-decode | The Candle Decode | medium | strings |
+| ember-slate | The Ember Slate | medium | arrays |
+| coin-rite | The Coin Rite | medium | arrays |
+| ember-words | The Ember Words | hard | strings |
+| lit-combos | The Lit Combos | hard | arrays |
+
+## Batch 14 — two-dimensional dynamic programming
+
+Ten packs on paired-state DP: grille ways, ember grids, nook cells, shelf tolls, ember echoes, scrawl edits, pack shelves, grille tolls, vault splits and ember braids.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| grille-ways | The Grille Ways | easy | matrices |
+| ember-grid | The Ember Grid | easy | matrices |
+| nook-cells | The Nook Cells | easy | matrices |
+| shelf-toll | The Shelf Toll | easy | matrices |
+| ember-echo | The Ember Echo | medium | strings |
+| scrawl-edit | The Scrawl Edit | medium | strings |
+| pack-shelf | The Pack Shelf | medium | matrices |
+| grille-toll | The Grille Toll | medium | matrices |
+| vault-split | The Vault Split | hard | arrays |
+| ember-braid | The Ember Braid | hard | strings |

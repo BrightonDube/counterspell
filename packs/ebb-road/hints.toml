@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Relax every arc n-1 times; an arc that still relaxes after that sits on or past a negative ring."
+
+[[hint]]
+rung = 2
+text = "Only rings that reach the target matter — a paying ring off the route is no threat."
+
+[[hint]]
+rung = 3
+text = "```\nrelax n-1 times\nmark nodes still relaxable or marked-reachable, n more passes\nmarked target -> the ring sentinel\n```"
+
+[[hint]]
+rung = 4
+text = "Return the toll, -1, or the ring sentinel."

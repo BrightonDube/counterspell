@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Keep the largest capacity each node can still promise; widen a node through min(current, arc)."
+
+[[hint]]
+rung = 2
+text = "The strongest single arc is not the answer — the weakest arc on the route decides."
+
+[[hint]]
+rung = 3
+text = "```\nbest[0] = inf; max-heap of (capacity, node)\nrelax with min(cap, arc) when larger\nreturn best[n-1] or -1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the ferry load, or -1."

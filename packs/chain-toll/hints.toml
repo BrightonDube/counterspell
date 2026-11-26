@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Run the cheapest-first walk; when an arc ties a node's best toll, add the counts — when it beats it, replace."
+
+[[hint]]
+rung = 2
+text = "Doubled arcs each offer their own price, and a stranded target answers 0."
+
+[[hint]]
+rung = 3
+text = "```\ndist + ways ledgers; heap of (toll, node)\nnd < dist -> ways[v] = ways[u]; nd == dist -> ways[v] += ways[u]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the route count."
