@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Fold each row into its key's running sum, then take the largest sum."
+
+[[hint]]
+rung = 2
+text = "An empty ledger has no groups — the floor is 0, not a crash."
+
+[[hint]]
+rung = 3
+text = "```\ntally[k] += v for each row\nreturn max(tally.values()) if tally else 0\n```"
+
+[[hint]]
+rung = 4
+text = "Return the largest group tally."

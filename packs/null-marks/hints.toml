@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Only the value column carries the mark — a key of -1 is a different thing."
+
+[[hint]]
+rung = 2
+text = "Count rows where the second field equals -1."
+
+[[hint]]
+rung = 3
+text = "```\ncount = 0\nfor k, v in rows: if v == -1: count += 1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the marked-row count."

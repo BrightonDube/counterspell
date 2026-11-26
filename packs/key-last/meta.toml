@@ -1,0 +1,43 @@
+slug = "key-last"
+title = "The Key Last"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["databases", "scanning", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "key_last"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(rows) last-write scan."
+
+[[params]]
+name = "rows"
+type = "list[list[int]]"
+[[params]]
+name = "k"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 30 }, { type = "int", min = 0, max = 30 },
+]
+
+[[samples]]
+input = [[[1, 5], [2, 7], [1, 9]], 1]
+expected = 9
+
+[[samples]]
+input = [[[1, 5], [2, 7], [1, 9]], 3]
+expected = -1
+
+[[samples]]
+input = [[], 1]
+expected = -1

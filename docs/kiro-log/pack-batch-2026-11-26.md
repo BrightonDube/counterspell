@@ -998,3 +998,91 @@ Codes and counts only - no hidden values are logged.
 
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- row-join: static stages S0-S9
+- row-join: S9 FAILED (0 findings); review needed
+--- null-marks: static stages S0-S9
+- null-marks: S9 FAILED (0 findings); review needed
+--- key-count: static stages S0-S9
+- key-count: S9 FAILED (0 findings); review needed
+--- key-last: static stages S0-S9
+- key-last: S9 FAILED (0 findings); review needed
+--- group-tally: static stages S0-S9
+- group-tally: S9 FAILED (0 findings); review needed
+--- join-span: static stages S0-S9
+- join-span: S9 FAILED (0 findings); review needed
+--- depend-rite: static stages S0-S9
+- depend-rite: S9 FAILED (0 findings); review needed
+--- null-join: static stages S0-S9
+- null-join: S9 FAILED (0 findings); review needed
+--- serial-check: static stages S0-S9
+- serial-check: S9 FAILED (0 findings); review needed
+--- sched-rite: static stages S0-S9
+- sched-rite: S9 FAILED (0 findings); review needed
+
+Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- row-join: static stages S0-S9
+- row-join: S9 passed; S10/S11 pending_judge
+- row-join: review round 1 recorded
+- row-join: review round 2 recorded
+- row-join: review round 3 recorded
+- row-join: awaiting_approval (Brighton gate; no approval.toml written here)
+--- null-marks: static stages S0-S9
+- null-marks: S9 passed; S10/S11 pending_judge
+- null-marks: review round 1 recorded
+- null-marks: review round 2 recorded
+- null-marks: review round 3 recorded
+- null-marks: awaiting_approval (Brighton gate; no approval.toml written here)
+--- key-count: static stages S0-S9
+- key-count: S9 passed; S10/S11 pending_judge
+- key-count: review round 1 recorded
+- key-count: review round 2 recorded
+- key-count: review round 3 recorded
+- key-count: awaiting_approval (Brighton gate; no approval.toml written here)
+--- key-last: static stages S0-S9
+- key-last: S9 passed; S10/S11 pending_judge
+- key-last: review round 1 recorded
+- key-last: review round 2 recorded
+- key-last: review round 3 recorded
+- key-last: awaiting_approval (Brighton gate; no approval.toml written here)
+--- group-tally: static stages S0-S9
+- group-tally: S9 passed; S10/S11 pending_judge
+- group-tally: review round 1 recorded
+- group-tally: review round 2 recorded
+- group-tally: review round 3 recorded
+- group-tally: awaiting_approval (Brighton gate; no approval.toml written here)
+--- join-span: static stages S0-S9
+- join-span: S9 passed; S10/S11 pending_judge
+- join-span: review round 1 recorded
+- join-span: review round 2 recorded
+- join-span: review round 3 recorded
+- join-span: awaiting_approval (Brighton gate; no approval.toml written here)
+--- depend-rite: static stages S0-S9
+- depend-rite: S9 passed; S10/S11 pending_judge
+- depend-rite: review round 1 recorded
+- depend-rite: review round 2 recorded
+- depend-rite: review round 3 recorded
+- depend-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- null-join: static stages S0-S9
+- null-join: S9 passed; S10/S11 pending_judge
+- null-join: review round 1 recorded
+- null-join: review round 2 recorded
+- null-join: review round 3 recorded
+- null-join: awaiting_approval (Brighton gate; no approval.toml written here)
+--- serial-check: static stages S0-S9
+- serial-check: S9 passed; S10/S11 pending_judge
+- serial-check: review round 1 recorded
+- serial-check: review round 2 recorded
+- serial-check: review round 3 recorded
+- serial-check: awaiting_approval (Brighton gate; no approval.toml written here)
+--- sched-rite: static stages S0-S9
+- sched-rite: S9 passed; S10/S11 pending_judge
+- sched-rite: review round 1 recorded
+- sched-rite: review round 2 recorded
+- sched-rite: review round 3 recorded
+- sched-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

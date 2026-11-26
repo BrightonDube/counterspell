@@ -1,0 +1,40 @@
+slug = "serial-check"
+title = "The Serial Check"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["databases", "scanning", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "serial_check"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(events) finished-set scan."
+
+[[params]]
+name = "events"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 24, min = 0, max = 12 },
+]
+
+[[samples]]
+input = [[1, 2, 1]]
+expected = 0
+
+[[samples]]
+input = [[1, 1, 2, 2, 3]]
+expected = 1
+
+[[samples]]
+input = [[]]
+expected = 1

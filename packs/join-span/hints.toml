@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Two conditions gate each pair: equal keys, then a strictly rising value."
+
+[[hint]]
+rung = 2
+text = "Equal values do not rise — `<`, not `<=`."
+
+[[hint]]
+rung = 3
+text = "```\ncount += x[0] == y[0] and x[1] < y[1]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the rising-pair count."

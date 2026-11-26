@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Record each key's first value; a later row with the same key must agree."
+
+[[hint]]
+rung = 2
+text = "Rows with equal keys AND equal values agree — repeats are fine, splits are not."
+
+[[hint]]
+rung = 3
+text = "```\nseen[x] = y on first sight\nif seen[x] != y: return 0\n```"
+
+[[hint]]
+rung = 4
+text = "Return 1 for clean, 0 for a split."
