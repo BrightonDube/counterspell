@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "From the first bare mark, among seals that can start covering it, take the one reaching furthest."
+
+[[hint]]
+rung = 2
+text = "Coverage is contiguous — a seal starting past the first bare mark leaves a hole."
+
+[[hint]]
+rung = 3
+text = "```\nfront=0; i=0\nwhile front<=t: best = max b over spans with a<=front\nif none: -1; else n+=1; front=best+1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the fewest seals, or -1."

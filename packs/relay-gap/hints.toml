@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Earliest end first still wins — skip any pick that starts before last_end + gap."
+
+[[hint]]
+rung = 2
+text = "gap = 0 means the next pick may touch the last end: a >= end + 0."
+
+[[hint]]
+rung = 3
+text = "```\nsort by end\nfor (a,b): if a >= last_end + gap: take; last_end = b\n```"
+
+[[hint]]
+rung = 4
+text = "Return the pick count."

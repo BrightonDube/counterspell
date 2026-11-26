@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk marks from 0 upward; the first mark no seal covers is the answer."
+
+[[hint]]
+rung = 2
+text = "When every mark 0..100 is sealed the answer is 101 — just past the lintel."
+
+[[hint]]
+rung = 3
+text = "```\ncovered = set of all marks in all seals\ni = 0; while i in covered: i += 1\nreturn i\n```"
+
+[[hint]]
+rung = 4
+text = "Return the first bare mark."

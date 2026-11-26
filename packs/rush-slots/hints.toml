@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Take the seal that ends earliest — it leaves the most room; then take the next that starts strictly after it."
+
+[[hint]]
+rung = 2
+text = "A pick at `[1, 2]` after `[0, 1]` shares mark `1` — starts must pass the running end."
+
+[[hint]]
+rung = 3
+text = "```\nsort by end\nfor (a,b): if a > last_end: take; last_end = b\n```"
+
+[[hint]]
+rung = 4
+text = "Return the pick count."

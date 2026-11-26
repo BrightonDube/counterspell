@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Sweep marks: a start adds a keeper, an end frees one — but a start at mark m collides with a hold ending at m."
+
+[[hint]]
+rung = 2
+text = "Apply starts before ends at the same mark; the peak count is the answer."
+
+[[hint]]
+rung = 3
+text = "```\nevents: (a,+1), (b,-1); sort by mark, starts first\nbest = max running sum\n```"
+
+[[hint]]
+rung = 4
+text = "Return the keeper count."
