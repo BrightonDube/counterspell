@@ -114,3 +114,6 @@ name = "Binary Search"
 slug = "linked-chains"
 name = "Linked Chains"
 
+[[concepts]]
+slug = "trees"
+name = "Trees"

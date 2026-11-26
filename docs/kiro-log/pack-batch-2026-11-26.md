@@ -278,3 +278,67 @@ Codes and counts only - no hidden values are logged.
 - reorder-embers: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- leaf-lanterns: static stages S0-S9
+- leaf-lanterns: S9 passed; S10/S11 pending_judge
+- leaf-lanterns: review round 1 recorded
+- leaf-lanterns: review round 2 recorded
+- leaf-lanterns: review round 3 recorded
+- leaf-lanterns: awaiting_approval (Brighton gate; no approval.toml written here)
+--- canopy-height: static stages S0-S9
+- canopy-height: S9 passed; S10/S11 pending_judge
+- canopy-height: review round 1 recorded
+- canopy-height: review round 2 recorded
+- canopy-height: review round 3 recorded
+- canopy-height: awaiting_approval (Brighton gate; no approval.toml written here)
+--- glow-sum: static stages S0-S9
+- glow-sum: S9 passed; S10/S11 pending_judge
+- glow-sum: review round 1 recorded
+- glow-sum: review round 2 recorded
+- glow-sum: review round 3 recorded
+- glow-sum: awaiting_approval (Brighton gate; no approval.toml written here)
+--- lone-branches: static stages S0-S9
+- lone-branches: S9 passed; S10/S11 pending_judge
+- lone-branches: review round 1 recorded
+- lone-branches: review round 2 recorded
+- lone-branches: review round 3 recorded
+- lone-branches: awaiting_approval (Brighton gate; no approval.toml written here)
+--- mirror-bough: static stages S0-S9
+- mirror-bough: S9 passed; S10/S11 pending_judge
+- mirror-bough: review round 1 recorded
+- mirror-bough: review round 2 recorded
+- mirror-bough: review round 3 recorded
+- mirror-bough: awaiting_approval (Brighton gate; no approval.toml written here)
+--- bst-ward: static stages S0-S9
+- bst-ward: S9 passed; S10/S11 pending_judge
+- bst-ward: review round 1 recorded
+- bst-ward: review round 2 recorded
+- bst-ward: review round 3 recorded
+- bst-ward: awaiting_approval (Brighton gate; no approval.toml written here)
+--- kindred-path: static stages S0-S9
+- kindred-path: S9 passed; S10/S11 pending_judge
+- kindred-path: review round 1 recorded
+- kindred-path: review round 2 recorded
+- kindred-path: review round 3 recorded
+- kindred-path: awaiting_approval (Brighton gate; no approval.toml written here)
+--- shared-ancestor: static stages S0-S9
+- shared-ancestor: S9 passed; S10/S11 pending_judge
+- shared-ancestor: review round 1 recorded
+- shared-ancestor: review round 2 recorded
+- shared-ancestor: review round 3 recorded
+- shared-ancestor: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ring-width: static stages S0-S9
+- ring-width: S9 passed; S10/S11 pending_judge
+- ring-width: review round 1 recorded
+- ring-width: review round 2 recorded
+- ring-width: review round 3 recorded
+- ring-width: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-diameter: static stages S0-S9
+- ember-diameter: S9 passed; S10/S11 pending_judge
+- ember-diameter: review round 1 recorded
+- ember-diameter: review round 2 recorded
+- ember-diameter: review round 3 recorded
+- ember-diameter: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

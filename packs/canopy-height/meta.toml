@@ -1,0 +1,46 @@
+slug = "canopy-height"
+title = "The Canopy Height"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["trees", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "tree_height"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) walk and O(n) space for the visit marks."
+
+[[params]]
+name = "vals"
+type = "list[int]"
+[[params]]
+name = "left"
+type = "list[int]"
+[[params]]
+name = "right"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = -999, max = 999 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 },
+]
+
+[[samples]]
+input = [[5, 3, 7], [1, -1, -1], [2, -1, -1]]
+expected = 2
+
+[[samples]]
+input = [[], [], []]
+expected = 0
+
+[[samples]]
+input = [[1, 2, 3], [1, 2, -1], [-1, -1, -1]]
+expected = 3

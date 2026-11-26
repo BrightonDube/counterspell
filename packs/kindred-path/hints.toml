@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Carry the running total to each node; the answer turns on only at a leaf."
+
+[[hint]]
+rung = 2
+text = "A partial path is not enough — check `left` and `right` both absent before comparing the total."
+
+[[hint]]
+rung = 3
+text = "```\nwork = [(0, vals[0])]\nat node i: lo == -1 and hi == -1 and total == target -> 1\nelse push children with total + vals[kid]\n```"
+
+[[hint]]
+rung = 4
+text = "Return `0` when no leaf total matches."

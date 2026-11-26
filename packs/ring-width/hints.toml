@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Breadth walks carry a level marker — group nodes by depth and keep the deepest-count ring."
+
+[[hint]]
+rung = 2
+text = "A map from depth to count is enough; you never need to know which nodes sit where."
+
+[[hint]]
+rung = 3
+text = "```\nlevel = {0:1}; queue = [(0,0)]\nfor (i,d): level[d] += 1\nanswer = max(level.values())\n```"
+
+[[hint]]
+rung = 4
+text = "Return the widest level's count."

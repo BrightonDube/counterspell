@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk from index `0` carrying each node's depth; the answer is the deepest depth seen."
+
+[[hint]]
+rung = 2
+text = "An empty `vals` means height `0`; a lone root means height `1` — count nodes, not edges."
+
+[[hint]]
+rung = 3
+text = "```\nstack = [(0, 1)]\npop (i, d); best = max(best, d)\npush children with d + 1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the best depth after the stack empties."

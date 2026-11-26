@@ -171,3 +171,20 @@ Ten packs on index-chain walks: counting, tails, order, loops, reversal, merging
 | loop-entry | The Loop Entry | hard | arrays |
 | reorder-embers | The Reorder Embers | hard | arrays |
 
+
+## Batch 07 — trees and search-order wards
+
+Ten packs on index-array trees: leaf counts, height, sums, lone branches, mirroring, BST order, root-to-leaf sums, shared ancestors, level width and diameter.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| leaf-lanterns | The Leaf Lanterns | easy | arrays |
+| canopy-height | The Canopy Height | easy | arrays |
+| glow-sum | The Glow Sum | easy | arrays |
+| lone-branches | The Lone Branches | easy | arrays |
+| mirror-bough | The Mirror Bough | medium | arrays |
+| bst-ward | The Bough Order Ward | medium | arrays |
+| kindred-path | The Kindred Path | medium | arrays |
+| shared-ancestor | The Shared Ancestor | medium | arrays |
+| ring-width | The Ring Width | hard | arrays |
+| ember-diameter | The Ember Diameter | hard | arrays |

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each node, the longest path through it spans `left_height + right_height` edges."
+
+[[hint]]
+rung = 2
+text = "Compute each subtree's height bottom-up and keep the widest span seen anywhere — not only at the root."
+
+[[hint]]
+rung = 3
+text = "```\nheights bottom-up\nspan = height(left) + height(right) at each node\nanswer = widest span\n```"
+
+[[hint]]
+rung = 4
+text = "Return the widest span found over every node."

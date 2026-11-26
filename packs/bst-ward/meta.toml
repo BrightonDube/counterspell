@@ -1,0 +1,46 @@
+slug = "bst-ward"
+title = "The Bough Order Ward"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["trees", "recursion", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "bst_check"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) bounded walk and O(n) space."
+
+[[params]]
+name = "vals"
+type = "list[int]"
+[[params]]
+name = "left"
+type = "list[int]"
+[[params]]
+name = "right"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = -999, max = 999 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 },
+]
+
+[[samples]]
+input = [[5, 3, 7], [1, -1, -1], [2, -1, -1]]
+expected = 1
+
+[[samples]]
+input = [[5, 3, 2], [1, -1, -1], [2, -1, -1]]
+expected = 0
+
+[[samples]]
+input = [[], [], []]
+expected = 1

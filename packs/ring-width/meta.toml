@@ -1,0 +1,46 @@
+slug = "ring-width"
+title = "The Ring Width"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["trees", "queues", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "widest_ring"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) breadth walk and O(n) space."
+
+[[params]]
+name = "vals"
+type = "list[int]"
+[[params]]
+name = "left"
+type = "list[int]"
+[[params]]
+name = "right"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = -999, max = 999 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 }, { type = "int_array", min_len = 0, max_len = 40, min = -1, max = 39 },
+]
+
+[[samples]]
+input = [[5, 3, 7, 2, 4, 6, 8], [1, 3, 5, -1, -1, -1, -1], [2, 4, 6, -1, -1, -1, -1]]
+expected = 4
+
+[[samples]]
+input = [[1, 2, 3, 4], [1, 2, 3, -1], [-1, -1, -1, -1]]
+expected = 1
+
+[[samples]]
+input = [[], [], []]
+expected = 0

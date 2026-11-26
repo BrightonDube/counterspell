@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A lone branch means exactly one child slot holds a real index — one `-1`, one child."
+
+[[hint]]
+rung = 2
+text = "Check `left[i] == -1` against `right[i] == -1` with xor-style logic at each visited node."
+
+[[hint]]
+rung = 3
+text = "```\nlo = left[i] != -1; hi = right[i] != -1\nif lo != hi:\n    count += 1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the count after the walk finishes."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Compare the root's left and right boughs as a pair, then keep pairing mirrored children."
+
+[[hint]]
+rung = 2
+text = "Each pair needs equal marks; pair left-of-a with right-of-b and right-of-a with left-of-b."
+
+[[hint]]
+rung = 3
+text = "```\nwork = [(left[0], right[0])]\nfor (a, b): vals[a] == vals[b]?\npush (left[a], right[b]) and (right[a], left[b])\n```"
+
+[[hint]]
+rung = 4
+text = "Any mismatched pair or one-sided child settles it at `0`."
