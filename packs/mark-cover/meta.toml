@@ -1,0 +1,40 @@
+slug = "mark-cover"
+title = "The Mark Cover"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["matrices", "merging", "edge-cases", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "cover_length"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(spans log spans + covered) merged-stretch walk."
+
+[[params]]
+name = "spans"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[[0, 2]]]
+expected = 3
+
+[[samples]]
+input = [[[0, 2], [1, 3]]]
+expected = 4
+
+[[samples]]
+input = [[[0, 0], [2, 2], [4, 4]]]
+expected = 3

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Mark coverage over 0..t, then scan for the longest uncovered run."
+
+[[hint]]
+rung = 2
+text = "A seal past `t` still holds the marks it covers inside the watch."
+
+[[hint]]
+rung = 3
+text = "```\ncov[i] = any seal covers mark i\nbest = max run of marks with cov[i] false\n```"
+
+[[hint]]
+rung = 4
+text = "Return the longest idle run."

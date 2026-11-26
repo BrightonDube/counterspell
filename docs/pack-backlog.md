@@ -307,3 +307,20 @@ Ten packs on paired-state DP: grille ways, ember grids, nook cells, shelf tolls,
 | grille-toll | The Grille Toll | medium | matrices |
 | vault-split | The Vault Split | hard | arrays |
 | ember-braid | The Ember Braid | hard | strings |
+## Batch 15 — greedy methods and intervals
+
+Ten packs on exchange arguments, scheduling, merging and coverage: mark covers, nest counts, gap blocks, first frees, rush slots, cover spans, relay gaps, idle stretches, double books and lantern watches.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| mark-cover | The Mark Cover | easy | matrices |
+| nest-count | The Nest Count | easy | matrices |
+| gap-blocks | The Gap Blocks | easy | matrices |
+| first-free | The First Free | easy | matrices |
+| rush-slots | The Rush Slots | medium | matrices |
+| cover-span | The Cover Span | medium | matrices |
+| relay-gap | The Relay Gap | medium | matrices |
+| idle-stretch | The Idle Stretch | medium | matrices |
+| double-book | The Double Book | hard | matrices |
+| lantern-watch | The Lantern Watch | hard | matrices |
+

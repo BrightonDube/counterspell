@@ -1,0 +1,40 @@
+slug = "gap-blocks"
+title = "The Gap Blocks"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["matrices", "merging", "edge-cases", "counting"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "block_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) sorted merge, count runs."
+
+[[params]]
+name = "spans"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[[0, 1], [2, 3]]]
+expected = 2
+
+[[samples]]
+input = [[[0, 3], [4, 5], [2, 4]]]
+expected = 1
+
+[[samples]]
+input = [[[0, 9], [9, 9]]]
+expected = 1

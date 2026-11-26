@@ -1,0 +1,43 @@
+slug = "cover-span"
+title = "The Cover Span"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["matrices", "greedy", "edge-cases", "scanning"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "span_cover"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) furthest-reach greedy."
+
+[[params]]
+name = "spans"
+type = "list[list[int]]"
+[[params]]
+name = "t"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 100 }, { type = "int", min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[[0, 2], [3, 5]], 5]
+expected = 2
+
+[[samples]]
+input = [[[0, 9]], 9]
+expected = 1
+
+[[samples]]
+input = [[[0, 2], [4, 9]], 9]
+expected = -1

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Sort by start; a seal starting past the running end opens a new block — at the end it merges."
+
+[[hint]]
+rung = 2
+text = "The running end grows to the furthest end seen inside the block."
+
+[[hint]]
+rung = 3
+text = "```\nsort by start\nblocks += 1 when a > running_end\nrunning_end = max(running_end, b)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the block count."
