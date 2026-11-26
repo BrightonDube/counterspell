@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Sort by arrival first — same arrivals keep the listed order, the engine waits through gaps."
+
+[[hint]]
+rung = 2
+text = "Keep a clock: start = max(clock, arrival), then clock = start + burst and wait += start - arrival."
+
+[[hint]]
+rung = 3
+text = "```\njobs.sort(key=lambda j: j[0])\nclock = 0\nfor a, b in jobs: clock += b - min(0, a - clock)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the total wait."

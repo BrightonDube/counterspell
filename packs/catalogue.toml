@@ -173,3 +173,11 @@ name = "Primes and Sieves"
 [[concepts]]
 slug = "intervals"
 name = "Intervals"
+
+[[concepts]]
+slug = "systems"
+name = "Operating Systems and Concurrency"
+
+[[concepts]]
+slug = "caching"
+name = "Caching and Memory Hierarchy"

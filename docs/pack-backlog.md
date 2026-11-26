@@ -341,3 +341,19 @@ Ten packs on number properties, coordinate reasoning and compact binary state: d
 | corner-turns | The Corner Turns | hard | math |
 | mask-rite | The Mask Rite | hard | math |
 
+## Batch 18 — operating systems, concurrency and systems
+
+Ten packs on OS and concurrency simulation: miss counts, page turns, burst rites, slice counts, LRU rites, alloc rites, lock orders, wrap rites, quantum ticks and frame rites.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| miss-count | The Miss Count | easy | arrays |
+| page-turn | The Page Turn | easy | arrays |
+| burst-rite | The Burst Rite | easy | matrices |
+| slice-count | The Slice Count | easy | arrays |
+| lru-rite | The Lru Rite | medium | arrays |
+| alloc-rite | The Alloc Rite | medium | arrays |
+| lock-order | The Lock Order | medium | arrays |
+| wrap-rite | The Wrap Rite | medium | arrays |
+| quantum-tick | The Quantum Tick | hard | matrices |
+| frame-rite | The Frame Rite | hard | arrays |
