@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Compare entries rune by rune; the stem ends at the first position where any two entries differ or one ends."
+
+[[hint]]
+rung = 2
+text = "An empty dictionary and a one-entry dictionary are the two poles — check both."
+
+[[hint]]
+rung = 3
+text = "```\nstem = entries[0]\nfor w in entries[1:]: while not w.startswith(stem): stem = stem[:-1]\nreturn len(stem)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the stem's length."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Track which entry positions are reachable for each pattern position; `*` keeps the previous pattern position reachable and also opens the next one."
+
+[[hint]]
+rung = 2
+text = "A `*` may match the empty run — a pattern of only `*` matches every entry."
+
+[[hint]]
+rung = 3
+text = "```\ndp[0][0] = True\nstar: dp[i][j] = dp[i][j - 1] or dp[i - 1][j]\nelse: dp[i][j] = p[j - 1] == w[i - 1] and dp[i - 1][j - 1]\n```"
+
+[[hint]]
+rung = 4
+text = "Count the distinct entries whose match table ends true."

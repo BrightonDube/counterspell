@@ -188,3 +188,20 @@ Ten packs on index-array trees: leaf counts, height, sums, lone branches, mirror
 | shared-ancestor | The Shared Ancestor | medium | arrays |
 | ring-width | The Ring Width | hard | arrays |
 | ember-diameter | The Ember Diameter | hard | arrays |
+
+## Batch 08 — tries, strings and prefix systems
+
+Ten packs on comma-joined dictionaries: prefix tallies, membership, shared stems, deepest entries, next-rune fan-out, prefix pairs, segmentation, prefix absorption, wildcard matching and stem depth.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| prefix-tally | The Prefix Tally | easy | strings |
+| word-ward | The Word Ward | easy | strings |
+| shared-stem | The Shared Stem | easy | strings |
+| deepest-lex | The Deepest Lex | easy | strings |
+| next-rune | The Next Rune | medium | strings |
+| twin-stems | The Twin Stems | medium | strings |
+| split-ward | The Split Ward | medium | strings |
+| lexicon-shrink | The Lexicon Shrink | medium | strings |
+| wild-lexicon | The Wild Lexicon | hard | strings |
+| stem-harvest | The Stem Harvest | hard | strings |

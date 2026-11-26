@@ -1,0 +1,43 @@
+slug = "wild-lexicon"
+title = "The Wild Lexicon"
+status = "published"
+difficulty = "hard"
+track = "strings"
+concepts = ["strings", "prefixes", "deduplication", "edge-cases", "tries"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "count_matches"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n * m) reachability states per entry for entry length n and pattern length m."
+
+[[params]]
+name = "words"
+type = "str"
+[[params]]
+name = "pattern"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 40 }, { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz*", min_len = 0, max_len = 12 },
+]
+
+[[samples]]
+input = ["cat,cart,cog", "c*"]
+expected = 3
+
+[[samples]]
+input = ["cat,cart,dog", "c*t"]
+expected = 2
+
+[[samples]]
+input = ["cat,dog", "d*g"]
+expected = 1

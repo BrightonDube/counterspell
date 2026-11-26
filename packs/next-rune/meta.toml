@@ -1,0 +1,43 @@
+slug = "next-rune"
+title = "The Next Rune"
+status = "published"
+difficulty = "medium"
+track = "strings"
+concepts = ["strings", "prefixes", "deduplication", "edge-cases", "tries"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "next_letters"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) scan over the entries with O(k) space for the rune set."
+
+[[params]]
+name = "words"
+type = "str"
+[[params]]
+name = "prefix"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 40 }, { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz", min_len = 0, max_len = 12 },
+]
+
+[[samples]]
+input = ["cat,car,cow,dog", "ca"]
+expected = 2
+
+[[samples]]
+input = ["cat,car,cow,dog", "d"]
+expected = 1
+
+[[samples]]
+input = ["cat,dog", "x"]
+expected = 0

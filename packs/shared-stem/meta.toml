@@ -1,0 +1,40 @@
+slug = "shared-stem"
+title = "The Shared Stem"
+status = "published"
+difficulty = "easy"
+track = "strings"
+concepts = ["strings", "prefixes", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "common_stem"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) comparison over the entries with O(1) extra space."
+
+[[params]]
+name = "words"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = ["cart,car,cargo"]
+expected = 3
+
+[[samples]]
+input = ["cat,dog"]
+expected = 0
+
+[[samples]]
+input = [""]
+expected = 0

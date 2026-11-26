@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Split `words` on commas, ignore empty pieces, and keep the longest entry length seen."
+
+[[hint]]
+rung = 2
+text = "The whole `words` string is not the answer — the commas are separators, not runes."
+
+[[hint]]
+rung = 3
+text = "```\nreturn max((len(w) for w in words.split(\",\") if w), default=0)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the largest entry length found."

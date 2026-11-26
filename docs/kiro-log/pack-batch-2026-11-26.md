@@ -342,3 +342,67 @@ Codes and counts only - no hidden values are logged.
 - ember-diameter: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- prefix-tally: static stages S0-S9
+- prefix-tally: S9 passed; S10/S11 pending_judge
+- prefix-tally: review round 1 recorded
+- prefix-tally: review round 2 recorded
+- prefix-tally: review round 3 recorded
+- prefix-tally: awaiting_approval (Brighton gate; no approval.toml written here)
+--- word-ward: static stages S0-S9
+- word-ward: S9 passed; S10/S11 pending_judge
+- word-ward: review round 1 recorded
+- word-ward: review round 2 recorded
+- word-ward: review round 3 recorded
+- word-ward: awaiting_approval (Brighton gate; no approval.toml written here)
+--- shared-stem: static stages S0-S9
+- shared-stem: S9 passed; S10/S11 pending_judge
+- shared-stem: review round 1 recorded
+- shared-stem: review round 2 recorded
+- shared-stem: review round 3 recorded
+- shared-stem: awaiting_approval (Brighton gate; no approval.toml written here)
+--- deepest-lex: static stages S0-S9
+- deepest-lex: S9 passed; S10/S11 pending_judge
+- deepest-lex: review round 1 recorded
+- deepest-lex: review round 2 recorded
+- deepest-lex: review round 3 recorded
+- deepest-lex: awaiting_approval (Brighton gate; no approval.toml written here)
+--- next-rune: static stages S0-S9
+- next-rune: S9 passed; S10/S11 pending_judge
+- next-rune: review round 1 recorded
+- next-rune: review round 2 recorded
+- next-rune: review round 3 recorded
+- next-rune: awaiting_approval (Brighton gate; no approval.toml written here)
+--- twin-stems: static stages S0-S9
+- twin-stems: S9 passed; S10/S11 pending_judge
+- twin-stems: review round 1 recorded
+- twin-stems: review round 2 recorded
+- twin-stems: review round 3 recorded
+- twin-stems: awaiting_approval (Brighton gate; no approval.toml written here)
+--- split-ward: static stages S0-S9
+- split-ward: S9 passed; S10/S11 pending_judge
+- split-ward: review round 1 recorded
+- split-ward: review round 2 recorded
+- split-ward: review round 3 recorded
+- split-ward: awaiting_approval (Brighton gate; no approval.toml written here)
+--- lexicon-shrink: static stages S0-S9
+- lexicon-shrink: S9 passed; S10/S11 pending_judge
+- lexicon-shrink: review round 1 recorded
+- lexicon-shrink: review round 2 recorded
+- lexicon-shrink: review round 3 recorded
+- lexicon-shrink: awaiting_approval (Brighton gate; no approval.toml written here)
+--- wild-lexicon: static stages S0-S9
+- wild-lexicon: S9 passed; S10/S11 pending_judge
+- wild-lexicon: review round 1 recorded
+- wild-lexicon: review round 2 recorded
+- wild-lexicon: review round 3 recorded
+- wild-lexicon: awaiting_approval (Brighton gate; no approval.toml written here)
+--- stem-harvest: static stages S0-S9
+- stem-harvest: S9 passed; S10/S11 pending_judge
+- stem-harvest: review round 1 recorded
+- stem-harvest: review round 2 recorded
+- stem-harvest: review round 3 recorded
+- stem-harvest: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

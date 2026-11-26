@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Split `words` on commas, drop empty entries, and count each entry that starts with `prefix`."
+
+[[hint]]
+rung = 2
+text = "An empty `prefix` is a prefix of every entry — do not special-case it to zero."
+
+[[hint]]
+rung = 3
+text = "```\nentries = [w for w in words.split(\",\") if w]\nreturn sum(1 for w in entries if w.startswith(prefix))\n```"
+
+[[hint]]
+rung = 4
+text = "Return the tally once every entry is checked."

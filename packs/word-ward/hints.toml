@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Split `words` on commas and compare each entry to `word` for an exact match."
+
+[[hint]]
+rung = 2
+text = "A prefix of an entry is not the entry — the whole string must be equal."
+
+[[hint]]
+rung = 3
+text = "```\nreturn 1 if word in [w for w in words.split(\",\") if w] else 0\n```"
+
+[[hint]]
+rung = 4
+text = "Return `1` on the first exact match, `0` after the scan."

@@ -1,0 +1,43 @@
+slug = "word-ward"
+title = "The Word Ward"
+status = "published"
+difficulty = "easy"
+track = "strings"
+concepts = ["strings", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "has_word"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) scan over the dictionary with O(1) extra space."
+
+[[params]]
+name = "words"
+type = "str"
+[[params]]
+name = "word"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz,", min_len = 0, max_len = 40 }, { type = "string", alphabet = "abcdefghijklmnopqrstuvwxyz", min_len = 0, max_len = 12 },
+]
+
+[[samples]]
+input = ["cat,car,dog", "car"]
+expected = 1
+
+[[samples]]
+input = ["cat,car,dog", "ca"]
+expected = 0
+
+[[samples]]
+input = ["", "cat"]
+expected = 0
