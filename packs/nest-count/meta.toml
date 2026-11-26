@@ -1,0 +1,40 @@
+slug = "nest-count"
+title = "The Nest Count"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["matrices", "counting", "nested-loops", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "nest_pairs"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n²) pair check."
+
+[[params]]
+name = "spans"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[[0, 4], [1, 2]]]
+expected = 1
+
+[[samples]]
+input = [[[0, 4], [1, 4]]]
+expected = 0
+
+[[samples]]
+input = [[[0, 9], [1, 8], [2, 7], [3, 6]]]
+expected = 6

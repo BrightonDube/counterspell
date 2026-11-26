@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Peel digits with % 10 and // 10; a digit burns only when it divides the original n — keep n before you eat it."
+
+[[hint]]
+rung = 2
+text = "Digit 0 is skipped entirely: it can never divide, and dividing by it would break the walk."
+
+[[hint]]
+rung = 3
+text = "```\nd = n % 10\nif d != 0 and original % d == 0: count += 1\nn = n // 10\n```"
+
+[[hint]]
+rung = 4
+text = "Return the burning digit count."

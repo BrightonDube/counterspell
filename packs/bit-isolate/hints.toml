@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The lowest lit bit survives `n & -n` — two's complement keeps only the anchor."
+
+[[hint]]
+rung = 2
+text = "A scan works too: shift right until `n & 1` lights, tracking `1 << position`."
+
+[[hint]]
+rung = 3
+text = "```\nreturn n & (-n)   // or scan: bit = 1; while not n & bit: bit <<= 1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the anchor value, 0 when unlit."

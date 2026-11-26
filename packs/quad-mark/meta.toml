@@ -1,0 +1,43 @@
+slug = "quad-mark"
+title = "The Quad Mark"
+status = "published"
+difficulty = "easy"
+track = "math"
+concepts = ["geometry", "math", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "quad_mark"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(1) sign testing."
+
+[[params]]
+name = "x"
+type = "int"
+[[params]]
+name = "y"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = -100, max = 100 }, { type = "int", min = -100, max = 100 },
+]
+
+[[samples]]
+input = [3, 4]
+expected = 1
+
+[[samples]]
+input = [-3, 4]
+expected = 2
+
+[[samples]]
+input = [0, 5]
+expected = 0

@@ -1,0 +1,28 @@
+# Pack review summary: bit-count
+
+## Public metadata
+
+| Field | Value |
+| ----- | ----- |
+| Slug | `bit-count` |
+| Title | The Bit Count |
+| Difficulty | easy |
+| Track | `math` |
+| Entry | `bit_count` |
+| Content hash | `a4222d4f2e13a2ad28149d178bcbed15646b5b0bbe4bcd1be4963ee9b3a88ca5` |
+
+## Mechanic
+
+Population count over a bound that forces a real shift loop.
+
+## Review basis
+
+- Statement, metadata, hints, fixtures and originality record reviewed in the public tree.
+- Reference, hidden cases, generator and known ghosts reviewed in the private tree.
+- Samples and hand-traced hidden cases were cross-checked against the reference before assembly.
+- Ghost inputs and recorded outcomes were re-run during verification.
+
+## Sandbox and oracle notes
+
+- S10/S11 verification covers the merged tree through the real PackRunnerFactory and SandboxOracle.
+- Hidden, generated and known-ghost cases run inside the rootless sandbox; public summaries carry no hidden values.

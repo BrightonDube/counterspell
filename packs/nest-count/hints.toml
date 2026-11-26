@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Outer holds `a < c` and `d < b` — both strict; a shared end or start is not nesting."
+
+[[hint]]
+rung = 2
+text = "Each unordered pair counts at most once: count i<j where either nests the other."
+
+[[hint]]
+rung = 3
+text = "```\nfor i<j: nests = (a_i<a_j and b_j<b_i) or (a_j<a_i and b_i<b_j)\ncount them\n```"
+
+[[hint]]
+rung = 4
+text = "Return the nesting pair count."

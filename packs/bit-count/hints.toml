@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Shift right one bit at a time and add n & 1 — stop when nothing remains."
+
+[[hint]]
+rung = 2
+text = "`n & (n - 1)` clears the lowest spark; counting clears also works."
+
+[[hint]]
+rung = 3
+text = "```\ncount = 0\nwhile n: count += n & 1; n >>= 1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the spark count."

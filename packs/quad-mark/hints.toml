@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Check the axis first — a zero on either coordinate means no quadrant."
+
+[[hint]]
+rung = 2
+text = "Positive y is the upper half; inside it, positive x is quadrant 1 and negative is 2."
+
+[[hint]]
+rung = 3
+text = "```\nif x == 0 or y == 0: return 0\nif y > 0: return 1 if x > 0 else 2\nreturn 4 if x > 0 else 3\n```"
+
+[[hint]]
+rung = 4
+text = "Return the quadrant number, or 0."

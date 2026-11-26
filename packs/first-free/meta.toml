@@ -1,0 +1,40 @@
+slug = "first-free"
+title = "The First Free Mark"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["matrices", "edge-cases", "counting", "scanning"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "first_free"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(covered) mark walk from 0."
+
+[[params]]
+name = "spans"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[[0, 1], [2, 3]]]
+expected = 4
+
+[[samples]]
+input = [[[1, 2]]]
+expected = 0
