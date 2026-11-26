@@ -61,7 +61,6 @@
 - three-rune-windows: review round 3 recorded
 - three-rune-windows: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- ember-index: static stages S0-S9
@@ -85,7 +84,6 @@ Codes and counts only - no hidden values are logged.
 --- even-offering: static stages S0-S9
 - even-offering: S9 FAILED (0 findings); review needed
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- ember-index: static stages S0-S9
@@ -149,7 +147,6 @@ Codes and counts only - no hidden values are logged.
 - even-offering: review round 3 recorded
 - even-offering: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- chain-length: static stages S0-S9
@@ -213,7 +210,6 @@ Codes and counts only - no hidden values are logged.
 --- reorder-embers: static stages S0-S9
 - reorder-embers: S9 FAILED (0 findings); review needed
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- chain-length: static stages S0-S9
@@ -277,7 +273,6 @@ Codes and counts only - no hidden values are logged.
 - reorder-embers: review round 3 recorded
 - reorder-embers: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- leaf-lanterns: static stages S0-S9
@@ -341,7 +336,6 @@ Codes and counts only - no hidden values are logged.
 - ember-diameter: review round 3 recorded
 - ember-diameter: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- prefix-tally: static stages S0-S9
@@ -405,7 +399,6 @@ Codes and counts only - no hidden values are logged.
 - stem-harvest: review round 3 recorded
 - stem-harvest: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- ember-floor: static stages S0-S9
@@ -531,7 +524,6 @@ Codes and counts only - no hidden values are logged.
 - ember-partition: review round 3 recorded
 - ember-partition: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- signal-reach: static stages S0-S9
@@ -675,7 +667,6 @@ Codes and counts only - no hidden values are logged.
 - rune-depth: review round 3 recorded
 - rune-depth: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- rune-toll: static stages S0-S9
@@ -739,7 +730,6 @@ Codes and counts only - no hidden values are logged.
 - ebb-road: review round 3 recorded
 - ebb-road: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- climb-rite: static stages S0-S9
@@ -803,7 +793,6 @@ Codes and counts only - no hidden values are logged.
 - lit-combos: review round 3 recorded
 - lit-combos: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- grille-ways: static stages S0-S9
@@ -867,7 +856,6 @@ Codes and counts only - no hidden values are logged.
 - ember-braid: review round 3 recorded
 - ember-braid: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- mark-cover: static stages S0-S9
@@ -931,7 +919,6 @@ Codes and counts only - no hidden values are logged.
 - lantern-watch: review round 3 recorded
 - lantern-watch: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- digit-rite: static stages S0-S9
@@ -995,7 +982,8 @@ Codes and counts only - no hidden values are logged.
 - mask-rite: review round 3 recorded
 - mask-rite: awaiting_approval (Brighton gate; no approval.toml written here)
 
-Codes and counts only - no hidden values are logged.
+
+
 # pack-batch run 2026-11-26
 
 --- row-join: static stages S0-S9
@@ -1019,7 +1007,6 @@ Codes and counts only - no hidden values are logged.
 --- sched-rite: static stages S0-S9
 - sched-rite: S9 FAILED (0 findings); review needed
 
-Codes and counts only - no hidden values are logged.
 # pack-batch run 2026-11-26
 
 --- row-join: static stages S0-S9
@@ -1271,5 +1258,6 @@ Codes and counts only - no hidden values are logged.
 - chunk-toll: review round 2 recorded
 - chunk-toll: review round 3 recorded
 - chunk-toll: awaiting_approval (Brighton gate; no approval.toml written here)
+
 
 Codes and counts only - no hidden values are logged.

@@ -175,13 +175,17 @@ slug = "intervals"
 name = "Intervals"
 
 [[concepts]]
+slug = "systems"
+name = "Operating Systems and Concurrency"
+
+[[concepts]]
+slug = "caching"
+name = "Caching and Memory Hierarchy"
+
+[[concepts]]
 slug = "databases"
 name = "Databases and Relations"
 
-
-[[concepts]]
-slug = "systems"
-name = "Operating Systems and Concurrency"
 
 [[concepts]]
 slug = "ai"

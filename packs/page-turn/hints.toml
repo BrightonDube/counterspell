@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "FIFO evicts the page that arrived earliest, not the one used longest ago."
+
+[[hint]]
+rung = 2
+text = "Keep the folio as a queue: on a miss, pop the front when full and append."
+
+[[hint]]
+rung = 3
+text = "```\nfolio = []\nfor p in pages:\n  if p not in folio: faults += 1; evict front if full; append\n```"
+
+[[hint]]
+rung = 4
+text = "Return the fault count."

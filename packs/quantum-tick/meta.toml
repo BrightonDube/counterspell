@@ -1,0 +1,43 @@
+slug = "quantum-tick"
+title = "The Quantum Tick"
+status = "published"
+difficulty = "hard"
+track = "matrices"
+concepts = ["systems", "simulation", "queues", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "quantum_tick"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(total_ticks) queue simulation."
+
+[[params]]
+name = "jobs"
+type = "list[list[int]]"
+[[params]]
+name = "q"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 12, min_cols = 2, max_cols = 2, min = 0, max = 60 }, { type = "int", min = 1, max = 8 },
+]
+
+[[samples]]
+input = [[[0, 5], [1, 4], [2, 3]], 2]
+expected = 33
+
+[[samples]]
+input = [[], 2]
+expected = 0
+
+[[samples]]
+input = [[[0, 1]], 2]
+expected = 1

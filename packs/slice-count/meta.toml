@@ -1,0 +1,43 @@
+slug = "slice-count"
+title = "The Slice Count"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["systems", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "slice_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n) ceiling fold."
+
+[[params]]
+name = "bursts"
+type = "list[int]"
+[[params]]
+name = "q"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 16, min = 0, max = 60 }, { type = "int", min = 1, max = 12 },
+]
+
+[[samples]]
+input = [[5, 3, 0], 2]
+expected = 5
+
+[[samples]]
+input = [[], 3]
+expected = 0
+
+[[samples]]
+input = [[4, 4], 4]
+expected = 2

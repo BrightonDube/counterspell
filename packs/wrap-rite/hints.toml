@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "An eviction only happens when a new mark meets a full ring — repeats and warm rings cost nothing."
+
+[[hint]]
+rung = 2
+text = "Track residency oldest-first: miss + full ring → evict front, append, count."
+
+[[hint]]
+rung = 3
+text = "```\nring = []\nfor m in marks:\n  if m not in ring: evict front if full; ring.append(m)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the overwrite count."
