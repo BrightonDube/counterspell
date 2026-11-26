@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "From each node the chain runs one deeper than its longest out-order; remember each node's depth."
+
+[[hint]]
+rung = 2
+text = "A node seen twice on one walk means the orders cycle — the whole answer becomes 0."
+
+[[hint]]
+rung = 3
+text = "```\nthree-state guard (fresh/in-progress/done)\ndepth(u) = 1 + max depth over out-neighbours\ncycle or self-order -> 0\n```"
+
+[[hint]]
+rung = 4
+text = "Return the deepest chain length."

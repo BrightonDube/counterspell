@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Layer the web by hop count from node 0 — breadth-first, not a deep walk."
+
+[[hint]]
+rung = 2
+text = "Unreached nodes carry no distance; the answer is the largest layer reached."
+
+[[hint]]
+rung = 3
+text = "```\ndist = [-1]*n; dist[0] = 0\nqueue the nodes level by level\nreturn max(dist)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the largest hop count."

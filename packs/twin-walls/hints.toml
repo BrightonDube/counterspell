@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Colour each node one of two camps as you flood it; a neighbour already holding the same colour is a clash."
+
+[[hint]]
+rung = 2
+text = "Restart the flood for every unvisited node — a split web can still split."
+
+[[hint]]
+rung = 3
+text = "```\ncolour = [None]*n\nflood, assigning 1-colour[x] to new neighbours\nclash -> 0\n```"
+
+[[hint]]
+rung = 4
+text = "Return `1` or `0`."

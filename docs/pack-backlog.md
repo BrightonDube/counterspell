@@ -239,3 +239,20 @@ Ten packs on choice walks with pruning: satchel sums, candle picks, wall spreads
 | sentry-gap | The Sentry Gap | medium | arrays |
 | sigil-board | The Sigil Board | hard | arrays |
 | ember-partition | The Ember Partition | hard | arrays |
+
+## Batch 11 — graphs, connectivity and traversal
+
+Ten packs on edge-list webs and grilles: signal reach, ember isles, lone nodes, a grid nook, twin walls, a cycle ward, signal span, an order count, sigil bridges and rune depth.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| signal-reach | The Signal Reach | easy | matrices |
+| ember-isles | The Ember Isles | easy | matrices |
+| lone-nodes | The Lone Nodes | easy | matrices |
+| grid-nook | The Grid Nook | easy | matrices |
+| twin-walls | The Twin Walls | medium | matrices |
+| cycle-ward | The Cycle Ward | medium | matrices |
+| signal-span | The Signal Span | medium | matrices |
+| order-count | The Order Count | medium | matrices |
+| sigil-bridge | The Sigil Bridges | hard | matrices |
+| rune-depth | The Rune Depth | hard | matrices |

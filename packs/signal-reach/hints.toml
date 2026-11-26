@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Start a flood at node 0 through arcs in both directions; count the visited."
+
+[[hint]]
+rung = 2
+text = "Node 0 counts even with no arcs; repeated arcs and self-loops add nothing."
+
+[[hint]]
+rung = 3
+text = "```\nbuild adjacency lists;\nstack = [0]; mark visited and count as you pop\n```"
+
+[[hint]]
+rung = 4
+text = "Return the reachable count."

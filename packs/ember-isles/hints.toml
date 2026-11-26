@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Start a fresh flood at every unvisited node; each flood is one isle."
+
+[[hint]]
+rung = 2
+text = "A lone node is an isle of one — do not only count nodes that arcs name."
+
+[[hint]]
+rung = 3
+text = "```\nfor s in range(n):\n  if not seen[s]: count += 1 and flood\n```"
+
+[[hint]]
+rung = 4
+text = "Return the isle count."

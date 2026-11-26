@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Mark every node an arc names — both endpoints — then count the unmarked."
+
+[[hint]]
+rung = 2
+text = "A self-loop names its node, so that node is not lone."
+
+[[hint]]
+rung = 3
+text = "```\ntouched = [False]*n\ntouch both ends of each arc\ncount untouched\n```"
+
+[[hint]]
+rung = 4
+text = "Return the lone count."

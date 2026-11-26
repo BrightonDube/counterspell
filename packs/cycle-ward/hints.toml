@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Union each arc's ends; if they already share a root, a ring exists."
+
+[[hint]]
+rung = 2
+text = "A self-loop rings itself, and a doubled arc means the second copy joins an already-joined pair."
+
+[[hint]]
+rung = 3
+text = "```\nparent = range(n)\nfind each arc's two roots\nsame root -> 1, else union\n```"
+
+[[hint]]
+rung = 4
+text = "Return `1` or `0`."

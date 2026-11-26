@@ -532,3 +532,147 @@ Codes and counts only - no hidden values are logged.
 - ember-partition: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- signal-reach: static stages S0-S9
+- signal-reach: S9 passed; S10/S11 pending_judge
+- signal-reach: review round 1 recorded
+- signal-reach: review round 2 recorded
+- signal-reach: review round 3 recorded
+- signal-reach: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- ember-isles: static stages S0-S9
+- ember-isles: S9 passed; S10/S11 pending_judge
+- ember-isles: review round 1 recorded
+- ember-isles: review round 2 recorded
+- ember-isles: review round 3 recorded
+- ember-isles: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- lone-nodes: static stages S0-S9
+- lone-nodes: S9 passed; S10/S11 pending_judge
+- lone-nodes: review round 1 recorded
+- lone-nodes: review round 2 recorded
+- lone-nodes: review round 3 recorded
+- lone-nodes: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- grid-nook: static stages S0-S9
+- grid-nook: S9 passed; S10/S11 pending_judge
+- grid-nook: review round 1 recorded
+- grid-nook: review round 2 recorded
+- grid-nook: review round 3 recorded
+- grid-nook: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- twin-walls: static stages S0-S9
+- twin-walls: S9 passed; S10/S11 pending_judge
+- twin-walls: review round 1 recorded
+- twin-walls: review round 2 recorded
+- twin-walls: review round 3 recorded
+- twin-walls: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- cycle-ward: static stages S0-S9
+- cycle-ward: S9 passed; S10/S11 pending_judge
+- cycle-ward: review round 1 recorded
+- cycle-ward: review round 2 recorded
+- cycle-ward: review round 3 recorded
+- cycle-ward: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- signal-span: static stages S0-S9
+- signal-span: S9 passed; S10/S11 pending_judge
+- signal-span: review round 1 recorded
+- signal-span: review round 2 recorded
+- signal-span: review round 3 recorded
+- signal-span: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- order-count: static stages S0-S9
+- order-count: S9 passed; S10/S11 pending_judge
+- order-count: review round 1 recorded
+- order-count: review round 2 recorded
+- order-count: review round 3 recorded
+- order-count: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- sigil-bridge: static stages S0-S9
+- sigil-bridge: S9 passed; S10/S11 pending_judge
+- sigil-bridge: review round 1 recorded
+- sigil-bridge: review round 2 recorded
+- sigil-bridge: review round 3 recorded
+- sigil-bridge: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- rune-depth: static stages S0-S9
+- rune-depth: S9 passed; S10/S11 pending_judge
+- rune-depth: review round 1 recorded
+- rune-depth: review round 2 recorded
+- rune-depth: review round 3 recorded
+- rune-depth: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- signal-reach: static stages S0-S9
+- signal-reach: S9 passed; S10/S11 pending_judge
+- signal-reach: review round 1 recorded
+- signal-reach: review round 2 recorded
+- signal-reach: review round 3 recorded
+- signal-reach: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-isles: static stages S0-S9
+- ember-isles: S9 passed; S10/S11 pending_judge
+- ember-isles: review round 1 recorded
+- ember-isles: review round 2 recorded
+- ember-isles: review round 3 recorded
+- ember-isles: awaiting_approval (Brighton gate; no approval.toml written here)
+--- lone-nodes: static stages S0-S9
+- lone-nodes: S9 passed; S10/S11 pending_judge
+- lone-nodes: review round 1 recorded
+- lone-nodes: review round 2 recorded
+- lone-nodes: review round 3 recorded
+- lone-nodes: awaiting_approval (Brighton gate; no approval.toml written here)
+--- grid-nook: static stages S0-S9
+- grid-nook: S9 passed; S10/S11 pending_judge
+- grid-nook: review round 1 recorded
+- grid-nook: review round 2 recorded
+- grid-nook: review round 3 recorded
+- grid-nook: awaiting_approval (Brighton gate; no approval.toml written here)
+--- twin-walls: static stages S0-S9
+- twin-walls: S9 passed; S10/S11 pending_judge
+- twin-walls: review round 1 recorded
+- twin-walls: review round 2 recorded
+- twin-walls: review round 3 recorded
+- twin-walls: awaiting_approval (Brighton gate; no approval.toml written here)
+--- cycle-ward: static stages S0-S9
+- cycle-ward: S9 passed; S10/S11 pending_judge
+- cycle-ward: review round 1 recorded
+- cycle-ward: review round 2 recorded
+- cycle-ward: review round 3 recorded
+- cycle-ward: awaiting_approval (Brighton gate; no approval.toml written here)
+--- signal-span: static stages S0-S9
+- signal-span: S9 passed; S10/S11 pending_judge
+- signal-span: review round 1 recorded
+- signal-span: review round 2 recorded
+- signal-span: review round 3 recorded
+- signal-span: awaiting_approval (Brighton gate; no approval.toml written here)
+--- order-count: static stages S0-S9
+- order-count: S9 passed; S10/S11 pending_judge
+- order-count: review round 1 recorded
+- order-count: review round 2 recorded
+- order-count: review round 3 recorded
+- order-count: awaiting_approval (Brighton gate; no approval.toml written here)
+--- sigil-bridge: static stages S0-S9
+- sigil-bridge: S9 passed; S10/S11 pending_judge
+- sigil-bridge: review round 1 recorded
+- sigil-bridge: review round 2 recorded
+- sigil-bridge: review round 3 recorded
+- sigil-bridge: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rune-depth: static stages S0-S9
+- rune-depth: S9 passed; S10/S11 pending_judge
+- rune-depth: review round 1 recorded
+- rune-depth: review round 2 recorded
+- rune-depth: review round 3 recorded
+- rune-depth: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.

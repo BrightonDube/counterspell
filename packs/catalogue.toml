@@ -137,3 +137,7 @@ name = "Greedy"
 [[concepts]]
 slug = "backtracking"
 name = "Backtracking"
+
+[[concepts]]
+slug = "graphs"
+name = "Graphs"
