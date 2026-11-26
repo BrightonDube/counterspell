@@ -1,0 +1,43 @@
+slug = "idle-stretch"
+title = "The Idle Stretch"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["matrices", "edge-cases", "counting", "scanning"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "idle_stretch"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(t) coverage sweep."
+
+[[params]]
+name = "spans"
+type = "list[list[int]]"
+[[params]]
+name = "t"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 100 }, { type = "int", min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[[0, 1], [3, 4]], 5]
+expected = 1
+
+[[samples]]
+input = [[], 5]
+expected = 6
+
+[[samples]]
+input = [[[1, 3]], 5]
+expected = 2

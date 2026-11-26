@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Sort by start; a new stretch opens only when a seal begins past the running end — marks sharing an edge count once."
+
+[[hint]]
+rung = 2
+text = "A seal at `[2, 2]` right after `[0, 1]` opens a new stretch: mark `2` was bare."
+
+[[hint]]
+rung = 3
+text = "```\nsort by start\ncovered = sum over merged runs of end-start+1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the covered mark count."

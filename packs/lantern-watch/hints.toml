@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Light the earliest unlit seal's end — every seal still dark must reach past it, and that mark lights the most."
+
+[[hint]]
+rung = 2
+text = "A seal starting at the lantern mark is lit — starts count, not after."
+
+[[hint]]
+rung = 3
+text = "```\nsort by end; p = first unlit seal's end; skip all with a <= p\n```"
+
+[[hint]]
+rung = 4
+text = "Return the lantern count."

@@ -1,0 +1,40 @@
+slug = "double-book"
+title = "The Double Book"
+status = "published"
+difficulty = "hard"
+track = "matrices"
+concepts = ["matrices", "greedy", "edge-cases", "counting", "prefixes"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "room_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) event sweep."
+
+[[params]]
+name = "spans"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[[0, 1], [1, 2]]]
+expected = 2
+
+[[samples]]
+input = [[[0, 1], [2, 3]]]
+expected = 1
+
+[[samples]]
+input = [[[0, 4], [1, 2], [2, 3], [3, 4]]]
+expected = 3
