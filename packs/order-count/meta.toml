@@ -1,0 +1,43 @@
+slug = "order-count"
+title = "The Order Count"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["graphs", "counting", "backtracking", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "order_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "Bounded removal walk — n! worst case inside the bound."
+
+[[params]]
+name = "edges"
+type = "list[list[int]]"
+[[params]]
+name = "n"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 0, max_rows = 20, min_cols = 2, max_cols = 2, min = 0, max = 8 }, { type = "int", min = 0, max = 8 },
+]
+
+[[samples]]
+input = [[[0, 1], [0, 2]], 3]
+expected = 2
+
+[[samples]]
+input = [[[0, 1], [1, 0]], 2]
+expected = 0
+
+[[samples]]
+input = [[], 3]
+expected = 6

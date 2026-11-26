@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Stamp each node on first entry; a child's low-link above its parent's stamp marks the arc between as a bridge."
+
+[[hint]]
+rung = 2
+text = "Track the arc you arrived by, not the node — a second copy of that arc is a back-ar, not the way home."
+
+[[hint]]
+rung = 3
+text = "```\ndisc/low stamps per node\nskip only the entry arc index\nlow[child] > disc[node] -> bridge\n```"
+
+[[hint]]
+rung = 4
+text = "Return the bridge count."

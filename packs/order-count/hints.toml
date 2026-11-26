@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "A node may join the line-up once every order into it is already placed; count the ways to finish."
+
+[[hint]]
+rung = 2
+text = "A self-order can never be met, and a repeated order rules once."
+
+[[hint]]
+rung = 3
+text = "```\nindeg[b] per arc\npick any zero-indegree node, decrement its out-arcs, recurse\nsum the finishes\n```"
+
+[[hint]]
+rung = 4
+text = "Return the line-up count."

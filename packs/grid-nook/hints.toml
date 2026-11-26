@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Flood the grille from the top-left, moving only up, down, left and right."
+
+[[hint]]
+rung = 2
+text = "A bricked start ends the flood at zero before it begins."
+
+[[hint]]
+rung = 3
+text = "```\nseen = {(0,0)}\nspread to open neighbours;\nreturn len(seen)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the nook size."

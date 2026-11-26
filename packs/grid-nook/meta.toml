@@ -1,0 +1,40 @@
+slug = "grid-nook"
+title = "The Grid Nook"
+status = "published"
+difficulty = "easy"
+track = "matrices"
+concepts = ["graphs", "matrices", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "nook_size"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(rows × cols) four-way flood."
+
+[[params]]
+name = "grid"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 1, max_rows = 5, min_cols = 1, max_cols = 5, min = 0, max = 1 },
+]
+
+[[samples]]
+input = [[[1, 1], [0, 1]]]
+expected = 3
+
+[[samples]]
+input = [[[0, 1], [1, 1]]]
+expected = 0
+
+[[samples]]
+input = [[[1]]]
+expected = 1
