@@ -1,0 +1,43 @@
+slug = "candle-choices"
+title = "The Candle Choices"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["backtracking", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "pick_ways"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n * k) table or take/leave recursion over n candles."
+
+[[params]]
+name = "n"
+type = "int"
+[[params]]
+name = "k"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 20 }, { type = "int", min = 0, max = 20 },
+]
+
+[[samples]]
+input = [4, 2]
+expected = 6
+
+[[samples]]
+input = [3, 0]
+expected = 1
+
+[[samples]]
+input = [2, 5]
+expected = 0

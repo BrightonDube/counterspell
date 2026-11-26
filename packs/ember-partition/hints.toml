@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Each mark joins one of `ways` heaps; prune a heap whose running sum would pass the target."
+
+[[hint]]
+rung = 2
+text = "To kill heap orderings: a mark may only join a heap already holding marks, or the first empty heap."
+
+[[hint]]
+rung = 3
+text = "```\ntarget = sum/ways\ngo(i): for each heap with room, add marks[i]\n  skip the next empty heaps after trying the first\n```"
+
+[[hint]]
+rung = 4
+text = "Return the split count."

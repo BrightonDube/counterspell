@@ -1,0 +1,40 @@
+slug = "grille-paths"
+title = "The Grille Paths"
+status = "published"
+difficulty = "medium"
+track = "matrices"
+concepts = ["backtracking", "matrices", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "path_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(2^(r+c)) worst case — the grille stays tiny."
+
+[[params]]
+name = "grid"
+type = "list[list[int]]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "matrix", min_rows = 1, max_rows = 5, min_cols = 1, max_cols = 5, min = 0, max = 1 },
+]
+
+[[samples]]
+input = [[[1, 1], [1, 1]]]
+expected = 2
+
+[[samples]]
+input = [[[1, 0], [1, 1]]]
+expected = 1
+
+[[samples]]
+input = [[[0, 1], [1, 1]]]
+expected = 0

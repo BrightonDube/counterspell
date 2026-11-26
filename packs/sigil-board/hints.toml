@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Place exactly one sigil per row; each new column must dodge used columns and both diagonals."
+
+[[hint]]
+rung = 2
+text = "A placement on row r sees a diagonal clash when the row difference equals the column difference."
+
+[[hint]]
+rung = 3
+text = "```\nfor c in range(n):\n  skip if c in cols or |r-rr|==|c-cc| for any (rr,cc)\n  else place c and recurse to r+1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the placement count."

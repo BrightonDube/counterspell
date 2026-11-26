@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Place candles one at a time; a candle may follow only a different mark."
+
+[[hint]]
+rung = 2
+text = "Candles are distinct — swap two equal-marked candles and it is a new order."
+
+[[hint]]
+rung = 3
+text = "```\ndef go(prev, left):\n  if not left: return 1\n  return sum(go(m, left - {i}) for i, m in enumerate(left) if m != prev)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the count."

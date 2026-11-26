@@ -1,0 +1,43 @@
+slug = "rune-gap"
+title = "The Rune Gap"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["backtracking", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "gap_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(2^n) worst case; bounds keep it inside the limits."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+[[params]]
+name = "cap"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 30, min = 0, max = 20 }, { type = "int", min = 0, max = 60 },
+]
+
+[[samples]]
+input = [[1, 2, 3], 4]
+expected = 6
+
+[[samples]]
+input = [[], 0]
+expected = 1
+
+[[samples]]
+input = [[5, 5], 4]
+expected = 1

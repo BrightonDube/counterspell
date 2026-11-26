@@ -222,3 +222,20 @@ Ten packs on integer piles and flat pair lists: bounded floor sums, triage order
 | meld-cost | The Meld Cost | medium | arrays |
 | deadline-dial | The Deadline Dial | hard | arrays |
 | rune-dial | The Rune Dial | hard | arrays |
+
+## Batch 10 — backtracking and constraint search
+
+Ten packs on choice walks with pruning: satchel sums, candle picks, wall spreads, satchel caps, rune lineups, grille routes, ember halves, sentry gaps, sigil boards and ember heaps.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| summon-rite | The Summon Rite | easy | arrays |
+| candle-choices | The Candle Choices | easy | arrays |
+| ward-spread | The Ward Spread | easy | arrays |
+| rune-gap | The Rune Gap | easy | arrays |
+| rune-lineup | The Rune Lineup | medium | arrays |
+| grille-paths | The Grille Paths | medium | matrices |
+| ember-split | The Ember Split | medium | arrays |
+| sentry-gap | The Sentry Gap | medium | arrays |
+| sigil-board | The Sigil Board | hard | arrays |
+| ember-partition | The Ember Partition | hard | arrays |

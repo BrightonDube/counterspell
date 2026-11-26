@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Place a sentry, then force `gap` empty posts before the next; or skip this post."
+
+[[hint]]
+rung = 2
+text = "Zero sentries is always one layout — the gap governs only pairs."
+
+[[hint]]
+rung = 3
+text = "```\ndef f(c, s):\n  if s == 0: return 1\n  return 0 if c <= 0 else f(c-gap-1,s-1)+f(c-1,s)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the layout count."

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Carry the remaining capacity; each mark is packed or left."
+
+[[hint]]
+rung = 2
+text = "The empty subset always fits, so the count never falls below one."
+
+[[hint]]
+rung = 3
+text = "```\ndef go(i, left):\n  if left < 0: return 0\n  return 1 if i == len(marks) else go(i+1,left-marks[i])+go(i+1,left)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the subset count."

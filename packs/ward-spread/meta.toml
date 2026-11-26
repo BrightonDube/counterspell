@@ -1,0 +1,43 @@
+slug = "ward-spread"
+title = "The Ward Spread"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["backtracking", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "spread_ways"
+returns = "int"
+comparator = "exact"
+complexity_note = "Bounded place/skip recursion; equally a choose count."
+
+[[params]]
+name = "cells"
+type = "int"
+[[params]]
+name = "guards"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 20 }, { type = "int", min = 0, max = 20 },
+]
+
+[[samples]]
+input = [4, 2]
+expected = 3
+
+[[samples]]
+input = [5, 3]
+expected = 1
+
+[[samples]]
+input = [3, 0]
+expected = 1

@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "The target is half the total — count subsets reaching it, then halve the count."
+
+[[hint]]
+rung = 2
+text = "Each side must be non-empty: drop the empty and the full subsets before halving."
+
+[[hint]]
+rung = 3
+text = "```\nhalf = sum(marks) / 2\ncount subsets with that sum, excluding the empty and full ones\nreturn count // 2\n```"
+
+[[hint]]
+rung = 4
+text = "Return the split count."

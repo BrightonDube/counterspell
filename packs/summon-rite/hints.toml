@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For each mark, either take it or skip it — walk both branches."
+
+[[hint]]
+rung = 2
+text = "The empty subset is a legal choice: it sums to zero."
+
+[[hint]]
+rung = 3
+text = "```\ndef go(i, need):\n  return need == 0 or (i < len(marks) and (go(i+1, need-marks[i]) or go(i+1, need)))\n```"
+
+[[hint]]
+rung = 4
+text = "Return 1 or 0."

@@ -1,0 +1,40 @@
+slug = "rune-lineup"
+title = "The Rune Lineup"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["backtracking", "counting", "deduplication", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "lineups"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n!) worst case — the bound keeps it inside the limits."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 8, min = 0, max = 20 },
+]
+
+[[samples]]
+input = [[1, 2, 3]]
+expected = 6
+
+[[samples]]
+input = [[1, 1, 2]]
+expected = 2
+
+[[samples]]
+input = [[1, 1]]
+expected = 0

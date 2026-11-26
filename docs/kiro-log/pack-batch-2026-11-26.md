@@ -468,3 +468,67 @@ Codes and counts only - no hidden values are logged.
 - rune-dial: review round 2 recorded
 - rune-dial: review round 3 recorded
 - rune-dial: awaiting_approval (Brighton gate; no approval.toml written here)
+# pack-batch run 2026-11-26
+
+--- summon-rite: static stages S0-S9
+- summon-rite: S9 passed; S10/S11 pending_judge
+- summon-rite: review round 1 recorded
+- summon-rite: review round 2 recorded
+- summon-rite: review round 3 recorded
+- summon-rite: awaiting_approval (Brighton gate; no approval.toml written here)
+--- candle-choices: static stages S0-S9
+- candle-choices: S9 passed; S10/S11 pending_judge
+- candle-choices: review round 1 recorded
+- candle-choices: review round 2 recorded
+- candle-choices: review round 3 recorded
+- candle-choices: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ward-spread: static stages S0-S9
+- ward-spread: S9 passed; S10/S11 pending_judge
+- ward-spread: review round 1 recorded
+- ward-spread: review round 2 recorded
+- ward-spread: review round 3 recorded
+- ward-spread: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rune-gap: static stages S0-S9
+- rune-gap: S9 passed; S10/S11 pending_judge
+- rune-gap: review round 1 recorded
+- rune-gap: review round 2 recorded
+- rune-gap: review round 3 recorded
+- rune-gap: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rune-lineup: static stages S0-S9
+- rune-lineup: S9 passed; S10/S11 pending_judge
+- rune-lineup: review round 1 recorded
+- rune-lineup: review round 2 recorded
+- rune-lineup: review round 3 recorded
+- rune-lineup: awaiting_approval (Brighton gate; no approval.toml written here)
+--- grille-paths: static stages S0-S9
+- grille-paths: S9 passed; S10/S11 pending_judge
+- grille-paths: review round 1 recorded
+- grille-paths: review round 2 recorded
+- grille-paths: review round 3 recorded
+- grille-paths: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-split: static stages S0-S9
+- ember-split: S9 passed; S10/S11 pending_judge
+- ember-split: review round 1 recorded
+- ember-split: review round 2 recorded
+- ember-split: review round 3 recorded
+- ember-split: awaiting_approval (Brighton gate; no approval.toml written here)
+--- sentry-gap: static stages S0-S9
+- sentry-gap: S9 passed; S10/S11 pending_judge
+- sentry-gap: review round 1 recorded
+- sentry-gap: review round 2 recorded
+- sentry-gap: review round 3 recorded
+- sentry-gap: awaiting_approval (Brighton gate; no approval.toml written here)
+--- sigil-board: static stages S0-S9
+- sigil-board: S9 passed; S10/S11 pending_judge
+- sigil-board: review round 1 recorded
+- sigil-board: review round 2 recorded
+- sigil-board: review round 3 recorded
+- sigil-board: awaiting_approval (Brighton gate; no approval.toml written here)
+--- ember-partition: static stages S0-S9
+- ember-partition: S9 passed; S10/S11 pending_judge
+- ember-partition: review round 1 recorded
+- ember-partition: review round 2 recorded
+- ember-partition: review round 3 recorded
+- ember-partition: awaiting_approval (Brighton gate; no approval.toml written here)
+
+Codes and counts only - no hidden values are logged.
