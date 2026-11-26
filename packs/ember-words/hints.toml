@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Mark every prefix the scrawl can reach — a word ending there extends it."
+
+[[hint]]
+rung = 2
+text = "Check each position against every ember's end; reuse is free so embers need no tracking."
+
+[[hint]]
+rung = 3
+text = "```\nd[0] = 1\nfor i: for w in embers: if i >= len(w) and d[i-len(w)] and text ends at i with w: d[i] = 1\nreturn d[len(text)]\n```"
+
+[[hint]]
+rung = 4
+text = "Return whether the scrawl splits."

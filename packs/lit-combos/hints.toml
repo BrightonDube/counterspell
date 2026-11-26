@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk the kinds outermost — every mix then builds in one canonical order and permutations collapse."
+
+[[hint]]
+rung = 2
+text = "For each kind c, every toll t gains the mixes ending with c: d[t] += d[t-c]."
+
+[[hint]]
+rung = 3
+text = "```\nd[0] = 1\nfor c in coins: for t in c..target: d[t] += d[t-c]\nreturn d[target]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the mix count."

@@ -1,0 +1,40 @@
+slug = "climb-rite"
+title = "The Climb Rite"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["recursion", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "climb_ways"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(steps) running two-variable sum."
+
+[[params]]
+name = "steps"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int", min = 0, max = 40 },
+]
+
+[[samples]]
+input = [0]
+expected = 1
+
+[[samples]]
+input = [3]
+expected = 3
+
+[[samples]]
+input = [5]
+expected = 8

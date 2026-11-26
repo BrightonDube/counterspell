@@ -1,0 +1,40 @@
+slug = "calm-gaps"
+title = "The Calm Gaps"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["counting", "greedy", "recursion", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "calm_haul"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len) take-or-skip rolling best."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 30, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[2, 7, 9, 3, 1]]
+expected = 12
+
+[[samples]]
+input = [[1, 2, 3, 1]]
+expected = 4

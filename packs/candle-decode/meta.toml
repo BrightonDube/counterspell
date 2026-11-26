@@ -1,0 +1,40 @@
+slug = "candle-decode"
+title = "The Candle Decode"
+status = "published"
+difficulty = "medium"
+track = "strings"
+concepts = ["recursion", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "decode_ways"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len) prefix counts over one- and two-glyph steps."
+
+[[params]]
+name = "glyphs"
+type = "str"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "string", alphabet = "0123456789", min_len = 0, max_len = 40 },
+]
+
+[[samples]]
+input = [""]
+expected = 1
+
+[[samples]]
+input = ["12"]
+expected = 2
+
+[[samples]]
+input = ["06"]
+expected = 0

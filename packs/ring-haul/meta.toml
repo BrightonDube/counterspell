@@ -1,0 +1,40 @@
+slug = "ring-haul"
+title = "The Ring Haul"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["greedy", "recursion", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "ring_haul"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(len) two linear take-or-skip runs."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 30, min = 0, max = 100 },
+]
+
+[[samples]]
+input = [[]]
+expected = 0
+
+[[samples]]
+input = [[9, 1, 1, 9]]
+expected = 10
+
+[[samples]]
+input = [[2, 1, 1, 2]]
+expected = 3

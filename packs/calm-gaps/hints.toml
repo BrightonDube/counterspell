@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "At each mark choose: take it (add it to the best skip) or skip it (keep the previous best)."
+
+[[hint]]
+rung = 2
+text = "Carry two numbers — best ending with a take and best ending with a skip."
+
+[[hint]]
+rung = 3
+text = "```\ntake = 0; skip = 0\nfor each m: take, skip = skip + m, max(skip, take)\nreturn max(take, skip)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the largest non-adjacent total."

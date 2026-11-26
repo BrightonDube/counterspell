@@ -1,0 +1,43 @@
+slug = "lit-combos"
+title = "The Lit Combos"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["recursion", "counting", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "count_mixes"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(kinds × target) coin-outer counting."
+
+[[params]]
+name = "coins"
+type = "list[int]"
+[[params]]
+name = "target"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 1, max_len = 12, min = 1, max = 60 }, { type = "int", min = 0, max = 300 },
+]
+
+[[samples]]
+input = [[1, 2, 5], 5]
+expected = 4
+
+[[samples]]
+input = [[2], 3]
+expected = 0
+
+[[samples]]
+input = [[1], 0]
+expected = 1

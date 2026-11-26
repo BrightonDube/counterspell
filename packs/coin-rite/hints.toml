@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "For every toll, the last coin is one of the kinds — the best count is one more than the cheapest remainder."
+
+[[hint]]
+rung = 2
+text = "The biggest-kind greedy fails — [9, 6, 5, 1] paying 11 wants 5+6, not 9+1+1."
+
+[[hint]]
+rung = 3
+text = "```\nd[0] = 0\nfor i in 1..target: d[i] = min over kinds c of d[i-c] + 1\nreturn d[target] or -1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the fewest coins, or -1."
