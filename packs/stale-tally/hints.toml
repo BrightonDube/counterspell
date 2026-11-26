@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Compare each pair at the same seat; count the seats that disagree."
+
+[[hint]]
+rung = 2
+text = "Only an exact version match is fresh — every mismatch is stale."
+
+[[hint]]
+rung = 3
+text = "```\nreturn sum(1 for a, b in zip(seen, queued) if a != b)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the stale tally."

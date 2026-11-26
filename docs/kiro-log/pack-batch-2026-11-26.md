@@ -406,3 +406,65 @@ Codes and counts only - no hidden values are logged.
 - stem-harvest: awaiting_approval (Brighton gate; no approval.toml written here)
 
 Codes and counts only - no hidden values are logged.
+# pack-batch run 2026-11-26
+
+--- ember-floor: static stages S0-S9
+- ember-floor: S9 passed; S10/S11 pending_judge
+- ember-floor: review round 1 recorded
+- ember-floor: review round 2 recorded
+- ember-floor: review round 3 recorded
+- ember-floor: awaiting_approval (Brighton gate; no approval.toml written here)
+--- triage-mark: static stages S0-S9
+- triage-mark: S9 passed; S10/S11 pending_judge
+- triage-mark: review round 1 recorded
+- triage-mark: review round 2 recorded
+- triage-mark: review round 3 recorded
+- triage-mark: awaiting_approval (Brighton gate; no approval.toml written here)
+--- stale-tally: static stages S0-S9
+- stale-tally: S9 passed; S10/S11 pending_judge
+- stale-tally: review round 1 recorded
+- stale-tally: review round 2 recorded
+- stale-tally: review round 3 recorded
+- stale-tally: awaiting_approval (Brighton gate; no approval.toml written here)
+--- kth-ember: static stages S0-S9
+- kth-ember: S9 passed; S10/S11 pending_judge
+- kth-ember: review round 1 recorded
+- kth-ember: review round 2 recorded
+- kth-ember: review round 3 recorded
+- kth-ember: awaiting_approval (Brighton gate; no approval.toml written here)
+--- drain-order: static stages S0-S9
+- drain-order: S9 passed; S10/S11 pending_judge
+- drain-order: review round 1 recorded
+- drain-order: review round 2 recorded
+- drain-order: review round 3 recorded
+- drain-order: awaiting_approval (Brighton gate; no approval.toml written here)
+--- median-ward: static stages S0-S9
+- median-ward: S9 passed; S10/S11 pending_judge
+- median-ward: review round 1 recorded
+- median-ward: review round 2 recorded
+- median-ward: review round 3 recorded
+- median-ward: awaiting_approval (Brighton gate; no approval.toml written here)
+--- meld-slate: static stages S0-S9
+- meld-slate: S9 passed; S10/S11 pending_judge
+- meld-slate: review round 1 recorded
+- meld-slate: review round 2 recorded
+- meld-slate: review round 3 recorded
+- meld-slate: awaiting_approval (Brighton gate; no approval.toml written here)
+--- meld-cost: static stages S0-S9
+- meld-cost: S9 passed; S10/S11 pending_judge
+- meld-cost: review round 1 recorded
+- meld-cost: review round 2 recorded
+- meld-cost: review round 3 recorded
+- meld-cost: awaiting_approval (Brighton gate; no approval.toml written here)
+--- deadline-dial: static stages S0-S9
+- deadline-dial: S9 passed; S10/S11 pending_judge
+- deadline-dial: review round 1 recorded
+- deadline-dial: review round 2 recorded
+- deadline-dial: review round 3 recorded
+- deadline-dial: awaiting_approval (Brighton gate; no approval.toml written here)
+--- rune-dial: static stages S0-S9
+- rune-dial: S9 passed; S10/S11 pending_judge
+- rune-dial: review round 1 recorded
+- rune-dial: review round 2 recorded
+- rune-dial: review round 3 recorded
+- rune-dial: awaiting_approval (Brighton gate; no approval.toml written here)

@@ -1,0 +1,40 @@
+slug = "deadline-dial"
+title = "The Deadline Dial"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["heaps", "greedy", "simulation", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "dial_count"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) sort with a max-heap of held durations."
+
+[[params]]
+name = "slots"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 },
+]
+
+[[samples]]
+input = [[2, 1, 2, 2, 1, 3]]
+expected = 1
+
+[[samples]]
+input = [[3, 1, 3, 2, 2, 2]]
+expected = 2
+
+[[samples]]
+input = [[]]
+expected = 0

@@ -1,0 +1,43 @@
+slug = "ember-floor"
+title = "The Ember Floor"
+status = "published"
+difficulty = "easy"
+track = "arrays"
+concepts = ["counting", "edge-cases", "heaps"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "floor_sum"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) ordering or O(n log k) with a bounded heap."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+[[params]]
+name = "k"
+type = "int"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = -999, max = 999 }, { type = "int", min = 0, max = 40 },
+]
+
+[[samples]]
+input = [[5, 1, 4, 2, 3], 2]
+expected = 3
+
+[[samples]]
+input = [[7, 7, 7], 5]
+expected = 21
+
+[[samples]]
+input = [[], 3]
+expected = 0

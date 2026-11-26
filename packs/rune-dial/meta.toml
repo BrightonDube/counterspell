@@ -1,0 +1,40 @@
+slug = "rune-dial"
+title = "The Rune Dial"
+status = "published"
+difficulty = "hard"
+track = "arrays"
+concepts = ["heaps", "simulation", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "run_median"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "O(n log n) with two heaps or O(n^2) resorting each prefix."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = -999, max = 999 },
+]
+
+[[samples]]
+input = [[1, 3, 2]]
+expected = [2, 4, 4]
+
+[[samples]]
+input = [[5, 5]]
+expected = [10, 10]
+
+[[samples]]
+input = [[]]
+expected = []

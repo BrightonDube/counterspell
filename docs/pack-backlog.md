@@ -205,3 +205,20 @@ Ten packs on comma-joined dictionaries: prefix tallies, membership, shared stems
 | lexicon-shrink | The Lexicon Shrink | medium | strings |
 | wild-lexicon | The Wild Lexicon | hard | strings |
 | stem-harvest | The Stem Harvest | hard | strings |
+
+## Batch 09 — heaps, priority queues and scheduling
+
+Ten packs on integer piles and flat pair lists: bounded floor sums, triage order, stale versions, rank picks, queue drains, running medians, slate melds, fusion cost, deadline dials and a rune dial.
+
+| Slug | Title | Difficulty | Track |
+| ---- | ----- | ---------- | ----- |
+| ember-floor | The Ember Floor | easy | arrays |
+| triage-mark | The Triage Mark | easy | arrays |
+| stale-tally | The Stale Tally | easy | arrays |
+| kth-ember | The Kth Ember | easy | arrays |
+| drain-order | The Drain Order | medium | arrays |
+| median-ward | The Median Ward | medium | arrays |
+| meld-slate | The Meld Slate | medium | arrays |
+| meld-cost | The Meld Cost | medium | arrays |
+| deadline-dial | The Deadline Dial | hard | arrays |
+| rune-dial | The Rune Dial | hard | arrays |

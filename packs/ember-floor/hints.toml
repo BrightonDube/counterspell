@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Put the marks in order and add the first `k`."
+
+[[hint]]
+rung = 2
+text = "When `k` is zero or the pile is empty the total is zero; when `k` exceeds the pile every mark counts."
+
+[[hint]]
+rung = 3
+text = "```\nmarks = sorted(marks)\nreturn sum(marks[:k])\n```"
+
+[[hint]]
+rung = 4
+text = "Return the bounded total."

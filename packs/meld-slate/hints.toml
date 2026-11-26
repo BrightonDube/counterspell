@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Hold a finger on each front; take the smaller mark each step, then drain what is left."
+
+[[hint]]
+rung = 2
+text = "Equal marks melt from either front — both copies land in the outflow."
+
+[[hint]]
+rung = 3
+text = "```\ni = j = 0\nwhile i < len(a) and j < len(b): out.append(a[i] if a[i] <= b[j] else b[j]); step the side taken\nout += a[i:] + b[j:]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the melded list."

@@ -125,3 +125,11 @@ name = "Tries"
 [[concepts]]
 slug = "recursion"
 name = "Recursion"
+
+[[concepts]]
+slug = "heaps"
+name = "Heaps"
+
+[[concepts]]
+slug = "greedy"
+name = "Greedy"

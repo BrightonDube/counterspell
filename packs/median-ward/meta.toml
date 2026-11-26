@@ -1,0 +1,40 @@
+slug = "median-ward"
+title = "The Median Ward"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["heaps", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "median_x2"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) ordering then O(1) middle reads."
+
+[[params]]
+name = "marks"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = -999, max = 999 },
+]
+
+[[samples]]
+input = [[3, 1, 2]]
+expected = 4
+
+[[samples]]
+input = [[4, 1, 3, 2]]
+expected = 5
+
+[[samples]]
+input = [[]]
+expected = 0
