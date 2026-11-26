@@ -117,3 +117,7 @@ name = "Linked Chains"
 [[concepts]]
 slug = "trees"
 name = "Trees"
+
+[[concepts]]
+slug = "recursion"
+name = "Recursion"
