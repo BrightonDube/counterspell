@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Hold the low half in a max-heap and the high half in a min-heap; move marks until they differ by at most one."
+
+[[hint]]
+rung = 2
+text = "While the counts are even the answer is the two tops added; on odd counts it is twice the larger side's top."
+
+[[hint]]
+rung = 3
+text = "```\npush lo (-v); move lo top to hi; if hi > lo move back\nout.append(-lo[0] + hi[0] if even else -2 * lo[0])\n```"
+
+[[hint]]
+rung = 4
+text = "Return the running doubled medians."

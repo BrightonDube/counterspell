@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Order the marks and read the middle — two middles sum on even counts."
+
+[[hint]]
+rung = 2
+text = "Doubling keeps the answer whole: even counts add the two middle marks."
+
+[[hint]]
+rung = 3
+text = "```\nm = sorted(marks)\nn = len(m)\nreturn 0 if n == 0 else (2 * m[n // 2] if n % 2 else m[n // 2 - 1] + m[n // 2])\n```"
+
+[[hint]]
+rung = 4
+text = "Return the doubled pivot."

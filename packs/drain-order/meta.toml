@@ -1,0 +1,40 @@
+slug = "drain-order"
+title = "The Drain Order"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["heaps", "simulation", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "drain_order"
+returns = "list[int]"
+comparator = "exact"
+complexity_note = "O(n log n) ordering of the pairs."
+
+[[params]]
+name = "events"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 0, max = 99 },
+]
+
+[[samples]]
+input = [[3, 10, 1, 20, 2, 30]]
+expected = [20, 30, 10]
+
+[[samples]]
+input = [[5, 42, 5, 7]]
+expected = [7, 42]
+
+[[samples]]
+input = [[]]
+expected = []

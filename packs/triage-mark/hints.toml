@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Walk the queue once, keeping the best index seen."
+
+[[hint]]
+rung = 2
+text = "Replace the best only when a mark is strictly smaller — a tie keeps the earlier index."
+
+[[hint]]
+rung = 3
+text = "```\nbest = -1\nfor i, p in enumerate(prios): if best < 0 or p < prios[best]: best = i\nreturn best\n```"
+
+[[hint]]
+rung = 4
+text = "Return the best index or -1."

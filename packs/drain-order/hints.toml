@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Pair urgency with id, then order the pairs by urgency first and id second."
+
+[[hint]]
+rung = 2
+text = "An equal urgency does not keep arrival order — the lower id pops first."
+
+[[hint]]
+rung = 3
+text = "```\npairs = zip(events[0::2], events[1::2])\nreturn [i for _, i in sorted(pairs)]\n```"
+
+[[hint]]
+rung = 4
+text = "Return the drained id list."

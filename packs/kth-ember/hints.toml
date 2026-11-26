@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Order the marks, then read index `k - 1`."
+
+[[hint]]
+rung = 2
+text = "Repeats keep ranks — never deduplicate; a short pile answers `-1`."
+
+[[hint]]
+rung = 3
+text = "```\nmarks = sorted(marks)\nreturn marks[k - 1] if 0 < k <= len(marks) else -1\n```"
+
+[[hint]]
+rung = 4
+text = "Return the mark or -1."

@@ -1,0 +1,40 @@
+slug = "meld-cost"
+title = "The Meld Cost"
+status = "published"
+difficulty = "medium"
+track = "arrays"
+concepts = ["heaps", "greedy", "edge-cases"]
+origin = "original"
+author = "Brighton"
+licence = "MIT"
+pack_version = 1
+function = "meld_cost"
+returns = "int"
+comparator = "exact"
+complexity_note = "O(n log n) heap pushes and pops."
+
+[[params]]
+name = "sizes"
+type = "list[int]"
+
+[limits]
+time_ms = 2000
+mem_mb = 256
+
+[input_schema]
+type = "tuple"
+items = [
+  { type = "int_array", min_len = 0, max_len = 40, min = 1, max = 99 },
+]
+
+[[samples]]
+input = [[1, 2, 3]]
+expected = 9
+
+[[samples]]
+input = [[4, 4, 4, 4]]
+expected = 32
+
+[[samples]]
+input = [[]]
+expected = 0

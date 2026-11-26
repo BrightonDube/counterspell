@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Keep a heap of pile sizes; each step meld the two smallest and push the fused pile back."
+
+[[hint]]
+rung = 2
+text = "The fused pile melds on — its size counts in later costs too."
+
+[[hint]]
+rung = 3
+text = "```\nimport heapq; heapq.heapify(sizes); cost = 0\nwhile len(sizes) > 1: a, b = heapq.heappop(sizes), heapq.heappop(sizes); cost += a + b; heapq.heappush(sizes, a + b)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the total cost."

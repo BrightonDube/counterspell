@@ -1,0 +1,15 @@
+[[hint]]
+rung = 1
+text = "Take jobs in deadline order and hold their durations in a max-heap."
+
+[[hint]]
+rung = 2
+text = "When the running time passes a deadline, drop the longest held job — it may be the one just added."
+
+[[hint]]
+rung = 3
+text = "```\nheld = []\ntime = 0\nfor d, t in sorted(jobs): time += t; push -t; if time > d: time += heappop(held)\n```"
+
+[[hint]]
+rung = 4
+text = "Return the heap's size."
