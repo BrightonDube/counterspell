@@ -31,7 +31,7 @@ axum-extra = { version = "0.12.6", features = ["cookie"] }
 # Approved by Brighton (14 Nov 2026) for the SSE run stream: `unfold` builds the event stream.
 fsrs = "7.0.0"
 futures-util = "0.3.34"
-argon2 = "0.5.3"
+argon2 = "0.6.0"
 hmac = "0.12.1"
 rand = "0.9.5"
 base64 = "0.23.1"
