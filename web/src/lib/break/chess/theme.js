@@ -6,7 +6,7 @@
 // fetches them with XMLHttpRequest, so a `?url` import that Vite inlines to a
 // `data:` URL would violate the deployed `connect-src 'self'` policy (the
 // marker sprite is below Vite's 4 kB inlining threshold).
-const PIECES_URL = '/break/pieces-steel-night.svg';
+const PIECES_URL = '/break/pieces-obsidian-ivory.svg';
 const MARKERS_URL = '/break/markers.svg';
 
 /** Style contract shared by every Counterspell board. */
