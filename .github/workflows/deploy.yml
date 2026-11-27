@@ -171,6 +171,28 @@ jobs:
       - name: Fail the run after rollback
         if: steps.health.outcome == 'failure'
         run: exit 1
+      # Verify the actual release asset, not only API availability. Keep this separate
+      # from rollback: manually deploying a historical release must remain possible.
+      - name: Public chess sprite smoke check
+        if: github.event_name == 'workflow_run'
+        env:
+          SHA: ${{ steps.sha.outputs.value }}
+        run: |
+          set -euo pipefail
+          sprite="$RUNNER_TEMP/chess-sprite.svg"
+          for _ in $(seq 1 12); do
+            if curl -fsS --max-time 10 -H 'Cache-Control: no-cache' \
+              "https://counterspel.online/break/pieces-obsidian-ivory.svg?v=${SHA}" -o "$sprite" &&
+              grep -Fq '<title>Obsidian and Ivory chess pieces</title>' "$sprite" &&
+              grep -Fq '<g id="wk"' "$sprite" &&
+              grep -Fq '<g id="bk"' "$sprite"; then
+              echo "Production is serving the Obsidian and Ivory sprite."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::Production chess sprite is missing, stale, or not SVG."
+          exit 1
       - name: Summary
         env:
           SHA: ${{ steps.sha.outputs.value }}

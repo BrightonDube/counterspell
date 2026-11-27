@@ -42,7 +42,7 @@ describe('shared chessboard presentation (CH02–CH05)', () => {
     expect(CHESSBOARD_STYLE.pieces.tileSize).toBe(40);
     // Same-origin file URL — cm-chessboard XHRs sprites, so a bundled
     // `?url` import that Vite inlines to `data:` is blocked by connect-src.
-    expect(CHESSBOARD_STYLE.pieces.file).toBe('/break/pieces-steel-night.svg');
+    expect(CHESSBOARD_STYLE.pieces.file).toBe('/break/pieces-obsidian-ivory.svg');
   });
 
   it('keeps piece animation bounded and off the critical path', () => {
