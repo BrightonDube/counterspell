@@ -1,0 +1,16 @@
+# Chess bot experience — design
+
+Tracking: #160. Sources: repository AGENTS.md, frontend steering, docs/palette.md, break-room spec, current bot page, minimax.js, bot.worker.js and SkullSentinel.svelte.
+
+## Decisions
+- Existing route /break/bot; compact inline difficulty selector, segmented White/Black choice and start/restart action. No setup modal. Use existing semantic tokens, Geist, accessible native controls or established Bits UI patterns.
+- Board geometry is primary. Desktop layout must preserve the existing board width where possible; expand usable container only as needed. Switch to vertical stacking at a content-derived breakpoint. History is compact and scrollable; do not scale or stretch individual board squares.
+- Keep chess.js authoritative. Derive SAN list and historical FENs from verbose move history or replay from initial position. Track review index independently; disable board move input while reviewing; return-to-live restores current position and markers. Raw FEN is not normal visual status; preserve text alternative and optional advanced disclosure for bot and puzzle.
+- Use a validated localStorage preference schema with guarded reads/writes; distinguish pending selections from active game settings. Increment game generation on restart and reject stale worker responses; terminate obsolete worker work as appropriate. Guard illegal moves, asynchronous initialization and timer cleanup.
+- Extend worker request with validated level and request identity. Six profiles must vary bounded search depth, budget, evaluation and/or deterministic error policy; calibrate strength via reproducible matches or reference opponents before showing approximate Elo. Existing material-only depth-2 search is not a validated Elo engine. Review negamax sign and cutoff correctness with tests before increasing depth. Avoid unbounded main-thread fallback.
+- Original SVG skull: layered cranium, cheekbones, teeth, sockets and independently controlled gaze; bone/moss/steel/amber palette, danger red only for defeat. Compose gaze and head tilt using SVG groups/CSS transforms, not a permanent bounce. State derives from actual game events (ready, opponent turn, player turn, victory, defeat, draw); reduced-motion static alternatives. Use lightweight bounded CSS or existing approved animation patterns, no new heavy library without justification.
+- Result celebration is tied to terminal transition once per game. Loss uses accessible dismissible centered result overlay; win has bounded confetti; draw gives reason. Preserve saveScore semantics and avoid duplicate recording.
+- Use accessible status messages (short turn status, check and results), visible focus, no reliance on color alone. Test at narrow phone, tablet, laptop and wide desktop; preserve board interaction during active play.
+
+## Verification
+Unit tests for engine behavior, profiles, seed determinism, legal moves, preferences, history review and stale responses. Component/E2E tests for selectors, reload, both colors, history, overflow, outcomes and reduced motion. Run repository lint/type/build/test scripts and CI; browser verify responsive layout and live deployment. No claim of verified rating or visual quality without evidence.
